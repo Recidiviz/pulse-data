@@ -29,19 +29,19 @@ keys_to_ignore:
   - bail_mths               # Bail months - appears unused in source
   - bail_days               # Bail days - appears unused in source
   - class_of_sent           # Class of sentence - handled manually in the controller
-  - commit_crdit_yrs        # Commitment credit years (credit awarded against a sentence, usually for pretrial confinement) - unused - TODO(1759) - Should we add this?
+  - commit_crdit_yrs        # Commitment credit years (credit awarded against a sentence, usually for pretrial confinement) - unused - TODO(#1759) - Should we add this?
   - commit_crdit_mths       # Commitment credit months - unused
   - commit_crdit_days       # Commitment credit days - unused
   - max_cort_sent_yrs       # Max court sentence years - handled manually in the controller
   - max_cort_sent_mths      # Max court sentence months - handled manually in the controller
   - max_cort_sent_days      # Max court sentence days - handled manually in the controller
-  - max_cort_sent_l_da      # Max court sentence less days subtracted by judge - TODO(1759) - Should we add this?
+  - max_cort_sent_l_da      # Max court sentence less days subtracted by judge - TODO(#1759) - Should we add this?
   - min_cort_sent_yrs       # Min court sentence years - handled manually in the controller
   - min_cort_sent_mths      # Min court sentence months - handled manually in the controller
   - min_cort_sent_days      # Min court sentence days - handled manually in the controller
-  - min_cort_sent_l_da      # Min court sentence less days subtracted by judge - TODO(1759) - Should we add this?
+  - min_cort_sent_l_da      # Min court sentence less days subtracted by judge - TODO(#1759) - Should we add this?
   - effective_date          # Effective date for beginning of min sentence - unused
-  - escape_yrs              # Escape time years (time added to a sentence in response to an escape attempt) - unused - TODO(1759) - Should we add this?
+  - escape_yrs              # Escape time years (time added to a sentence in response to an escape attempt) - unused - TODO(#1759) - Should we add this?
   - escape_mths             # Escape time months - unused
   - escape_days             # Escape time days - unused
   - max_expir_date          # Max expiration date - unused (duplicative of max_cort_sent fields)

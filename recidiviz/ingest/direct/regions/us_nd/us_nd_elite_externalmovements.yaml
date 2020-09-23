@@ -12,7 +12,7 @@ enforced_ancestor_types:
 
 keys_to_ignore:
   - ACTIVE_FLAG           # More detailed information from other fields here
-  - ARREST_AGENCY_LOC_ID  # TODO(2331) Add when we track arrests in the state schema
+  - ARREST_AGENCY_LOC_ID  # TODO(#2331) Add when we track arrests in the state schema
   - COMMENT_TEXT          # This free text info is really variable and sparse
   - ESCORT_CODE           # No apparent use for these at the moment
   - MOVEMENT_TYPE         # No use for these. Status is inferred from DIRECTION_CODE

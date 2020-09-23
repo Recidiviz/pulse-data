@@ -78,7 +78,7 @@ def is_property_forward_ref(obj, property_name) -> bool:
     return is_forward_ref(attribute)
 
 
-# TODO(1886): We should not consider objects which are not ForwardRefs, but are properly typed to an entity cls
+# TODO(#1886): We should not consider objects which are not ForwardRefs, but are properly typed to an entity cls
 #  as a flat field
 def is_property_flat_field(obj, property_name) -> bool:
     """Returns true if the attribute corresponding to |property_name| on the

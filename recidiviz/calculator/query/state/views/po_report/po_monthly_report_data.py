@@ -30,7 +30,7 @@ PO_MONTHLY_REPORT_DATA_DESCRIPTION = """
  from supervision, and keeping cases in compliance with state standards.
  """
 
-# TODO(3514): handle officers with caseloads across multiple districts
+# TODO(#3514): handle officers with caseloads across multiple districts
 PO_MONTHLY_REPORT_DATA_QUERY_TEMPLATE = \
     """
     /*{description}*/

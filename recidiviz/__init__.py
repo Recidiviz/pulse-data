@@ -24,7 +24,7 @@ from recidiviz.ingest.models.ingest_info import IngestInfo
 from recidiviz.ingest.scrape import ingest_utils
 from recidiviz.utils import environment
 
-# TODO(3820): Move these hooks out of this global file
+# TODO(#3820): Move these hooks out of this global file
 # We want to add these globally because the serialization hooks are used in
 # ingest and persistence.
 

@@ -346,7 +346,7 @@ def run(apache_beam_pipeline_options: PipelineOptions,
             state_code=state_code
         ))
 
-        # TODO(2769): Don't bring this in as a root entity
+        # TODO(#2769): Don't bring this in as a root entity
         # Get StateSupervisionViolationResponses
         supervision_violation_responses = (p | 'Load SupervisionViolationResponses' >> BuildRootEntity(
             dataset=input_dataset,

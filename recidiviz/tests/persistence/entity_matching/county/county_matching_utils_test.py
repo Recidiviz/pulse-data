@@ -260,7 +260,7 @@ class TestCountyMatchingUtils(TestCase):
             db_entity=db_sentence, ingested_entity=ingested_sentence))
 
     def test_sentence_match(self):
-        # TODO(350): expand tests after more robust equality function
+        # TODO(#350): expand tests after more robust equality function
         self.assertTrue(county_matching_utils.is_sentence_match(
             db_entity=entities.Sentence.new_with_defaults(
                 sentence_id=_SENTENCE_ID, booking_id=_BOOKING_ID),

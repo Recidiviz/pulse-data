@@ -27,7 +27,7 @@ from opencensus.trace import execution_context
 from recidiviz.utils import environment, monitoring
 
 
-# TODO(3043): Once census-instrumentation/opencensus-python#442 is fixed we can
+# TODO(#3043): Once census-instrumentation/opencensus-python#442 is fixed we can
 # use OpenCensus threading intregration which will copy this for us. Until then
 # we can just copy it manually.
 with_context = RuntimeContext.with_current_context

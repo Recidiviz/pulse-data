@@ -45,18 +45,18 @@ keys_to_ignore:
   - co_defend           # Unused - Co-defendants
   - consec_sent_no      # Unused - Sequence number indicating rank in the chain of consecutive sentences
   - consec_typ          # Unused - Sentence timing type (Consecutive vs Concurrent)
-  - court_cred          # Unused - TODO(3506): Get more info from ID on this. Is this earned time?
+  - court_cred          # Unused - TODO(#3506): Get more info from ID on this. Is this earned time?
   - cnty_cd             # Unused - County code, instead we use cnty_desc for the actual county name
   - cnty_ldesc          # Unused - County long description. We use cnty_sdesc instead (short description).
   - def_atty            # Unused - Defense attorney code
   - description         # Unused - Offense description
   - dist_atty           # Unused - DA code
-  - enhanced            # Unused - Whether or not the sentence is enhanced. TODO(3513): Consider adding to schema.
+  - enhanced            # Unused - Whether or not the sentence is enhanced. TODO(#3513): Consider adding to schema.
   - govn_sent           # Unused - Whether this is the governing sentence or not.
   - interstate_mitt     # Unused - Y/N flag to indicate if this is an interstate mittimus
-  - jail_cred           # Unused - TODO(3506): Get more info from ID on this. Is this earned time?
+  - jail_cred           # Unused - TODO(#3506): Get more info from ID on this. Is this earned time?
   - jud_cd              # Unused - Judge code.
-  - law_cd              # Unused - Law code. TODO(3506): Get more info from ID on this.
+  - law_cd              # Unused - Law code. TODO(#3506): Get more info from ID on this.
   - lgl_fnam            # Unused - Legal first name of sentenced person (name information gathered from
                         #          offender_ofndr_dob.csv)
   - lgl_mnam            # Unused - Legal middle name of sentenced person (name information gathered from
@@ -72,31 +72,31 @@ keys_to_ignore:
   - off_cat             # Unused - Offense category - Used to find off_ldesc
   - off_cd              # Unused - Offense code - Used to find off_ldesc
   - off_deg             # Unused - Offense degree - Usedtofind off_ldesc
-  - off_dtd             # Unused - offense date. TODO(3506): Handle different variations of this field.
-  - off_rank1           # Unused - TODO(3506): Get more info from ID.
-  - off_rank2           # Unused - TODO(3506): Get more info from ID.
-  - off_rank3           # Unused - TODO(3506): Get more info from ID.
-  - off_rpt_flg         # Unused - TODO(3506): Get more info from ID
+  - off_dtd             # Unused - offense date. TODO(#3506): Handle different variations of this field.
+  - off_rank1           # Unused - TODO(#3506): Get more info from ID.
+  - off_rank2           # Unused - TODO(#3506): Get more info from ID.
+  - off_rank3           # Unused - TODO(#3506): Get more info from ID.
+  - off_rpt_flg         # Unused - TODO(#3506): Get more info from ID
   - off_sdesc           # Unused - Offense short description. We use off_ldesc instead (long description).
   - off_stat_eff_dtd    # Unused - Date the statue become effective
   - off_stat_subsec     # Unused - Statute Subsection
-  - off_stat_term_dtd   # Unused - TODO(3506): Get more info from ID
-  - off_sxo_flg         # Unused - Offense sex offender? TODO(3506): Get more info from ID.
-  - off_typ             # Unused - Offense type - TODO(3506): Get more info from ID
-  - off_viol            # Unused - Whether or not the offense was violent. TODO(3516): Consider adding this to charge
+  - off_stat_term_dtd   # Unused - TODO(#3506): Get more info from ID
+  - off_sxo_flg         # Unused - Offense sex offender? TODO(#3506): Get more info from ID.
+  - off_typ             # Unused - Offense type - TODO(#3506): Get more info from ID
+  - off_viol            # Unused - Whether or not the offense was violent. TODO(#3516): Consider adding this to charge
                         #          schema.
-  - offvisxo_flg        # Unused - TODO(3506): Get more info from ID
-  - off_visxo_flg       # Unused - TODO(3507): Add raw import preprocessing to combine with offvisxo_flg above.
-  - plea                # Unused - Plea TODO(2607): Add plea to StateCharge.
+  - offvisxo_flg        # Unused - TODO(#3506): Get more info from ID
+  - off_visxo_flg       # Unused - TODO(#3507): Add raw import preprocessing to combine with offvisxo_flg above.
+  - plea                # Unused - Plea TODO(#2607): Add plea to StateCharge.
   - sent_eff_dtd        # Unused - Usually the same as sentence_dtd/sent_beg_dtd.
-                        #          TODO(3506): Understand when these differ.
+                        #          TODO(#3506): Understand when these differ.
   - sent_exp_dtd        # Unused - Date the mittimus expires. Usually the same as sent_ft_dtd unless there has been a
                         #          manual process to update the expiration date.
-                        #          TODO(3506): Should we use this instead of sent_ft_dtd
-  - sent_gtr_dtd        # Unused - Mostly null. TODO(3506): Get more info from ID on this.
+                        #          TODO(#3506): Should we use this instead of sent_ft_dtd
+  - sent_gtr_dtd        # Unused - Mostly null. TODO(#3506): Get more info from ID on this.
   - state               # Unused - State where sentenced.
-  - string_no           # Unused - TODO(3506): Get more info from ID
-  - vio_doc             # Unused - TODO(3506): Get more info from ID on this.
-  - vio_1311            # Unused - TODO(3506): Get more info from ID on this
+  - string_no           # Unused - TODO(#3506): Get more info from ID
+  - vio_doc             # Unused - TODO(#3506): Get more info from ID on this.
+  - vio_1311            # Unused - TODO(#3506): Get more info from ID on this
   - was_amended         # Unused - Whether or not this sentence was amended. If True, this means that this row contains
                         #          information from the original and amended sentence. This is recidiviz-generated.

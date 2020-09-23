@@ -94,7 +94,7 @@ class BuildRootEntity(beam.PTransform):
             raise ValueError(f'Root entity class [{self._root_schema_class.__name__}] does not have unifying id field '
                              f'[{unifying_id_field}]')
 
-    # TODO(2769): Update this to expand recursively, perhaps changing the _build_related_entities bool to a much more
+    # TODO(#2769): Update this to expand recursively, perhaps changing the _build_related_entities bool to a much more
     #  detailed config about which paths down the entity tree we want to explore, with specification on each node about
     #  whether we want to hydrate fields or just relationship to child objects.
     def expand(self, input_or_inputs):
@@ -677,7 +677,7 @@ class _HydrateRootEntitiesWithRelationshipPropertyEntities(beam.DoFn):
 
                 if is_property_list(root_entity, property_name):
                     getattr(root_entity, property_name).extend(entities)
-                # TODO(1886): We should include properties that aren't forward refs, but are entity types here.
+                # TODO(#1886): We should include properties that aren't forward refs, but are entity types here.
                 elif is_property_forward_ref(root_entity, property_name):
                     if len(entities) > 1:
                         raise ValueError("Attempting to set a list of entities"

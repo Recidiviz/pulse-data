@@ -25,7 +25,7 @@ from recidiviz.persistence.database.schema.schema_person_type import \
     SchemaPersonType
 
 
-# TODO(1907): Rename people -> persons
+# TODO(#1907): Rename people -> persons
 @attr.s(frozen=True, kw_only=True)
 class MatchedEntities(BuildableAttr, Generic[SchemaPersonType]):
     """

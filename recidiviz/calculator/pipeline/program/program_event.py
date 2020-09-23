@@ -50,7 +50,7 @@ class ProgramReferralEvent(ProgramEvent, AssessmentEventMixin):
     """Models a ProgramEvent where a the person was referred to a program."""
 
     # The type of supervision the person was on
-    # TODO(2891): Make this of type StateSupervisionPeriodSupervisionType
+    # TODO(#2891): Make this of type StateSupervisionPeriodSupervisionType
     supervision_type: Optional[StateSupervisionType] = attr.ib(default=None)
 
     # Program participation status
@@ -81,7 +81,7 @@ class ProgramParticipationEvent(ProgramEvent):
     program_location_id: Optional[str] = attr.ib(default=None)
 
     # The type of supervision the person was on
-    # TODO(2891): Make this of type StateSupervisionPeriodSupervisionType
+    # TODO(#2891): Make this of type StateSupervisionPeriodSupervisionType
     supervision_type: Optional[StateSupervisionType] = attr.ib(default=None)
 
     @property

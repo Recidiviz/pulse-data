@@ -32,7 +32,7 @@ from recidiviz.ingest.direct.errors import DirectIngestError, \
     DirectIngestErrorType
 from recidiviz.utils import metadata
 
-# TODO(3162): Make file_type non-optional once we've added these specifiers to every file
+# TODO(#3162): Make file_type non-optional once we've added these specifiers to every file
 _FILEPATH_REGEX = \
     re.compile(
         r'(unprocessed|processed)_'  # processed_state
@@ -61,7 +61,7 @@ class GcsfsDirectIngestFileType(Enum):
     # For regions that have not yet been migrated to SQL pre-processing support and do not have raw/ingest_view tags in
     # file names in the ingest bucket, these files are treated as INGEST_VIEW files. If a region has been configured
     # to have SQL pre-processing support, we will throw if encountering an UNSPECIFIED file.
-    # TODO(3162): Once all region files are fully migrated to having valid file types, remove this type entirely.
+    # TODO(#3162): Once all region files are fully migrated to having valid file types, remove this type entirely.
     UNSPECIFIED = 'unspecified'
 
     @classmethod

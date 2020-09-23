@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Manages state-specific methodology decisions made throughout the calculation pipelines."""
-# TODO(2995): Make a state config file for every state and every one of these state-specific calculation methodologies
+# TODO(#2995): Make a state config file for every state and every one of these state-specific calculation methodologies
 from datetime import date
 import logging
 from typing import List, Optional
@@ -146,7 +146,7 @@ def second_assessment_on_supervision_is_more_reliable(state_code: str) -> bool:
         - US_MO: True
         - US_ND: True
     """
-    # TODO(2782): Investigate whether to update this logic
+    # TODO(#2782): Investigate whether to update this logic
     return state_code in ('US_ID', 'US_MO', 'US_ND')
 
 
@@ -208,7 +208,7 @@ def get_pre_incarceration_supervision_type(
                                                             supervision_sentences,
                                                             incarceration_period)
 
-    # TODO(2938): Decide if we want date matching/supervision period lookback logic for US_ND
+    # TODO(#2938): Decide if we want date matching/supervision period lookback logic for US_ND
     return get_pre_incarceration_supervision_type_from_incarceration_period(incarceration_period)
 
 
@@ -356,7 +356,7 @@ def produce_supervision_time_bucket_for_period(supervision_period: StateSupervis
     not want to drop periods entirely because we need them for context in some of the calculations, but we do not want
     to create metrics using the periods."""
     if ((supervision_period.supervision_period_supervision_type == StateSupervisionPeriodSupervisionType.INVESTIGATION
-         # TODO(2891): Remove this check when we remove supervision_type from StateSupervisionPeriods
+         # TODO(#2891): Remove this check when we remove supervision_type from StateSupervisionPeriods
          or supervision_period.supervision_type == StateSupervisionType.PRE_CONFINEMENT)
             and not investigation_periods_in_supervision_population(supervision_period.state_code)):
         return False
@@ -384,7 +384,7 @@ def get_case_compliance_on_date(supervision_period: StateSupervisionPeriod,
     return None
 
 
-# TODO(3829): Determine if we want a supervision district / supervision site distinction in our schema and/or metrics.
+# TODO(#3829): Determine if we want a supervision district / supervision site distinction in our schema and/or metrics.
 def get_supervision_district_from_supervision_period(supervision_period: StateSupervisionPeriod) -> Optional[str]:
     """Given |supervision_period| returns the relevant supervision site abiding by state-specific logic."""
 

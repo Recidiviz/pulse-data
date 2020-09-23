@@ -22,7 +22,7 @@ keys_to_ignore:
   - ParoleCountID                 # Parole "count" (index) for this person - handled manually in the controller
   - Sent16DGroupNumber            # Sentence group number (sentence group index within a parole count id) - handled manually in the controller
   - SentenceID                    # Sentence id (sentence index within Sent16DGroupNumber) - handled manually in the controller
-  - SentType                      # Sentence type TODO(3312): Figure out what this means
+  - SentType                      # Sentence type TODO(#3312): Figure out what this means
   - SentMinSentenceYear           # Sentence minimum years - handled manually in the controller
   - SentMinSentenceMonth          # Sentence minimum months - handled manually in the controller
   - SentMinSentenceDay            # Sentence minimum days - handled manually in the controller

@@ -35,7 +35,7 @@ from recidiviz.common.constants.state.state_supervision_period import StateSuper
 from recidiviz.persistence.entity.state.entities import StateSupervisionPeriod, StateAssessment, StateSupervisionContact
 
 
-# TODO(3938): rename to SEX_OFFENSE.
+# TODO(#3938): rename to SEX_OFFENSE.
 SEX_OFFENDER_NEW_SUPERVISION_ASSESSMENT_DEADLINE_DAYS_PROBATION = 45
 SEX_OFFENDER_NEW_SUPERVISION_ASSESSMENT_DEADLINE_DAYS_PAROLE = 90
 SEX_OFFENDER_LSIR_MINIMUM_SCORE = 16
@@ -70,7 +70,7 @@ def us_id_case_compliance_on_date(supervision_period: StateSupervisionPeriod,
     on US_ID compliance standards. Measures compliance values for the following types of supervision events:
         - Assessments
         - Face-to-Face Contacts
-    TODO(3938): rename to SEX_OFFENSE here and below
+    TODO(#3938): rename to SEX_OFFENSE here and below
     We currently measure compliance for `GENERAL` and `SEX_OFFENDER` case types. Below are the expected requirements:
         - For `GENERAL` cases, there are two level systems:
             1. Deprecated system mapping (`StateSupervisionLevel`: raw string) and expected frequencies:

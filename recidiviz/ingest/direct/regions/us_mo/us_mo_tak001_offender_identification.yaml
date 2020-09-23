@@ -16,7 +16,7 @@ primary_key:
   EK$DOC: state_person.state_person_id
 
 keys_to_ignore:
-# TODO(2604): Take another pass through these columns to document and ensure they should be ignored
+# TODO(#2604): Take another pass through these columns to document and ensure they should be ignored
 - EK$NRN
 - EK$SID  # Offender SID Number - Handled manually in the controller
 - EK$FBI  # Offender FBI Number - Handled manually in the controller

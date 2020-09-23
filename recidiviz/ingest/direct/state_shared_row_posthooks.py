@@ -36,7 +36,7 @@ from recidiviz.ingest.models.ingest_info import IngestObject, StateAlias, \
 from recidiviz.ingest.models.ingest_object_cache import IngestObjectCache
 
 
-# TODO(1882): This should no-longer be necessary once you can map a column
+# TODO(#1882): This should no-longer be necessary once you can map a column
 #  value to multiple fields on the ingested object.
 def copy_name_to_alias(_file_tag: str,
                        _row: Dict[str, str],
@@ -88,7 +88,7 @@ def gen_rationalize_race_and_ethnicity(enum_overrides: Dict[EntityEnum, List[str
     return _rationalize_race_and_ethnicity
 
 
-# TODO(1882): If yaml format supported raw values, this would no-longer be
+# TODO(#1882): If yaml format supported raw values, this would no-longer be
 #  necessary.
 def gen_label_single_external_id_hook(external_id_type: str) -> Callable:
     """Generates a row post-hook that will hydrate the id_type field on the

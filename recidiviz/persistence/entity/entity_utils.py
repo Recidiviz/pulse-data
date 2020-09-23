@@ -252,7 +252,7 @@ class EntityFieldType(Enum):
     ALL = auto()
 
 
-# TODO(2383): Move all functions that take in a CoreEntity onto the CoreEntity
+# TODO(#2383): Move all functions that take in a CoreEntity onto the CoreEntity
 #  object itself, once we figure out the circular dependency with the
 #  SchemaEdgeDirectionChecker.
 def get_set_entity_field_names(
@@ -347,7 +347,7 @@ def _get_all_entity_field_names(entity: Entity,
         if v is None:
             continue
 
-        # TODO(1908): Update traversal logic if relationship fields can be
+        # TODO(#1908): Update traversal logic if relationship fields can be
         # different types aside from Entity and List
         if issubclass(type(v), Entity):
             is_back_edge = direction_checker.is_back_edge(entity, field)
@@ -430,7 +430,7 @@ def is_placeholder(entity: CoreEntity) -> bool:
     if primary_key_name in set_flat_fields:
         set_flat_fields.remove(primary_key_name)
 
-    # TODO(2244): Change this to a general approach so we don't need to check
+    # TODO(#2244): Change this to a general approach so we don't need to check
     # explicit columns
     if 'state_code' in set_flat_fields:
         set_flat_fields.remove('state_code')

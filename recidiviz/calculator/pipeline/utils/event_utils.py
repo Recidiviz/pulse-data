@@ -33,7 +33,7 @@ class AssessmentEventMixin:
         """Calculates the assessment score bucket that applies to measurement.
 
         NOTE: Only LSIR and ORAS buckets are currently supported
-        TODO(2742): Add calculation support for all supported StateAssessmentTypes
+        TODO(#2742): Add calculation support for all supported StateAssessmentTypes
 
         Returns:
             A string representation of the assessment score for the person.

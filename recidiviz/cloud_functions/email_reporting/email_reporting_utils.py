@@ -73,7 +73,7 @@ def get_cdn_static_ip() -> str:
     return get_env_var('CDN_STATIC_IP')
 
 
-# TODO(3265): Convert from HTTP to HTTPS when a certificate has been set up
+# TODO(#3265): Convert from HTTP to HTTPS when a certificate has been set up
 def get_static_image_path(state_code: str, report_type: str) -> str:
     return f'http://{get_cdn_static_ip()}/{state_code}/{report_type}/static'
 
@@ -98,7 +98,7 @@ def get_template_filename(state_code: str, report_type: str) -> str:
     return f'{report_type}/{state_code}/template.html'
 
 
-# TODO(3260): Make this general-purpose to work for any report type's chart
+# TODO(#3260): Make this general-purpose to work for any report type's chart
 def get_chart_topic() -> str:
     return f'projects/{get_project_id()}/topics/report_po_comparison_chart'
 

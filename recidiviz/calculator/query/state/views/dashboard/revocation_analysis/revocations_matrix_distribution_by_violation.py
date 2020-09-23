@@ -31,7 +31,7 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_VIOLATION_DESCRIPTION = """
  violation reports filed during that period. 
  """
 
-# TODO(3981): Reconfigure this view to support more than just US_MO violation categories
+# TODO(#3981): Reconfigure this view to support more than just US_MO violation categories
 REVOCATIONS_MATRIX_DISTRIBUTION_BY_VIOLATION_QUERY_TEMPLATE = \
     """
     /*{description}*/

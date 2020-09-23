@@ -36,5 +36,5 @@ class TestBaseEntities(TestCase):
                              f"remember to set eq=False in the @attr.s "
                              f"declaration?")
 
-    # TODO(1894): Write unit tests for entity graph equality that reference the
+    # TODO(#1894): Write unit tests for entity graph equality that reference the
     # schema defined in test_schema/test_entities.py.

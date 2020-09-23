@@ -90,7 +90,7 @@ REVOCATION_TYPE_SEVERITY_ORDER = [
 ]
 
 CASE_TYPE_SEVERITY_ORDER = [
-    # TODO(3938): rename to SEX_OFFENSE.
+    # TODO(#3938): rename to SEX_OFFENSE.
     StateSupervisionCaseType.SEX_OFFENDER,
     StateSupervisionCaseType.DOMESTIC_VIOLENCE,
     StateSupervisionCaseType.SERIOUS_MENTAL_ILLNESS,
@@ -591,7 +591,7 @@ def _get_revocation_details(incarceration_period: StateIncarcerationPeriod,
         if response_decisions:
             revocation_type = _identify_most_severe_revocation_type(response_decisions)
 
-        # TODO(2840): Remove this once revocation type is being set on the proper fields on the response decisions
+        # TODO(#2840): Remove this once revocation type is being set on the proper fields on the response decisions
         if revocation_type is None:
             revocation_type = source_violation_response.revocation_type
 
@@ -615,7 +615,7 @@ def _get_revocation_details(incarceration_period: StateIncarcerationPeriod,
                 _get_supervising_officer_and_district(supervision_period, supervision_period_to_agent_associations)
 
     if revocation_type is None:
-        # TODO(3341): Consider removing revocation_type and always looking at the specialized_purpose_for_incarceration
+        # TODO(#3341): Consider removing revocation_type and always looking at the specialized_purpose_for_incarceration
         #  on the revoked period
         if incarceration_period.specialized_purpose_for_incarceration == \
                 StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON:
@@ -668,7 +668,7 @@ def get_violation_and_response_history(
     updated_responses: List[StateSupervisionViolationResponse] = []
 
     for response in responses_in_window:
-        # TODO(2995): Formalize state-specific calc logic
+        # TODO(#2995): Formalize state-specific calc logic
         if state_code == 'US_MO':
             updated_responses.append(us_mo_violation_utils.normalize_violations_on_responses(response))
         else:
@@ -1085,7 +1085,7 @@ def _get_projected_completion_bucket(
 
     sentence_days_served = (supervision_sentence.completion_date - supervision_sentence.start_date).days
 
-    # TODO(2596): Assert that the sentence status is COMPLETED or COMMUTED to qualify as successful
+    # TODO(#2596): Assert that the sentence status is COMPLETED or COMMUTED to qualify as successful
     supervision_success = supervision_period.termination_reason in (StateSupervisionPeriodTerminationReason.DISCHARGE,
                                                                     StateSupervisionPeriodTerminationReason.EXPIRATION)
 
@@ -1102,7 +1102,7 @@ def _get_projected_completion_bucket(
 
     last_day_of_projected_month = last_day_of_month(projected_completion_date)
 
-    # TODO(2975): Note that this metric measures success by projected completion month. Update or expand this
+    # TODO(#2975): Note that this metric measures success by projected completion month. Update or expand this
     #  metric to capture the success of early termination as well
     return ProjectedSupervisionCompletionBucket(
         state_code=supervision_period.state_code,
