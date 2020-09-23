@@ -145,6 +145,21 @@ function check_for_too_many_serving_versions {
     echo "Found [$SERVING_VERSIONS] already serving versions - proceeding"
 }
 
+function check_for_too_many_deployed_versions {
+    PROJECT_ID=$1
+
+    # Query for the deployed versions in YAML format, select the IDs, count the number of lines and trim whitespace
+    DEPLOYED_VERSIONS=$(gcloud app versions list --project=${PROJECT_ID} --service=default --format=yaml | pipenv run yq .id | wc -l | xargs) || exit_on_fail
+    MAX_ALLOWED_DEPLOYED_VERSIONS=210
+    if [[ "$DEPLOYED_VERSIONS" -ge "$MAX_ALLOWED_DEPLOYED_VERSIONS" ]]; then
+        echo_error "Found [$DEPLOYED_VERSIONS] already deployed versions. You must delete at least one version to proceed"
+        echo_error "in order to avoid maxing out the number of allowed deployed versions."
+        echo_error "Delete versions here: https://console.cloud.google.com/appengine/versions?organizationId=448885369991&project=$PROJECT_ID&serviceId=default"
+        exit 1
+    fi
+    echo "Found [$DEPLOYED_VERSIONS] already deployed versions - proceeding"
+}
+
 function verify_can_deploy {
     PROJECT_ID=$1
     echo "Verifying deploy permissions"
@@ -155,6 +170,9 @@ function verify_can_deploy {
 
     echo "Checking jq is installed"
     run_cmd check_docker_installed
+
+    echo "Checking for too many deployed versions"
+    run_cmd check_for_too_many_deployed_versions ${PROJECT_ID}
 
     echo "Checking for too many currently serving versions"
     run_cmd check_for_too_many_serving_versions ${PROJECT_ID}
