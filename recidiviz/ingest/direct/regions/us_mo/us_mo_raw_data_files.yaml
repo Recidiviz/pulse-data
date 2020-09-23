@@ -22,4 +22,63 @@
 
 default_encoding: UTF-8
 default_separator: ','
-raw_files: []
+raw_files:
+  - file_tag: FOCTEST_ORAS_ASSESSMENTS_WEEKLY
+    primary_key_cols: []
+    # Status Descriptions. Column prefix: FH.
+  - file_tag: LBAKRCOD_TAK146
+    primary_key_cols: []
+    # Offender Identification. Column prefix: EK.
+  - file_tag: LBAKRDTA_TAK001
+    primary_key_cols: []
+    # Sentence. Column prefix: BS.
+  - file_tag: LBAKRDTA_TAK022
+    primary_key_cols: []
+    # Sentence Inst. Column prefix: BT.
+  - file_tag: LBAKRDTA_TAK023
+    primary_key_cols: []
+    # Sentence Prob. Column prefix: BU.
+  - file_tag: LBAKRDTA_TAK024
+    primary_key_cols: []
+    # Status Xref. Column prefix: BV.
+  - file_tag: LBAKRDTA_TAK025
+    primary_key_cols: []
+    # Status. Column prefix: BW.
+  - file_tag: LBAKRDTA_TAK026
+    primary_key_cols: []
+    # Violation Reports. Column prefix: BY.
+  - file_tag: LBAKRDTA_TAK028
+    primary_key_cols: []
+    # Field Assignments. Column prefix: CE. 
+  - file_tag: LBAKRDTA_TAK034
+    primary_key_cols: []
+    # Supervision Type Assessments. Column prefix: DN.
+  - file_tag: LBAKRDTA_TAK039
+    primary_key_cols: []
+    # Offender Cycles. Column prefix: DQ.
+  - file_tag: LBAKRDTA_TAK040
+    primary_key_cols: []
+    # Conditions. Column prefix: CF.
+  - file_tag: LBAKRDTA_TAK042
+    primary_key_cols: []
+    # Sentence Xref. Column prefix: CZ.
+  - file_tag: LBAKRDTA_TAK076
+    primary_key_cols: []
+    # Finally Formed Documents. Column prefix: E6.
+  - file_tag: LBAKRDTA_TAK142
+    primary_key_cols: []
+    # Status Descriptions. Column prefix: FH.
+  - file_tag: LBAKRDTA_TAK146
+    primary_key_cols: []
+    # Body Status. Column prefix: F1.
+  - file_tag: LBAKRDTA_TAK158
+    primary_key_cols: []
+    # Sentence Xref. Column prefix: JS.
+  - file_tag: LBAKRDTA_TAK291
+    primary_key_cols: []
+    # Citations. Column prefix: JT.
+  - file_tag: LBAKRDTA_TAK292
+    primary_key_cols: []
+    # DOB View.
+  - file_tag: LBAKRDTA_VAK003
+    primary_key_cols: []
