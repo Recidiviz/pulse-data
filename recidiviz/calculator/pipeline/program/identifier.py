@@ -189,12 +189,15 @@ def find_program_participation_events(program_assignment: StateProgramAssignment
     while participation_date < discharge_date:
         overlapping_supervision_periods = find_supervision_periods_overlapping_with_date(participation_date,
                                                                                          supervision_periods)
+        is_first_day_in_program = participation_date == start_date
+
         if overlapping_supervision_periods:
             for supervision_period in supervision_periods:
                 program_participation_events.append(
                     ProgramParticipationEvent(
                         state_code=state_code,
                         event_date=participation_date,
+                        is_first_day_in_program=is_first_day_in_program,
                         program_id=program_id,
                         program_location_id=program_location_id,
                         # TODO(2891): Use supervision_period_supervision_type
@@ -204,6 +207,7 @@ def find_program_participation_events(program_assignment: StateProgramAssignment
             program_participation_events.append(ProgramParticipationEvent(
                 state_code=state_code,
                 event_date=participation_date,
+                is_first_day_in_program=is_first_day_in_program,
                 program_id=program_id,
                 program_location_id=program_location_id
             ))
