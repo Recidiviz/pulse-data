@@ -19,6 +19,7 @@
 """Tests for program/pipeline.py"""
 import unittest
 from typing import Optional, Set
+from unittest import mock
 
 import apache_beam as beam
 import pytest
@@ -66,6 +67,14 @@ class TestProgramPipeline(unittest.TestCase):
     """Tests the entire program pipeline."""
     def setUp(self) -> None:
         self.fake_bq_source_factory = FakeReadFromBigQueryFactory()
+        self.assessment_types_patcher = mock.patch(
+            'recidiviz.calculator.pipeline.program.identifier.assessment_utils.'
+            '_assessment_types_of_class_for_state')
+        self.mock_assessment_types = self.assessment_types_patcher.start()
+        self.mock_assessment_types.return_value = [StateAssessmentType.ORAS]
+
+    def tearDown(self) -> None:
+        self.assessment_types_patcher.stop()
 
     @staticmethod
     def build_data_dict(fake_person_id: int,
@@ -80,14 +89,14 @@ class TestProgramPipeline(unittest.TestCase):
 
         race_1 = schema.StatePersonRace(
             person_race_id=111,
-            state_code='CA',
+            state_code='US_XX',
             race=Race.BLACK,
             person_id=fake_person_id
         )
 
         race_2 = schema.StatePersonRace(
             person_race_id=111,
-            state_code='ND',
+            state_code='US_XX',
             race=Race.WHITE,
             person_id=fake_person_id
         )
@@ -96,14 +105,14 @@ class TestProgramPipeline(unittest.TestCase):
 
         ethnicity = schema.StatePersonEthnicity(
             person_ethnicity_id=111,
-            state_code='CA',
+            state_code='US_XX',
             ethnicity=Ethnicity.HISPANIC,
             person_id=fake_person_id)
 
         ethnicity_data = normalized_database_base_dict_list([ethnicity])
 
         program_assignment = schema.StateProgramAssignment(
-            state_code='CA',
+            state_code='US_XX',
             program_assignment_id=123,
             referral_date=date(2015, 5, 10),
             person_id=fake_person_id,
@@ -119,7 +128,7 @@ class TestProgramPipeline(unittest.TestCase):
 
         supervision_period = schema.StateSupervisionPeriod(
             supervision_period_id=fake_supervision_period_id,
-            state_code='CA',
+            state_code='US_XX',
             county_code='124',
             start_date=date(2015, 3, 14),
             termination_date=date(2016, 12, 29),
@@ -326,14 +335,14 @@ class TestProgramPipeline(unittest.TestCase):
 
         race_1 = schema.StatePersonRace(
             person_race_id=111,
-            state_code='CA',
+            state_code='US_XX',
             race=Race.BLACK,
             person_id=fake_person_id
         )
 
         race_2 = schema.StatePersonRace(
             person_race_id=111,
-            state_code='ND',
+            state_code='US_XX',
             race=Race.WHITE,
             person_id=fake_person_id
         )
@@ -342,7 +351,7 @@ class TestProgramPipeline(unittest.TestCase):
 
         ethnicity = schema.StatePersonEthnicity(
             person_ethnicity_id=111,
-            state_code='CA',
+            state_code='US_XX',
             ethnicity=Ethnicity.HISPANIC,
             person_id=fake_person_id)
 
@@ -350,7 +359,7 @@ class TestProgramPipeline(unittest.TestCase):
 
         # Program assignment for a different person
         program_assignment = schema.StateProgramAssignment(
-            state_code='CA',
+            state_code='US_XX',
             program_assignment_id=123,
             referral_date=date(2015, 5, 10),
             person_id=fake_person_id_2,
@@ -366,7 +375,7 @@ class TestProgramPipeline(unittest.TestCase):
 
         supervision_period = schema.StateSupervisionPeriod(
             supervision_period_id=1111,
-            state_code='CA',
+            state_code='US_XX',
             county_code='124',
             start_date=date(2015, 3, 14),
             termination_date=date(2016, 12, 29),
@@ -421,6 +430,16 @@ class TestProgramPipeline(unittest.TestCase):
 class TestClassifyProgramAssignments(unittest.TestCase):
     """Tests the ClassifyProgramAssignments DoFn."""
 
+    def setUp(self) -> None:
+        self.assessment_types_patcher = mock.patch(
+            'recidiviz.calculator.pipeline.program.identifier.assessment_utils.'
+            '_assessment_types_of_class_for_state')
+        self.mock_assessment_types = self.assessment_types_patcher.start()
+        self.mock_assessment_types.return_value = [StateAssessmentType.ORAS]
+
+    def tearDown(self) -> None:
+        self.assessment_types_patcher.stop()
+
     @freeze_time('2009-10-19')
     def testClassifyProgramAssignments(self):
         """Tests the ClassifyProgramAssignments DoFn."""
@@ -433,7 +452,7 @@ class TestClassifyProgramAssignments(unittest.TestCase):
         )
 
         program_assignment = entities.StateProgramAssignment.new_with_defaults(
-            state_code='US_CA',
+            state_code='US_XX',
             program_id='PG3',
             program_location_id='XYZ',
             referral_date=date(2009, 10, 3),
@@ -442,7 +461,7 @@ class TestClassifyProgramAssignments(unittest.TestCase):
         )
 
         assessment = entities.StateAssessment.new_with_defaults(
-            state_code='US_CA',
+            state_code='US_XX',
             assessment_type=StateAssessmentType.ORAS,
             assessment_score=33,
             assessment_date=date(2009, 7, 10)
@@ -452,7 +471,7 @@ class TestClassifyProgramAssignments(unittest.TestCase):
             entities.StateSupervisionPeriod.new_with_defaults(
                 supervision_period_id=111,
                 status=StateSupervisionPeriodStatus.TERMINATED,
-                state_code='UT',
+                state_code='US_XX',
                 start_date=date(2008, 3, 5),
                 supervision_type=StateSupervisionType.PAROLE
             )
@@ -531,7 +550,7 @@ class TestClassifyProgramAssignments(unittest.TestCase):
         )
 
         assessment = entities.StateAssessment.new_with_defaults(
-            state_code='US_CA',
+            state_code='US_XX',
             assessment_type=StateAssessmentType.ORAS,
             assessment_score=33,
             assessment_date=date(2009, 7, 10)
@@ -541,7 +560,7 @@ class TestClassifyProgramAssignments(unittest.TestCase):
             entities.StateSupervisionPeriod.new_with_defaults(
                 supervision_period_id=111,
                 status=StateSupervisionPeriodStatus.TERMINATED,
-                state_code='UT',
+                state_code='US_XX',
                 start_date=date(2008, 3, 5),
                 termination_date=date(2010, 5, 19),
                 termination_reason=
@@ -604,7 +623,7 @@ class TestClassifyProgramAssignments(unittest.TestCase):
         )
 
         program_assignment = entities.StateProgramAssignment.new_with_defaults(
-            state_code='US_CA',
+            state_code='US_XX',
             program_id='PG3',
             referral_date=date(2009, 10, 3)
         )
@@ -613,7 +632,7 @@ class TestClassifyProgramAssignments(unittest.TestCase):
             entities.StateSupervisionPeriod.new_with_defaults(
                 supervision_period_id=111,
                 status=StateSupervisionPeriodStatus.TERMINATED,
-                state_code='UT',
+                state_code='US_XX',
                 start_date=date(2008, 3, 5),
                 termination_date=date(2010, 5, 19),
                 termination_reason=
@@ -686,13 +705,13 @@ class TestClassifyProgramAssignments(unittest.TestCase):
         )
 
         program_assignment = entities.StateProgramAssignment.new_with_defaults(
-            state_code='US_CA',
+            state_code='US_XX',
             program_id='PG3',
             referral_date=date(2009, 10, 3)
         )
 
         assessment = entities.StateAssessment.new_with_defaults(
-            state_code='US_CA',
+            state_code='US_XX',
             assessment_type=StateAssessmentType.ORAS,
             assessment_score=33,
             assessment_date=date(2009, 7, 10)
@@ -761,13 +780,13 @@ class TestCalculateProgramMetricCombinations(unittest.TestCase):
 
         program_events = [
             ProgramReferralEvent(
-                state_code='US_TX',
+                state_code='US_XX',
                 event_date=date(2011, 4, 3),
                 program_id='program',
                 participation_status=StateProgramAssignmentParticipationStatus.IN_PROGRESS
             ),
             ProgramParticipationEvent(
-                state_code='US_TX',
+                state_code='US_XX',
                 event_date=date(2011, 6, 3),
                 program_id='program'
             )]
@@ -843,7 +862,7 @@ class TestProduceProgramMetric(unittest.TestCase):
                       'month': 3,
                       'metric_type':
                           ProgramMetricType.PROGRAM_REFERRAL,
-                      'state_code': 'CA'}
+                      'state_code': 'US_XX'}
 
         value = 10
 
