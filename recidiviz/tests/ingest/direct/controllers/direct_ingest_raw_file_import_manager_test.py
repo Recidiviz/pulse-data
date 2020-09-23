@@ -47,10 +47,10 @@ class DirectIngestRegionRawFileConfigTest(unittest.TestCase):
             yaml_config_file_path=fixtures.as_filepath('us_xx_raw_data_files.yaml'),
         )
 
-        self.assertEqual(4, len(region_config.raw_file_configs))
+        self.assertEqual(6, len(region_config.raw_file_configs))
 
-        self.assertEqual({'file_tag_first', 'file_tag_second', 'tagC', 'tagPipeSeparatedNonUTF8'},
-                         region_config.raw_file_configs.keys())
+        self.assertEqual({'file_tag_first', 'file_tag_second', 'tagC', 'tagInvalidCharacters',
+                          'tagNormalizationConflict', 'tagPipeSeparatedNonUTF8'}, region_config.raw_file_configs.keys())
 
         config_1 = region_config.raw_file_configs['file_tag_first']
         self.assertEqual('file_tag_first', config_1.file_tag)
@@ -360,3 +360,45 @@ class DirectIngestRawFileImportManagerTest(unittest.TestCase):
         self.assertEqual(len(expected_insert_calls) - 1, self.mock_time.sleep.call_count)
         self.assertEqual(5, self.num_lines_uploaded)
         self._check_no_temp_files_remain()
+
+    def test_import_bq_file_with_raw_file_invalid_column_chars(self):
+        file_path = path_for_fixture_file_in_test_gcs_directory(
+            directory=self.ingest_directory_path,
+            filename='tagInvalidCharacters.csv',
+            should_normalize=True,
+            file_type=GcsfsDirectIngestFileType.RAW_DATA)
+
+        self.fs.test_add_path(file_path)
+
+        self.import_manager.import_raw_file_to_big_query(file_path,
+                                                         self._metadata_for_unprocessed_file_path(file_path))
+        self.assertEqual(1, len(self.fs.uploaded_test_path_to_actual))
+
+        path = one(self.fs.uploaded_test_path_to_actual.keys())
+        self.mock_big_query_client.insert_into_table_from_cloud_storage_async.assert_called_with(
+            source_uri=f'gs://{path}',
+            destination_dataset_ref=bigquery.DatasetReference(self.project_id, 'us_xx_raw_data'),
+            destination_table_id='tagInvalidCharacters',
+            destination_table_schema=[bigquery.SchemaField('COL_1', 'STRING', 'NULLABLE'),
+                                      bigquery.SchemaField('_COL2', 'STRING', 'NULLABLE'),
+                                      bigquery.SchemaField('_3COL', 'STRING', 'NULLABLE'),
+                                      bigquery.SchemaField('_4_COL', 'STRING', 'NULLABLE'),
+                                      bigquery.SchemaField('file_id', 'INTEGER', 'REQUIRED'),
+                                      bigquery.SchemaField('update_datetime', 'DATETIME', 'REQUIRED')])
+        self.assertEqual(1, self.num_lines_uploaded)
+        self._check_no_temp_files_remain()
+
+    def test_import_bq_file_with_raw_file_normalization_conflict(self):
+        with self.assertRaises(ValueError) as e:
+            file_path = path_for_fixture_file_in_test_gcs_directory(
+                directory=self.ingest_directory_path,
+                filename='tagNormalizationConflict.csv',
+                should_normalize=True,
+                file_type=GcsfsDirectIngestFileType.RAW_DATA)
+
+            self.fs.test_add_path(file_path)
+
+            self.import_manager.import_raw_file_to_big_query(file_path,
+                                                             self._metadata_for_unprocessed_file_path(file_path))
+
+        self.assertEqual(str(e.exception), "Multiple columns with name [_4COL] after normalization.")

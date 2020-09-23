@@ -377,24 +377,30 @@ class DirectIngestRawFileImportManager:
         # Strip whitespace from head/tail of column names
         columns = [c.strip() for c in columns]
 
-        for column_name in columns:
+        normalized_columns = set()
+        for i, column_name in enumerate(columns):
             if not column_name:
                 raise ValueError(f'Found empty column name in [{file_config.file_tag}]')
 
-            non_allowable_chars = self._get_non_allowable_bq_column_chars(column_name)
-            if non_allowable_chars:
-                # TODO(3020): Some regions (US_MO) are known to have unsupported chars in their column names - will need
-                #  to implement how we reliably convert these column names.
-                raise ValueError(f'Column [{column_name}] for file has non-allowable characters {non_allowable_chars}.')
+            column_name = self._convert_non_allowable_bq_column_chars(column_name)
+
+            # BQ doesn't allow column names to begin with a number, so we prepend an underscore in that case
+            if column_name[0] in string.digits:
+                column_name = '_' + column_name
+
+            if column_name in normalized_columns:
+                raise ValueError(f'Multiple columns with name [{column_name}] after normalization.')
+            normalized_columns.add(column_name)
+            columns[i] = column_name
 
         return columns
 
     @staticmethod
-    def _get_non_allowable_bq_column_chars(column_name: str) -> Set[str]:
+    def _convert_non_allowable_bq_column_chars(column_name: str) -> str:
         def is_bq_allowable_column_char(x: str) -> bool:
             return x in string.ascii_letters or x in string.digits or x == '_'
-
-        return {x for x in column_name if not is_bq_allowable_column_char(x)}
+        column_name = "".join([c if is_bq_allowable_column_char(c) else '_' for c in column_name])
+        return column_name
 
     @staticmethod
     def _create_raw_table_schema_from_columns(columns: List[str]) -> List[bigquery.SchemaField]:
