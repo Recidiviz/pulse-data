@@ -5,3 +5,5 @@ timezone: America/Chicago
 environment: production
 shared_queue: direct-ingest-state-process-job-queue-v2
 jurisdiction_id: unknown
+raw_vs_ingest_file_name_differentiation_enabled_env: staging
+raw_data_bq_imports_enabled_env: staging
