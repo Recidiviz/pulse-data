@@ -17,71 +17,30 @@
 """Tests the functions in the assessment_utils file."""
 import unittest
 from datetime import date
+from unittest import mock
 
 from recidiviz.calculator.pipeline.utils import assessment_utils
 from recidiviz.persistence.entity.state.entities import StateAssessment
-from recidiviz.common.constants.state.state_assessment import StateAssessmentType
+from recidiviz.common.constants.state.state_assessment import StateAssessmentType, StateAssessmentClass
 
 
-class TestIncludeAssessmentInMetric(unittest.TestCase):
-    """Tests the include_assessment_in_metric function."""
+# pylint: disable=protected-access
+class TestFindMostRecentApplicableAssessment(unittest.TestCase):
+    """Tests the find_most_recent_applicable_assessment_for_pipeline_and_state function."""
 
-    def test_include_assessment_in_metric(self):
-        pipeline = 'supervision'
-        state_code = 'US_MO'
-        assessment_type = StateAssessmentType.ORAS_COMMUNITY_SUPERVISION
+    @mock.patch('recidiviz.calculator.pipeline.utils.assessment_utils._assessment_types_of_class_for_state')
+    def test_find_most_recent_applicable_assessment_LSIR(self, mock_assessment_types):
+        mock_assessment_types.return_value = [StateAssessmentType.LSIR]
 
-        include_assessment = assessment_utils.include_assessment_in_metric(pipeline, state_code, assessment_type)
-
-        self.assertTrue(include_assessment)
-
-        assessment_type = StateAssessmentType.ORAS_COMMUNITY_SUPERVISION_SCREENING
-
-        include_assessment = assessment_utils.include_assessment_in_metric(pipeline, state_code, assessment_type)
-
-        self.assertTrue(include_assessment)
-
-    def test_include_assessment_in_metric_exclude_type(self):
-        pipeline = 'supervision'
-        state_code = 'US_MO'
-        assessment_type = StateAssessmentType.ORAS_MISDEMEANOR_ASSESSMENT
-
-        include_assessment = assessment_utils.include_assessment_in_metric(pipeline, state_code, assessment_type)
-
-        self.assertFalse(include_assessment)
-
-    def test_include_assessment_in_metric_unsupported_pipeline(self):
-        pipeline = 'not_supported_pipeline'
-        state_code = 'US_MO'
-        assessment_type = StateAssessmentType.ORAS_MISDEMEANOR_ASSESSMENT
-
-        include_assessment = assessment_utils.include_assessment_in_metric(pipeline, state_code, assessment_type)
-
-        self.assertFalse(include_assessment)
-
-    def test_include_assessment_in_metric_unsupported_state_code(self):
-        pipeline = 'supervision'
-        state_code = 'US_XX'
-        assessment_type = StateAssessmentType.ORAS_MISDEMEANOR_ASSESSMENT
-
-        include_assessment = assessment_utils.include_assessment_in_metric(pipeline, state_code, assessment_type)
-
-        self.assertFalse(include_assessment)
-
-
-class TestFindMostRecentAssessment(unittest.TestCase):
-    """Tests the find_most_recent_assessment function."""
-
-    def test_find_most_recent_assessment_filters_assessment_type_matches_LSIR(self):
         assessment_1 = StateAssessment.new_with_defaults(
-            state_code='US_ID',
+            state_code='US_XX',
             assessment_type=StateAssessmentType.LSIR,
             assessment_date=date(2018, 4, 28),
             assessment_score=17
         )
 
         assessment_2 = StateAssessment.new_with_defaults(
-            state_code='US_ID',
+            state_code='US_XX',
             assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION_SCREENING,
             assessment_date=date(2018, 4, 29),
             assessment_score=17
@@ -89,59 +48,160 @@ class TestFindMostRecentAssessment(unittest.TestCase):
 
         assessments = [assessment_1, assessment_2]
 
-        most_recent_assessment = assessment_utils.find_most_recent_assessment(date(2018, 4, 30), assessments,
-                                                                              StateAssessmentType.LSIR)
+        most_recent_assessment = assessment_utils.find_most_recent_applicable_assessment_of_class_for_state(
+            date(2018, 4, 30),
+            assessments,
+            StateAssessmentClass.RISK,
+            'US_XX'
+        )
 
         self.assertEqual(most_recent_assessment, assessment_1)
 
-    def test_find_most_recent_assessment_filters_assessment_type_no_matches_LSIR(self):
+    @mock.patch('recidiviz.calculator.pipeline.utils.assessment_utils._assessment_types_of_class_for_state')
+    def test_find_most_recent_applicable_assessment_LSIR_no_matches(self, mock_assessment_types):
+        mock_assessment_types.return_value = [StateAssessmentType.LSIR]
         assessment = StateAssessment.new_with_defaults(
-            state_code='US_ID',
+            state_code='US_XX',
             assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION_SCREENING,
             assessment_date=date(2018, 4, 29),
             assessment_score=17
         )
 
-        most_recent_assessment = assessment_utils.find_most_recent_assessment(date(2018, 4, 30), [assessment],
-                                                                              StateAssessmentType.LSIR)
+        most_recent_assessment = assessment_utils.find_most_recent_applicable_assessment_of_class_for_state(
+            date(2018, 4, 30),
+            [assessment],
+            StateAssessmentClass.RISK,
+            'US_XX')
 
         self.assertIsNone(most_recent_assessment)
 
-    def test_find_most_recent_assessment_without_assessment_type_filter(self):
+    @mock.patch('recidiviz.calculator.pipeline.utils.assessment_utils._assessment_types_of_class_for_state')
+    def test_find_most_recent_applicable_assessment_no_assessment_types_for_pipeline(self, mock_assessment_types):
+        mock_assessment_types.return_value = None
+
         assessment = StateAssessment.new_with_defaults(
-            state_code='US_ID',
+            state_code='US_XX',
             assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION_SCREENING,
             assessment_date=date(2018, 4, 29),
             assessment_score=17
         )
 
-        most_recent_assessment = assessment_utils.find_most_recent_assessment(date(2018, 4, 30), [assessment],
-                                                                              None)
+        most_recent_assessment = assessment_utils.find_most_recent_applicable_assessment_of_class_for_state(
+            date(2018, 4, 30),
+            [assessment],
+            StateAssessmentClass.RISK,
+            'US_XX')
 
-        self.assertEqual(most_recent_assessment, assessment)
+        self.assertIsNone(most_recent_assessment, assessment)
 
-    def test_find_most_recent_assessment_with_assessment_type_filter_no_assessment_score(self):
+    @mock.patch('recidiviz.calculator.pipeline.utils.assessment_utils._assessment_types_of_class_for_state')
+    def test_find_most_recent_applicable_assessment_no_assessment_score(
+            self, mock_assessment_types):
+        mock_assessment_types.return_value = [StateAssessmentType.ORAS_COMMUNITY_SUPERVISION]
+
         assessment = StateAssessment.new_with_defaults(
-            state_code='US_ID',
-            assessment_type=StateAssessmentType.LSIR,
+            state_code='US_XX',
+            assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
             assessment_date=date(2018, 4, 29),
             assessment_score=None
         )
 
-        most_recent_assessment = assessment_utils.find_most_recent_assessment(date(2018, 4, 30), [assessment],
-                                                                              StateAssessmentType.LSIR)
+        most_recent_assessment = assessment_utils.find_most_recent_applicable_assessment_of_class_for_state(
+            date(2018, 4, 30),
+            [assessment],
+            StateAssessmentClass.RISK,
+            'US_XX')
 
         self.assertIsNone(most_recent_assessment)
 
-    def test_find_most_recent_assessment_without_assessment_type_filter_no_assessment_score(self):
-        assessment = StateAssessment.new_with_defaults(
-            state_code='US_ID',
+    def test_find_most_recent_applicable_assessment_US_ID(self):
+        state_code = 'US_ID'
+
+        lsir_assessment = StateAssessment.new_with_defaults(
+            state_code=state_code,
             assessment_type=StateAssessmentType.LSIR,
-            assessment_date=date(2018, 4, 29),
-            assessment_score=None
+            assessment_date=date(2018, 4, 28),
+            assessment_score=17
         )
 
-        most_recent_assessment = assessment_utils.find_most_recent_assessment(date(2018, 4, 30), [assessment],
-                                                                              None)
+        oras_assessment = StateAssessment.new_with_defaults(
+            state_code=state_code,
+            assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION_SCREENING,
+            assessment_date=date(2018, 4, 29),
+            assessment_score=17
+        )
 
-        self.assertIsNone(most_recent_assessment)
+        assessments = [lsir_assessment, oras_assessment]
+
+        for pipeline in assessment_utils._ASSESSMENT_TYPES_TO_INCLUDE_FOR_CLASS:
+            most_recent_assessment = assessment_utils.find_most_recent_applicable_assessment_of_class_for_state(
+                date(2018, 4, 30),
+                assessments,
+                pipeline,
+                state_code
+            )
+
+            self.assertEqual(most_recent_assessment, lsir_assessment)
+
+    def test_find_most_recent_applicable_assessment_US_ND(self):
+        state_code = 'US_ND'
+
+        lsir_assessment = StateAssessment.new_with_defaults(
+            state_code=state_code,
+            assessment_type=StateAssessmentType.LSIR,
+            assessment_date=date(2018, 4, 28),
+            assessment_score=17
+        )
+
+        oras_assessment = StateAssessment.new_with_defaults(
+            state_code=state_code,
+            assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION_SCREENING,
+            assessment_date=date(2018, 4, 29),
+            assessment_score=17
+        )
+
+        assessments = [lsir_assessment, oras_assessment]
+
+        for pipeline in assessment_utils._ASSESSMENT_TYPES_TO_INCLUDE_FOR_CLASS:
+            most_recent_assessment = assessment_utils.find_most_recent_applicable_assessment_of_class_for_state(
+                date(2018, 4, 30),
+                assessments,
+                pipeline,
+                state_code
+            )
+
+            self.assertEqual(most_recent_assessment, lsir_assessment)
+
+    def test_find_most_recent_applicable_assessment_US_MO(self):
+        state_code = 'US_MO'
+
+        lsir_assessment = StateAssessment.new_with_defaults(
+            state_code=state_code,
+            assessment_type=StateAssessmentType.LSIR,
+            assessment_date=date(2018, 4, 28),
+            assessment_score=17
+        )
+
+        oras_assessment = StateAssessment.new_with_defaults(
+            state_code=state_code,
+            assessment_date=date(2018, 4, 29),
+            assessment_score=17
+        )
+
+        assessments = [lsir_assessment, oras_assessment]
+
+        applicable_assessment_types = [StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
+                                       StateAssessmentType.ORAS_COMMUNITY_SUPERVISION_SCREENING]
+
+        for assessment_type in applicable_assessment_types:
+            oras_assessment.assessment_type = assessment_type
+
+            for pipeline in assessment_utils._ASSESSMENT_TYPES_TO_INCLUDE_FOR_CLASS:
+                most_recent_assessment = assessment_utils.find_most_recent_applicable_assessment_of_class_for_state(
+                    date(2018, 4, 30),
+                    assessments,
+                    pipeline,
+                    state_code
+                )
+
+                self.assertEqual(most_recent_assessment, oras_assessment)

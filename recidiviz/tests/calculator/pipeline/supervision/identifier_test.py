@@ -22,12 +22,12 @@ from datetime import date
 
 import unittest
 from typing import Optional, List, Dict
+from unittest import mock
 
 import attr
 from dateutil.relativedelta import relativedelta
 from freezegun import freeze_time
 
-import recidiviz.calculator
 from recidiviz.calculator.pipeline.supervision import identifier
 from recidiviz.calculator.pipeline.supervision.supervision_case_compliance import SupervisionCaseCompliance
 from recidiviz.calculator.pipeline.utils.calculator_utils import last_day_of_month
@@ -108,6 +108,15 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
     def setUp(self):
         self.maxDiff = None
 
+        self.assessment_types_patcher = mock.patch(
+            'recidiviz.calculator.pipeline.supervision.identifier.assessment_utils.'
+            '_assessment_types_of_class_for_state')
+        self.mock_assessment_types = self.assessment_types_patcher.start()
+        self.mock_assessment_types.return_value = [StateAssessmentType.ORAS, StateAssessmentType.LSIR]
+
+    def tearDown(self) -> None:
+        self.assessment_types_patcher.stop()
+
     def test_find_supervision_time_buckets(self):
         """Tests the find_supervision_time_buckets function for a single
         supervision period with no incarceration periods."""
@@ -119,11 +128,11 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 status=StateSupervisionPeriodStatus.TERMINATED,
                 case_type_entries=[
                     StateSupervisionCaseTypeEntry.new_with_defaults(
-                        state_code='US_ND',
+                        state_code='US_XX',
                         case_type=StateSupervisionCaseType.DOMESTIC_VIOLENCE
                     )
                 ],
-                state_code='US_ND',
+                state_code='US_XX',
                 start_date=date(2018, 3, 5),
                 termination_date=date(2018, 5, 19),
                 termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
@@ -137,7 +146,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 supervision_sentence_id=111,
                 start_date=date(2017, 1, 1),
                 external_id='ss1',
-                state_code='US_ND',
+                state_code='US_XX',
                 status=StateSentenceStatus.COMPLETED,
                 supervision_type=StateSupervisionType.PROBATION,
                 projected_completion_date=date(2018, 5, 19),
@@ -146,7 +155,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             )
 
         assessment = StateAssessment.new_with_defaults(
-            state_code='US_ND',
+            state_code='US_XX',
             assessment_type=StateAssessmentType.ORAS,
             assessment_score=33,
             assessment_level=StateAssessmentLevel.HIGH,
@@ -3911,11 +3920,19 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
 
         self.assertCountEqual(supervision_time_buckets, expected_buckets)
 
-    def test_supervision_time_buckets_revocation_details_us_mo(self):
+    # # pylint: disable=line-too-long
+    @mock.patch('recidiviz.calculator.pipeline.supervision.identifier.assessment_utils._assessment_types_of_class_for_state')
+    def test_supervision_time_buckets_revocation_details_us_mo(self, mock_assessment_types):
         """Tests the supervision_time_buckets function when there is an incarceration period with
-        a revocation admission in the same month as the supervision period's termination_date. Also ensures that the
+        a revocation admission in the same month as the supervision period's termination_date. Ensures that the
         correct revocation_type, violation_count_type, supervising_officer_external_id, and
-        supervising_district_external_id are set on the RevocationReturnSupervisionTimeBucket."""
+        supervising_district_external_id are set on the RevocationReturnSupervisionTimeBucket. Also tests that only
+        the relevant assessment_type for the given state_code and pipeline is included in output."""
+        mock_assessment_types.return_value = [
+            StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
+            StateAssessmentType.ORAS_COMMUNITY_SUPERVISION_SCREENING
+        ]
+
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             external_id='sp1',
@@ -3979,11 +3996,18 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             source_supervision_violation_response=source_supervision_violation_response
         )
 
-        assessment = StateAssessment.new_with_defaults(
+        relevant_assessment = StateAssessment.new_with_defaults(
             state_code='US_MO',
-            assessment_type=StateAssessmentType.ORAS,
+            assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
             assessment_score=33,
             assessment_date=date(2018, 3, 1)
+        )
+
+        irrelevant_assessment = StateAssessment.new_with_defaults(
+            state_code='US_MO',
+            assessment_type=StateAssessmentType.ORAS_PRISON_INTAKE,
+            assessment_score=39,
+            assessment_date=date(2018, 5, 25)
         )
 
         supervision_sentence = \
@@ -4028,7 +4052,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 ]
             )
 
-        assessments = [assessment]
+        assessments = [relevant_assessment, irrelevant_assessment]
         violation_reports = [violation_report]
         incarceration_sentences = [incarceration_sentence]
         supervision_contacts = []
@@ -4055,9 +4079,9 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 bucket_date=incarceration_period.admission_date,
                 supervision_type=supervision_period_supervision_type,
                 case_type=StateSupervisionCaseType.GENERAL,
-                assessment_score=assessment.assessment_score,
-                assessment_level=assessment.assessment_level,
-                assessment_type=assessment.assessment_type,
+                assessment_score=relevant_assessment.assessment_score,
+                assessment_level=relevant_assessment.assessment_level,
+                assessment_type=relevant_assessment.assessment_type,
                 revocation_type=StateSupervisionViolationResponseRevocationType.SHOCK_INCARCERATION,
                 source_violation_type=StateSupervisionViolationType.FELONY,
                 most_severe_violation_type=StateSupervisionViolationType.FELONY,
@@ -4085,17 +4109,17 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             supervision_period,
             supervision_period_supervision_type,
             end_date=violation_report.response_date,
-            assessment_score=assessment.assessment_score,
-            assessment_level=assessment.assessment_level,
-            assessment_type=assessment.assessment_type
+            assessment_score=relevant_assessment.assessment_score,
+            assessment_level=relevant_assessment.assessment_level,
+            assessment_type=relevant_assessment.assessment_type
         ))
 
         expected_buckets.extend(expected_non_revocation_return_time_buckets(
             attr.evolve(supervision_period, start_date=violation_report.response_date),
             supervision_period_supervision_type,
-            assessment_score=assessment.assessment_score,
-            assessment_level=assessment.assessment_level,
-            assessment_type=assessment.assessment_type,
+            assessment_score=relevant_assessment.assessment_score,
+            assessment_level=relevant_assessment.assessment_level,
+            assessment_type=relevant_assessment.assessment_type,
             most_severe_violation_type=StateSupervisionViolationType.FELONY,
             response_count=1
         ))
@@ -4697,6 +4721,15 @@ class TestFindTimeBucketsForSupervisionPeriod(unittest.TestCase):
     def setUp(self):
         self.maxDiff = None
 
+        self.assessment_types_patcher = mock.patch(
+            'recidiviz.calculator.pipeline.supervision.identifier.assessment_utils.'
+            '_assessment_types_of_class_for_state')
+        self.mock_assessment_types = self.assessment_types_patcher.start()
+        self.mock_assessment_types.return_value = [StateAssessmentType.ORAS, StateAssessmentType.LSIR]
+
+    def tearDown(self) -> None:
+        self.assessment_types_patcher.stop()
+
     def test_find_time_buckets_for_supervision_period_revocation_no_termination(self):
         """Tests the find_time_buckets_for_supervision_period function
         when there is an incarceration period with a revocation admission,
@@ -5236,7 +5269,7 @@ class TestFindTimeBucketsForSupervisionPeriod(unittest.TestCase):
             StateSupervisionPeriod.new_with_defaults(
                 supervision_period_id=111,
                 external_id='sp1',
-                state_code='US_ND',
+                state_code='US_XX',
                 start_date=date(2018, 3, 11),
                 termination_date=date(2018, 12, 10),
                 supervision_type=StateSupervisionType.PROBATION
@@ -5246,14 +5279,14 @@ class TestFindTimeBucketsForSupervisionPeriod(unittest.TestCase):
             StateIncarcerationPeriod.new_with_defaults(
                 incarceration_period_id=111,
                 external_id='ip1',
-                state_code='US_ND',
+                state_code='US_XX',
                 admission_date=date(2018, 5, 25),
                 admission_reason=StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
                 release_date=date(2018, 10, 27)
             )
 
         assessment_1 = StateAssessment.new_with_defaults(
-            state_code='US_CA',
+            state_code='US_XX',
             assessment_type=StateAssessmentType.ORAS,
             assessment_score=33,
             assessment_level=StateAssessmentLevel.HIGH,
@@ -5261,7 +5294,7 @@ class TestFindTimeBucketsForSupervisionPeriod(unittest.TestCase):
         )
 
         assessment_2 = StateAssessment.new_with_defaults(
-            state_code='US_CA',
+            state_code='US_XX',
             assessment_type=StateAssessmentType.ORAS,
             assessment_score=24,
             assessment_level=StateAssessmentLevel.MEDIUM,

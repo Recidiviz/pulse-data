@@ -33,6 +33,19 @@ class TestAssessmentEventMixin(unittest.TestCase):
             39: '39+'
         }
 
+    def test_assessment_scores_all_types(self):
+        for assessment_type in StateAssessmentType:
+            event = ProgramReferralEvent(
+                state_code='US_XX',
+                event_date=date.today(),
+                program_id='xxx',
+                assessment_score=10,
+                assessment_type=assessment_type
+            )
+
+            # Assert this doesn't fail for all assessment types
+            _ = event.assessment_score_bucket
+
     def test_assessment_scores_to_buckets_LSIR(self):
         for score, bucket in self.lsir_scores_to_buckets.items():
             event = ProgramReferralEvent(

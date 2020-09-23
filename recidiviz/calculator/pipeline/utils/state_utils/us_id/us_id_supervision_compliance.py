@@ -24,8 +24,9 @@ import numpy
 from dateutil.relativedelta import relativedelta
 
 from recidiviz.calculator.pipeline.supervision.supervision_case_compliance import SupervisionCaseCompliance
-from recidiviz.calculator.pipeline.utils.assessment_utils import find_most_recent_assessment
-from recidiviz.common.constants.state.state_assessment import StateAssessmentType
+from recidiviz.calculator.pipeline.utils.assessment_utils import \
+    find_most_recent_applicable_assessment_of_class_for_state
+from recidiviz.common.constants.state.state_assessment import StateAssessmentClass
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
 from recidiviz.common.constants.state.state_supervision_contact import StateSupervisionContactType, \
     StateSupervisionContactStatus
@@ -142,8 +143,12 @@ def us_id_case_compliance_on_date(supervision_period: StateSupervisionPeriod,
     face_to_face_frequency_sufficient = None
 
     if _guidelines_applicable_for_case(supervision_period, case_type):
-        most_recent_assessment = find_most_recent_assessment(compliance_evaluation_date, assessments,
-                                                             StateAssessmentType.LSIR)
+        most_recent_assessment = find_most_recent_applicable_assessment_of_class_for_state(
+            compliance_evaluation_date,
+            assessments,
+            assessment_class=StateAssessmentClass.RISK,
+            state_code=supervision_period.state_code
+        )
 
         assessment_is_up_to_date = _assessment_is_up_to_date(case_type,
                                                              supervision_period,
