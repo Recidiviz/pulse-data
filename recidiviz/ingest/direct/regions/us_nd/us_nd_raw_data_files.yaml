@@ -110,6 +110,8 @@ raw_files:
       - MOVEMENT_DATE
       - CREATE_DATETIME
       - MODIFY_DATETIME
+  - file_tag: elite_grievances
+    primary_key_cols: []
   - file_tag: elite_institutionalactivities
     # Using these primary keys, there's a few dupes, only differing by end_date and offender_end_reason.
     primary_key_cols:
