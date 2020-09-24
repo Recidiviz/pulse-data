@@ -43,7 +43,7 @@ SUPERVISION_POPULATION_BY_DISTRICT_BY_DEMOGRAPHICS_VIEW_QUERY_TEMPLATE = \
       {gender_dimension},
       {age_dimension},
       {district_dimension},
-      {supervision_dimension}
+      {supervision_type_dimension}
     WHERE supervision_type IN ('ALL', 'PROBATION', 'PAROLE')
       -- Omit district breakdowns for supervision_type = 'ALL' --
       AND (supervision_type != 'ALL' OR district = 'ALL')
@@ -67,8 +67,8 @@ SUPERVISION_POPULATION_BY_DISTRICT_BY_DEMOGRAPHICS_VIEW_BUILDER = MetricBigQuery
     gender_dimension=bq_utils.unnest_column('gender', 'gender'),
     age_dimension=bq_utils.unnest_column('age_bucket', 'age_bucket'),
     district_dimension=bq_utils.unnest_district(
-        state_specific_query_strings.state_supervision_specific_district_groupings('supervising_district_external_id', 'judicial_district_code')),
-    supervision_dimension=bq_utils.unnest_supervision_type(),
+        bq_utils.supervision_specific_district_groupings('supervising_district_external_id', 'judicial_district_code')),
+    supervision_type_dimension=bq_utils.unnest_supervision_type(),
     state_specific_race_or_ethnicity_groupings=state_specific_query_strings.state_specific_race_or_ethnicity_groupings()
 )
 
