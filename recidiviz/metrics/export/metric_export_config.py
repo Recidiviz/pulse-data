@@ -20,7 +20,7 @@ from typing import List, Optional, Sequence
 import attr
 
 from recidiviz.big_query.export.export_query_config import ExportBigQueryViewConfig
-from recidiviz.ingest.direct.controllers.gcsfs_path import GcsfsDirectoryPath
+from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath
 from recidiviz.metrics.metric_big_query_view import MetricBigQueryView, MetricBigQueryViewBuilder
 
 

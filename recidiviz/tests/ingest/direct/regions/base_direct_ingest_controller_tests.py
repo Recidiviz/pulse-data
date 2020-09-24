@@ -37,7 +37,7 @@ from recidiviz.persistence.database.schema.operations import schema as operation
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.tests.ingest.direct.direct_ingest_util import \
     build_gcsfs_controller_for_tests, ingest_args_for_fixture_file
-from recidiviz.tests.ingest.direct.fake_direct_ingest_gcs_file_system import FakeDirectIngestGCSFileSystem
+from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.tests.utils import fakes
 from recidiviz.tests.utils.test_utils import print_visible_header_label
 
@@ -113,10 +113,10 @@ class BaseDirectIngestControllerTests(unittest.TestCase):
         args = ingest_args_for_fixture_file(self.controller,
                                             f'{fixture_file_name}.csv')
 
-        if not isinstance(self.controller.fs, FakeDirectIngestGCSFileSystem):
+        if not isinstance(self.controller.fs.gcs_file_system, FakeGCSFileSystem):
             raise ValueError(f"Controller fs must have type "
-                             f"FakeDirectIngestGCSFileSystem. Found instead "
-                             f"type [{type(self.controller.fs)}]")
+                             f"FakeGCSFileSystem. Found instead "
+                             f"type [{type(self.controller.fs.gcs_file_system)}]")
 
         if self.controller.region.are_ingest_view_exports_enabled_in_env():
             ingest_file_export_job_args = GcsfsIngestViewExportArgs(
@@ -128,7 +128,7 @@ class BaseDirectIngestControllerTests(unittest.TestCase):
             self.controller.file_metadata_manager.register_ingest_file_export_job(ingest_file_export_job_args)
             self.controller.ingest_view_export_manager.export_view_for_args(ingest_file_export_job_args)
         else:
-            self.controller.fs.test_add_path(args.file_path)
+            self.controller.fs.gcs_file_system.test_add_path(args.file_path)
 
         # pylint:disable=protected-access
         fixture_contents_handle = self.controller._get_contents_handle(args)

@@ -24,7 +24,7 @@ from recidiviz.ingest.direct.controllers.direct_ingest_file_metadata_manager imp
 from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import DIRECT_INGEST_UNPROCESSED_PREFIX
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import GcsfsIngestViewExportArgs, \
     filename_parts_from_path, GcsfsDirectIngestFileType
-from recidiviz.ingest.direct.controllers.gcsfs_path import GcsfsFilePath
+from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.persistence.database.base_schema import OperationsBase
 from recidiviz.persistence.database.schema.operations import schema, dao
 from recidiviz.persistence.database.schema_entity_converter.schema_entity_converter import \

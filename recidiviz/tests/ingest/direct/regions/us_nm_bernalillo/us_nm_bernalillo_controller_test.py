@@ -316,5 +316,5 @@ class UsNmBernalilloControllerTest(IndividualIngestTest,
         file_tags = sorted(self.controller.get_file_tag_rank_list())
         file_path = path_for_fixture_file(
             self.controller, 'MDC_VERA_20200303_01.csv', False)
-        self.controller.fs.test_add_path(file_path)
+        self.controller.fs.gcs_file_system.test_add_path(file_path)
         process_task_queues(self, self.controller, file_tags)

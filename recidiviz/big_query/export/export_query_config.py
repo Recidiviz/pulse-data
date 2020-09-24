@@ -23,7 +23,7 @@ import attr
 from google.cloud import bigquery
 
 from recidiviz.big_query.big_query_view import BigQueryView
-from recidiviz.ingest.direct.controllers.gcsfs_path import GcsfsFilePath, GcsfsDirectoryPath
+from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath, GcsfsDirectoryPath
 
 
 @attr.s(frozen=True)

@@ -28,7 +28,7 @@ from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import Di
     to_normalized_unprocessed_file_path
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import GcsfsDirectIngestFileType, \
     GcsfsIngestViewExportArgs
-from recidiviz.ingest.direct.controllers.gcsfs_path import GcsfsFilePath
+from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.ingest.direct.controllers.postgres_direct_ingest_file_metadata_manager import \
     PostgresDirectIngestFileMetadataManager
 from recidiviz.persistence.database.base_schema import OperationsBase

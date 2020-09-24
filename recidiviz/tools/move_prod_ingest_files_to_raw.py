@@ -44,12 +44,12 @@ from progress.bar import Bar
 
 from recidiviz.common.ingest_metadata import SystemLevel
 from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import \
-    to_normalized_processed_file_path_from_normalized_path, DirectIngestGCSFileSystem, \
-    to_normalized_unprocessed_file_path_from_normalized_path
+    to_normalized_processed_file_path_from_normalized_path, \
+    to_normalized_unprocessed_file_path_from_normalized_path, DirectIngestGCSFileSystem
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import \
     gcsfs_direct_ingest_storage_directory_path_for_region, GcsfsDirectIngestFileType, \
     gcsfs_direct_ingest_directory_path_for_region, filename_parts_from_path
-from recidiviz.ingest.direct.controllers.gcsfs_path import GcsfsDirectoryPath, GcsfsFilePath
+from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath, GcsfsFilePath
 from recidiviz.tools.gsutil_shell_helpers import gsutil_mv, gsutil_ls
 from recidiviz.utils.params import str_to_bool
 

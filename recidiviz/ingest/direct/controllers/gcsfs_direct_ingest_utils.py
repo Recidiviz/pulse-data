@@ -26,8 +26,8 @@ import attr
 
 from recidiviz.common.date import snake_case_datetime
 from recidiviz.common.ingest_metadata import SystemLevel
-from recidiviz.ingest.direct.controllers.gcsfs_path import GcsfsFilePath
-from recidiviz.ingest.direct.controllers.direct_ingest_types import IngestArgs, CloudTaskArgs
+from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
+from recidiviz.ingest.direct.controllers.direct_ingest_types import CloudTaskArgs, IngestArgs
 from recidiviz.ingest.direct.errors import DirectIngestError, \
     DirectIngestErrorType
 from recidiviz.utils import metadata
