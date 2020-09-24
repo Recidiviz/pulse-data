@@ -16,9 +16,6 @@ exclusions:
   - validation_name: revocation_matrix_comparison_revocation_cell_vs_month
     exclusion_type: DOES_NOT_APPLY
     exclusion_reason: Revocation matrix not used for ID
-  - validation_name: revocation_matrix_comparison_supervision_population
-    exclusion_type: BROKEN
-    exclusion_reason: TODO(#3951) Fix this validation to handle multiple races properly
 max_allowed_error_overrides: []  # This region will use only the default max_allowed_error values
 num_allowed_rows_overrides:
   - validation_name: incarceration_admission_after_open_period
