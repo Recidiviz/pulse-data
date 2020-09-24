@@ -40,7 +40,7 @@ raw_files:
     # Sentence Prob. Column prefix: BU.
   - file_tag: LBAKRDTA_TAK024
     primary_key_cols: []
-    # Status Xref. Column prefix: BV.
+    # Sentence / Status Xref. Column prefix: BV.
   - file_tag: LBAKRDTA_TAK025
     primary_key_cols: []
     # Status. Column prefix: BW.
@@ -67,13 +67,10 @@ raw_files:
     # Finally Formed Documents. Column prefix: E6.
   - file_tag: LBAKRDTA_TAK142
     primary_key_cols: []
-    # Status Descriptions. Column prefix: FH.
-  - file_tag: LBAKRDTA_TAK146
-    primary_key_cols: []
     # Body Status. Column prefix: F1.
   - file_tag: LBAKRDTA_TAK158
     primary_key_cols: []
-    # Sentence Xref. Column prefix: JS.
+    # Sentence / Citation Xref. Column prefix: JS.
   - file_tag: LBAKRDTA_TAK291
     primary_key_cols: []
     # Citations. Column prefix: JT.
