@@ -48,14 +48,14 @@ def _get_query_prep_statement(reference_views_dataset):
           LEFT JOIN `{{project_id}}.{reference_views_dataset}.supervision_period_to_agent_association` agent
             USING (supervision_period_id),
           {district_dimension},
-          {supervision_dimension}
+          {supervision_type_dimension}
           WHERE termination_date IS NOT NULL
         )
     """.format(
         reference_views_dataset=reference_views_dataset,
         district_dimension=bq_utils.unnest_district(
             district_column='agent.district_external_id'),
-        supervision_dimension=bq_utils.unnest_supervision_type(
+        supervision_type_dimension=bq_utils.unnest_supervision_type(
             supervision_type_column='supervision_period.supervision_type'),
     )
 
