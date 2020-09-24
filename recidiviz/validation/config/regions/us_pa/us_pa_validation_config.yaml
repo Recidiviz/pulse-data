@@ -14,7 +14,4 @@ max_allowed_error_overrides:
     override_reason: PA external validation data was generated from snapshots at the time the population for a given
       month was measured. Over time, data gets backfilled as new info about what happened that month comes in, so our
       numbers will get "worse" as time goes on and we get more accurate data about movements.
-  - validation_name: revocation_matrix_comparison_supervision_population
-    max_allowed_error_override: 0.015
-    override_reason: TODO(#3951) - Needs investigation. Currently has one row where value is 0.0117.
 num_allowed_rows_overrides: []

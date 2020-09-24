@@ -111,7 +111,6 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_RACE_QUERY_TEMPLATE = \
       termination_counts
     USING (state_code, violation_type, reported_violations, race, risk_level, supervision_type, supervision_level, charge_category,
       district, metric_period_months)
-    WHERE race != 'EXTERNAL_UNKNOWN'
     ORDER BY state_code, metric_period_months, district, supervision_type, supervision_level, race, risk_level, violation_type,
       reported_violations, charge_category
     """
