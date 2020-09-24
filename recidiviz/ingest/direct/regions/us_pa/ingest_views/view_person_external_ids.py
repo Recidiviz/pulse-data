@@ -27,9 +27,9 @@ VIEW_QUERY_TEMPLATE = f"""WITH
 {MASTER_STATE_IDS_FRAGMENT}
 SELECT 
   recidiviz_master_person_id,
-  STRING_AGG(DISTINCT control_number, ',') AS control_numbers,
-  STRING_AGG(DISTINCT state_id, ',') AS state_ids,
-  STRING_AGG(DISTINCT parole_number, ',') AS parole_numbers
+  STRING_AGG(DISTINCT control_number, ',' ORDER BY control_number) AS control_numbers,
+  STRING_AGG(DISTINCT state_id, ',' ORDER BY state_id) AS state_ids,
+  STRING_AGG(DISTINCT parole_number, ',' ORDER BY parole_number) AS parole_numbers
 FROM recidiviz_master_person_ids
 GROUP BY recidiviz_master_person_id;"""
 
