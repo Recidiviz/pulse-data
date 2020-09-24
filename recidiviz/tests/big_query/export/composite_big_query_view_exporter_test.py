@@ -27,9 +27,9 @@ from recidiviz.big_query.big_query_client import BigQueryClient
 from recidiviz.big_query.export.big_query_view_exporter import BigQueryViewExporter
 from recidiviz.big_query.export.composite_big_query_view_exporter import CompositeBigQueryViewExporter
 from recidiviz.big_query.export.export_query_config import ExportBigQueryViewConfig
-from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import DirectIngestGCSFileSystem
+from recidiviz.cloud_storage.gcs_file_system import GCSFileSystem
 from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
-from recidiviz.ingest.direct.controllers.gcsfs_path import GcsfsFilePath, GcsfsDirectoryPath
+from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath, GcsfsDirectoryPath
 
 
 class CompositeBigQueryViewExporterTest(unittest.TestCase):
@@ -85,7 +85,7 @@ class CompositeBigQueryViewExporterTest(unittest.TestCase):
         )
 
         mock_bq_client = create_autospec(BigQueryClient)
-        mock_fs = create_autospec(DirectIngestGCSFileSystem)
+        mock_fs = create_autospec(GCSFileSystem)
 
         mock_fs.exists.return_value = True
 
@@ -176,7 +176,7 @@ class CompositeBigQueryViewExporterTest(unittest.TestCase):
         )
 
         mock_bq_client = create_autospec(BigQueryClient)
-        mock_fs = create_autospec(DirectIngestGCSFileSystem)
+        mock_fs = create_autospec(GCSFileSystem)
 
         # The False value should trigger a ValueError - file not found in staging location
         mock_fs.exists.side_effect = [True, False, True, True]

@@ -23,11 +23,10 @@ import logging
 from typing import Generic, Optional
 
 from recidiviz import IngestInfo
+from recidiviz.ingest.direct.controllers.direct_ingest_types import ContentsHandleType, IngestArgsType
 from recidiviz.ingest.direct.direct_ingest_cloud_task_manager import \
     DirectIngestCloudTaskManagerImpl
 from recidiviz.common.ingest_metadata import IngestMetadata, SystemLevel
-from recidiviz.ingest.direct.controllers.direct_ingest_types import \
-    IngestArgsType, ContentsHandleType
 from recidiviz.ingest.direct.direct_ingest_controller_utils import check_is_region_launched_in_env
 from recidiviz.ingest.direct.errors import DirectIngestError, \
     DirectIngestErrorType
@@ -37,9 +36,7 @@ from recidiviz.persistence import persistence
 from recidiviz.utils import regions
 
 
-class BaseDirectIngestController(Ingestor,
-                                 Generic[IngestArgsType,
-                                         ContentsHandleType]):
+class BaseDirectIngestController(Ingestor, Generic[IngestArgsType, ContentsHandleType]):
     """Parses and persists individual-level info from direct ingest partners.
     """
 

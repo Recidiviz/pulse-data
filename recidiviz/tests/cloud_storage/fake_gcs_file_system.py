@@ -14,34 +14,37 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Test-only implementation of the DirectIngestGCSFileSystem."""
+"""Test-only implementation of the GCSFileSystem"""
 
+import abc
 import os
 import shutil
 import threading
 from typing import Set, Union, Dict, Optional, List
 
-from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import DirectIngestGCSFileSystem, \
-    GcsfsFileContentsHandle
-from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_controller import GcsfsDirectIngestController
+from recidiviz.cloud_storage.gcs_file_system import GCSFileSystem, GcsfsFileContentsHandle, generate_random_temp_path
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import filename_parts_from_path
-from recidiviz.ingest.direct.controllers.gcsfs_path import GcsfsFilePath, GcsfsDirectoryPath, GcsfsBucketPath, GcsfsPath
+from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath, GcsfsDirectoryPath, GcsfsBucketPath, GcsfsPath
 from recidiviz.tests.ingest import fixtures
 
 
-class FakeDirectIngestGCSFileSystem(DirectIngestGCSFileSystem):
-    """Test-only implementation of the DirectIngestGCSFileSystem."""
+class FakeGCSFileSystemDelegate:
+    @abc.abstractmethod
+    def on_file_added(self, path: GcsfsFilePath):
+        """Will be called whenever a new file path is successfully added to the file system."""
 
-    def __init__(self, can_start_ingest=True):
+
+class FakeGCSFileSystem(GCSFileSystem):
+    """Test-only implementation of the GCSFileSystem."""
+
+    def __init__(self):
         self.mutex = threading.Lock()
         self.all_paths: Set[Union[GcsfsFilePath, GcsfsDirectoryPath]] = set()
         self.uploaded_test_path_to_actual: Dict[str, str] = {}
-        self.controller: Optional[GcsfsDirectIngestController] = None
-        self.can_start_ingest = can_start_ingest
+        self.delegate: Optional[FakeGCSFileSystemDelegate] = None
 
-    def test_set_controller(self,
-                            controller: GcsfsDirectIngestController) -> None:
-        self.controller = controller
+    def test_set_delegate(self, delegate: FakeGCSFileSystemDelegate) -> None:
+        self.delegate = delegate
 
     def test_add_path(self,
                       path: Union[GcsfsFilePath, GcsfsDirectoryPath],
@@ -56,11 +59,8 @@ class FakeDirectIngestGCSFileSystem(DirectIngestGCSFileSystem):
         with self.mutex:
             self.all_paths.add(path)
 
-        if not fail_handle_file_call and self.controller and \
-                path.abs_path().startswith(
-                        self.controller.ingest_directory_path.abs_path()):
-            if isinstance(path, GcsfsFilePath):
-                self.controller.handle_file(path, start_ingest=self.can_start_ingest)
+        if not fail_handle_file_call and self.delegate and isinstance(path, GcsfsFilePath):
+            self.delegate.on_file_added(path)
 
     def exists(self, path: Union[GcsfsBucketPath, GcsfsFilePath]) -> bool:
         with self.mutex:
@@ -80,7 +80,7 @@ class FakeDirectIngestGCSFileSystem(DirectIngestGCSFileSystem):
             fixtures.file_path_from_relative_path(
                 os.path.join(directory_path, fixture_filename))
 
-        tempfile_path = self.generate_random_temp_path()
+        tempfile_path = generate_random_temp_path()
         return shutil.copyfile(actual_fixture_file_path, tempfile_path)
 
     def download_to_temp_file(self, path: GcsfsFilePath) -> Optional[GcsfsFileContentsHandle]:
@@ -96,7 +96,8 @@ class FakeDirectIngestGCSFileSystem(DirectIngestGCSFileSystem):
                            path: GcsfsFilePath,
                            contents: str,
                            content_type: str):
-        temp_path = self.generate_random_temp_path()
+        # pylint: disable=unused-argument
+        temp_path = generate_random_temp_path()
         with open(temp_path, 'w') as f:
             f.write(contents)
 
@@ -107,8 +108,8 @@ class FakeDirectIngestGCSFileSystem(DirectIngestGCSFileSystem):
                                     path: GcsfsFilePath,
                                     contents_handle: GcsfsFileContentsHandle,
                                     content_type: str):
-
-        temp_path = self.generate_random_temp_path()
+        # pylint: disable=unused-argument
+        temp_path = generate_random_temp_path()
         shutil.copyfile(contents_handle.local_file_path, temp_path)
         self.uploaded_test_path_to_actual[path.abs_path()] = temp_path
         self._add_path(path)
@@ -143,9 +144,9 @@ class FakeDirectIngestGCSFileSystem(DirectIngestGCSFileSystem):
             if path_to_remove is not None:
                 self.all_paths.remove(path_to_remove)
 
-    def _ls_with_blob_prefix(self,
-                             bucket_name: str,
-                             blob_prefix: str) -> List[Union[GcsfsDirectoryPath, GcsfsFilePath]]:
+    def ls_with_blob_prefix(self,
+                            bucket_name: str,
+                            blob_prefix: str) -> List[Union[GcsfsDirectoryPath, GcsfsFilePath]]:
         with self.mutex:
             result: List[Union[GcsfsDirectoryPath, GcsfsFilePath]] = []
             for path in self.all_paths:

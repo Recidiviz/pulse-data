@@ -32,10 +32,10 @@ from recidiviz.common.constants.county.booking import AdmissionReason, \
     ReleaseReason
 from recidiviz.common.constants.enum_overrides import EnumOverrides
 from recidiviz.common.ingest_metadata import SystemLevel
+from recidiviz.cloud_storage.content_types import FileContentsHandle
+from recidiviz.ingest.direct.controllers.direct_ingest_types import IngestArgs
 from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import \
     BaseDirectIngestController
-from recidiviz.ingest.direct.controllers.direct_ingest_types import \
-    IngestArgs, IngestContentsHandle
 from recidiviz.ingest.direct.errors import DirectIngestError, \
     DirectIngestErrorType
 from recidiviz.ingest.direct.regions.us_ma_middlesex.us_ma_middlesex_parser \
@@ -59,7 +59,7 @@ def _create_engine():
             query={'host': '/cloudsql/{}'.format(cloudsql_instance_id)}))
 
 
-class UsMaMiddlesexContentsHandle(IngestContentsHandle[Dict]):
+class UsMaMiddlesexContentsHandle(FileContentsHandle[Dict]):
     """Class that provides an iterator over Middlesex SQL data."""
 
     def __init__(self, args: IngestArgs):
@@ -227,7 +227,7 @@ class UsMaMiddlesexController(
         builder.add('SENTENCED', ReleaseReason.TRANSFER)
         builder.ignore('TRANSFERRED TO CORRECTIONAL INSTI', ChargeStatus)
         builder.ignore('TURNED OVER TO NEW JURISDICTION', ChargeStatus)
-        # TODO (#1897) make sure charge class is filled in. This is a
+        # TODO(#1897) make sure charge class is filled in. This is a
         #  parole violation.
         builder.add('VL', ChargeStatus.PRETRIAL)
         builder.add('WARRANT MANAGEMENT SYSTEM', AdmissionReason.NEW_COMMITMENT)

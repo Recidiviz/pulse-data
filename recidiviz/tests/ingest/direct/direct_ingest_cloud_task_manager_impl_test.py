@@ -30,7 +30,7 @@ from recidiviz.common.google_cloud.google_cloud_tasks_client_wrapper import \
     QUEUES_REGION
 from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import \
     to_normalized_unprocessed_file_path
-from recidiviz.ingest.direct.controllers.gcsfs_path import GcsfsFilePath
+from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.ingest.direct.direct_ingest_cloud_task_manager import \
     DirectIngestCloudTaskManagerImpl, _build_task_id, ProcessIngestJobCloudTaskQueueInfo
 from recidiviz.ingest.direct.controllers.direct_ingest_types import IngestArgs

@@ -28,12 +28,12 @@ from recidiviz.common.constants.bond import BondStatus, BondType
 from recidiviz.common.constants.county.booking import CustodyStatus
 from recidiviz.common.constants.person_characteristics import Ethnicity, Race
 from recidiviz.common.ingest_metadata import SystemLevel, IngestMetadata
+from recidiviz.cloud_storage.gcs_file_system import GcsfsFileContentsHandle
 from recidiviz.ingest.direct.controllers.csv_gcsfs_direct_ingest_controller \
     import CsvGcsfsDirectIngestController
-from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import GcsfsFileContentsHandle
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import \
     GcsfsIngestArgs, filename_parts_from_path
-from recidiviz.ingest.direct.controllers.gcsfs_path import GcsfsFilePath
+from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.ingest.direct.errors import DirectIngestError, \
     DirectIngestErrorType
 from recidiviz.persistence import persistence

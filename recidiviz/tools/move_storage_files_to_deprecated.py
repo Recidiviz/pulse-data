@@ -49,7 +49,7 @@ from recidiviz.common.ingest_metadata import SystemLevel
 
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import \
     gcsfs_direct_ingest_storage_directory_path_for_region, GcsfsDirectIngestFileType, filename_parts_from_path
-from recidiviz.ingest.direct.controllers.gcsfs_path import GcsfsDirectoryPath, GcsfsFilePath
+from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath, GcsfsFilePath
 from recidiviz.tools.gsutil_shell_helpers import gsutil_mv, gsutil_ls, \
     gsutil_get_storage_subdirs_containing_file_types
 from recidiviz.tools.utils import INGESTED_FILE_REGEX

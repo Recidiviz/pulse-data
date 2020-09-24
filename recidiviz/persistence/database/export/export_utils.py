@@ -26,7 +26,7 @@ from google.cloud import bigquery
 
 from recidiviz.big_query.big_query_client import ExportQueryConfig, BigQueryClient
 from recidiviz.calculator.query.state.dataset_config import STATE_BASE_DATASET
-from recidiviz.ingest.direct.controllers.gcsfs_path import GcsfsDirectoryPath
+from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath
 from recidiviz.persistence.database.base_schema import StateBase
 
 # We need to import this to ensure that the Sql Alchemy table metadata referenced by StateBase is accessible later

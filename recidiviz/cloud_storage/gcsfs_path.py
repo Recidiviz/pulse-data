@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """
-Class representing path information about buckets/objects in
+Generic class representing path information about buckets/objects in
 Google Cloud Storage.
 """
 import abc
@@ -26,6 +26,17 @@ from urllib.parse import unquote
 
 import attr
 from google.cloud import storage
+
+
+def strip_forward_slash(string: str):
+    if string.startswith('/'):
+        return string[1:]
+    return string
+
+
+def normalize_relative_path(relative_path: str) -> str:
+    no_slash_relative_path = relative_path.rstrip('/')
+    return f'{no_slash_relative_path}/' if relative_path else ''
 
 
 @attr.s(frozen=True)
@@ -74,18 +85,6 @@ class GcsfsPath:
         return GcsfsFilePath(
             bucket_name=bucket_name,
             blob_name=blob_name)
-
-
-def strip_forward_slash(string: str):
-    if string.startswith('/'):
-        return string[1:]
-    return string
-
-
-def normalize_relative_path(relative_path: str) -> str:
-    no_slash_relative_path = relative_path.rstrip('/')
-    return f'{no_slash_relative_path}/' if relative_path else ''
-
 
 @attr.s(frozen=True)
 class GcsfsDirectoryPath(GcsfsPath):
@@ -136,7 +135,6 @@ class GcsfsDirectoryPath(GcsfsPath):
         relative_path = os.path.join(dir_path.relative_path, subdir)
         return GcsfsDirectoryPath(bucket_name=dir_path.bucket_name,
                                   relative_path=relative_path)
-
 
 @attr.s(frozen=True)
 class GcsfsBucketPath(GcsfsDirectoryPath):

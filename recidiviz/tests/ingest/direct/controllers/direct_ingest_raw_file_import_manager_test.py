@@ -25,16 +25,17 @@ from mock import create_autospec, call, patch
 from more_itertools import one
 
 from recidiviz.big_query.big_query_client import BigQueryClient
+from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import DirectIngestGCSFileSystem
 from recidiviz.ingest.direct.controllers.direct_ingest_raw_file_import_manager import \
     DirectIngestRawFileImportManager, DirectIngestRegionRawFileConfig
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import GcsfsDirectIngestFileType, \
     filename_parts_from_path
-from recidiviz.ingest.direct.controllers.gcsfs_path import GcsfsFilePath, GcsfsDirectoryPath
+from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath, GcsfsDirectoryPath
 from recidiviz.persistence.entity.operations.entities import DirectIngestFileMetadata
+from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.tests.ingest import fixtures
 from recidiviz.tests.ingest.direct.direct_ingest_util import path_for_fixture_file_in_test_gcs_directory, \
     TestSafeGcsCsvReader
-from recidiviz.tests.ingest.direct.fake_direct_ingest_gcs_file_system import FakeDirectIngestGCSFileSystem
 from recidiviz.tests.utils.fake_region import fake_region
 
 
@@ -91,7 +92,7 @@ class DirectIngestRawFileImportManagerTest(unittest.TestCase):
         self.project_id = 'recidiviz-456'
         self.test_region = fake_region(region_code='us_xx',
                                        are_raw_data_bq_imports_enabled_in_env=True)
-        self.fs = FakeDirectIngestGCSFileSystem()
+        self.fs = DirectIngestGCSFileSystem(FakeGCSFileSystem())
         self.ingest_directory_path = GcsfsDirectoryPath(bucket_name='direct/controllers/fixtures')
         self.temp_output_path = GcsfsDirectoryPath(bucket_name='temp_bucket')
 
@@ -134,7 +135,7 @@ class DirectIngestRawFileImportManagerTest(unittest.TestCase):
                                           **_kwargs):
         col_names = [schema_field.name for schema_field in destination_table_schema]
         temp_path = GcsfsFilePath.from_absolute_path(source_uri)
-        local_temp_path = self.fs.uploaded_test_path_to_actual[temp_path.abs_path()]
+        local_temp_path = self.fs.gcs_file_system.uploaded_test_path_to_actual[temp_path.abs_path()]
 
         df = pd.read_csv(local_temp_path, header=None, dtype=str)
         for value in df.values:
@@ -160,7 +161,7 @@ class DirectIngestRawFileImportManagerTest(unittest.TestCase):
         )
 
     def _check_no_temp_files_remain(self):
-        for path in self.fs.all_paths:
+        for path in self.fs.gcs_file_system.all_paths:
             if path.abs_path().startswith(self.temp_output_path.abs_path()):
                 self.fail(f'Expected temp path {path.abs_path()} to be cleaned up')
 
@@ -179,8 +180,8 @@ class DirectIngestRawFileImportManagerTest(unittest.TestCase):
             should_normalize=True,
             file_type=GcsfsDirectIngestFileType.INGEST_VIEW)
 
-        self.fs.test_add_path(raw_unprocessed)
-        self.fs.test_add_path(ingest_view_unprocessed)
+        self.fs.gcs_file_system.test_add_path(raw_unprocessed)
+        self.fs.gcs_file_system.test_add_path(ingest_view_unprocessed)
 
         self.assertEqual([raw_unprocessed], self.import_manager.get_unprocessed_raw_files_to_import())
 
@@ -241,14 +242,14 @@ class DirectIngestRawFileImportManagerTest(unittest.TestCase):
             should_normalize=True,
             file_type=GcsfsDirectIngestFileType.RAW_DATA)
 
-        self.fs.test_add_path(file_path)
+        self.fs.gcs_file_system.test_add_path(file_path)
 
         self.import_manager.import_raw_file_to_big_query(file_path,
                                                          self._metadata_for_unprocessed_file_path(file_path))
 
-        self.assertEqual(1, len(self.fs.uploaded_test_path_to_actual))
+        self.assertEqual(1, len(self.fs.gcs_file_system.uploaded_test_path_to_actual))
 
-        path = one(self.fs.uploaded_test_path_to_actual.keys())
+        path = one(self.fs.gcs_file_system.uploaded_test_path_to_actual.keys())
         self.mock_big_query_client.insert_into_table_from_cloud_storage_async.assert_called_with(
             source_uri=f'gs://{path}',
             destination_dataset_ref=bigquery.DatasetReference(self.project_id, 'us_xx_raw_data'),
@@ -268,14 +269,14 @@ class DirectIngestRawFileImportManagerTest(unittest.TestCase):
             should_normalize=True,
             file_type=GcsfsDirectIngestFileType.RAW_DATA)
 
-        self.fs.test_add_path(file_path)
+        self.fs.gcs_file_system.test_add_path(file_path)
 
         self.import_manager.import_raw_file_to_big_query(file_path,
                                                          self._metadata_for_unprocessed_file_path(file_path))
 
-        self.assertEqual(1, len(self.fs.uploaded_test_path_to_actual))
+        self.assertEqual(1, len(self.fs.gcs_file_system.uploaded_test_path_to_actual))
 
-        path = one(self.fs.uploaded_test_path_to_actual.keys())
+        path = one(self.fs.gcs_file_system.uploaded_test_path_to_actual.keys())
         self.mock_big_query_client.insert_into_table_from_cloud_storage_async.assert_called_with(
             source_uri=f'gs://{path}',
             destination_dataset_ref=bigquery.DatasetReference(self.project_id, 'us_xx_raw_data'),
@@ -299,12 +300,12 @@ class DirectIngestRawFileImportManagerTest(unittest.TestCase):
             should_normalize=True,
             file_type=GcsfsDirectIngestFileType.RAW_DATA)
 
-        self.fs.test_add_path(file_path)
+        self.fs.gcs_file_system.test_add_path(file_path)
 
         self.import_manager.import_raw_file_to_big_query(file_path,
                                                          self._metadata_for_unprocessed_file_path(file_path))
 
-        self.assertEqual(5, len(self.fs.uploaded_test_path_to_actual))
+        self.assertEqual(5, len(self.fs.gcs_file_system.uploaded_test_path_to_actual))
 
         expected_insert_calls = [
             call.insert_into_table_from_cloud_storage_async(
@@ -317,7 +318,7 @@ class DirectIngestRawFileImportManagerTest(unittest.TestCase):
                                           bigquery.SchemaField('COL4', 'STRING', 'NULLABLE'),
                                           bigquery.SchemaField('file_id', 'INTEGER', 'REQUIRED'),
                                           bigquery.SchemaField('update_datetime', 'DATETIME', 'REQUIRED')]
-            ) for uploaded_path in self.fs.uploaded_test_path_to_actual
+            ) for uploaded_path in self.fs.gcs_file_system.uploaded_test_path_to_actual
         ]
 
         self.assertEqual(expected_insert_calls, self.mock_big_query_client.method_calls)
@@ -335,12 +336,12 @@ class DirectIngestRawFileImportManagerTest(unittest.TestCase):
             should_normalize=True,
             file_type=GcsfsDirectIngestFileType.RAW_DATA)
 
-        self.fs.test_add_path(file_path)
+        self.fs.gcs_file_system.test_add_path(file_path)
 
         self.import_manager.import_raw_file_to_big_query(file_path,
                                                          self._metadata_for_unprocessed_file_path(file_path))
 
-        self.assertEqual(3, len(self.fs.uploaded_test_path_to_actual))
+        self.assertEqual(3, len(self.fs.gcs_file_system.uploaded_test_path_to_actual))
 
         expected_insert_calls = [
             call.insert_into_table_from_cloud_storage_async(
@@ -353,7 +354,7 @@ class DirectIngestRawFileImportManagerTest(unittest.TestCase):
                                           bigquery.SchemaField('COL4', 'STRING', 'NULLABLE'),
                                           bigquery.SchemaField('file_id', 'INTEGER', 'REQUIRED'),
                                           bigquery.SchemaField('update_datetime', 'DATETIME', 'REQUIRED')]
-            ) for uploaded_path in self.fs.uploaded_test_path_to_actual
+            ) for uploaded_path in self.fs.gcs_file_system.uploaded_test_path_to_actual
         ]
 
         self.assertEqual(expected_insert_calls, self.mock_big_query_client.method_calls)
@@ -368,13 +369,14 @@ class DirectIngestRawFileImportManagerTest(unittest.TestCase):
             should_normalize=True,
             file_type=GcsfsDirectIngestFileType.RAW_DATA)
 
-        self.fs.test_add_path(file_path)
+        self.fs.gcs_file_system.test_add_path(file_path)
 
         self.import_manager.import_raw_file_to_big_query(file_path,
                                                          self._metadata_for_unprocessed_file_path(file_path))
-        self.assertEqual(1, len(self.fs.uploaded_test_path_to_actual))
+        self.assertEqual(1, len(self.fs.gcs_file_system.uploaded_test_path_to_actual))
 
-        path = one(self.fs.uploaded_test_path_to_actual.keys())
+        path = one(self.fs.gcs_file_system.uploaded_test_path_to_actual.keys())
+
         self.mock_big_query_client.insert_into_table_from_cloud_storage_async.assert_called_with(
             source_uri=f'gs://{path}',
             destination_dataset_ref=bigquery.DatasetReference(self.project_id, 'us_xx_raw_data'),
@@ -396,7 +398,7 @@ class DirectIngestRawFileImportManagerTest(unittest.TestCase):
                 should_normalize=True,
                 file_type=GcsfsDirectIngestFileType.RAW_DATA)
 
-            self.fs.test_add_path(file_path)
+            self.fs.gcs_file_system.test_add_path(file_path)
 
             self.import_manager.import_raw_file_to_big_query(file_path,
                                                              self._metadata_for_unprocessed_file_path(file_path))

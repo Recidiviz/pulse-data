@@ -23,7 +23,7 @@ from unittest import mock
 from google.cloud import bigquery
 
 from recidiviz.metrics.export.metric_export_config import ExportMetricBigQueryViewConfig, ExportMetricDatasetConfig
-from recidiviz.ingest.direct.controllers.gcsfs_path import GcsfsDirectoryPath
+from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath
 from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
 from recidiviz.metrics.export import metric_view_export_manager
 

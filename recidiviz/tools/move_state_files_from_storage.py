@@ -56,7 +56,7 @@ from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import \
     gcsfs_direct_ingest_directory_path_for_region, GcsfsDirectIngestFileType
 from recidiviz.common.google_cloud.google_cloud_tasks_shared_queues import \
     DIRECT_INGEST_SCHEDULER_QUEUE_V2, DIRECT_INGEST_STATE_PROCESS_JOB_QUEUE_V2, DIRECT_INGEST_BQ_IMPORT_EXPORT_QUEUE_V2
-from recidiviz.ingest.direct.controllers.gcsfs_path import GcsfsDirectoryPath
+from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath
 from recidiviz.tools.gsutil_shell_helpers import gsutil_ls, gsutil_mv, gsutil_get_storage_subdirs_containing_file_types
 from recidiviz.utils.params import str_to_bool
 

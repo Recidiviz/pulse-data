@@ -41,7 +41,7 @@ from recidiviz.persistence.entity.state.entities import StatePerson
 from recidiviz.tests.ingest.direct.direct_ingest_util import \
     run_task_queues_to_empty, \
     path_for_fixture_file
-from recidiviz.tests.ingest.direct.fake_direct_ingest_gcs_file_system import FakeDirectIngestGCSFileSystem
+from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.tests.ingest.direct.regions.base_direct_ingest_controller_tests \
     import BaseDirectIngestControllerTests
 from recidiviz.tests.persistence.entity.state.entities_test_utils import \
@@ -88,10 +88,10 @@ class BaseStateDirectIngestControllerTests(BaseDirectIngestControllerTests):
         file_type = GcsfsDirectIngestFileType.INGEST_VIEW \
             if self.controller.region.is_raw_vs_ingest_file_name_detection_enabled() else None
 
-        if not isinstance(self.controller.fs, FakeDirectIngestGCSFileSystem):
+        if not isinstance(self.controller.fs.gcs_file_system, FakeGCSFileSystem):
             raise ValueError(f"Controller fs must have type "
-                             f"FakeDirectIngestGCSFileSystem. Found instead "
-                             f"type [{type(self.controller.fs)}]")
+                             f"FakeGCSFileSystem. Found instead "
+                             f"type [{type(self.controller.fs.gcs_file_system)}]")
 
         if self.controller.region.are_ingest_view_exports_enabled_in_env():
             ingest_file_export_job_args = GcsfsIngestViewExportArgs(
@@ -107,7 +107,7 @@ class BaseStateDirectIngestControllerTests(BaseDirectIngestControllerTests):
                                               filename,
                                               file_type=file_type,
                                               should_normalize=True)
-            self.controller.fs.test_add_path(file_path)
+            self.controller.fs.gcs_file_system.test_add_path(file_path)
 
         run_task_queues_to_empty(self.controller)
 

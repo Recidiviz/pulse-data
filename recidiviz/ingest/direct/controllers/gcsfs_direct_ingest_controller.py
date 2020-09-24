@@ -23,11 +23,12 @@ from typing import Optional, List
 from recidiviz import IngestInfo
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.common.ingest_metadata import SystemLevel
+from recidiviz.cloud_storage.gcs_file_system import GcsfsFileContentsHandle
 from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import \
     BaseDirectIngestController
 from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import \
     to_normalized_unprocessed_file_path, SPLIT_FILE_SUFFIX, to_normalized_unprocessed_file_path_from_normalized_path, \
-    GcsfsFileContentsHandle
+    DirectIngestGCSFileSystem
 from recidiviz.ingest.direct.controllers.direct_ingest_ingest_view_export_manager import \
     DirectIngestIngestViewExportManager
 from recidiviz.ingest.direct.controllers.direct_ingest_raw_file_import_manager import DirectIngestRawFileImportManager
@@ -39,8 +40,8 @@ from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import \
     gcsfs_direct_ingest_storage_directory_path_for_region, \
     gcsfs_direct_ingest_directory_path_for_region, GcsfsDirectIngestFileType, GcsfsRawDataBQImportArgs, \
     GcsfsIngestViewExportArgs, gcsfs_direct_ingest_temporary_output_directory_path
-from recidiviz.ingest.direct.controllers.gcsfs_factory import GcsfsFactory
-from recidiviz.ingest.direct.controllers.gcsfs_path import \
+from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
+from recidiviz.cloud_storage.gcsfs_path import \
     GcsfsFilePath, GcsfsDirectoryPath
 from recidiviz.ingest.direct.controllers.postgres_direct_ingest_file_metadata_manager import \
     PostgresDirectIngestFileMetadataManager
@@ -63,7 +64,7 @@ class GcsfsDirectIngestController(
                  storage_directory_path: Optional[str] = None,
                  max_delay_sec_between_files: Optional[int] = None):
         super().__init__(region_name, system_level)
-        self.fs = GcsfsFactory.build()
+        self.fs = DirectIngestGCSFileSystem(GcsfsFactory.build())
         self.max_delay_sec_between_files = max_delay_sec_between_files
 
         if not ingest_directory_path:

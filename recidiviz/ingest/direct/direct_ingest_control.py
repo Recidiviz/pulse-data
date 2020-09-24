@@ -28,7 +28,7 @@ from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_controller import \
     GcsfsDirectIngestController
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import GcsfsRawDataBQImportArgs, \
     GcsfsIngestViewExportArgs
-from recidiviz.ingest.direct.controllers.gcsfs_path import \
+from recidiviz.cloud_storage.gcsfs_path import \
     GcsfsFilePath, GcsfsPath
 from recidiviz.ingest.direct.direct_ingest_cloud_task_manager import \
     DirectIngestCloudTaskManager
