@@ -39,15 +39,15 @@ from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_controller import \
     GcsfsDirectIngestController
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import \
     filename_parts_from_path, GcsfsIngestArgs, GcsfsDirectIngestFileType
-from recidiviz.ingest.direct.controllers.gcsfs_factory import GcsfsFactory
-from recidiviz.ingest.direct.controllers.gcsfs_path import \
+from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
+from recidiviz.cloud_storage.gcsfs_path import \
     GcsfsFilePath, GcsfsDirectoryPath, GcsfsPath
 from recidiviz.ingest.direct.controllers.gcsfs_csv_reader import GcsfsCsvReader
 from recidiviz.persistence.entity.operations.entities import DirectIngestFileMetadata
 from recidiviz.tests.ingest.direct.fake_direct_ingest_big_query_client import FakeDirectIngestBigQueryClient
 from recidiviz.tests.ingest.direct.fake_async_direct_ingest_cloud_task_manager \
     import FakeAsyncDirectIngestCloudTaskManager
-from recidiviz.tests.ingest.direct.fake_direct_ingest_gcs_file_system import FakeDirectIngestGCSFileSystem
+from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem, FakeGCSFileSystemDelegate
 from recidiviz.tests.ingest.direct. \
     fake_synchronous_direct_ingest_cloud_task_manager import \
     FakeSynchronousDirectIngestCloudTaskManager
@@ -56,13 +56,26 @@ from recidiviz.utils.regions import Region
 
 
 class TestSafeGcsCsvReader(GcsfsCsvReader):
-    def __init__(self, fs: FakeDirectIngestGCSFileSystem):
+    def __init__(self, fs: FakeGCSFileSystem):
         super().__init__(create_autospec(gcsfs.GCSFileSystem))
         self.fs = fs
 
     def _file_pointer_for_path(self, path: GcsfsFilePath, encoding: str):
-        path_str = self.fs.real_absolute_path_for_path(path)
+        try:
+            path_str = self.fs.gcs_file_system.real_absolute_path_for_path(path)
+        except AttributeError:
+            path_str = self.fs.real_absolute_path_for_path(path)
         return open(path_str, encoding=encoding)
+
+
+class DirectIngestFakeGCSFileSystemDelegate(FakeGCSFileSystemDelegate):
+    def __init__(self, controller: GcsfsDirectIngestController, can_start_ingest: bool):
+        self.controller = controller
+        self.can_start_ingest = can_start_ingest
+
+    def on_file_added(self, path: GcsfsFilePath):
+        if path.abs_path().startswith(self.controller.ingest_directory_path.abs_path()):
+            self.controller.handle_file(path, start_ingest=self.can_start_ingest)
 
 
 @attr.s
@@ -119,7 +132,6 @@ class FakeDirectIngestRawFileImportManager(DirectIngestRawFileImportManager):
                  ingest_directory_path: GcsfsDirectoryPath,
                  temp_output_directory_path: GcsfsDirectoryPath,
                  big_query_client: BigQueryClient):
-
         super().__init__(region=region,
                          fs=fs,
                          ingest_directory_path=ingest_directory_path,
@@ -154,6 +166,7 @@ class FakeDirectIngestPreProcessedIngestViewCollector(BigQueryViewCollector[Dire
 
         return views
 
+
 def build_controller_for_tests(controller_cls,
                                run_async: bool) -> BaseDirectIngestController:
     """Builds an instance of |controller_cls| for use in tests with several internal classes mocked properly. If
@@ -180,11 +193,12 @@ def build_gcsfs_controller_for_tests(
         controller_cls,
         fixture_path_prefix: str,
         run_async: bool,
-        fake_fs: Optional[FakeDirectIngestGCSFileSystem] = None,
+        fake_fs: Optional[FakeGCSFileSystem] = None,
+        can_start_ingest: bool = True,
         **kwargs,
 ) -> GcsfsDirectIngestController:
     """Builds an instance of |controller_cls| for use in tests with several internal classes mocked properly. """
-    fake_fs = fake_fs if fake_fs else FakeDirectIngestGCSFileSystem()
+    fake_fs = FakeGCSFileSystem()
 
     def mock_build_fs():
         return fake_fs
@@ -215,7 +229,8 @@ def build_gcsfs_controller_for_tests(
                         controller.raw_file_import_manager.csv_reader = controller.csv_reader
 
                         task_manager.set_controller(controller)
-                        fake_fs.test_set_controller(controller)
+                        fake_fs.test_set_delegate(
+                            DirectIngestFakeGCSFileSystemDelegate(controller, can_start_ingest=can_start_ingest))
                         return controller
 
 
@@ -291,10 +306,10 @@ def add_paths_with_tags(controller: GcsfsDirectIngestController,
                         file_tags: List[str],
                         pre_normalize_filename: bool = False,
                         file_type=GcsfsDirectIngestFileType.UNSPECIFIED):
-    if not isinstance(controller.fs, FakeDirectIngestGCSFileSystem):
+    if not isinstance(controller.fs.gcs_file_system, FakeGCSFileSystem):
         raise ValueError(f"Controller fs must have type "
-                         f"FakeDirectIngestGCSFileSystem. Found instead "
-                         f"type [{type(controller.fs)}]")
+                         f"FakeGCSFileSystem. Found instead "
+                         f"type [{type(controller.fs.gcs_file_system)}]")
 
     for file_tag in file_tags:
         file_path = path_for_fixture_file(
@@ -302,7 +317,7 @@ def add_paths_with_tags(controller: GcsfsDirectIngestController,
             f'{file_tag}.csv',
             should_normalize=pre_normalize_filename,
             file_type=file_type)
-        controller.fs.test_add_path(file_path)
+        controller.fs.gcs_file_system.test_add_path(file_path)
         time.sleep(.05)
 
 
@@ -326,13 +341,13 @@ def check_all_paths_processed(
     processed and moved to storage.
     """
 
-    if not isinstance(controller.fs, FakeDirectIngestGCSFileSystem):
+    if not isinstance(controller.fs.gcs_file_system, FakeGCSFileSystem):
         raise ValueError(f"Controller fs must have type "
-                         f"FakeDirectIngestGCSFileSystem. Found instead "
-                         f"type [{type(controller.fs)}]")
+                         f"FakeGCSFileSystem. Found instead "
+                         f"type [{type(controller.fs.gcs_file_system)}]")
 
     file_tags_processed = set()
-    for path in controller.fs.all_paths:
+    for path in controller.fs.gcs_file_system.all_paths:
         if isinstance(path, GcsfsDirectoryPath):
             continue
 
@@ -362,7 +377,7 @@ def run_task_queues_to_empty(controller: GcsfsDirectIngestController):
                     FakeSynchronousDirectIngestCloudTaskManager):
         tm = controller.cloud_task_manager
         while tm.get_scheduler_queue_info(controller.region).size() \
-                or tm.get_process_job_queue_info(controller.region).size()\
+                or tm.get_process_job_queue_info(controller.region).size() \
                 or tm.get_bq_import_export_queue_info(controller.region).size():
             if tm.get_bq_import_export_queue_info(controller.region).size():
                 tm.test_run_next_bq_import_export_task()

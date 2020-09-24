@@ -22,7 +22,7 @@ from more_itertools import one
 
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import GcsfsDirectIngestFileType, \
     filename_parts_from_path
-from recidiviz.ingest.direct.controllers.gcsfs_path import GcsfsFilePath
+from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.persistence.database.schema.operations import schema
 from recidiviz.persistence.database.session import Session
 

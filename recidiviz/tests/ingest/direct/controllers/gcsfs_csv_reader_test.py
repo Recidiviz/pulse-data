@@ -24,7 +24,7 @@ from mock import create_autospec
 
 from recidiviz.ingest.direct.controllers.gcsfs_csv_reader import GcsfsCsvReader, GcsfsCsvReaderDelegate, \
     COMMON_RAW_FILE_ENCODINGS
-from recidiviz.ingest.direct.controllers.gcsfs_path import GcsfsFilePath
+from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.tests.ingest import fixtures
 
 

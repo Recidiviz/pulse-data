@@ -21,7 +21,7 @@ from typing import Iterator, List, Optional
 import gcsfs
 import pandas as pd
 
-from recidiviz.ingest.direct.controllers.gcsfs_path import GcsfsFilePath
+from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.utils import environment
 
 COMMON_RAW_FILE_ENCODINGS = [
@@ -105,6 +105,7 @@ class GcsfsCsvReader:
             delegate: A delegate for handling read chunks one by one.
             chunk_size: The max number of rows each chunk of the CSV should have.
             encodings_to_try: If provided, the ordered list of file encodings we should try for the given file.
+            wrapper: If provided and true, use wrapper function when calling the helper function in direct_ingest_utils
             kwargs: Key-value args passed through to the pandas read_csv() call.
         """
 

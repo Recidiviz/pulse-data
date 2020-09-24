@@ -18,10 +18,12 @@
 import abc
 import datetime
 import heapq
-from typing import TypeVar, Generic, Callable, List, Tuple, Optional, Iterator
+from typing import TypeVar, Generic, Callable, List, Tuple, Optional
 
 import attr
 import cattr
+
+from recidiviz.cloud_storage.content_types import FileContentsHandle
 
 
 @attr.s(frozen=True)
@@ -48,23 +50,8 @@ class IngestArgs(CloudTaskArgs):
 
 IngestArgsType = TypeVar('IngestArgsType', bound=IngestArgs)
 
-# Type for a single row/chunk returned by the ingest contents iterator.
-IngestContentsRowType = TypeVar('IngestContentsRowType')
 
-
-class IngestContentsHandle(Generic[IngestContentsRowType]):
-    @abc.abstractmethod
-    def get_contents_iterator(self) -> Iterator[IngestContentsRowType]:
-        """Should be overridden by subclasses to return an iterator over the
-        contents that should be ingested into the format supported by this
-        controller.
-
-        Will throw if the contents could not be read (i.e. if they no longer
-        exist).
-        """
-
-
-ContentsHandleType = TypeVar('ContentsHandleType', bound=IngestContentsHandle)
+ContentsHandleType = TypeVar('ContentsHandleType', bound=FileContentsHandle)
 
 
 class ArgsPriorityQueue(Generic[IngestArgsType]):

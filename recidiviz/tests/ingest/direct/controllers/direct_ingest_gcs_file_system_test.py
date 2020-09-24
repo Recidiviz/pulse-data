@@ -14,53 +14,22 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Tests for the DirectIngestGCSFileSystem."""
-import datetime
+"""Tests for the Path Normalization in DirectIngestGCSFileSystem."""
 import os
+import datetime
 from unittest import TestCase
 
-from google.api_core import exceptions
-from google.cloud import storage
-from google.cloud.storage import Bucket
-from mock import create_autospec
-
+from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath, GcsfsFilePath
 from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import \
     to_normalized_unprocessed_file_path_from_normalized_path, to_normalized_processed_file_path_from_normalized_path, \
-    to_normalized_processed_file_name, to_normalized_unprocessed_file_name, DirectIngestGCSFileSystemImpl
+    to_normalized_processed_file_name, to_normalized_unprocessed_file_name, DirectIngestGCSFileSystem
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import GcsfsDirectIngestFileType, \
     filename_parts_from_path
-from recidiviz.ingest.direct.controllers.gcsfs_path import GcsfsFilePath, \
-    GcsfsDirectoryPath, GcsfsBucketPath
-from recidiviz.tests.ingest.direct.fake_direct_ingest_gcs_file_system import FakeDirectIngestGCSFileSystem
+from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 
 
 class TestDirectIngestGcsFileSystem(TestCase):
-    def setUp(self) -> None:
-        self.mock_storage_client = create_autospec(storage.Client)
-        self.fs = DirectIngestGCSFileSystemImpl(self.mock_storage_client)
-
-    def test_retry(self):
-        mock_bucket = create_autospec(Bucket)
-        mock_bucket.exists.return_value = True
-        # Client first raises a Gateway timeout, then returns a normal bucket.
-        self.mock_storage_client.get_bucket.side_effect = [exceptions.GatewayTimeout('Exception'), mock_bucket]
-
-        # Should not crash!
-        self.assertTrue(self.fs.exists(GcsfsBucketPath.from_absolute_path('gs://my-bucket')))
-
-    def test_retry_with_fatal_error(self):
-        mock_bucket = create_autospec(Bucket)
-        mock_bucket.exists.return_value = True
-        # Client first raises a Gateway timeout, then on retry will raise a ValueError
-        self.mock_storage_client.get_bucket.side_effect = [exceptions.GatewayTimeout('Exception'),
-                                                           ValueError('This will crash')]
-
-        with self.assertRaises(ValueError):
-            self.fs.exists(GcsfsBucketPath.from_absolute_path('gs://my-bucket'))
-
-
-class TestFakeDirectIngestGcsFileSystem(TestCase):
-    """Tests for the DirectIngestGCSFileSystem."""
+    """Tests for the FakeGCSFileSystem."""
 
     STORAGE_DIR_PATH = GcsfsDirectoryPath(bucket_name='storage_bucket',
                                           relative_path='region_subdir')
@@ -68,7 +37,7 @@ class TestFakeDirectIngestGcsFileSystem(TestCase):
     INGEST_DIR_PATH = GcsfsDirectoryPath(bucket_name='my_bucket')
 
     def setUp(self) -> None:
-        self.fs = FakeDirectIngestGCSFileSystem()
+        self.fs = DirectIngestGCSFileSystem(FakeGCSFileSystem())
 
     def fully_process_file(self,
                            dt: datetime.datetime,
@@ -78,9 +47,9 @@ class TestFakeDirectIngestGcsFileSystem(TestCase):
         ingest system, from getting added to the ingest bucket, turning to a
         processed file, then getting moved to storage."""
 
-        self.fs.test_add_path(path)
+        self.fs.gcs_file_system.test_add_path(path)
 
-        start_num_total_files = len(self.fs.all_paths)
+        start_num_total_files = len(self.fs.gcs_file_system.all_paths)
         # pylint: disable=protected-access
         start_ingest_paths = self.fs._ls_with_file_prefix(self.INGEST_DIR_PATH, '', None)
         start_storage_paths = self.fs._ls_with_file_prefix(self.STORAGE_DIR_PATH, '', None)
@@ -160,7 +129,7 @@ class TestFakeDirectIngestGcsFileSystem(TestCase):
         splitting_factor = 2 if file_type_differentiation_on else 1
 
         expected_final_total_files = start_num_total_files + splitting_factor - 1
-        self.assertEqual(len(self.fs.all_paths), expected_final_total_files)
+        self.assertEqual(len(self.fs.gcs_file_system.all_paths), expected_final_total_files)
         self.assertEqual(len(end_ingest_paths), len(start_ingest_paths) - 1)
         self.assertEqual(len(end_storage_paths), len(start_storage_paths) + 1 * splitting_factor)
         if file_type_differentiation_on:

@@ -33,7 +33,7 @@ from google.cloud import bigquery
 from recidiviz.big_query.big_query_client import BigQueryClientImpl, ExportQueryConfig
 from recidiviz.calculator.query.state.dataset_config import STATE_BASE_DATASET
 from recidiviz.persistence.database.export.export_utils import state_table_export_query_str, gcs_export_directory
-from recidiviz.ingest.direct.controllers.gcsfs_path import GcsfsFilePath
+from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.utils.params import str_to_bool

@@ -21,7 +21,7 @@ from unittest import TestCase
 from mock import patch, Mock
 
 from recidiviz.common.ingest_metadata import SystemLevel
-from recidiviz.ingest.direct.controllers.gcsfs_path import GcsfsFilePath
+from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import \
     gcsfs_direct_ingest_storage_directory_path_for_region, \
     gcsfs_direct_ingest_directory_path_for_region, filename_parts_from_path, GcsfsDirectIngestFileType, \

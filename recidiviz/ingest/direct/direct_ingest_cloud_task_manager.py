@@ -27,8 +27,7 @@ from recidiviz.common.google_cloud.google_cloud_tasks_shared_queues import \
     DIRECT_INGEST_SCHEDULER_QUEUE_V2, DIRECT_INGEST_BQ_IMPORT_EXPORT_QUEUE_V2
 from recidiviz.common.google_cloud.google_cloud_tasks_client_wrapper import \
     GoogleCloudTasksClientWrapper
-from recidiviz.ingest.direct.controllers.direct_ingest_types import \
-    IngestArgs, CloudTaskArgs
+from recidiviz.ingest.direct.controllers.direct_ingest_types import CloudTaskArgs, IngestArgs
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import \
     GcsfsIngestArgs, GcsfsRawDataBQImportArgs, GcsfsIngestViewExportArgs
 from recidiviz.utils.regions import Region

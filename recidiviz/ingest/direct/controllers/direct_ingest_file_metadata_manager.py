@@ -20,7 +20,7 @@ import datetime
 from typing import Optional, List
 
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import GcsfsIngestViewExportArgs
-from recidiviz.ingest.direct.controllers.gcsfs_path import GcsfsFilePath
+from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.persistence.entity.operations.entities import DirectIngestFileMetadata, DirectIngestIngestFileMetadata, \
     DirectIngestRawFileMetadata
 

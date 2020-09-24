@@ -25,7 +25,7 @@ from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import \
     GcsfsIngestArgs, filename_parts_from_path, GcsfsDirectIngestFileType
 from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import \
     DirectIngestGCSFileSystem
-from recidiviz.ingest.direct.controllers.gcsfs_path import \
+from recidiviz.cloud_storage.gcsfs_path import \
     GcsfsFilePath, GcsfsDirectoryPath
 
 
@@ -61,10 +61,7 @@ class GcsfsDirectIngestJobPrioritizer:
         if not next_file_path:
             return None
 
-        return GcsfsIngestArgs(
-            ingest_time=datetime.datetime.utcnow(),
-            file_path=next_file_path,
-        )
+        return GcsfsIngestArgs(ingest_time=datetime.datetime.utcnow(), file_path=next_file_path)
 
     def are_next_args_expected(self, next_args: GcsfsIngestArgs):
         """Returns True if the provided args are the args we expect to run next,

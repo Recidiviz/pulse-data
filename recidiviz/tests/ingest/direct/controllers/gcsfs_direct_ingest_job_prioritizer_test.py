@@ -21,14 +21,14 @@ import unittest
 from typing import List
 
 from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import \
-    to_normalized_unprocessed_file_path
-from recidiviz.ingest.direct.controllers.gcsfs_path import GcsfsDirectoryPath, \
+    to_normalized_unprocessed_file_path, DirectIngestGCSFileSystem
+from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath, \
     GcsfsFilePath
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_job_prioritizer \
     import GcsfsDirectIngestJobPrioritizer
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import \
     filename_parts_from_path, GcsfsDirectIngestFileType
-from recidiviz.tests.ingest.direct.fake_direct_ingest_gcs_file_system import FakeDirectIngestGCSFileSystem
+from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 
 
 # TODO(#3162): Delete this test class once is_raw_vs_ingest_file_name_detection_enabled() is true for all regions
@@ -58,7 +58,7 @@ class TestGcsfsDirectIngestJobPrioritizerNoFilter(unittest.TestCase):
         GcsfsDirectoryPath.from_absolute_path('direct/regions/us_nd/fixtures')
 
     def setUp(self) -> None:
-        self.fs = FakeDirectIngestGCSFileSystem()
+        self.fs = DirectIngestGCSFileSystem(FakeGCSFileSystem())
         self.prioritizer = GcsfsDirectIngestJobPrioritizer(
             self.fs, self._INGEST_BUCKET_PATH, ['tagA', 'tagB'], file_type_filter=None)
 
@@ -105,7 +105,7 @@ class TestGcsfsDirectIngestJobPrioritizerNoFilter(unittest.TestCase):
         path = self._normalized_path_for_filename(
             'tagA.csv', GcsfsDirectIngestFileType.UNSPECIFIED, self._DAY_1_TIME_1)
 
-        self.fs.test_add_path(path)
+        self.fs.gcs_file_system.test_add_path(path)
 
         self._process_jobs_for_paths_with_no_gaps_in_expected_order([path])
 
@@ -126,7 +126,7 @@ class TestGcsfsDirectIngestJobPrioritizerNoFilter(unittest.TestCase):
         ]
 
         for path in paths:
-            self.fs.test_add_path(path)
+            self.fs.gcs_file_system.test_add_path(path)
 
         self._process_jobs_for_paths_with_no_gaps_in_expected_order(paths)
 
@@ -140,7 +140,7 @@ class TestGcsfsDirectIngestJobPrioritizerNoFilter(unittest.TestCase):
         path = self._normalized_path_for_filename(
             'tagB.csv', GcsfsDirectIngestFileType.UNSPECIFIED, self._DAY_1_TIME_1)
 
-        self.fs.test_add_path(path)
+        self.fs.gcs_file_system.test_add_path(path)
 
         self.assertTrue(
             self.prioritizer.are_more_jobs_expected_for_day(
@@ -172,7 +172,7 @@ class TestGcsfsDirectIngestJobPrioritizerNoFilter(unittest.TestCase):
                 'tagA.csv', GcsfsDirectIngestFileType.UNSPECIFIED, self._DAY_2_TIME_1),
         ]
         for path in paths:
-            self.fs.test_add_path(path)
+            self.fs.gcs_file_system.test_add_path(path)
 
         self._process_jobs_for_paths_with_no_gaps_in_expected_order(paths)
 
@@ -195,7 +195,7 @@ class TestGcsfsDirectIngestJobPrioritizerNoFilter(unittest.TestCase):
                 'tagA.csv', GcsfsDirectIngestFileType.UNSPECIFIED, self._DAY_2_TIME_1),
         ]
         for path in paths:
-            self.fs.test_add_path(path)
+            self.fs.gcs_file_system.test_add_path(path)
 
         for i, path in enumerate(paths):
             date_str = filename_parts_from_path(path).date_str
@@ -235,7 +235,7 @@ class TestGcsfsDirectIngestJobPrioritizerNoFilter(unittest.TestCase):
                 'tagB.csv', GcsfsDirectIngestFileType.INGEST_VIEW, self._DAY_1_TIME_3),
         ]
         for path in paths:
-            self.fs.test_add_path(path)
+            self.fs.gcs_file_system.test_add_path(path)
 
         self._process_jobs_for_paths_with_no_gaps_in_expected_order(paths)
 
@@ -258,7 +258,7 @@ class TestGcsfsDirectIngestJobPrioritizerNoFilter(unittest.TestCase):
 
         ]
         for path in paths:
-            self.fs.test_add_path(path)
+            self.fs.gcs_file_system.test_add_path(path)
 
         for i, path in enumerate(paths):
             date_str = filename_parts_from_path(path).date_str
@@ -294,7 +294,7 @@ class TestGcsfsDirectIngestJobPrioritizerNoFilter(unittest.TestCase):
                 'tagB.csv', GcsfsDirectIngestFileType.UNSPECIFIED, self._DAY_1_TIME_3),
         ]
         for path in paths:
-            self.fs.test_add_path(path)
+            self.fs.gcs_file_system.test_add_path(path)
 
         self._process_jobs_for_paths_with_no_gaps_in_expected_order(paths)
 
@@ -330,7 +330,7 @@ class TestGcsfsDirectIngestJobPrioritizerIngestViewFilter(unittest.TestCase):
         GcsfsDirectoryPath.from_absolute_path('direct/regions/us_nd/fixtures')
 
     def setUp(self) -> None:
-        self.fs = FakeDirectIngestGCSFileSystem()
+        self.fs = DirectIngestGCSFileSystem(FakeGCSFileSystem())
         self.prioritizer = GcsfsDirectIngestJobPrioritizer(
             self.fs, self._INGEST_BUCKET_PATH, ['tagA', 'tagB'], file_type_filter=GcsfsDirectIngestFileType.INGEST_VIEW)
 
@@ -376,7 +376,7 @@ class TestGcsfsDirectIngestJobPrioritizerIngestViewFilter(unittest.TestCase):
         path = self._normalized_path_for_filename(
             'tagA.csv', GcsfsDirectIngestFileType.INGEST_VIEW, self._DAY_1_TIME_1)
 
-        self.fs.test_add_path(path)
+        self.fs.gcs_file_system.test_add_path(path)
 
         self._process_jobs_for_paths_with_no_gaps_in_expected_order([path])
 
@@ -401,7 +401,7 @@ class TestGcsfsDirectIngestJobPrioritizerIngestViewFilter(unittest.TestCase):
         ]
 
         for path in paths:
-            self.fs.test_add_path(path)
+            self.fs.gcs_file_system.test_add_path(path)
 
         # Exclude last raw file
         expected_processed_paths = paths[0:-1]
@@ -418,7 +418,7 @@ class TestGcsfsDirectIngestJobPrioritizerIngestViewFilter(unittest.TestCase):
         path = self._normalized_path_for_filename(
             'tagB.csv', GcsfsDirectIngestFileType.INGEST_VIEW, self._DAY_1_TIME_1)
 
-        self.fs.test_add_path(path)
+        self.fs.gcs_file_system.test_add_path(path)
 
         self.assertTrue(
             self.prioritizer.are_more_jobs_expected_for_day(
@@ -454,7 +454,7 @@ class TestGcsfsDirectIngestJobPrioritizerIngestViewFilter(unittest.TestCase):
                 'tagC.csv', GcsfsDirectIngestFileType.RAW_DATA, self._DAY_1_TIME_3)
         ]
         for path in paths:
-            self.fs.test_add_path(path)
+            self.fs.gcs_file_system.test_add_path(path)
 
         # Exclude last raw file
         expected_processed_paths = paths[0:-1]
@@ -480,7 +480,7 @@ class TestGcsfsDirectIngestJobPrioritizerIngestViewFilter(unittest.TestCase):
                 'tagA.csv', GcsfsDirectIngestFileType.INGEST_VIEW, self._DAY_2_TIME_1),
         ]
         for path in paths:
-            self.fs.test_add_path(path)
+            self.fs.gcs_file_system.test_add_path(path)
 
         for i, path in enumerate(paths):
             date_str = filename_parts_from_path(path).date_str
@@ -520,7 +520,7 @@ class TestGcsfsDirectIngestJobPrioritizerIngestViewFilter(unittest.TestCase):
                 'tagB.csv', GcsfsDirectIngestFileType.INGEST_VIEW, self._DAY_1_TIME_3),
         ]
         for path in paths:
-            self.fs.test_add_path(path)
+            self.fs.gcs_file_system.test_add_path(path)
 
         self._process_jobs_for_paths_with_no_gaps_in_expected_order(paths)
 
@@ -543,7 +543,7 @@ class TestGcsfsDirectIngestJobPrioritizerIngestViewFilter(unittest.TestCase):
 
         ]
         for path in paths:
-            self.fs.test_add_path(path)
+            self.fs.gcs_file_system.test_add_path(path)
 
         for i, path in enumerate(paths):
             date_str = filename_parts_from_path(path).date_str
@@ -579,7 +579,7 @@ class TestGcsfsDirectIngestJobPrioritizerIngestViewFilter(unittest.TestCase):
                 'tagB.csv', GcsfsDirectIngestFileType.INGEST_VIEW, self._DAY_1_TIME_3),
         ]
         for path in paths:
-            self.fs.test_add_path(path)
+            self.fs.gcs_file_system.test_add_path(path)
 
         self._process_jobs_for_paths_with_no_gaps_in_expected_order(paths)
 
