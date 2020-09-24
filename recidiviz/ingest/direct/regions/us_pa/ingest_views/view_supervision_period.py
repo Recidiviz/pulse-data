@@ -63,12 +63,12 @@ conditions_by_parole_count_id AS (
   SELECT
     ParoleNumber as parole_number,
     ParoleCountID as parole_count_id,
-    STRING_AGG(DISTINCT CndConditionCode) as condition_codes,
+    STRING_AGG(DISTINCT CndConditionCode ORDER BY CndConditionCode) as condition_codes,
   FROM {dbo_ConditionCode} cc
   GROUP BY parole_number, parole_count_id
 ),
 case_types AS (
-  SELECT ParoleNumber AS parole_number, STRING_AGG(case_type, ',') AS case_types_list
+  SELECT ParoleNumber AS parole_number, STRING_AGG(case_type, ',' ORDER BY case_type) AS case_types_list
   FROM (
     SELECT ParoleNumber, 'PA_Sexual' AS case_type FROM {dbo_OffenderDetails} WHERE PA_Sexual = '1'
     UNION ALL

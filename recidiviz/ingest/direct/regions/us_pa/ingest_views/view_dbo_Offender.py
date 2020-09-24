@@ -35,7 +35,9 @@ base_query AS (
   ON ids.parole_number = offender.ParoleNumber
 ),
 races_ethnicities AS (
-  SELECT recidiviz_master_person_id, STRING_AGG(DISTINCT OffRaceEthnicGroup, ',') AS races_ethnicities_list
+  SELECT 
+    recidiviz_master_person_id,
+    STRING_AGG(DISTINCT OffRaceEthnicGroup, ',' ORDER BY OffRaceEthnicGroup) AS races_ethnicities_list
   FROM base_query
   GROUP BY recidiviz_master_person_id
 )
