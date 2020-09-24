@@ -23,8 +23,8 @@ from recidiviz.big_query.big_query_client import BigQueryClient
 from recidiviz.big_query.big_query_view import BigQueryView
 from recidiviz.big_query.export.export_query_config import ExportQueryConfig
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import filename_parts_from_path
-from recidiviz.ingest.direct.controllers.gcsfs_path import GcsfsFilePath
-from recidiviz.tests.ingest.direct.fake_direct_ingest_gcs_file_system import FakeDirectIngestGCSFileSystem
+from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
+from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 
 
 class FakeQueryJob:
@@ -37,7 +37,7 @@ class FakeDirectIngestBigQueryClient(BigQueryClient):
     """A fake implementation of BigQueryClient for use in direct ingest tests."""
     def __init__(self,
                  project_id: str,
-                 fs: FakeDirectIngestGCSFileSystem):
+                 fs: FakeGCSFileSystem):
         self._project_id = project_id
         self.fs = fs
         self.exported_file_tags: List[str] = []

@@ -33,7 +33,7 @@ from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import Di
 from recidiviz.ingest.direct.controllers.direct_ingest_view_collector import DirectIngestPreProcessedIngestViewCollector
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import GcsfsIngestViewExportArgs, \
     GcsfsDirectIngestFileType
-from recidiviz.ingest.direct.controllers.gcsfs_path import GcsfsDirectoryPath, GcsfsFilePath
+from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath, GcsfsFilePath
 from recidiviz.persistence.entity.operations.entities import DirectIngestIngestFileMetadata, DirectIngestRawFileMetadata
 from recidiviz.utils import regions
 from recidiviz.utils.environment import GCP_PROJECT_STAGING

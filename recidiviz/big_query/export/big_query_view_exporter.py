@@ -24,7 +24,7 @@ from google.cloud import bigquery
 
 from recidiviz.big_query.big_query_client import BigQueryClient
 from recidiviz.big_query.export.export_query_config import ExportBigQueryViewConfig
-from recidiviz.ingest.direct.controllers.gcsfs_path import GcsfsFilePath
+from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 
 
 class BigQueryViewExporter:

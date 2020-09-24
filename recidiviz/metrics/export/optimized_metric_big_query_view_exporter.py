@@ -39,7 +39,7 @@ from recidiviz.big_query.big_query_client import BigQueryClient
 from recidiviz.big_query.export.big_query_view_exporter import BigQueryViewExporter
 from recidiviz.big_query.export.export_query_config import ExportBigQueryViewConfig
 
-from recidiviz.ingest.direct.controllers.gcsfs_path import GcsfsFilePath
+from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.metrics.metric_big_query_view import MetricBigQueryView
 
 # 10000 rows appears to be a reasonable balance of speed and memory usage from local testing

@@ -34,7 +34,7 @@ from recidiviz.cloud_functions.cloud_function_utils import GCSFS_NO_CACHING
 from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import DirectIngestGCSFileSystem
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import filename_parts_from_path, \
     GcsfsDirectIngestFileType
-from recidiviz.ingest.direct.controllers.gcsfs_path import GcsfsFilePath, GcsfsDirectoryPath
+from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath, GcsfsDirectoryPath
 from recidiviz.ingest.direct.controllers.gcsfs_csv_reader import GcsfsCsvReader, COMMON_RAW_FILE_ENCODINGS
 from recidiviz.ingest.direct.controllers.gcsfs_csv_reader_delegates import ReadOneGcsfsCsvReaderDelegate, \
     SplittingGcsfsCsvReaderDelegate
@@ -255,7 +255,6 @@ class DirectIngestRawFileImportManager:
             file_metadata: DirectIngestFileMetadata) -> List[Tuple[GcsfsFilePath, List[str]]]:
         """Uploads the contents of the file at the provided path to one or more GCS files, with whitespace stripped and
         additional metadata columns added.
-
         Returns a list of tuple pairs containing the destination paths and corrected CSV columns for that file.
         """
 

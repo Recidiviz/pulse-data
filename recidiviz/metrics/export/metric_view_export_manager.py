@@ -29,7 +29,7 @@ from recidiviz.big_query import view_update_manager
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.big_query.export.big_query_view_exporter import BigQueryViewExporter, JsonLinesBigQueryViewExporter
 from recidiviz.big_query.view_update_manager import BigQueryViewNamespace
-from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import DirectIngestGCSFileSystemImpl
+from recidiviz.cloud_storage.gcs_file_system import GCSFileSystemImpl
 
 from recidiviz.calculator.query.state import view_config
 from recidiviz.big_query.export.composite_big_query_view_exporter import CompositeBigQueryViewExporter
@@ -54,7 +54,7 @@ def export_view_data_to_cloud_storage(view_exporter: BigQueryViewExporter = None
         bq_client = BigQueryClientImpl()
         view_exporter = CompositeBigQueryViewExporter(
             bq_client,
-            DirectIngestGCSFileSystemImpl(storage.Client()),
+            GCSFileSystemImpl(storage.Client()),
             [JsonLinesBigQueryViewExporter(bq_client), OptimizedMetricBigQueryViewExporter(bq_client)],
         )
 

@@ -30,13 +30,13 @@ from recidiviz import IngestInfo
 from recidiviz.cloud_functions.cloud_function_utils import GCSFS_NO_CACHING
 from recidiviz.common.ingest_metadata import SystemLevel
 
+from recidiviz.cloud_storage.gcs_file_system import GcsfsFileContentsHandle
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_controller import \
     GcsfsDirectIngestController
-from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import GcsfsFileContentsHandle, \
-    DirectIngestGCSFileSystem
+from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import DirectIngestGCSFileSystem
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import \
     GcsfsIngestArgs, filename_parts_from_path, GcsfsDirectIngestFileType
-from recidiviz.ingest.direct.controllers.gcsfs_path import GcsfsFilePath, GcsfsDirectoryPath
+from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath, GcsfsDirectoryPath
 from recidiviz.ingest.direct.controllers.gcsfs_csv_reader import GcsfsCsvReader
 from recidiviz.ingest.direct.controllers.gcsfs_csv_reader_delegates import ReadOneGcsfsCsvReaderDelegate, \
     SplittingGcsfsCsvReaderDelegate

@@ -25,7 +25,7 @@ import pandas as pd
 
 from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import DirectIngestGCSFileSystem
 from recidiviz.ingest.direct.controllers.gcsfs_csv_reader import GcsfsCsvReaderDelegate
-from recidiviz.ingest.direct.controllers.gcsfs_path import GcsfsFilePath
+from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 
 
 class SimpleGcsfsCsvReaderDelegate(GcsfsCsvReaderDelegate):

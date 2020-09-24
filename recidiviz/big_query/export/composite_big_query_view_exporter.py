@@ -34,8 +34,8 @@ from typing import List, Sequence
 from recidiviz.big_query.big_query_client import BigQueryClient
 from recidiviz.big_query.export.big_query_view_exporter import BigQueryViewExporter
 from recidiviz.big_query.export.export_query_config import ExportBigQueryViewConfig
-from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import DirectIngestGCSFileSystem
-from recidiviz.ingest.direct.controllers.gcsfs_path import GcsfsFilePath
+from recidiviz.cloud_storage.gcs_file_system import GCSFileSystem
+from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 
 QUERY_PAGE_SIZE = 1000
 
@@ -47,7 +47,7 @@ class CompositeBigQueryViewExporter(BigQueryViewExporter):
 
     def __init__(self,
                  bq_client: BigQueryClient,
-                 fs: DirectIngestGCSFileSystem,
+                 fs: GCSFileSystem,
                  delegate_view_exporters: List[BigQueryViewExporter]):
         super(CompositeBigQueryViewExporter, self).__init__(bq_client)
         self.delegate_view_exporters = delegate_view_exporters

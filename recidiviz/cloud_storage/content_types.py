@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2019 Recidiviz, Inc.
+# Copyright (C) 2020 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,14 +14,18 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Factory for GCSFileSystem objects"""
-from google.cloud import storage
+"""Defines types used for general cloud storage code."""
+import abc
+from typing import TypeVar, Generic, Iterator
 
-from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import \
-    DirectIngestGCSFileSystem, DirectIngestGCSFileSystemImpl
+# Type for a single row/chunk returned by the ingest contents iterator.
+FileContentsRowType = TypeVar('IngestContentsRowType')
 
 
-class GcsfsFactory:
-    @classmethod
-    def build(cls) -> DirectIngestGCSFileSystem:
-        return DirectIngestGCSFileSystemImpl(storage.Client())
+class FileContentsHandle(Generic[FileContentsRowType]):
+    @abc.abstractmethod
+    def get_contents_iterator(self) -> Iterator[FileContentsRowType]:
+        """Should be overridden by subclasses to return an iterator over contents of the desired format.
+        Will throw if the contents could not be read (i.e. if they no longer
+        exist).
+        """

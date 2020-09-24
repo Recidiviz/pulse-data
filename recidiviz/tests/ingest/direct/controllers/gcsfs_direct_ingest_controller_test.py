@@ -26,16 +26,17 @@ from typing import List, Optional, Set, Tuple
 from freezegun import freeze_time
 from mock import patch, Mock
 
+from recidiviz.cloud_storage.gcs_file_system import GcsfsFileContentsHandle
 from recidiviz.common.ingest_metadata import SystemLevel
 from recidiviz.common.serialization import attr_to_json_dict, \
     datetime_to_serializable, serializable_to_datetime, attr_from_json_dict
 from recidiviz.ingest.direct.controllers.csv_gcsfs_direct_ingest_controller \
     import CsvGcsfsDirectIngestController
 from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import \
-    SPLIT_FILE_STORAGE_SUBDIR, GcsfsFileContentsHandle
+    SPLIT_FILE_STORAGE_SUBDIR
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_controller import \
     GcsfsDirectIngestController
-from recidiviz.ingest.direct.controllers.gcsfs_path import GcsfsFilePath, \
+from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath, \
     GcsfsDirectoryPath
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import \
     GcsfsIngestArgs, filename_parts_from_path, GcsfsDirectIngestFileType, GcsfsIngestViewExportArgs
@@ -50,7 +51,7 @@ from recidiviz.tests.ingest.direct.direct_ingest_util import \
     path_for_fixture_file, \
     run_task_queues_to_empty, check_all_paths_processed, FakeDirectIngestRawFileImportManager, add_paths_with_tags
 from recidiviz.tests.ingest.direct.fake_direct_ingest_big_query_client import FakeDirectIngestBigQueryClient
-from recidiviz.tests.ingest.direct.fake_direct_ingest_gcs_file_system import FakeDirectIngestGCSFileSystem
+from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.tests.ingest.direct. \
     fake_synchronous_direct_ingest_cloud_task_manager import \
     FakeSynchronousDirectIngestCloudTaskManager
@@ -313,7 +314,7 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
             self, controller, file_tags, unexpected_tags)
 
         split_paths = {path
-                       for path in controller.fs.all_paths
+                       for path in controller.fs.gcs_file_system.all_paths
                        if controller.fs.is_split_file(path)}
         self.assertFalse(split_paths)
         self.validate_file_metadata(controller)
@@ -332,7 +333,7 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
             self, controller, file_tags, unexpected_tags)
 
         split_paths = {path
-                       for path in controller.fs.all_paths
+                       for path in controller.fs.gcs_file_system.all_paths
                        if controller.fs.is_split_file(path)}
         self.assertFalse(split_paths)
 
@@ -365,7 +366,7 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
             self, controller, file_tags, unexpected_tags)
 
         processed_split_file_paths = defaultdict(list)
-        for path in controller.fs.all_paths:
+        for path in controller.fs.gcs_file_system.all_paths:
             if self._path_in_split_file_storage_subdir(path, controller):
                 file_tag = filename_parts_from_path(path).file_tag
                 processed_split_file_paths[file_tag].append(path)
@@ -408,7 +409,7 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
             self, controller, file_tags, unexpected_tags)
 
         split_paths = {path
-                       for path in controller.fs.all_paths
+                       for path in controller.fs.gcs_file_system.all_paths
                        if controller.fs.is_split_file(path)}
         self.assertFalse(split_paths)
 
@@ -440,7 +441,7 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
         add_paths_with_tags_and_process(self, controller, file_tags)
 
         split_paths = {path
-                       for path in controller.fs.all_paths
+                       for path in controller.fs.gcs_file_system.all_paths
                        if controller.fs.is_split_file(path)}
         self.assertFalse(split_paths)
 
@@ -463,7 +464,7 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
         add_paths_with_tags_and_process(self, controller, file_tags)
 
         split_paths = {path
-                       for path in controller.fs.all_paths
+                       for path in controller.fs.gcs_file_system.all_paths
                        if controller.fs.is_split_file(path)}
         self.assertFalse(split_paths)
 
@@ -497,18 +498,18 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
         file_path2 = \
             path_for_fixture_file(controller, 'tagB.csv',
                                   should_normalize=False)
-        if not isinstance(controller.fs, FakeDirectIngestGCSFileSystem):
+        if not isinstance(controller.fs.gcs_file_system, FakeGCSFileSystem):
             raise ValueError(f"Controller fs must have type "
-                             f"FakeDirectIngestGCSFileSystem. Found instead "
-                             f"type [{type(controller.fs)}]")
+                             f"FakeGCSFileSystem. Found instead "
+                             f"type [{type(controller.fs.gcs_file_system)}]")
 
-        controller.fs.test_add_path(file_path)
+        controller.fs.gcs_file_system.test_add_path(file_path)
 
         while task_manager.scheduler_tasks:
             task_manager.test_run_next_scheduler_task()
             task_manager.test_pop_finished_scheduler_task()
 
-        controller.fs.test_add_path(file_path2)
+        controller.fs.gcs_file_system.test_add_path(file_path2)
 
         # Task for handling unnormalized file_path2
         task_manager.test_run_next_scheduler_task()
@@ -553,13 +554,13 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
         file_path2 = \
             path_for_fixture_file(controller, 'tagB.csv',
                                   should_normalize=False)
-        if not isinstance(controller.fs, FakeDirectIngestGCSFileSystem):
+        if not isinstance(controller.fs.gcs_file_system, FakeGCSFileSystem):
             raise ValueError(f"Controller fs must have type "
-                             f"FakeDirectIngestGCSFileSystem. Found instead "
-                             f"type [{type(controller.fs)}]")
+                             f"FakeGCSFileSystem. Found instead "
+                             f"type [{type(controller.fs.gcs_file_system)}]")
 
-        controller.fs.test_add_path(file_path)
-        controller.fs.test_add_path(file_path2)
+        controller.fs.gcs_file_system.test_add_path(file_path)
+        controller.fs.gcs_file_system.test_add_path(file_path2)
 
         # At this point we have a series of tasks handling / renaming /
         # splitting the new files, then scheduling the next job. They run in
@@ -611,12 +612,12 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
                                   should_normalize=True,
                                   dt=dt)
 
-        if not isinstance(controller.fs, FakeDirectIngestGCSFileSystem):
+        if not isinstance(controller.fs.gcs_file_system, FakeGCSFileSystem):
             raise ValueError(f"Controller fs must have type "
-                             f"FakeDirectIngestGCSFileSystem. Found instead "
-                             f"type [{type(controller.fs)}]")
+                             f"FakeGCSFileSystem. Found instead "
+                             f"type [{type(controller.fs.gcs_file_system)}]")
 
-        controller.fs.test_add_path(file_path)
+        controller.fs.gcs_file_system.test_add_path(file_path)
         parts = filename_parts_from_path(file_path)
         metadata = controller.file_metadata_manager.register_ingest_file_export_job(GcsfsIngestViewExportArgs(
             ingest_view_name=parts.file_tag,
@@ -676,13 +677,13 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
                                      'tagB.csv',
                                      should_normalize=False)
 
-        if not isinstance(controller.fs, FakeDirectIngestGCSFileSystem):
+        if not isinstance(controller.fs.gcs_file_system, FakeGCSFileSystem):
             raise ValueError(f"Controller fs must have type "
-                             f"FakeDirectIngestGCSFileSystem. Found instead "
-                             f"type [{type(controller.fs)}]")
+                             f"FakeGCSFileSystem. Found instead "
+                             f"type [{type(controller.fs.gcs_file_system)}]")
 
         # This will kick the scheduler once
-        controller.fs.test_add_path(path)
+        controller.fs.gcs_file_system.test_add_path(path)
 
         # Kick the scheduler 5 times
         for _ in range(5):
@@ -755,7 +756,7 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
                                         pre_normalize_filename=True)
 
         processed_split_file_paths = defaultdict(list)
-        for path in controller.fs.all_paths:
+        for path in controller.fs.gcs_file_system.all_paths:
             if self._path_in_split_file_storage_subdir(path, controller):
                 file_tag = filename_parts_from_path(path).file_tag
                 processed_split_file_paths[file_tag].append(path)
@@ -789,7 +790,7 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
                                         file_type=GcsfsDirectIngestFileType.INGEST_VIEW)
 
         processed_split_file_paths = defaultdict(list)
-        for path in controller.fs.all_paths:
+        for path in controller.fs.gcs_file_system.all_paths:
             if self._path_in_split_file_storage_subdir(path, controller):
                 file_tag = filename_parts_from_path(path).file_tag
                 processed_split_file_paths[file_tag].append(path)
@@ -825,7 +826,7 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
                                         file_type=GcsfsDirectIngestFileType.RAW_DATA)
 
         processed_split_file_paths = defaultdict(list)
-        for path in controller.fs.all_paths:
+        for path in controller.fs.gcs_file_system.all_paths:
             if self._path_in_split_file_storage_subdir(path, controller):
                 file_tag = filename_parts_from_path(path).file_tag
                 processed_split_file_paths[file_tag].append(path)
@@ -871,14 +872,14 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
                                         file_type=GcsfsDirectIngestFileType.RAW_DATA)
 
         processed_split_file_paths = defaultdict(list)
-        for path in controller.fs.all_paths:
+        for path in controller.fs.gcs_file_system.all_paths:
             if self._path_in_split_file_storage_subdir(path, controller):
                 file_tag = filename_parts_from_path(path).file_tag
                 processed_split_file_paths[file_tag].append(path)
 
         self.assertEqual(0, len(processed_split_file_paths.keys()))
 
-        for path in controller.fs.all_paths:
+        for path in controller.fs.gcs_file_system.all_paths:
             if not isinstance(path, GcsfsFilePath):
                 continue
             self.assertTrue('file_split' not in path.file_name)
@@ -909,7 +910,7 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
             'tagC.csv',
             should_normalize=True,
             dt=datetime.datetime.fromisoformat('2019-09-19'))
-        controller.fs.test_add_path(file_path, fail_handle_file_call=True)
+        controller.fs.gcs_file_system.test_add_path(file_path, fail_handle_file_call=True)
 
         controller.kick_scheduler(just_finished_job=False)
 
@@ -955,8 +956,8 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
             should_normalize=True,
             dt=datetime.datetime.fromisoformat(previous_date))
 
-        controller.fs.test_add_path(processed_file_from_prev_day)
-        controller.fs.test_add_path(unexpected_file_path_from_prev_day)
+        controller.fs.gcs_file_system.test_add_path(processed_file_from_prev_day)
+        controller.fs.gcs_file_system.test_add_path(unexpected_file_path_from_prev_day)
 
         file_tags = list(sorted(controller.get_file_tag_rank_list()))
 
@@ -968,7 +969,7 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
                                         unexpected_tags=['Unexpected_Tag'])
 
         paths_from_prev_date = []
-        for path in controller.fs.all_paths:
+        for path in controller.fs.gcs_file_system.all_paths:
             expected_storage_dir_str = os.path.join(
                 controller.storage_directory_path.abs_path(), previous_date)
             if path.abs_path().startswith(expected_storage_dir_str):
@@ -1004,8 +1005,8 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
             file_type=GcsfsDirectIngestFileType.RAW_DATA,
             dt=prev_date_datetime)
 
-        controller.fs.test_add_path(processed_file_from_prev_day)
-        controller.fs.test_add_path(unexpected_file_path_from_prev_day)
+        controller.fs.gcs_file_system.test_add_path(processed_file_from_prev_day)
+        controller.fs.gcs_file_system.test_add_path(unexpected_file_path_from_prev_day)
 
         file_tags = list(sorted(controller.get_file_tag_rank_list()))
 
@@ -1019,7 +1020,7 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
                                         unexpected_tags=unexpected_tags)
 
         paths_from_prev_date = []
-        for path in controller.fs.all_paths:
+        for path in controller.fs.gcs_file_system.all_paths:
             parts = filename_parts_from_path(path)
             expected_storage_dir_str = os.path.join(
                 controller.storage_directory_path.abs_path(),
@@ -1064,8 +1065,8 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
             file_type=GcsfsDirectIngestFileType.RAW_DATA,
             dt=prev_date_datetime)
 
-        controller.fs.test_add_path(processed_file_from_prev_day)
-        controller.fs.test_add_path(unexpected_file_path_from_prev_day)
+        controller.fs.gcs_file_system.test_add_path(processed_file_from_prev_day)
+        controller.fs.gcs_file_system.test_add_path(unexpected_file_path_from_prev_day)
 
         file_tags = list(sorted(controller.get_file_tag_rank_list()))
 
@@ -1079,7 +1080,7 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
                                         unexpected_tags=unexpected_tags)
 
         paths_from_prev_date = []
-        for path in controller.fs.all_paths:
+        for path in controller.fs.gcs_file_system.all_paths:
             parts = filename_parts_from_path(path)
             expected_storage_dir_str = os.path.join(
                 controller.storage_directory_path.abs_path(),
@@ -1110,10 +1111,10 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
             StateTestGcsfsDirectIngestController,
             self.FIXTURE_PATH_PREFIX,
             run_async=False)
-        if not isinstance(controller.fs, FakeDirectIngestGCSFileSystem):
+        if not isinstance(controller.fs.gcs_file_system, FakeGCSFileSystem):
             raise ValueError(f"Controller fs must have type "
-                             f"FakeDirectIngestGCSFileSystem. Found instead "
-                             f"type [{type(controller.fs)}]")
+                             f"FakeGCSFileSystem. Found instead "
+                             f"type [{type(controller.fs.gcs_file_system)}]")
 
         prev_date_datetime = datetime.datetime.fromisoformat('2019-09-15')
         current_date_datetime = datetime.datetime.fromisoformat('2019-09-16')
@@ -1140,17 +1141,17 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
             should_normalize=True,
             dt=current_date_datetime)
 
-        controller.fs.test_add_path(processed_file_from_prev_day)
-        controller.fs.test_add_path(unexpected_file_path_from_prev_day)
-        controller.fs.test_add_path(file_path_from_current_day)
+        controller.fs.gcs_file_system.test_add_path(processed_file_from_prev_day)
+        controller.fs.gcs_file_system.test_add_path(unexpected_file_path_from_prev_day)
+        controller.fs.gcs_file_system.test_add_path(file_path_from_current_day)
 
         run_task_queues_to_empty(controller)
 
-        self.assertTrue(len(controller.fs.all_paths), 3)
+        self.assertTrue(len(controller.fs.gcs_file_system.all_paths), 3)
 
         storage_paths = []
         processed_paths = []
-        for path in controller.fs.all_paths:
+        for path in controller.fs.gcs_file_system.all_paths:
             if self._path_in_storage_dir(path, controller):
                 if 'Unexpected_Tag' in path.abs_path():
                     self.fail('Unexpected tag found in storage dir')
@@ -1189,10 +1190,10 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
             StateTestGcsfsDirectIngestController,
             self.FIXTURE_PATH_PREFIX,
             run_async=False)
-        if not isinstance(controller.fs, FakeDirectIngestGCSFileSystem):
+        if not isinstance(controller.fs.gcs_file_system, FakeGCSFileSystem):
             raise ValueError(f"Controller fs must have type "
-                             f"FakeDirectIngestGCSFileSystem. Found instead "
-                             f"type [{type(controller.fs)}]")
+                             f"FakeGCSFileSystem. Found instead "
+                             f"type [{type(controller.fs.gcs_file_system)}]")
 
         prev_date_datetime = datetime.datetime.fromisoformat('2019-09-15')
         current_date_datetime = datetime.datetime.fromisoformat('2019-09-16')
@@ -1222,17 +1223,17 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
             file_type=GcsfsDirectIngestFileType.INGEST_VIEW,
             dt=current_date_datetime)
 
-        controller.fs.test_add_path(processed_file_from_prev_day)
-        controller.fs.test_add_path(unexpected_file_path_from_prev_day)
-        controller.fs.test_add_path(file_path_from_current_day)
+        controller.fs.gcs_file_system.test_add_path(processed_file_from_prev_day)
+        controller.fs.gcs_file_system.test_add_path(unexpected_file_path_from_prev_day)
+        controller.fs.gcs_file_system.test_add_path(file_path_from_current_day)
 
         run_task_queues_to_empty(controller)
 
-        self.assertTrue(len(controller.fs.all_paths), 3)
+        self.assertTrue(len(controller.fs.gcs_file_system.all_paths), 3)
 
         storage_paths = []
         processed_paths = []
-        for path in controller.fs.all_paths:
+        for path in controller.fs.gcs_file_system.all_paths:
             if self._path_in_storage_dir(path, controller):
                 if 'Unexpected_Tag' in path.abs_path():
                     self.fail('Unexpected tag found in storage dir')
@@ -1279,10 +1280,10 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
             run_async=False,
             max_delay_sec_between_files=1)
 
-        if not isinstance(controller.fs, FakeDirectIngestGCSFileSystem):
+        if not isinstance(controller.fs.gcs_file_system, FakeGCSFileSystem):
             raise ValueError(f"Controller fs must have type "
-                             f"FakeDirectIngestGCSFileSystem. Found instead "
-                             f"type [{type(controller.fs)}]")
+                             f"FakeGCSFileSystem. Found instead "
+                             f"type [{type(controller.fs.gcs_file_system)}]")
 
         current_date_datetime = datetime.datetime.utcnow()
         prev_date_datetime = current_date_datetime - datetime.timedelta(days=1)
@@ -1300,8 +1301,8 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
                 should_normalize=True,
                 file_type=GcsfsDirectIngestFileType.RAW_DATA)
 
-            controller.fs.test_add_path(unexpected_file_path_from_prev_day)
-            controller.fs.test_add_path(processed_file_from_prev_day)
+            controller.fs.gcs_file_system.test_add_path(unexpected_file_path_from_prev_day)
+            controller.fs.gcs_file_system.test_add_path(processed_file_from_prev_day)
 
         run_task_queues_to_empty(controller)
 
@@ -1311,15 +1312,15 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
             should_normalize=True,
             file_type=GcsfsDirectIngestFileType.RAW_DATA)
 
-        controller.fs.test_add_path(file_path_from_current_day)
+        controller.fs.gcs_file_system.test_add_path(file_path_from_current_day)
 
         run_task_queues_to_empty(controller)
 
-        self.assertTrue(len(controller.fs.all_paths), 3)
+        self.assertTrue(len(controller.fs.gcs_file_system.all_paths), 3)
 
         storage_paths = []
         processed_paths = []
-        for path in controller.fs.all_paths:
+        for path in controller.fs.gcs_file_system.all_paths:
             if self._path_in_storage_dir(path, controller):
                 if 'Unexpected_Tag' in path.abs_path():
                     self.fail('Unexpected tag found in storage dir')
@@ -1387,14 +1388,14 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
             path_for_fixture_file(controller, 'tagC.csv',
                                   should_normalize=False)
 
-        if not isinstance(controller.fs, FakeDirectIngestGCSFileSystem):
+        if not isinstance(controller.fs.gcs_file_system, FakeGCSFileSystem):
             raise ValueError(f"Controller fs must have type "
-                             f"FakeDirectIngestGCSFileSystem. Found instead "
-                             f"type [{type(controller.fs)}]")
+                             f"FakeGCSFileSystem. Found instead "
+                             f"type [{type(controller.fs.gcs_file_system)}]")
 
         # Upload two new files without triggering the controller
-        controller.fs.test_add_path(file_path, fail_handle_file_call=True)
-        controller.fs.test_add_path(file_path2, fail_handle_file_call=True)
+        controller.fs.gcs_file_system.test_add_path(file_path, fail_handle_file_call=True)
+        controller.fs.gcs_file_system.test_add_path(file_path2, fail_handle_file_call=True)
 
         self.assertEqual(
             0,
@@ -1404,7 +1405,7 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
             task_manager.get_process_job_queue_info(controller.region).size())
 
         # Later file that succeeds will trigger proper upload of all files
-        controller.fs.test_add_path(file_path3)
+        controller.fs.gcs_file_system.test_add_path(file_path3)
 
         run_task_queues_to_empty(controller)
         check_all_paths_processed(self,
@@ -1435,15 +1436,15 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
             path_for_fixture_file(controller, 'tagC.csv',
                                   should_normalize=False)
 
-        if not isinstance(controller.fs, FakeDirectIngestGCSFileSystem):
+        if not isinstance(controller.fs.gcs_file_system, FakeGCSFileSystem):
             raise ValueError(f"Controller fs must have type "
-                             f"FakeDirectIngestGCSFileSystem. Found instead "
-                             f"type [{type(controller.fs)}]")
+                             f"FakeGCSFileSystem. Found instead "
+                             f"type [{type(controller.fs.gcs_file_system)}]")
 
         # Upload new files without triggering the controller
-        controller.fs.test_add_path(file_path, fail_handle_file_call=True)
-        controller.fs.test_add_path(file_path2, fail_handle_file_call=True)
-        controller.fs.test_add_path(file_path3, fail_handle_file_call=True)
+        controller.fs.gcs_file_system.test_add_path(file_path, fail_handle_file_call=True)
+        controller.fs.gcs_file_system.test_add_path(file_path2, fail_handle_file_call=True)
+        controller.fs.gcs_file_system.test_add_path(file_path3, fail_handle_file_call=True)
 
         self.assertEqual(
             0,
@@ -1452,7 +1453,7 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
             0,
             task_manager.get_process_job_queue_info(controller.region).size())
 
-        for path in controller.fs.all_paths:
+        for path in controller.fs.gcs_file_system.all_paths:
             self.assertFalse(controller.fs.is_normalized_file_path(path))
 
         # Cron job to handle unseen files triggers later
@@ -1462,7 +1463,7 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
 
         run_task_queues_to_empty(controller)
 
-        for path in controller.fs.all_paths:
+        for path in controller.fs.gcs_file_system.all_paths:
             self.assertTrue(controller.fs.is_normalized_file_path(path))
 
         self.validate_file_metadata(controller)
@@ -1472,7 +1473,7 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
         controller = build_gcsfs_controller_for_tests(StateTestGcsfsDirectIngestController,
                                                       self.FIXTURE_PATH_PREFIX,
                                                       run_async=True,
-                                                      fake_fs=FakeDirectIngestGCSFileSystem(can_start_ingest=False))
+                                                      can_start_ingest=False)
 
         file_tags = list(
             reversed(sorted(controller.get_file_tag_rank_list())))
@@ -1480,7 +1481,7 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
         add_paths_with_tags(controller, file_tags, pre_normalize_filename=False, file_type=None)
         run_task_queues_to_empty(controller)
 
-        for path in controller.fs.all_paths:
+        for path in controller.fs.gcs_file_system.all_paths:
             self.assertTrue(controller.fs.is_normalized_file_path(path))
             self.assertTrue(controller.fs.is_seen_unprocessed_file(path))
             self.assertFalse(controller.fs.is_split_file(path))
@@ -1496,7 +1497,7 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
         controller = build_gcsfs_controller_for_tests(StateTestGcsfsDirectIngestController,
                                                       self.FIXTURE_PATH_PREFIX,
                                                       run_async=True,
-                                                      fake_fs=FakeDirectIngestGCSFileSystem(can_start_ingest=False))
+                                                      can_start_ingest=False)
 
         file_tags = list(
             reversed(sorted(controller.get_file_tag_rank_list())))
@@ -1504,7 +1505,7 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
         add_paths_with_tags(controller, file_tags, pre_normalize_filename=False, file_type=None)
         run_task_queues_to_empty(controller)
 
-        for path in controller.fs.all_paths:
+        for path in controller.fs.gcs_file_system.all_paths:
             self.assertTrue(controller.fs.is_normalized_file_path(path))
             self.assertTrue(controller.fs.is_seen_unprocessed_file(path))
             self.assertFalse(controller.fs.is_split_file(path))
@@ -1528,7 +1529,7 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
 
         self.assertEqual(str(e.exception), 'Bad environment [production] for region [us_xx].')
 
-        for path in controller.fs.all_paths:
+        for path in controller.fs.gcs_file_system.all_paths:
             self.assertTrue(controller.fs.is_normalized_file_path(path))
             self.assertTrue(controller.fs.is_seen_unprocessed_file(path))
             self.assertFalse(controller.fs.is_split_file(path))
@@ -1546,10 +1547,10 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
             self.FIXTURE_PATH_PREFIX,
             run_async=False)
 
-        if not isinstance(controller.fs, FakeDirectIngestGCSFileSystem):
+        if not isinstance(controller.fs.gcs_file_system, FakeGCSFileSystem):
             raise ValueError(f"Controller fs must have type "
-                             f"FakeDirectIngestGCSFileSystem. Found instead "
-                             f"type [{type(controller.fs)}]")
+                             f"FakeGCSFileSystem. Found instead "
+                             f"type [{type(controller.fs.gcs_file_system)}]")
 
         subdir_path = \
             path_for_fixture_file(controller, 'subdir/',
@@ -1569,7 +1570,7 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
         ]
 
         for path in paths:
-            controller.fs.test_add_path(path)
+            controller.fs.gcs_file_system.test_add_path(path)
 
         run_task_queues_to_empty(controller)
 
@@ -1577,7 +1578,7 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
         storage_file_paths = []
         ingest_file_paths = []
 
-        for path in controller.fs.all_paths:
+        for path in controller.fs.gcs_file_system.all_paths:
             if isinstance(path, GcsfsDirectoryPath):
                 dir_paths_found.append(path)
                 continue

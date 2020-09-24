@@ -31,12 +31,12 @@ from recidiviz.common.constants.county.booking import CustodyStatus
 from recidiviz.common.constants.county.charge import ChargeDegree, ChargeClass
 from recidiviz.common.constants.person_characteristics import Race
 from recidiviz.common.ingest_metadata import SystemLevel, IngestMetadata
+from recidiviz.cloud_storage.gcs_file_system import GcsfsFileContentsHandle
 from recidiviz.ingest.direct.controllers.csv_gcsfs_direct_ingest_controller \
     import CsvGcsfsDirectIngestController
-from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import GcsfsFileContentsHandle
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import \
     GcsfsIngestArgs, filename_parts_from_path
-from recidiviz.ingest.direct.controllers.gcsfs_path import GcsfsFilePath
+from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.persistence import persistence
 from recidiviz.utils.environment import get_gae_environment
 
@@ -156,7 +156,7 @@ class UsTxBrazosController(CsvGcsfsDirectIngestController):
         overrides_builder.ignore('CLASS B MISDEMEANOR', ChargeDegree)
         overrides_builder.ignore('CLASS C MISDEMEANOR', ChargeDegree)
 
-        # TODO: We are hoping this is attached to a charge that has changed in
+        # TODO(#4153): We are hoping this is attached to a charge that has changed in
         #  some other way that we can keep track of, but verify that we're not
         #  losing information here.
         overrides_builder.ignore('CLOSED', BondStatus)
