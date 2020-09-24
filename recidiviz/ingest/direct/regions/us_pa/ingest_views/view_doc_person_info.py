@@ -111,7 +111,7 @@ people AS (
   FROM
     most_recent_info
   LEFT OUTER JOIN (
-    SELECT recidiviz_master_person_id, STRING_AGG(inmate_number, ',') AS inmate_numbers
+    SELECT recidiviz_master_person_id, STRING_AGG(inmate_number, ',' ORDER BY inmate_number) AS inmate_numbers
     FROM search_inmate_info_with_master_ids
     GROUP BY recidiviz_master_person_id
   ) AS inmate_numbers_grouping
