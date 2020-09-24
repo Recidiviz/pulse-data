@@ -77,7 +77,7 @@ ACTIVE_PROGRAM_PARTICIPATION_BY_REGION_VIEW_QUERY_TEMPLATE = \
       participants_with_race_or_ethnicity,
       {unnested_race_or_ethnicity_dimension},
       {region_dimension},
-      {supervision_dimension}
+      {supervision_type_dimension}
     WHERE inclusion_priority = 1
     GROUP BY state_code, supervision_type, race_or_ethnicity, region_id
     ORDER BY state_code, supervision_type, race_or_ethnicity, region_id
@@ -99,7 +99,7 @@ ACTIVE_PROGRAM_PARTICIPATION_BY_REGION_VIEW_BUILDER = MetricBigQueryViewBuilder(
     race_or_ethnicity_dimension=bq_utils.unnest_race_and_ethnicity(),
     unnested_race_or_ethnicity_dimension=bq_utils.unnest_column('race_or_ethnicity', 'race_or_ethnicity'),
     region_dimension=bq_utils.unnest_column('region_id', 'region_id'),
-    supervision_dimension=bq_utils.unnest_supervision_type()
+    supervision_type_dimension=bq_utils.unnest_supervision_type()
 )
 
 if __name__ == '__main__':

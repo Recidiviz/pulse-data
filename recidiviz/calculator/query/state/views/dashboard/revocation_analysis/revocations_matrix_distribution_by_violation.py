@@ -64,7 +64,7 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_VIOLATION_QUERY_TEMPLATE = \
     JOIN `{project_id}.{reference_views_dataset}.most_recent_job_id_by_metric_and_state_code_materialized` job
         USING (state_code, job_id, year, month, metric_period_months, metric_type),
     {district_dimension},
-    {supervision_dimension},
+    {supervision_type_dimension},
     {charge_category_dimension}
     WHERE revocation_type = 'REINCARCERATION'
         AND methodology = 'PERSON'
@@ -89,7 +89,7 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_VIOLATION_VIEW_BUILDER = MetricBigQueryViewBu
     most_severe_violation_type_subtype_grouping=
     state_specific_query_strings.state_specific_most_severe_violation_type_subtype_grouping(),
     district_dimension=bq_utils.unnest_district(),
-    supervision_dimension=bq_utils.unnest_supervision_type(),
+    supervision_type_dimension=bq_utils.unnest_supervision_type(),
     charge_category_dimension=bq_utils.unnest_charge_category(),
 )
 

@@ -42,11 +42,12 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_GENDER_QUERY_TEMPLATE = \
       gender,
       risk_level,
       supervision_type,
+      supervision_level,
       charge_category,
       district,
       metric_period_months    
     FROM `{project_id}.{reference_views_dataset}.supervision_matrix_by_person`
-    GROUP BY state_code, violation_type, reported_violations, gender, risk_level, supervision_type, charge_category,
+    GROUP BY state_code, violation_type, reported_violations, gender, risk_level, supervision_type, supervision_level, charge_category,
       district, metric_period_months
   ), termination_counts AS (
      SELECT
@@ -57,11 +58,12 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_GENDER_QUERY_TEMPLATE = \
       gender,
       risk_level,
       supervision_type,
+      supervision_level,
       charge_category,
       district,
       metric_period_months    
     FROM `{project_id}.{reference_views_dataset}.supervision_termination_matrix_by_person` 
-    GROUP BY state_code, violation_type, reported_violations, gender, risk_level, supervision_type, charge_category,
+    GROUP BY state_code, violation_type, reported_violations, gender, risk_level, supervision_type, supervision_level, charge_category,
       district, metric_period_months
   ), revocation_counts AS (
     SELECT
@@ -72,11 +74,12 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_GENDER_QUERY_TEMPLATE = \
       gender,
       risk_level,
       supervision_type,
+      supervision_level,
       charge_category,
       district,
       metric_period_months
     FROM `{project_id}.{reference_views_dataset}.revocations_matrix_by_person`
-    GROUP BY state_code, violation_type, reported_violations, gender, risk_level, supervision_type, charge_category,
+    GROUP BY state_code, violation_type, reported_violations, gender, risk_level, supervision_type, supervision_level, charge_category,
       district, metric_period_months
   )
  
@@ -91,6 +94,7 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_GENDER_QUERY_TEMPLATE = \
       gender,
       risk_level,
       supervision_type,
+      supervision_level,
       charge_category,
       district,
       metric_period_months
@@ -98,13 +102,13 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_GENDER_QUERY_TEMPLATE = \
       supervision_counts
     LEFT JOIN
       revocation_counts
-    USING (state_code, violation_type, reported_violations, gender, risk_level, supervision_type, charge_category,
+    USING (state_code, violation_type, reported_violations, gender, risk_level, supervision_type, supervision_level, charge_category,
       district, metric_period_months)
     LEFT JOIN
       termination_counts
-    USING (state_code, violation_type, reported_violations, gender, risk_level, supervision_type, charge_category,
+    USING (state_code, violation_type, reported_violations, gender, risk_level, supervision_type, supervision_level, charge_category,
       district, metric_period_months)
-    ORDER BY state_code, metric_period_months, district, supervision_type, gender, risk_level, violation_type,
+    ORDER BY state_code, metric_period_months, district, supervision_type, supervision_level, gender, risk_level, violation_type,
       reported_violations, charge_category
     """
 
@@ -112,7 +116,7 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_GENDER_VIEW_BUILDER = MetricBigQueryViewBuild
     dataset_id=dataset_config.DASHBOARD_VIEWS_DATASET,
     view_id=REVOCATIONS_MATRIX_DISTRIBUTION_BY_GENDER_VIEW_NAME,
     view_query_template=REVOCATIONS_MATRIX_DISTRIBUTION_BY_GENDER_QUERY_TEMPLATE,
-    dimensions=['state_code', 'metric_period_months', 'district', 'supervision_type',
+    dimensions=['state_code', 'metric_period_months', 'district', 'supervision_type', 'supervision_level',
                 'violation_type', 'reported_violations', 'charge_category', 'gender', 'risk_level'],
     description=REVOCATIONS_MATRIX_DISTRIBUTION_BY_GENDER_DESCRIPTION,
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,

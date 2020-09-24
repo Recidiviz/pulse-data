@@ -44,7 +44,7 @@ EVENT_BASED_SUPERVISION_QUERY_TEMPLATE = \
     JOIN `{project_id}.{reference_views_dataset}.most_recent_job_id_by_metric_and_state_code_materialized` job
         USING (state_code, job_id, year, month, metric_period_months, metric_type),
     {district_dimension},
-    {supervision_dimension}
+    {supervision_type_dimension}
     WHERE methodology = 'EVENT'
       AND metric_period_months = 0
       AND person_id IS NOT NULL
@@ -61,7 +61,7 @@ EVENT_BASED_SUPERVISION_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     metrics_dataset=dataset_config.DATAFLOW_METRICS_DATASET,
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
     district_dimension=bq_utils.unnest_district(),
-    supervision_dimension=bq_utils.unnest_supervision_type(),
+    supervision_type_dimension=bq_utils.unnest_supervision_type(),
 )
 
 if __name__ == '__main__':
