@@ -40,11 +40,12 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_DISTRICT_QUERY_TEMPLATE = \
       reported_violations,
       COUNT(DISTINCT person_id) AS total_supervision_count,
       supervision_type,
+      supervision_level,
       charge_category,
       district,
       metric_period_months    
     FROM `{project_id}.{reference_views_dataset}.supervision_matrix_by_person`
-    GROUP BY state_code, violation_type, reported_violations, supervision_type, charge_category, district, metric_period_months
+    GROUP BY state_code, violation_type, reported_violations, supervision_type, supervision_level, charge_category, district, metric_period_months
   ), termination_counts AS (
      SELECT
       state_code, 
@@ -52,11 +53,12 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_DISTRICT_QUERY_TEMPLATE = \
       reported_violations,
       COUNT(DISTINCT person_id) AS termination_count,
       supervision_type,
+      supervision_level,
       charge_category,
       district,
       metric_period_months    
     FROM `{project_id}.{reference_views_dataset}.supervision_termination_matrix_by_person` 
-    GROUP BY state_code, violation_type, reported_violations, supervision_type, charge_category, district, metric_period_months
+    GROUP BY state_code, violation_type, reported_violations, supervision_type, supervision_level, charge_category, district, metric_period_months
   ), revocation_counts AS (
     SELECT
       state_code,
@@ -64,11 +66,12 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_DISTRICT_QUERY_TEMPLATE = \
       reported_violations,
       COUNT(DISTINCT person_id) AS population_count,
       supervision_type,
+      supervision_level,
       charge_category,
       district,
       metric_period_months
     FROM `{project_id}.{reference_views_dataset}.revocations_matrix_by_person`
-    GROUP BY state_code, violation_type, reported_violations, supervision_type, charge_category, district, metric_period_months
+    GROUP BY state_code, violation_type, reported_violations, supervision_type, supervision_level, charge_category, district, metric_period_months
   )
  
     SELECT
@@ -79,6 +82,7 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_DISTRICT_QUERY_TEMPLATE = \
       IFNULL(termination_count, 0) AS total_exit_count,
       total_supervision_count,
       supervision_type,
+      supervision_level,
       charge_category,
       district,
       metric_period_months
@@ -86,18 +90,18 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_DISTRICT_QUERY_TEMPLATE = \
       supervision_counts
     LEFT JOIN
       revocation_counts
-    USING (state_code, violation_type, reported_violations, supervision_type, charge_category, district, metric_period_months)
+    USING (state_code, violation_type, reported_violations, supervision_type, supervision_level,charge_category, district, metric_period_months)
     LEFT JOIN
       termination_counts
-    USING (state_code, violation_type, reported_violations, supervision_type, charge_category, district, metric_period_months)
-    ORDER BY state_code, metric_period_months, district, supervision_type, violation_type, reported_violations, charge_category
+    USING (state_code, violation_type, reported_violations, supervision_type, supervision_level, charge_category, district, metric_period_months)
+    ORDER BY state_code, metric_period_months, district, supervision_type, supervision_level, violation_type, reported_violations, charge_category
     """
 
 REVOCATIONS_MATRIX_DISTRIBUTION_BY_DISTRICT_VIEW_BUILDER = MetricBigQueryViewBuilder(
     dataset_id=dataset_config.DASHBOARD_VIEWS_DATASET,
     view_id=REVOCATIONS_MATRIX_DISTRIBUTION_BY_DISTRICT_VIEW_NAME,
     view_query_template=REVOCATIONS_MATRIX_DISTRIBUTION_BY_DISTRICT_QUERY_TEMPLATE,
-    dimensions=['state_code', 'metric_period_months', 'district', 'supervision_type',
+    dimensions=['state_code', 'metric_period_months', 'district', 'supervision_type', 'supervision_level',
                 'violation_type', 'reported_violations', 'charge_category'],
     description=REVOCATIONS_MATRIX_DISTRIBUTION_BY_DISTRICT_DESCRIPTION,
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,

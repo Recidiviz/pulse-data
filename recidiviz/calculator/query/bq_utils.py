@@ -68,3 +68,43 @@ def period_to_sentence_group_joins(period_type: str, sentence_type: str) -> str:
       LEFT JOIN
         `{{project_id}}.{{base_dataset}}.state_sentence_group`
       USING (sentence_group_id)"""
+
+
+def supervision_specific_district_groupings(district_column: str, judicial_district_column: str) -> str:
+    return f"""IFNULL(CASE WHEN supervision_type = 'PROBATION' THEN
+        {state_specific_judicial_district_groupings(judicial_district_column)}
+        ELSE {district_column} END, 'EXTERNAL_UNKNOWN')"""
+
+
+# TODO(#3675): Formalize state-specific logic in queries
+def state_specific_judicial_district_groupings(judicial_district_column: str) -> str:
+    return f"""(CASE WHEN state_code = 'US_ND'
+               AND ({judicial_district_column} IS NULL
+                    OR {judicial_district_column} IN ('OUT_OF_STATE', 'EXTERNAL_UNKNOWN', 'FEDERAL'))
+                THEN 'OTHER'
+               WHEN {judicial_district_column} IS NULL THEN 'EXTERNAL_UNKNOWN'
+               ELSE {judicial_district_column} END)"""
+
+
+def most_severe_violation_type_subtype_grouping() -> str:
+    return """CASE WHEN most_severe_violation_type = 'TECHNICAL' THEN
+                CASE WHEN most_severe_violation_type_subtype = 'SUBSTANCE_ABUSE' THEN most_severe_violation_type_subtype
+                     WHEN most_severe_violation_type_subtype = 'LAW_CITATION' THEN 'MISDEMEANOR'
+                     ELSE most_severe_violation_type END
+                WHEN most_severe_violation_type IS NULL THEN 'NO_VIOLATIONS'
+                ELSE most_severe_violation_type
+            END AS violation_type"""
+
+
+# TODO(#3675): Formalize state-specific logic in queries
+def state_specific_race_or_ethnicity_groupings(race_or_ethnicity_column: str = 'race_or_ethnicity') -> str:
+    return f"""CASE WHEN state_code = 'US_ND' AND {race_or_ethnicity_column} IN
+              ('EXTERNAL_UNKNOWN', 'ASIAN', 'NATIVE_HAWAIIAN_PACIFIC_ISLANDER') THEN 'OTHER'
+              ELSE {race_or_ethnicity_column} END AS race_or_ethnicity"""
+
+
+def state_specific_supervision_level() -> str:
+    return """IFNULL((CASE WHEN state_code = 'US_PA' AND supervision_level IN ('LIMITED', 'INTERNAL_UNKNOWN')
+          THEN 'SPECIAL'
+          ELSE supervision_level
+          END), 'EXTERNAL_UNKNOWN')  AS supervision_level"""

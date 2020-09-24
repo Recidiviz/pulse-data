@@ -49,6 +49,7 @@ REVOCATIONS_MATRIX_BY_PERSON_QUERY_TEMPLATE = \
             race,
             ethnicity,
             supervision_type,
+            supervision_level,
             case_type,
             district,
             officer,
@@ -64,6 +65,7 @@ REVOCATIONS_MATRIX_BY_PERSON_QUERY_TEMPLATE = \
         violation_type,
         reported_violations,
         supervision_type,
+        supervision_level,
         charge_category,
         district,
         officer,
@@ -76,7 +78,8 @@ REVOCATIONS_MATRIX_BY_PERSON_QUERY_TEMPLATE = \
         ethnicity,
     FROM revocations,
     {district_dimension},
-    {supervision_dimension},
+    {supervision_type_dimension},
+    {supervision_level_dimension},
     {charge_category_dimension}
     WHERE ranking = 1
       AND supervision_type IN ('ALL', 'DUAL', 'PAROLE', 'PROBATION')
@@ -93,7 +96,8 @@ REVOCATIONS_MATRIX_BY_PERSON_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     most_severe_violation_type_subtype_grouping=
     state_specific_query_strings.state_specific_most_severe_violation_type_subtype_grouping(),
     district_dimension=bq_utils.unnest_district('district'),
-    supervision_dimension=bq_utils.unnest_supervision_type(),
+    supervision_type_dimension=bq_utils.unnest_supervision_type(),
+    supervision_level_dimension=bq_utils.unnest_column('supervision_level', 'supervision_level'),
     charge_category_dimension=bq_utils.unnest_charge_category(),
     metric_period_dimension=bq_utils.unnest_metric_period_months(),
     metric_period_condition=bq_utils.metric_period_condition()

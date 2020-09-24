@@ -41,11 +41,12 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_RISK_LEVEL_QUERY_TEMPLATE = \
           COUNT(DISTINCT person_id) AS total_supervision_count,
           risk_level,
           supervision_type,
+          supervision_level,
           charge_category,
           district,
           metric_period_months    
         FROM `{project_id}.{reference_views_dataset}.supervision_matrix_by_person`
-        GROUP BY state_code, violation_type, reported_violations, risk_level, supervision_type, charge_category,
+        GROUP BY state_code, violation_type, reported_violations, risk_level, supervision_type, supervision_level, charge_category,
           district, metric_period_months
       ), termination_counts AS (
          SELECT
@@ -55,11 +56,12 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_RISK_LEVEL_QUERY_TEMPLATE = \
           COUNT(DISTINCT person_id) AS termination_count,
           risk_level,
           supervision_type,
+          supervision_level,
           charge_category,
           district,
           metric_period_months    
         FROM `{project_id}.{reference_views_dataset}.supervision_termination_matrix_by_person` 
-        GROUP BY state_code, violation_type, reported_violations, risk_level, supervision_type, charge_category,
+        GROUP BY state_code, violation_type, reported_violations, risk_level, supervision_type, supervision_level, charge_category,
           district, metric_period_months
       ), revocation_counts AS (
         SELECT
@@ -69,11 +71,12 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_RISK_LEVEL_QUERY_TEMPLATE = \
           COUNT(DISTINCT person_id) AS population_count,
           risk_level,
           supervision_type,
+          supervision_level,
           charge_category,
           district,
           metric_period_months
         FROM `{project_id}.{reference_views_dataset}.revocations_matrix_by_person`
-        GROUP BY state_code, violation_type, reported_violations, risk_level, supervision_type, charge_category,
+        GROUP BY state_code, violation_type, reported_violations, risk_level, supervision_type, supervision_level, charge_category,
           district, metric_period_months
     )
  
@@ -87,6 +90,7 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_RISK_LEVEL_QUERY_TEMPLATE = \
       total_supervision_count,
       risk_level,
       supervision_type,
+      supervision_level,
       charge_category,
       district,
       metric_period_months
@@ -94,13 +98,13 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_RISK_LEVEL_QUERY_TEMPLATE = \
       supervision_counts
     LEFT JOIN
       revocation_counts
-    USING (state_code, violation_type, reported_violations, risk_level, supervision_type, charge_category,
+    USING (state_code, violation_type, reported_violations, risk_level, supervision_type, supervision_level, charge_category,
       district, metric_period_months)
     LEFT JOIN
       termination_counts
-    USING (state_code, violation_type, reported_violations, risk_level, supervision_type, charge_category,
+    USING (state_code, violation_type, reported_violations, risk_level, supervision_type, supervision_level, charge_category,
       district, metric_period_months)
-    ORDER BY state_code, metric_period_months, district, supervision_type, risk_level, violation_type,
+    ORDER BY state_code, metric_period_months, district, supervision_type, supervision_level, risk_level, violation_type,
       reported_violations, charge_category
     """
 

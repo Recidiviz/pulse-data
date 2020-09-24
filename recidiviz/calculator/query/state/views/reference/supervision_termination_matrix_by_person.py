@@ -53,6 +53,7 @@ SUPERVISION_TERMINATION_MATRIX_BY_PERSON_VIEW_QUERY_TEMPLATE = \
             race,
             ethnicity,
             supervision_type,
+            {state_specific_supervision_level},
             case_type,
             supervising_district_external_id AS district,
             supervising_officer_external_id AS officer,
@@ -93,6 +94,7 @@ SUPERVISION_TERMINATION_MATRIX_BY_PERSON_VIEW_QUERY_TEMPLATE = \
         {most_severe_violation_type_subtype_grouping},
         IF(response_count > 8, 8, response_count) as reported_violations,
         supervision_type,
+        supervision_level,
         charge_category,
         district,
         officer,
@@ -105,7 +107,8 @@ SUPERVISION_TERMINATION_MATRIX_BY_PERSON_VIEW_QUERY_TEMPLATE = \
         ethnicity
     FROM person_based_terminations,
     {district_dimension},
-    {supervision_dimension},
+    {supervision_type_dimension},
+    {supervision_level_dimension},
     {charge_category_dimension}
     WHERE ranking = 1
       AND supervision_type IN ('ALL', 'DUAL', 'PAROLE', 'PROBATION')
@@ -122,8 +125,10 @@ SUPERVISION_TERMINATION_MATRIX_BY_PERSON_VIEW_BUILDER = SimpleBigQueryViewBuilde
     most_severe_violation_type_subtype_grouping=
     state_specific_query_strings.state_specific_most_severe_violation_type_subtype_grouping(),
     state_specific_assessment_bucket=state_specific_query_strings.state_specific_assessment_bucket(),
+    state_specific_supervision_level=bq_utils.state_specific_supervision_level(),
     district_dimension=bq_utils.unnest_district('district'),
-    supervision_dimension=bq_utils.unnest_supervision_type(),
+    supervision_type_dimension=bq_utils.unnest_supervision_type(),
+    supervision_level_dimension=bq_utils.unnest_column('supervision_level', 'supervision_level'),
     charge_category_dimension=bq_utils.unnest_charge_category(),
     metric_period_dimension=bq_utils.unnest_metric_period_months(),
     metric_period_condition=bq_utils.metric_period_condition()
