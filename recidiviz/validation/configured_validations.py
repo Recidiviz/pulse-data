@@ -163,8 +163,17 @@ def get_all_validations() -> List[DataValidationCheck]:
         SamenessDataValidationCheck(view=REVOCATION_MATRIX_COMPARISON_REVOCATION_CELL_VS_MONTH_VIEW_BUILDER.build(),
                                     comparison_columns=['cell_sum', 'month_sum'],
                                     max_allowed_error=0.03),
+        # This version of this validation excludes the race column explicitly since we have chosen to count people with
+        # multiple races in counts for each individual race, so the sum of the race breakdowns will not match the total.
         SamenessDataValidationCheck(view=REVOCATION_MATRIX_COMPARISON_SUPERVISION_POPULATION_VIEW_BUILDER.build(),
-                                    comparison_columns=['district_sum', 'risk_level_sum', 'gender_sum', 'race_sum']),
+                                    validation_name_suffix='without_race',
+                                    comparison_columns=['district_sum', 'risk_level_sum', 'gender_sum']),
+        # This version of the validation checks to make sure the race sum isn't far off from the other sums, even
+        # though we expect them to be different (e.g. make sure it isn't zero).
+        SamenessDataValidationCheck(view=REVOCATION_MATRIX_COMPARISON_SUPERVISION_POPULATION_VIEW_BUILDER.build(),
+                                    validation_name_suffix='with_race',
+                                    comparison_columns=['district_sum', 'risk_level_sum', 'gender_sum', 'race_sum'],
+                                    max_allowed_error=.05),
         SamenessDataValidationCheck(
             view=REVOCATIONS_BY_PERIOD_DASHBOARD_COMPARISON_VIEW_BUILDER.build(),
             comparison_columns=['dashboard_revocation_count', 'public_dashboard_revocation_count']
