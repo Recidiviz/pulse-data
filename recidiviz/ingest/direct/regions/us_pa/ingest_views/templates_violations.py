@@ -24,7 +24,9 @@ SELECT
   parole_count_id,
   set_id,
   EXTRACT(DATE FROM MIN({parsed_date_column})) as {date_field},
-  TO_JSON_STRING(ARRAY_AGG(STRUCT(sequence_id, {code_field}))) AS {types_field},
+  TO_JSON_STRING(
+    ARRAY_AGG(STRUCT(sequence_id, {code_field}) ORDER BY sequence_id)
+  ) AS {types_field},
 FROM (
   SELECT
     ParoleNumber as parole_number,
