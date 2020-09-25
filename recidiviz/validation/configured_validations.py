@@ -56,6 +56,8 @@ from recidiviz.validation.views.state.incarceration_population_person_level_exte
     INCARCERATION_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_MATCHING_PEOPLE_VIEW_BUILDER
 from recidiviz.validation.views.state.incarceration_release_prior_to_admission import \
     INCARCERATION_RELEASE_PRIOR_TO_ADMISSION_VIEW_BUILDER
+from recidiviz.validation.views.state.incarceration_release_reason_no_date import \
+    INCARCERATION_RELEASE_REASON_NO_DATE_VIEW_BUILDER
 from recidiviz.validation.views.state.incarceration_release_reason_no_release_date import \
     INCARCERATION_RELEASE_REASON_NO_RELEASE_DATE_VIEW_BUILDER
 from recidiviz.validation.views.state.incarceration_releases_by_type_by_period_internal_consistency import \
@@ -95,6 +97,8 @@ from recidiviz.validation.views.state.supervision_success_by_period_dashboard_co
     SUPERVISION_SUCCESS_BY_PERIOD_DASHBOARD_COMPARISON_VIEW_BUILDER
 from recidiviz.validation.views.state.supervision_termination_prior_to_start import \
     SUPERVISION_TERMINATION_PRIOR_TO_START_VIEW_BUILDER
+from recidiviz.validation.views.state.supervision_termination_reason_no_date import \
+    SUPERVISION_TERMINATION_REASON_NO_DATE_VIEW_BUILDER
 
 
 def _get_validation_region_module_paths() -> List[Tuple[str, str]]:
@@ -138,6 +142,7 @@ def get_all_validations() -> List[DataValidationCheck]:
         ExistenceDataValidationCheck(view=INCARCERATION_ADMISSION_AFTER_OPEN_PERIOD_VIEW_BUILDER.build()),
         ExistenceDataValidationCheck(view=INCARCERATION_ADMISSION_NULLS_VIEW_BUILDER.build()),
         ExistenceDataValidationCheck(view=INCARCERATION_RELEASE_PRIOR_TO_ADMISSION_VIEW_BUILDER.build()),
+        ExistenceDataValidationCheck(view=INCARCERATION_RELEASE_REASON_NO_DATE_VIEW_BUILDER.build()),
 
         # TODO(#2981): This should stop failing for MO once we fix the 600ish periods with end dates of 99999999
         ExistenceDataValidationCheck(view=INCARCERATION_RELEASE_REASON_NO_RELEASE_DATE_VIEW_BUILDER.build()),
@@ -145,6 +150,7 @@ def get_all_validations() -> List[DataValidationCheck]:
         ExistenceDataValidationCheck(view=PO_REPORT_AVGS_PER_DISTRICT_STATE_VIEW_BUILDER.build()),
         ExistenceDataValidationCheck(view=PO_REPORT_DISTINCT_BY_OFFICER_MONTH_VIEW_BUILDER.build()),
         ExistenceDataValidationCheck(view=SUPERVISION_TERMINATION_PRIOR_TO_START_VIEW_BUILDER.build()),
+        ExistenceDataValidationCheck(view=SUPERVISION_TERMINATION_REASON_NO_DATE_VIEW_BUILDER.build()),
 
         SamenessDataValidationCheck(view=CASE_TERMINATIONS_BY_TYPE_COMPARISON_VIEW_BUILDER.build(),
                                     validation_name_suffix='absconsions',
