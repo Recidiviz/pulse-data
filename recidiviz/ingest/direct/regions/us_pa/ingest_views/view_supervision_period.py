@@ -26,38 +26,51 @@ parole_count_id_level_info_base AS (
   -- This subquery selects one row per continuous stint a person spends on supervision (i.e. per ParoleCountID), along
   -- with some information on the supervision level, admission/release reasons and start/end dates of that full stint.
 
-  -- These are rows with information on active supervision stints, collected from multiple Release* tables.
-  SELECT
-    ParoleNumber as parole_number,
-    ParoleCountID as parole_count_id,
-    rs.RelStatusCode as status_code,
-    r.RelEntryCodeOfCase as supervision_type,
-    r.RelEntryCodeOfCase as parole_count_id_admission_reason,
-    CONCAT(r.RelReleaseDateYear, r.RelReleaseDateMonth, r.RelReleaseDateDay) as parole_count_id_start_date,
-    NULL as parole_count_id_termination_reason,
-    NULL as parole_count_id_termination_date,
-    ri.RelCountyResidence as county_of_residence,
-    ri.RelFinalRiskGrade as supervision_level,
-  FROM {dbo_Release} r
-  JOIN {dbo_ReleaseInfo} ri USING (ParoleNumber, ParoleCountID)
-  JOIN {dbo_RelStatus} rs USING (ParoleNumber, ParoleCountID)
+  SELECT * 
+  FROM (
+    SELECT 
+      *, 
+      -- If there is a row in the history table about this parole_count_id, that means this parole stint has been
+      -- terminated and this is the most up to date information about this parole_count_id.
+      ROW_NUMBER() OVER (PARTITION BY parole_number, parole_count_id ORDER BY is_history_row DESC) AS entry_priority
+    FROM (
+      -- These are rows with information on active supervision stints at the time of raw data upload, collected from multiple Release* tables.
+      SELECT
+        ParoleNumber as parole_number,
+        ParoleCountID as parole_count_id,
+        rs.RelStatusCode as status_code,
+        r.RelEntryCodeOfCase as supervision_type,
+        r.RelEntryCodeOfCase as parole_count_id_admission_reason,
+        CONCAT(r.RelReleaseDateYear, r.RelReleaseDateMonth, r.RelReleaseDateDay) as parole_count_id_start_date,
+        NULL as parole_count_id_termination_reason,
+        NULL as parole_count_id_termination_date,
+        ri.RelCountyResidence as county_of_residence,
+        ri.RelFinalRiskGrade as supervision_level,
+        0 AS is_history_row
+      FROM {dbo_Release} r
+      JOIN {dbo_ReleaseInfo} ri USING (ParoleNumber, ParoleCountID)
+      JOIN {dbo_RelStatus} rs USING (ParoleNumber, ParoleCountID)
 
-  UNION ALL
+      UNION ALL
 
-  -- These are rows with information on historical supervision stints. The Hist_Release table is where info associated 
-  -- with the ParoleCountID goes on the completion of the supervision stint, all in one table.
-  SELECT
-    hr.ParoleNumber as parole_number,
-    hr.ParoleCountID as parole_count_id,
-    hr.HReStatcode as status_code,
-    hr.HReEntryCode as supervision_type,
-    hr.HReEntryCode as parole_count_id_admission_reason,
-    hr.HReReldate as parole_count_id_start_date,
-    hr.HReDelCode as parole_count_id_termination_reason,
-    hr.HReDelDate as parole_count_id_termination_date,
-    hr.HReCntyRes as county_of_residence,
-    hr.HReGradeSup as supervision_level,
-  FROM {dbo_Hist_Release} hr
+      -- These are rows with information on historical supervision stints. The Hist_Release table is where info associated 
+      -- with the ParoleCountID goes on the completion of the supervision stint, all in one table.
+      SELECT
+        hr.ParoleNumber as parole_number,
+        hr.ParoleCountID as parole_count_id,
+        hr.HReStatcode as status_code,
+        hr.HReEntryCode as supervision_type,
+        hr.HReEntryCode as parole_count_id_admission_reason,
+        hr.HReReldate as parole_count_id_start_date,
+        hr.HReDelCode as parole_count_id_termination_reason,
+        hr.HReDelDate as parole_count_id_termination_date,
+        hr.HReCntyRes as county_of_residence,
+        hr.HReGradeSup as supervision_level,
+        1 AS is_history_row
+      FROM {dbo_Hist_Release} hr
+    )
+  )
+  WHERE entry_priority = 1
 ),
 conditions_by_parole_count_id AS (
   SELECT
@@ -224,7 +237,8 @@ supervision_periods AS (
        parole_count_id_admission_reason, 'TRANSFER_WITHIN_STATE') AS admission_reason,
     start_date,
     IF(period_sequence_number_reverse = 1 AND termination_date IS NOT NULL,
-       parole_count_id_termination_reason, 'TRANSFER_WITHIN_STATE') AS termination_reason,
+       parole_count_id_termination_reason, 
+       IF(termination_date IS NOT NULL, 'TRANSFER_WITHIN_STATE', NULL)) AS termination_reason,
     termination_date,
     county_of_residence,
     district_office,
