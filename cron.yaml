@@ -6,8 +6,8 @@ cron:
       min_backoff_seconds: 2.5
       max_doublings: 5
 
-  - description: Start America/New_York scrapers
-    url: /scraper/start?region=all&scrape_type=background&timezone=America/New_York
+  - description: Start America/New_York scrapers without an assigned stripe
+    url: /scraper/start?region=all&scrape_type=background&timezone=America/New_York&stripe=0
     schedule: every day 21:00
     timezone: America/New_York
     retry_parameters:
@@ -15,64 +15,100 @@ cron:
       max_doublings: 5
       job_age_limit: 9h
 
-  - description: Stop all America/New_York scrapers, respecting is_stoppable field of each scraper
+  - description: Stop all America/New_York scrapers without an assigned stripe, respecting is_stoppable field of each scraper
+    url: /scraper/stop?region=all&scrape_type=background&timezone=America/New_York&stripe=0&respect_is_stoppable=true
+    schedule: every day 09:00
+    timezone: America/New_York
+    retry_parameters:
+      min_backoff_seconds: 2.5
+      max_doublings: 5
+      job_age_limit: 9h
+
+  - description: Start America/Chicago scrapers without an assigned stripe 
+    url: /scraper/start?region=all&scrape_type=background&timezone=America/Chicago&stripe=0
+    schedule: every day 21:00
+    timezone: America/Chicago
+    retry_parameters:
+      min_backoff_seconds: 2.5
+      max_doublings: 5
+      job_age_limit: 9h
+
+  - description: Stop all America/Chicago scrapers without an assigned stripe, respecting is_stoppable field of each scraper
+    url: /scraper/stop?region=all&scrape_type=background&timezone=America/Chicago&respect_is_stoppable=true&stripe=0
+    schedule: every day 09:00
+    timezone: America/Chicago
+    retry_parameters:
+      min_backoff_seconds: 2.5
+      max_doublings: 5
+      job_age_limit: 9h
+
+  - description: Start America/Los_Angeles scrapers without an assigned stripe 
+    url: /scraper/start?region=all&scrape_type=background&timezone=America/Los_Angeles&stripe=0
+    schedule: every day 21:00
+    timezone: America/Los_Angeles
+    retry_parameters:
+      min_backoff_seconds: 2.5
+      max_doublings: 5
+      job_age_limit: 9h
+
+  - description: Stop all America/Los_Angeles scrapers without an assigned stripe, respecting is_stoppable field of each scraper
+    url: /scraper/stop?region=all&scrape_type=background&timezone=America/Los_Angeles&stripe=0&respect_is_stoppable=true
+    schedule: every day 09:00
+    timezone: America/Los_Angeles
+    retry_parameters:
+      min_backoff_seconds: 2.5
+      max_doublings: 5
+      job_age_limit: 9h
+
+  - description: Start America/Denver scrapers without an assigned stripe 
+    url: /scraper/start?region=all&scrape_type=background&timezone=America/Denver&stripe=0
+    schedule: every day 21:00
+    timezone: America/Denver
+    retry_parameters:
+      min_backoff_seconds: 2.5
+      max_doublings: 5
+      job_age_limit: 9h
+
+  - description: Stop all America/Denver scrapers without an assigned stripe, respecting is_stoppable field of each scraper
+    url: /scraper/stop?region=all&scrape_type=background&timezone=America/Denver&respect_is_stoppable=true&stripe=0
+    schedule: every day 09:00
+    timezone: America/Denver
+    retry_parameters:
+      min_backoff_seconds: 2.5
+      max_doublings: 5
+      job_age_limit: 9h
+
+  - description: Start scrapers in stripe 1
+    url: /scraper/start?region=all&scrape_type=background&stripe=1
+    schedule: every day 18:00
+    timezone: America/New_York
+    retry_parameters:
+      min_backoff_seconds: 2.5
+      max_doublings: 5
+      job_age_limit: 9h
+
+  - description: Stop all scrapers in stripe 1, respecting is_stoppable field of each scraper
     url: /scraper/stop?region=all&scrape_type=background&timezone=America/New_York&respect_is_stoppable=true
-    schedule: every day 09:00
+    schedule: every day 06:00
     timezone: America/New_York
     retry_parameters:
       min_backoff_seconds: 2.5
       max_doublings: 5
       job_age_limit: 9h
-
-  - description: Start America/Chicago scrapers
-    url: /scraper/start?region=all&scrape_type=background&timezone=America/Chicago
-    schedule: every day 21:00
-    timezone: America/Chicago
-    retry_parameters:
-      min_backoff_seconds: 2.5
-      max_doublings: 5
-      job_age_limit: 9h
-
-  - description: Stop all America/Chicago scrapers, respecting is_stoppable field of each scraper
-    url: /scraper/stop?region=all&scrape_type=background&timezone=America/Chicago&respect_is_stoppable=true
-    schedule: every day 09:00
-    timezone: America/Chicago
-    retry_parameters:
-      min_backoff_seconds: 2.5
-      max_doublings: 5
-      job_age_limit: 9h
-
-  - description: Start America/Los_Angeles scrapers
-    url: /scraper/start?region=all&scrape_type=background&timezone=America/Los_Angeles
-    schedule: every day 21:00
+ 
+  - description: Start scrapers in stripe 2
+    url: /scraper/start?region=all&scrape_type=background&stripe=2
+    schedule: every day 18:00
     timezone: America/Los_Angeles
     retry_parameters:
       min_backoff_seconds: 2.5
       max_doublings: 5
       job_age_limit: 9h
 
-  - description: Stop all America/Los_Angeles scrapers, respecting is_stoppable field of each scraper
-    url: /scraper/stop?region=all&scrape_type=background&timezone=America/Los_Angeles&respect_is_stoppable=true
-    schedule: every day 09:00
+  - description: Stop all scrapers in stripe 2, respecting is_stoppable field of each scraper
+    url: /scraper/stop?region=all&scrape_type=background&stripe=2&respect_is_stoppable=true
+    schedule: every day 06:00
     timezone: America/Los_Angeles
-    retry_parameters:
-      min_backoff_seconds: 2.5
-      max_doublings: 5
-      job_age_limit: 9h
-
-  - description: Start America/Denver scrapers
-    url: /scraper/start?region=all&scrape_type=background&timezone=America/Denver
-    schedule: every day 21:00
-    timezone: America/Denver
-    retry_parameters:
-      min_backoff_seconds: 2.5
-      max_doublings: 5
-      job_age_limit: 9h
-
-  - description: Stop all America/Denver scrapers, respecting is_stoppable field of each scraper
-    url: /scraper/stop?region=all&scrape_type=background&timezone=America/Denver&respect_is_stoppable=true
-    schedule: every day 09:00
-    timezone: America/Denver
     retry_parameters:
       min_backoff_seconds: 2.5
       max_doublings: 5
