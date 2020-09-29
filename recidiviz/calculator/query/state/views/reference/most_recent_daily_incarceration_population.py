@@ -18,7 +18,7 @@
 # pylint: disable=trailing-whitespace, line-too-long
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query import bq_utils
-from recidiviz.calculator.query.state import dataset_config
+from recidiviz.calculator.query.state import dataset_config, state_specific_query_strings
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -54,8 +54,7 @@ MOST_RECENT_DAILY_INCARCERATION_POPULATION_QUERY_TEMPLATE = \
       USING (state_code, race_or_ethnicity)
       WHERE metric_period_months = 0
       AND methodology = 'EVENT'
-      -- Revisit these exclusions when #3657 and #3723 are complete --
-      AND (state_code != 'US_ND' OR facility not in ('OOS', 'CPP'))
+      {state_specific_facility_exclusion}
     )
     
     SELECT
@@ -82,7 +81,8 @@ MOST_RECENT_DAILY_INCARCERATION_POPULATION_VIEW_BUILDER = SimpleBigQueryViewBuil
     metrics_dataset=dataset_config.DATAFLOW_METRICS_DATASET,
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
     static_reference_dataset=dataset_config.STATIC_REFERENCE_TABLES_DATASET,
-    race_or_ethnicity_dimension=bq_utils.unnest_race_and_ethnicity()
+    race_or_ethnicity_dimension=bq_utils.unnest_race_and_ethnicity(),
+    state_specific_facility_exclusion=state_specific_query_strings.state_specific_facility_exclusion()
 )
 
 if __name__ == '__main__':

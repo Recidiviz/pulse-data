@@ -16,6 +16,7 @@
 # =============================================================================
 """Functions that return state-specific logic used in BigQuery queries."""
 
+
 def state_supervision_specific_district_groupings(district_column: str, judicial_district_column: str) -> str:
     return f"""IFNULL(CASE WHEN supervision_type = 'PROBATION' THEN
         {state_specific_judicial_district_groupings(judicial_district_column)}
@@ -60,3 +61,8 @@ def state_specific_officer_recommendation() -> str:
                 ELSE most_severe_response_decision END
            ELSE most_severe_response_decision
       END AS officer_recommendation"""
+
+
+def state_specific_facility_exclusion() -> str:
+    return """-- Revisit these exclusions when #3657 and #3723 are complete --
+      AND (state_code != 'US_ND' OR facility not in ('OOS', 'CPP'))"""

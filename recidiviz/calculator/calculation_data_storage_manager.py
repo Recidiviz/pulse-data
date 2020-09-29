@@ -33,7 +33,7 @@ import flask
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.calculator.calculation_data_storage_config import DATAFLOW_METRICS_COLD_STORAGE_DATASET, \
     MAX_DAYS_IN_DATAFLOW_METRICS_TABLE, DATAFLOW_METRICS_TO_TABLES
-from recidiviz.calculator.query.state.dataset_config import DATAFLOW_METRICS_DATASET
+from recidiviz.calculator.query.state.dataset_config import DATAFLOW_METRICS_DATASET, REFERENCE_VIEWS_DATASET
 from recidiviz.utils.auth import authenticate_request
 from recidiviz.utils.environment import GCP_PROJECT_STAGING, GCP_PROJECT_PRODUCTION
 from recidiviz.utils.metadata import local_project_id_override
@@ -64,14 +64,20 @@ def move_old_dataflow_metrics_to_cold_storage():
         table_id = table_ref.table_id
 
         filter_clause = """WHERE created_on NOT IN
-                          (SELECT DISTINCT created_on FROM `{project_id}.{dataflow_metrics_dataset}.{table_id}` 
-                          ORDER BY created_on DESC
-                          LIMIT {day_count_limit})""".format(
-                              project_id=table_ref.project,
-                              dataflow_metrics_dataset=table_ref.dataset_id,
-                              table_id=table_ref.table_id,
-                              day_count_limit=MAX_DAYS_IN_DATAFLOW_METRICS_TABLE
-                          )
+                              (SELECT DISTINCT created_on FROM `{project_id}.{dataflow_metrics_dataset}.{table_id}` 
+                              ORDER BY created_on DESC
+                              LIMIT {day_count_limit})
+                           AND job_id NOT IN (
+                              SELECT DISTINCT job_id FROM
+                              `{project_id}.{reference_views_dataset}.most_recent_job_id_by_metric_and_state_code_materialized` 
+                           )
+                        """.format(
+                            project_id=table_ref.project,
+                            dataflow_metrics_dataset=table_ref.dataset_id,
+                            reference_views_dataset=REFERENCE_VIEWS_DATASET,
+                            table_id=table_ref.table_id,
+                            day_count_limit=MAX_DAYS_IN_DATAFLOW_METRICS_TABLE
+                        )
 
         cold_storage_dataset_ref = bq_client.dataset_ref_for_id(cold_storage_dataset)
 

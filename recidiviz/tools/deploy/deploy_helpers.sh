@@ -105,6 +105,11 @@ function pre_deploy_configure_infrastructure {
     echo "Deploying prod-ready calculation pipelines to templates in ${PROJECT}."
     run_cmd pipenv run python -m recidiviz.tools.deploy.deploy_pipeline_templates --project_id ${PROJECT} --templates_to_deploy production
 
+    # We trigger historical calculations with every deploy because code changes may impact historical metric output
+    echo "Triggering historical calculation pipelines"
+    run_cmd gcloud pubsub topics publish v1.calculator.historical_incarceration_us_nd --project ${PROJECT} --message="Trigger Dataflow job"
+    run_cmd gcloud pubsub topics publish v1.calculator.historical_supervision_us_nd --project ${PROJECT} --message="Trigger Dataflow job"
+
     echo "Initializing task queues"
     run_cmd pipenv run python -m recidiviz.tools.initialize_google_cloud_task_queues --project_id ${PROJECT} --google_auth_token $(gcloud auth print-access-token)
 }
