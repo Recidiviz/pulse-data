@@ -6,23 +6,11 @@
 # List of pipelines with their necessary details
 
 # Full US_ND calculations with no time limit
-- pipeline: supervision
-  job_name: full-us-nd-supervision-calculations
-  state_code: US_ND
-  calculation_month_count: -1 # No limit
 - pipeline: recidivism
   job_name: full-us-nd-recidivism-calculations
   state_code: US_ND
-- pipeline: incarceration
-  job_name: full-us-nd-incarceration-calculations
-  state_code: US_ND
-  calculation_month_count: -1 # No limit
-- pipeline: program
-  job_name: full-us-nd-program-calculations
-  state_code: US_ND
-  calculation_month_count: -1 # No limit
 
-# Daily US_ND calculations for the 36-mo dashboard
+# Daily US_ND calculations for the dashboards
 - pipeline: supervision
   job_name: us-nd-supervision-calculations-36
   state_code: US_ND
@@ -36,6 +24,19 @@
   job_name: us-nd-program-calculations-36
   state_code: US_ND
   calculation_month_count: 36
+
+# Historical US_ND population calculations for the dashboards
+- pipeline: supervision
+  job_name: us-nd-supervision-population-240
+  state_code: US_ND
+  calculation_month_count: 240
+  metric_types: SUPERVISION_POPULATION
+- pipeline: incarceration
+  job_name: us-nd-incarceration-population-240
+  state_code: US_ND
+  calculation_month_count: 240
+  metric_types: INCARCERATION_POPULATION
+
 
 # Daily US_MO calculations for the dashboard
 - pipeline: supervision

@@ -18,7 +18,7 @@
 # pylint: disable=trailing-whitespace, line-too-long
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
-from recidiviz.calculator.query.state import dataset_config
+from recidiviz.calculator.query.state import dataset_config, state_specific_query_strings
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -39,8 +39,7 @@ EVENT_BASED_REVOCATIONS_AND_ADMISSIONS_QUERY_TEMPLATE = \
         'NEW_ADMISSION' AS incarceration_type
       FROM `{project_id}.{reference_views_dataset}.event_based_admissions`
       WHERE admission_reason = 'NEW_ADMISSION'
-        -- Do not count admissions to CPP as incarceration admissions
-        AND (state_code != 'US_ND' OR facility != 'CPP')
+      {state_specific_facility_exclusion}
 
       UNION ALL
 
@@ -60,7 +59,8 @@ EVENT_BASED_REVOCATIONS_AND_ADMISSIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_query_template=EVENT_BASED_REVOCATIONS_AND_ADMISSIONS_QUERY_TEMPLATE,
     description=EVENT_BASED_REVOCATIONS_AND_ADMISSIONS_DESCRIPTION,
     metrics_dataset=dataset_config.DATAFLOW_METRICS_DATASET,
-    reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET
+    reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
+    state_specific_facility_exclusion=state_specific_query_strings.state_specific_facility_exclusion()
 )
 
 if __name__ == '__main__':
