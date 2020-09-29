@@ -46,8 +46,7 @@ INCARCERATION_POPULATION_BY_PRIORITIZED_RACE_AND_ETHNICITY_BY_PERIOD_VIEW_QUERY_
       WHERE {metric_period_condition}
         AND methodology = 'EVENT'
         AND person_id IS NOT NULL
-        -- Revisit these exclusions when #3657 and #3723 are complete --
-        AND (state_code != 'US_ND' OR facility not in ('OOS', 'CPP'))
+        {state_specific_facility_exclusion}
     ), population_with_race_or_ethnicity_priorities AS (
       SELECT
         *,
@@ -83,7 +82,8 @@ INCARCERATION_POPULATION_BY_PRIORITIZED_RACE_AND_ETHNICITY_BY_PERIOD_VIEW_BUILDE
     metric_period_condition=bq_utils.metric_period_condition(),
     race_or_ethnicity_dimension=bq_utils.unnest_race_and_ethnicity(),
     unnested_race_or_ethnicity_dimension=bq_utils.unnest_column('race_or_ethnicity', 'race_or_ethnicity'),
-    state_specific_race_or_ethnicity_groupings=state_specific_query_strings.state_specific_race_or_ethnicity_groupings()
+    state_specific_race_or_ethnicity_groupings=state_specific_query_strings.state_specific_race_or_ethnicity_groupings(),
+    state_specific_facility_exclusion=state_specific_query_strings.state_specific_facility_exclusion()
 )
 
 if __name__ == '__main__':
