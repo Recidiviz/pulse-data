@@ -30,14 +30,10 @@ from recidiviz.calculator.pipeline.supervision.supervision_time_bucket import \
     SupervisionTimeBucket, RevocationReturnSupervisionTimeBucket, \
     NonRevocationReturnSupervisionTimeBucket, \
     ProjectedSupervisionCompletionBucket, SupervisionTerminationBucket
-from recidiviz.calculator.pipeline.utils.execution_utils import list_of_dicts_to_dict_with_keys
-from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_revocation_identification import \
-    us_id_revoked_supervision_period_if_revocation_occurred
-from recidiviz.calculator.pipeline.utils.state_utils.us_mo import us_mo_violation_utils
-from recidiviz.calculator.pipeline.utils.calculator_utils import \
-    last_day_of_month, identify_most_severe_violation_type_and_subtype, \
-    identify_most_severe_response_decision, first_day_of_next_month, VIOLATION_TYPE_SEVERITY_ORDER
 from recidiviz.calculator.pipeline.utils import assessment_utils
+from recidiviz.calculator.pipeline.utils.execution_utils import list_of_dicts_to_dict_with_keys
+from recidiviz.calculator.pipeline.utils.calculator_utils import \
+    last_day_of_month, identify_most_severe_response_decision, first_day_of_next_month
 from recidiviz.calculator.pipeline.utils.incarceration_period_index import IncarcerationPeriodIndex
 from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_manager import \
     supervision_types_distinct_for_state, \
@@ -49,19 +45,21 @@ from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_ma
     filter_supervision_periods_for_revocation_identification, get_pre_revocation_supervision_type, \
     produce_supervision_time_bucket_for_period, only_state_custodial_authority_in_supervision_population, \
     get_case_compliance_on_date, include_decisions_on_follow_up_responses, \
-    second_assessment_on_supervision_is_more_reliable, get_supervision_district_from_supervision_period
+    second_assessment_on_supervision_is_more_reliable, get_supervision_district_from_supervision_period,\
+    prepare_violation_responses_for_calculations, revoked_supervision_periods_if_revocation_occurred
 from recidiviz.calculator.pipeline.utils.supervision_period_index import SupervisionPeriodIndex
-from recidiviz.calculator.pipeline.utils.supervision_period_utils import prepare_supervision_periods_for_calculations, \
-    get_relevant_supervision_periods_before_admission_date
+from recidiviz.calculator.pipeline.utils.supervision_period_utils import prepare_supervision_periods_for_calculations
 from recidiviz.calculator.pipeline.utils.supervision_type_identification import \
     get_supervision_type_from_sentences
 from recidiviz.calculator.pipeline.utils.time_range_utils import TimeRange, TimeRangeDiff
+from recidiviz.calculator.pipeline.utils.violation_utils import shorthand_description_for_ranked_violation_counts, \
+    identify_most_severe_violation_type_and_subtype, shorthand_description_for_ranked_violation_counts, \
+    get_violation_type_frequency_counter
 from recidiviz.common.constants.state.state_assessment import StateAssessmentLevel, StateAssessmentType, \
     StateAssessmentClass
 from recidiviz.common.constants.state.state_case_type import \
     StateSupervisionCaseType
-from recidiviz.common.constants.state.state_incarceration_period import StateSpecializedPurposeForIncarceration, \
-    is_revocation_admission
+from recidiviz.common.constants.state.state_incarceration_period import StateSpecializedPurposeForIncarceration
 from recidiviz.calculator.pipeline.utils.incarceration_period_utils import \
     prepare_incarceration_periods_for_calculations
 from recidiviz.common.constants.state.state_supervision_period import \
@@ -188,6 +186,9 @@ def find_supervision_time_buckets(
 
     supervision_period_index = SupervisionPeriodIndex(supervision_periods=supervision_periods)
     incarceration_period_index = IncarcerationPeriodIndex(incarceration_periods=incarceration_periods)
+
+    violation_responses = prepare_violation_responses_for_calculations(state_code=state_code,
+                                                                       violation_responses=violation_responses)
 
     projected_supervision_completion_buckets = classify_supervision_success(
         supervision_sentences,
@@ -665,16 +666,8 @@ def get_violation_and_response_history(
     violations_in_window: List[StateSupervisionViolation] = []
     violation_ids_in_window: Set[int] = set()
     response_decisions: List[StateSupervisionViolationResponseDecision] = []
-    updated_responses: List[StateSupervisionViolationResponse] = []
 
     for response in responses_in_window:
-        # TODO(#2995): Formalize state-specific calc logic
-        if state_code == 'US_MO':
-            updated_responses.append(us_mo_violation_utils.normalize_violations_on_responses(response))
-        else:
-            updated_responses.append(response)
-
-    for response in updated_responses:
         violation = response.supervision_violation
 
         if (violation and violation.supervision_violation_id
@@ -712,9 +705,9 @@ def get_violation_and_response_history(
     for violation in violations_in_window:
         violation_type_entries.extend(violation.supervision_violation_types)
 
-    violation_history_description = _get_violation_history_description(violations_in_window)
+    violation_history_description = get_violation_history_description(violations_in_window)
 
-    violation_type_frequency_counter = _get_violation_type_frequency_counter(violations_in_window)
+    violation_type_frequency_counter = get_violation_type_frequency_counter(violations_in_window)
 
     # Count the number of responses in the window
     response_count = len(responses_in_window)
@@ -774,67 +767,6 @@ def _get_responses_in_window_before_revocation(revocation_date: date,
     return responses_in_window
 
 
-def _get_violation_history_description(violations: List[StateSupervisionViolation]) -> Optional[str]:
-    """Returns a string description of the violation history given the violation type entries. Tallies the number of
-    each violation type, and then builds a string that lists the number of each of the represented types in the order
-    listed in the violation_type_shorthand dictionary and separated by a semicolon.
-
-    For example, if someone has 3 felonies and 2 technicals, this will return '3fel;2tech'.
-    """
-    if not violations:
-        return None
-
-    state_code = violations[0].state_code
-    ranked_violation_type_and_subtype_counts: Dict[str, int] = {}
-
-    if state_code.upper() == 'US_MO':
-        ranked_violation_type_and_subtype_counts = \
-            us_mo_violation_utils.get_ranked_violation_type_and_subtype_counts(violations,
-                                                                               VIOLATION_TYPE_SEVERITY_ORDER)
-
-    descriptions = [f"{count}{label}" for label, count in
-                    ranked_violation_type_and_subtype_counts.items() if count > 0]
-
-    if descriptions:
-        return ';'.join(descriptions)
-
-    return None
-
-
-def _get_violation_type_frequency_counter(violations: List[StateSupervisionViolation]) -> Optional[List[List[str]]]:
-    """For every violation in violations, builds a list of strings, where each string is a violation type or a
-    condition violated that is recorded on the given violation. Returns a list of all lists of strings, where the length
-    of the list is the number of violations."""
-    violation_type_frequency_counter: List[List[str]] = []
-
-    for violation in violations:
-        violation_type_list: List[str] = []
-
-        includes_technical_violation = False
-
-        for violation_type_entry in violation.supervision_violation_types:
-            if violation_type_entry.violation_type and \
-                    violation_type_entry.violation_type != StateSupervisionViolationType.TECHNICAL:
-                violation_type_list.append(violation_type_entry.violation_type.value)
-            else:
-                includes_technical_violation = True
-
-        for condition_entry in violation.supervision_violated_conditions:
-            condition = condition_entry.condition
-            if condition:
-                # Condition values are free text so we standardize all to be upper case
-                violation_type_list.append(condition.upper())
-
-        # If there are no stored violation types, but there was a TECHNICAL violation type present, then mark this as a
-        # technical violation without conditions
-        if not violation_type_list and includes_technical_violation:
-            violation_type_list.append('TECHNICAL_NO_CONDITIONS')
-
-        violation_type_frequency_counter.append(violation_type_list)
-
-    return violation_type_frequency_counter if violation_type_frequency_counter else None
-
-
 def _get_is_on_supervision_last_day_of_month(
         any_date_in_month: date,
         incarceration_period_index: IncarcerationPeriodIndex,
@@ -887,7 +819,7 @@ def find_revocation_return_buckets(
         previous_incarceration_period = (incarceration_period_index.incarceration_periods[index - 1]
                                          if index > 0 else None)
 
-        admission_is_revocation, revoked_supervision_periods = _revoked_supervision_periods_if_revocation_occurred(
+        admission_is_revocation, revoked_supervision_periods = revoked_supervision_periods_if_revocation_occurred(
             incarceration_period, filtered_supervision_periods, previous_incarceration_period)
 
         if not admission_is_revocation:
@@ -1318,38 +1250,6 @@ def _get_buckets_with_supervision_type(buckets: List[SupervisionTimeBucket],
     ]
 
 
-def _revoked_supervision_periods_if_revocation_occurred(
-        incarceration_period: StateIncarcerationPeriod,
-        supervision_periods: List[StateSupervisionPeriod],
-        preceding_incarceration_period: Optional[StateIncarcerationPeriod]) -> \
-        Tuple[bool, List[StateSupervisionPeriod]]:
-    """If the incarceration period was a result of a supervision revocation, finds the supervision periods that were
-    revoked.
-
-    Returns False, [] if the incarceration period was not a result of a revocation. Returns True and the list of
-    supervision periods that were revoked if the incarceration period was a result of a revocation. In some cases, it's
-    possible for the admission to be a revocation even though we cannot identify the corresponding supervision periods
-    that were revoked (e.g. the person was serving supervision out-of-state). In these instances, this function will
-    return True and an empty list [].
-    """
-    revoked_periods: List[StateSupervisionPeriod] = []
-
-    if incarceration_period.state_code == 'US_ID':
-        admission_is_revocation, revoked_period = \
-            us_id_revoked_supervision_period_if_revocation_occurred(
-                incarceration_period, supervision_periods, preceding_incarceration_period
-            )
-
-        if revoked_period:
-            revoked_periods = [revoked_period]
-    else:
-        admission_is_revocation = is_revocation_admission(incarceration_period.admission_reason)
-        revoked_periods = get_relevant_supervision_periods_before_admission_date(incarceration_period.admission_date,
-                                                                                 supervision_periods)
-
-    return admission_is_revocation, revoked_periods
-
-
 def _get_judicial_district_code(
         supervision_period: StateSupervisionPeriod,
         supervision_period_to_judicial_district: Dict[int, Dict[Any, Any]]) -> Optional[str]:
@@ -1416,3 +1316,30 @@ def find_assessment_score_change(state_code: str,
                                 last_assessment.assessment_type)
 
     return None, None, None, None
+
+
+def get_violation_history_description(violations: List[StateSupervisionViolation]) -> Optional[str]:
+    """Returns a string description of the violation history given the violation type entries. Tallies the number of
+    each violation type, and then builds a string that lists the number of each of the represented types in the order
+    listed in the violation_type_shorthand dictionary and separated by a semicolon.
+
+    For example, if someone has 3 felonies and 2 technicals, this will return '3fel;2tech'.
+    """
+    if not violations:
+        return None
+
+    subtype_counts: Dict[str, int] = defaultdict(int)
+
+    # Count all violation types and subtypes
+    for violation in violations:
+        most_severe_violation_type_and_subtype = identify_most_severe_violation_type_and_subtype([violation])
+        if not most_severe_violation_type_and_subtype:
+            continue
+        _, most_severe_subtype = most_severe_violation_type_and_subtype
+
+        if most_severe_subtype:
+            subtype_counts[most_severe_subtype] += 1
+
+    state_code = get_single_state_code(violations)
+
+    return shorthand_description_for_ranked_violation_counts(state_code, subtype_counts)

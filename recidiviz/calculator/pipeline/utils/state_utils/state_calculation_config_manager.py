@@ -16,20 +16,26 @@
 # =============================================================================
 """Manages state-specific methodology decisions made throughout the calculation pipelines."""
 # TODO(#2995): Make a state config file for every state and every one of these state-specific calculation methodologies
+import sys
 from datetime import date
 import logging
-from typing import List, Optional
+from typing import List, Optional, Tuple
 
 from recidiviz.calculator.pipeline.supervision.supervision_case_compliance import SupervisionCaseCompliance
+from recidiviz.calculator.pipeline.utils.calculator_utils import safe_list_index
 from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_revocation_identification import \
     us_id_filter_supervision_periods_for_revocation_identification, us_id_get_pre_revocation_supervision_type, \
-    us_id_is_revocation_admission
+    us_id_is_revocation_admission, us_id_revoked_supervision_period_if_revocation_occurred
 from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_supervision_compliance import \
     us_id_case_compliance_on_date
 from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_supervision_type_identification import \
     us_id_get_pre_incarceration_supervision_type, us_id_get_post_incarceration_supervision_type
+from recidiviz.calculator.pipeline.utils.state_utils.us_mo import us_mo_violation_utils
 from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_supervision_type_identification import \
     us_nd_get_post_incarceration_supervision_type
+from recidiviz.calculator.pipeline.utils.state_utils.us_pa import us_pa_violation_utils
+from recidiviz.calculator.pipeline.utils.supervision_period_utils import \
+    get_relevant_supervision_periods_before_admission_date
 from recidiviz.calculator.pipeline.utils.supervision_type_identification import get_month_supervision_type_default, \
     get_pre_incarceration_supervision_type_from_incarceration_period
 from recidiviz.calculator.pipeline.utils.time_range_utils import TimeRange, TimeRangeDiff
@@ -42,9 +48,10 @@ from recidiviz.common.constants.state.state_case_type import StateSupervisionCas
 from recidiviz.common.constants.state.state_incarceration_period import is_revocation_admission
 from recidiviz.common.constants.state.state_supervision import StateSupervisionType
 from recidiviz.common.constants.state.state_supervision_period import StateSupervisionPeriodSupervisionType
+from recidiviz.common.constants.state.state_supervision_violation import StateSupervisionViolationType
 from recidiviz.persistence.entity.state.entities import StateSupervisionSentence, StateIncarcerationSentence, \
     StateSupervisionPeriod, StateIncarcerationPeriod, StateSupervisionViolationResponse, StateAssessment, \
-    StateSupervisionContact
+    StateSupervisionContact, StateSupervisionViolation
 
 
 def supervision_types_distinct_for_state(state_code: str) -> bool:
@@ -67,10 +74,12 @@ def default_to_supervision_period_officer_for_revocation_details_for_state(state
         - US_ID: True
         - US_MO: True
         - US_ND: False
+        - US_PA: True
 
-    Returns whether our calculations should use supervising officer information for revocation details.
+    Returns whether our calculations should use supervising officer information for revocation details. Defaults to True
+    if the state_code has not been explicitly listed to return False.
     """
-    return state_code.upper() in ('US_MO', 'US_ID')
+    return state_code.upper() != 'US_ND'
 
 
 def temporary_custody_periods_under_state_authority(state_code: str) -> bool:
@@ -394,3 +403,113 @@ def get_supervision_district_from_supervision_period(supervision_period: StateSu
     if supervision_period.state_code in ('US_ID', 'US_PA') and supervision_period.supervision_site:
         return supervision_period.supervision_site.split('|')[0]
     return supervision_period.supervision_site
+
+
+def get_violation_type_subtype_strings_for_violation(violation: StateSupervisionViolation) -> List[str]:
+    """Returns a list of strings that represent the violation subtypes present on the given |violation|. If there's no
+    state-specific logic for determining the subtypes, then a list of the violation_type raw values in the violation's
+    supervision_violation_types is returned."""
+    if violation.state_code.upper() == 'US_MO':
+        return us_mo_violation_utils.us_mo_get_violation_type_subtype_strings_for_violation(violation)
+    if violation.state_code.upper() == 'US_PA':
+        return us_pa_violation_utils.us_pa_get_violation_type_subtype_strings_for_violation(violation)
+
+    supervision_violation_types = violation.supervision_violation_types
+
+    if supervision_violation_types:
+        return [
+            violation_type_entry.violation_type.value
+            for violation_type_entry in supervision_violation_types
+            if violation_type_entry.violation_type
+        ]
+
+    return []
+
+
+def sorted_violation_subtypes_by_severity(state_code: str,
+                                          violation_subtypes: List[str],
+                                          default_severity_order: List[str]) -> List[str]:
+    """Sorts the provided |violation_subtypes| by severity, and returns the list in order of descending severity.
+    Defers to the severity ordering in the |default_severity_order| if no state-specific logic is implemented."""
+    if state_code.upper() == 'US_MO':
+        return us_mo_violation_utils.us_mo_sorted_violation_subtypes_by_severity(violation_subtypes)
+    if state_code.upper() == 'US_PA':
+        return us_pa_violation_utils.us_pa_sorted_violation_subtypes_by_severity(violation_subtypes)
+
+    logging.warning("No implemented violation subtype ordering for state [%s]", state_code)
+
+    sorted_violation_subtypes = \
+        sorted(violation_subtypes, key=lambda subtype: safe_list_index(default_severity_order, subtype, sys.maxsize))
+
+    return sorted_violation_subtypes
+
+
+def violation_type_from_subtype(state_code: str, violation_subtype: str) -> StateSupervisionViolationType:
+    """Determines which StateSupervisionViolationType corresponds to the |violation_subtype| value for the given
+    |state_code|. If no state-specific logic is implemented, returns the StateSupervisionViolationType corresponding to
+    the |violation_subtype|."""
+    if state_code.upper() == 'US_MO':
+        return us_mo_violation_utils.us_mo_violation_type_from_subtype(violation_subtype)
+    if state_code.upper() == 'US_PA':
+        return us_pa_violation_utils.us_pa_violation_type_from_subtype(violation_subtype)
+
+    for violation_type in StateSupervisionViolationType:
+        if violation_subtype == violation_type.value:
+            return violation_type
+
+    raise ValueError(f"Unexpected violation_subtype {violation_subtype} for {state_code}.")
+
+
+def shorthand_for_violation_subtype(state_code: str, violation_subtype: str) -> str:
+    """Returns the shorthand string representing the given |violation_subtype| in the given |state_code|. If no
+    state-specific logic is implemented, returns a lowercase version of the |violation_subtype| string."""
+    if state_code.upper() == 'US_MO':
+        return us_mo_violation_utils.us_mo_shorthand_for_violation_subtype(violation_subtype)
+    if state_code.upper() == 'US_PA':
+        return us_pa_violation_utils.us_pa_shorthand_for_violation_subtype(violation_subtype)
+
+    logging.warning("No state-specific violation subtype shorthand implementation for state [%s]", state_code)
+    return violation_subtype.lower()
+
+
+def prepare_violation_responses_for_calculations(state_code: str,
+                                                 violation_responses: List[StateSupervisionViolationResponse]) -> \
+        List[StateSupervisionViolationResponse]:
+    """Performs state-specific pre-processing on StateSupervisionViolationResponse instances if necessary for the given
+    |state_code|."""
+    if state_code.upper() == 'US_MO':
+        return us_mo_violation_utils.us_mo_prepare_violation_responses_for_calculations(violation_responses)
+
+    return violation_responses
+
+
+def revoked_supervision_periods_if_revocation_occurred(
+        incarceration_period: StateIncarcerationPeriod,
+        supervision_periods: List[StateSupervisionPeriod],
+        preceding_incarceration_period: Optional[StateIncarcerationPeriod]) -> \
+        Tuple[bool, List[StateSupervisionPeriod]]:
+    """If the incarceration period was a result of a supervision revocation, finds the supervision periods that were
+    revoked.
+
+    Returns False, [] if the incarceration period was not a result of a revocation. Returns True and the list of
+    supervision periods that were revoked if the incarceration period was a result of a revocation. In some cases, it's
+    possible for the admission to be a revocation even though we cannot identify the corresponding supervision periods
+    that were revoked (e.g. the person was serving supervision out-of-state). In these instances, this function will
+    return True and an empty list [].
+    """
+    revoked_periods: List[StateSupervisionPeriod] = []
+
+    if incarceration_period.state_code == 'US_ID':
+        admission_is_revocation, revoked_period = \
+            us_id_revoked_supervision_period_if_revocation_occurred(
+                incarceration_period, supervision_periods, preceding_incarceration_period
+            )
+
+        if revoked_period:
+            revoked_periods = [revoked_period]
+    else:
+        admission_is_revocation = is_revocation_admission(incarceration_period.admission_reason)
+        revoked_periods = get_relevant_supervision_periods_before_admission_date(incarceration_period.admission_date,
+                                                                                 supervision_periods)
+
+    return admission_is_revocation, revoked_periods
