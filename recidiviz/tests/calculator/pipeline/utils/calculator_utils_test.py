@@ -24,12 +24,10 @@ import pytest
 from recidiviz.calculator.pipeline.utils import calculator_utils
 from recidiviz.calculator.pipeline.utils.calculator_utils import person_characteristics
 from recidiviz.common.constants.person_characteristics import Gender
-from recidiviz.common.constants.state.state_supervision_violation import StateSupervisionViolationType
 from recidiviz.common.constants.state.state_supervision_violation_response import \
     StateSupervisionViolationResponseDecision
 from recidiviz.persistence.entity.state.entities import StatePerson, \
-    StatePersonRace, Race, StatePersonEthnicity, Ethnicity, StatePersonExternalId, StateSupervisionViolationTypeEntry, \
-    StateSupervisionViolation
+    StatePersonRace, Race, StatePersonEthnicity, Ethnicity, StatePersonExternalId
 
 
 def test_age_at_date_earlier_month():
@@ -322,42 +320,6 @@ class TestIdentifyMostSevereResponseDecision(unittest.TestCase):
             most_severe_decision = calculator_utils.identify_most_severe_response_decision(decisions)
 
             self.assertEqual(most_severe_decision, decision)
-
-
-class TestIdentifyMostSevereViolationType(unittest.TestCase):
-    """Tests code that identifies the msot severe violation type."""
-
-    def test_identify_most_severe_violation_type(self):
-        violation = StateSupervisionViolation.new_with_defaults(
-            state_code='US_MO',
-            supervision_violation_types=[
-                StateSupervisionViolationTypeEntry.new_with_defaults(
-                    violation_type=StateSupervisionViolationType.TECHNICAL
-                ),
-                StateSupervisionViolationTypeEntry.new_with_defaults(
-                    violation_type=StateSupervisionViolationType.FELONY
-                )
-            ])
-
-        most_severe_violation_type, most_severe_violation_type_subtype = \
-            calculator_utils.identify_most_severe_violation_type_and_subtype([violation])
-
-        self.assertEqual(most_severe_violation_type, StateSupervisionViolationType.FELONY)
-        self.assertIsNone(most_severe_violation_type_subtype)
-
-    def test_identify_most_severe_violation_type_test_all_types(self):
-        for violation_type in StateSupervisionViolationType:
-            violation = StateSupervisionViolation.new_with_defaults(
-                state_code='US_MO',
-                supervision_violation_types=[
-                    StateSupervisionViolationTypeEntry.new_with_defaults(
-                        violation_type=violation_type)
-                ])
-            most_severe_violation_type, most_severe_violation_type_subtype = \
-                calculator_utils.identify_most_severe_violation_type_and_subtype([violation])
-
-            self.assertEqual(most_severe_violation_type, violation_type)
-            self.assertIsNone(most_severe_violation_type_subtype)
 
 
 class TestAddPersonCharacteristics(unittest.TestCase):

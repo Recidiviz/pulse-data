@@ -17,7 +17,7 @@
 """Utils for the various calculation pipelines."""
 import datetime
 from datetime import date
-from typing import Optional, List, Any, Dict, Tuple, Type, Union
+from typing import Optional, List, Any, Dict, Type, Union
 
 import dateutil
 import attr
@@ -27,16 +27,13 @@ from recidiviz.calculator.pipeline.incarceration.incarceration_event import Inca
 from recidiviz.calculator.pipeline.program.program_event import ProgramEvent
 from recidiviz.calculator.pipeline.recidivism.release_event import ReleaseEvent
 from recidiviz.calculator.pipeline.supervision.supervision_time_bucket import SupervisionTimeBucket
-from recidiviz.calculator.pipeline.utils.state_utils.us_mo import us_mo_violation_utils
 from recidiviz.calculator.pipeline.utils.execution_utils import year_and_month_for_today
 from recidiviz.calculator.pipeline.utils.metric_utils import MetricMethodologyType, RecidivizMetric, \
     PersonLevelMetric
 from recidiviz.common.constants.state.external_id_types import US_ID_DOC, US_MO_DOC, US_PA_CONTROL, US_PA_PBPP
-from recidiviz.common.constants.state.state_supervision_violation import \
-    StateSupervisionViolationType
 from recidiviz.common.constants.state.state_supervision_violation_response \
     import StateSupervisionViolationResponseDecision
-from recidiviz.persistence.entity.state.entities import StatePerson, StateSupervisionViolation
+from recidiviz.persistence.entity.state.entities import StatePerson
 
 # Relevant metric period month lengths for dashboard person-based calculations
 METRIC_PERIOD_MONTHS = [36, 12, 6, 3]
@@ -73,15 +70,6 @@ DECISION_SEVERITY_ORDER = [
         StateSupervisionViolationResponseDecision.WARNING,
         StateSupervisionViolationResponseDecision.CONTINUANCE,
     ]
-
-VIOLATION_TYPE_SEVERITY_ORDER = [
-    StateSupervisionViolationType.FELONY,
-    StateSupervisionViolationType.MISDEMEANOR,
-    StateSupervisionViolationType.ABSCONDED,
-    StateSupervisionViolationType.MUNICIPAL,
-    StateSupervisionViolationType.ESCAPED,
-    StateSupervisionViolationType.TECHNICAL
-]
 
 
 def person_characteristics(person: StatePerson,
@@ -202,51 +190,6 @@ def first_day_of_next_month(any_date: datetime.date) -> datetime.date:
     """Returns the date corresponding to the first day of the next month for the given date."""
     next_month_date = any_date.replace(day=28) + datetime.timedelta(days=4)
     return next_month_date.replace(day=1)
-
-
-def identify_most_severe_violation_type_and_subtype(violations: List[StateSupervisionViolation]) \
-        -> Tuple[Optional[StateSupervisionViolationType], Optional[str]]:
-    """Identifies the most severe violation type on the provided |violations|, and, if relevant, the subtype of that
-    most severe violation type. Returns both as a tuple.
-    """
-    most_severe_violation_type = _identify_most_severe_violation_type(violations)
-    violation_subtype = identify_violation_subtype(most_severe_violation_type, violations)
-    return most_severe_violation_type, violation_subtype
-
-
-def _identify_most_severe_violation_type(
-        violations: List[StateSupervisionViolation]) -> Optional[StateSupervisionViolationType]:
-    """Identifies the most severe violation type on the violation according
-    to the static violation type ranking."""
-    if not violations:
-        return None
-
-    state_code = violations[0].state_code
-
-    if state_code.upper() == 'US_MO':
-        return us_mo_violation_utils.us_mo_identify_most_severe_violation_type(
-            violations, VIOLATION_TYPE_SEVERITY_ORDER)
-
-    violation_types = []
-    for violation in violations:
-        for violation_type_entry in violation.supervision_violation_types:
-            violation_types.append(violation_type_entry.violation_type)
-    return next((violation_type for violation_type in VIOLATION_TYPE_SEVERITY_ORDER
-                 if violation_type in violation_types), None)
-
-
-def identify_violation_subtype(violation_type: Optional[StateSupervisionViolationType],
-                               violations: List[StateSupervisionViolation]) \
-        -> Optional[str]:
-    """Looks through all provided |violations| of type |violation_type| and returns a string subtype, if necessary."""
-    if not violation_type or not violations:
-        return None
-
-    state_code = violations[0].state_code
-    if state_code.upper() == 'US_MO':
-        return us_mo_violation_utils.us_mo_identify_violation_subtype(violation_type, violations)
-
-    return None
 
 
 def identify_most_severe_response_decision(
@@ -473,3 +416,12 @@ def characteristics_dict_builder(
                 f'Did not find expected field [{metric_attribute}] in {event.__class__}. Metric class: {metric_class}')
 
     return characteristics
+
+
+def safe_list_index(list_of_values: List[Any], value: Any, default: int) -> int:
+    """Returns the index of the |value| in the |list_of_values|, if the |value| exists in the list. If the |value| is
+    not present in the |list_of_values|, returns the provided |default| value."""
+    try:
+        return list_of_values.index(value)
+    except ValueError:
+        return default

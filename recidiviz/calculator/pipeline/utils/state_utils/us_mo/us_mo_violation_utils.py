@@ -15,9 +15,10 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Utils for state-specific calculations related to violations for US_MO."""
-from collections import defaultdict, OrderedDict
-from typing import List, Optional, Dict, Any
+import sys
+from typing import List, Optional, Tuple
 
+from recidiviz.calculator.pipeline.utils.calculator_utils import safe_list_index
 from recidiviz.common.constants.state.state_supervision_violation import StateSupervisionViolationType
 from recidiviz.common.constants.state.state_supervision_violation_response import StateSupervisionViolationResponseType
 from recidiviz.persistence.entity.state.entities import StateSupervisionViolation, StateSupervisionViolationResponse, \
@@ -26,19 +27,20 @@ from recidiviz.persistence.entity.state.entities import StateSupervisionViolatio
 _SUBSTANCE_ABUSE_CONDITION_STR = 'DRG'
 _LAW_CONDITION_STR = 'LAW'
 
-_SUBSTANCE_ABUSE_SUBTYPE_STR: str = 'SUBSTANCE_ABUSE'
 _LAW_CITATION_SUBTYPE_STR: str = 'LAW_CITATION'
+_SUBSTANCE_ABUSE_SUBTYPE_STR: str = 'SUBSTANCE_ABUSE'
 
-_VIOLATION_TYPE_AND_SUBTYPE_SHORTHAND_ORDERED_MAP = OrderedDict([
-    (StateSupervisionViolationType.FELONY.value, 'fel'),
-    (StateSupervisionViolationType.MISDEMEANOR.value, 'misd'),
-    (_LAW_CITATION_SUBTYPE_STR, 'law_cit'),
-    (StateSupervisionViolationType.ABSCONDED.value, 'absc'),
-    (StateSupervisionViolationType.MUNICIPAL.value, 'muni'),
-    (StateSupervisionViolationType.ESCAPED.value, 'esc'),
-    (_SUBSTANCE_ABUSE_SUBTYPE_STR, 'subs'),
-    (StateSupervisionViolationType.TECHNICAL.value, 'tech')
-])
+
+_VIOLATION_TYPE_AND_SUBTYPE_SHORTHAND_ORDERED_MAP: List[Tuple[StateSupervisionViolationType, str, str]] = [
+    (StateSupervisionViolationType.FELONY, StateSupervisionViolationType.FELONY.value, 'fel'),
+    (StateSupervisionViolationType.MISDEMEANOR, StateSupervisionViolationType.MISDEMEANOR.value, 'misd'),
+    (StateSupervisionViolationType.TECHNICAL, _LAW_CITATION_SUBTYPE_STR, 'law_cit'),
+    (StateSupervisionViolationType.ABSCONDED, StateSupervisionViolationType.ABSCONDED.value, 'absc'),
+    (StateSupervisionViolationType.MUNICIPAL, StateSupervisionViolationType.MUNICIPAL.value, 'muni'),
+    (StateSupervisionViolationType.ESCAPED, StateSupervisionViolationType.ESCAPED.value, 'esc'),
+    (StateSupervisionViolationType.TECHNICAL, _SUBSTANCE_ABUSE_SUBTYPE_STR, 'subs'),
+    (StateSupervisionViolationType.TECHNICAL, StateSupervisionViolationType.TECHNICAL.value, 'tech')
+]
 
 FOLLOW_UP_RESPONSE_SUBTYPE = 'SUP'
 
@@ -70,107 +72,16 @@ def _get_violation_report_subtype_should_be_included_in_calculations(response_su
     raise ValueError(f"Unexpected violation response subtype {response_subtype} for a US_MO VIOLATION_REPORT.")
 
 
-def us_mo_identify_most_severe_violation_type(violations: List[StateSupervisionViolation],
-                                              violation_type_severity_order: List[StateSupervisionViolationType]) -> \
-        Optional[StateSupervisionViolationType]:
-    """Identifies the most severe violation type on the violation according to the violation type severity order
-    ranking. Classifies LAW_CITATION violations as severe as a MISDEMEANOR."""
-    has_law_citation = False
-
-    violation_types = []
-    for violation in violations:
-        for violation_type_entry in violation.supervision_violation_types:
-            violation_types.append(violation_type_entry.violation_type)
-
-            if violation_type_entry.violation_type == StateSupervisionViolationType.TECHNICAL:
-                technical_subtype = us_mo_identify_violation_subtype(StateSupervisionViolationType.TECHNICAL,
-                                                                     [violation])
-
-                if technical_subtype == _LAW_CITATION_SUBTYPE_STR:
-                    has_law_citation = True
-
-    most_severe_type = next((violation_type for violation_type in violation_type_severity_order
-                             if violation_type in violation_types), None)
-
-    if (most_severe_type not in (StateSupervisionViolationType.FELONY, StateSupervisionViolationType.MISDEMEANOR)
-            and has_law_citation):
-        # The most severe violation type was a LAW_CITATION. Return TECHNICAL so that TECHNICAL-LAW_CITATION will be
-        # this person's most severe violation type and subtype.
-        return StateSupervisionViolationType.TECHNICAL
-
-    return most_severe_type
-
-
-def us_mo_identify_violation_subtype(violation_type: StateSupervisionViolationType,
-                                     violations: List[StateSupervisionViolation]) -> Optional[str]:
-    """Looks through all provided |violations| of type |violation_type| and returns a string subtype, if necessary."""
-    # We only care about subtypes for technical violations
-    if violation_type != StateSupervisionViolationType.TECHNICAL:
-        return None
-
-    technical_violations = _get_violations_of_type(violations, StateSupervisionViolationType.TECHNICAL)
-
-    all_conditions = [
-        condition.condition for violation in technical_violations
-        for condition in violation.supervision_violated_conditions
+def us_mo_prepare_violation_responses_for_calculations(
+        violation_responses: List[StateSupervisionViolationResponse]) -> List[StateSupervisionViolationResponse]:
+    """Performs required pre-processing on US_MO StateSupervisionViolationResponses."""
+    return [
+        _normalize_violations_on_responses(response)
+        for response in violation_responses
     ]
 
-    if _LAW_CITATION_SUBTYPE_STR in all_conditions:
-        return _LAW_CITATION_SUBTYPE_STR
 
-    if _SUBSTANCE_ABUSE_CONDITION_STR in all_conditions:
-        return _SUBSTANCE_ABUSE_SUBTYPE_STR
-
-    return None
-
-
-def _get_violations_of_type(violations: List[StateSupervisionViolation], violation_type: StateSupervisionViolationType):
-    return [violation for violation in violations if _is_violation_of_type(violation, violation_type)]
-
-
-def _is_violation_of_type(violation: StateSupervisionViolation, violation_type: StateSupervisionViolationType) -> bool:
-    for violation_type_entry in violation.supervision_violation_types:
-        if violation_type_entry.violation_type == violation_type:
-            return True
-    return False
-
-
-def get_ranked_violation_type_and_subtype_counts(violations: List[StateSupervisionViolation],
-                                                 violation_type_severity_order: List[StateSupervisionViolationType]) \
-        -> Dict[str, int]:
-    """Given a list of violations, returns a dictionary containing violation type/subtypes and their relative
-    frequency as the most severe violation type listed on a report. All keys are shorthand versions of the violation
-    type/subtype for ease of display in our front end. Entries in the dictionary are ordered by decreasing severity.
-    """
-    type_and_subtype_counts: Dict[Any, int] = defaultdict(int)
-
-    # Count all violation types and subtypes
-    for violation in violations:
-        most_severe_violation_type = us_mo_identify_most_severe_violation_type([violation],
-                                                                               violation_type_severity_order)
-
-        if not most_severe_violation_type:
-            continue
-
-        is_technical = most_severe_violation_type == StateSupervisionViolationType.TECHNICAL
-
-        subtype = us_mo_identify_violation_subtype(most_severe_violation_type, [violation])
-
-        to_increment = subtype if subtype and is_technical else most_severe_violation_type.value
-        type_and_subtype_counts[to_increment] += 1
-
-    # Convert to string shorthand
-    ranked_shorthand_counts: Dict[str, int] = OrderedDict()
-    for violation_type_or_subtype in _VIOLATION_TYPE_AND_SUBTYPE_SHORTHAND_ORDERED_MAP.keys():
-        violation_count = type_and_subtype_counts[violation_type_or_subtype]
-        shorthand = _VIOLATION_TYPE_AND_SUBTYPE_SHORTHAND_ORDERED_MAP[violation_type_or_subtype]
-        if violation_count:
-            ranked_shorthand_counts[shorthand] = violation_count
-
-    return ranked_shorthand_counts
-
-
-def normalize_violations_on_responses(response: StateSupervisionViolationResponse) -> \
+def _normalize_violations_on_responses(response: StateSupervisionViolationResponse) -> \
         StateSupervisionViolationResponse:
     """For responses that are not of type CITATION or don't have an associated violation, does nothing. Responses of
     type CITATION do not have violation types on their violations, so the violation types and conditions violated on
@@ -199,3 +110,74 @@ def normalize_violations_on_responses(response: StateSupervisionViolationRespons
                 condition_entry.condition = _LAW_CITATION_SUBTYPE_STR
 
     return response
+
+
+def us_mo_get_violation_type_subtype_strings_for_violation(violation: StateSupervisionViolation) -> List[str]:
+    """Returns a list of strings that represent the violation subtypes present on the given |violation|."""
+    violation_type_list: List[str] = []
+
+    includes_technical_violation = False
+    includes_special_case_violation_subtype = False
+
+    supervision_violation_types = violation.supervision_violation_types
+
+    if not supervision_violation_types:
+        return violation_type_list
+
+    for violation_type_entry in violation.supervision_violation_types:
+        if violation_type_entry.violation_type and \
+                violation_type_entry.violation_type != StateSupervisionViolationType.TECHNICAL:
+            violation_type_list.append(violation_type_entry.violation_type.value)
+        else:
+            includes_technical_violation = True
+
+    for condition_entry in violation.supervision_violated_conditions:
+        condition = condition_entry.condition
+        if condition:
+            if condition.upper() == _SUBSTANCE_ABUSE_CONDITION_STR:
+                violation_type_list.append(_SUBSTANCE_ABUSE_SUBTYPE_STR)
+                includes_special_case_violation_subtype = True
+            else:
+                if condition.upper() == _LAW_CITATION_SUBTYPE_STR:
+                    includes_special_case_violation_subtype = True
+
+                # Condition values are free text so we standardize all to be upper case
+                violation_type_list.append(condition.upper())
+
+    # If this is a TECHNICAL violation without either a SUBSTANCE_ABUSE or LAW_CITATION condition, then add
+    # 'TECHNICAL' to the type list so that this will get classified as a TECHNICAL violation
+    if includes_technical_violation and not includes_special_case_violation_subtype:
+        violation_type_list.append(StateSupervisionViolationType.TECHNICAL.value)
+
+    return violation_type_list
+
+
+def us_mo_sorted_violation_subtypes_by_severity(violation_subtypes: List[str]) -> List[str]:
+    """Returns the list of |violation_subtypes| sorted in order of the subtype values in the
+    _VIOLATION_TYPE_AND_SUBTYPE_SHORTHAND_ORDERED_MAP."""
+    subtype_sort_order = [
+        subtype for _, subtype, _ in _VIOLATION_TYPE_AND_SUBTYPE_SHORTHAND_ORDERED_MAP
+    ]
+
+    sorted_violation_subtypes = sorted(violation_subtypes,
+                                       key=lambda subtype: safe_list_index(subtype_sort_order, subtype, sys.maxsize))
+
+    return sorted_violation_subtypes
+
+
+def us_mo_violation_type_from_subtype(violation_subtype: str) -> StateSupervisionViolationType:
+    """Determines which StateSupervisionViolationType corresponds to the |violation_subtype| value."""
+    for violation_type, violation_subtype_value, _ in _VIOLATION_TYPE_AND_SUBTYPE_SHORTHAND_ORDERED_MAP:
+        if violation_subtype == violation_subtype_value:
+            return violation_type
+
+    raise ValueError(f"Unexpected violation_subtype {violation_subtype} for US_MO.")
+
+
+def us_mo_shorthand_for_violation_subtype(violation_subtype: str) -> str:
+    """Returns the shorthand string corresponding to the |violation_subtype| value."""
+    for _, violation_subtype_value, subtype_shorthand in _VIOLATION_TYPE_AND_SUBTYPE_SHORTHAND_ORDERED_MAP:
+        if violation_subtype == violation_subtype_value:
+            return subtype_shorthand
+
+    raise ValueError(f"Unexpected violation_subtype {violation_subtype} for US_MO.")

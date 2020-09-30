@@ -53,7 +53,7 @@ REVOCATIONS_MATRIX_FILTERED_CASELOAD_QUERY_TEMPLATE = \
       AND month IS NOT NULL
       AND year = EXTRACT(YEAR FROM CURRENT_DATE('US/Pacific'))
       AND month = EXTRACT(MONTH FROM CURRENT_DATE('US/Pacific'))
-    ORDER BY metric_period_months, violation_record
+    ORDER BY state_code, metric_period_months, violation_record
     """
 
 REVOCATIONS_MATRIX_FILTERED_CASELOAD_VIEW_BUILDER = MetricBigQueryViewBuilder(

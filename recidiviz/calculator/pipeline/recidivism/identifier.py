@@ -30,10 +30,9 @@ from typing import Dict, List, Optional
 from collections import defaultdict
 from recidiviz.calculator.pipeline.recidivism.release_event import \
     ReincarcerationReturnType, ReleaseEvent, RecidivismReleaseEvent, NonRecidivismReleaseEvent
-from recidiviz.calculator.pipeline.utils.calculator_utils import \
-    identify_most_severe_violation_type_and_subtype
 from recidiviz.calculator.pipeline.utils.incarceration_period_utils import \
     prepare_incarceration_periods_for_calculations, drop_temporary_custody_periods
+from recidiviz.calculator.pipeline.utils.violation_utils import identify_most_severe_violation_type_and_subtype
 from recidiviz.common.constants.state.state_incarceration_period import \
     StateIncarcerationPeriodStatus, is_revocation_admission
 from recidiviz.common.constants.state.state_incarceration_period import \
