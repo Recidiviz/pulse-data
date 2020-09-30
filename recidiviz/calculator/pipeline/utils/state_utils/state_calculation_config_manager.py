@@ -269,33 +269,6 @@ def get_pre_revocation_supervision_type(
     )
 
 
-def supervision_period_counts_towards_supervision_population_in_date_range_state_specific(
-        date_range: TimeRange,
-        supervision_sentences: List[StateSupervisionSentence],
-        incarceration_sentences: List[StateIncarcerationSentence],
-        supervision_period: StateSupervisionPeriod) -> bool:
-    """ Returns False if there is state-specific information to indicate that the supervision period should not count
-    towards the supervision population in a range. Returns True if either there is a state-specific check that indicates
-    that the supervision period should count or if there is no state-specific check to perform.
-    """
-
-    if supervision_period.state_code == 'US_MO':
-        sp_range = TimeRange.for_supervision_period(supervision_period)
-        overlapping_range = TimeRangeDiff(range_1=date_range, range_2=sp_range).overlapping_range
-
-        if not overlapping_range:
-            return False
-
-        return us_mo_get_most_recent_supervision_period_supervision_type_before_upper_bound_day(
-            upper_bound_exclusive_date=overlapping_range.upper_bound_exclusive_date,
-            lower_bound_inclusive_date=overlapping_range.lower_bound_inclusive_date,
-            incarceration_sentences=incarceration_sentences,
-            supervision_sentences=supervision_sentences
-        ) is not None
-
-    return True
-
-
 def terminating_supervision_period_supervision_type(
         supervision_period: StateSupervisionPeriod,
         supervision_sentences: List[StateSupervisionSentence],
@@ -360,15 +333,61 @@ def incarceration_period_is_from_revocation(
     return is_revocation_admission(incarceration_period.admission_reason)
 
 
-def produce_supervision_time_bucket_for_period(supervision_period: StateSupervisionPeriod):
-    """Whether or not any SupervisionTimeBuckets should be created using the supervision_period. In some cases, we do
-    not want to drop periods entirely because we need them for context in some of the calculations, but we do not want
-    to create metrics using the periods."""
+def should_produce_supervision_time_bucket_for_period(supervision_period: StateSupervisionPeriod,
+                                                      incarceration_sentences: List[StateIncarcerationSentence],
+                                                      supervision_sentences: List[StateSupervisionSentence]):
+    """Whether or not any SupervisionTimeBuckets should be created using the supervision_period. In some cases,
+    supervision period pre-processing will not drop periods entirely because we need them for context in some of the
+    calculations, but we do not want to create metrics using the periods.
+
+    If this returns True, it does not necessarily mean they should be counted towards the supervision population for
+    any part of this period. It just means that a person was actively assigned to supervision at this time and various
+    characteristics of this period may be relevant for generating metrics (such as the termination reason / date) even
+    if we may not count this person towards the supervision population during the period time span (e.g. if they are
+    incarcerated the whole time).
+    """
+    if supervision_period.state_code == 'US_MO':
+        # If no days of this supervision_period should count towards any metrics, we can drop this period entirely
+        sp_range = TimeRange.for_supervision_period(supervision_period)
+
+        return us_mo_get_most_recent_supervision_period_supervision_type_before_upper_bound_day(
+            upper_bound_exclusive_date=sp_range.upper_bound_exclusive_date,
+            lower_bound_inclusive_date=sp_range.lower_bound_inclusive_date,
+            incarceration_sentences=incarceration_sentences,
+            supervision_sentences=supervision_sentences
+        ) is not None
+
     if ((supervision_period.supervision_period_supervision_type == StateSupervisionPeriodSupervisionType.INVESTIGATION
          # TODO(#2891): Remove this check when we remove supervision_type from StateSupervisionPeriods
          or supervision_period.supervision_type == StateSupervisionType.PRE_CONFINEMENT)
             and not investigation_periods_in_supervision_population(supervision_period.state_code)):
         return False
+    return True
+
+
+def supervision_period_counts_towards_supervision_population_in_date_range_state_specific(
+        date_range: TimeRange,
+        supervision_sentences: List[StateSupervisionSentence],
+        incarceration_sentences: List[StateIncarcerationSentence],
+        supervision_period: StateSupervisionPeriod) -> bool:
+    """Returns False if there is state-specific information to indicate that the supervision period should not count
+    towards any supervision metrics in the time range. Returns True if either there is a state-specific check that
+    indicates that the supervision period should count or if there is no state-specific check to perform.
+    """
+    if supervision_period.state_code == 'US_MO':
+        sp_range = TimeRange.for_supervision_period(supervision_period)
+        overlapping_range = TimeRangeDiff(range_1=date_range, range_2=sp_range).overlapping_range
+
+        if not overlapping_range:
+            return False
+
+        return us_mo_get_most_recent_supervision_period_supervision_type_before_upper_bound_day(
+            upper_bound_exclusive_date=overlapping_range.upper_bound_exclusive_date,
+            lower_bound_inclusive_date=overlapping_range.lower_bound_inclusive_date,
+            incarceration_sentences=incarceration_sentences,
+            supervision_sentences=supervision_sentences
+        ) is not None
+
     return True
 
 

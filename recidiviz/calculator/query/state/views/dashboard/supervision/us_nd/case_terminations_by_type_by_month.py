@@ -30,6 +30,7 @@ CASE_TERMINATIONS_BY_TYPE_BY_MONTH_DESCRIPTION = """
 """
 
 
+# TODO(#4155): Use the supervision_termination_metrics instead of the raw state_supervision_period table
 def _get_query_prep_statement(reference_views_dataset):
     """Return the Common Table Expression used to gather the termination case data"""
     return """
