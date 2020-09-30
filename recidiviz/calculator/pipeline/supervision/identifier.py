@@ -43,7 +43,7 @@ from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_ma
     filter_violation_responses_before_revocation, \
     should_collapse_transfers_different_purpose_for_incarceration, incarceration_period_is_from_revocation, \
     filter_supervision_periods_for_revocation_identification, get_pre_revocation_supervision_type, \
-    produce_supervision_time_bucket_for_period, only_state_custodial_authority_in_supervision_population, \
+    should_produce_supervision_time_bucket_for_period, only_state_custodial_authority_in_supervision_population, \
     get_case_compliance_on_date, include_decisions_on_follow_up_responses, \
     second_assessment_on_supervision_is_more_reliable, get_supervision_district_from_supervision_period,\
     prepare_violation_responses_for_calculations, revoked_supervision_periods_if_revocation_occurred
@@ -199,7 +199,9 @@ def find_supervision_time_buckets(
     supervision_time_buckets.extend(projected_supervision_completion_buckets)
 
     for supervision_period in supervision_period_index.supervision_periods:
-        if produce_supervision_time_bucket_for_period(supervision_period):
+        if should_produce_supervision_time_bucket_for_period(supervision_period,
+                                                             incarceration_sentences,
+                                                             supervision_sentences):
             judicial_district_code = _get_judicial_district_code(
                 supervision_period, supervision_period_to_judicial_district_associations
             )
@@ -225,7 +227,6 @@ def find_supervision_time_buckets(
                 assessments,
                 violation_responses,
                 supervision_period_to_agent_associations,
-                incarceration_period_index,
                 judicial_district_code
             )
 
@@ -410,7 +411,6 @@ def supervision_period_counts_towards_supervision_population_in_date_range(
     """Returns True if the existence of the |supervision_period| means a person can be counted towards the supervision
     population in the provided date range.
     """
-
     is_fully_incarcerated_for_range = incarceration_period_index.is_fully_incarcerated_for_range(date_range)
 
     if is_fully_incarcerated_for_range:
@@ -466,7 +466,6 @@ def find_supervision_termination_bucket(
         assessments: List[StateAssessment],
         violation_responses: List[StateSupervisionViolationResponse],
         supervision_period_to_agent_associations: Dict[int, Dict[Any, Any]],
-        incarceration_period_index: IncarcerationPeriodIndex,
         judicial_district_code: Optional[str] = None
 ) -> Optional[SupervisionTimeBucket]:
     """Identifies an instance of supervision termination. If the given supervision_period has a valid start_date and
@@ -484,19 +483,6 @@ def find_supervision_termination_bucket(
     If this supervision does not have a termination_date, then None is returned.
     """
     if supervision_period.start_date is not None and supervision_period.termination_date is not None:
-        supervision_period_counts_towards_supervision_population_at_any_point = \
-            supervision_period_counts_towards_supervision_population_in_date_range(
-                date_range=TimeRange.for_supervision_period(supervision_period),
-                supervision_sentences=supervision_sentences,
-                incarceration_sentences=incarceration_sentences,
-                supervision_period=supervision_period,
-                incarceration_period_index=incarceration_period_index)
-
-        if not supervision_period_counts_towards_supervision_population_at_any_point:
-            # If no portion of the supervision period counts towards the supervision population at any point, do not
-            # emit a termination bucket.
-            return None
-
         assessment_start_date = supervision_period.start_date
         termination_date = supervision_period.termination_date
         assessment_termination_date = supervision_period.termination_date

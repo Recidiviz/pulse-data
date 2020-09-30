@@ -29,6 +29,7 @@ SUPERVISION_ABSCONSION_TERMINATIONS_BY_OFFICER_BY_MONTH_DESCRIPTION = """
  Total supervision periods terminated for absconsion by officer and by month.
  """
 
+# TODO(#4155): Use the supervision_termination_metrics instead of the raw state_supervision_period table
 SUPERVISION_ABSCONSION_TERMINATIONS_BY_OFFICER_BY_MONTH_QUERY_TEMPLATE = \
     """
     /*{description}*/

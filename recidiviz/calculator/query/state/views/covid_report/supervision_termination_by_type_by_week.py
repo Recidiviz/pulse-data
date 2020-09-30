@@ -26,6 +26,7 @@ SUPERVISION_TERMINATIONS_BY_TYPE_BY_WEEK_VIEW_NAME = 'supervision_terminations_b
 SUPERVISION_TERMINATIONS_BY_TYPE_BY_WEEK_DESCRIPTION = \
     """ Supervision terminations by week, with subset of discharge terminations """
 
+# TODO(#4155): Use the supervision_termination_metrics instead of the raw state_supervision_period table
 SUPERVISION_TERMINATIONS_BY_TYPE_BY_WEEK_QUERY_TEMPLATE = \
     """
     /*{description}*/
