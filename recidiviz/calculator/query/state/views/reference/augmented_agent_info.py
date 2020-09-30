@@ -34,6 +34,7 @@ AUGMENTED_AGENT_INFO_DESCRIPTION = \
     for use in the pipelines.
     """
 
+# TODO(#4159) Remove the US_PA state-specific logic once we have given and surnames set in ingest
 AUGMENTED_AGENT_INFO_QUERY_TEMPLATE = \
     """
     /*{description}*/
@@ -44,7 +45,7 @@ AUGMENTED_AGENT_INFO_QUERY_TEMPLATE = \
         state_code, 
         agent_type, 
         external_id, 
-        full_name,
+        REPLACE(JSON_EXTRACT(full_name, '$.full_name'), '"', '')  AS full_name,
         REPLACE(JSON_EXTRACT(full_name, '$.given_names'), '"', '')  AS given_names,
         REPLACE(JSON_EXTRACT(full_name, '$.surname'), '"', '') AS surname
       FROM `{project_id}.{base_dataset}.state_agent` agent
@@ -57,10 +58,14 @@ AUGMENTED_AGENT_INFO_QUERY_TEMPLATE = \
           external_id,
           CASE 
             WHEN state_code = 'US_ND' THEN COALESCE(given_names, FNAME)
+            -- TODO(#4159) Remove this state-specific logic once we have given and surnames set in ingest --
+            WHEN state_code = 'US_PA' THEN TRIM(SPLIT(full_name, ',')[SAFE_OFFSET(1)])
             ELSE given_names
           END AS given_names,
           CASE 
             WHEN state_code = 'US_ND' THEN COALESCE(surname, LNAME)
+            -- TODO(#4159) Remove this state-specific logic once we have given and surnames set in ingest --
+            WHEN state_code = 'US_PA' THEN TRIM(SPLIT(full_name, ',')[SAFE_OFFSET(0)])
             ELSE surname
           END AS surname, 
           CASE 
@@ -73,8 +78,15 @@ AUGMENTED_AGENT_INFO_QUERY_TEMPLATE = \
     )
     SELECT 
       *, 
-      COALESCE(CONCAT(agents.external_id, ': ', agents.given_names, ' ', agents.surname),
-               agents.external_id) as agent_external_id
+      CASE WHEN agents.external_id IS NOT NULL AND COALESCE(agents.given_names, agents.surname) IS NOT NULL
+           THEN CONCAT(agents.external_id, ': ', agents.given_names, ' ', agents.surname)
+           WHEN agents.external_id IS NOT NULL THEN agents.external_id
+           ELSE ARRAY_TO_STRING((SELECT ARRAY_AGG(col ORDER BY col DESC) 
+                FROM UNNEST([agents.given_names, agents.surname]) AS col 
+                WHERE NOT col IS NULL)
+                , '')
+           END
+       AS agent_external_id,
     FROM agents
 
 """

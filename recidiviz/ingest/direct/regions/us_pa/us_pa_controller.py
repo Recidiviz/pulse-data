@@ -1065,6 +1065,7 @@ class UsPaController(CsvGcsfsDirectIngestController):
         for obj in extracted_objects:
             if isinstance(obj, StateSupervisionPeriod):
                 if officer_full_name_and_id:
+                    # TODO(#4159): Update this regex to extract and set the given_names and surname from the full_name
                     match = re.match(AGENT_NAME_AND_ID_REGEX, officer_full_name_and_id)
                     if match:
                         full_name = match.group(1)
