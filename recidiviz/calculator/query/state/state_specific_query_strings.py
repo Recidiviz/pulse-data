@@ -49,6 +49,10 @@ def state_specific_most_severe_violation_type_subtype_grouping() -> str:
                 CASE WHEN most_severe_violation_type_subtype = 'SUBSTANCE_ABUSE' THEN most_severe_violation_type_subtype
                      WHEN most_severe_violation_type_subtype = 'LAW_CITATION' THEN 'MISDEMEANOR'
                      ELSE most_severe_violation_type END
+                WHEN state_code = 'US_PA' THEN
+                    CASE WHEN most_severe_violation_type = 'TECHNICAL' THEN most_severe_violation_type_subtype
+                         WHEN most_severe_violation_type = 'MUNICIPAL' THEN 'SUMMARY_OFFENSE'
+                         ELSE most_severe_violation_type END
                 WHEN most_severe_violation_type IS NULL THEN 'NO_VIOLATIONS'
                 ELSE most_severe_violation_type
             END AS violation_type"""
@@ -61,6 +65,32 @@ def state_specific_officer_recommendation() -> str:
                 ELSE most_severe_response_decision END
            ELSE most_severe_response_decision
       END AS officer_recommendation"""
+
+
+def state_specific_violation_count_type_grouping() -> str:
+    return """CASE WHEN state_code = 'US_MO' AND violation_count_type = 'LAW_CITATION' THEN 'MISDEMEANOR'
+              WHEN state_code = 'US_PA' AND violation_count_type = 'MUNICIPAL' THEN 'SUMMARY_OFFENSE'
+              ELSE violation_count_type
+        END as violation_count_type"""
+
+
+def state_specific_violation_count_type_categories() -> str:
+    return """-- US_MO categories --
+        SUM(IF(state_code = 'US_MO' AND violation_count_type = 'ASC', count, 0)) AS association_count,
+        SUM(IF(state_code = 'US_MO' AND violation_count_type = 'DIR', count, 0)) AS directive_count,
+        SUM(IF(state_code = 'US_MO' AND violation_count_type = 'EMP', count, 0)) AS employment_count,
+        SUM(IF(state_code = 'US_MO' AND violation_count_type = 'INT', count, 0)) AS intervention_fee_count,
+        SUM(IF(state_code = 'US_MO' AND violation_count_type = 'RES', count, 0)) AS residency_count,
+        SUM(IF(state_code = 'US_MO' AND violation_count_type = 'SPC', count, 0)) AS special_count,
+        SUM(IF(state_code = 'US_MO' AND violation_count_type = 'SUP', count, 0)) AS supervision_strategy_count,
+        SUM(IF(state_code = 'US_MO' AND violation_count_type = 'TRA', count, 0)) AS travel_count,
+        SUM(IF(state_code = 'US_MO' AND violation_count_type = 'WEA', count, 0)) AS weapon_count,
+        -- US_PA categories --
+        SUM(IF(state_code = 'US_PA' AND violation_count_type = 'ELEC_MONITORING', count, 0)) as elec_monitoring_count,
+        SUM(IF(state_code = 'US_PA' AND violation_count_type = 'LOW_TECH', count, 0)) as low_tech_count,
+        SUM(IF(state_code = 'US_PA' AND violation_count_type = 'MED_TECH', count, 0)) as med_tech_count,
+        SUM(IF(state_code = 'US_PA' AND violation_count_type = 'HIGH_TECH', count, 0)) as high_tech_count,
+        SUM(IF(state_code = 'US_PA' AND violation_count_type = 'SUMMARY_OFFENSE', count, 0)) AS summary_offense_count"""
 
 
 def state_specific_facility_exclusion() -> str:

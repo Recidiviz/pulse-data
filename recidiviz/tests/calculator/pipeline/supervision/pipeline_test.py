@@ -794,6 +794,7 @@ class TestSupervisionPipeline(unittest.TestCase):
             supervision_violation_types=[supervision_violation_type]
         )
 
+        supervision_violation_type.supervision_violation_id = supervision_violation.supervision_violation_id
         violation_report.supervision_violation_id = supervision_violation.supervision_violation_id
 
         # This incarceration period was due to a probation revocation
@@ -1918,7 +1919,8 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             supervising_officer_external_id='OFFICER0009',
             supervising_district_external_id='10',
             response_count=1,
-            most_severe_violation_type=StateSupervisionViolationType.MISDEMEANOR
+            most_severe_violation_type=StateSupervisionViolationType.MISDEMEANOR,
+            most_severe_violation_type_subtype=StateSupervisionViolationType.MISDEMEANOR.value
         ))
 
         expected_buckets.extend([
@@ -1935,6 +1937,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 supervising_officer_external_id='OFFICER0009',
                 supervising_district_external_id='10',
                 most_severe_violation_type=StateSupervisionViolationType.MISDEMEANOR,
+                most_severe_violation_type_subtype=StateSupervisionViolationType.MISDEMEANOR.value,
                 response_count=1
             ),
             RevocationReturnSupervisionTimeBucket(
@@ -1943,6 +1946,8 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 bucket_date=incarceration_period.admission_date,
                 supervision_type=supervision_period_supervision_type,
                 most_severe_violation_type=StateSupervisionViolationType.MISDEMEANOR,
+                most_severe_violation_type_subtype=StateSupervisionViolationType.MISDEMEANOR.value,
+                violation_history_description='1misdemeanor',
                 response_count=1,
                 violation_type_frequency_counter=[['MISDEMEANOR']],
                 case_type=StateSupervisionCaseType.GENERAL,
@@ -2127,7 +2132,8 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             supervising_officer_external_id='OFFICER0009',
             supervising_district_external_id='10',
             response_count=1,
-            most_severe_violation_type=StateSupervisionViolationType.MISDEMEANOR
+            most_severe_violation_type=StateSupervisionViolationType.MISDEMEANOR,
+            most_severe_violation_type_subtype=StateSupervisionViolationType.MISDEMEANOR.value,
         ))
 
         expected_buckets.extend([
@@ -2144,7 +2150,8 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 supervising_officer_external_id='OFFICER0009',
                 supervising_district_external_id='10',
                 response_count=1,
-                most_severe_violation_type=StateSupervisionViolationType.MISDEMEANOR
+                most_severe_violation_type=StateSupervisionViolationType.MISDEMEANOR,
+                most_severe_violation_type_subtype=StateSupervisionViolationType.MISDEMEANOR.value,
             ),
             RevocationReturnSupervisionTimeBucket(
                 state_code=supervision_period.state_code,
@@ -2152,6 +2159,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 bucket_date=incarceration_period.admission_date,
                 supervision_type=supervision_period_supervision_type,
                 most_severe_violation_type=StateSupervisionViolationType.MISDEMEANOR,
+                most_severe_violation_type_subtype=StateSupervisionViolationType.MISDEMEANOR.value,
                 response_count=1,
                 violation_history_description='1misd',
                 violation_type_frequency_counter=[['MISDEMEANOR']],
