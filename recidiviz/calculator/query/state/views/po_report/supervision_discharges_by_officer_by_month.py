@@ -30,6 +30,7 @@ SUPERVISION_DISCHARGES_BY_OFFICER_BY_MONTH_DESCRIPTION = """
  average discharges per district, and average discharges per state.
  """
 
+# TODO(#4155): Use the supervision_termination_metrics instead of the raw state_supervision_period table
 SUPERVISION_DISCHARGES_BY_OFFICER_BY_MONTH_QUERY_TEMPLATE = \
     """
     /*{description}*/
