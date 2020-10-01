@@ -292,7 +292,7 @@ def get_all_validations() -> List[DataValidationCheck]:
             validation_name_suffix='district',
             sameness_check_type=SamenessDataValidationCheckType.STRINGS,
             comparison_columns=['external_district', 'internal_district'],
-            max_allowed_error=0.001),
+            max_allowed_error=0.01),
         SamenessDataValidationCheck(
             view=SUPERVISION_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_MATCHING_PEOPLE_VIEW_BUILDER.build(),
             validation_name_suffix='supervision_level',
