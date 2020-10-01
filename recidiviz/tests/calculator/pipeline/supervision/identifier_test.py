@@ -3200,6 +3200,91 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
 
         self.assertCountEqual(supervision_time_buckets, expected_buckets)
 
+    def test_find_supervision_time_buckets_us_pa(self):
+        """Tests the find_supervision_time_buckets function for periods in US_PA."""
+        supervision_period = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=111,
+            external_id='sp1',
+            status=StateSupervisionPeriodStatus.TERMINATED,
+            case_type_entries=[
+                StateSupervisionCaseTypeEntry.new_with_defaults(
+                    state_code='US_PA',
+                    case_type=StateSupervisionCaseType.GENERAL
+                )
+            ],
+            state_code='US_PA',
+            supervision_site='OFFICE',
+            start_date=date(2018, 3, 5),
+            termination_date=date(2018, 5, 19),
+            termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_level=StateSupervisionLevel.MINIMUM,
+            supervision_level_raw_text='LOW'
+        )
+
+        supervision_sentence = StateSupervisionSentence.new_with_defaults(
+            supervision_sentence_id=111,
+            start_date=date(2017, 1, 1),
+            external_id='ss1',
+            status=StateSentenceStatus.COMPLETED,
+            supervision_periods=[supervision_period]
+        )
+
+        assessment = StateAssessment.new_with_defaults(
+            state_code='US_PA',
+            assessment_type=StateAssessmentType.LSIR,
+            assessment_level=StateAssessmentLevel.HIGH,
+            assessment_score=33,
+            assessment_date=date(2018, 3, 1)
+        )
+
+        supervision_sentences = [supervision_sentence]
+        supervision_periods = [supervision_period]
+        incarceration_periods = []
+        assessments = [assessment]
+        violation_responses = []
+        supervision_contacts = []
+        incarceration_sentences = []
+
+        supervision_time_buckets = identifier.find_supervision_time_buckets(
+            supervision_sentences,
+            incarceration_sentences,
+            supervision_periods,
+            incarceration_periods,
+            assessments,
+            violation_responses,
+            supervision_contacts,
+            DEFAULT_SSVR_AGENT_ASSOCIATIONS,
+            DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
+            DEFAULT_SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATIONS
+        )
+
+        expected_buckets = [
+            SupervisionTerminationBucket(
+                state_code=supervision_period.state_code,
+                year=supervision_period.termination_date.year,
+                month=supervision_period.termination_date.month,
+                bucket_date=supervision_period.termination_date,
+                supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+                supervision_level=supervision_period.supervision_level,
+                supervision_level_raw_text=supervision_period.supervision_level_raw_text,
+                supervising_district_external_id='OFFICE',
+                case_type=StateSupervisionCaseType.GENERAL,
+                termination_reason=supervision_period.termination_reason
+            )
+        ]
+
+        expected_buckets.extend(expected_non_revocation_return_time_buckets(
+            supervision_period,
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            assessment_score=assessment.assessment_score,
+            assessment_level=StateAssessmentLevel.HIGH,
+            assessment_type=assessment.assessment_type,
+            supervising_district_external_id='OFFICE',
+        ))
+
+        self.assertCountEqual(supervision_time_buckets, expected_buckets)
+
     def test_find_supervision_time_buckets_infer_supervision_type(self):
         """Tests the find_supervision_time_buckets function where the supervision type needs to be inferred from the
         sentence attached to the supervision period."""
@@ -7888,14 +7973,17 @@ class TestGetResponsesInWindowBeforeRevocation(unittest.TestCase):
     def test_get_responses_in_window_before_revocation(self):
         violation_responses = [
             StateSupervisionViolationResponse.new_with_defaults(
+                state_code='US_XX',
                 response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
                 response_date=date(2000, 1, 1)
             ),
             StateSupervisionViolationResponse.new_with_defaults(
+                state_code='US_XX',
                 response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
                 response_date=date(2000, 2, 1)
             ),
             StateSupervisionViolationResponse.new_with_defaults(
+                state_code='US_XX',
                 response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
                 response_date=date(2000, 3, 1)
             )
@@ -7911,14 +7999,17 @@ class TestGetResponsesInWindowBeforeRevocation(unittest.TestCase):
     def test_get_responses_in_window_before_revocation_exclude_before_window(self):
         violation_responses = [
             StateSupervisionViolationResponse.new_with_defaults(
+                state_code='US_XX',
                 response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
                 response_date=date(2000, 1, 1)
             ),
             StateSupervisionViolationResponse.new_with_defaults(
+                state_code='US_XX',
                 response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
                 response_date=date(1998, 2, 1)
             ),
             StateSupervisionViolationResponse.new_with_defaults(
+                state_code='US_XX',
                 response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
                 response_date=date(1997, 3, 1)
             )
@@ -7931,6 +8022,7 @@ class TestGetResponsesInWindowBeforeRevocation(unittest.TestCase):
 
         self.assertEqual([
             StateSupervisionViolationResponse.new_with_defaults(
+                state_code='US_XX',
                 response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
                 response_date=date(2000, 1, 1)
             )
@@ -7939,14 +8031,17 @@ class TestGetResponsesInWindowBeforeRevocation(unittest.TestCase):
     def test_get_responses_in_window_before_revocation_none_before_revocation(self):
         violation_responses = [
             StateSupervisionViolationResponse.new_with_defaults(
+                state_code='US_XX',
                 response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
                 response_date=date(2000, 1, 1)
             ),
             StateSupervisionViolationResponse.new_with_defaults(
+                state_code='US_XX',
                 response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
                 response_date=date(1998, 2, 1)
             ),
             StateSupervisionViolationResponse.new_with_defaults(
+                state_code='US_XX',
                 response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
                 response_date=date(1997, 3, 1)
             )
@@ -7962,14 +8057,17 @@ class TestGetResponsesInWindowBeforeRevocation(unittest.TestCase):
     def test_get_responses_in_window_before_revocation_exclude_permanent_decision(self):
         violation_responses = [
             StateSupervisionViolationResponse.new_with_defaults(
+                state_code='US_XX',
                 response_type=StateSupervisionViolationResponseType.PERMANENT_DECISION,
                 response_date=date(2000, 1, 1)
             ),
             StateSupervisionViolationResponse.new_with_defaults(
+                state_code='US_XX',
                 response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
                 response_date=date(1998, 2, 1)
             ),
             StateSupervisionViolationResponse.new_with_defaults(
+                state_code='US_XX',
                 response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
                 response_date=date(1997, 3, 1)
             )
@@ -7982,10 +8080,12 @@ class TestGetResponsesInWindowBeforeRevocation(unittest.TestCase):
 
         self.assertCountEqual([
             StateSupervisionViolationResponse.new_with_defaults(
+                state_code='US_XX',
                 response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
                 response_date=date(1998, 2, 1)
             ),
             StateSupervisionViolationResponse.new_with_defaults(
+                state_code='US_XX',
                 response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
                 response_date=date(1997, 3, 1)
             )

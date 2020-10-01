@@ -30,6 +30,7 @@ _ASSESSMENT_TYPES_TO_INCLUDE_FOR_CLASS: Dict[StateAssessmentClass, Dict[str, Lis
             StateAssessmentType.ORAS_COMMUNITY_SUPERVISION_SCREENING
         ],
         'US_ND': [StateAssessmentType.LSIR],
+        'US_PA': [StateAssessmentType.LSIR]
     }
 }
 

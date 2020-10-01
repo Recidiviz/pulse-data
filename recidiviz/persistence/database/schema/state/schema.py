@@ -102,6 +102,7 @@ state_assessment_type = Enum(
     name='state_assessment_type')
 
 state_assessment_level = Enum(
+    enum_strings.external_unknown,
     state_enum_strings.state_assessment_level_low,
     state_enum_strings.state_assessment_level_low_medium,
     state_enum_strings.state_assessment_level_medium,
@@ -109,8 +110,6 @@ state_assessment_level = Enum(
     state_enum_strings.state_assessment_level_moderate,
     state_enum_strings.state_assessment_level_high,
     state_enum_strings.state_assessment_level_very_high,
-    state_enum_strings.state_assessment_level_not_applicable,
-    state_enum_strings.state_assessment_level_undetermined,
     name='state_assessment_level')
 
 state_sentence_status = Enum(
