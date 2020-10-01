@@ -16,6 +16,10 @@ ENV LANG en_US.UTF-8
 
 ENV TZ America/New_York
 
+# Postgres pulls in tzdata which must have these set to stay noninteractive.
+RUN ln -fs /usr/share/zoneinfo/America/New_York /etc/localtime
+ENV DEBIAN_FRONTEND=noninteractive
+
 # Make stdout/stderr unbuffered. This prevents delay between output and cloud
 # logging collection.
 ENV PYTHONUNBUFFERED 1
@@ -36,6 +40,17 @@ RUN if [ "$DEV_MODE" = "True" ]; \
          apt install google-cloud-sdk-datastore-emulator -y && \
          apt install google-cloud-sdk-pubsub-emulator -y; \
     fi
+
+# Install postgres to be used by tests that need to write to a database from multiple threads.
+RUN if [ "$DEV_MODE" = "True" ]; \
+    then apt-get update && apt install postgresql-10 -y; \
+    fi
+# Add all the postgres tools installed above to the path, so that we can use pg_ctl, etc. in tests.
+# Uses variable substitution to set PATH_PREFIX to '/usr/lib/postgresql/10/bin/' in DEV_MODE and otherwise leave it
+# blank. Docker doesn't support setting environment variables within conditions, so we can't do this above.
+ENV PATH_PREFIX=${DEV_MODE:+/usr/lib/postgresql/10/bin/:}
+# Then prepend our path with whatever is in PATH_PREFIX.
+ENV PATH="$PATH_PREFIX$PATH"
 
 # Add only the Pipfiles first to ensure we cache `pipenv sync` when application code is updated but not the Pipfiles
 ADD Pipfile /app/
