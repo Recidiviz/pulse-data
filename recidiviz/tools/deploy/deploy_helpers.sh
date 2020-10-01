@@ -107,8 +107,10 @@ function pre_deploy_configure_infrastructure {
 
     # We trigger historical calculations with every deploy because code changes may impact historical metric output
     echo "Triggering historical calculation pipelines"
-    run_cmd gcloud pubsub topics publish v1.calculator.historical_incarceration_us_nd --project ${PROJECT} --message="Trigger Dataflow job"
-    run_cmd gcloud pubsub topics publish v1.calculator.historical_supervision_us_nd --project ${PROJECT} --message="Trigger Dataflow job"
+
+    # Note: using exit_on_fail instead of run_cmd since the quoted string doesn't translate well when passed to run_cmd
+    gcloud pubsub topics publish v1.calculator.historical_incarceration_us_nd --project ${PROJECT} --message="Trigger Dataflow job" || exit_on_fail
+    gcloud pubsub topics publish v1.calculator.historical_supervision_us_nd --project ${PROJECT} --message="Trigger Dataflow job" || exit_on_fail
 
     echo "Initializing task queues"
     run_cmd pipenv run python -m recidiviz.tools.initialize_google_cloud_task_queues --project_id ${PROJECT} --google_auth_token $(gcloud auth print-access-token)
