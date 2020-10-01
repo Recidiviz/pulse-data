@@ -1031,6 +1031,7 @@ class TestSupervisionPipeline(unittest.TestCase):
         ssvr_2.decision_agents = [state_agent]
 
         violation_report = schema.StateSupervisionViolationResponse(
+            state_code='US_XX',
             supervision_violation_response_id=99999,
             response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
             is_draft=False,
