@@ -27,7 +27,8 @@ from recidiviz.common.constants.enum_overrides import EnumOverrides, EnumMapper,
 from recidiviz.common.constants.person_characteristics import Race, Gender, Ethnicity
 from recidiviz.common.constants.state.external_id_types import US_PA_SID, US_PA_CONTROL, US_PA_PBPP
 from recidiviz.common.constants.state.state_agent import StateAgentType
-from recidiviz.common.constants.state.state_assessment import StateAssessmentType, StateAssessmentClass
+from recidiviz.common.constants.state.state_assessment import StateAssessmentType, StateAssessmentClass, \
+    StateAssessmentLevel
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_incident import StateIncarcerationIncidentOutcomeType, \
@@ -47,10 +48,11 @@ from recidiviz.common.str_field_utils import parse_days_from_duration_pieces, sa
     safe_parse_days_from_duration_pieces, sorted_list_from_str
 from recidiviz.ingest.direct.controllers.csv_gcsfs_direct_ingest_controller import CsvGcsfsDirectIngestController
 from recidiviz.ingest.direct.direct_ingest_controller_utils import update_overrides_from_maps, create_if_not_exists
+from recidiviz.ingest.direct.regions.us_pa.us_pa_assessment_level_reference import set_date_specific_lsir_fields
 from recidiviz.ingest.direct.regions.us_pa.us_pa_enum_helpers import incarceration_period_release_reason_mapper, \
     concatenate_incarceration_period_end_codes, incarceration_period_purpose_mapper, \
     concatenate_incarceration_period_purpose_codes, incarceration_period_admission_reason_mapper, \
-    concatenate_incarceration_period_start_codes, revocation_type_mapper
+    concatenate_incarceration_period_start_codes, revocation_type_mapper, assessment_level_mapper
 from recidiviz.ingest.direct.regions.us_pa.us_pa_violation_type_reference import violated_condition
 from recidiviz.ingest.direct.state_shared_row_posthooks import copy_name_to_alias, gen_label_single_external_id_hook, \
     gen_rationalize_race_and_ethnicity, gen_set_agent_type, gen_convert_person_ids_to_external_id_objects, \
@@ -514,6 +516,7 @@ class UsPaController(CsvGcsfsDirectIngestController):
     }
 
     ENUM_MAPPERS: Dict[EntityEnumMeta, EnumMapper] = {
+        StateAssessmentLevel: assessment_level_mapper,
         StateIncarcerationPeriodAdmissionReason: incarceration_period_admission_reason_mapper,
         StateIncarcerationPeriodReleaseReason: incarceration_period_release_reason_mapper,
         StateSpecializedPurposeForIncarceration: incarceration_period_purpose_mapper,
@@ -733,6 +736,9 @@ class UsPaController(CsvGcsfsDirectIngestController):
                     if rst_metadata:
                         obj.assessment_metadata = json.dumps(rst_metadata)
 
+                if assessment_type == 'LSI-R':
+                    set_date_specific_lsir_fields(obj)
+
     @staticmethod
     def _generate_pbpp_assessment_external_id(_file_tag: str,
                                               row: Dict[str, str],
@@ -758,6 +764,7 @@ class UsPaController(CsvGcsfsDirectIngestController):
             if isinstance(obj, StateAssessment):
                 obj.assessment_type = StateAssessmentType.LSIR.value
                 obj.assessment_class = StateAssessmentClass.RISK.value
+                set_date_specific_lsir_fields(obj)
 
     @staticmethod
     def _set_incarceration_sentence_id(_file_tag: str,

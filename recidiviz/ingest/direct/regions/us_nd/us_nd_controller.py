@@ -28,7 +28,8 @@ from recidiviz.common.constants.enum_overrides import EnumOverrides, EnumMapper,
 from recidiviz.common.constants.person_characteristics import Gender, Race, Ethnicity
 from recidiviz.common.constants.state.external_id_types import US_ND_ELITE, US_ND_SID
 from recidiviz.common.constants.state.state_agent import StateAgentType
-from recidiviz.common.constants.state.state_assessment import StateAssessmentType, StateAssessmentClass
+from recidiviz.common.constants.state.state_assessment import StateAssessmentType, StateAssessmentClass, \
+    StateAssessmentLevel
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
 from recidiviz.common.constants.state.state_charge import StateChargeClassificationType
 from recidiviz.common.constants.state.state_court_case import StateCourtCaseStatus
@@ -825,7 +826,9 @@ class UsNdController(CsvGcsfsDirectIngestController):
             StateProgramAssignmentParticipationStatus.PENDING: ['Submitted', 'Pending Coordinator'],
 
             StateSupervisionCaseType.GENERAL: ['0'],
-            StateSupervisionCaseType.SEX_OFFENDER: ['-1']
+            StateSupervisionCaseType.SEX_OFFENDER: ['-1'],
+
+            StateAssessmentLevel.EXTERNAL_UNKNOWN: ['NOT APPLICABLE', 'UNDETERMINED']
         }
 
         ignores: Dict[EntityEnumMeta, List[str]] = {

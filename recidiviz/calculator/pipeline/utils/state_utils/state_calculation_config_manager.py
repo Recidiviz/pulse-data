@@ -19,7 +19,7 @@
 import sys
 from datetime import date
 import logging
-from typing import List, Optional, Tuple
+from typing import List, Optional, Tuple, Callable
 
 from recidiviz.calculator.pipeline.supervision.supervision_case_compliance import SupervisionCaseCompliance
 from recidiviz.calculator.pipeline.utils.calculator_utils import safe_list_index
@@ -175,13 +175,13 @@ def get_month_supervision_type(
     supervision_sentences: (List[StateSupervisionSentence]) All supervision sentences for a given person.
     """
 
-    if supervision_period.state_code == 'US_MO':
+    if supervision_period.state_code.upper() == 'US_MO':
         return us_mo_get_month_supervision_type(any_date_in_month,
                                                 supervision_sentences,
                                                 incarceration_sentences,
                                                 supervision_period)
 
-    if supervision_period.state_code == 'US_ID':
+    if supervision_period.state_code.upper() == 'US_ID':
         return (supervision_period.supervision_period_supervision_type
                 if supervision_period.supervision_period_supervision_type
                 else StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN)
@@ -207,12 +207,12 @@ def get_pre_incarceration_supervision_type(
 
     state_code = incarceration_period.state_code
 
-    if state_code == 'US_MO':
+    if state_code.upper() == 'US_MO':
         return us_mo_get_pre_incarceration_supervision_type(incarceration_sentences,
                                                             supervision_sentences,
                                                             incarceration_period)
 
-    if state_code == 'US_ID':
+    if state_code.upper() == 'US_ID':
         return us_id_get_pre_incarceration_supervision_type(incarceration_sentences,
                                                             supervision_sentences,
                                                             incarceration_period)
@@ -237,15 +237,15 @@ def get_post_incarceration_supervision_type(
     """
     state_code = incarceration_period.state_code
 
-    if state_code == 'US_ID':
+    if state_code.upper() == 'US_ID':
         return us_id_get_post_incarceration_supervision_type(incarceration_sentences,
                                                              supervision_sentences,
                                                              incarceration_period)
-    if state_code == 'US_MO':
+    if state_code.upper() == 'US_MO':
         return us_mo_get_post_incarceration_supervision_type(incarceration_sentences,
                                                              supervision_sentences,
                                                              incarceration_period)
-    if state_code == 'US_ND':
+    if state_code.upper() == 'US_ND':
         return us_nd_get_post_incarceration_supervision_type(incarceration_period)
 
     logging.warning("get_post_incarceration_supervision_type not implemented for state: %s", state_code)
@@ -259,7 +259,7 @@ def get_pre_revocation_supervision_type(
         revoked_supervision_period: Optional[StateSupervisionPeriod]) -> \
         Optional[StateSupervisionPeriodSupervisionType]:
     """Returns the supervision type the person was on before they had their supervision revoked."""
-    if incarceration_period.state_code == 'US_ID':
+    if incarceration_period.state_code.upper() == 'US_ID':
         return us_id_get_pre_revocation_supervision_type(revoked_supervision_period)
 
     return get_pre_incarceration_supervision_type(
@@ -284,7 +284,7 @@ def terminating_supervision_period_supervision_type(
         raise ValueError(f'Expected a terminated supervision period for period '
                          f'[{supervision_period.supervision_period_id}]')
 
-    if supervision_period.state_code == 'US_MO':
+    if supervision_period.state_code.upper() == 'US_MO':
         supervision_type = us_mo_get_most_recent_supervision_period_supervision_type_before_upper_bound_day(
             upper_bound_exclusive_date=supervision_period.termination_date,
             lower_bound_inclusive_date=supervision_period.start_date,
@@ -294,7 +294,7 @@ def terminating_supervision_period_supervision_type(
 
         return supervision_type if supervision_type else StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN
 
-    if supervision_period.state_code == 'US_ID':
+    if supervision_period.state_code.upper() == 'US_ID':
         return (supervision_period.supervision_period_supervision_type
                 if supervision_period.supervision_period_supervision_type
                 else StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN)
@@ -309,7 +309,7 @@ def filter_violation_responses_before_revocation(violation_responses: List[State
     """State-specific filtering of the violation responses that should be included in pre-revocation analysis."""
     if violation_responses:
         state_code = violation_responses[0].state_code
-        if state_code == 'US_MO':
+        if state_code.upper() == 'US_MO':
             return us_mo_filter_violation_responses(violation_responses, include_follow_up_responses)
     return violation_responses
 
@@ -318,7 +318,7 @@ def filter_supervision_periods_for_revocation_identification(supervision_periods
         List[StateSupervisionPeriod]:
     """State-specific filtering of supervision periods that should be included in pre-revocation analysis."""
     if supervision_periods:
-        if supervision_periods[0].state_code == 'US_ID':
+        if supervision_periods[0].state_code.upper() == 'US_ID':
             return us_id_filter_supervision_periods_for_revocation_identification(supervision_periods)
     return supervision_periods
 
@@ -328,7 +328,7 @@ def incarceration_period_is_from_revocation(
         preceding_incarceration_period: Optional[StateIncarcerationPeriod]) \
         -> bool:
     """Determines if the sequence of incarceration periods represents a revocation."""
-    if incarceration_period.state_code == 'US_ID':
+    if incarceration_period.state_code.upper() == 'US_ID':
         return us_id_is_revocation_admission(incarceration_period, preceding_incarceration_period)
     return is_revocation_admission(incarceration_period.admission_reason)
 
@@ -401,7 +401,7 @@ def get_case_compliance_on_date(supervision_period: StateSupervisionPeriod,
     """Returns the SupervisionCaseCompliance object containing information about whether the given supervision case is
     in compliance with state-specific standards on the compliance_evaluation_date. If the state of the
     supervision_period does not have state-specific compliance calculations, returns None."""
-    if supervision_period.state_code == 'US_ID':
+    if supervision_period.state_code.upper() == 'US_ID':
         return us_id_case_compliance_on_date(supervision_period,
                                              case_type,
                                              start_of_supervision,
@@ -491,17 +491,6 @@ def shorthand_for_violation_subtype(state_code: str, violation_subtype: str) -> 
     return violation_subtype.lower()
 
 
-def prepare_violation_responses_for_calculations(state_code: str,
-                                                 violation_responses: List[StateSupervisionViolationResponse]) -> \
-        List[StateSupervisionViolationResponse]:
-    """Performs state-specific pre-processing on StateSupervisionViolationResponse instances if necessary for the given
-    |state_code|."""
-    if state_code.upper() == 'US_MO':
-        return us_mo_violation_utils.us_mo_prepare_violation_responses_for_calculations(violation_responses)
-
-    return violation_responses
-
-
 def revoked_supervision_periods_if_revocation_occurred(
         incarceration_period: StateIncarcerationPeriod,
         supervision_periods: List[StateSupervisionPeriod],
@@ -518,7 +507,7 @@ def revoked_supervision_periods_if_revocation_occurred(
     """
     revoked_periods: List[StateSupervisionPeriod] = []
 
-    if incarceration_period.state_code == 'US_ID':
+    if incarceration_period.state_code.upper() == 'US_ID':
         admission_is_revocation, revoked_period = \
             us_id_revoked_supervision_period_if_revocation_occurred(
                 incarceration_period, supervision_periods, preceding_incarceration_period
@@ -532,3 +521,14 @@ def revoked_supervision_periods_if_revocation_occurred(
                                                                                  supervision_periods)
 
     return admission_is_revocation, revoked_periods
+
+
+def state_specific_violation_response_pre_processing_function(state_code: str) -> \
+        Optional[Callable[[List[StateSupervisionViolationResponse]], List[StateSupervisionViolationResponse]]]:
+    """Returns a callable to be used to prepare StateSupervisionViolationResponses for calculations, if applicable for
+    the given state. If the state doesn't have a state-specific violation response pre-processing function,
+    returns None."""
+    if state_code.upper() == 'US_MO':
+        return us_mo_violation_utils.us_mo_prepare_violation_responses_for_calculations
+
+    return None
