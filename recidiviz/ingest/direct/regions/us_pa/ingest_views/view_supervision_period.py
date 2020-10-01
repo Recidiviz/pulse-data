@@ -134,6 +134,7 @@ all_update_dates AS (
   -- end dates for a ParoleCountID as well as every time a supervising officer update is recorded. Officer updates may
   -- occur before the supervision stint is officially started as well as after it has ended.
 
+  -- All PO update dates
   SELECT 
     parole_number,
     parole_count_id, 
@@ -147,12 +148,17 @@ all_update_dates AS (
  
   UNION ALL
 
+  -- Start dates for the ParoleCountID - will be used if the date comes before the first PO update date for this 
+  -- ParoleCountID.
   SELECT 
     parole_number,
     parole_count_id, 
     parole_count_id_start_date AS po_modified_date,
     0 AS update_rank,
     NULL AS supervising_officer_name,
+    -- We don't use the district office info from dbo_Release/dbo_Hist_Release because those tables have the *most 
+    -- recent* district office and this should be the district office at the very beginning of the supervision stint.
+    -- We leave the office blank rather than taking a guess in this case.
     NULL AS district_office,
     NULL AS district_sub_office_id,
     0 AS is_termination_edge
@@ -160,11 +166,13 @@ all_update_dates AS (
 
   UNION ALL
  
+  -- End dates for the ParoleCountID. Will only ever be used as a termination edge for a supervision period.
   SELECT 
     parole_number,
     parole_count_id, 
     COALESCE(parole_count_id_termination_date, DATE(9999, 09, 09)) AS po_modified_date,
     99999 AS update_rank,
+    -- These PO/district values are never used on a resulting period since they will be pulled from the start edge.
     NULL AS supervising_officer_name,
     NULL AS district_office,
     NULL AS district_sub_office_id,
