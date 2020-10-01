@@ -93,6 +93,16 @@ def state_specific_violation_count_type_categories() -> str:
         SUM(IF(state_code = 'US_PA' AND violation_count_type = 'SUMMARY_OFFENSE', count, 0)) AS summary_offense_count"""
 
 
+def state_specific_supervision_level() -> str:
+    return """IFNULL(
+                (CASE WHEN state_code = 'US_PA' THEN
+                  CASE WHEN supervision_level IN ('LIMITED', 'INTERNAL_UNKNOWN') THEN 'SPECIAL'
+                       WHEN supervision_level = 'HIGH' THEN 'ENHANCED'
+                       ELSE supervision_level END
+                ELSE supervision_level END),
+           'EXTERNAL_UNKNOWN')  AS supervision_level"""
+
+
 def state_specific_facility_exclusion() -> str:
     return """-- Revisit these exclusions when #3657 and #3723 are complete --
       AND (state_code != 'US_ND' OR facility not in ('OOS', 'CPP'))"""
