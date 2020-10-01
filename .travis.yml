@@ -3,7 +3,6 @@ language: generic
 
 services:
   - docker
-  - postgresql
 
 env:
   global:
@@ -27,12 +26,7 @@ install:
 before_script:
   # Run our docker application so we can `exec` our tests against it. Network set to 'host' to allow us to connect to
   # the Travis postgres server from inside the docker container.
-  - docker run --network host --name recidiviz -d -t recidiviz-image
-
-  # Creates a Postgres DB for tests with a database called 'recidiviz_test_db' and a user 'recidiviz_test_usr' which has
-  # no password. See more on Travis Postgres setup here: https://docs.travis-ci.com/user/database-setup/#postgresql
-  - psql --command 'CREATE USER recidiviz_test_usr;'
-  - createdb -O recidiviz_test_usr recidiviz_test_db
+  - docker run --name recidiviz -d -t recidiviz-image
 
 script:
   # Order test commands with fastest first to ensure we fail fast
