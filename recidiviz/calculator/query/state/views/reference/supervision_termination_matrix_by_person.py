@@ -125,7 +125,7 @@ SUPERVISION_TERMINATION_MATRIX_BY_PERSON_VIEW_BUILDER = SimpleBigQueryViewBuilde
     most_severe_violation_type_subtype_grouping=
     state_specific_query_strings.state_specific_most_severe_violation_type_subtype_grouping(),
     state_specific_assessment_bucket=state_specific_query_strings.state_specific_assessment_bucket(),
-    state_specific_supervision_level=bq_utils.state_specific_supervision_level(),
+    state_specific_supervision_level=state_specific_query_strings.state_specific_supervision_level(),
     district_dimension=bq_utils.unnest_district('district'),
     supervision_type_dimension=bq_utils.unnest_supervision_type(),
     supervision_level_dimension=bq_utils.unnest_column('supervision_level', 'supervision_level'),
