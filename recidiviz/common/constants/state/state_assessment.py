@@ -80,6 +80,7 @@ class StateAssessmentType(EntityEnum, metaclass=EntityEnumMeta):
 
 @unique
 class StateAssessmentLevel(EntityEnum, metaclass=EntityEnumMeta):
+    EXTERNAL_UNKNOWN = enum_strings.external_unknown
     LOW = state_enum_strings.state_assessment_level_low
     LOW_MEDIUM = state_enum_strings.state_assessment_level_low_medium
     MEDIUM = state_enum_strings.state_assessment_level_medium
@@ -87,8 +88,6 @@ class StateAssessmentLevel(EntityEnum, metaclass=EntityEnumMeta):
     MODERATE = state_enum_strings.state_assessment_level_moderate
     HIGH = state_enum_strings.state_assessment_level_high
     VERY_HIGH = state_enum_strings.state_assessment_level_very_high
-    NOT_APPLICABLE = state_enum_strings.state_assessment_level_not_applicable
-    UNDETERMINED = state_enum_strings.state_assessment_level_undetermined
 
     @staticmethod
     def _get_default_map():
@@ -137,13 +136,12 @@ _STATE_ASSESSMENT_TYPE_MAP = {
 }
 
 _STATE_ASSESSMENT_LEVEL_TYPE_MAP = {
+    'EXTERNAL UNKNOWN': StateAssessmentLevel.EXTERNAL_UNKNOWN,
     'LOW': StateAssessmentLevel.LOW,
     'LOW MEDIUM': StateAssessmentLevel.LOW_MEDIUM,
     'MEDIUM': StateAssessmentLevel.MEDIUM,
     'MEDIUM HIGH': StateAssessmentLevel.MEDIUM_HIGH,
     'MODERATE': StateAssessmentLevel.MODERATE,
     'HIGH': StateAssessmentLevel.HIGH,
-    'NOT APPLICABLE': StateAssessmentLevel.NOT_APPLICABLE,
-    'UNDETERMINED': StateAssessmentLevel.UNDETERMINED,
     'VERY HIGH': StateAssessmentLevel.VERY_HIGH,
 }

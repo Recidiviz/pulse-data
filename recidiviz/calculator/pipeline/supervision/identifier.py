@@ -45,16 +45,17 @@ from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_ma
     filter_supervision_periods_for_revocation_identification, get_pre_revocation_supervision_type, \
     should_produce_supervision_time_bucket_for_period, only_state_custodial_authority_in_supervision_population, \
     get_case_compliance_on_date, include_decisions_on_follow_up_responses, \
-    second_assessment_on_supervision_is_more_reliable, get_supervision_district_from_supervision_period,\
-    prepare_violation_responses_for_calculations, revoked_supervision_periods_if_revocation_occurred
+    second_assessment_on_supervision_is_more_reliable, get_supervision_district_from_supervision_period, \
+    revoked_supervision_periods_if_revocation_occurred, \
+    state_specific_violation_response_pre_processing_function
 from recidiviz.calculator.pipeline.utils.supervision_period_index import SupervisionPeriodIndex
 from recidiviz.calculator.pipeline.utils.supervision_period_utils import prepare_supervision_periods_for_calculations
 from recidiviz.calculator.pipeline.utils.supervision_type_identification import \
     get_supervision_type_from_sentences
 from recidiviz.calculator.pipeline.utils.time_range_utils import TimeRange, TimeRangeDiff
-from recidiviz.calculator.pipeline.utils.violation_utils import shorthand_description_for_ranked_violation_counts, \
-    identify_most_severe_violation_type_and_subtype, shorthand_description_for_ranked_violation_counts, \
-    get_violation_type_frequency_counter
+from recidiviz.calculator.pipeline.utils.violation_utils import identify_most_severe_violation_type_and_subtype, \
+    shorthand_description_for_ranked_violation_counts, get_violation_type_frequency_counter, \
+    prepare_violation_responses_for_calculations
 from recidiviz.common.constants.state.state_assessment import StateAssessmentLevel, StateAssessmentType, \
     StateAssessmentClass
 from recidiviz.common.constants.state.state_case_type import \
@@ -187,8 +188,10 @@ def find_supervision_time_buckets(
     supervision_period_index = SupervisionPeriodIndex(supervision_periods=supervision_periods)
     incarceration_period_index = IncarcerationPeriodIndex(incarceration_periods=incarceration_periods)
 
-    violation_responses = prepare_violation_responses_for_calculations(state_code=state_code,
-                                                                       violation_responses=violation_responses)
+    violation_responses = prepare_violation_responses_for_calculations(
+        violation_responses=violation_responses,
+        pre_processing_function=state_specific_violation_response_pre_processing_function(state_code=state_code)
+    )
 
     projected_supervision_completion_buckets = classify_supervision_success(
         supervision_sentences,

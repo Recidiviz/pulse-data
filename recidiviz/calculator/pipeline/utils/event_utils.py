@@ -40,20 +40,27 @@ class AssessmentEventMixin:
             DEFAULT_ASSESSMENT_SCORE_BUCKET if the assessment type is not supported or if the object is missing
                 assessment information.
         """
+        state_code = getattr(self, 'state_code')
         assessment_score = getattr(self, 'assessment_score')
         assessment_level = getattr(self, 'assessment_level')
         assessment_type = getattr(self, 'assessment_type')
 
         if assessment_type:
             if assessment_type == StateAssessmentType.LSIR:
-                if assessment_score:
-                    if assessment_score < 24:
-                        return '0-23'
-                    if assessment_score <= 29:
-                        return '24-29'
-                    if assessment_score <= 38:
-                        return '30-38'
-                    return '39+'
+                if state_code == 'US_PA':
+                    # The score buckets for US_PA have changed over time, so we defer to the assessment_level
+                    if assessment_level:
+                        return assessment_level.value
+                else:
+                    if assessment_score:
+                        if assessment_score < 24:
+                            return '0-23'
+                        if assessment_score <= 29:
+                            return '24-29'
+                        if assessment_score <= 38:
+                            return '30-38'
+                        return '39+'
+
             elif assessment_type in [
                     StateAssessmentType.ORAS,
                     StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,

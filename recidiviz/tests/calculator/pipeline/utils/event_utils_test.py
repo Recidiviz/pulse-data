@@ -69,6 +69,30 @@ class TestAssessmentEventMixin(unittest.TestCase):
 
         self.assertEqual(AssessmentEventMixin.DEFAULT_ASSESSMENT_SCORE_BUCKET, event.assessment_score_bucket)
 
+    def test_assessment_scores_to_buckets_LSIR_US_PA(self):
+        event = ProgramReferralEvent(
+            state_code='US_PA',
+            event_date=date.today(),
+            program_id='xxx',
+            assessment_score=11,
+            assessment_type=StateAssessmentType.LSIR,
+            assessment_level=StateAssessmentLevel.LOW
+        )
+
+        self.assertEqual(StateAssessmentLevel.LOW.value, event.assessment_score_bucket)
+
+    def test_assessment_scores_to_buckets_LSIR_US_PA_no_level(self):
+        event = ProgramReferralEvent(
+            state_code='US_PA',
+            event_date=date.today(),
+            program_id='xxx',
+            assessment_score=11,
+            assessment_type=StateAssessmentType.LSIR,
+            assessment_level=None
+        )
+
+        self.assertEqual(AssessmentEventMixin.DEFAULT_ASSESSMENT_SCORE_BUCKET, event.assessment_score_bucket)
+
     def test_assessment_score_bucket_ORAS(self):
         event = ProgramReferralEvent(
             state_code='US_XX',

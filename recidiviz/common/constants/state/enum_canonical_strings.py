@@ -72,8 +72,6 @@ state_assessment_level_medium_high = 'MEDIUM_HIGH'
 state_assessment_level_moderate = 'MODERATE'
 state_assessment_level_high = 'HIGH'
 state_assessment_level_very_high = 'VERY_HIGH'
-state_assessment_level_not_applicable = 'NOT_APPLICABLE'
-state_assessment_level_undetermined = 'UNDETERMINED'
 
 # state_charge.py
 state_charge_classification_type_civil = 'CIVIL'

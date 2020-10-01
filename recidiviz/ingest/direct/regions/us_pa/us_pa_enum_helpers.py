@@ -18,6 +18,7 @@
 """US_PA specific enum helper methods."""
 from typing import Dict, List, Optional
 
+from recidiviz.common.constants.state.state_assessment import StateAssessmentLevel
 from recidiviz.common.constants.state.state_incarceration_period import StateIncarcerationPeriodReleaseReason, \
     StateSpecializedPurposeForIncarceration, StateIncarcerationPeriodAdmissionReason
 from recidiviz.common.constants.state.state_supervision_violation_response import \
@@ -348,3 +349,18 @@ def concatenate_incarceration_period_purpose_codes(row: Dict[str, str]) -> str:
     sentence_type = row['sentence_type'] or 'None'
 
     return f"{start_parole_status_code}-{sentence_type}"
+
+
+def assessment_level_mapper(assessment_level_raw_text: Optional[str]) -> Optional[StateAssessmentLevel]:
+    """Maps an assessment_level_raw_text code to the corresponding StateAssessmentLevel, if applicable."""
+    if not assessment_level_raw_text:
+        return None
+
+    if assessment_level_raw_text.startswith('UNKNOWN'):
+        return StateAssessmentLevel.EXTERNAL_UNKNOWN
+
+    for assessment_level in StateAssessmentLevel:
+        if assessment_level_raw_text == assessment_level.value:
+            return assessment_level
+
+    raise ValueError(f"Unexpected assessment_level_raw_text: {assessment_level_raw_text}")
