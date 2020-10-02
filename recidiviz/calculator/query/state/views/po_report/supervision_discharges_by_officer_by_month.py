@@ -77,7 +77,7 @@ SUPERVISION_DISCHARGES_BY_OFFICER_BY_MONTH_QUERY_TEMPLATE = \
         state_code, year, month, district,
         officer_external_id,
         COUNT(DISTINCT person_id) AS discharge_count
-      FROM `{project_id}.{po_report_dataset}.officer_supervision_district_association`
+      FROM `{project_id}.{po_report_dataset}.officer_supervision_district_association_materialized`
       LEFT JOIN supervision_discharges
         USING (state_code, year, month, officer_external_id)
       LEFT JOIN overlapping_open_period USING (supervision_period_id)
@@ -118,6 +118,7 @@ SUPERVISION_DISCHARGES_BY_OFFICER_BY_MONTH_QUERY_TEMPLATE = \
 SUPERVISION_DISCHARGES_BY_OFFICER_BY_MONTH_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=dataset_config.PO_REPORT_DATASET,
     view_id=SUPERVISION_DISCHARGES_BY_OFFICER_BY_MONTH_VIEW_NAME,
+    should_materialize=True,
     view_query_template=SUPERVISION_DISCHARGES_BY_OFFICER_BY_MONTH_QUERY_TEMPLATE,
     description=SUPERVISION_DISCHARGES_BY_OFFICER_BY_MONTH_DESCRIPTION,
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,

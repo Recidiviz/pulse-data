@@ -57,7 +57,7 @@ SUPERVISION_COMPLIANCE_BY_OFFICER_BY_MONTH_QUERY_TEMPLATE = \
       *,
       IEEE_DIVIDE(assessments_up_to_date, assessment_compliance_caseload_count) * 100 AS assessment_percent,
       IEEE_DIVIDE(facetoface_frequencies_sufficient, facetoface_compliance_caseload_count) * 100 as facetoface_percent
-      FROM `{project_id}.{po_report_dataset}.officer_supervision_district_association` 
+      FROM `{project_id}.{po_report_dataset}.officer_supervision_district_association_materialized` 
       LEFT JOIN frequencies
         USING (state_code, month, officer_external_id, year)
     ORDER BY state_code, year, month, district, officer_external_id
@@ -66,6 +66,7 @@ SUPERVISION_COMPLIANCE_BY_OFFICER_BY_MONTH_QUERY_TEMPLATE = \
 SUPERVISION_COMPLIANCE_BY_OFFICER_BY_MONTH_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=dataset_config.PO_REPORT_DATASET,
     view_id=SUPERVISION_COMPLIANCE_BY_OFFICER_BY_MONTH_VIEW_NAME,
+    should_materialize=True,
     view_query_template=SUPERVISION_COMPLIANCE_BY_OFFICER_BY_MONTH_QUERY_TEMPLATE,
     description=SUPERVISION_COMPLIANCE_BY_OFFICER_BY_MONTH_DESCRIPTION,
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
