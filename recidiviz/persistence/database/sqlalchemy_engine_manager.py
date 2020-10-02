@@ -146,12 +146,12 @@ class SQLAlchemyEngineManager:
         return secrets.get_secret(cls.get_db_name_key(schema_type))
 
     @classmethod
-    def get_cloudql_instance_id_key(
+    def get_cloudsql_instance_id_key(
             cls, schema_type: SchemaType) -> str:
         return cls._SCHEMA_TO_INSTANCE_ID_KEY[schema_type]
 
     @classmethod
-    def get_stripped_cloudql_instance_id(
+    def get_stripped_cloudsql_instance_id(
             cls, schema_type: SchemaType) -> str:
         """The full instance id stored in secrets has the form
         project_id:zone:instance_id. This returns just the final instance_id
@@ -159,7 +159,7 @@ class SQLAlchemyEngineManager:
 
         Should be used when using the sqladmin_client().
         """
-        instance_id_key = cls.get_cloudql_instance_id_key(schema_type)
+        instance_id_key = cls.get_cloudsql_instance_id_key(schema_type)
         instance_id_full = secrets.get_secret(instance_id_key)
         # Remove Project ID and Zone information from Cloud SQL instance ID.
         # Expected format "project_id:zone:instance_id"
@@ -168,11 +168,11 @@ class SQLAlchemyEngineManager:
         return instance_id
 
     @classmethod
-    def get_all_stripped_cloudql_instance_ids(cls) -> List[str]:
+    def get_all_stripped_cloudsql_instance_ids(cls) -> List[str]:
         """Returns all stripped instance ids for all sql instances in this
-        project. See get_stripped_cloudql_instance_id() for more info.
+        project. See get_stripped_cloudsql_instance_id() for more info.
         """
-        return [cls.get_stripped_cloudql_instance_id(schema_type)
+        return [cls.get_stripped_cloudsql_instance_id(schema_type)
                 for schema_type in SchemaType]
 
     @classmethod
@@ -182,7 +182,7 @@ class SQLAlchemyEngineManager:
             db_password_key='state_db_password',
             db_name_key=cls.get_db_name_key(SchemaType.STATE),
             cloudsql_instance_id_key=
-            cls.get_cloudql_instance_id_key(SchemaType.STATE))
+            cls.get_cloudsql_instance_id_key(SchemaType.STATE))
 
     @classmethod
     def _get_jails_server_postgres_instance_url(cls) -> str:
@@ -191,7 +191,7 @@ class SQLAlchemyEngineManager:
             db_password_key='sqlalchemy_db_password',
             db_name_key=cls.get_db_name_key(SchemaType.JAILS),
             cloudsql_instance_id_key=
-            cls.get_cloudql_instance_id_key(SchemaType.JAILS))
+            cls.get_cloudsql_instance_id_key(SchemaType.JAILS))
 
     @classmethod
     def _get_operations_server_postgres_instance_url(cls) -> str:
@@ -200,7 +200,7 @@ class SQLAlchemyEngineManager:
             db_password_key='operations_db_password',
             db_name_key=cls.get_db_name_key(SchemaType.OPERATIONS),
             cloudsql_instance_id_key=
-            cls.get_cloudql_instance_id_key(SchemaType.OPERATIONS))
+            cls.get_cloudsql_instance_id_key(SchemaType.OPERATIONS))
 
     @classmethod
     def _get_server_postgres_instance_url(cls,

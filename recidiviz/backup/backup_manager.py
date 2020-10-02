@@ -53,7 +53,7 @@ def update_long_term_backups() -> Tuple[str, HTTPStatus]:
     logging.info('Starting backup of all cloudsql instances in [%s]',
                  project_id)
     for instance_id in \
-            SQLAlchemyEngineManager.get_all_stripped_cloudql_instance_ids():
+            SQLAlchemyEngineManager.get_all_stripped_cloudsql_instance_ids():
         update_long_term_backups_for_cloudsql_instance(project_id,
                                                        instance_id)
 
