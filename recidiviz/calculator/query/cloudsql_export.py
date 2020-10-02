@@ -138,7 +138,7 @@ def export_table(schema_type: SchemaType, table_name: str, export_query: str) \
 
     project_id = metadata.project_id()
     instance_id = \
-        SQLAlchemyEngineManager.get_stripped_cloudql_instance_id(schema_type)
+        SQLAlchemyEngineManager.get_stripped_cloudsql_instance_id(schema_type)
     export_request = sqladmin_client().instances().export(
         project=project_id,
         instance=instance_id,
