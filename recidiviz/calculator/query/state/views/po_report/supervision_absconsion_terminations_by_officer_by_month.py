@@ -54,7 +54,7 @@ SUPERVISION_ABSCONSION_TERMINATIONS_BY_OFFICER_BY_MONTH_QUERY_TEMPLATE = \
       state_code, year, month,
       officer_external_id, district,
       IFNULL(absconsions_per_officer.absconsion_count, 0) AS absconsions
-    FROM `{project_id}.{po_report_dataset}.officer_supervision_district_association`
+    FROM `{project_id}.{po_report_dataset}.officer_supervision_district_association_materialized`
     LEFT JOIN absconsions_per_officer
       USING (state_code, year, month, officer_external_id)
     ORDER BY state_code, year, month, district, officer_external_id
@@ -63,6 +63,7 @@ SUPERVISION_ABSCONSION_TERMINATIONS_BY_OFFICER_BY_MONTH_QUERY_TEMPLATE = \
 SUPERVISION_ABSCONSION_TERMINATIONS_BY_OFFICER_BY_MONTH_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=dataset_config.PO_REPORT_DATASET,
     view_id=SUPERVISION_ABSCONSION_TERMINATIONS_BY_OFFICER_BY_MONTH_VIEW_NAME,
+    should_materialize=True,
     view_query_template=SUPERVISION_ABSCONSION_TERMINATIONS_BY_OFFICER_BY_MONTH_QUERY_TEMPLATE,
     description=SUPERVISION_ABSCONSION_TERMINATIONS_BY_OFFICER_BY_MONTH_DESCRIPTION,
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
