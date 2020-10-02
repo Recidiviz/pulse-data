@@ -36,7 +36,7 @@ from recidiviz.calculator.pipeline.utils.calculator_utils import \
     last_day_of_month, identify_most_severe_response_decision, first_day_of_next_month
 from recidiviz.calculator.pipeline.utils.incarceration_period_index import IncarcerationPeriodIndex
 from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_manager import \
-    supervision_types_distinct_for_state, \
+    supervision_types_mutually_exclusive_for_state, \
     default_to_supervision_period_officer_for_revocation_details_for_state, get_month_supervision_type, \
     terminating_supervision_period_supervision_type, \
     supervision_period_counts_towards_supervision_population_in_date_range_state_specific, \
@@ -247,7 +247,7 @@ def find_supervision_time_buckets(
         supervision_period_to_judicial_district_associations,
         incarceration_period_index)
 
-    if supervision_types_distinct_for_state(state_code):
+    if supervision_types_mutually_exclusive_for_state(state_code):
         supervision_time_buckets = _convert_buckets_to_dual(supervision_time_buckets)
     else:
         supervision_time_buckets = _expand_dual_supervision_buckets(supervision_time_buckets)
