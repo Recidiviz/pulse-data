@@ -54,13 +54,15 @@ from recidiviz.persistence.entity.state.entities import StateSupervisionSentence
     StateSupervisionContact, StateSupervisionViolation
 
 
-def supervision_types_distinct_for_state(state_code: str) -> bool:
-    """For some states, we want to track DUAL supervision as distinct from both PAROLE and PROBATION. For others, a
-    person can be on multiple types of supervision simultaneously and contribute to counts for both types.
+def supervision_types_mutually_exclusive_for_state(state_code: str) -> bool:
+    """For some states, we want to track people on DUAL supervision as mutually exclusive from the groups of people on
+    either PAROLE and PROBATION. For others, a person can be on multiple types of supervision simultaneously
+    and contribute to counts for both types.
 
         - US_ID: True
         - US_MO: True
         - US_ND: False
+        - US_PA: False
 
     Returns whether our calculations should consider supervision types as distinct for the given state_code.
     """
@@ -88,6 +90,7 @@ def temporary_custody_periods_under_state_authority(state_code: str) -> bool:
         - US_ID: True
         - US_MO: True
         - US_ND: False
+        - US_PA: True
     """
     return state_code.upper() != 'US_ND'
 
@@ -97,6 +100,7 @@ def non_prison_periods_under_state_authority(state_code: str) -> bool:
         - US_ID: True
         - US_MO: False
         - US_ND: True
+        - US_PA: False
     """
     return state_code.upper() in ('US_ID', 'US_ND')
 
@@ -105,9 +109,10 @@ def investigation_periods_in_supervision_population(_state_code: str) -> bool:
     """Whether or not supervision periods that have a supervision_period_supervision_type of INVESTIGATION should be
     counted in the supervision calculations.
 
-    - US_ID: False
-    - US_MO: False
-    - US_ND: False
+        - US_ID: False
+        - US_MO: False
+        - US_ND: False
+        - US_PA: False
     """
     return False
 
@@ -116,9 +121,10 @@ def only_state_custodial_authority_in_supervision_population(state_code: str) ->
     """Whether or not only supervision periods that are under the state DOC's custodial authority should be counted in
     the supervision calculations.
 
-    - US_ID: True
-    - US_MO: False
-    - US_ND: False
+        - US_ID: True
+        - US_MO: False
+        - US_ND: False
+        - US_PA: False
     """
     return state_code.upper() == 'US_ID'
 
@@ -131,32 +137,35 @@ def should_collapse_transfers_different_purpose_for_incarceration(state_code: st
             in US_ID.
         - US_MO: True
         - US_ND: True
+        - US_PA: True
     """
     return state_code.upper() != 'US_ID'
 
 
 def include_decisions_on_follow_up_responses(state_code: str) -> bool:
-    """Some StateSupervisionViolationResponses are a 'follow-up' type of reponse, which is a state-defined response
+    """Some StateSupervisionViolationResponses are a 'follow-up' type of response, which is a state-defined response
     that is related to a previously submitted response. This returns whether or not the decision entries on
     follow-up responses should be considered in the calculations.
 
         - US_ID: False
         - US_MO: True
         - US_ND: False
+        - US_PA: False
     """
     return state_code.upper() == 'US_MO'
 
 
-def second_assessment_on_supervision_is_more_reliable(state_code: str) -> bool:
+def second_assessment_on_supervision_is_more_reliable(_state_code: str) -> bool:
     """Some states rely on the first-reassessment (the second assessment) instead of the first assessment when comparing
     terminating assessment scores to a score at the beginning of someone's supervision.
 
         - US_ID: True
         - US_MO: True
         - US_ND: True
+        - US_PA: True
     """
     # TODO(#2782): Investigate whether to update this logic
-    return state_code in ('US_ID', 'US_MO', 'US_ND')
+    return True
 
 
 def get_month_supervision_type(
