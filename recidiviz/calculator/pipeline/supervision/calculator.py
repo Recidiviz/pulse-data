@@ -40,7 +40,7 @@ from recidiviz.calculator.pipeline.supervision.metrics import \
     SupervisionRevocationViolationTypeAnalysisMetric
 from recidiviz.calculator.pipeline.utils.metric_utils import MetricMethodologyType
 from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_manager import \
-    supervision_types_distinct_for_state
+    supervision_types_mutually_exclusive_for_state
 from recidiviz.persistence.entity.state.entities import StatePerson
 
 
@@ -614,9 +614,9 @@ def include_supervision_in_count(combo: Dict[str, Any],
     This function assumes that the SupervisionTimeBuckets in all_buckets_in_period are of the same type and that the
     list is sorted in ascending order by year and month.
     """
-    # If supervision types are distinct for a given state, then a person who has events with different types of
-    # supervision cannot contribute to counts for more than one type
-    if supervision_types_distinct_for_state(supervision_time_bucket.state_code):
+    # If supervision types are mutually exclusive for a given state, then a person who has events with different types
+    # of supervision cannot contribute to counts for more than one type
+    if supervision_types_mutually_exclusive_for_state(supervision_time_bucket.state_code):
         supervision_type_specific_metric = False
     else:
         # If this combo specifies the supervision type (and it's not a person-level combo), then limit this inclusion
