@@ -44,12 +44,12 @@ CASE_TERMINATIONS_BY_TYPE_COMPARISON_QUERY_TEMPLATE = \
     ),
     absconsions_by_officer as (
       SELECT state_code as region_code, year, month, SUM(absconsions) as absconsion_count
-      FROM `{project_id}.{po_report_dataset}.supervision_absconsion_terminations_by_officer_by_month`
+      FROM `{project_id}.{po_report_dataset}.supervision_absconsion_terminations_by_officer_by_month_materialized`
       GROUP BY region_code, year, month
     ),
     discharges_by_officer as (
       SELECT state_code as region_code, year, month, SUM(pos_discharges) as discharge_count
-      FROM `{project_id}.{po_report_dataset}.supervision_discharges_by_officer_by_month`
+      FROM `{project_id}.{po_report_dataset}.supervision_discharges_by_officer_by_month_materialized`
       WHERE district != 'ALL' AND officer_external_id != 'ALL'
       GROUP BY region_code, year, month
     )

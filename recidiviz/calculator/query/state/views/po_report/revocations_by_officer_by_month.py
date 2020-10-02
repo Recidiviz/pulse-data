@@ -59,7 +59,7 @@ REVOCATIONS_BY_OFFICER_BY_MONTH_QUERY_TEMPLATE = \
       officer_external_id, district,
       IFNULL(revocations_per_officer.crime_revocations, 0) AS crime_revocations,
       IFNULL(revocations_per_officer.technical_revocations, 0) AS technical_revocations
-    FROM `{project_id}.{po_report_dataset}.officer_supervision_district_association`
+    FROM `{project_id}.{po_report_dataset}.officer_supervision_district_association_materialized`
     LEFT JOIN revocations_per_officer
       USING (state_code, year, month, officer_external_id)
     ORDER BY state_code, year, month, district, officer_external_id
@@ -68,6 +68,7 @@ REVOCATIONS_BY_OFFICER_BY_MONTH_QUERY_TEMPLATE = \
 REVOCATIONS_BY_OFFICER_BY_MONTH_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=dataset_config.PO_REPORT_DATASET,
     view_id=REVOCATIONS_BY_OFFICER_BY_MONTH_VIEW_NAME,
+    should_materialize=True,
     view_query_template=REVOCATIONS_BY_OFFICER_BY_MONTH_QUERY_TEMPLATE,
     description=REVOCATIONS_BY_OFFICER_BY_MONTH_DESCRIPTION,
     metrics_dataset=dataset_config.DATAFLOW_METRICS_DATASET,

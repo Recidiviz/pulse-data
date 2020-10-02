@@ -51,14 +51,14 @@ PO_MONTHLY_REPORT_DATA_QUERY_TEMPLATE = \
         assessment_percent,
         facetoface,
         facetoface_percent,
-      FROM `{project_id}.{po_report_dataset}.supervision_discharges_by_officer_by_month`
-      FULL OUTER JOIN `{project_id}.{po_report_dataset}.supervision_compliance_by_officer_by_month`
+      FROM `{project_id}.{po_report_dataset}.supervision_discharges_by_officer_by_month_materialized`
+      FULL OUTER JOIN `{project_id}.{po_report_dataset}.supervision_compliance_by_officer_by_month_materialized`
         USING (state_code, year, month, district, officer_external_id)
-      FULL OUTER JOIN `{project_id}.{po_report_dataset}.supervision_absconsion_terminations_by_officer_by_month`
+      FULL OUTER JOIN `{project_id}.{po_report_dataset}.supervision_absconsion_terminations_by_officer_by_month_materialized`
         USING (state_code, year, month, district, officer_external_id)
-      FULL OUTER JOIN `{project_id}.{po_report_dataset}.revocations_by_officer_by_month`
+      FULL OUTER JOIN `{project_id}.{po_report_dataset}.revocations_by_officer_by_month_materialized`
         USING (state_code, year, month, district, officer_external_id)
-      FULL OUTER JOIN `{project_id}.{po_report_dataset}.supervision_early_discharge_requests_by_officer_by_month`
+      FULL OUTER JOIN `{project_id}.{po_report_dataset}.supervision_early_discharge_requests_by_officer_by_month_materialized`
         USING (state_code, year, month, district, officer_external_id)
     )
     SELECT
