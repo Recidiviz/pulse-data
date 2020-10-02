@@ -8912,7 +8912,11 @@ class TestFindAssessmentScoreChange(unittest.TestCase):
         self.assertIsNone(end_assessment_level)
         self.assertIsNone(end_assessment_type)
 
-    def test_find_assessment_score_change_first_reliable_assessment_is_first_assessment(self):
+    # # pylint: disable=line-too-long
+    @mock.patch('recidiviz.calculator.pipeline.supervision.identifier.second_assessment_on_supervision_is_more_reliable')
+    def test_find_assessment_score_change_first_reliable_assessment_is_first_assessment(self, mock_reliable_assessment):
+        mock_reliable_assessment.return_value = False
+
         assessment_1 = StateAssessment.new_with_defaults(
             state_code='US_XX',
             assessment_type=StateAssessmentType.ORAS,

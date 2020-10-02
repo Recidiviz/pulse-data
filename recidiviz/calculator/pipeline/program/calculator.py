@@ -34,7 +34,7 @@ from recidiviz.calculator.pipeline.utils.calculator_utils import last_day_of_mon
 from recidiviz.calculator.pipeline.utils.metric_utils import \
     MetricMethodologyType
 from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_manager import \
-    supervision_types_distinct_for_state
+    supervision_types_mutually_exclusive_for_state
 from recidiviz.persistence.entity.state.entities import StatePerson
 
 
@@ -351,9 +351,9 @@ def include_event_in_count(combo: Dict[str, Any],
     if not isinstance(program_event, (ProgramReferralEvent, ProgramParticipationEvent)):
         raise ValueError(f"Unexpected program_event of type {program_event.__class__}")
 
-    # If supervision types are distinct for a given state, then a person who has events with different types of
-    # supervision cannot contribute to counts for more than one type
-    if supervision_types_distinct_for_state(program_event.state_code):
+    # If supervision types are mutually exclusive for a given state, then a person who has events with different types
+    # of supervision cannot contribute to counts for more than one type
+    if supervision_types_mutually_exclusive_for_state(program_event.state_code):
         supervision_type_specific_metric = False
     else:
         # If this combo specifies the supervision type, then limit this inclusion logic to only buckets of the same
