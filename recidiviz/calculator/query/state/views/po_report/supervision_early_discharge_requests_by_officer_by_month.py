@@ -60,7 +60,7 @@ SUPERVISION_EARLY_DISCHARGE_REQUESTS_BY_OFFICER_BY_MONTH_QUERY_TEMPLATE = \
         state_code, year, month,
         district,
         AVG(IFNULL(earned_discharges, 0)) AS avg_earned_discharges
-      FROM `{project_id}.{po_report_dataset}.officer_supervision_district_association`
+      FROM `{project_id}.{po_report_dataset}.officer_supervision_district_association_materialized`
       LEFT JOIN requests_per_officer
         USING (state_code, year, month, officer_external_id),
       {district_dimension}
@@ -72,7 +72,7 @@ SUPERVISION_EARLY_DISCHARGE_REQUESTS_BY_OFFICER_BY_MONTH_QUERY_TEMPLATE = \
       IFNULL(requests_per_officer.earned_discharges, 0) AS earned_discharges,
       district_avg.avg_earned_discharges AS earned_discharges_district_average,
       state_avg.avg_earned_discharges AS earned_discharges_state_average
-    FROM `{project_id}.{po_report_dataset}.officer_supervision_district_association`
+    FROM `{project_id}.{po_report_dataset}.officer_supervision_district_association_materialized`
     LEFT JOIN requests_per_officer
       USING (state_code, year, month, officer_external_id)
     LEFT JOIN (
@@ -91,6 +91,7 @@ SUPERVISION_EARLY_DISCHARGE_REQUESTS_BY_OFFICER_BY_MONTH_QUERY_TEMPLATE = \
 SUPERVISION_EARLY_DISCHARGE_REQUESTS_BY_OFFICER_BY_MONTH_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=dataset_config.PO_REPORT_DATASET,
     view_id=SUPERVISION_EARLY_DISCHARGE_REQUESTS_BY_OFFICER_BY_MONTH_VIEW_NAME,
+    should_materialize=True,
     view_query_template=SUPERVISION_EARLY_DISCHARGE_REQUESTS_BY_OFFICER_BY_MONTH_QUERY_TEMPLATE,
     description=SUPERVISION_EARLY_DISCHARGE_REQUESTS_BY_OFFICER_BY_MONTH_DESCRIPTION,
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,

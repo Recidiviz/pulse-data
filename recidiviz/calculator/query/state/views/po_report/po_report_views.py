@@ -32,12 +32,16 @@ from recidiviz.calculator.query.state.views.po_report.supervision_discharges_by_
 from recidiviz.calculator.query.state.views.po_report.supervision_early_discharge_requests_by_officer_by_month import \
     SUPERVISION_EARLY_DISCHARGE_REQUESTS_BY_OFFICER_BY_MONTH_VIEW_BUILDER
 
+# NOTE: These views must be listed in order of dependency. For example, if view Y depends on view X, then view X should
+# appear in the list before view Y.
 PO_REPORT_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
+    OFFICER_SUPERVISION_DISTRICT_ASSOCIATION_VIEW_BUILDER,
     REVOCATIONS_BY_OFFICER_BY_MONTH_VIEW_BUILDER,
     SUPERVISION_DISCHARGES_BY_OFFICER_BY_MONTH_VIEW_BUILDER,
     SUPERVISION_ABSCONSION_TERMINATIONS_BY_OFFICER_BY_MONTH_VIEW_BUILDER,
     SUPERVISION_COMPLIANCE_BY_OFFICER_BY_MONTH_VIEW_BUILDER,
     SUPERVISION_EARLY_DISCHARGE_REQUESTS_BY_OFFICER_BY_MONTH_VIEW_BUILDER,
-    OFFICER_SUPERVISION_DISTRICT_ASSOCIATION_VIEW_BUILDER,
+    # PO_MONTHLY_REPORT_DATA_VIEW_BUILDER must be last in this list because it relies on the materialized versions of
+    # all of the other PO Report views
     PO_MONTHLY_REPORT_DATA_VIEW_BUILDER
 ]
