@@ -30,66 +30,16 @@ import argparse
 import logging
 
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
-from recidiviz.ingest.direct.query_utils import get_raw_tables_for_state, get_raw_table_config
-from recidiviz.ingest.direct.controllers.direct_ingest_big_query_view_types import \
-    DirectIngestRawDataTableLatestView
+from recidiviz.ingest.direct.controllers.direct_ingest_raw_data_table_latest_view_updater import \
+    DirectIngestRawDataTableLatestViewUpdater
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.utils.params import str_to_bool
 
 
-def create_or_update_views_for_table(
-        raw_table_name: str,
-        project_id: str,
-        state_code: str,
-        views_dataset: str,
-        dry_run: bool):
-    """Creates/Updates views corresponding to the provided |raw_table_name|."""
-    logging.info('===================== CREATING QUERIES FOR %s  =======================', raw_table_name)
-    raw_table_config = get_raw_table_config(region_code=state_code,
-                                            raw_table_name=raw_table_name)
-    if not raw_table_config.primary_key_cols:
-        if dry_run:
-            logging.info('[DRY RUN] would have skipped table named %s with empty primary key list', raw_table_name)
-        else:
-            logging.warning('Table config with name %s has empty primary key list... Skipping '
-                            'update/creation.', raw_table_name)
-        return
-
-    latest_view = DirectIngestRawDataTableLatestView(
-        region_code=state_code,
-        raw_file_config=raw_table_config)
-
-    if dry_run:
-        logging.info('[DRY RUN] would have created/updated view %s with query:\n %s',
-                     latest_view.view_id, latest_view.view_query)
-        return
-
-    bq_client = BigQueryClientImpl(project_id=project_id)
-    views_dataset_ref = bq_client.dataset_ref_for_id(views_dataset)
-    bq_client.create_or_update_view(dataset_ref=views_dataset_ref, view=latest_view)
-    logging.info('Created/Updated view %s', latest_view.view_id)
-
-
 def main(state_code: str, project_id: str, dry_run: bool):
-    views_dataset = f'{state_code}_raw_data_up_to_date_views'
-    succeeded_tables = []
-    failed_tables = []
-    for raw_table_name in get_raw_tables_for_state(state_code):
-        try:
-            create_or_update_views_for_table(
-                state_code=state_code,
-                raw_table_name=raw_table_name,
-                project_id=project_id,
-                views_dataset=views_dataset,
-                dry_run=dry_run)
-            succeeded_tables.append(raw_table_name)
-        except Exception:
-            failed_tables.append(raw_table_name)
-            logging.exception("Couldn't create/update views for file %s", raw_table_name)
-
-    logging.info('Succeeded tables %s', succeeded_tables)
-    if failed_tables:
-        logging.error('Failed tables %s', failed_tables)
+    bq_client = BigQueryClientImpl(project_id=project_id)
+    updater = DirectIngestRawDataTableLatestViewUpdater(state_code, project_id, bq_client, dry_run)
+    updater.update_tables_for_state()
 
 
 if __name__ == '__main__':
