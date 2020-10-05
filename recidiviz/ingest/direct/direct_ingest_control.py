@@ -27,6 +27,8 @@ from flask import Blueprint, request
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.ingest.direct.controllers.direct_ingest_raw_data_table_latest_view_updater import \
     DirectIngestRawDataTableLatestViewUpdater
+from recidiviz.ingest.direct.controllers.direct_ingest_raw_update_cloud_task_manager import \
+    DirectIngestRawUpdateCloudTaskManager
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_controller import \
     GcsfsDirectIngestController
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import GcsfsRawDataBQImportArgs, \
@@ -39,13 +41,14 @@ from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import \
     BaseDirectIngestController
 from recidiviz.ingest.direct.controllers.direct_ingest_types import IngestArgs, CloudTaskArgs
 from recidiviz.ingest.direct.direct_ingest_controller_utils import check_is_region_launched_in_env
+from recidiviz.ingest.direct.direct_ingest_region_utils import get_existing_region_dir_names
 from recidiviz.ingest.direct.errors import DirectIngestError, \
     DirectIngestErrorType
 from recidiviz.utils import regions, monitoring, metadata
 from recidiviz.utils.auth import authenticate_request
 from recidiviz.utils.monitoring import TagKey
 from recidiviz.utils.params import get_str_param_value, get_bool_param_value
-from recidiviz.utils.regions import get_supported_direct_ingest_region_codes
+from recidiviz.utils.regions import get_supported_direct_ingest_region_codes, get_region
 
 direct_ingest_control = Blueprint('direct_ingest_control', __name__)
 
@@ -192,6 +195,26 @@ def raw_data_import() -> Tuple[str, HTTPStatus]:
                     error_type=DirectIngestErrorType.INPUT_ERROR)
 
             controller.do_raw_data_import(data_import_args)
+    return '', HTTPStatus.OK
+
+
+@direct_ingest_control.route('/create_raw_data_latest_view_update_tasks', methods=['GET', 'POST'])
+@authenticate_request
+def create_raw_data_latest_view_update_tasks() -> Tuple[str, HTTPStatus]:
+    """Creates tasks for every direct ingest region with SQL preprocessing
+    enabled to update the raw data table latest views.
+    """
+    raw_update_ctm = DirectIngestRawUpdateCloudTaskManager(metadata.project_id())
+
+    for region_code in get_existing_region_dir_names():
+        with monitoring.push_region_tag(region_code):
+            region = get_region(region_code, is_direct_ingest=True)
+            if region.are_raw_data_bq_imports_enabled_in_env():
+                logging.info('Creating raw data latest view update task for region [%s]', region_code)
+                raw_update_ctm.create_raw_data_latest_view_update_task(region_code)
+            else:
+                logging.info('Skipping raw data latest view update for region [%s] - raw data imports not enabled.',
+                             region_code)
     return '', HTTPStatus.OK
 
 

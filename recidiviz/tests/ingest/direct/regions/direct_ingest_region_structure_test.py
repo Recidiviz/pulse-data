@@ -18,20 +18,20 @@
 import os
 import re
 import unittest
-from typing import List, Callable
+from typing import Callable
 
 from mock import patch
 import yaml
 
-import recidiviz
 from recidiviz.ingest.direct.controllers.direct_ingest_view_collector import DirectIngestPreProcessedIngestViewCollector
 from recidiviz.ingest.direct.controllers.direct_ingest_raw_file_import_manager import \
     DirectIngestRegionRawFileConfig
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_controller import GcsfsDirectIngestController
+from recidiviz.ingest.direct.direct_ingest_region_utils import get_existing_region_dir_names, \
+    get_existing_region_dir_paths
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.utils.regions import get_region
 
-_REGIONS_DIR = os.path.dirname(recidiviz.ingest.direct.regions.__file__)
 
 _REGION_REGEX = re.compile(r'us_[a-z]{2}(_[a-z]+)?')
 
@@ -52,22 +52,15 @@ class DirectIngestRegionDirStructureTest(unittest.TestCase):
         self.storage_client_patcher.stop()
         self.task_client_patcher.stop()
 
-    def _get_existing_region_dir_paths(self):
-        return [os.path.join(_REGIONS_DIR, d) for d in self._get_existing_region_dir_names()]
-
-    def _get_existing_region_dir_names(self) -> List[str]:
-        return [d for d in os.listdir(_REGIONS_DIR)
-                if os.path.isdir(os.path.join(_REGIONS_DIR, d)) and not d.startswith('__')]
-
     def test_region_dirname_matches_pattern(self):
-        for d in self._get_existing_region_dir_names():
+        for d in get_existing_region_dir_names():
             self.assertIsNotNone(re.match(_REGION_REGEX, d),
                                  f'Region [{d}] does not match expected region pattern.')
 
     def run_check_valid_yamls_exist_in_all_regions(self,
                                                    generate_yaml_name_fn: Callable[[str], str],
                                                    validate_contents_fn: Callable[[str, object], None]):
-        for dir_path in self._get_existing_region_dir_paths():
+        for dir_path in get_existing_region_dir_paths():
             region_code = os.path.basename(dir_path)
 
             yaml_path = os.path.join(dir_path, generate_yaml_name_fn(region_code))
@@ -100,7 +93,7 @@ class DirectIngestRegionDirStructureTest(unittest.TestCase):
                                                         validate_manifest_contents)
 
     def test_region_controller_exists_and_builds(self):
-        for dir_path in self._get_existing_region_dir_paths():
+        for dir_path in get_existing_region_dir_paths():
             region_code = os.path.basename(dir_path)
             controller_path = os.path.join(dir_path, f'{region_code}_controller.py')
             self.assertTrue(os.path.exists(controller_path), f'Path [{controller_path}] does not exist.')
@@ -110,7 +103,7 @@ class DirectIngestRegionDirStructureTest(unittest.TestCase):
                 self.assertIsNotNone(region.get_ingestor_class())
 
     def test_region_controller_builds(self):
-        for dir_path in self._get_existing_region_dir_paths():
+        for dir_path in get_existing_region_dir_paths():
             region_code = os.path.basename(dir_path)
 
             region = get_region(region_code, is_direct_ingest=True)
@@ -118,7 +111,7 @@ class DirectIngestRegionDirStructureTest(unittest.TestCase):
                 self.assertIsNotNone(region.get_ingestor())
 
     def test_raw_files_yaml_parses_all_regions(self):
-        for region_code in self._get_existing_region_dir_names():
+        for region_code in get_existing_region_dir_names():
             region = get_region(region_code, is_direct_ingest=True)
 
             raw_file_manager = DirectIngestRegionRawFileConfig(region_code=region.region_code)
@@ -131,9 +124,10 @@ class DirectIngestRegionDirStructureTest(unittest.TestCase):
                                 f"Multiple raw file configs defined with the same file_tag [{config.file_tag}]")
                 config_file_tags.add(config.file_tag)
 
-    def test_collect_ingest_views(self):
+    @staticmethod
+    def test_collect_ingest_views():
         with local_project_id_override('project'):
-            for region_code in self._get_existing_region_dir_names():
+            for region_code in get_existing_region_dir_names():
                 region = get_region(region_code, is_direct_ingest=True)
 
                 controller_class = region.get_ingestor_class()
