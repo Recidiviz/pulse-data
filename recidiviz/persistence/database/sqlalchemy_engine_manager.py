@@ -24,7 +24,7 @@ from sqlalchemy.engine import Engine
 from sqlalchemy.ext.declarative import DeclarativeMeta
 
 from recidiviz.persistence.database.base_schema import JailsBase, \
-    StateBase, OperationsBase
+    StateBase, OperationsBase, JusticeCountsBase
 from recidiviz.utils import secrets, environment
 
 @enum.unique
@@ -32,6 +32,7 @@ class SchemaType(enum.Enum):
     JAILS = 'JAILS'
     STATE = 'STATE'
     OPERATIONS = 'OPERATIONS'
+    JUSTICE_COUNTS = 'JUSTICE_COUNTS'
 
 
 class SQLAlchemyEngineManager:
@@ -96,7 +97,7 @@ class SQLAlchemyEngineManager:
         # we may reconsider. See https://www.postgresql.org/docs/9.1/applevel-consistency.html.
         #
         # TODO(#3734): Consider doing this for all databases.
-        if schema_base is StateBase:
+        if schema_base in (StateBase, JusticeCountsBase):
             return 'SERIALIZABLE'
         return None
 
@@ -131,6 +132,8 @@ class SQLAlchemyEngineManager:
         cls.init_engine_for_postgres_instance(
             db_url=cls._get_operations_server_postgres_instance_url(),
             schema_base=OperationsBase)
+
+        # TODO(#4175): Add Justice Counts database instance
 
     @classmethod
     def get_engine_for_schema_base(

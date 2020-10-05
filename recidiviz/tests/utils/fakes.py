@@ -25,14 +25,14 @@ from typing import Callable, Optional, Set
 from sqlalchemy.ext.declarative import DeclarativeMeta
 from sqlalchemy.orm.session import close_all_sessions
 
-from recidiviz.persistence.database.base_schema import OperationsBase, StateBase, JailsBase
+from recidiviz.persistence.database.base_schema import OperationsBase, StateBase, JailsBase, JusticeCountsBase
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_engine_manager import SQLAlchemyEngineManager
 from recidiviz.tests.persistence.database.schema_entity_converter.test_base_schema import TestBase
 from recidiviz.utils import environment
 
 
-DECLARATIVE_BASES = [OperationsBase, StateBase, JailsBase, TestBase]
+DECLARATIVE_BASES = [OperationsBase, StateBase, JailsBase, JusticeCountsBase, TestBase]
 LINUX_TEST_DB_OWNER_NAME = 'recidiviz_test_db_owner'
 TEST_POSTGRES_DB_NAME = 'recidiviz_test_db'
 TEST_POSTGRES_USER_NAME = 'recidiviz_test_usr'
