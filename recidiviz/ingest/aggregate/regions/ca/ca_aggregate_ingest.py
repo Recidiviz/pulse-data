@@ -83,9 +83,13 @@ def _last_date_of_month(series: pd.Series) -> datetime.date:
 def _pretend_jurisdiction_is_county(jurisdiction: str) -> str:
     """Format jurisdiction_name like a county_name to match each to a fips."""
     jurisdiction = jurisdiction.lower()
-    jurisdiction = jurisdiction.replace(" sheriff's dept.", '')
     jurisdiction = jurisdiction.replace(" corrections dept.", '')
     jurisdiction = jurisdiction.replace(" police dept.", '')
+    jurisdiction = jurisdiction.replace(" probation dept.", '')
+    jurisdiction = jurisdiction.replace(" sheriff's dept.", '')
     jurisdiction = jurisdiction.replace(" work furlough", '')
+
+    if jurisdiction == 'oakland':
+        return 'alameda'
 
     return jurisdiction
