@@ -52,10 +52,10 @@ echo "Checking for TODO format"
 # - Skips 'run_pylint.sh' as it is allowed to have 'TODO' that doesn't match the format
 # - Runs grep for each updated file, getting all lines containing 'TODO' (and including the line number in the output via -n)
 # - Filters to only the lines that don't contain 'TODO' with the correct format
-invalid_lines=$(${changed_files_cmd} | grep --invert-match -e 'run_pylint\.sh' | xargs grep -n -e 'TODO' | grep --invert-match -e 'TODO(#[0-9]\+)')
+invalid_lines=$(${changed_files_cmd} | grep --invert-match -e 'run_pylint\.sh' | xargs grep -n -e 'TODO' | grep --invert-match -e 'TODO(\(.*#[0-9]\+\)\|\(http.*\))')
 if [[ -n ${invalid_lines} ]]
 then
-    echo "TODOs must be of format TODO(#123)"
+    echo "TODOs must be of format TODO(#123), TODO(organization/repo#123), or TODO(https://issues.com/123"
     echo "${invalid_lines}" | indent_output
     exit_code=$((exit_code + 1))
 else
