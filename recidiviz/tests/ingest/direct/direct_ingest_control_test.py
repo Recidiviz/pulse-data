@@ -25,6 +25,8 @@ from mock import patch, create_autospec, Mock
 
 from recidiviz.ingest.direct import direct_ingest_control
 from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import to_normalized_unprocessed_file_path
+from recidiviz.ingest.direct.controllers.direct_ingest_raw_data_table_latest_view_updater import \
+    DirectIngestRawDataTableLatestViewUpdater
 from recidiviz.ingest.direct.controllers.direct_ingest_types import IngestArgs
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_controller import \
     GcsfsDirectIngestController
@@ -467,6 +469,36 @@ class TestDirectIngestControl(unittest.TestCase):
                                        query_string={},
                                        headers=headers)
 
+            self.assertEqual(200, response.status_code)
+
+    @patch("recidiviz.utils.environment.get_gae_environment")
+    @patch("recidiviz.utils.regions.get_region")
+    @patch(f"{CONTROL_PACKAGE_NAME}.get_supported_direct_ingest_region_codes")
+    @patch('recidiviz.ingest.direct.direct_ingest_control.DirectIngestRawDataTableLatestViewUpdater')
+    def test_update_raw_data_latest_views_for_state(
+            self, mock_updater_fn, mock_supported, mock_region, mock_environment):
+        with local_project_id_override('recidiviz-staging'):
+            mock_supported.return_value = ['us_xx']
+            mock_updater = create_autospec(DirectIngestRawDataTableLatestViewUpdater)
+            mock_updater_fn.return_value = mock_updater
+
+            region_code = 'us_xx'
+
+            mock_environment.return_value = 'staging'
+            mock_region.return_value = fake_region(
+                region_code=region_code,
+                environment='staging')
+
+            request_args = {
+                'region': region_code,
+            }
+
+            headers = {'X-Appengine-Cron': 'test-cron'}
+
+            response = self.client.post('/update_raw_data_latest_views_for_state',
+                                        query_string=request_args,
+                                        headers=headers)
+            mock_updater.update_tables_for_state.assert_called_once()
             self.assertEqual(200, response.status_code)
 
     @patch("recidiviz.utils.environment.get_gae_environment")

@@ -24,6 +24,9 @@ from typing import Optional, Tuple
 
 from flask import Blueprint, request
 
+from recidiviz.big_query.big_query_client import BigQueryClientImpl
+from recidiviz.ingest.direct.controllers.direct_ingest_raw_data_table_latest_view_updater import \
+    DirectIngestRawDataTableLatestViewUpdater
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_controller import \
     GcsfsDirectIngestController
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import GcsfsRawDataBQImportArgs, \
@@ -149,6 +152,7 @@ def ensure_all_file_paths_normalized() -> Tuple[str, HTTPStatus]:
                     controller.region, can_start_ingest=can_start_ingest)
     return '', HTTPStatus.OK
 
+
 @direct_ingest_control.route('/raw_data_import', methods=['POST'])
 @authenticate_request
 def raw_data_import() -> Tuple[str, HTTPStatus]:
@@ -188,6 +192,24 @@ def raw_data_import() -> Tuple[str, HTTPStatus]:
                     error_type=DirectIngestErrorType.INPUT_ERROR)
 
             controller.do_raw_data_import(data_import_args)
+    return '', HTTPStatus.OK
+
+
+@direct_ingest_control.route('/update_raw_data_latest_views_for_state', methods=['POST'])
+@authenticate_request
+def update_raw_data_latest_views_for_state() -> Tuple[str, HTTPStatus]:
+    """Updates raw data tables for a given state
+    """
+    logging.info('Received request to do direct ingest raw data update: [%s]', request.values)
+    region_code = get_str_param_value('region', request.values)
+
+    if not region_code:
+        return f'Bad parameters [{request.values}]', HTTPStatus.BAD_REQUEST
+
+    with monitoring.push_region_tag(region_code):
+        bq_client = BigQueryClientImpl(project_id=metadata.project_id())
+        controller = DirectIngestRawDataTableLatestViewUpdater(region_code, metadata.project_id(), bq_client)
+        controller.update_tables_for_state()
     return '', HTTPStatus.OK
 
 
