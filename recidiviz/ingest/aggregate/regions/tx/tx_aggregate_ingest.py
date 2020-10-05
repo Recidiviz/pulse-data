@@ -34,7 +34,6 @@ from recidiviz.ingest.aggregate.errors import AggregateDateParsingError
 from recidiviz.persistence.database.schema.aggregate.schema import \
     TxCountyAggregate
 
-DATE_PARSE_ANCHOR = 'Abbreviated Population Report for'
 DATE_PARSE_ANCHOR_FILENAME = 'abbreviated pop rpt'
 
 
@@ -67,7 +66,12 @@ def _parse_date(filename: str) -> datetime.date:
         parsed_date = str_field_utils.parse_date(date_str)
         if parsed_date:
             return parsed_date.replace(day=1)
-    raise AggregateDateParsingError("Could not extract date")
+
+    try:
+        return datetime.datetime.strptime(
+            filename, "_wp-content_uploads_%Y_%m_abbrerptcurrent.pdf")
+    except ValueError as e:
+        raise AggregateDateParsingError("Could not extract date") from e
 
 
 def _parse_table(location: str, filename: str,
