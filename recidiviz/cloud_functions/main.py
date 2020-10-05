@@ -140,6 +140,28 @@ def export_view_data(_event, _context):
     logging.info("The response status is %s", response.status_code)
 
 
+def trigger_calculation_pipeline_dag(_event, _context):
+    """This function is triggered by a Pub/Sub event, triggers an Airflow DAG where all
+    the calculation pipelines run simultaneously.
+    """
+    project_id = os.environ.get('GCP_PROJECT')
+    if not project_id:
+        logging.error('No project id set for call to run the calculation pipelines, returning.')
+        return
+
+    client_id = IAP_CLIENT_ID[project_id]
+    webserver_id = os.environ.get('WEBSERVER_ID')
+    if not webserver_id:
+        logging.error("The environment variable 'WEBSERVER_ID' is not set")
+        return
+    # The name of the DAG you wish to trigger
+    dag_name = 'calculation_pipeline_dag'
+    webserver_url = 'https://{}.appspot.com/api/experimental/dags/{}/dag_runs'.format(webserver_id, dag_name)
+
+    monitor_response = make_iap_request(webserver_url, client_id, method='POST')
+    logging.info("The monitoring Airflow response is %s", monitor_response)
+
+
 def run_calculation_pipelines(_event, _context):
     """This function, which is triggered by a Pub/Sub event, kicks off a
     Dataflow job with the given job_name where the template for the job lives at
@@ -216,8 +238,8 @@ def handle_covid_ingest_on_trigger(_request):
 
 def _ingest_and_aggregate_covid_data():
     """Calls main COVID ingest function"""
-    # TODO(zdg2102): remove this try-except wrapper once GCP cloud function
-    # stack trace bug is fixed: https://issuetracker.google.com/issues/155215191
+    # TODO(https://issuetracker.google.com/issues/155215191): zdg2102
+    #  remove this try-except wrapper once GCP cloud function
     try:
         logging.info('COVID ingest cloud function triggered')
         covid_ingest.ingest_and_aggregate_latest_data()
