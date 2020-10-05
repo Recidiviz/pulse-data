@@ -19,6 +19,7 @@
 import datetime
 import json
 import unittest
+from unittest import mock
 
 from flask import Flask
 from mock import patch, create_autospec, Mock
@@ -27,6 +28,8 @@ from recidiviz.ingest.direct import direct_ingest_control
 from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import to_normalized_unprocessed_file_path
 from recidiviz.ingest.direct.controllers.direct_ingest_raw_data_table_latest_view_updater import \
     DirectIngestRawDataTableLatestViewUpdater
+from recidiviz.ingest.direct.controllers.direct_ingest_raw_update_cloud_task_manager import \
+    DirectIngestRawUpdateCloudTaskManager
 from recidiviz.ingest.direct.controllers.direct_ingest_types import IngestArgs
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_controller import \
     GcsfsDirectIngestController
@@ -35,6 +38,7 @@ from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import GcsfsR
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.ingest.direct.direct_ingest_cloud_task_manager import \
     DirectIngestCloudTaskManager
+from recidiviz.ingest.direct.direct_ingest_region_utils import get_existing_region_dir_names
 from recidiviz.tests.utils.fake_region import fake_region
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -500,6 +504,31 @@ class TestDirectIngestControl(unittest.TestCase):
                                         headers=headers)
             mock_updater.update_tables_for_state.assert_called_once()
             self.assertEqual(200, response.status_code)
+
+    @patch("recidiviz.utils.environment.get_gae_environment")
+    @patch(f"{CONTROL_PACKAGE_NAME}.DirectIngestRawUpdateCloudTaskManager")
+    def test_create_raw_data_latest_view_update_tasks(
+            self,
+            mock_cloud_task_manager_fn,
+            mock_environment):
+        with local_project_id_override('recidiviz-staging'):
+            mock_environment.return_value = 'staging'
+
+            mock_cloud_task_manager = create_autospec(DirectIngestRawUpdateCloudTaskManager)
+            mock_cloud_task_manager_fn.return_value = mock_cloud_task_manager
+
+            headers = {'X-Appengine-Cron': 'test-cron'}
+            response = self.client.post('/create_raw_data_latest_view_update_tasks',
+                                        query_string={},
+                                        headers=headers)
+
+            self.assertEqual(200, response.status_code)
+
+            no_raw_data_import_regions = {'us_tx_brazos', 'us_ma_middlesex', 'us_nm_bernalillo'}
+            expected_calls = [mock.call(region_code)
+                              for region_code in get_existing_region_dir_names()
+                              if region_code not in no_raw_data_import_regions]
+            mock_cloud_task_manager.create_raw_data_latest_view_update_task.assert_has_calls(expected_calls)
 
     @patch("recidiviz.utils.environment.get_gae_environment")
     @patch("recidiviz.utils.regions.get_region")
