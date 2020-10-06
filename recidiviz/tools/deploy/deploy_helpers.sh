@@ -184,7 +184,7 @@ function verify_can_deploy {
     run_cmd check_docker_installed
 
     echo "Checking jq is installed"
-    run_cmd check_docker_installed
+    run_cmd check_jq_installed
 
     echo "Checking for too many deployed versions"
     run_cmd check_for_too_many_deployed_versions ${PROJECT_ID}
