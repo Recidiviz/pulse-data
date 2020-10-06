@@ -97,6 +97,7 @@ FULL_NAME_3 = 'TEST_FULL_NAME_3'
 JURISDICTION_ID = '12345678'
 DEFAULT_METADATA = IngestMetadata.new_with_defaults(
     region='region_code',
+    system_level=SystemLevel.COUNTY,
     jurisdiction_id='12345678',
     ingest_time=datetime(year=1000, month=1, day=1))
 ID = 1
