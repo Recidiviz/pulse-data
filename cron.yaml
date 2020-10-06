@@ -249,6 +249,15 @@ cron:
       max_doublings: 5
       job_age_limit: 9h
 
+  - description: "[Direct ingest] Create or update raw data latest views"
+    url: /direct/create_raw_data_latest_view_update_tasks
+    schedule: every day 12:00
+    timezone: America/Los_Angeles
+    retry_parameters:
+      min_backoff_seconds: 2.5
+      max_doublings: 5
+      job_age_limit: 9h
+
   - description: Run automated data validation task
     url: /validation_manager/validate?should_update_views=true
     schedule: every day 12:00

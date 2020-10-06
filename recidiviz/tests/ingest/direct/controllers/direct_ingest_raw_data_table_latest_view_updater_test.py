@@ -45,6 +45,12 @@ class DirectIngestRawDataUpdateControllerTest(unittest.TestCase):
             return bigquery.DatasetReference(project=self.project_id, dataset_id=dataset_id)
 
         self.mock_big_query_client.dataset_ref_for_id = fake_get_dataset_ref
+        self.mock_big_query_client.table_exists.side_effect = [
+            True,  # tagA
+            False,  # tagB
+            True,  # tagC
+            True  # tagWeDoNotIngest
+        ]
 
     @patch("recidiviz.ingest.direct.controllers.direct_ingest_raw_data_table_latest_view_updater"
            ".DirectIngestRegionRawFileConfig")
@@ -62,12 +68,10 @@ class DirectIngestRawDataUpdateControllerTest(unittest.TestCase):
         with local_project_id_override(self.project_id):
             self.update_controller.update_tables_for_state()
 
-            self.assertEqual(self.mock_big_query_client.create_or_update_view.call_count, 3)
+            self.assertEqual(self.mock_big_query_client.create_or_update_view.call_count, 2)
 
             mock_views = [DirectIngestRawDataTableLatestView(region_code=self.test_region.region_code,
                                                              raw_file_config=self.mock_raw_file_configs['tagA']),
-                          DirectIngestRawDataTableLatestView(region_code=self.test_region.region_code,
-                                                             raw_file_config=self.mock_raw_file_configs['tagB']),
                           DirectIngestRawDataTableLatestView(region_code=self.test_region.region_code,
                                                              raw_file_config=self.mock_raw_file_configs['tagC'])]
 
