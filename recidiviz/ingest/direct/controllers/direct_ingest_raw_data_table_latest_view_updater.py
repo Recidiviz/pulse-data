@@ -73,14 +73,18 @@ class DirectIngestRawDataTableLatestViewUpdater:
         succeeded_tables = []
         failed_tables = []
         for raw_file_config in self.raw_file_region_config.raw_file_configs.values():
-            try:
-                self._create_or_update_views_for_table(
-                    raw_file_config=raw_file_config,
-                    views_dataset=views_dataset)
-                succeeded_tables.append(raw_file_config.file_tag)
-            except Exception:
-                failed_tables.append(raw_file_config.file_tag)
-                logging.exception("Couldn't create/update views for file %s", raw_file_config.file_tag)
+            if self.bq_client.table_exists(self.bq_client.dataset_ref_for_id(views_dataset), raw_file_config.file_tag):
+                try:
+                    self._create_or_update_views_for_table(
+                        raw_file_config=raw_file_config,
+                        views_dataset=views_dataset)
+                    succeeded_tables.append(raw_file_config.file_tag)
+                except Exception:
+                    failed_tables.append(raw_file_config.file_tag)
+                    logging.exception("Couldn't create/update views for file [%s]", raw_file_config.file_tag)
+            else:
+                logging.warning('Table with name [%s] does not exist in BQ... Skipping latest view update/creation',
+                                raw_file_config.file_tag)
 
         logging.info('Succeeded tables %s', succeeded_tables)
         if failed_tables:
