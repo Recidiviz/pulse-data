@@ -61,6 +61,22 @@ class UsNmBernalilloControllerTest(IndividualIngestTest,
     def schema_base(cls) -> DeclarativeMeta:
         return JailsBase
 
+    def setUp(self) -> None:
+        super().setUp()
+
+        # Set entity matching error threshold to a diminishingly small number
+        # for tests. We cannot set it to 0 because we throw when errors *equal*
+        # the error threshold.
+        self.entity_matching_error_threshold_patcher = patch(
+            'recidiviz.persistence.persistence.COUNTY_SYSTEM_LEVEL_ERROR_THRESHOLD',
+            pow(1, -10))
+        self.entity_matching_error_threshold_patcher.start()
+
+    def tearDown(self) -> None:
+        super().tearDown()
+
+        self.entity_matching_error_threshold_patcher.stop()
+
     def testParse(self):
         expected_info = IngestInfo(
             people=[

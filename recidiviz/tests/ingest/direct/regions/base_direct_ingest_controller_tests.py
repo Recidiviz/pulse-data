@@ -84,16 +84,7 @@ class BaseDirectIngestControllerTests(unittest.TestCase):
             run_async=False,
             max_delay_sec_between_files=0)
 
-        # Set entity matching error threshold to a diminishingly small number
-        # for tests. We cannot set it to 0 because we throw when errors *equal*
-        # the error threshold.
-        self.entity_matching_error_threshold_patcher = patch(
-            'recidiviz.persistence.persistence.ERROR_THRESHOLD',
-            pow(1, -10))
-        self.entity_matching_error_threshold_patcher.start()
-
     def tearDown(self) -> None:
-        self.entity_matching_error_threshold_patcher.stop()
         fakes.teardown_on_disk_postgresql_database(OperationsBase)
         fakes.teardown_in_memory_sqlite_databases()
 
