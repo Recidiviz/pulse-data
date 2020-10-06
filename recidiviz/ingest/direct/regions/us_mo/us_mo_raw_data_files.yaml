@@ -24,58 +24,115 @@ default_encoding: UTF-8
 default_separator: ','
 raw_files:
   - file_tag: FOCTEST_ORAS_ASSESSMENTS_WEEKLY
-    primary_key_cols: []
+    primary_key_cols:
+      - E04
+      - FOCTEST
     # Status Descriptions. Column prefix: FH.
   - file_tag: LBAKRCOD_TAK146
-    primary_key_cols: []
+    primary_key_cols:
+      - FH_SCD
     # Offender Identification. Column prefix: EK.
   - file_tag: LBAKRDTA_TAK001
-    primary_key_cols: []
+    primary_key_cols:
+      - EK_DOC
     # Sentence. Column prefix: BS.
   - file_tag: LBAKRDTA_TAK022
-    primary_key_cols: []
+    primary_key_cols:
+      - BS_DOC
+      - BS_CYC
+      - BS_SEO
     # Sentence Inst. Column prefix: BT.
   - file_tag: LBAKRDTA_TAK023
-    primary_key_cols: []
+    primary_key_cols:
+      - BT_DOC
+      - BT_CYC
+      - BT_SEO
     # Sentence Prob. Column prefix: BU.
   - file_tag: LBAKRDTA_TAK024
-    primary_key_cols: []
+    primary_key_cols:
+      - BU_DOC
+      - BU_CYC
+      - BU_SEO
+      - BU_FSO
     # Sentence / Status Xref. Column prefix: BV.
   - file_tag: LBAKRDTA_TAK025
-    primary_key_cols: []
+    primary_key_cols:
+      - BV_DOC
+      - BV_CYC
+      - BV_SSO
+      - BV_SEO
     # Status. Column prefix: BW.
   - file_tag: LBAKRDTA_TAK026
-    primary_key_cols: []
+    primary_key_cols:
+      - BW_DOC
+      - BW_CYC
+      - BW_SSO
     # Violation Reports. Column prefix: BY.
   - file_tag: LBAKRDTA_TAK028
-    primary_key_cols: []
+    primary_key_cols:
+      - BY_DOC
+      - BY_CYC
+      - BY_VSN
     # Field Assignments. Column prefix: CE. 
   - file_tag: LBAKRDTA_TAK034
-    primary_key_cols: []
+    primary_key_cols:
+      - CE_DOC
+      - CE_CYC
+      - CE_HF
+      - CE_EH
+      - CE_PON
     # Supervision Type Assessments. Column prefix: DN.
   - file_tag: LBAKRDTA_TAK039
-    primary_key_cols: []
+    primary_key_cols:
+      - DN_DOC
+      - DN_CYC
+      - DN_NSN
     # Offender Cycles. Column prefix: DQ.
   - file_tag: LBAKRDTA_TAK040
-    primary_key_cols: []
+    primary_key_cols:
+      - DQ_DOC
+      - DQ_CYC
     # Conditions. Column prefix: CF.
   - file_tag: LBAKRDTA_TAK042
-    primary_key_cols: []
-    # Sentence Xref. Column prefix: CZ.
+    primary_key_cols:
+      - CF_DOC
+      - CF_CYC
+      - CF_VSN
+      - CF_VCV
+    # Sentence / Violation Xref. Column prefix: CZ.
   - file_tag: LBAKRDTA_TAK076
-    primary_key_cols: []
+    primary_key_cols:
+      - CZ_DOC
+      - CZ_CYC
+      - CZ_VSN
+      - CZ_SEO
     # Finally Formed Documents. Column prefix: E6.
   - file_tag: LBAKRDTA_TAK142
-    primary_key_cols: []
+    primary_key_cols:
+      - E6_DOC
+      - E6_CYC
+      - E6_DSN # Internal Document seq number
     # Body Status. Column prefix: F1.
   - file_tag: LBAKRDTA_TAK158
-    primary_key_cols: []
+    primary_key_cols:
+      - F1_DOC
+      - F1_CYC
+      - F1_SQN
     # Sentence / Citation Xref. Column prefix: JS.
   - file_tag: LBAKRDTA_TAK291
-    primary_key_cols: []
+    primary_key_cols:
+      - JS_DOC
+      - JS_CYC
+      - JS_CSQ
+      - JS_SEO
     # Citations. Column prefix: JT.
   - file_tag: LBAKRDTA_TAK292
-    primary_key_cols: []
+    primary_key_cols:
+      - JT_DOC
+      - JT_CYC
+      - JT_CSQ
+      - JT_TSS
     # DOB View.
   - file_tag: LBAKRDTA_VAK003
-    primary_key_cols: []
+    primary_key_cols:
+      - DOC_ID_DOB
