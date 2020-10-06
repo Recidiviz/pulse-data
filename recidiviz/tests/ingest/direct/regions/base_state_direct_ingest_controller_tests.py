@@ -72,6 +72,23 @@ class BaseStateDirectIngestControllerTests(BaseDirectIngestControllerTests):
     def schema_base(cls) -> DeclarativeMeta:
         return StateBase
 
+    def setUp(self) -> None:
+        super().setUp()
+
+        # Set entity matching error threshold to a diminishingly small number
+        # for tests. We cannot set it to 0 because we throw when errors *equal*
+        # the error threshold.
+        self.entity_matching_error_threshold_patcher = patch(
+            'recidiviz.persistence.persistence.STATE_SYSTEM_LEVEL_ERROR_THRESHOLD',
+            pow(1, -10))
+
+        self.entity_matching_error_threshold_patcher.start()
+
+    def tearDown(self) -> None:
+        super().tearDown()
+
+        self.entity_matching_error_threshold_patcher.stop()
+
     def _run_ingest_job_for_filename(self, filename: str) -> None:
         """Runs ingest for a the ingest view file with the given unnormalized file name."""
         get_region_patcher = patch(

@@ -82,7 +82,8 @@ retried_transactions_view = view.View("recidiviz/persistence/num_transaction_ret
 monitoring.register_views(
     [people_persisted_view, aborted_writes_view, errors_persisted_view, retried_transactions_view])
 
-ERROR_THRESHOLD = 0.5
+STATE_SYSTEM_LEVEL_ERROR_THRESHOLD = 0.5
+COUNTY_SYSTEM_LEVEL_ERROR_THRESHOLD = 0.5
 
 
 def infer_release_on_open_bookings(
@@ -167,6 +168,7 @@ def _mark_children_removed_from_source(booking: county_entities.Booking):
 
 def _should_abort(
         total_root_entities,
+        system_level: SystemLevel,
         conversion_result: IngestInfoConversionResult,
         entity_matching_errors=0,
         data_validation_errors=0):
@@ -179,7 +181,6 @@ def _should_abort(
                      "root entity objects to persist.")
         return True
 
-    # TODO: finalize the logic in here.
     if conversion_result.protected_class_errors:
         logging.error(
             "Aborting because there was an error regarding a protected class")
@@ -187,15 +188,18 @@ def _should_abort(
                 {monitoring.TagKey.REASON: 'PROTECTED_CLASS_ERROR'}) as m:
             m.measure_int_put(m_aborts, 1)
         return True
-    if (conversion_result.enum_parsing_errors +
-            conversion_result.general_parsing_errors +
-            entity_matching_errors +
-            data_validation_errors) / total_root_entities >= ERROR_THRESHOLD:
+
+    error_ratio = _calculate_error_ratio(conversion_result,
+                                         entity_matching_errors,
+                                         data_validation_errors,
+                                         total_root_entities)
+
+    if error_ratio >= _get_system_level_error_threshold(system_level):
         logging.error(
             "Aborting because we exceeded the error threshold of [%s] with "
             "[%s] enum_parsing errors, [%s] general_parsing_errors, [%s] "
             "entity_matching_errors, and [%s] data_validation_errors",
-            ERROR_THRESHOLD,
+            _get_system_level_error_threshold(system_level),
             conversion_result.enum_parsing_errors,
             conversion_result.general_parsing_errors,
             entity_matching_errors,
@@ -205,6 +209,27 @@ def _should_abort(
             m.measure_int_put(m_aborts, 1)
         return True
     return False
+
+
+def _calculate_error_ratio(conversion_result: IngestInfoConversionResult,
+                           entity_matching_errors: int,
+                           data_validation_errors: int,
+                           total_root_entities: int):
+    """Calculates the error ratio, given the total number of errors and root entities."""
+    return (conversion_result.enum_parsing_errors +
+            conversion_result.general_parsing_errors +
+            entity_matching_errors +
+            data_validation_errors) / total_root_entities
+
+
+def _get_system_level_error_threshold(system_level: SystemLevel):
+    """Returns the error threshold associated with a system level."""
+    if system_level == SystemLevel.COUNTY:
+        return COUNTY_SYSTEM_LEVEL_ERROR_THRESHOLD
+    if system_level == SystemLevel.STATE:
+        return STATE_SYSTEM_LEVEL_ERROR_THRESHOLD
+
+    raise ValueError(f'Found no error threshold associated with `system_level=[{system_level}]`')
 
 
 def retry_transaction(session: Session, measurements: MeasurementMap,
@@ -288,6 +313,7 @@ def write(ingest_info: IngestInfo, metadata: IngestMetadata,
 
         if _should_abort(
                 total_root_entities=total_people,
+                system_level=metadata.system_level,
                 conversion_result=conversion_result,
                 data_validation_errors=data_validation_errors):
             #  TODO(#1665): remove once dangling PERSIST session investigation
@@ -314,6 +340,7 @@ def write(ingest_info: IngestInfo, metadata: IngestMetadata,
                          "to commit to DB", len(output_people))
             if _should_abort(
                     total_root_entities=total_root_entities,
+                    system_level=metadata.system_level,
                     conversion_result=conversion_result,
                     entity_matching_errors=entity_matching_output.error_count,
                     data_validation_errors=data_validation_errors):
