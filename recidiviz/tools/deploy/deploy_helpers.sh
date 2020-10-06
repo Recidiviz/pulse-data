@@ -111,6 +111,7 @@ function pre_deploy_configure_infrastructure {
         echo "Copying pipeline configurations to DAG bucket in ${PROJECT} GCS."
         run_cmd gsutil cp recidiviz/calculator/pipeline/production_calculation_pipeline_templates.yaml gs://us-west3-calculation-pipeli-0fb68009-bucket/dags/
         run_cmd gsutil cp recidiviz/airflow/calculation_pipeline_dag.py gs://us-west3-calculation-pipeli-0fb68009-bucket/dags/
+    fi
 
     # We trigger historical calculations with every deploy because code changes may impact historical metric output
     echo "Triggering historical calculation pipelines"
