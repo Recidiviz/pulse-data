@@ -40,7 +40,9 @@ IAP_CLIENT_ID = {
     'recidiviz-staging': ('984160736970-flbivauv2l7sccjsppe34p7436l6890m.apps.'
                           'googleusercontent.com'),
     'recidiviz-123': ('688733534196-uol4tvqcb345md66joje9gfgm26ufqj6.apps.'
-                      'googleusercontent.com')
+                      'googleusercontent.com'),
+    'recidiviz-staging-airflow': ('17428640429-55a16miqmvtdq0damq39t1iht8vmo981.apps.'
+                                  'googleusercontent.com')
 }
 
 _IAM_SCOPE = 'https://www.googleapis.com/auth/iam'

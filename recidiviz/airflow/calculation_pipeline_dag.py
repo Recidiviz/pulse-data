@@ -38,7 +38,7 @@ publisher = pubsub.PublisherClient()
 project_id = os.environ.get('GCP_PROJECT_ID')
 
 default_args = {
-    'start_date': datetime.date.today(),
+    'start_date': datetime.date.today().strftime('%Y-%m-%d'),
     'email': ['alerts@recidiviz.org'],
     'email_on_failure': True
 }
@@ -75,6 +75,6 @@ with models.DAG(dag_id="calculation_pipeline_dag",
                     job_name=job_name,
                     dataflow_default_options=dataflow_default_args
                 )
-            # This >> ensures that all the calculation pipelines will run before the Pub / Sub message
-            # is published saying the pipelines are done.
-            calculation_pipeline >> calculation_pipeline_completion_task
+                # This >> ensures that all the calculation pipelines will run before the Pub / Sub message
+                # is published saying the pipelines are done.
+                calculation_pipeline >> calculation_pipeline_completion_task
