@@ -38,9 +38,7 @@ INCARCERATION_POPULATION_BY_MONTH_BY_DEMOGRAPHICS_VIEW_QUERY_TEMPLATE = \
          ROW_NUMBER () OVER (PARTITION BY state_code, year, month, date_of_stay, person_id ORDER BY representation_priority) as inclusion_priority
       FROM
         `{project_id}.{metrics_dataset}.incarceration_population_metrics`
-      INNER JOIN
-        `{project_id}.{reference_views_dataset}.most_recent_job_id_by_metric_and_state_code_materialized`
-      USING (state_code, year, month, metric_period_months, metric_type),
+      {filter_to_most_recent_job_id_for_metric},
         {race_ethnicity_dimension}
       LEFT JOIN
          `{project_id}.{static_reference_dataset}.state_race_ethnicity_population_counts`
@@ -95,7 +93,9 @@ INCARCERATION_POPULATION_BY_MONTH_BY_DEMOGRAPHICS_VIEW_BUILDER = MetricBigQueryV
     gender_dimension=bq_utils.unnest_column('gender', 'gender'),
     age_dimension=bq_utils.unnest_column('age_bucket', 'age_bucket'),
     state_specific_race_or_ethnicity_groupings=state_specific_query_strings.state_specific_race_or_ethnicity_groupings(),
-    state_specific_facility_exclusion=state_specific_query_strings.state_specific_facility_exclusion()
+    state_specific_facility_exclusion=state_specific_query_strings.state_specific_facility_exclusion(),
+    filter_to_most_recent_job_id_for_metric=bq_utils.filter_to_most_recent_job_id_for_metric(
+        reference_dataset=dataset_config.REFERENCE_VIEWS_DATASET)
 )
 
 if __name__ == '__main__':

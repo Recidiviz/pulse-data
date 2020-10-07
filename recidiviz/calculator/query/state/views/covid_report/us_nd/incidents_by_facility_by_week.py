@@ -122,7 +122,7 @@ INCIDENTS_BY_FACILITY_BY_WEEK_QUERY_TEMPLATE = \
     ORDER BY facility, week_num, start_date, end_date
 """
 
-DATE_REGEX_MATCHER = r"'\d{1,2}/\d{1,2}/\d{4}'"
+DATE_REGEX_MATCHER = r"'\d{{1,2}}/\d{{1,2}}/\d{{4}}'"
 US_ND_REPORT_FACILITIES = "'NDSP','JRCC', 'DWCRC', 'MRCC'"
 
 INCIDENTS_BY_FACILITY_BY_WEEK_VIEW_BUILDER = SimpleBigQueryViewBuilder(

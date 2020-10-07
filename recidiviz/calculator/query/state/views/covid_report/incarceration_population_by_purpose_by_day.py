@@ -41,9 +41,7 @@ INCARCERATION_POPULATION_BY_PURPOSE_BY_DAY_QUERY_TEMPLATE = \
         specialized_purpose_for_incarceration,
       FROM
         `{project_id}.{metrics_dataset}.incarceration_population_metrics`
-      JOIN
-        `{project_id}.{reference_views_dataset}.most_recent_job_id_by_metric_and_state_code_materialized`
-      USING (state_code, job_id, year, month, metric_period_months, metric_type)
+      {filter_to_most_recent_job_id_for_metric}
       LEFT JOIN
         `{project_id}.{static_reference_dataset}.state_incarceration_facility_capacity`
       USING (state_code, facility)
@@ -77,7 +75,9 @@ INCARCERATION_POPULATION_BY_PURPOSE_BY_DAY_VIEW_BUILDER = SimpleBigQueryViewBuil
     metrics_dataset=DATAFLOW_METRICS_DATASET,
     static_reference_dataset=STATIC_REFERENCE_TABLES_DATASET,
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
-    facility_dimension=bq_utils.unnest_column('facility', 'facility')
+    facility_dimension=bq_utils.unnest_column('facility', 'facility'),
+    filter_to_most_recent_job_id_for_metric=bq_utils.filter_to_most_recent_job_id_for_metric(
+        reference_dataset=dataset_config.REFERENCE_VIEWS_DATASET)
 )
 
 if __name__ == '__main__':

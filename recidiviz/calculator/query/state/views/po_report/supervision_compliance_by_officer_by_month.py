@@ -18,6 +18,7 @@
 # pylint: disable=trailing-whitespace
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+from recidiviz.calculator.query import bq_utils
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -45,8 +46,7 @@ SUPERVISION_COMPLIANCE_BY_OFFICER_BY_MONTH_QUERY_TEMPLATE = \
         COUNT(DISTINCT IF(face_to_face_frequency_sufficient IS NOT NULL, person_id, NULL)) 
             AS facetoface_compliance_caseload_count
       FROM `{project_id}.{metrics_dataset}.supervision_case_compliance_metrics`
-      JOIN `{project_id}.{reference_views_dataset}.most_recent_job_id_by_metric_and_state_code_materialized`
-        USING (state_code, job_id, year, month, metric_period_months, metric_type)
+      {filter_to_most_recent_job_id_for_metric}
       WHERE methodology = 'PERSON'
         AND person_id IS NOT NULL
         AND metric_period_months = 0
@@ -71,7 +71,9 @@ SUPERVISION_COMPLIANCE_BY_OFFICER_BY_MONTH_VIEW_BUILDER = SimpleBigQueryViewBuil
     description=SUPERVISION_COMPLIANCE_BY_OFFICER_BY_MONTH_DESCRIPTION,
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
     metrics_dataset=dataset_config.DATAFLOW_METRICS_DATASET,
-    po_report_dataset=dataset_config.PO_REPORT_DATASET
+    po_report_dataset=dataset_config.PO_REPORT_DATASET,
+    filter_to_most_recent_job_id_for_metric=bq_utils.filter_to_most_recent_job_id_for_metric(
+        reference_dataset=dataset_config.REFERENCE_VIEWS_DATASET)
 )
 
 if __name__ == '__main__':

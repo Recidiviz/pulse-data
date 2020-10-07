@@ -60,8 +60,7 @@ SUPERVISION_TERMINATION_MATRIX_BY_PERSON_VIEW_QUERY_TEMPLATE = \
             termination_date,
             FALSE AS is_revocation
         FROM `{project_id}.{metrics_dataset}.supervision_termination_metrics`
-        JOIN `{project_id}.{reference_views_dataset}.most_recent_job_id_by_metric_and_state_code_materialized` job
-        USING (state_code, job_id, year, month, metric_period_months, metric_type)
+        {filter_to_most_recent_job_id_for_metric}
         WHERE methodology = 'EVENT'
             AND termination_reason IN ('DISCHARGE', 'EXPIRATION', 'SUSPENSION', 'INTERNAL_UNKNOWN', 'EXTERNAL_UNKNOWN', 'DEATH')
             AND month IS NOT NULL
@@ -131,7 +130,9 @@ SUPERVISION_TERMINATION_MATRIX_BY_PERSON_VIEW_BUILDER = SimpleBigQueryViewBuilde
     supervision_level_dimension=bq_utils.unnest_column('supervision_level', 'supervision_level'),
     charge_category_dimension=bq_utils.unnest_charge_category(),
     metric_period_dimension=bq_utils.unnest_metric_period_months(),
-    metric_period_condition=bq_utils.metric_period_condition()
+    metric_period_condition=bq_utils.metric_period_condition(),
+    filter_to_most_recent_job_id_for_metric=bq_utils.filter_to_most_recent_job_id_for_metric(
+        reference_dataset=dataset_config.REFERENCE_VIEWS_DATASET)
 )
 
 if __name__ == '__main__':

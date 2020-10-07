@@ -48,6 +48,8 @@ from recidiviz.validation.views.state.incarceration_population_by_facility_exter
 from recidiviz.validation.views.state.incarceration_population_by_facility_internal_comparison import \
     INCARCERATION_POPULATION_BY_FACILITY_INTERNAL_COMPARISON_VIEW_BUILDER
 # pylint: disable=line-too-long
+from recidiviz.validation.views.state.incarceration_population_by_month_internal_comparison import \
+    INCARCERATION_POPULATION_BY_MONTH_INTERNAL_COMPARISON_VIEW_BUILDER
 from recidiviz.validation.views.state.incarceration_population_by_prioritized_race_and_ethnicity_by_period_internal_consistency import \
     INCARCERATION_POPULATION_BY_PRIORITIZED_RACE_AND_ETHNICITY_BY_PERIOD_INTERNAL_CONSISTENCY_VIEW_BUILDER
 from recidiviz.validation.views.state.incarceration_population_person_level_external_comparison import \
@@ -207,6 +209,10 @@ def get_all_validations() -> List[DataValidationCheck]:
         SamenessDataValidationCheck(
             view=INCARCERATION_POPULATION_BY_FACILITY_INTERNAL_COMPARISON_VIEW_BUILDER.build(),
             comparison_columns=['covid_report_facility_population', 'public_dashboard_facility_population']
+        ),
+        SamenessDataValidationCheck(
+            view=INCARCERATION_POPULATION_BY_MONTH_INTERNAL_COMPARISON_VIEW_BUILDER.build(),
+            comparison_columns=['covid_report_population', 'public_dashboard_population']
         ),
         SamenessDataValidationCheck(
             view=INCARCERATION_POPULATION_BY_DEMOGRAPHIC_INTERNAL_COMPARISON_VIEW_BUILDER.build(),

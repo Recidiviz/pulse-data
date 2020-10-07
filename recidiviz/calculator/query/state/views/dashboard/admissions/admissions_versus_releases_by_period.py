@@ -61,8 +61,7 @@ ADMISSIONS_VERSUS_RELEASES_BY_PERIOD_QUERY_TEMPLATE = \
         district,
         COUNT(DISTINCT person_id) as release_count
       FROM `{project_id}.{metrics_dataset}.incarceration_release_metrics` m
-      JOIN `{project_id}.{reference_views_dataset}.most_recent_job_id_by_metric_and_state_code_materialized` job
-        USING (state_code, job_id, year, month, metric_period_months, metric_type),
+      {filter_to_most_recent_job_id_for_metric},
       {district_dimension},
       {metric_period_dimension}
       WHERE methodology = 'EVENT'
@@ -79,8 +78,7 @@ ADMISSIONS_VERSUS_RELEASES_BY_PERIOD_QUERY_TEMPLATE = \
         COUNT(DISTINCT person_id) AS month_end_population,
         metric_period_months
       FROM `{project_id}.{metrics_dataset}.incarceration_population_metrics` m
-      JOIN `{project_id}.{reference_views_dataset}.most_recent_job_id_by_metric_and_state_code_materialized` job
-        USING (state_code, job_id, year, month, metric_period_months, metric_type),
+      {filter_to_most_recent_job_id_for_metric},
       {district_dimension},
       {metric_period_dimension}
       WHERE methodology = 'EVENT'
@@ -110,6 +108,8 @@ ADMISSIONS_VERSUS_RELEASES_BY_PERIOD_VIEW_BUILDER = MetricBigQueryViewBuilder(
     metric_period_condition=bq_utils.metric_period_condition(month_offset=1),
     prior_month_metric_period_dimension=bq_utils.metric_period_condition(
         month_offset=0),
+    filter_to_most_recent_job_id_for_metric=bq_utils.filter_to_most_recent_job_id_for_metric(
+        reference_dataset=dataset_config.REFERENCE_VIEWS_DATASET)
 )
 
 if __name__ == '__main__':

@@ -49,10 +49,38 @@ class BigQueryView(bigquery.TableReference):
                                                             default_project=project_id)
         super().__init__(dataset_ref, view_id)
         self._view_id = view_id
-        self._view_query = view_query_template.format(**self._query_format_args(**query_format_kwargs))
+        self._view_query = self._format_view_query(view_query_template, inject_project_id=True, **query_format_kwargs)
         self._should_materialize = should_materialize
 
-    def _query_format_args(self, **query_format_kwargs) -> Dict[str, str]:
+    @classmethod
+    def _format_view_query_without_project_id(cls, view_query_template: str, **query_format_kwargs):
+        """Formats the given |view_query_template| string with the given arguments, without injecting a value for the
+        PROJECT_ID_KEY."""
+        query_format_args = {
+            PROJECT_ID_KEY: f'{{{PROJECT_ID_KEY}}}',
+            **query_format_kwargs
+        }
+
+        return view_query_template.format(**query_format_args)
+
+    def _format_view_query(self, view_query_template: str, inject_project_id: bool, **query_format_kwargs) -> str:
+        """This builds the view_query with the given query_format_kwargs. If |inject_project_id| is set to True, sets
+        the PROJECT_ID_KEY value in the template to the current project. Else, returns the formatted view_query with the
+        PROJECT_ID_KEY as {PROJECT_ID_KEY}."""
+
+        view_query_no_project_id = self._format_view_query_without_project_id(
+            view_query_template, **query_format_kwargs)
+
+        if not inject_project_id:
+            return view_query_no_project_id
+
+        project_id_format_args = {
+            PROJECT_ID_KEY: self.project
+        }
+
+        return view_query_no_project_id.format(**project_id_format_args)
+
+    def _query_format_args_with_project_id(self, **query_format_kwargs) -> Dict[str, str]:
         return {
             PROJECT_ID_KEY: self.project,
             **query_format_kwargs
