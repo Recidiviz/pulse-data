@@ -86,10 +86,12 @@ class DirectIngestRawDataTableLatestViewUpdater:
 
     def update_views_for_state(self):
         views_dataset = f'{self.state_code}_raw_data_up_to_date_views'
+        raw_data_dataset = f'{self.state_code}_raw_data'
         succeeded_tables = []
         failed_tables = []
         for raw_file_config in self.raw_file_region_config.raw_file_configs.values():
-            if self.bq_client.table_exists(self.bq_client.dataset_ref_for_id(views_dataset), raw_file_config.file_tag):
+            if self.bq_client.table_exists(self.bq_client.dataset_ref_for_id(raw_data_dataset),
+                                           raw_file_config.file_tag):
                 try:
                     self._create_or_update_views_for_table(
                         raw_file_config=raw_file_config,
