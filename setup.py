@@ -33,17 +33,16 @@ REQUIRED_PACKAGES = [
     'cattrs',
     'dateparser',
     'Flask',
-    # TODO(#3337): Remove this line once the google-api-core release is stable
-    'google-api-core==1.17.0',
-    # TODO(#2973): Resolve dependency conflict to remove this version constraint
-    'google-api-python-client<=1.7.11',
-    'google-cloud-monitoring',
+    'google-api-core',
+    'google-api-python-client',
+    # TODO(#4231): Pinned due to dependency version introduced in version 2.0.0 on 10/5/20
+    'google-cloud-monitoring==1.1.0',
     'more-itertools',
     'oauth2client',
     'opencensus',
     'opencensus-correlation',
     'opencensus-ext-stackdriver',
-    # Must stay up-to-date with latest version
+    # Must stay up-to-date with latest protobuf version in the Pipfile
     'protobuf==3.13.0',
     'SQLAlchemy'
 ]
