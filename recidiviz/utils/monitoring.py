@@ -112,3 +112,4 @@ class TagKey:
     VALIDATION_CHECK_TYPE = 'validation_check_type'
     VALIDATION_VIEW_ID = 'validation_view_id'
     CREATE_UPDATE_VIEWS_NAMESPACE = 'create_update_views_namespace'
+    CREATE_UPDATE_RAW_DATA_LATEST_VIEWS_FILE_TAG = 'create_update_raw_data_latest_views_file_tag'
