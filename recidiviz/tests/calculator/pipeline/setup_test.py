@@ -40,6 +40,10 @@ class TestSetupFilePinnedDependencies(unittest.TestCase):
                 # Remove whitespace, quotation marks, and commas
                 dependency_with_version = line.strip().replace("'", "").replace(",", "")
 
+                if dependency_with_version.startswith('#'):
+                    # Skip comments that mention the dependency
+                    continue
+
                 self.assertEqual(pipfile_dependency, dependency_with_version, "Try running pipenv sync --dev before"
                                                                               "running this test again.")
 
