@@ -48,8 +48,7 @@ REINCARCERATIONS_BY_MONTH_QUERY_TEMPLATE = \
         district,
         COUNT(person_id) AS returns
       FROM `{project_id}.{metrics_dataset}.recidivism_count_metrics`
-      JOIN `{project_id}.{reference_views_dataset}.most_recent_job_id_by_metric_and_state_code_materialized` job
-        USING (state_code, job_id, year, month, metric_period_months, metric_type),
+      {filter_to_most_recent_job_id_for_metric},
       {district_dimension}
       WHERE methodology = 'PERSON'
         AND person_id IS NOT NULL
@@ -73,6 +72,8 @@ REINCARCERATIONS_BY_MONTH_VIEW_BUILDER = MetricBigQueryViewBuilder(
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
     district_dimension=bq_utils.unnest_district(
         district_column='county_of_residence'),
+    filter_to_most_recent_job_id_for_metric=bq_utils.filter_to_most_recent_job_id_for_metric(
+        reference_dataset=dataset_config.REFERENCE_VIEWS_DATASET)
 )
 
 if __name__ == '__main__':

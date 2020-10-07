@@ -40,18 +40,17 @@ def unnest_metric_period_months() -> str:
 
 def unnest_race_and_ethnicity() -> str:
     return """UNNEST(
-    SPLIT(
-      IFNULL(
-        ARRAY_TO_STRING((
-            SELECT ARRAY_AGG(col) 
-            FROM UNNEST(ARRAY_CONCAT(COALESCE(SPLIT(race, ','), []), 
-                                     COALESCE(SPLIT(ethnicity, ','), []))) AS col
-            WHERE col IS NOT NULL AND col != 'NOT_HISPANIC' AND col != 'EXTERNAL_UNKNOWN'
-          ),
-          ','), 
-        'EXTERNAL_UNKNOWN')
-    )
-  ) race_or_ethnicity"""
+            SPLIT(
+              IFNULL(
+                ARRAY_TO_STRING((
+                    SELECT ARRAY_AGG(col) 
+                    FROM UNNEST(ARRAY_CONCAT(COALESCE(SPLIT(race, ','), []), 
+                                             COALESCE(SPLIT(ethnicity, ','), []))) AS col
+                    WHERE col IS NOT NULL AND col != 'NOT_HISPANIC' AND col != 'EXTERNAL_UNKNOWN'
+                  ),
+                  ','), 
+                'EXTERNAL_UNKNOWN')
+            )) race_or_ethnicity"""
 
 
 def metric_period_condition(month_offset=1) -> str:
@@ -87,3 +86,9 @@ def most_severe_violation_type_subtype_grouping() -> str:
                 WHEN most_severe_violation_type IS NULL THEN 'NO_VIOLATIONS'
                 ELSE most_severe_violation_type
             END AS violation_type"""
+
+
+def filter_to_most_recent_job_id_for_metric(reference_dataset: str) -> str:
+    return f"""JOIN
+            `{{project_id}}.{reference_dataset}.most_recent_job_id_by_metric_and_state_code_materialized`
+        USING (job_id, state_code, year, month, metric_period_months, metric_type)"""

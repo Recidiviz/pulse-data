@@ -52,8 +52,7 @@ ADMISSIONS_VERSUS_RELEASES_BY_MONTH_QUERY_TEMPLATE = \
         district,
         COUNT(DISTINCT person_id) AS release_count
       FROM `{project_id}.{metrics_dataset}.incarceration_release_metrics`
-      JOIN `{project_id}.{reference_views_dataset}.most_recent_job_id_by_metric_and_state_code_materialized` job
-        USING (state_code, job_id, year, month, metric_period_months, metric_type),
+      {filter_to_most_recent_job_id_for_metric},
       {district_dimension}
       WHERE methodology = 'EVENT'
         AND metric_period_months = 1
@@ -72,8 +71,7 @@ ADMISSIONS_VERSUS_RELEASES_BY_MONTH_QUERY_TEMPLATE = \
       FROM `{project_id}.{metrics_dataset}.incarceration_population_metrics`,
         -- Convert the "month end" data in the incarceration_population_metrics to the "prior month end" by adding 1 month to the date
         UNNEST([DATE_ADD(DATE(year, month, 1), INTERVAL 1 MONTH)]) AS incarceration_month_end_date
-      JOIN `{project_id}.{reference_views_dataset}.most_recent_job_id_by_metric_and_state_code_materialized` job
-        USING (state_code, job_id, year, month, metric_period_months, metric_type),
+      {filter_to_most_recent_job_id_for_metric},
       {district_dimension}
       WHERE methodology = 'PERSON'
         AND metric_period_months = 0
@@ -98,7 +96,9 @@ ADMISSIONS_VERSUS_RELEASES_BY_MONTH_VIEW_BUILDER = MetricBigQueryViewBuilder(
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
     metrics_dataset=dataset_config.DATAFLOW_METRICS_DATASET,
     district_dimension=bq_utils.unnest_district(
-        district_column='county_of_residence')
+        district_column='county_of_residence'),
+    filter_to_most_recent_job_id_for_metric=bq_utils.filter_to_most_recent_job_id_for_metric(
+        reference_dataset=dataset_config.REFERENCE_VIEWS_DATASET),
 )
 
 if __name__ == '__main__':
