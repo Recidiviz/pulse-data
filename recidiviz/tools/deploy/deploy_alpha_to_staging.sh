@@ -15,7 +15,7 @@ run_cmd git fetch --all --tags --prune --prune-tags
 echo "Checking for existing tags at tip of master"
 check_for_tags_at_branch_tip master
 
-run_cmd safe_git_checkout_branch master
+run_cmd safe_git_checkout_remote_branch master
 
 LAST_VERSION_TAG_ON_MASTER=$(last_version_tag_on_branch master) || exit_on_fail
 NEW_VERSION=$(next_alpha_version ${LAST_VERSION_TAG_ON_MASTER}) || exit_on_fail

@@ -19,7 +19,7 @@ fi
 echo "Fetching all tags"
 run_cmd git fetch --all --tags --prune --prune-tags
 
-run_cmd safe_git_checkout_branch ${RELEASE_CANDIDATE_BASE_BRANCH}
+run_cmd safe_git_checkout_remote_branch ${RELEASE_CANDIDATE_BASE_BRANCH}
 
 HEAD_COMMIT=$(git rev-parse HEAD) || exit_on_fail
 
