@@ -17,6 +17,7 @@
 """US_ID released community performance during COVID for the 2020 and 2019 cohorts"""
 # pylint: disable=trailing-whitespace,line-too-long
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+from recidiviz.calculator.query import bq_utils
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.calculator.query.state.dataset_config import COVID_REPORT_DATASET
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
@@ -54,13 +55,11 @@ US_ID_RELEASED_COMMUNITY_PERFORMANCE_QUERY_TEMPLATE = \
         week_num, report_year, m.state_code, m.person_id, m.release_date AS start_date, NULL AS termination_date,
         ROW_NUMBER() OVER (PARTITION BY state_code, person_id, week_num, report_year, purpose_for_incarceration, release_reason ORDER BY release_date DESC) AS release_rank
       FROM `{project_id}.{metrics_dataset}.incarceration_release_metrics` m
-      JOIN `{project_id}.{reference_dataset}.most_recent_job_id_by_metric_and_state_code_materialized` job
-          USING (state_code, year, month, metric_period_months, job_id)
+      {filter_to_most_recent_job_id_for_metric}
       JOIN report_dates
         ON release_date BETWEEN earliest_start_date AND report_end_date
       WHERE state_code = 'US_ID'
         AND methodology = 'EVENT'
-        AND job.metric_type = 'INCARCERATION_RELEASE'
         AND metric_period_months = 1
         AND release_reason NOT IN ('RELEASED_FROM_TEMPORARY_CUSTODY', 'TRANSFER')
     ),
@@ -106,6 +105,8 @@ US_ID_RELEASED_COMMUNITY_PERFORMANCE_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_query_template=US_ID_RELEASED_COMMUNITY_PERFORMANCE_QUERY_TEMPLATE,
     description=US_ID_RELEASED_COMMUNITY_PERFORMANCE_DESCRIPTION,
     covid_report_dataset=COVID_REPORT_DATASET,
+    filter_to_most_recent_job_id_for_metric=bq_utils.filter_to_most_recent_job_id_for_metric(
+        reference_dataset=dataset_config.REFERENCE_VIEWS_DATASET)
 )
 
 if __name__ == '__main__':

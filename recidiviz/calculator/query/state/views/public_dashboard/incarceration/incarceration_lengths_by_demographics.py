@@ -53,9 +53,7 @@ INCARCERATION_LENGTHS_BY_DEMOGRAPHICS_VIEW_QUERY_TEMPLATE = \
           IEEE_DIVIDE(total_days_incarcerated, 365.25) as years_incarcerated 
         FROM
           `{project_id}.{metrics_dataset}.incarceration_release_metrics` releases
-        JOIN
-          `{project_id}.{reference_views_dataset}.most_recent_job_id_by_metric_and_state_code_materialized`
-        USING (state_code, job_id, year, month, metric_period_months, metric_type)
+        {filter_to_most_recent_job_id_for_metric}
         WHERE release_reason in ('COMMUTED', 'COMPASSIONATE', 'CONDITIONAL_RELEASE', 'SENTENCE_SERVED', 'DEATH', 'EXECUTION')
           AND admission_reason IN ('NEW_ADMISSION', 'PROBATION_REVOCATION')
           AND methodology = 'EVENT'
@@ -124,7 +122,9 @@ INCARCERATION_LENGTHS_BY_DEMOGRAPHICS_VIEW_BUILDER = MetricBigQueryViewBuilder(
     unnested_race_or_ethnicity_dimension=bq_utils.unnest_column('race_or_ethnicity', 'race_or_ethnicity'),
     gender_dimension=bq_utils.unnest_column('gender', 'gender'),
     age_dimension=bq_utils.unnest_column('age_bucket', 'age_bucket'),
-    state_specific_race_or_ethnicity_groupings=state_specific_query_strings.state_specific_race_or_ethnicity_groupings()
+    state_specific_race_or_ethnicity_groupings=state_specific_query_strings.state_specific_race_or_ethnicity_groupings(),
+    filter_to_most_recent_job_id_for_metric=bq_utils.filter_to_most_recent_job_id_for_metric(
+        reference_dataset=dataset_config.REFERENCE_VIEWS_DATASET)
 )
 
 if __name__ == '__main__':

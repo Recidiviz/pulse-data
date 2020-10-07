@@ -42,8 +42,7 @@ SUPERVISION_SUCCESS_BY_PERIOD_BY_DEMOGRAPHICS_VIEW_QUERY_TEMPLATE = \
         supervision_type,
         metric_period_months
       FROM `{project_id}.{metrics_dataset}.supervision_success_metrics` success_metrics
-      JOIN `{project_id}.{reference_views_dataset}.most_recent_job_id_by_metric_and_state_code_materialized` job
-        USING (state_code, job_id, year, month, metric_period_months, metric_type),
+      {filter_to_most_recent_job_id_for_metric},
       {race_or_ethnicity_dimension},
       {gender_dimension},
       {age_dimension},
@@ -116,7 +115,9 @@ SUPERVISION_SUCCESS_BY_PERIOD_BY_DEMOGRAPHICS_VIEW_BUILDER = MetricBigQueryViewB
     unnested_race_or_ethnicity_dimension=bq_utils.unnest_column('race_or_ethnicity', 'race_or_ethnicity'),
     gender_dimension=bq_utils.unnest_column('gender', 'gender'),
     age_dimension=bq_utils.unnest_column('age_bucket', 'age_bucket'),
-    state_specific_race_or_ethnicity_groupings=state_specific_query_strings.state_specific_race_or_ethnicity_groupings()
+    state_specific_race_or_ethnicity_groupings=state_specific_query_strings.state_specific_race_or_ethnicity_groupings(),
+    filter_to_most_recent_job_id_for_metric=bq_utils.filter_to_most_recent_job_id_for_metric(
+        reference_dataset=dataset_config.REFERENCE_VIEWS_DATASET)
 )
 
 if __name__ == '__main__':
