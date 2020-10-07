@@ -50,6 +50,7 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_VIOLATION_QUERY_TEMPLATE = \
         month,
         metric_period_months,
         supervision_type,
+        {state_specific_supervision_level},
         case_type,
         IFNULL(supervising_district_external_id, 'EXTERNAL_UNKNOWN') as supervising_district_external_id,
         IF(response_count > 8, 8, response_count) as reported_violations,
@@ -72,6 +73,7 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_VIOLATION_QUERY_TEMPLATE = \
         month,
         metric_period_months,
         supervision_type,
+        supervision_level,
         charge_category,
         district,
         reported_violations,
@@ -90,9 +92,10 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_VIOLATION_QUERY_TEMPLATE = \
     state_specific_violation_count_types,
     {district_dimension},
     {supervision_type_dimension},
+    {supervision_level_dimension},
     {charge_category_dimension}
-    GROUP BY state_code, year, month, metric_period_months, supervision_type, charge_category, district, reported_violations, violation_type
-    ORDER BY state_code, year, month, metric_period_months, supervision_type, district, charge_category, violation_type, reported_violations
+    GROUP BY state_code, year, month, metric_period_months, supervision_type, supervision_level, charge_category, district, reported_violations, violation_type
+    ORDER BY state_code, year, month, metric_period_months, supervision_type, supervision_level, district, charge_category, violation_type, reported_violations
     """
 
 REVOCATIONS_MATRIX_DISTRIBUTION_BY_VIOLATION_VIEW_BUILDER = MetricBigQueryViewBuilder(
@@ -100,7 +103,7 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_VIOLATION_VIEW_BUILDER = MetricBigQueryViewBu
     view_id=REVOCATIONS_MATRIX_DISTRIBUTION_BY_VIOLATION_VIEW_NAME,
     view_query_template=REVOCATIONS_MATRIX_DISTRIBUTION_BY_VIOLATION_QUERY_TEMPLATE,
     dimensions=['state_code', 'year', 'month', 'metric_period_months', 'district', 'supervision_type',
-                'violation_type', 'reported_violations', 'charge_category'],
+                'supervision_level', 'violation_type', 'reported_violations', 'charge_category'],
     description=REVOCATIONS_MATRIX_DISTRIBUTION_BY_VIOLATION_DESCRIPTION,
     metrics_dataset=dataset_config.DATAFLOW_METRICS_DATASET,
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
@@ -108,8 +111,10 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_VIOLATION_VIEW_BUILDER = MetricBigQueryViewBu
     state_specific_query_strings.state_specific_most_severe_violation_type_subtype_grouping(),
     violation_count_type_grouping=state_specific_query_strings.state_specific_violation_count_type_grouping(),
     state_specific_violation_categories=state_specific_query_strings.state_specific_violation_count_type_categories(),
+    state_specific_supervision_level=state_specific_query_strings.state_specific_supervision_level(),
     district_dimension=bq_utils.unnest_district(),
     supervision_type_dimension=bq_utils.unnest_supervision_type(),
+    supervision_level_dimension=bq_utils.unnest_column('supervision_level', 'supervision_level'),
     charge_category_dimension=bq_utils.unnest_charge_category(),
 )
 
