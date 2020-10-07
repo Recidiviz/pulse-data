@@ -232,7 +232,7 @@ def update_raw_data_latest_views_for_state() -> Tuple[str, HTTPStatus]:
     with monitoring.push_region_tag(region_code):
         bq_client = BigQueryClientImpl(project_id=metadata.project_id())
         controller = DirectIngestRawDataTableLatestViewUpdater(region_code, metadata.project_id(), bq_client)
-        controller.update_tables_for_state()
+        controller.update_views_for_state()
     return '', HTTPStatus.OK
 
 
