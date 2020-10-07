@@ -41,6 +41,8 @@ from recidiviz.validation.views.state.incarceration_population_by_facility_exter
 from recidiviz.validation.views.state.incarceration_population_by_facility_internal_comparison import \
     INCARCERATION_POPULATION_BY_FACILITY_INTERNAL_COMPARISON_VIEW_BUILDER
 # pylint: disable=line-too-long
+from recidiviz.validation.views.state.incarceration_population_by_month_internal_comparison import \
+    INCARCERATION_POPULATION_BY_MONTH_INTERNAL_COMPARISON_VIEW_BUILDER
 from recidiviz.validation.views.state.incarceration_population_by_prioritized_race_and_ethnicity_by_period_internal_consistency import \
     INCARCERATION_POPULATION_BY_PRIORITIZED_RACE_AND_ETHNICITY_BY_PERIOD_INTERNAL_CONSISTENCY_VIEW_BUILDER
 from recidiviz.validation.views.state.incarceration_population_person_level_external_comparison import \
@@ -105,6 +107,7 @@ VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE: Dict[str, Sequence[BigQueryViewBuilder]] = {
         INCARCERATION_POPULATION_BY_FACILITY_BY_DEMOGRAPHICS_INTERNAL_CONSISTENCY_VIEW_BUILDER,
         INCARCERATION_POPULATION_BY_FACILITY_EXTERNAL_COMPARISON_VIEW_BUILDER,
         INCARCERATION_POPULATION_BY_FACILITY_INTERNAL_COMPARISON_VIEW_BUILDER,
+        INCARCERATION_POPULATION_BY_MONTH_INTERNAL_COMPARISON_VIEW_BUILDER,
         INCARCERATION_POPULATION_BY_PRIORITIZED_RACE_AND_ETHNICITY_BY_PERIOD_INTERNAL_CONSISTENCY_VIEW_BUILDER,
         INCARCERATION_POPULATION_BY_DEMOGRAPHIC_INTERNAL_COMPARISON_VIEW_BUILDER,
         INCARCERATION_RELEASE_PRIOR_TO_ADMISSION_VIEW_BUILDER,

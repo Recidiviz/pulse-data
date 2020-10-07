@@ -16,7 +16,7 @@
 # =============================================================================
 """Average days at liberty for reincarcerations by month."""
 # pylint: disable=trailing-whitespace
-
+from recidiviz.calculator.query import bq_utils
 from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
@@ -35,14 +35,13 @@ AVERAGE_DAYS_AT_LIBERTY_BY_MONTH_QUERY_TEMPLATE = \
       COUNT(DISTINCT person_id) AS returns,
       AVG(days_at_liberty) AS avg_liberty
     FROM `{project_id}.{metrics_dataset}.recidivism_count_metrics`
-    JOIN `{project_id}.{reference_views_dataset}.most_recent_job_id_by_metric_and_state_code_materialized` job
-      USING (state_code, year, month, metric_period_months, job_id, metric_type)
+    {filter_to_most_recent_job_id_for_metric}
     WHERE methodology = 'PERSON'
       AND person_id IS NOT NULL
       AND metric_period_months = 1
       AND month IS NOT NULL
       AND year >= EXTRACT(YEAR FROM DATE_SUB(CURRENT_DATE(), INTERVAL 3 YEAR))
-      -- TODO (#3123): enforce positive days at liberty earlier in the pipeline
+      -- TODO(#3123): enforce positive days at liberty earlier in the pipeline
       AND days_at_liberty >= 0
     GROUP BY state_code, year, month
     ORDER BY state_code, year, month
@@ -55,6 +54,8 @@ AVERAGE_DAYS_AT_LIBERTY_BY_MONTH_VIEW_BUILDER = MetricBigQueryViewBuilder(
     description=AVERAGE_DAYS_AT_LIBERTY_BY_MONTH_DESCRIPTION,
     metrics_dataset=dataset_config.DATAFLOW_METRICS_DATASET,
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
+    filter_to_most_recent_job_id_for_metric=bq_utils.filter_to_most_recent_job_id_for_metric(
+        reference_dataset=dataset_config.REFERENCE_VIEWS_DATASET)
 )
 
 

@@ -16,6 +16,7 @@
 # =============================================================================
 """Revocations Matrix Filtered Caseload."""
 # pylint: disable=trailing-whitespace, line-too-long
+from recidiviz.calculator.query import bq_utils
 from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config, state_specific_query_strings
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
@@ -45,8 +46,7 @@ REVOCATIONS_MATRIX_FILTERED_CASELOAD_QUERY_TEMPLATE = \
       IF(response_count > 8, 8, response_count) AS reported_violations,
       metric_period_months
     FROM `{project_id}.{metrics_dataset}.supervision_revocation_analysis_metrics`
-    JOIN `{project_id}.{reference_views_dataset}.most_recent_job_id_by_metric_and_state_code_materialized` job
-      USING (state_code, job_id, year, month, metric_period_months, metric_type)
+    {filter_to_most_recent_job_id_for_metric}
     WHERE methodology = 'PERSON'
       AND revocation_type = 'REINCARCERATION'
       AND person_external_id IS NOT NULL
@@ -68,7 +68,9 @@ REVOCATIONS_MATRIX_FILTERED_CASELOAD_VIEW_BUILDER = MetricBigQueryViewBuilder(
     most_severe_violation_type_subtype_grouping=
     state_specific_query_strings.state_specific_most_severe_violation_type_subtype_grouping(),
     state_specific_officer_recommendation=state_specific_query_strings.state_specific_officer_recommendation(),
-    state_specific_supervision_level=state_specific_query_strings.state_specific_supervision_level()
+    state_specific_supervision_level=state_specific_query_strings.state_specific_supervision_level(),
+    filter_to_most_recent_job_id_for_metric=bq_utils.filter_to_most_recent_job_id_for_metric(
+        reference_dataset=dataset_config.REFERENCE_VIEWS_DATASET)
 )
 
 if __name__ == '__main__':

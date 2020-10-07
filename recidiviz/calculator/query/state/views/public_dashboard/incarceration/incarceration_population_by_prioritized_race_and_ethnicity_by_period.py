@@ -38,8 +38,7 @@ INCARCERATION_POPULATION_BY_PRIORITIZED_RACE_AND_ETHNICITY_BY_PERIOD_VIEW_QUERY_
         person_id,
         race_or_ethnicity
       FROM `{project_id}.{metrics_dataset}.incarceration_population_metrics`
-      JOIN `{project_id}.{reference_views_dataset}.most_recent_job_id_by_metric_and_state_code_materialized` job
-        USING (state_code, job_id, year, month, metric_period_months, metric_type),
+      {filter_to_most_recent_job_id_for_metric},
             -- We only want a 36-month period for this view --
       UNNEST ([36]) AS metric_period_months,
       {race_or_ethnicity_dimension}
@@ -83,7 +82,9 @@ INCARCERATION_POPULATION_BY_PRIORITIZED_RACE_AND_ETHNICITY_BY_PERIOD_VIEW_BUILDE
     race_or_ethnicity_dimension=bq_utils.unnest_race_and_ethnicity(),
     unnested_race_or_ethnicity_dimension=bq_utils.unnest_column('race_or_ethnicity', 'race_or_ethnicity'),
     state_specific_race_or_ethnicity_groupings=state_specific_query_strings.state_specific_race_or_ethnicity_groupings(),
-    state_specific_facility_exclusion=state_specific_query_strings.state_specific_facility_exclusion()
+    state_specific_facility_exclusion=state_specific_query_strings.state_specific_facility_exclusion(),
+    filter_to_most_recent_job_id_for_metric=bq_utils.filter_to_most_recent_job_id_for_metric(
+        reference_dataset=dataset_config.REFERENCE_VIEWS_DATASET)
 )
 
 if __name__ == '__main__':

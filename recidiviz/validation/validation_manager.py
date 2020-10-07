@@ -174,4 +174,4 @@ if __name__ == '__main__':
     project_id = GCP_PROJECT_STAGING
     logging.getLogger().setLevel(logging.INFO)
     with local_project_id_override(project_id):
-        execute_validation(should_update_views=False, region_code_filter=None)
+        execute_validation(should_update_views=True, region_code_filter=None)

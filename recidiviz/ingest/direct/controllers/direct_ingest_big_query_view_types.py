@@ -191,11 +191,11 @@ class DirectIngestPreProcessedIngestView(BigQueryView):
         raw_table_dependency_configs = self._get_raw_table_dependency_configs(view_query_template,
                                                                               region_raw_table_config)
 
-        latest_view_query = self._format_view_query(region_code=region_code,
-                                                    raw_table_dependency_configs=raw_table_dependency_configs,
-                                                    view_query_template=view_query_template,
-                                                    order_by_cols=order_by_cols,
-                                                    parametrize_query=False)
+        latest_view_query = self._format_expanded_view_query(region_code=region_code,
+                                                             raw_table_dependency_configs=raw_table_dependency_configs,
+                                                             view_query_template=view_query_template,
+                                                             order_by_cols=order_by_cols,
+                                                             parametrize_query=False)
 
         dataset_id = f'{region_code.lower()}_ingest_views'
         super().__init__(dataset_id=dataset_id,
@@ -203,13 +203,14 @@ class DirectIngestPreProcessedIngestView(BigQueryView):
                          view_query_template=latest_view_query)
 
         self._raw_table_dependency_configs = raw_table_dependency_configs
-        date_parametrized_view_query = self._format_view_query(
+        date_parametrized_view_query = self._format_expanded_view_query(
             region_code=region_code,
             raw_table_dependency_configs=raw_table_dependency_configs,
             view_query_template=view_query_template,
             order_by_cols=order_by_cols,
             parametrize_query=True)
-        self._date_parametrized_view_query = date_parametrized_view_query.format(**self._query_format_args())
+        self._date_parametrized_view_query = date_parametrized_view_query.format(**self.
+                                                                                 _query_format_args_with_project_id())
 
     @property
     def file_tag(self):
@@ -262,18 +263,15 @@ class DirectIngestPreProcessedIngestView(BigQueryView):
         return query
 
     @classmethod
-    def _format_view_query(cls,
-                           region_code: str,
-                           raw_table_dependency_configs: List[DirectIngestRawFileConfig],
-                           view_query_template: str,
-                           order_by_cols: Optional[str],
-                           parametrize_query: bool) -> str:
+    def _format_expanded_view_query(cls,
+                                    region_code: str,
+                                    raw_table_dependency_configs: List[DirectIngestRawFileConfig],
+                                    view_query_template: str,
+                                    order_by_cols: Optional[str],
+                                    parametrize_query: bool) -> str:
         """Formats the given template with expanded subqueries for each raw table dependency."""
         table_subquery_strs = []
-        # We don't want to inject the project_id outside of the BigQueryView initializer
-        format_args = {
-            'project_id': '{project_id}'
-        }
+        format_args = {}
         for raw_table_config in raw_table_dependency_configs:
             table_subquery_strs.append(cls._get_table_subquery_str(region_code, raw_table_config, parametrize_query))
             format_args[raw_table_config.file_tag] = cls._table_subbquery_name(raw_table_config)
@@ -288,7 +286,8 @@ class DirectIngestPreProcessedIngestView(BigQueryView):
         view_query_template = f'{cls.WITH_PREFIX}\n{table_subquery_clause}\n{view_query_template}'
         view_query_template = cls.add_order_by_suffix(query=view_query_template, order_by_cols=order_by_cols)
 
-        return view_query_template.format(**format_args)
+        # We don't want to inject the project_id outside of the BigQueryView initializer
+        return cls._format_view_query_without_project_id(view_query_template, **format_args)
 
     @classmethod
     def _get_table_subquery_str(cls,

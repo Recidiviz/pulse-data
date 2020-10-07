@@ -17,6 +17,7 @@
 """Event based revocations to support various revocation matrix views."""
 # pylint: disable=trailing-whitespace, line-too-long
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+from recidiviz.calculator.query import bq_utils
 from recidiviz.calculator.query.state import dataset_config, state_specific_query_strings
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -51,8 +52,7 @@ EVENT_BASED_REVOCATIONS_FOR_MATRIX_QUERY_TEMPLATE = \
         supervising_district_external_id AS district,
         supervising_officer_external_id AS officer
     FROM `{project_id}.{metrics_dataset}.supervision_revocation_analysis_metrics` 
-    JOIN `{project_id}.{reference_views_dataset}.most_recent_job_id_by_metric_and_state_code_materialized` job
-    USING (state_code, job_id, year, month, metric_period_months, metric_type)
+    {filter_to_most_recent_job_id_for_metric}
     WHERE methodology = 'EVENT'
         AND metric_period_months = 1
         AND revocation_type = 'REINCARCERATION'
@@ -68,7 +68,9 @@ EVENT_BASED_REVOCATIONS_FOR_MATRIX_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     metrics_dataset=dataset_config.DATAFLOW_METRICS_DATASET,
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
     state_specific_assessment_bucket=state_specific_query_strings.state_specific_assessment_bucket(),
-    state_specific_supervision_level=state_specific_query_strings.state_specific_supervision_level()
+    state_specific_supervision_level=state_specific_query_strings.state_specific_supervision_level(),
+    filter_to_most_recent_job_id_for_metric=bq_utils.filter_to_most_recent_job_id_for_metric(
+        reference_dataset=dataset_config.REFERENCE_VIEWS_DATASET)
 )
 
 if __name__ == '__main__':

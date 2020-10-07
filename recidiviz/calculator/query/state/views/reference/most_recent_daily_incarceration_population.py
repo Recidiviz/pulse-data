@@ -82,7 +82,9 @@ MOST_RECENT_DAILY_INCARCERATION_POPULATION_VIEW_BUILDER = SimpleBigQueryViewBuil
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
     static_reference_dataset=dataset_config.STATIC_REFERENCE_TABLES_DATASET,
     race_or_ethnicity_dimension=bq_utils.unnest_race_and_ethnicity(),
-    state_specific_facility_exclusion=state_specific_query_strings.state_specific_facility_exclusion()
+    state_specific_facility_exclusion=state_specific_query_strings.state_specific_facility_exclusion(),
+    filter_to_most_recent_job_id_for_metric=bq_utils.filter_to_most_recent_job_id_for_metric(
+        reference_dataset=dataset_config.REFERENCE_VIEWS_DATASET)
 )
 
 if __name__ == '__main__':
