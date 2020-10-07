@@ -83,11 +83,16 @@ function version_less_than {
     [[ "$1" = "$2" ]] && return 1 || [[  "$1" = "$min_version" ]]
 }
 
-function safe_git_checkout_branch {
+function safe_git_checkout_remote_branch {
     BRANCH=$1
     echo "Checking for clean git status"
     if [[ ! -z "$(git status --porcelain)" ]]; then
-        echo_error "Git status not clean - please commit or stash changes before retrying."
+        echo_error "Git status not clean - please stash changes before retrying."
+        echo_error "If you have made a local change to fix a deploy issue that cannot be solved by reverting a recent "
+        echo_error "commit (e.g. if you have found an old bug in the script itself) AND you need to deploy "
+        echo_error "urgently, you can comment this whole if-block out before deploying. Do not commit changes locally "
+        echo_error "to suppress this error."
+        echo_error "!! Please notify the #eng channel if you have to deploy with dirty local status. !!"
         exit 1
     fi
 
@@ -96,6 +101,17 @@ function safe_git_checkout_branch {
     then
         echo "Branch [$BRANCH] already exists - reusing"
         run_cmd git checkout ${BRANCH}
+
+        echo "Checking local commit exists on origin/${BRANCH}"
+        # Queries for branches that contain the commit at HEAD, then searches for the remote branch in that list
+        HEAD_EXISTS_ON_REMOTE_RESULT=$(git branch --remotes --contains HEAD | grep origin/${BRANCH})
+        if [[ -z ${HEAD_EXISTS_ON_REMOTE_RESULT} ]]; then
+            echo origin/${BRANCH} does not contain HEAD
+            echo_error "Remote branch origin/${BRANCH} does not contain the commit at HEAD."
+            echo_error "Please revert any local commit history before continuing."
+            exit 1
+        fi
+
         echo "Pulling latest from [$BRANCH]"
         run_cmd git pull
     fi
