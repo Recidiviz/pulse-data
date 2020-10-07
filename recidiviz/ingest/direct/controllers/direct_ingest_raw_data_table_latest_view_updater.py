@@ -14,9 +14,12 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Controller for updating raw state data tables in BQ."""
+"""Controller for updating raw state data latest views in BQ."""
 
 import logging
+
+from opencensus.stats import measure, view as opencensus_view, aggregation
+from recidiviz.utils import monitoring
 
 from recidiviz.big_query.big_query_client import BigQueryClient
 from recidiviz.ingest.direct.controllers.direct_ingest_raw_file_import_manager import DirectIngestRegionRawFileConfig, \
@@ -24,9 +27,22 @@ from recidiviz.ingest.direct.controllers.direct_ingest_raw_file_import_manager i
 from recidiviz.ingest.direct.controllers.direct_ingest_big_query_view_types import \
     DirectIngestRawDataTableLatestView
 
+m_failed_latest_views_update = measure.MeasureInt(
+    "ingest/direct/controllers/direct_ingest_raw_data_table_latest_view_updater/update_views_for_state_failure",
+    "Counted every time updating views for state fails", "1")
+
+failed_latest_view_updates_view = opencensus_view.View(
+    "ingest/direct/controllers/direct_ingest_raw_data_table_latest_view_updater/num_update_views_for_state_failure",
+    "The sum of times a view failed to update",
+    [monitoring.TagKey.CREATE_UPDATE_RAW_DATA_LATEST_VIEWS_FILE_TAG],
+    m_failed_latest_views_update,
+    aggregation.SumAggregation())
+
+monitoring.register_views([failed_latest_view_updates_view])
+
 
 class DirectIngestRawDataTableLatestViewUpdater:
-    """Controller for updating raw state data tables in BQ."""
+    """Controller for updating raw state data latest views in BQ."""
 
     def __init__(self,
                  state_code: str,
@@ -68,7 +84,7 @@ class DirectIngestRawDataTableLatestViewUpdater:
         self.bq_client.create_or_update_view(dataset_ref=views_dataset_ref, view=latest_view)
         logging.info('Created/Updated view %s', latest_view.view_id)
 
-    def update_tables_for_state(self):
+    def update_views_for_state(self):
         views_dataset = f'{self.state_code}_raw_data_up_to_date_views'
         succeeded_tables = []
         failed_tables = []
@@ -80,6 +96,10 @@ class DirectIngestRawDataTableLatestViewUpdater:
                         views_dataset=views_dataset)
                     succeeded_tables.append(raw_file_config.file_tag)
                 except Exception:
+                    with monitoring.measurements({
+                            monitoring.TagKey.CREATE_UPDATE_RAW_DATA_LATEST_VIEWS_FILE_TAG: raw_file_config.file_tag
+                    }) as measurements:
+                        measurements.measure_int_put(m_failed_latest_views_update, 1)
                     failed_tables.append(raw_file_config.file_tag)
                     logging.exception("Couldn't create/update views for file [%s]", raw_file_config.file_tag)
             else:

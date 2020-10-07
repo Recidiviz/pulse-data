@@ -66,7 +66,7 @@ class DirectIngestRawDataUpdateControllerTest(unittest.TestCase):
         )
 
         with local_project_id_override(self.project_id):
-            self.update_controller.update_tables_for_state()
+            self.update_controller.update_views_for_state()
 
             self.assertEqual(self.mock_big_query_client.create_or_update_view.call_count, 2)
 

@@ -502,7 +502,7 @@ class TestDirectIngestControl(unittest.TestCase):
             response = self.client.post('/update_raw_data_latest_views_for_state',
                                         query_string=request_args,
                                         headers=headers)
-            mock_updater.update_tables_for_state.assert_called_once()
+            mock_updater.update_views_for_state.assert_called_once()
             self.assertEqual(200, response.status_code)
 
     @patch("recidiviz.utils.environment.get_gae_environment")
