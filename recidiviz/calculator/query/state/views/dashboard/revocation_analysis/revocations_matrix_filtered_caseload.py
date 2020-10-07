@@ -38,7 +38,7 @@ REVOCATIONS_MATRIX_FILTERED_CASELOAD_QUERY_TEMPLATE = \
       violation_history_description AS violation_record,
       supervising_district_external_id AS district,
       supervision_type,
-      supervision_level,
+      {state_specific_supervision_level},
       case_type AS charge_category,
       assessment_score_bucket AS risk_level,
       {most_severe_violation_type_subtype_grouping},
@@ -67,7 +67,8 @@ REVOCATIONS_MATRIX_FILTERED_CASELOAD_VIEW_BUILDER = MetricBigQueryViewBuilder(
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
     most_severe_violation_type_subtype_grouping=
     state_specific_query_strings.state_specific_most_severe_violation_type_subtype_grouping(),
-    state_specific_officer_recommendation=state_specific_query_strings.state_specific_officer_recommendation()
+    state_specific_officer_recommendation=state_specific_query_strings.state_specific_officer_recommendation(),
+    state_specific_supervision_level=state_specific_query_strings.state_specific_supervision_level()
 )
 
 if __name__ == '__main__':
