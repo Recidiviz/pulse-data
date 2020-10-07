@@ -39,7 +39,7 @@ from recidiviz.utils.params import str_to_bool
 def main(state_code: str, project_id: str, dry_run: bool):
     bq_client = BigQueryClientImpl(project_id=project_id)
     updater = DirectIngestRawDataTableLatestViewUpdater(state_code, project_id, bq_client, dry_run)
-    updater.update_tables_for_state()
+    updater.update_views_for_state()
 
 
 if __name__ == '__main__':
