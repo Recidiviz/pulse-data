@@ -70,12 +70,19 @@ class DirectIngestRawDataUpdateControllerTest(unittest.TestCase):
 
             self.assertEqual(self.mock_big_query_client.create_or_update_view.call_count, 2)
 
+            raw_data_dataset = DatasetReference(self.project_id, 'us_xx_raw_data')
+            self.mock_big_query_client.table_exists.assert_has_calls([
+                mock.call(raw_data_dataset, 'tagA'),
+                mock.call(raw_data_dataset, 'tagB'),
+                mock.call(raw_data_dataset, 'tagC'),
+                mock.call(raw_data_dataset, 'tagWeDoNotIngest')
+            ])
+
             mock_views = [DirectIngestRawDataTableLatestView(region_code=self.test_region.region_code,
                                                              raw_file_config=self.mock_raw_file_configs['tagA']),
                           DirectIngestRawDataTableLatestView(region_code=self.test_region.region_code,
                                                              raw_file_config=self.mock_raw_file_configs['tagC'])]
+            views_dataset = DatasetReference(self.project_id, 'us_xx_raw_data_up_to_date_views')
 
-            dataset = DatasetReference(self.project_id, 'us_xx_raw_data_up_to_date_views')
-
-            self.mock_big_query_client.create_or_update_view.assert_has_calls([mock.call(dataset, x)
+            self.mock_big_query_client.create_or_update_view.assert_has_calls([mock.call(views_dataset, x)
                                                                                for x in mock_views])
