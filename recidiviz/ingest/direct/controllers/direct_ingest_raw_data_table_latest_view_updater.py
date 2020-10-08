@@ -85,10 +85,14 @@ class DirectIngestRawDataTableLatestViewUpdater:
         logging.info('Created/Updated view %s', latest_view.view_id)
 
     def update_views_for_state(self):
+        """Create or update the up to date views dataset for a state with latest views"""
         views_dataset = f'{self.state_code}_raw_data_up_to_date_views'
         raw_data_dataset = f'{self.state_code}_raw_data'
         succeeded_tables = []
         failed_tables = []
+
+        self.bq_client.create_dataset_if_necessary(self.bq_client.dataset_ref_for_id(views_dataset))
+
         for raw_file_config in self.raw_file_region_config.raw_file_configs.values():
             if self.bq_client.table_exists(self.bq_client.dataset_ref_for_id(raw_data_dataset),
                                            raw_file_config.file_tag):
@@ -97,13 +101,13 @@ class DirectIngestRawDataTableLatestViewUpdater:
                         raw_file_config=raw_file_config,
                         views_dataset=views_dataset)
                     succeeded_tables.append(raw_file_config.file_tag)
-                except Exception:
+                except Exception as e:
                     with monitoring.measurements({
                             monitoring.TagKey.CREATE_UPDATE_RAW_DATA_LATEST_VIEWS_FILE_TAG: raw_file_config.file_tag
                     }) as measurements:
                         measurements.measure_int_put(m_failed_latest_views_update, 1)
                     failed_tables.append(raw_file_config.file_tag)
-                    logging.exception("Couldn't create/update views for file [%s]", raw_file_config.file_tag)
+                    raise ValueError(f"Couldn't create/update views for file [{raw_file_config.file_tag}]") from e
             else:
                 logging.warning('Table with name [%s] does not exist in BQ... Skipping latest view update/creation',
                                 raw_file_config.file_tag)
