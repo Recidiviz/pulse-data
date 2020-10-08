@@ -86,3 +86,27 @@ class DirectIngestRawDataUpdateControllerTest(unittest.TestCase):
 
             self.mock_big_query_client.create_or_update_view.assert_has_calls([mock.call(views_dataset, x)
                                                                                for x in mock_views])
+
+            self.mock_big_query_client.create_dataset_if_necessary.assert_called_once()
+            self.mock_big_query_client.create_dataset_if_necessary.assert_has_calls([mock.call(views_dataset)])
+
+    @patch("recidiviz.ingest.direct.controllers.direct_ingest_raw_data_table_latest_view_updater"
+           ".DirectIngestRegionRawFileConfig")
+    def test_failed_view_update(self, mock_region_config_fn) -> None:
+        mock_region_config = FakeDirectIngestRegionRawFileConfig(self.test_region.region_code)
+        mock_region_config_fn.return_value = mock_region_config
+        self.mock_raw_file_configs = mock_region_config.raw_file_configs
+
+        self.update_controller = DirectIngestRawDataTableLatestViewUpdater(
+            state_code=self.test_region.region_code,
+            project_id=self.project_id,
+            bq_client=self.mock_big_query_client
+        )
+
+        self.mock_big_query_client.create_or_update_view.side_effect = Exception
+
+        with local_project_id_override(self.project_id):
+            with self.assertRaises(ValueError) as e:
+                self.update_controller.update_views_for_state()
+
+            self.assertEqual(str(e.exception), "Couldn't create/update views for file [tagA]")
