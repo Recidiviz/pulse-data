@@ -117,7 +117,7 @@ class UsMaMiddlesexController(
     """
 
     def __init__(self):
-        super(UsMaMiddlesexController, self).__init__('us_ma_middlesex',
+        super().__init__('us_ma_middlesex',
                                                       SystemLevel.COUNTY)
         self.scheduled_ingest_times: Set[datetime.datetime] = set()
 
@@ -195,8 +195,7 @@ class UsMaMiddlesexController(
 
     def get_enum_overrides(self) -> EnumOverrides:
         """Overridden values for enum fields."""
-        builder = super(
-            UsMaMiddlesexController, self).get_enum_overrides().to_builder()
+        builder = super().get_enum_overrides().to_builder()
         builder.add('15 DAY PAROLE DETAINER', AdmissionReason.PAROLE_VIOLATION)
         builder.add('2', ChargeStatus.SENTENCED)
         builder.add('BAIL', ReleaseReason.BOND)

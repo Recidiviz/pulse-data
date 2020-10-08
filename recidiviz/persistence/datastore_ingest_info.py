@@ -40,7 +40,7 @@ class DatastoreWriteIngestInfoError(Exception):
                        " region {}. Trace id: {}"
         msg = msg_template.format(ingest_info, region,
                                   get_trace_id_from_flask())
-        super(DatastoreWriteIngestInfoError, self).__init__(msg)
+        super().__init__(msg)
 
 
 class DatastoreErrorWriteError(Exception):
@@ -52,7 +52,7 @@ class DatastoreErrorWriteError(Exception):
                        " region {}. Trace id: {}"
         msg = msg_template.format(error, region,
                                   get_trace_id_from_flask())
-        super(DatastoreErrorWriteError, self).__init__(msg)
+        super().__init__(msg)
 
 
 class DatastoreBatchGetError(Exception):
@@ -62,7 +62,7 @@ class DatastoreBatchGetError(Exception):
     def __init__(self, region: str):
         msg_template = "Error when batch getting ingest_infos for region {}"
         msg = msg_template.format(region)
-        super(DatastoreBatchGetError, self).__init__(msg)
+        super().__init__(msg)
 
 
 class DatastoreBatchDeleteError(Exception):
@@ -72,7 +72,7 @@ class DatastoreBatchDeleteError(Exception):
     def __init__(self, region: str):
         msg_template = "Error when batch deleting ingest_infos for region {}"
         msg = msg_template.format(region)
-        super(DatastoreBatchDeleteError, self).__init__(msg)
+        super().__init__(msg)
 
 
 def ds():
@@ -185,8 +185,8 @@ def write_ingest_info(region: str, task_hash: int,
             ds().put,
             new_ingest_info_entity
         )
-    except Exception:
-        raise DatastoreWriteIngestInfoError(ingest_info, region)
+    except Exception as e:
+        raise DatastoreWriteIngestInfoError(ingest_info, region) from e
 
     return _DatastoreIngestInfo.get_batch_ingest_info_data(
         new_ingest_info_entity)
@@ -223,8 +223,8 @@ def write_error(region: str, session_start_time: datetime, error: str,
             ds().put,
             new_ingest_info_entity
         )
-    except Exception:
-        raise DatastoreErrorWriteError(error, region)
+    except Exception as e:
+        raise DatastoreErrorWriteError(error, region) from e
 
     return _DatastoreIngestInfo.get_batch_ingest_info_data(
         new_ingest_info_entity)
@@ -263,16 +263,16 @@ def batch_delete_ingest_infos_for_region(region: str):
                     NUM_GRPC_RETRIES, ds().delete_multi,
                     [chunk_item.key for chunk_item in chunk]
                 )
-            except Exception:
-                raise DatastoreBatchDeleteError(region)
+            except Exception as e:
+                raise DatastoreBatchDeleteError(region) from e
     else:
         try:
             retry_grpc(
                 NUM_GRPC_RETRIES, ds().delete_multi,
                 [result.key for result in results]
             )
-        except Exception:
-            raise DatastoreBatchDeleteError(region)
+        except Exception as e:
+            raise DatastoreBatchDeleteError(region) from e
 
 
 def _divide_into_chunks(results: List[datastore.Entity], chunk_size: int) -> \
@@ -303,7 +303,7 @@ def _get_ingest_info_entities_for_region(region: str, session_start_time=None) \
         results = retry_grpc(
             NUM_GRPC_RETRIES, session_query.fetch, limit=None)
 
-    except Exception:
-        raise DatastoreBatchGetError(region)
+    except Exception as e:
+        raise DatastoreBatchGetError(region) from e
 
     return list(results)

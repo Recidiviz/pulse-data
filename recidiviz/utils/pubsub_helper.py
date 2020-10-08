@@ -38,7 +38,7 @@ _publisher = None
 _subscriber = None
 
 
-def get_publisher():
+def get_publisher() -> pubsub.PublisherClient:
     global _publisher
     if not _publisher:
         _publisher = pubsub.PublisherClient()
@@ -51,7 +51,7 @@ def clear_publisher():
     _publisher = None
 
 
-def get_subscriber():
+def get_subscriber() -> pubsub.SubscriberClient:
     global _subscriber
     if not _subscriber:
         _subscriber = pubsub.SubscriberClient()
@@ -85,7 +85,7 @@ def create_topic_and_subscription(scrape_key, pubsub_type):
         retry_grpc(
             NUM_GRPC_RETRIES,
             get_publisher().create_topic,
-            topic_path
+            name=topic_path
         )
     except exceptions.AlreadyExists:
         logging.info("Topic already exists")
@@ -99,7 +99,7 @@ def create_topic_and_subscription(scrape_key, pubsub_type):
         retry_grpc(
             NUM_GRPC_RETRIES,
             get_subscriber().create_subscription,
-            subscription_path, topic_path,
+            name=subscription_path, topic=topic_path,
             ack_deadline_seconds=ACK_DEADLINE_SECONDS
         )
     except exceptions.AlreadyExists:
@@ -121,7 +121,7 @@ def purge(scrape_key: ScrapeKey, pubsub_type: str):
     # once available on the emulator.
     try:
         get_subscriber().delete_subscription(
-            get_subscription_path(scrape_key, pubsub_type=pubsub_type))
+            subscription=get_subscription_path(scrape_key, pubsub_type=pubsub_type))
     except exceptions.NotFound:
         pass
 

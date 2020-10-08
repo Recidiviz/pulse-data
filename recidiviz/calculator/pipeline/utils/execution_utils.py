@@ -95,7 +95,7 @@ def get_job_id(pipeline_options: Dict[str, str]) -> str:
 
         except Exception as e:
             logging.error("Error retrieving Job ID")
-            raise LookupError(e)
+            raise LookupError(e) from e
 
     else:
         # Job is running locally. Generate id from the timestamp.
@@ -149,8 +149,8 @@ def calculation_end_month_arg(value) -> str:
             raise argparse.ArgumentTypeError("calculation_end_month parameter cannot be a month in the future.")
 
         return value
-    except ValueError:
-        raise argparse.ArgumentTypeError("calculation_end_month parameter must be in the format YYYY-MM.")
+    except ValueError as e:
+        raise argparse.ArgumentTypeError("calculation_end_month parameter must be in the format YYYY-MM.") from e
 
 
 def year_and_month_for_today() -> Tuple[int, int]:

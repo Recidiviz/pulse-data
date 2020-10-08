@@ -60,7 +60,7 @@ class TestBQExportCloudTaskManager(unittest.TestCase):
             'schema_type': schema_type
         }
 
-        task = tasks_v2.types.task_pb2.Task(
+        task = tasks_v2.Task(
             name=task_path,
             app_engine_http_request={
                 'http_method': 'POST',
@@ -87,7 +87,7 @@ class TestBQExportCloudTaskManager(unittest.TestCase):
             BIGQUERY_QUEUE_V2,
             task_id)
         mock_client.return_value.create_task.assert_called_with(
-            queue_path, task)
+            parent=queue_path, task=task)
 
     @patch(f'{CLOUD_TASK_MANAGER_PACKAGE_NAME}.uuid')
     @patch('google.cloud.tasks_v2.CloudTasksClient')
@@ -113,7 +113,7 @@ class TestBQExportCloudTaskManager(unittest.TestCase):
             'message': message,
         }
 
-        task = tasks_v2.types.task_pb2.Task(
+        task = tasks_v2.Task(
             name=task_path,
             schedule_time=timestamp_pb2.Timestamp(
                 seconds=(now_utc_timestamp + delay_sec)),
@@ -142,4 +142,4 @@ class TestBQExportCloudTaskManager(unittest.TestCase):
             JOB_MONITOR_QUEUE_V2,
             task_id)
         mock_client.return_value.create_task.assert_called_with(
-            queue_path, task)
+            parent=queue_path, task=task)

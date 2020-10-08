@@ -46,7 +46,7 @@ class FakeReadFromBigQuery(apache_beam.PTransform):
     """Creates a PCollection from the provided |table_values|."""
 
     def __init__(self, table_values: List[NormalizedDatabaseDict]):
-        super(FakeReadFromBigQuery, self).__init__()
+        super().__init__()
         self._table_values = table_values
 
     def expand(self, input_or_inputs):

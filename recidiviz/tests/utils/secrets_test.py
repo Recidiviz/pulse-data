@@ -20,9 +20,7 @@
 """Tests for utils/secrets.py."""
 from unittest.mock import patch
 
-from google.cloud import exceptions
-from google.cloud.secretmanager_v1beta1.proto import service_pb2
-from google.cloud.secretmanager_v1beta1.types import SecretPayload
+from google.cloud import exceptions, secretmanager_v1beta1 as secretmanager
 from mock import Mock
 
 from recidiviz.utils import secrets
@@ -44,11 +42,11 @@ class TestSecrets:
     @patch('recidiviz.utils.metadata.project_id')
     def test_get_not_in_cache(self, mock_project_id):
         mock_project_id.return_value = 'test-project'
-        payload = SecretPayload(data=bytes('Olson'.encode('UTF-8')))
+        payload = secretmanager.SecretPayload(data=bytes('Olson'.encode('UTF-8')))
 
         mock_client = Mock()
         mock_client.secret_version_path.return_value = "test-project.top_track.latest"
-        mock_client.access_secret_version.return_value = service_pb2.AccessSecretVersionResponse(payload=payload)
+        mock_client.access_secret_version.return_value = secretmanager.AccessSecretVersionResponse(payload=payload)
         with patch('google.cloud.secretmanager_v1beta1.SecretManagerServiceClient', return_value=mock_client):
             actual = secrets.get_secret('top_track')
             assert actual == 'Olson'
@@ -81,7 +79,7 @@ class TestSecrets:
 
         mock_client = Mock()
         mock_client.secret_version_path.return_value = "test-project.top_track.latest"
-        mock_client.access_secret_version.return_value = service_pb2.AccessSecretVersionResponse(payload=None)
+        mock_client.access_secret_version.return_value = secretmanager.AccessSecretVersionResponse(payload=None)
         with patch('google.cloud.secretmanager_v1beta1.SecretManagerServiceClient', return_value=mock_client):
             actual = secrets.get_secret('top_track')
             assert actual is None

@@ -49,7 +49,7 @@ class CompositeBigQueryViewExporter(BigQueryViewExporter):
                  bq_client: BigQueryClient,
                  fs: GCSFileSystem,
                  delegate_view_exporters: List[BigQueryViewExporter]):
-        super(CompositeBigQueryViewExporter, self).__init__(bq_client)
+        super().__init__(bq_client)
         self.delegate_view_exporters = delegate_view_exporters
         self.fs = fs
 
