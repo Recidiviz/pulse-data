@@ -26,7 +26,6 @@ from opencensus.stats import aggregation, measure, view
 from recidiviz.common.str_field_utils import normalize
 from recidiviz.utils import monitoring
 
-# TODO(ageiduschek): Should we change convert -> ingest_info_converter here?
 m_enum_errors = measure.MeasureInt("converter/enum_error_count",
                                    "The number of enum errors", "1")
 enum_errors_view = view.View("recidiviz/converter/enum_error_count",
@@ -100,7 +99,7 @@ class EntityEnumMeta(EnumMeta):
                 raise e
 
             # If a mapper throws another type of error, convert it to an enum parsing error
-            raise EnumParsingError(cls, label)
+            raise EnumParsingError(cls, label) from e
 
         if overridden_value is not None:
             return overridden_value
@@ -108,8 +107,8 @@ class EntityEnumMeta(EnumMeta):
         complete_map = cls._get_default_map()
         try:
             return complete_map[label]
-        except KeyError:
-            raise EnumParsingError(cls, label)
+        except KeyError as e:
+            raise EnumParsingError(cls, label) from e
 
     def parse_from_canonical_string(cls: EnumMeta, label: Optional[str]) \
             -> Optional['EntityEnum']:
@@ -122,8 +121,8 @@ class EntityEnumMeta(EnumMeta):
 
         try:
             return cls._value2member_map_[label]
-        except KeyError:
-            raise EnumParsingError(cls, label)
+        except KeyError as e:
+            raise EnumParsingError(cls, label) from e
 
 
 class EntityEnum(Enum, metaclass=EntityEnumMeta):

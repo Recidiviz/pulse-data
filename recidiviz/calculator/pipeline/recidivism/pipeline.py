@@ -78,7 +78,7 @@ class GetRecidivismMetrics(beam.PTransform):
 
     def __init__(self, pipeline_options: Dict[str, str],
                  metric_types: Set[str]):
-        super(GetRecidivismMetrics, self).__init__()
+        super().__init__()
         self._pipeline_options = pipeline_options
 
         self.metric_inclusions: Dict[ReincarcerationRecidivismMetricType, bool] = {}

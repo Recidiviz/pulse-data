@@ -22,7 +22,6 @@ from typing import List, Set
 
 from freezegun import freeze_time
 from google.cloud import tasks_v2, exceptions
-from google.cloud.tasks_v2.proto import queue_pb2
 from google.protobuf import timestamp_pb2
 from mock import create_autospec, patch
 
@@ -94,7 +93,7 @@ class TestGoogleCloudTasksClientWrapper(unittest.TestCase):
 
     def test_initialize_cloud_task_queue(self):
         # Arrange
-        queue = queue_pb2.Queue(
+        queue = tasks_v2.Queue(
             name=self.client_wrapper.format_queue_path('queue1'))
 
         # Act
@@ -104,21 +103,21 @@ class TestGoogleCloudTasksClientWrapper(unittest.TestCase):
         self.mock_client.update_queue.assert_called_with(queue)
 
     @staticmethod
-    def _tasks_to_ids(tasks: List[tasks_v2.types.task_pb2.Task]) -> Set[str]:
+    def _tasks_to_ids(tasks: List[tasks_v2.Task]) -> Set[str]:
         return {task_id
                 for _, task_id in {os.path.split(task.name) for task in tasks}}
 
     def test_list_tasks_with_prefix(self):
         all_tasks = [
-            tasks_v2.types.task_pb2.Task(
+            tasks_v2.Task(
                 name=self.client_wrapper.format_task_path(self.QUEUE_NAME,
                                                           'us-nd-task-1')
             ),
-            tasks_v2.types.task_pb2.Task(
+            tasks_v2.Task(
                 name=self.client_wrapper.format_task_path(self.QUEUE_NAME,
                                                           'us-nd-task-2')
             ),
-            tasks_v2.types.task_pb2.Task(
+            tasks_v2.Task(
                 name=self.client_wrapper.format_task_path(self.QUEUE_NAME,
                                                           'us-mo-task-1')
             ),
@@ -182,8 +181,8 @@ class TestGoogleCloudTasksClientWrapper(unittest.TestCase):
         )
 
         self.mock_client.create_task.assert_called_with(
-            'projects/my-project-id/locations/us-east1/queues/queue-name',
-            tasks_v2.types.task_pb2.Task(
+            parent='projects/my-project-id/locations/us-east1/queues/queue-name',
+            task=tasks_v2.Task(
                 name="projects/my-project-id/locations/us-east1/queues/"
                      "queue-name/tasks/us_mo-file_name_1-123456",
                 app_engine_http_request={
@@ -207,8 +206,8 @@ class TestGoogleCloudTasksClientWrapper(unittest.TestCase):
         )
 
         self.mock_client.create_task.assert_called_with(
-            'projects/my-project-id/locations/us-east1/queues/queue-name',
-            tasks_v2.types.task_pb2.Task(
+            parent='projects/my-project-id/locations/us-east1/queues/queue-name',
+            task=tasks_v2.Task(
                 name="projects/my-project-id/locations/us-east1/queues/"
                      "queue-name/tasks/us_mo-file_name_1-123456",
                 app_engine_http_request={
@@ -224,7 +223,7 @@ class TestGoogleCloudTasksClientWrapper(unittest.TestCase):
 
     def test_delete_task(self):
         self.client_wrapper.delete_task(
-            tasks_v2.types.task_pb2.Task(name='task_name'))
+            tasks_v2.Task(name='task_name'))
 
         self.mock_client.delete_task.assert_called_with('task_name')
 
@@ -233,7 +232,7 @@ class TestGoogleCloudTasksClientWrapper(unittest.TestCase):
             message='message')
 
         self.client_wrapper.delete_task(
-            tasks_v2.types.task_pb2.Task(name='task_name'))
+            tasks_v2.Task(name='task_name'))
 
         self.mock_client.delete_task.assert_called_with('task_name')
 

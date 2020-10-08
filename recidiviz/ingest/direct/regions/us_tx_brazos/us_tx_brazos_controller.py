@@ -51,7 +51,7 @@ class UsTxBrazosController(CsvGcsfsDirectIngestController):
         gae_environment = get_gae_environment()
         if ingest_directory_path and gae_environment:
             ingest_directory_path += f'-{gae_environment}'
-        super(UsTxBrazosController, self).__init__(
+        super().__init__(
             'us_tx_brazos',
             SystemLevel.COUNTY,
             ingest_directory_path,

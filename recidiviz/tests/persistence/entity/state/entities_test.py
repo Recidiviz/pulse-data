@@ -22,7 +22,7 @@ from typing import Optional
 try:
     from typing import ForwardRef  # type: ignore
 except ImportError as e:
-    raise ImportError(e)
+    raise ImportError(e) from e
 
 from unittest import TestCase
 

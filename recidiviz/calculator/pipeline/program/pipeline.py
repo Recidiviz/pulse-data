@@ -71,7 +71,7 @@ class GetProgramMetrics(beam.PTransform):
                  metric_types: Set[str],
                  calculation_month_count: int,
                  calculation_end_month: Optional[str] = None):
-        super(GetProgramMetrics, self).__init__()
+        super().__init__()
         self._pipeline_options = pipeline_options
         self._calculation_end_month = calculation_end_month
         self._calculation_month_count = calculation_month_count

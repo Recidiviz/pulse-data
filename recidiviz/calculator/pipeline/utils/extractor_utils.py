@@ -65,7 +65,7 @@ class BuildRootEntity(beam.PTransform):
                 unifying ids.
         """
 
-        super(BuildRootEntity, self).__init__()
+        super().__init__()
         self._dataset = dataset
 
         if not root_entity_class:
@@ -152,7 +152,7 @@ class ReadFromBigQuery(beam.PTransform):
     """Reads query results from BigQuery."""
 
     def __init__(self, query: str):
-        super(ReadFromBigQuery, self).__init__()
+        super().__init__()
         self._query = query
 
     def expand(self, input_or_inputs):
@@ -172,7 +172,7 @@ class _ExtractEntityBase(beam.PTransform):
                  parent_id_field: Optional[str],
                  unifying_id_field_filter_set: Optional[Set[int]],
                  state_code: Optional[str]):
-        super(_ExtractEntityBase, self).__init__()
+        super().__init__()
         self._dataset = dataset
 
         self._unifying_id_field = unifying_id_field
@@ -259,7 +259,7 @@ class _ExtractEntity(_ExtractEntityBase):
                  parent_id_field: Optional[str],
                  unifying_id_field_filter_set: Optional[Set[int]],
                  state_code: Optional[str]):
-        super(_ExtractEntity, self).__init__(dataset, entity_class, unifying_id_field, parent_id_field,
+        super().__init__(dataset, entity_class, unifying_id_field, parent_id_field,
                                              unifying_id_field_filter_set, state_code)
 
     def expand(self, input_or_inputs):
@@ -297,7 +297,7 @@ class _ExtractRelationshipPropertyEntities(beam.PTransform):
                  unifying_id_field: str,
                  unifying_id_field_filter_set: Optional[Set[int]],
                  state_code: Optional[str]):
-        super(_ExtractRelationshipPropertyEntities, self).__init__()
+        super().__init__()
         self._dataset = dataset
         self._parent_schema_class = parent_schema_class
         self._parent_id_field = parent_id_field
@@ -404,7 +404,7 @@ class _ExtractEntityWithAssociationTable(_ExtractEntityBase):
                  association_table_entity_id_field: str,
                  unifying_id_field_filter_set: Optional[Set[int]],
                  state_code: Optional[str]):
-        super(_ExtractEntityWithAssociationTable, self).__init__(
+        super().__init__(
             dataset, entity_class, unifying_id_field, parent_id_field, unifying_id_field_filter_set, state_code)
 
         self._association_table_parent_id_field = association_table_parent_id_field
