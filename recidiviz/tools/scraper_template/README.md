@@ -196,8 +196,7 @@ vendor scraper), be sure to retrieve the parent class' overrides by calling
 For example:
 ```python
 def get_enum_overrides(self) -> EnumOverrides:
-    overrides_builder = super(MyRegionScraper,
-                              self).get_enum_overrides().to_builder()
+    overrides_builder = super().get_enum_overrides().to_builder()
     
     # When charge.charge_class is 'A', this is a misdemeanor charge.
     overrides_builder.add('A', ChargeClass.MISDEMEANOR)

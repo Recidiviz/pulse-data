@@ -78,7 +78,7 @@ class UsNdController(CsvGcsfsDirectIngestController):
                  ingest_directory_path: Optional[str] = None,
                  storage_directory_path: Optional[str] = None,
                  max_delay_sec_between_files: Optional[int] = None):
-        super(UsNdController, self).__init__(
+        super().__init__(
             'us_nd',
             SystemLevel.STATE,
             ingest_directory_path,
@@ -844,7 +844,7 @@ class UsNdController(CsvGcsfsDirectIngestController):
 
         ignore_predicates: Dict[EntityEnumMeta, EnumIgnorePredicate] = {}
 
-        base_overrides = super(UsNdController, self).get_enum_overrides()
+        base_overrides = super().get_enum_overrides()
         return update_overrides_from_maps(base_overrides, overrides, ignores, override_mappers, ignore_predicates)
 
     def get_enum_overrides(self) -> EnumOverrides:

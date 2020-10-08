@@ -61,7 +61,7 @@ def _parse_date(filename: str) -> datetime.date:
             text = page.extractText()
             lines = text.split('\n')
         except Exception as e:
-            raise AggregateDateParsingError(str(e))
+            raise AggregateDateParsingError(str(e)) from e
         for index, line in enumerate(lines):
             if DATE_PARSE_ANCHOR in line:
                 # The date is on the next line if anchor is present on the line

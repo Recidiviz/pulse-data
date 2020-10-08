@@ -69,8 +69,8 @@ def _to_county_fips(county_name: str, state: us.states) -> int:
 
     try:
         return all_fips_for_state_df.at[actual_county_name, 'fips']
-    except KeyError:
-        raise FipsMergingError
+    except KeyError as e:
+        raise FipsMergingError from e
 
 
 def _to_jurisdiction_id(county_fips: int) -> str:

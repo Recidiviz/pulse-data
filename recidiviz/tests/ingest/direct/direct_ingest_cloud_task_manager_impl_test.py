@@ -124,7 +124,7 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
 
         task_name = DIRECT_INGEST_SCHEDULER_QUEUE_V2 + \
             '/{}-{}-{}'.format(_REGION.region_code, '2019-07-20', uuid)
-        task = tasks_v2.types.task_pb2.Task(
+        task = tasks_v2.Task(
             name=task_name,
             schedule_time=time_proto,
             app_engine_http_request={
@@ -148,7 +148,7 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
             project_id, QUEUES_REGION,
             DIRECT_INGEST_SCHEDULER_QUEUE_V2)
         mock_client.return_value.create_task.assert_called_with(
-            queue_path, task)
+            parent=queue_path, task=task)
 
     @patch('recidiviz.ingest.direct.direct_ingest_cloud_task_manager.uuid')
     @patch('google.cloud.tasks_v2.CloudTasksClient')
@@ -168,7 +168,7 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
 
         task_name = _REGION.shared_queue + '/{}-{}-{}'.format(
             _REGION.region_code, date, uuid)
-        task = tasks_v2.types.task_pb2.Task(
+        task = tasks_v2.Task(
             name=task_name,
             app_engine_http_request={
                 'http_method': 'POST',
@@ -189,7 +189,7 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
         mock_client.return_value.queue_path.assert_called_with(
             project_id, QUEUES_REGION, _REGION.shared_queue)
         mock_client.return_value.create_task.assert_called_with(
-            queue_path, task)
+            parent=queue_path, task=task)
 
     @patch('recidiviz.common.google_cloud.google_cloud_tasks_client_wrapper.'
            'datetime')
@@ -215,7 +215,7 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
 
         task_name = _REGION.shared_queue + '/{}-{}-{}'.format(
             _REGION.region_code, date, uuid)
-        task = tasks_v2.types.task_pb2.Task(
+        task = tasks_v2.Task(
             name=task_name,
             app_engine_http_request={
                 'http_method': 'POST',
@@ -236,7 +236,7 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
         mock_client.return_value.queue_path.assert_called_with(
             project_id, QUEUES_REGION, _REGION.shared_queue)
         mock_client.return_value.create_task.assert_called_with(
-            queue_path, task)
+            parent=queue_path, task=task)
 
 
     @patch('recidiviz.ingest.direct.direct_ingest_cloud_task_manager.uuid')
@@ -260,7 +260,7 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
 
         task_name = DIRECT_INGEST_BQ_IMPORT_EXPORT_QUEUE_V2 + '/{}-{}-{}'.format(
             _REGION.region_code, date, uuid)
-        task = tasks_v2.types.task_pb2.Task(
+        task = tasks_v2.Task(
             name=task_name,
             app_engine_http_request={
                 'http_method': 'POST',
@@ -280,7 +280,7 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
         # Assert
         mock_client.return_value.queue_path.assert_called_with(
             project_id, QUEUES_REGION, DIRECT_INGEST_BQ_IMPORT_EXPORT_QUEUE_V2)
-        mock_client.return_value.create_task.assert_called_with(queue_path, task)
+        mock_client.return_value.create_task.assert_called_with(parent=queue_path, task=task)
 
     @patch('recidiviz.ingest.direct.direct_ingest_cloud_task_manager.uuid')
     @patch('google.cloud.tasks_v2.CloudTasksClient')
@@ -304,7 +304,7 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
 
         task_name = DIRECT_INGEST_BQ_IMPORT_EXPORT_QUEUE_V2 + '/{}-{}-{}'.format(
             _REGION.region_code, date, uuid)
-        task = tasks_v2.types.task_pb2.Task(
+        task = tasks_v2.Task(
             name=task_name,
             app_engine_http_request={
                 'http_method': 'POST',
@@ -324,4 +324,4 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
         # Assert
         mock_client.return_value.queue_path.assert_called_with(
             project_id, QUEUES_REGION, DIRECT_INGEST_BQ_IMPORT_EXPORT_QUEUE_V2)
-        mock_client.return_value.create_task.assert_called_with(queue_path, task)
+        mock_client.return_value.create_task.assert_called_with(parent=queue_path, task=task)

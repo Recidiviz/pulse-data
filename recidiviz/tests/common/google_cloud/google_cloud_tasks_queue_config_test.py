@@ -21,7 +21,7 @@ import unittest
 from typing import Dict
 
 from google.cloud import tasks_v2
-from google.cloud.tasks_v2.proto import queue_pb2
+from google.protobuf import duration_pb2
 from mock import create_autospec, patch
 
 from recidiviz.common.google_cloud import google_cloud_task_queue_config
@@ -50,12 +50,12 @@ class TestGoogleCloudTasksQueueConfig(unittest.TestCase):
     def tearDown(self):
         self.mock_client_patcher.stop()
 
-    def get_updated_queues(self) -> Dict[str, queue_pb2.Queue]:
-        queues_updated_by_id: Dict[str, queue_pb2.Queue] = {}
+    def get_updated_queues(self) -> Dict[str, tasks_v2.Queue]:
+        queues_updated_by_id: Dict[str, tasks_v2.Queue] = {}
         for method_name, args, _kwargs in self.mock_client.mock_calls:
             if method_name == 'update_queue':
                 queue = args[0]
-                if not isinstance(queue, queue_pb2.Queue):
+                if not isinstance(queue, tasks_v2.Queue):
                     self.fail(f"Unexpected type [{type(queue)}]")
                 _, queue_id = os.path.split(queue.name)
                 queues_updated_by_id[queue_id] = queue
@@ -90,6 +90,43 @@ class TestGoogleCloudTasksQueueConfig(unittest.TestCase):
 
         for region in regions.get_supported_regions():
             self.assertTrue(region.get_queue_name() in queues_updated_by_id)
+
+        # Test that composition works as expected
+        self.assertEqual(
+            queues_updated_by_id[regions.get_region('us_ny').get_queue_name()],
+            tasks_v2.Queue(
+                name='projects/my-project-id/locations/us-east1/queues/us-ny-scraper-v2',
+                rate_limits=tasks_v2.RateLimits(
+                    # This is overridden in the manifest.yaml
+                    max_dispatches_per_second=0.3,
+                    max_concurrent_dispatches=3,
+                ),
+                retry_config=tasks_v2.RetryConfig(
+                    min_backoff=duration_pb2.Duration(seconds=5),
+                    max_backoff=duration_pb2.Duration(seconds=300),
+                    max_attempts=5,
+                ),
+                stackdriver_logging_config=tasks_v2.StackdriverLoggingConfig(
+                    sampling_ratio=1.0,
+                )))
+
+        # Test that other regions are unaffected
+        self.assertEqual(
+            queues_updated_by_id[regions.get_region('us_pa').get_queue_name()],
+            tasks_v2.Queue(
+                name='projects/my-project-id/locations/us-east1/queues/us-pa-scraper-v2',
+                rate_limits=tasks_v2.RateLimits(
+                    max_dispatches_per_second=0.08333333333,
+                    max_concurrent_dispatches=3,
+                ),
+                retry_config=tasks_v2.RetryConfig(
+                    min_backoff=duration_pb2.Duration(seconds=5),
+                    max_backoff=duration_pb2.Duration(seconds=300),
+                    max_attempts=5,
+                ),
+                stackdriver_logging_config=tasks_v2.StackdriverLoggingConfig(
+                    sampling_ratio=1.0,
+                )))
 
         self.assertTrue('bigquery-v2' in queues_updated_by_id)
         self.assertTrue('job-monitor-v2' in queues_updated_by_id)

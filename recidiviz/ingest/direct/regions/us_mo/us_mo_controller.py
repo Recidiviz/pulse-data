@@ -434,7 +434,7 @@ class UsMoController(CsvGcsfsDirectIngestController):
                  ingest_directory_path: Optional[str] = None,
                  storage_directory_path: Optional[str] = None,
                  max_delay_sec_between_files: Optional[int] = None):
-        super(UsMoController, self).__init__(
+        super().__init__(
             'us_mo',
             SystemLevel.STATE,
             ingest_directory_path,
@@ -631,7 +631,7 @@ class UsMoController(CsvGcsfsDirectIngestController):
 
     def generate_enum_overrides(self) -> EnumOverrides:
         """Provides Missouri-specific overrides for enum mappings."""
-        base_overrides = super(UsMoController, self).get_enum_overrides()
+        base_overrides = super().get_enum_overrides()
         return update_overrides_from_maps(
             base_overrides, self.ENUM_OVERRIDES, self.ENUM_IGNORES, self.ENUM_MAPPERS, self.ENUM_IGNORE_PREDICATES)
 

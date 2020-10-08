@@ -70,8 +70,8 @@ def calculate_birthdate_from_age(age):
     try:
         birth_year = datetime.datetime.now().date().year - int(age)
         return datetime.date(year=birth_year, month=1, day=1)
-    except Exception:
-        raise ValueError("Cannot parse age: %s" % age)
+    except Exception as e:
+        raise ValueError("Cannot parse age: %s" % age) from e
 
 
 def parse_birthdate(proto, birthdate_field: str, age_field: str):

@@ -52,13 +52,13 @@ class TestScraperCloudTaskManager(unittest.TestCase):
         queue_name = 'test-queue-name'
         queue_path = f'queue_path/{project_id}/{QUEUES_REGION}/{queue_name}'
 
-        task1 = tasks_v2.types.task_pb2.Task(
+        task1 = tasks_v2.Task(
             name=self.task_path(project_id,
                                 QUEUES_REGION,
                                 queue_name,
                                 'us_ca_san_francisco-12345')
         )
-        task2 = tasks_v2.types.task_pb2.Task(
+        task2 = tasks_v2.Task(
             name=self.task_path(project_id,
                                 QUEUES_REGION,
                                 queue_name,
@@ -101,13 +101,13 @@ class TestScraperCloudTaskManager(unittest.TestCase):
         mock_client.return_value.task_path.side_effect = self.task_path
         mock_client.return_value.queue_path.return_value = queue_path
 
-        task1 = tasks_v2.types.task_pb2.Task(
+        task1 = tasks_v2.Task(
             name=self.task_path(project_id,
                                 QUEUES_REGION,
                                 queue_name,
                                 'us_ca_san_francisco-12345')
         )
-        task2 = tasks_v2.types.task_pb2.Task(
+        task2 = tasks_v2.Task(
             name=self.task_path(project_id,
                                 QUEUES_REGION,
                                 queue_name,
@@ -158,7 +158,7 @@ class TestScraperCloudTaskManager(unittest.TestCase):
                 scraper_start_time=datetime.datetime.now()
             ).to_serializable()
         }
-        task = tasks_v2.types.task_pb2.Task(
+        task = tasks_v2.Task(
             name=task_path,
             app_engine_http_request={
                 'http_method': 'POST',
@@ -188,7 +188,7 @@ class TestScraperCloudTaskManager(unittest.TestCase):
             queue_name,
             task_id)
         mock_client.return_value.create_task.assert_called_with(
-            queue_path, task)
+            parent=queue_path, task=task)
 
     @patch(f'{CLOUD_TASK_MANAGER_PACKAGE_NAME}.uuid')
     @patch('google.cloud.tasks_v2.CloudTasksClient')
@@ -205,7 +205,7 @@ class TestScraperCloudTaskManager(unittest.TestCase):
         task_path = f'{queue_path}/{task_id}'
         url = '/my_enqueue/phase'
 
-        task = tasks_v2.types.task_pb2.Task(
+        task = tasks_v2.Task(
             name=task_path,
             app_engine_http_request={
                 'http_method': 'GET',
@@ -231,4 +231,4 @@ class TestScraperCloudTaskManager(unittest.TestCase):
             SCRAPER_PHASE_QUEUE_V2,
             task_id)
         mock_client.return_value.create_task.assert_called_with(
-            queue_path, task)
+            parent=queue_path, task=task)

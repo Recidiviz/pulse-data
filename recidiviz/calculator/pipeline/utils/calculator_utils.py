@@ -334,8 +334,8 @@ def get_calculation_month_upper_bound_date(calculation_end_month: Optional[str])
 
     try:
         end_month_date = datetime.datetime.strptime(calculation_end_month, '%Y-%m').date()
-    except ValueError:
-        raise ValueError(f"Invalid value for calculation_end_month: {calculation_end_month}")
+    except ValueError as e:
+        raise ValueError(f"Invalid value for calculation_end_month: {calculation_end_month}") from e
 
     return last_day_of_month(end_month_date)
 

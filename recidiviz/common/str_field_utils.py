@@ -39,24 +39,24 @@ def parse_dollars(dollar_string: str) -> int:
         return 0
     try:
         return int(locale.atof(clean_string))
-    except Exception:
-        raise ValueError("Cannot parse dollar value: %s" % dollar_string)
+    except Exception as e:
+        raise ValueError("Cannot parse dollar value: %s" % dollar_string) from e
 
 
 def parse_bool(bool_string: str) -> bool:
     """Parses a string and returns a bool."""
     try:
         return bool(strtobool(bool_string))
-    except Exception:
-        raise ValueError("Cannot parse bool value: %s" % bool_string)
+    except Exception as e:
+        raise ValueError("Cannot parse bool value: %s" % bool_string) from e
 
 
 def parse_int(int_string: str) -> int:
     """Parses a string and returns an int. If the string has a decimal, the floor of the value is returned."""
     try:
         return int(float(normalize(int_string)))
-    except Exception:
-        raise ValueError("Cannot parse int value: %s" % int_string)
+    except Exception as e:
+        raise ValueError("Cannot parse int value: %s" % int_string) from e
 
 
 # TODO(#2365): All usages of this function should pass in a datetime, otherwise

@@ -56,7 +56,7 @@ class FetchPageError(Exception):
                         response.text)
 
         msg = "Problem retrieving page: {}".format(details)
-        super(FetchPageError, self).__init__(msg)
+        super().__init__(msg)
 
 
 class Scraper(Ingestor, metaclass=abc.ABCMeta):
@@ -302,7 +302,7 @@ class Scraper(Ingestor, metaclass=abc.ABCMeta):
                         .format(params, post_data, json_data))
             page.raise_for_status()
         except requests.exceptions.RequestException as ce:
-            raise FetchPageError(ce.request, ce.response)
+            raise FetchPageError(ce.request, ce.response) from ce
 
         return page
 

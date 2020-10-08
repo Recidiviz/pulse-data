@@ -418,8 +418,9 @@ def _get_sequence_no(period: schema.StateIncarcerationPeriod) -> int:
     try:
         external_id = cast(str, period.external_id)
         sequence_no = int(external_id.split('-')[-1])
-    except Exception:
-        raise ValueError(f"Could not parse sequence number from external_id {period.external_id} on period [{period}]")
+    except Exception as e:
+        raise ValueError(
+            f"Could not parse sequence number from external_id {period.external_id} on period [{period}]") from e
     return sequence_no
 
 

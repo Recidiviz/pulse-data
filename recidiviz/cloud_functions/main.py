@@ -243,5 +243,5 @@ def _ingest_and_aggregate_covid_data():
         logging.info('COVID ingest cloud function triggered')
         covid_ingest.ingest_and_aggregate_latest_data()
         logging.info('COVID ingest cloud function completed')
-    except Exception:
-        raise RuntimeError('Stack trace: {}'.format(traceback.format_exc()))
+    except Exception as e:
+        raise RuntimeError('Stack trace: {}'.format(traceback.format_exc())) from e

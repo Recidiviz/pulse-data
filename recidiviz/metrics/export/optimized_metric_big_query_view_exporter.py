@@ -66,7 +66,7 @@ class OptimizedMetricBigQueryViewExporter(BigQueryViewExporter):
     Google Cloud Storage."""
 
     def __init__(self, bq_client: BigQueryClient, should_compress: bool = False):
-        super(OptimizedMetricBigQueryViewExporter, self).__init__(bq_client)
+        super().__init__(bq_client)
         self.should_compress = should_compress
 
     def export(self, export_configs: Sequence[ExportBigQueryViewConfig[MetricBigQueryView]]) -> List[GcsfsFilePath]:
@@ -281,11 +281,11 @@ def place_in_compact_matrix(data_point: Dict[str, Any],
 
         try:
             value_index = dimension_values.index(normalized_value)
-        except ValueError:
+        except ValueError as e:
             raise KeyError(f'Dimension of [{dimension_key}: {dimension_value}] not found in dimension manifest: '
                            f'[{dimension_manifest}]. This indicates that either the manifest was not constructed from '
                            'a dataset containing the given data point or a bug in the optimized view exporter. '
-                           f'Data point: {data_point}')
+                           f'Data point: {data_point}') from e
 
         data_values[i].append(value_index)
 
