@@ -50,7 +50,7 @@ class UsNmBernalilloController(CsvGcsfsDirectIngestController):
         gae_environment = get_gae_environment()
         if ingest_directory_path and gae_environment:
             ingest_directory_path += f'-{gae_environment}'
-        super(UsNmBernalilloController, self).__init__(
+        super().__init__(
             'us_nm_bernalillo',
             SystemLevel.COUNTY,
             ingest_directory_path,

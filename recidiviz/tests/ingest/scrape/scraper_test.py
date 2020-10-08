@@ -541,7 +541,7 @@ FAKE_TASK = Task(task_type=constants.TaskType.INITIAL, endpoint='fake')
 class FakeScraper(Scraper):
 
     def __init__(self, region_name, initial_task_method):
-        super(FakeScraper, self).__init__(region_name)
+        super().__init__(region_name)
         self.initial_task_method = initial_task_method
 
     def get_initial_task_method(self):

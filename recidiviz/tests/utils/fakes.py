@@ -136,10 +136,10 @@ def _run_command(command: str, assert_success: bool = True, as_user: Optional[pw
                             preexec_fn=_get_run_as_user_fn(as_user) if as_user else None)
     try:
         out, err = proc.communicate(timeout=15)
-    except subprocess.TimeoutExpired:
+    except subprocess.TimeoutExpired as e:
         proc.kill()
         out, err = proc.communicate()
-        raise RuntimeError(f'Command timed out: `{command}`\n{err}\n{out}')
+        raise RuntimeError(f'Command timed out: `{command}`\n{err}\n{out}') from e
 
     if assert_success and proc.returncode != 0:
         raise RuntimeError(f'Command failed: `{command}`\n{err}\n{out}')

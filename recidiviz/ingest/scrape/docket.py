@@ -255,7 +255,7 @@ def get_new_docket_item(
 
     def inner() -> pubsub.types.PullResponse:
         return pubsub_helper.get_subscriber().pull(
-            subscription_path, max_messages=1,
+            subscription=subscription_path, max_messages=1,
             return_immediately=return_immediately)
 
     response = pubsub_helper.retry_with_create(
@@ -310,7 +310,7 @@ def ack_docket_item(scrape_key: ScrapeKey, ack_id: str):
 
     def inner():
         pubsub_helper.get_subscriber().acknowledge(
-            pubsub_helper.get_subscription_path(
-                scrape_key, pubsub_type=PUBSUB_TYPE), [ack_id])
+            subscription=pubsub_helper.get_subscription_path(
+                scrape_key, pubsub_type=PUBSUB_TYPE), ack_ids=[ack_id])
 
     pubsub_helper.retry_with_create(scrape_key, inner, pubsub_type=PUBSUB_TYPE)

@@ -25,11 +25,9 @@ from enum import Enum
 from typing import List, Dict, Optional
 
 from google.cloud import tasks_v2, exceptions
-from google.cloud.tasks_v2.types import queue_pb2, task_pb2
 from google.protobuf import timestamp_pb2
 
 from recidiviz.common.common_utils import retry_grpc
-from recidiviz.common.google_cloud.protobuf_builder import ProtobufBuilder
 from recidiviz.utils import metadata
 
 class HttpMethod(Enum):
@@ -70,7 +68,7 @@ class GoogleCloudTasksClientWrapper:
             self.queues_region,
             queue_name)
 
-    def initialize_cloud_task_queue(self, queue_config: queue_pb2.Queue):
+    def initialize_cloud_task_queue(self, queue_config: tasks_v2.Queue):
         """
         Initializes a task queue with the given config. If a queue with a given
         name already exists, it is updated to have the given config. If it does
@@ -102,7 +100,7 @@ class GoogleCloudTasksClientWrapper:
             self,
             queue_name: str,
             task_id_prefix: str,
-    ) -> List[task_pb2.Task]:
+    ) -> List[tasks_v2.Task]:
         """List tasks for the given queue with the given task path prefix."""
 
         task_name_prefix = self.format_task_path(queue_name, task_id_prefix)
@@ -140,7 +138,7 @@ class GoogleCloudTasksClientWrapper:
             schedule_timestamp = \
                 timestamp_pb2.Timestamp(seconds=schedule_time_sec)
 
-        task_builder = ProtobufBuilder(task_pb2.Task).update_args(
+        task = tasks_v2.Task(
             name=task_name,
             app_engine_http_request={
                 'relative_uri': relative_uri,
@@ -148,27 +146,13 @@ class GoogleCloudTasksClientWrapper:
         )
 
         if schedule_timestamp:
-            task_builder.update_args(
-                schedule_time=schedule_timestamp,
-            )
+            task.schedule_time = schedule_timestamp
 
         if http_method is not None:
-            task_builder.update_args(
-                app_engine_http_request={
-                    'http_method': http_method.value,
-                },
-            )
+            task.app_engine_http_request.http_method = http_method.value
 
         if http_method in (HttpMethod.POST, HttpMethod.PUT, HttpMethod.PATCH):
-            if body is None:
-                body = {}
-            task_builder.update_args(
-                app_engine_http_request={
-                    'body': json.dumps(body).encode()
-                },
-            )
-
-        task = task_builder.build()
+            task.app_engine_http_request.body = json.dumps(body or {}).encode()
 
         logging.info("Queueing task to queue [%s]: [%s]",
                      queue_name, task.name)
@@ -176,11 +160,11 @@ class GoogleCloudTasksClientWrapper:
         retry_grpc(
             self.NUM_GRPC_RETRIES,
             self.client.create_task,
-            self.format_queue_path(queue_name),
-            task
+            parent=self.format_queue_path(queue_name),
+            task=task
         )
 
-    def delete_task(self, task: task_pb2.Task):
+    def delete_task(self, task: tasks_v2.Task):
         try:
             retry_grpc(self.NUM_GRPC_RETRIES,
                        self.client.delete_task,

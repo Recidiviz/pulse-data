@@ -53,7 +53,7 @@ class StructuredLogFormatter(logging.Formatter):
     _SUFFIX = '...truncated'
 
     def format(self, record):
-        text = super(StructuredLogFormatter, self).format(record)
+        text = super().format(record)
         if len(text) > self._MAX_BYTES:
             logging.warning('Truncated log message')
             text = text[:self._MAX_BYTES - len(self._SUFFIX)] + self._SUFFIX
@@ -82,7 +82,7 @@ class StructuredAppEngineHandler(handlers.AppEngineHandler):
         Allows us to put custom information in labels instead of
         jsonPayload.message
         """
-        message = super(StructuredAppEngineHandler, self).format(record)
+        message = super().format(record)
         labels = {**message.get('labels', {}), **self.get_gae_labels()}
         # pylint: disable=protected-access
         trace_id = (

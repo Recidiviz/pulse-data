@@ -28,7 +28,7 @@ class ValidationError(Exception):
 
     def __init__(self, errors):
         # TODO(#1261): Return errors to caller instead of printing in exception
-        super(ValidationError, self).__init__(errors)
+        super().__init__(errors)
         self.errors = errors
 
 

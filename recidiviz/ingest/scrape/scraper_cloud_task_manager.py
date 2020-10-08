@@ -53,7 +53,7 @@ class ScraperCloudTaskManager:
             *,
             region_code: str,
             queue_name: str
-    ) -> List[tasks_v2.types.task_pb2.Task]:
+    ) -> List[tasks_v2.Task]:
         """List scrape tasks for the given region and queue"""
         region_task_id_prefix = self._format_scrape_task_id(region_code, '')
         return self.cloud_task_client.list_tasks_with_prefix(

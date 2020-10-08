@@ -48,7 +48,7 @@ class RequestProcessingError(Exception):
         request_string = pprint.pformat(queue_request.to_serializable())
         msg = "Error when running '{}' for '{}' with request:\n{}".format(
             task, region, request_string)
-        super(RequestProcessingError, self).__init__(msg)
+        super().__init__(msg)
 
 worker = Blueprint('worker', __name__)
 
@@ -126,7 +126,7 @@ def work(region):
         except Exception as e:
             task_tags[monitoring.TagKey.STATUS] = 'ERROR: {}' \
                 .format(type(e).__name__)
-            raise RequestProcessingError(region, task, params)
+            raise RequestProcessingError(region, task, params) from e
 
         # Respond to the task queue to mark this task as done
         return ('', HTTPStatus.OK)

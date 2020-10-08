@@ -64,17 +64,17 @@ class ParsingError(Exception):
 
     def __init__(self, response_type: constants.ResponseType, text: str):
         msg = 'Error parsing response as {}:\n{}'.format(response_type, text)
-        super(ParsingError, self).__init__(msg)
+        super().__init__(msg)
 
 
 class BaseScraper(Scraper):
     """Generic class for scrapers."""
 
-    # TODO 1055: Remove this when batch reader is complete.
+    # TODO(#1055): Remove this when batch reader is complete.
     BATCH_WRITES = True
 
     def __init__(self, region_name):
-        super(BaseScraper, self).__init__(region_name)
+        super().__init__(region_name)
 
     def get_initial_task_method(self):
         """
@@ -127,21 +127,21 @@ class BaseScraper(Scraper):
         if response_type is constants.ResponseType.HTML:
             try:
                 return self._parse_html_content(response.text), cookies
-            except XMLSyntaxError:
-                raise ParsingError(response_type, response.text)
+            except XMLSyntaxError as e:
+                raise ParsingError(response_type, response.text) from e
         if response_type is constants.ResponseType.JSON:
             try:
                 return json.loads(response.text), cookies
-            except json.JSONDecodeError:
+            except json.JSONDecodeError as e:
                 if not response.text:
                     return [], cookies
-                raise ParsingError(response_type, response.text)
+                raise ParsingError(response_type, response.text) from e
         if response_type is constants.ResponseType.JSONP:
             json_text = self._jsonp_to_json(response.text)
             try:
                 return json.loads(json_text), cookies
-            except json.JSONDecodeError:
-                raise ParsingError(response_type, response.text)
+            except json.JSONDecodeError as e:
+                raise ParsingError(response_type, response.text) from e
         if response_type is constants.ResponseType.TEXT:
             return response.text, cookies
         if response_type is constants.ResponseType.RAW:

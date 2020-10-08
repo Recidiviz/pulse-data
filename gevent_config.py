@@ -54,7 +54,7 @@ class CustomGeventWorker(GeventWorker):
         For a longer discussion of why this is important, see description in #3850.
         """
         # pylint: disable=import-outside-toplevel
-        super(CustomGeventWorker, self).patch()
+        super().patch()
 
         # patch grpc
         from grpc.experimental import gevent as grpc_gevent
@@ -73,11 +73,11 @@ class CustomGeventWorker(GeventWorker):
             tracemalloc.start(25)
 
         # Starts run loop.
-        super(CustomGeventWorker, self).init_process()
+        super().init_process()
 
     def init_signals(self):
         # Leave all signals defined by the superclass in place.
-        super(CustomGeventWorker, self).init_signals()
+        super().init_signals()
 
         # Use SIGUSR2 to dump threads and memory usage information.
         signal.signal(signal.SIGUSR2, self.dump_profiles)

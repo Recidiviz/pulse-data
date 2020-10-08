@@ -55,7 +55,7 @@ class TestDirectIngestRawUpdateCloudTaskManager(unittest.TestCase):
         relative_uri = f'/direct/update_raw_data_latest_views_for_state?region={region_code}'
         body = {}
 
-        task = tasks_v2.types.task_pb2.Task(
+        task = tasks_v2.Task(
             name=task_path,
             app_engine_http_request={
                 'http_method': 'POST',
@@ -82,4 +82,4 @@ class TestDirectIngestRawUpdateCloudTaskManager(unittest.TestCase):
             BIGQUERY_QUEUE_V2,
             task_id)
         mock_client.return_value.create_task.assert_called_with(
-            queue_path, task)
+            parent=queue_path, task=task)

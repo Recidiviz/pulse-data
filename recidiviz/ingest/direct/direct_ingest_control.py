@@ -353,11 +353,11 @@ def controller_for_region_code(
 
     try:
         region = regions.get_region(region_code, is_direct_ingest=True)
-    except FileNotFoundError:
+    except FileNotFoundError as e:
         raise DirectIngestError(
             msg=f"Region [{region_code}] has no registered manifest",
             error_type=DirectIngestErrorType.INPUT_ERROR,
-        )
+        ) from e
 
     if not allow_unlaunched and not region.is_ingest_launched_in_env():
         check_is_region_launched_in_env(region)
