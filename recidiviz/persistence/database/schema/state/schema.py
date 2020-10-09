@@ -431,6 +431,13 @@ state_early_discharge_decision = Enum(
     name='state_early_discharge_decision'
 )
 
+state_early_discharge_decision_status = Enum(
+    state_enum_strings.state_early_discharge_decision_status_pending,
+    state_enum_strings.state_early_discharge_decision_status_decided,
+    state_enum_strings.state_early_discharge_decision_status_invalid,
+    name='state_early_discharge_decision_status'
+)
+
 state_acting_body_type = Enum(
     state_enum_strings.state_acting_body_type_court,
     state_enum_strings.state_acting_body_type_parole_board,
@@ -2390,6 +2397,8 @@ class _StateEarlyDischargeSharedColumns(_ReferencesStatePersonSharedColumns):
     decision_date = Column(Date)
     decision = Column(state_early_discharge_decision)
     decision_raw_text = Column(String(255))
+    decision_status = Column(state_early_discharge_decision_status)
+    decision_status_raw_text = Column(String(255))
     deciding_body_type = Column(state_acting_body_type)
     deciding_body_type_raw_text = Column(String(255))
     request_date = Column(Date)

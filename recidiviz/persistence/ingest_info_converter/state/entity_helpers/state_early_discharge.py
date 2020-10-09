@@ -16,7 +16,8 @@
 # =============================================================================
 
 """Converts an ingest_info proto StateEarlyDischarge to a persistence entity."""
-from recidiviz.common.constants.state.state_early_discharge import StateEarlyDischargeDecision
+from recidiviz.common.constants.state.state_early_discharge import StateEarlyDischargeDecision, \
+    StateEarlyDischargeDecisionStatus
 from recidiviz.common.constants.state.shared_enums import StateActingBodyType
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.common.str_field_utils import parse_date, normalize
@@ -37,6 +38,7 @@ def copy_fields_to_builder(
 
     enum_fields = {
         'decision': StateEarlyDischargeDecision,
+        'decision_status': StateEarlyDischargeDecisionStatus,
         'deciding_body_type': StateActingBodyType,
         'requesting_body_type': StateActingBodyType,
     }
@@ -45,6 +47,8 @@ def copy_fields_to_builder(
     # enum values
     new.decision = enum_mappings.get(StateEarlyDischargeDecision)
     new.decision_raw_text = fn(normalize, 'decision', proto)
+    new.decision_status = enum_mappings.get(StateEarlyDischargeDecisionStatus)
+    new.decision_status_raw_text = fn(normalize, 'decision_status', proto)
     new.deciding_body_type = enum_mappings.get(StateActingBodyType, field_name='deciding_body_type')
     new.deciding_body_type_raw_text = fn(normalize, 'deciding_body_type', proto)
     new.requesting_body_type = enum_mappings.get(StateActingBodyType, field_name='requesting_body_type')

@@ -95,28 +95,40 @@ jurisdiction_code AS (
     jurisdiction_decision_description
   FROM 
    {{jurisdiction_decision_code}}
+),
+all_early_discharge_info AS (
+    SELECT 
+      *
+    FROM 
+      {{early_discharge_sent}}
+    LEFT JOIN 
+      filtered_early_discharge
+    USING 
+      (early_discharge_id)
+    LEFT JOIN 
+      form_type
+    USING 
+      (early_discharge_form_typ_id)
+    LEFT JOIN 
+      jurisdiction_code
+    USING 
+      (jurisdiction_decision_code_id)
+    JOIN 
+      relevant_sentences
+    USING
+      (mitt_srl, sent_no)
 )
-SELECT 
-  *
+SELECT
+    {relevant_select_args}
 FROM 
-  {{early_discharge_sent}}
-LEFT JOIN 
-  filtered_early_discharge
-USING 
-  (early_discharge_id)
-LEFT JOIN 
-  form_type
-USING 
-  (early_discharge_form_typ_id)
-LEFT JOIN 
-  jurisdiction_code
-USING 
-  (jurisdiction_decision_code_id)
-JOIN 
-  relevant_sentences
-USING
-  (mitt_srl, sent_no)
+    all_early_discharge_info
 """
+
+
+def _get_relevant_select_args(ids_only: bool) -> str:
+    if ids_only:
+        return 'ofndr_num, incrno, sent_no, early_discharge_id, early_discharge_sent_id'
+    return '*'
 
 
 def _get_relevant_sentence_query_for_type(discharge_type: EarlyDischargeType) -> str:
@@ -128,7 +140,8 @@ def _get_relevant_sentence_query_for_type(discharge_type: EarlyDischargeType) ->
     raise ValueError(f'Unexpected discharge type {discharge_type}')
 
 
-def early_discharge_view_template(discharge_type: EarlyDischargeType) -> str:
+def early_discharge_view_template(discharge_type: EarlyDischargeType, ids_only: bool = False) -> str:
     return EARLY_DISCHARGE_QUERY_TEMPLATE.format(
-        relevant_sentence_query=_get_relevant_sentence_query_for_type(discharge_type)
+        relevant_sentence_query=_get_relevant_sentence_query_for_type(discharge_type),
+        relevant_select_args=_get_relevant_select_args(ids_only)
     )

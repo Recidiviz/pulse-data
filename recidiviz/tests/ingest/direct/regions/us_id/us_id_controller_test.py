@@ -29,7 +29,8 @@ from recidiviz.common.constants.state.state_agent import StateAgentType
 from recidiviz.common.constants.state.state_assessment import StateAssessmentType, StateAssessmentLevel
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
 from recidiviz.common.constants.state.state_court_case import StateCourtCaseStatus, StateCourtType
-from recidiviz.common.constants.state.state_early_discharge import StateEarlyDischargeDecision
+from recidiviz.common.constants.state.state_early_discharge import StateEarlyDischargeDecision, \
+    StateEarlyDischargeDecisionStatus
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_period import StateIncarcerationPeriodAdmissionReason, \
     StateIncarcerationPeriodReleaseReason, StateSpecializedPurposeForIncarceration, StateIncarcerationPeriodStatus
@@ -456,12 +457,14 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
                                             deciding_body_type='PAROLE',
                                             decision_date='02/05/2020',
                                             decision='Deny - Programming Needed',
+                                            decision_status='DECIDED',
                                         ),
                                         StateEarlyDischarge(
                                             state_early_discharge_id='ed2-2',
                                             request_date='03/01/2020',
                                             requesting_body_type='SPECIAL PROGRESS REPORT FOR PAROLE COMMUTATION',
                                             deciding_body_type='PAROLE',
+                                            decision_status='PENDING',
                                         ),
                                     ],
                                 )
@@ -496,6 +499,14 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
                                             deciding_body_type='PROBATION',
                                             decision_date='06/01/2015',
                                             decision='Deny',
+                                            decision_status='DECIDED',
+                                        ),
+                                        StateEarlyDischarge(
+                                            state_early_discharge_id='ed4-4',
+                                            request_date='01/01/2016',
+                                            requesting_body_type='REQUEST FOR DISCHARGE: PROBATION',
+                                            deciding_body_type='PROBATION',
+                                            decision_status='PENDING',
                                         ),
                                     ],
                                 )
@@ -507,6 +518,66 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
         )
 
         self.run_parse_file_test(expected, 'early_discharge_supervision_sentence')
+
+    def test_populate_data_early_discharge_incarceration_sentence_deleted_rows(self):
+        expected = IngestInfo(
+            state_people=[
+                StatePerson(
+                    state_person_id='1111',
+                    state_person_external_ids=[
+                        StatePersonExternalId(state_person_external_id_id='1111', id_type=US_ID_DOC)
+                    ],
+                    state_sentence_groups=[
+                        StateSentenceGroup(
+                            state_sentence_group_id='1111-2',
+                            state_incarceration_sentences=[
+                                StateIncarcerationSentence(
+                                    state_incarceration_sentence_id='1111-3',
+                                    state_early_discharges=[
+                                        StateEarlyDischarge(
+                                            state_early_discharge_id='ed2-2',
+                                            decision_status='INVALID',
+                                        ),
+                                    ],
+                                )
+                            ]
+                        ),
+                    ]
+                ),
+            ]
+        )
+
+        self.run_parse_file_test(expected, 'early_discharge_incarceration_sentence_deleted_rows')
+
+    def test_populate_data_early_discharge_supervision_sentence_deleted_rows(self):
+        expected = IngestInfo(
+            state_people=[
+                StatePerson(
+                    state_person_id='3333',
+                    state_person_external_ids=[
+                        StatePersonExternalId(state_person_external_id_id='3333', id_type=US_ID_DOC)
+                    ],
+                    state_sentence_groups=[
+                        StateSentenceGroup(
+                            state_sentence_group_id='3333-1',
+                            state_supervision_sentences=[
+                                StateSupervisionSentence(
+                                    state_supervision_sentence_id='3333-1',
+                                    state_early_discharges=[
+                                        StateEarlyDischarge(
+                                            state_early_discharge_id='ed4-4',
+                                            decision_status='INVALID'
+                                        ),
+                                    ],
+                                )
+                            ]
+                        ),
+                    ]
+                ),
+            ]
+        )
+
+        self.run_parse_file_test(expected, 'early_discharge_supervision_sentence_deleted_rows')
 
     def test_populate_data_movement_facility_location_offstat_incarceration_periods(self):
         expected = IngestInfo(
@@ -1559,6 +1630,8 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
             decision_date=datetime.date(year=2020, month=2, day=5),
             decision=StateEarlyDischargeDecision.REQUEST_DENIED,
             decision_raw_text='DENY - PROGRAMMING NEEDED',
+            decision_status=StateEarlyDischargeDecisionStatus.DECIDED,
+            decision_status_raw_text='DECIDED',
             incarceration_sentence=is_1111_3,
             person=is_1111_3.person,
         )
@@ -1570,6 +1643,8 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
             requesting_body_type_raw_text='SPECIAL PROGRESS REPORT FOR PAROLE COMMUTATION',
             deciding_body_type=StateActingBodyType.PAROLE_BOARD,
             deciding_body_type_raw_text='PAROLE',
+            decision_status=StateEarlyDischargeDecisionStatus.PENDING,
+            decision_status_raw_text='PENDING',
             incarceration_sentence=is_1111_3,
             person=is_1111_3.person,
         )
@@ -1595,10 +1670,25 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
             decision_date=datetime.date(year=2015, month=6, day=1),
             decision=StateEarlyDischargeDecision.REQUEST_DENIED,
             decision_raw_text='DENY',
+            decision_status=StateEarlyDischargeDecisionStatus.DECIDED,
+            decision_status_raw_text='DECIDED',
             supervision_sentence=ss_3333_1,
             person=ss_3333_1.person,
         )
-        ss_3333_1.early_discharges.append(ed_3)
+        ed_4 = entities.StateEarlyDischarge.new_with_defaults(
+            external_id='ED4-4',
+            state_code=_STATE_CODE_UPPER,
+            request_date=datetime.date(year=2016, month=1, day=1),
+            requesting_body_type=StateActingBodyType.SUPERVISION_OFFICER,
+            requesting_body_type_raw_text='REQUEST FOR DISCHARGE: PROBATION',
+            deciding_body_type=StateActingBodyType.COURT,
+            deciding_body_type_raw_text='PROBATION',
+            decision_status=StateEarlyDischargeDecisionStatus.PENDING,
+            decision_status_raw_text='PENDING',
+            supervision_sentence=ss_3333_1,
+            person=ss_3333_1.person,
+        )
+        ss_3333_1.early_discharges.extend([ed_3, ed_4])
 
         # Act
         self._run_ingest_job_for_filename('early_discharge_supervision_sentence.csv')
@@ -2394,6 +2484,32 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
 
         # Act
         self._run_ingest_job_for_filename('sprvsn_cntc.csv')
+
+        # Assert
+        self.assert_expected_db_people(expected_people)
+
+        #################################################################
+        # EARLY_DISCHARGE_INCARCERATION_SENTENCE_DELETED_ROWS
+        #################################################################
+        # Arrange
+        ed_2.decision_status = StateEarlyDischargeDecisionStatus.INVALID
+        ed_2.decision_status_raw_text = 'INVALID'
+
+        # Act
+        self._run_ingest_job_for_filename('early_discharge_incarceration_sentence_deleted_rows.csv')
+
+        # Assert
+        self.assert_expected_db_people(expected_people)
+
+        #################################################################
+        # EARLY_DISCHARGE_SUPERVISION_SENTENCE_DELETED_ROWS
+        #################################################################
+        # Arrange
+        ed_4.decision_status = StateEarlyDischargeDecisionStatus.INVALID
+        ed_4.decision_status_raw_text = 'INVALID'
+
+        # Act
+        self._run_ingest_job_for_filename('early_discharge_supervision_sentence_deleted_rows.csv')
 
         # Assert
         self.assert_expected_db_people(expected_people)

@@ -19,7 +19,8 @@
 import unittest
 from datetime import date
 
-from recidiviz.common.constants.state.state_early_discharge import StateEarlyDischargeDecision
+from recidiviz.common.constants.state.state_early_discharge import StateEarlyDischargeDecision, \
+    StateEarlyDischargeDecisionStatus
 from recidiviz.common.constants.state.shared_enums import StateActingBodyType
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.ingest.models import ingest_info_pb2
@@ -39,6 +40,7 @@ class StateEarlyDischargeConverterTest(unittest.TestCase):
             request_date='2010/07/01',
             decision_date='2010/08/01',
             decision='REQUEST_DENIED',
+            decision_status='DECIDED',
             deciding_body_type='COURT',
             requesting_body_type='SUPERVISION_OFFICER',
             state_code='us_nd',
@@ -57,6 +59,8 @@ class StateEarlyDischargeConverterTest(unittest.TestCase):
             decision_date=date(year=2010, month=8, day=1),
             decision=StateEarlyDischargeDecision.REQUEST_DENIED,
             decision_raw_text='REQUEST_DENIED',
+            decision_status=StateEarlyDischargeDecisionStatus.DECIDED,
+            decision_status_raw_text='DECIDED',
             deciding_body_type=StateActingBodyType.COURT,
             deciding_body_type_raw_text='COURT',
             requesting_body_type=StateActingBodyType.SUPERVISION_OFFICER,
