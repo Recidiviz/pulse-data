@@ -87,6 +87,7 @@ def _pretend_jurisdiction_is_county(jurisdiction: str) -> str:
     jurisdiction = jurisdiction.replace(" police dept.", '')
     jurisdiction = jurisdiction.replace(" probation dept.", '')
     jurisdiction = jurisdiction.replace(" sheriff's dept.", '')
+    jurisdiction = jurisdiction.replace(" sheriffs office", '')
     jurisdiction = jurisdiction.replace(" work furlough", '')
 
     if jurisdiction == 'oakland':
