@@ -33,8 +33,26 @@ class StateEarlyDischargeDecision(EntityEnum, metaclass=EntityEnumMeta):
         return _STATE_EARLY_DISCHARGE_DECISION_MAP
 
 
+@unique
+class StateEarlyDischargeDecisionStatus(EntityEnum, metaclass=EntityEnumMeta):
+    PENDING = state_enum_strings.state_early_discharge_decision_status_pending
+    DECIDED = state_enum_strings.state_early_discharge_decision_status_decided
+    INVALID = state_enum_strings.state_early_discharge_decision_status_invalid
+
+    @staticmethod
+    def _get_default_map():
+        return _STATE_EARLY_DISCHARGE_DECISION_STATUS_MAP
+
+
 _STATE_EARLY_DISCHARGE_DECISION_MAP = {
     'REQUEST DENIED': StateEarlyDischargeDecision.REQUEST_DENIED,
     'SENTENCE TERMINATION GRANTED': StateEarlyDischargeDecision.SENTENCE_TERMINATION_GRANTED,
     'UNSUPERVISED PROBATION GRANTED': StateEarlyDischargeDecision.UNSUPERVISED_PROBATION_GRANTED,
+}
+
+
+_STATE_EARLY_DISCHARGE_DECISION_STATUS_MAP = {
+    'PENDING': StateEarlyDischargeDecisionStatus.PENDING,
+    'DECIDED': StateEarlyDischargeDecisionStatus.DECIDED,
+    'INVALID': StateEarlyDischargeDecisionStatus.INVALID,
 }

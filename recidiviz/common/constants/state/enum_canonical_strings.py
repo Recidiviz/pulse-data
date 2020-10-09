@@ -300,6 +300,10 @@ state_early_discharge_decision_request_denied = 'REQUEST_DENIED'
 state_early_discharge_decision_sentence_termination_granted = 'SENTENCE_TERMINATION_GRANTED'
 state_early_discharge_decision_unsupervised_probation_granted = 'UNSUPERVISED_PROBATION_GRANTED'
 
+state_early_discharge_decision_status_pending = 'PENDING'
+state_early_discharge_decision_status_decided = 'DECIDED'
+state_early_discharge_decision_status_invalid = 'INVALID'
+
 # state_supervision_contact.py
 state_supervision_contact_type_face_to_face = 'FACE_TO_FACE'
 state_supervision_contact_type_telephone = 'TELEPHONE'

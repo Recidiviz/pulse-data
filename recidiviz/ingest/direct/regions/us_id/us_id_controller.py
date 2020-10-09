@@ -25,7 +25,8 @@ from recidiviz.common.constants.state.shared_enums import StateActingBodyType
 from recidiviz.common.constants.state.state_agent import StateAgentType
 from recidiviz.common.constants.state.state_assessment import StateAssessmentType, StateAssessmentLevel
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
-from recidiviz.common.constants.state.state_early_discharge import StateEarlyDischargeDecision
+from recidiviz.common.constants.state.state_early_discharge import StateEarlyDischargeDecision, \
+    StateEarlyDischargeDecisionStatus
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_period import StateIncarcerationPeriodAdmissionReason, \
     StateIncarcerationPeriodReleaseReason, StateSpecializedPurposeForIncarceration
@@ -62,6 +63,7 @@ from recidiviz.ingest.models.ingest_info import IngestObject, StateAssessment, S
     StateSupervisionViolationResponseDecisionEntry, StateSupervisionViolationTypeEntry, \
     StateEarlyDischarge, StateSupervisionContact, StateSupervisionCaseTypeEntry
 from recidiviz.ingest.models.ingest_object_cache import IngestObjectCache
+from recidiviz.utils import environment
 
 from recidiviz.utils.params import str_to_bool
 
@@ -108,10 +110,12 @@ class UsIdController(CsvGcsfsDirectIngestController):
             'early_discharge_incarceration_sentence': [
                 gen_label_single_external_id_hook(US_ID_DOC),
                 self._set_generated_ids,
+                self._set_early_discharge_status,
             ],
             'early_discharge_supervision_sentence': [
                 gen_label_single_external_id_hook(US_ID_DOC),
                 self._set_generated_ids,
+                self._set_early_discharge_status,
             ],
             'movement_facility_location_offstat_incarceration_periods': [
                 gen_label_single_external_id_hook(US_ID_DOC),
@@ -151,6 +155,16 @@ class UsIdController(CsvGcsfsDirectIngestController):
                 gen_label_single_external_id_hook(US_ID_DOC),
                 self._add_supervision_contact_fields,
             ],
+            'early_discharge_incarceration_sentence_deleted_rows': [
+                gen_label_single_external_id_hook(US_ID_DOC),
+                self._set_generated_ids,
+                self._set_invalid_early_discharge_status,
+            ],
+            'early_discharge_supervision_sentence_deleted_rows': [
+                gen_label_single_external_id_hook(US_ID_DOC),
+                self._set_generated_ids,
+                self._set_invalid_early_discharge_status,
+            ],
         }
         self.file_post_processors_by_file: Dict[str, List[Callable]] = {
             'offender_ofndr_dob_address': [],
@@ -165,20 +179,6 @@ class UsIdController(CsvGcsfsDirectIngestController):
             'ofndr_tst_tst_qstn_rspns_violation_reports_old': [],
             'sprvsn_cntc': [],
         }
-
-    FILE_TAGS = [
-        'offender_ofndr_dob_address',
-        'ofndr_tst_ofndr_tst_cert',
-        'mittimus_judge_sentence_offense_sentprob_incarceration_sentences',
-        'mittimus_judge_sentence_offense_sentprob_supervision_sentences',
-        'early_discharge_incarceration_sentence',
-        'early_discharge_supervision_sentence',
-        'movement_facility_location_offstat_incarceration_periods',
-        'movement_facility_location_offstat_supervision_periods',
-        'ofndr_tst_tst_qstn_rspns_violation_reports',
-        'ofndr_tst_tst_qstn_rspns_violation_reports_old',
-        'sprvsn_cntc',
-    ]
 
     ENUM_OVERRIDES: Dict[EntityEnum, List[str]] = {
         Race.ASIAN: ['A'],
@@ -524,7 +524,26 @@ class UsIdController(CsvGcsfsDirectIngestController):
 
     @classmethod
     def get_file_tag_rank_list(cls) -> List[str]:
-        return cls.FILE_TAGS
+        tags = [
+            'offender_ofndr_dob_address',
+            'ofndr_tst_ofndr_tst_cert',
+            'mittimus_judge_sentence_offense_sentprob_incarceration_sentences',
+            'mittimus_judge_sentence_offense_sentprob_supervision_sentences',
+            'early_discharge_incarceration_sentence',
+            'early_discharge_supervision_sentence',
+            'movement_facility_location_offstat_incarceration_periods',
+            'movement_facility_location_offstat_supervision_periods',
+            'ofndr_tst_tst_qstn_rspns_violation_reports',
+            'ofndr_tst_tst_qstn_rspns_violation_reports_old',
+            'sprvsn_cntc',
+        ]
+
+        # TODO(#3746): Remove this check once we've validated the output in staging.
+        if not environment.in_gae_production():
+            # TODO(#4252): Determine long term strategy for deleting/tombstoning entities.
+            tags.append('early_discharge_incarceration_sentence_deleted_rows')
+            tags.append('early_discharge_supervision_sentence_deleted_rows')
+        return tags
 
     def generate_enum_overrides(self) -> EnumOverrides:
         """Provides Idaho-specific overrides for enum mappings."""
@@ -737,6 +756,29 @@ class UsIdController(CsvGcsfsDirectIngestController):
         for obj in extracted_objects:
             if isinstance(obj, StateSupervisionPeriod):
                 obj.supervision_site = supervision_site
+
+    @staticmethod
+    def _set_invalid_early_discharge_status(
+            _file_tag: str,
+            _row: Dict[str, str],
+            extracted_objects: List[IngestObject],
+            _cache: IngestObjectCache):
+        for obj in extracted_objects:
+            if isinstance(obj, StateEarlyDischarge):
+                obj.decision_status = StateEarlyDischargeDecisionStatus.INVALID.value
+
+    @staticmethod
+    def _set_early_discharge_status(
+            _file_tag: str,
+            _row: Dict[str, str],
+            extracted_objects: List[IngestObject],
+            _cache: IngestObjectCache):
+        for obj in extracted_objects:
+            if isinstance(obj, StateEarlyDischarge):
+                if obj.decision is not None:
+                    obj.decision_status = StateEarlyDischargeDecisionStatus.DECIDED.value
+                else:
+                    obj.decision_status = StateEarlyDischargeDecisionStatus.PENDING.value
 
     @staticmethod
     def _set_generated_ids(
