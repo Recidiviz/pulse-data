@@ -535,6 +535,7 @@ message StateEarlyDischarge{
     optional string requesting_body_type = 6;
     optional string state_code = 7;
     optional string county_code = 8;
+    optional string decision_status = 9;
 }
 
 message StateSupervisionContact {

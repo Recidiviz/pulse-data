@@ -1594,6 +1594,7 @@ class StateEarlyDischarge(IngestObject):
                  request_date=None,
                  decision_date=None,
                  decision=None,
+                 decision_status=None,
                  deciding_body_type=None,
                  requesting_body_type=None,
                  state_code=None,
@@ -1602,6 +1603,7 @@ class StateEarlyDischarge(IngestObject):
         self.request_date: Optional[str] = request_date
         self.decision_date: Optional[str] = decision_date
         self.decision: Optional[str] = decision
+        self.decision_status: Optional[str] = decision_status
         self.deciding_body_type: Optional[str] = deciding_body_type
         self.requesting_body_type: Optional[str] = requesting_body_type
         self.state_code: Optional[str] = state_code
