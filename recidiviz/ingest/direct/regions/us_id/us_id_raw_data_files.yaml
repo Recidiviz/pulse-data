@@ -209,6 +209,7 @@ raw_files:
   - file_tag: early_discharge_sent
     primary_key_cols:
       - early_discharge_sent_id
+    always_historical_export: True
   - file_tag: employee
     primary_key_cols:
       - empl_cd
