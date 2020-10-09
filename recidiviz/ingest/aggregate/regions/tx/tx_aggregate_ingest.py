@@ -69,7 +69,8 @@ def _parse_date(filename: str) -> datetime.date:
 
     try:
         return datetime.datetime.strptime(
-            filename, "_wp-content_uploads_%Y_%m_abbrerptcurrent.pdf")
+            filename.split('/')[-1],
+            "_wp-content_uploads_%Y_%m_abbrerptcurrent.pdf")
     except ValueError as e:
         raise AggregateDateParsingError("Could not extract date") from e
 
