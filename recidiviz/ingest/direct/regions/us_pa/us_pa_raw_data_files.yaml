@@ -25,160 +25,191 @@ default_separator: ','
 raw_files:
   # TODO(#3312): Confirm primary keys are indeed unique within historical dump
   - file_tag: dbo_Arrest_Crim
-    primary_key_cols:  # TODO(#3312): Verify pks unique once raw data is loaded
-      - ParoleNumber
-      - ArrestReportNO
+    # Best initial (unconfirmed) guess at primary keys for this table:
+    #      - ParoleNumber
+    #      - ArrestReportNO
+    primary_key_cols: []
   - file_tag: dbo_Arrest_Header
-    primary_key_cols:  # TODO(#3312): Verify pks unique once raw data is loaded
-      - ParoleNumber
-      - ArrestReportNO
+    # Best initial (unconfirmed) guess at primary keys for this table:
+    #      - ParoleNumber
+    #      - ArrestReportNO
+    primary_key_cols: []
   - file_tag: dbo_Arrest_Tech
-    primary_key_cols:  # TODO(#3312): Verify pks unique once raw data is loaded
-      - ParoleNumber
-      - ArrestReportNO
+    # Best initial (unconfirmed) guess at primary keys for this table:
+    #      - ParoleNumber
+    #      - ArrestReportNO
+    primary_key_cols: []
   - file_tag: dbo_BdActionProcessed
-    primary_key_cols:  # TODO(#3312): Verify pks unique once raw data is loaded
-      - ParoleNumber
-      - ParoleCountID
-      - BdActionID
+    # Best initial (unconfirmed) guess at primary keys for this table:
+    #      - ParoleNumber
+    #      - ParoleCountID
+    #      - BdActionID
+    primary_key_cols: []
   - file_tag: dbo_BdActionType
-    primary_key_cols:  # TODO(#3312): Verify pks unique once raw data is loaded
-      - ParoleNumber
-      - ParoleCountID
-      - BdActionID
-      - BdActionTypeID
+    # Best initial (unconfirmed) guess at primary keys for this table:
+    #      - ParoleNumber
+    #      - ParoleCountID
+    #      - BdActionID
+    #      - BdActionTypeID
+    primary_key_cols: []
   - file_tag: dbo_BoardAction
-    primary_key_cols:  # TODO(#3312): Verify pks unique once raw data is loaded
-      - ParoleNumber
-      - ParoleCountID
-      - BdActionID
+    # Best initial (unconfirmed) guess at primary keys for this table:
+    #      - ParoleNumber
+    #      - ParoleCountID
+    #      - BdActionID
+    primary_key_cols: []
   - file_tag: dbo_ConditionCode
-    primary_key_cols:  # TODO(#3312): Verify pks unique once raw data is loaded
+    primary_key_cols:
       - ParoleNumber
       - ParoleCountID
       - BdActionID
       - ConditionCodeID
   - file_tag: dbo_ConditionCodeDescription
-    primary_key_cols:  # TODO(#3312): Verify pks unique once raw data is loaded
-      - ParoleNumber
-      - ParoleCountID
-      - BdActionID
-      - ConditionCodeID
-      - CndDescriptionID
+    # Best initial (unconfirmed) guess at primary keys for this table:
+    #      - ParoleNumber
+    #      - ParoleCountID
+    #      - BdActionID
+    #      - ConditionCodeID
+    #      - CndDescriptionID
+    primary_key_cols: []
+  - file_tag: dbo_Crossref_Hist
+    primary_key_cols: []
   - file_tag: dbo_DOB
-    primary_key_cols:  # TODO(#3312): Verify pks unique once raw data is loaded
-      - ParoleNumber
-      - DOBID
+    # Best initial (unconfirmed) guess at primary keys for this table:
+    #      - ParoleNumber
+    #      - DOBID
+    primary_key_cols: []
   - file_tag: dbo_Docket
-    primary_key_cols:  # TODO(#3312): Verify pks unique once raw data is loaded
-      - ParoleNumber
-      - DocketID
+    # Best initial (unconfirmed) guess at primary keys for this table:
+    #      - ParoleNumber
+    #      - DocketID
+    primary_key_cols: []
   - file_tag: dbo_HIST_ICMA_InmSumm_CloseCase
-    primary_key_cols:  # TODO(#3312): Verify pks unique once raw data is loaded
-      - ParoleNumber
-      - DocketID
+    # Best initial (unconfirmed) guess at primary keys for this table:
+    #      - ParoleNumber
+    #      - DocketID
+    primary_key_cols: []
   - file_tag: dbo_HIST_tblHIPHrngSchd
-    primary_key_cols:  # TODO(#3312): Verify pks unique once raw data is loaded
-      - HrngID
-      - SchdID
+    # Best initial (unconfirmed) guess at primary keys for this table:
+    #      - HrngID
+    #      - SchdID
+    primary_key_cols: []
   - file_tag: dbo_Hist_Arrest_Crim
-    primary_key_cols:  # TODO(#3312): Verify pks unique once raw data is loaded
-      - ParoleNumber
-      - ArrestReportNO
+    # Best initial (unconfirmed) guess at primary keys for this table:
+    #      - ParoleNumber
+    #      - ArrestReportNO
+    primary_key_cols: []
   - file_tag: dbo_Hist_Arrest_Header
-    primary_key_cols:  # TODO(#3312): Verify pks unique once raw data is loaded
-      - ParoleNumber
-      - ArrestReportNO
+    # Best initial (unconfirmed) guess at primary keys for this table:
+    #      - ParoleNumber
+    #      - ArrestReportNO
+    primary_key_cols: []
   - file_tag: dbo_Hist_Arrest_Tech
-    primary_key_cols:  # TODO(#3312): Verify pks unique once raw data is loaded
-      - ParoleNumber
-      - ArrestReportNO
+    # Best initial (unconfirmed) guess at primary keys for this table:
+    #      - ParoleNumber
+    #      - ArrestReportNO
+    primary_key_cols: []
   - file_tag: dbo_Hist_Docket
-    primary_key_cols:  # TODO(#3312): Verify pks unique once raw data is loaded
-      - ParoleNumber
+    # Best initial (unconfirmed) guess at primary keys for this table:
+    #      - ParoleNumber
+    primary_key_cols: []
   - file_tag: dbo_Hist_Guideline_CloseCase
-    primary_key_cols:  # TODO(#3312): Verify pks unique once raw data is loaded
-      - ParoleNumber
-      - ParoleCountID
-      - GuidelineID
-      - DocketID
+    # Best initial (unconfirmed) guess at primary keys for this table:
+    #      - ParoleNumber
+    #      - ParoleCountID
+    #      - GuidelineID
+    #      - DocketID
+    primary_key_cols: []
   - file_tag: dbo_Hist_Investigation
-    primary_key_cols:  # TODO(#3312): Verify pks unique once raw data is loaded
-      - InvUPAR
+    # Best initial (unconfirmed) guess at primary keys for this table:
+    #      - InvUPAR
+    primary_key_cols: []
   - file_tag: dbo_Hist_OffenderDetails
-    primary_key_cols:  # TODO(#3312): Verify pks unique once raw data is loaded
-      - ParoleNumber
-      - ParoleCountID
-      - HOffenderDetailsID
+    # Best initial (unconfirmed) guess at primary keys for this table:
+    #      - ParoleNumber
+    #      - ParoleCountID
+    #      - HOffenderDetailsID
+    primary_key_cols: []
   - file_tag: dbo_Hist_ParoleeAddress
-    primary_key_cols:  # TODO(#3312): Verify pks unique once raw data is loaded
-      - ParoleNumber
-      - EffDate
+    # Best initial (unconfirmed) guess at primary keys for this table:
+    #      - ParoleNumber
+    #      - EffDate
+    primary_key_cols: []
   - file_tag: dbo_Hist_Release
-    primary_key_cols:  # TODO(#3312): Verify pks unique once raw data is loaded
+    primary_key_cols:
       - ParoleNumber
       - ParoleCountID
   - file_tag: dbo_Hist_SanctionTracking
-    primary_key_cols:  # TODO(#3312): Verify pks unique once raw data is loaded
+    primary_key_cols:
       - ParoleNumber
       - ParoleCountID
       - SetID
       - SequenceID
   - file_tag: dbo_Hist_tblHIPHrngRqs
-    primary_key_cols:  # TODO(#3312): Verify pks unique once raw data is loaded
-      - HrngID
-      - PrlNum
-      - ParoleCountID
+    # Best initial (unconfirmed) guess at primary keys for this table:
+    #      - HrngID
+    #      - PrlNum
+    #      - ParoleCountID
+    primary_key_cols: []
   - file_tag: dbo_ICMA_CasesSeen_NotSeen
-    primary_key_cols:  # TODO(#3312): Verify pks unique once raw data is loaded
-      - ParoleNumber
-      - InstitutionNumber
+    # Best initial (unconfirmed) guess at primary keys for this table:
+    #      - ParoleNumber
+    #      - InstitutionNumber
+    primary_key_cols: []
   - file_tag: dbo_ICMA_InmateSummarization
-    primary_key_cols:  # TODO(#3312): Verify pks unique once raw data is loaded
-      - InstitutionNumber
-      - ParoleCountId
-      - ParoleNumber
-      - SequenceNumber
+    # Best initial (unconfirmed) guess at primary keys for this table:
+    #      - InstitutionNumber
+    #      - ParoleCountId
+    #      - ParoleNumber
+    #      - SequenceNumber
+    primary_key_cols: []
   - file_tag: dbo_ICMA_ReleaseParolee
-    primary_key_cols:  # TODO(#3312): Verify pks unique once raw data is loaded
-      - InstitutionNumber
-      - ParoleNumber
-      - ParoleCountId
+    # Best initial (unconfirmed) guess at primary keys for this table:
+    #      - InstitutionNumber
+    #      - ParoleNumber
+    #      - ParoleCountId
+    primary_key_cols: []
   - file_tag: dbo_ICMA_Static99
-    primary_key_cols:  # TODO(#3312): Verify pks unique once raw data is loaded
-      - ParoleNumber
-      - InstitutionNumber
-      - ParoleCountId
-      - DocketID
+    # Best initial (unconfirmed) guess at primary keys for this table:
+    #      - ParoleNumber
+    #      - InstitutionNumber
+    #      - ParoleCountId
+    #      - DocketID
+    primary_key_cols: []
   - file_tag: dbo_IcsCriminalHist
-    primary_key_cols:  # TODO(#3312): Verify pks unique once raw data is loaded
-      - Doc_Id
-      - CrmlHistSeq_Id
+    # Best initial (unconfirmed) guess at primary keys for this table:
+    #      - Doc_Id
+    #      - CrmlHistSeq_Id
+    primary_key_cols: []
   - file_tag: dbo_IcsDoc
     primary_key_cols:
       - Cont_Num
       - Doc_Id
   - file_tag: dbo_InstantOffense
-    primary_key_cols:  # TODO(#3312): Verify pks unique once raw data is loaded
-      - PrimaryKey
+    # Best initial (unconfirmed) guess at primary keys for this table:
+    #      - PrimaryKey
+    primary_key_cols: []
   - file_tag: dbo_Interview
-    primary_key_cols:  # TODO(#3312): Verify pks unique once raw data is loaded
-      - InstitutionNumber
-      - ParoleNumber
-      - DocketID
-      - InterviewID
+    # Best initial (unconfirmed) guess at primary keys for this table:
+    #      - InstitutionNumber
+    #      - ParoleNumber
+    #      - DocketID
+    #      - InterviewID
+    primary_key_cols: []
   - file_tag: dbo_InvestigationRequest
-    primary_key_cols:  # TODO(#3312): Verify pks unique once raw data is loaded
-      - ParoleNumber
-      - PBPP30ID
+    # Best initial (unconfirmed) guess at primary keys for this table:
+    #      - ParoleNumber
+    #      - PBPP30ID
+    primary_key_cols: []
   - file_tag: dbo_LSIR
     primary_key_cols:
       - ParoleNumber
       - ParoleCountID
       - LsirID
   - file_tag: dbo_LU_BoardActionClass
-    primary_key_cols:  # TODO(#3312): Verify pks unique once raw data is loaded
-      - ActionClassCode
+    # Best initial (unconfirmed) guess at primary keys for this table:
+    #      - ActionClassCode
+    primary_key_cols: []
   - file_tag: dbo_LU_BoardActionKeyword_New
     primary_key_cols:
       - KeywordCode
@@ -196,49 +227,55 @@ raw_files:
     primary_key_cols:
       - TreatTrackCloseCasesCode
   - file_tag: dbo_LU_TreatTrackingProgramNew
-    primary_key_cols:  # TODO(#3312): Verify pks unique once raw data is loaded
-      - TreatTrackProgCode
+    # Best initial (unconfirmed) guess at primary keys for this table:
+    #      - TreatTrackProgCode
+    primary_key_cols: []
   - file_tag: dbo_Misasa
-    primary_key_cols:  # TODO(#3312): Verify pks unique once raw data is loaded
-      - status_ind
-      - control_number
-      - misconduct_number
+    # Best initial (unconfirmed) guess at primary keys for this table:
+    #      - status_ind
+    #      - control_number
+    #      - misconduct_number
+    primary_key_cols: []
   - file_tag: dbo_Mischg
-    primary_key_cols:  # TODO(#3312): Verify pks unique once raw data is loaded
-      - inmate_cnt_num1
-      - inmate_cnt_num2
-      - miscndct_number
+    # Best initial (unconfirmed) guess at primary keys for this table:
+    #      - inmate_cnt_num1
+    #      - inmate_cnt_num2
+    #      - miscndct_number
+    primary_key_cols: []
   - file_tag: dbo_Miscon
     primary_key_cols:
       - control_number
       - misconduct_number
   - file_tag: dbo_Mishea
-    primary_key_cols:  # TODO(#3312): Verify pks unique once raw data is loaded
-      - Inmate_Cnt_Num
-      - Miscndct_Number
-      - Sequence_Number
+    # Best initial (unconfirmed) guess at primary keys for this table:
+    #      - Inmate_Cnt_Num
+    #      - Miscndct_Number
+    #      - Sequence_Number
+    primary_key_cols: []
   - file_tag: dbo_Movrec
     primary_key_cols:
       - mov_cnt_num
       - mov_seq_num
   - file_tag: dbo_NEWParoleDecisionGuideline
-    primary_key_cols:  # TODO(#3312): Verify pks unique once raw data is loaded
-      - ParoleNumber
-      - ParoleCountID
-      - GuidelineID
-      - DocketID
+    # Best initial (unconfirmed) guess at primary keys for this table:
+    #      - ParoleNumber
+    #      - ParoleCountID
+    #      - GuidelineID
+    #      - DocketID
+    primary_key_cols: []
   - file_tag: dbo_Offender
     primary_key_cols:
       - ParoleNumber
   - file_tag: dbo_OffenderDetails
-    primary_key_cols:  # TODO(#3312): Verify pks unique once raw data is loaded
+    primary_key_cols:
       - ParoleNumber
   - file_tag: dbo_ParoleeAddress
-    primary_key_cols:  # TODO(#3312): Verify pks unique once raw data is loaded
-      - ParoleNumber
-      - EffDate
+    # Best initial (unconfirmed) guess at primary keys for this table:
+    #      - ParoleNumber
+    #      - EffDate
+    primary_key_cols: []
   - file_tag: dbo_Perrec
-    primary_key_cols:  # TODO(#3312): Verify pks unique once raw data is loaded
+    primary_key_cols:
       - control_number
   - file_tag: dbo_RelAgentHistory
     primary_key_cols:
@@ -248,23 +285,24 @@ raw_files:
     datetime_cols:
       - LastModifiedDateTime
   - file_tag: dbo_RelEmployment
-    primary_key_cols:  # TODO(#3312): Verify pks unique once raw data is loaded
-      - ParoleNumber
-      - ParoleCountID
+    # Best initial (unconfirmed) guess at primary keys for this table:
+    #      - ParoleNumber
+    #      - ParoleCountID
+    primary_key_cols: []
   - file_tag: dbo_RelStatus
-    primary_key_cols:  # TODO(#3312): Verify pks unique once raw data is loaded
+    primary_key_cols:
       - ParoleNumber
       - ParoleCountID
   - file_tag: dbo_Release
-    primary_key_cols:  # TODO(#3312): Verify pks unique once raw data is loaded
+    primary_key_cols:
       - ParoleNumber
       - ParoleCountID
   - file_tag: dbo_ReleaseInfo
-    primary_key_cols:  # TODO(#3312): Verify pks unique once raw data is loaded
+    primary_key_cols:
       - ParoleNumber
       - ParoleCountID
   - file_tag: dbo_SanctionTracking
-    primary_key_cols:  # TODO(#3312): Verify pks unique once raw data is loaded
+    primary_key_cols:
       - ParoleNumber
       - ParoleCountID
       - SetID
@@ -285,76 +323,87 @@ raw_files:
       - ParoleCountID
       - Sent16DGroupNumber
   - file_tag: dbo_Treatment
-    primary_key_cols:  # TODO(#3312): Verify pks unique once raw data is loaded
-      - ParoleNumber
-      - ParoleCountID
-      - TreatmentID
+    # Best initial (unconfirmed) guess at primary keys for this table:
+    #      - ParoleNumber
+    #      - ParoleCountID
+    #      - TreatmentID
+    primary_key_cols: []
   - file_tag: dbo_hist_Static99_CloseCase
-    primary_key_cols:  # TODO(#3312): Verify pks unique once raw data is loaded
-      - ParoleNumber
-      - InstitutionNumber
-      - ParoleCountId
-      - DocketID
+    # Best initial (unconfirmed) guess at primary keys for this table:
+    #      - ParoleNumber
+    #      - InstitutionNumber
+    #      - ParoleCountId
+    #      - DocketID
+    primary_key_cols: []
   - file_tag: dbo_pb_INMATE_SUMMARY
-    primary_key_cols:  # TODO(#3312): Verify pks unique once raw data is loaded
-      - sid
-      - inmate_number
-      - control_number
+    # Best initial (unconfirmed) guess at primary keys for this table:
+    #      - sid
+    #      - inmate_number
+    #      - control_number
+    primary_key_cols: []
   - file_tag: dbo_pb_SENTENCE
-    primary_key_cols:  # TODO(#3312): Verify pks unique once raw data is loaded
-      - sid
-      - inmate_number
+    # Best initial (unconfirmed) guess at primary keys for this table:
+    #      - sid
+    #      - inmate_number
+    primary_key_cols: []
   - file_tag: dbo_tblEval
-    primary_key_cols:  # TODO(#3312): Verify pks unique once raw data is loaded
-      - Control_Number
+    # Best initial (unconfirmed) guess at primary keys for this table:
+    #      - Control_Number
+    primary_key_cols: []
   - file_tag: dbo_tblEvalHist
-    primary_key_cols:  # TODO(#3312): Verify pks unique once raw data is loaded
-      - Control_Number
+    # Best initial (unconfirmed) guess at primary keys for this table:
+    #      - Control_Number
+    primary_key_cols: []
   - file_tag: dbo_tblInmTestScore
-    primary_key_cols:  # TODO(#3312): Verify pks unique once raw data is loaded
+    primary_key_cols:
       - Control_Number
       - Inmate_number
       - Test_Id
       - AsmtVer_Num
   - file_tag: dbo_tblInmTestScoreHist
-    primary_key_cols:  # TODO(#3312): Verify pks unique once raw data is loaded
+    primary_key_cols:
       - Control_Number
       - Inmate_number
       - Test_Id
       - AsmtVer_Num
     supplemental_order_by_clause: "PARSE_DATETIME('%m/%d/%Y %H:%M:%S', Hist_dt) DESC"
   - file_tag: dbo_tblRecmdPrgm
-    primary_key_cols:  # TODO(#3312): Verify pks unique once raw data is loaded
-      - Control_Number
-      - Prgm_Cd
+    # Best initial (unconfirmed) guess at primary keys for this table:
+    #      - Control_Number
+    #      - Prgm_Cd
+    primary_key_cols: []
   - file_tag: dbo_tblRecmdPrgmHist
-    primary_key_cols:  # TODO(#3312): Verify pks unique once raw data is loaded
-      - Control_Number
-      - Prgm_Cd
+    # Best initial (unconfirmed) guess at primary keys for this table:
+    #      - Control_Number
+    #      - Prgm_Cd
+    primary_key_cols: []
   - file_tag: dbo_tblSearchInmateInfo
-    primary_key_cols:  # TODO(#3312): Verify pks unique once raw data is loaded
+    primary_key_cols:
       - inmate_number
       - control_number
       - state_id_num
   - file_tag: dbo_vwCCISAllInmate
-    primary_key_cols:
-      - Control_Number
-      - Inmate_Number
+    # Best initial (unconfirmed) guess at primary keys for this table:
+    #      - Control_Number
+    #      - Inmate_Number
+    primary_key_cols: []
     datetime_cols:
       - Bed_Dt
       - Cur_Status_Dt
       - LstMod_Dt
     encoding: ISO-8859-1
   - file_tag: dbo_vwCCISAllMvmt
-    primary_key_cols:
-      - CCISMvmt_Id
+    # Best initial (unconfirmed) guess at primary keys for this table:
+    #      - CCISMvmt_Id
+    primary_key_cols: []
     datetime_cols:
       - Status_Dt
     encoding: ISO-8859-1
   - file_tag: dbo_vwCCISAllProgDtls
-    primary_key_cols:
-      - CCISMvmt_Id
-      - Program_Id
+    # Best initial (unconfirmed) guess at primary keys for this table:
+    #      - CCISMvmt_Id
+    #      - Program_Id
+    primary_key_cols: []
     datetime_cols:
       - LstMod_Dt
     encoding: ISO-8859-1
