@@ -35,6 +35,10 @@ raw_files:
   - file_tag: tagC
     primary_key_cols:
       - COL1
+  - file_tag: tagFullHistoricalExport
+    primary_key_cols:
+      - COL_1
+    always_historical_export: True
   - file_tag: tagInvalidCharacters
     primary_key_cols:
       - COL_1

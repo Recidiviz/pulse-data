@@ -31,6 +31,8 @@ with local_project_id_override('my-project-id'):
             raw_file_configs={}
         ),
         order_by_cols=None,
+        is_detect_row_deletion_view=False,
+        primary_key_tables_for_entity_deletion=[],
     )
 
 VIEW_BUILDER = FakeBigQueryViewBuilder(GOOD_VIEW_2)

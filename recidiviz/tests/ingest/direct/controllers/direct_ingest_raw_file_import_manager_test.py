@@ -48,10 +48,11 @@ class DirectIngestRegionRawFileConfigTest(unittest.TestCase):
             yaml_config_file_path=fixtures.as_filepath('us_xx_raw_data_files.yaml'),
         )
 
-        self.assertEqual(6, len(region_config.raw_file_configs))
+        self.assertEqual(7, len(region_config.raw_file_configs))
 
-        self.assertEqual({'file_tag_first', 'file_tag_second', 'tagC', 'tagInvalidCharacters',
-                          'tagNormalizationConflict', 'tagPipeSeparatedNonUTF8'}, region_config.raw_file_configs.keys())
+        self.assertEqual({'file_tag_first', 'file_tag_second', 'tagC', 'tagFullHistoricalExport',
+                          'tagInvalidCharacters', 'tagNormalizationConflict', 'tagPipeSeparatedNonUTF8'},
+                         region_config.raw_file_configs.keys())
 
         config_1 = region_config.raw_file_configs['file_tag_first']
         self.assertEqual('file_tag_first', config_1.file_tag)

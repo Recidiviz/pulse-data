@@ -55,11 +55,14 @@ _DATE_4 = datetime.datetime(year=2022, month=7, day=20)
 
 
 class _ViewCollector(BigQueryViewCollector[DirectIngestPreProcessedIngestView]):
+    """Fake ViewCollector for tests."""
     def __init__(self,
                  region: Region,
-                 controller_file_tags: List[str]):
+                 controller_file_tags: List[str],
+                 is_detect_row_deletion_view: bool):
         self.region = region
         self.controller_file_tags = controller_file_tags
+        self.is_detect_row_deletion_view = is_detect_row_deletion_view
 
     def collect_views(self) -> List[DirectIngestPreProcessedIngestView]:
 
@@ -68,13 +71,17 @@ class _ViewCollector(BigQueryViewCollector[DirectIngestPreProcessedIngestView]):
             yaml_config_file_path=fixtures.as_filepath('us_xx_raw_data_files.yaml', subdir='fixtures'),
         )
 
-        query = 'select * from {file_tag_first}'
+        query = 'select * from {file_tag_first} JOIN {tagFullHistoricalExport} USING (COL_1)'
+        primary_key_tables_for_entity_deletion = \
+            [] if not self.is_detect_row_deletion_view else ['tagFullHistoricalExport']
         views = [
             DirectIngestPreProcessedIngestView(
                 ingest_view_name=tag,
                 view_query_template=query,
                 region_raw_table_config=region_config,
                 order_by_cols='colA, colC',
+                is_detect_row_deletion_view=self.is_detect_row_deletion_view,
+                primary_key_tables_for_entity_deletion=primary_key_tables_for_entity_deletion,
             )
             for tag in self.controller_file_tags
         ]
@@ -111,7 +118,7 @@ class DirectIngestIngestViewExportManagerTest(unittest.TestCase):
                            are_raw_data_bq_imports_enabled_in_env=True,
                            are_ingest_view_exports_enabled_in_env=ingest_view_exports_enabled)
 
-    def create_export_manager(self, region):
+    def create_export_manager(self, region, is_detect_row_deletion_view=False):
         metadata_manager = PostgresDirectIngestFileMetadataManager(region.region_code)
         return DirectIngestIngestViewExportManager(
             region=region,
@@ -119,7 +126,10 @@ class DirectIngestIngestViewExportManagerTest(unittest.TestCase):
             ingest_directory_path=GcsfsDirectoryPath.from_absolute_path('ingest_bucket'),
             big_query_client=self.mock_client,
             file_metadata_manager=metadata_manager,
-            view_collector=_ViewCollector(region, controller_file_tags=['ingest_view']))
+            view_collector=_ViewCollector(
+                region,
+                controller_file_tags=['ingest_view'],
+                is_detect_row_deletion_view=is_detect_row_deletion_view))
 
     @staticmethod
     def generate_query_params_for_date(date_param):
@@ -310,6 +320,105 @@ class DirectIngestIngestViewExportManagerTest(unittest.TestCase):
             '(SELECT * FROM `recidiviz-456.us_xx_ingest_views.ingest_view_2020_07_20_00_00_00_upper_bound`) ' \
             'EXCEPT DISTINCT ' \
             '(SELECT * FROM `recidiviz-456.us_xx_ingest_views.ingest_view_2019_07_20_00_00_00_lower_bound`) ' \
+            'ORDER BY colA, colC;'
+        self.assert_exported_to_gcs_with_query(expected_query)
+        self.mock_client.delete_table.assert_has_calls([
+            mock.call(dataset_id='us_xx_ingest_views', table_id='ingest_view_2020_07_20_00_00_00_upper_bound'),
+            mock.call(dataset_id='us_xx_ingest_views', table_id='ingest_view_2019_07_20_00_00_00_lower_bound'),
+        ])
+
+        assert_session = SessionFactory.for_schema_base(OperationsBase)
+        found_metadata = self.to_entity(one(assert_session.query(schema.DirectIngestIngestFileMetadata).all()))
+        self.assertEqual(expected_metadata, found_metadata)
+        assert_session.close()
+
+    def test_exportViewForArgs_detectRowDeletionView_noLowerBound(self):
+        # Arrange
+        region = self.create_fake_region()
+        export_manager = self.create_export_manager(region, is_detect_row_deletion_view=True)
+        export_args = GcsfsIngestViewExportArgs(
+            ingest_view_name='ingest_view',
+            upper_bound_datetime_prev=None,
+            upper_bound_datetime_to_export=_DATE_2)
+
+        session = SessionFactory.for_schema_base(OperationsBase)
+        metadata = schema.DirectIngestIngestFileMetadata(
+            file_id=_ID,
+            region_code=region.region_code,
+            file_tag=export_args.ingest_view_name,
+            normalized_file_name='normalized_file_name',
+            is_invalidated=False,
+            is_file_split=False,
+            job_creation_time=_DATE_1,
+            export_time=None,
+            datetimes_contained_lower_bound_exclusive=export_args.upper_bound_datetime_prev,
+            datetimes_contained_upper_bound_inclusive=export_args.upper_bound_datetime_to_export
+        )
+
+        session.add(metadata)
+        session.commit()
+        session.close()
+
+        # Act
+        with freeze_time(_DATE_4.isoformat()):
+            export_manager.export_view_for_args(export_args)
+
+        # Assert
+        self.mock_client.create_table_from_query_async.assert_not_called()
+        self.mock_client.export_query_results_to_cloud_storage.assert_not_called()
+        self.mock_client.delete_table.assert_not_called()
+
+    def test_exportViewForArgs_detectRowDeletionView(self):
+        # Arrange
+        region = self.create_fake_region()
+        export_manager = self.create_export_manager(region, is_detect_row_deletion_view=True)
+        export_args = GcsfsIngestViewExportArgs(
+            ingest_view_name='ingest_view',
+            upper_bound_datetime_prev=_DATE_1,
+            upper_bound_datetime_to_export=_DATE_2)
+
+        session = SessionFactory.for_schema_base(OperationsBase)
+        metadata = schema.DirectIngestIngestFileMetadata(
+            file_id=_ID,
+            region_code=region.region_code,
+            file_tag=export_args.ingest_view_name,
+            normalized_file_name='normalized_file_name',
+            is_invalidated=False,
+            is_file_split=False,
+            job_creation_time=_DATE_1,
+            export_time=None,
+            datetimes_contained_lower_bound_exclusive=export_args.upper_bound_datetime_prev,
+            datetimes_contained_upper_bound_inclusive=export_args.upper_bound_datetime_to_export
+        )
+        expected_metadata = attr.evolve(self.to_entity(metadata), export_time=_DATE_4)
+        session.add(metadata)
+        session.commit()
+        session.close()
+
+        # Act
+        with freeze_time(_DATE_4.isoformat()):
+            export_manager.export_view_for_args(export_args)
+
+        # Assert
+        self.mock_client.create_table_from_query_async.assert_has_calls([
+            mock.call(
+                dataset_id='us_xx_ingest_views',
+                overwrite=True,
+                query=mock.ANY,
+                query_parameters=[self.generate_query_params_for_date(export_args.upper_bound_datetime_to_export)],
+                table_id='ingest_view_2020_07_20_00_00_00_upper_bound'),
+            mock.call(
+                dataset_id='us_xx_ingest_views',
+                overwrite=True,
+                query=mock.ANY,
+                query_parameters=[self.generate_query_params_for_date(export_args.upper_bound_datetime_prev)],
+                table_id='ingest_view_2019_07_20_00_00_00_lower_bound'),
+        ])
+        # Lower bound is the first part of the subquery, not upper bound.
+        expected_query = \
+            '(SELECT * FROM `recidiviz-456.us_xx_ingest_views.ingest_view_2019_07_20_00_00_00_lower_bound`) ' \
+            'EXCEPT DISTINCT ' \
+            '(SELECT * FROM `recidiviz-456.us_xx_ingest_views.ingest_view_2020_07_20_00_00_00_upper_bound`) ' \
             'ORDER BY colA, colC;'
         self.assert_exported_to_gcs_with_query(expected_query)
         self.mock_client.delete_table.assert_has_calls([
