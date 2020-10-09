@@ -46,6 +46,40 @@ FROM rows_with_recency_rank
 WHERE recency_rank = 1
 """
 
+RAW_DATA_UP_TO_DATE_HISTORICAL_FILE_VIEW_QUERY_TEMPLATE = f"""
+WITH max_update_datetime AS (
+    SELECT 
+        MAX(update_datetime) AS update_datetime
+    FROM
+        `{{project_id}}.{{raw_table_dataset_id}}.{{raw_table_name}}`
+    WHERE 
+        update_datetime <= @{UPDATE_DATETIME_PARAM_NAME}
+),
+max_file_id AS (
+    SELECT
+        MAX(file_id) AS file_id
+    FROM
+        `{{project_id}}.{{raw_table_dataset_id}}.{{raw_table_name}}`
+    WHERE 
+        update_datetime = (SELECT update_datetime FROM max_update_datetime)
+),
+rows_with_recency_rank AS (
+    SELECT 
+        * {{except_clause}}, {{datetime_cols_clause}}
+        ROW_NUMBER() OVER (PARTITION BY {{raw_table_primary_key_str}}
+                           ORDER BY update_datetime DESC{{supplemental_order_by_clause}}) AS recency_rank
+    FROM 
+        `{{project_id}}.{{raw_table_dataset_id}}.{{raw_table_name}}`
+    WHERE 
+        file_id = (SELECT file_id FROM max_file_id)
+)
+SELECT * 
+EXCEPT (recency_rank)
+FROM rows_with_recency_rank
+WHERE recency_rank = 1
+"""
+
+
 # A query for looking at the most recent row for each primary key
 RAW_DATA_LATEST_VIEW_QUERY_TEMPLATE = """
 WITH rows_with_recency_rank AS (
@@ -63,6 +97,36 @@ FROM rows_with_recency_rank
 WHERE recency_rank = 1
 """
 
+RAW_DATA_LATEST_HISTORICAL_FILE_VIEW_QUERY_TEMPLATE = """
+WITH max_update_datetime AS (
+    SELECT 
+        MAX(update_datetime) AS update_datetime
+    FROM
+        `{project_id}.{raw_table_dataset_id}.{raw_table_name}`
+),
+max_file_id AS (
+    SELECT
+        MAX(file_id) AS file_id
+    FROM
+        `{project_id}.{raw_table_dataset_id}.{raw_table_name}`
+    WHERE 
+        update_datetime = (SELECT update_datetime FROM max_update_datetime)
+),
+rows_with_recency_rank AS (
+    SELECT 
+        * {except_clause}, {datetime_cols_clause}
+        ROW_NUMBER() OVER (PARTITION BY {raw_table_primary_key_str}
+                           ORDER BY update_datetime DESC{supplemental_order_by_clause}) AS recency_rank
+    FROM 
+        `{project_id}.{raw_table_dataset_id}.{raw_table_name}`
+    WHERE 
+        file_id = (SELECT file_id FROM max_file_id)
+)
+SELECT * 
+EXCEPT (recency_rank)
+FROM rows_with_recency_rank
+WHERE recency_rank = 1
+"""
 
 DATETIME_COL_NORMALIZATION_TEMPLATE = """
         COALESCE(
@@ -142,10 +206,12 @@ class DirectIngestRawDataTableLatestView(DirectIngestRawDataTableBigQueryView):
                  region_code: str,
                  raw_file_config: DirectIngestRawFileConfig):
         view_id = f'{raw_file_config.file_tag}_latest'
+        view_query_template = RAW_DATA_LATEST_HISTORICAL_FILE_VIEW_QUERY_TEMPLATE \
+            if raw_file_config.always_historical_export else RAW_DATA_LATEST_VIEW_QUERY_TEMPLATE
         super().__init__(project_id=project_id,
                          region_code=region_code,
                          view_id=view_id,
-                         view_query_template=RAW_DATA_LATEST_VIEW_QUERY_TEMPLATE,
+                         view_query_template=view_query_template,
                          raw_file_config=raw_file_config)
 
 
@@ -163,10 +229,12 @@ class DirectIngestRawDataTableUpToDateView(DirectIngestRawDataTableBigQueryView)
                  region_code: str,
                  raw_file_config: DirectIngestRawFileConfig):
         view_id = f'{raw_file_config.file_tag}_by_update_date'
+        view_query_template = RAW_DATA_UP_TO_DATE_HISTORICAL_FILE_VIEW_QUERY_TEMPLATE \
+            if raw_file_config.always_historical_export else RAW_DATA_UP_TO_DATE_VIEW_QUERY_TEMPLATE
         super().__init__(project_id=project_id,
                          region_code=region_code,
                          view_id=view_id,
-                         view_query_template=RAW_DATA_UP_TO_DATE_VIEW_QUERY_TEMPLATE,
+                         view_query_template=view_query_template,
                          raw_file_config=raw_file_config)
 
 
@@ -353,7 +421,6 @@ class DirectIngestPreProcessedIngestView(BigQueryView):
                 f'clause in DirectIngestPreProcessingIngestView.view_query_template. If this ORDER BY is a result'
                 f'of an inline subquery in the final SELECT statement, please consider moving alias-ing the subquery '
                 f'or otherwise refactoring the query so no ORDER BY statements occur after the final `FROM`')
-
 
 
 class DirectIngestPreProcessedIngestViewBuilder(BigQueryViewBuilder[DirectIngestPreProcessedIngestView]):

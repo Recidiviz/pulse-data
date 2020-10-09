@@ -79,6 +79,11 @@ class DirectIngestRawFileConfig:
     #     123|456789|2|He said, "I will be there.|ASDF
     ignore_quotes: bool = attr.ib()
 
+    # TODO(#4243): Add alerts for order in magnitude changes in exported files.
+    # If true, means that we **always** will get a historical version of this raw data file from the state and will
+    # never change to incremental uploads (for example, because we need to detect row deletions).
+    always_historical_export: bool = attr.ib()
+
     # A comma-separated string representation of the primary keys
     primary_key_str = attr.ib()
 
@@ -100,7 +105,8 @@ class DirectIngestRawFileConfig:
             supplemental_order_by_clause=file_config_dict.get('supplemental_order_by_clause', ''),
             encoding=file_config_dict['encoding'],
             separator=file_config_dict['separator'],
-            ignore_quotes=file_config_dict.get('ignore_quotes', False)
+            ignore_quotes=file_config_dict.get('ignore_quotes', False),
+            always_historical_export=file_config_dict.get('always_historical_export', False),
         )
 
 
