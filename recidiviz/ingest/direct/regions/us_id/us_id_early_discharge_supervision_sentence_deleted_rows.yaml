@@ -1,0 +1,25 @@
+# TODO(#1883): Combine this and us_id_early_discharge_incarceration_sentence_deleted_rows.yaml into one file once we
+#  can dynamically choose ancestry types from YAML.
+key_mappings:
+  ofndr_num: state_person.state_person_id
+
+child_key_mappings:
+  ofndr_num: state_person_external_id.state_person_external_id_id
+
+  incrno: state_sentence_group.state_sentence_group_id
+
+  # TODO(#1883): We overwrite state_supervision_sentence_id and state_early_discharge_id in the controller, but this
+  # is here because otherwise the entities aren't added to our extracted objects cache.
+  sent_no: state_supervision_sentence.state_supervision_sentence_id
+  early_discharge_id: state_early_discharge.state_early_discharge_id
+
+primary_key:
+  ofndr_num: state_person.state_person_id
+
+enforced_ancestor_types:
+  state_sentence: state_supervision_sentence
+
+keys_to_ignore:
+  - early_discharge_id        # Early discharge id - can be associated with multiple sentences. Handled manually in
+                              #                      controller
+  - early_discharge_sent_id   # Id for each sentence-level early discharge request. Handled manually in controller.

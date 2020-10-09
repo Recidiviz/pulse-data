@@ -111,10 +111,12 @@ class BaseStateDirectIngestControllerTests(BaseDirectIngestControllerTests):
                              f"type [{type(self.controller.fs.gcs_file_system)}]")
 
         if self.controller.region.are_ingest_view_exports_enabled_in_env():
+            now = datetime.datetime.utcnow()
+            yesterday = now - datetime.timedelta(days=1)
             ingest_file_export_job_args = GcsfsIngestViewExportArgs(
                 ingest_view_name=os.path.splitext(filename)[0],
-                upper_bound_datetime_to_export=datetime.datetime.utcnow(),
-                upper_bound_datetime_prev=None
+                upper_bound_datetime_to_export=now,
+                upper_bound_datetime_prev=yesterday,
             )
 
             self.controller.file_metadata_manager.register_ingest_file_export_job(ingest_file_export_job_args)

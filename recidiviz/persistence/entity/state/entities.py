@@ -71,7 +71,8 @@ from recidiviz.common.constants.state.state_program_assignment import \
     StateProgramAssignmentParticipationStatus, \
     StateProgramAssignmentDischargeReason
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
-from recidiviz.common.constants.state.state_early_discharge import StateEarlyDischargeDecision
+from recidiviz.common.constants.state.state_early_discharge import StateEarlyDischargeDecision, \
+    StateEarlyDischargeDecisionStatus
 from recidiviz.common.constants.state.shared_enums import StateActingBodyType
 from recidiviz.common.constants.state.state_supervision import (
     StateSupervisionType,
@@ -1063,6 +1064,8 @@ class StateEarlyDischarge(ExternalIdEntity, BuildableAttr, DefaultableAttr):
     #  - What
     decision: Optional[StateEarlyDischargeDecision] = attr.ib()
     decision_raw_text: Optional[str] = attr.ib()
+    decision_status: Optional[StateEarlyDischargeDecisionStatus] = attr.ib()
+    decision_status_raw_text: Optional[str] = attr.ib()
     deciding_body_type: Optional[StateActingBodyType] = attr.ib()
     deciding_body_type_raw_text: Optional[str] = attr.ib()
     requesting_body_type: Optional[StateActingBodyType] = attr.ib()
