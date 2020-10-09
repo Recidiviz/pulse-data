@@ -21,7 +21,8 @@ from mock import patch
 
 from recidiviz.ingest.direct.controllers.direct_ingest_big_query_view_types import \
     DirectIngestRawDataTableLatestView, RAW_DATA_LATEST_VIEW_QUERY_TEMPLATE, \
-    DirectIngestRawDataTableUpToDateView, RAW_DATA_UP_TO_DATE_VIEW_QUERY_TEMPLATE, DirectIngestPreProcessedIngestView
+    DirectIngestRawDataTableUpToDateView, RAW_DATA_UP_TO_DATE_VIEW_QUERY_TEMPLATE, DirectIngestPreProcessedIngestView, \
+    RAW_DATA_LATEST_HISTORICAL_FILE_VIEW_QUERY_TEMPLATE, RAW_DATA_UP_TO_DATE_HISTORICAL_FILE_VIEW_QUERY_TEMPLATE
 from recidiviz.ingest.direct.controllers.direct_ingest_raw_file_import_manager import DirectIngestRawFileConfig, \
     DirectIngestRegionRawFileConfig
 from recidiviz.tests.ingest import fixtures
@@ -50,7 +51,8 @@ class DirectIngestBigQueryViewTypesTest(unittest.TestCase):
                 supplemental_order_by_clause='CAST(seq_num AS INT64)',
                 encoding='any-encoding',
                 separator='@',
-                ignore_quotes=False
+                ignore_quotes=False,
+                always_historical_export=False,
             )
         )
 
@@ -60,6 +62,40 @@ class DirectIngestBigQueryViewTypesTest(unittest.TestCase):
         self.assertEqual('table_name_latest', view.view_id)
 
         expected_view_query = RAW_DATA_LATEST_VIEW_QUERY_TEMPLATE.format(
+            project_id=self.PROJECT_ID,
+            raw_table_primary_key_str='col1, col2',
+            raw_table_dataset_id='us_xx_raw_data',
+            raw_table_name='table_name',
+            except_clause='EXCEPT (file_id, update_datetime)',
+            datetime_cols_clause='',
+            supplemental_order_by_clause=', CAST(seq_num AS INT64)'
+        )
+
+        self.assertEqual(expected_view_query, view.view_query)
+        self.assertEqual('SELECT * FROM `recidiviz-456.us_xx_raw_data_up_to_date_views.table_name_latest`',
+                         view.select_query)
+
+    def test_raw_latest_historical_file_view(self):
+        view = DirectIngestRawDataTableLatestView(
+            region_code='us_xx',
+            raw_file_config=DirectIngestRawFileConfig(
+                file_tag='table_name',
+                primary_key_cols=['col1', 'col2'],
+                datetime_cols=[],
+                supplemental_order_by_clause='CAST(seq_num AS INT64)',
+                encoding='any-encoding',
+                separator='@',
+                ignore_quotes=False,
+                always_historical_export=True,
+            )
+        )
+
+        self.assertEqual(self.PROJECT_ID, view.project)
+        self.assertEqual('us_xx_raw_data_up_to_date_views', view.dataset_id)
+        self.assertEqual('table_name_latest', view.table_id)
+        self.assertEqual('table_name_latest', view.view_id)
+
+        expected_view_query = RAW_DATA_LATEST_HISTORICAL_FILE_VIEW_QUERY_TEMPLATE.format(
             project_id=self.PROJECT_ID,
             raw_table_primary_key_str='col1, col2',
             raw_table_dataset_id='us_xx_raw_data',
@@ -83,7 +119,8 @@ class DirectIngestBigQueryViewTypesTest(unittest.TestCase):
                 supplemental_order_by_clause='',
                 encoding='any-encoding',
                 separator='@',
-                ignore_quotes=False
+                ignore_quotes=False,
+                always_historical_export=False,
             )
         )
 
@@ -103,6 +140,50 @@ class DirectIngestBigQueryViewTypesTest(unittest.TestCase):
         ) AS col2,"""
 
         expected_view_query = RAW_DATA_UP_TO_DATE_VIEW_QUERY_TEMPLATE.format(
+            project_id=self.PROJECT_ID,
+            raw_table_primary_key_str='col1',
+            raw_table_dataset_id='us_xx_raw_data',
+            raw_table_name='table_name',
+            except_clause='EXCEPT (col2, file_id, update_datetime)',
+            datetime_cols_clause=expected_datetime_cols_clause,
+            supplemental_order_by_clause=''
+        )
+
+        self.assertEqual(expected_view_query, view.view_query)
+        self.assertEqual('SELECT * FROM `recidiviz-456.us_xx_raw_data_up_to_date_views.table_name_by_update_date`',
+                         view.select_query)
+
+    def test_raw_up_to_date_historical_file_view(self):
+        view = DirectIngestRawDataTableUpToDateView(
+            region_code='us_xx',
+            raw_file_config=DirectIngestRawFileConfig(
+                file_tag='table_name',
+                primary_key_cols=['col1'],
+                datetime_cols=['col2'],
+                supplemental_order_by_clause='',
+                encoding='any-encoding',
+                separator='@',
+                ignore_quotes=False,
+                always_historical_export=True,
+            )
+        )
+
+        self.assertEqual(self.PROJECT_ID, view.project)
+        self.assertEqual('us_xx_raw_data_up_to_date_views', view.dataset_id)
+        self.assertEqual('table_name_by_update_date', view.table_id)
+        self.assertEqual('table_name_by_update_date', view.view_id)
+
+        expected_datetime_cols_clause = """
+        COALESCE(
+            CAST(SAFE_CAST(col2 AS DATETIME) AS STRING),
+            CAST(SAFE_CAST(SAFE.PARSE_DATE('%m/%d/%y', col2) AS DATETIME) AS STRING),
+            CAST(SAFE_CAST(SAFE.PARSE_DATE('%m/%d/%Y', col2) AS DATETIME) AS STRING),
+            CAST(SAFE_CAST(SAFE.PARSE_TIMESTAMP('%Y-%m-%d %H:%M', col2) AS DATETIME) AS STRING),
+            CAST(SAFE_CAST(SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S', col2) AS DATETIME) AS STRING),
+            col2
+        ) AS col2,"""
+
+        expected_view_query = RAW_DATA_UP_TO_DATE_HISTORICAL_FILE_VIEW_QUERY_TEMPLATE.format(
             project_id=self.PROJECT_ID,
             raw_table_primary_key_str='col1',
             raw_table_dataset_id='us_xx_raw_data',
