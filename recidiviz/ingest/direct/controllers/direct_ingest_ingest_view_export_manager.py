@@ -165,6 +165,18 @@ class DirectIngestIngestViewExportManager:
             overwrite=True)
         return query_job
 
+    @staticmethod
+    def create_date_diff_query(upper_bound_query: str, upper_bound_prev_query: str, do_reverse_date_diff: bool) -> str:
+        """Provided the given |upper_bound_query| and |upper_bound_prev_query| returns a query which will return the
+        delta between those two queries. The ordering of the comparison depends on the provided |do_reverse_date_diff|.
+        """
+        main_query, filter_query = (upper_bound_prev_query, upper_bound_query) \
+            if do_reverse_date_diff else (upper_bound_query, upper_bound_prev_query)
+        filter_query = filter_query.rstrip().rstrip(';')
+        main_query = main_query.rstrip().rstrip(';')
+        query = f'(\n{main_query}\n) EXCEPT DISTINCT (\n{filter_query}\n);'
+        return query
+
     def export_view_for_args(self, ingest_view_export_args: GcsfsIngestViewExportArgs) -> bool:
         """Performs an Cloud Storage export of a single ingest view with date bounds specified in the provided args. If
         the provided args contain an upper and lower bound date, the exported view contains only the delta between the
@@ -195,6 +207,12 @@ class DirectIngestIngestViewExportManager:
             self.file_metadata_manager.register_ingest_view_export_file_name(metadata, output_path)
 
         ingest_view = self.ingest_views_by_tag[ingest_view_export_args.ingest_view_name]
+
+        # If the view requires a reverse date diff (i.e. only outputting what is found from Date 1 that's not in Date
+        # 2), then no work is necessary when we only have one date.
+        if ingest_view.do_reverse_date_diff and not ingest_view_export_args.upper_bound_datetime_prev:
+            return True
+
         single_date_table_ids = []
         single_date_table_export_jobs = []
 
@@ -226,12 +244,14 @@ class DirectIngestIngestViewExportManager:
             single_date_table_export_jobs.append(export_job)
             single_date_table_ids.append(lower_bound_table_name)
 
-            filter_query = SELECT_SUBQUERY.format(
+            upper_bound_prev_query = SELECT_SUBQUERY.format(
                 project_id=self.big_query_client.project_id,
                 dataset_id=ingest_view.dataset_id,
-                table_name=lower_bound_table_name).rstrip().rstrip(';')
-            query = query.rstrip().rstrip(';')
-            query = f'(\n{query}\n) EXCEPT DISTINCT (\n{filter_query}\n);'
+                table_name=lower_bound_table_name)
+            query = DirectIngestIngestViewExportManager.create_date_diff_query(
+                upper_bound_query=query,
+                upper_bound_prev_query=upper_bound_prev_query,
+                do_reverse_date_diff=ingest_view.do_reverse_date_diff)
 
         query = DirectIngestPreProcessedIngestView.add_order_by_suffix(
             query=query, order_by_cols=ingest_view.order_by_cols)
@@ -311,10 +331,10 @@ class DirectIngestIngestViewExportManager:
                                               bigquery.enums.SqlTypeNames.DATETIME.value,
                                               ingest_view_export_args.upper_bound_datetime_prev)
             )
-            query = query.rstrip().rstrip(';')
-            filter_query = \
-                ingest_view.date_parametrized_view_query(LOWER_BOUND_TIMESTAMP_PARAM_NAME).rstrip().rstrip(';')
-            query = f'(\n{query}\n) EXCEPT DISTINCT (\n{filter_query}\n);'
+            query = DirectIngestIngestViewExportManager.create_date_diff_query(
+                upper_bound_query=query,
+                upper_bound_prev_query=ingest_view.date_parametrized_view_query(LOWER_BOUND_TIMESTAMP_PARAM_NAME),
+                do_reverse_date_diff=ingest_view.do_reverse_date_diff)
             query = DirectIngestPreProcessedIngestView.add_order_by_suffix(
                 query=query, order_by_cols=ingest_view.order_by_cols)
         return query, query_params
@@ -400,7 +420,7 @@ if __name__ == '__main__':
 
     # Update these variables and run to print an export query you can run in the BigQuery UI
     region_code_: str = 'us_id'
-    ingest_view_name_: str = 'early_discharge_incarceration_sentence'
+    ingest_view_name_: str = 'early_discharge_incarceration_sentence_deleted_rows'
     upper_bound_datetime_prev_: datetime.datetime = datetime.datetime(2020, 6, 29)
     upper_bound_datetime_to_export_: datetime.datetime = datetime.datetime(2020, 7, 6)
 
