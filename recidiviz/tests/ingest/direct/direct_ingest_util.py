@@ -91,6 +91,7 @@ class FakeDirectIngestRegionRawFileConfig(DirectIngestRegionRawFileConfig):
                 encoding='UTF-8',
                 separator=',',
                 ignore_quotes=False,
+                always_historical_export=False,
             ),
             'tagB': DirectIngestRawFileConfig(
                 file_tag='tagB',
@@ -100,6 +101,7 @@ class FakeDirectIngestRegionRawFileConfig(DirectIngestRegionRawFileConfig):
                 encoding='UTF-8',
                 separator=',',
                 ignore_quotes=False,
+                always_historical_export=False,
             ),
             'tagC': DirectIngestRawFileConfig(
                 file_tag='tagC',
@@ -109,6 +111,7 @@ class FakeDirectIngestRegionRawFileConfig(DirectIngestRegionRawFileConfig):
                 encoding='UTF-8',
                 separator=',',
                 ignore_quotes=False,
+                always_historical_export=False,
             ),
             'tagWeDoNotIngest': DirectIngestRawFileConfig(
                 file_tag='tagWeDoNotIngest',
@@ -118,6 +121,7 @@ class FakeDirectIngestRegionRawFileConfig(DirectIngestRegionRawFileConfig):
                 encoding='UTF-8',
                 separator=',',
                 ignore_quotes=False,
+                always_historical_export=False,
             )
         }
 
