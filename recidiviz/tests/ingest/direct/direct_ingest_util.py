@@ -164,6 +164,8 @@ class FakeDirectIngestPreProcessedIngestViewCollector(BigQueryViewCollector[Dire
                 view_query_template=('SELECT * FROM {' + tag + '}'),
                 region_raw_table_config=FakeDirectIngestRegionRawFileConfig(region_code=self.region.region_code),
                 order_by_cols=None,
+                is_detect_row_deletion_view=False,
+                primary_key_tables_for_entity_deletion=[],
             )
             for tag in self.controller_file_tags
         ]
