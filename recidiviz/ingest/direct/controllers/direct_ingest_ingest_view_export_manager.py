@@ -208,9 +208,13 @@ class DirectIngestIngestViewExportManager:
 
         ingest_view = self.ingest_views_by_tag[ingest_view_export_args.ingest_view_name]
 
+        # TODO(#4268): Clean up - do not create ingest view export args in the first place for reverse date diff views
+        #  if there is no upper_bound_datetime_prev.
         # If the view requires a reverse date diff (i.e. only outputting what is found from Date 1 that's not in Date
-        # 2), then no work is necessary when we only have one date.
+        # 2), then no work is necessary when we only have one date. We mark the ingest view as "exported" so that
+        # to mark that all work is done for it.
         if ingest_view.do_reverse_date_diff and not ingest_view_export_args.upper_bound_datetime_prev:
+            self.file_metadata_manager.mark_ingest_view_exported(metadata)
             return True
 
         single_date_table_ids = []
@@ -420,9 +424,9 @@ if __name__ == '__main__':
 
     # Update these variables and run to print an export query you can run in the BigQuery UI
     region_code_: str = 'us_id'
-    ingest_view_name_: str = 'early_discharge_incarceration_sentence_deleted_rows'
+    ingest_view_name_: str = 'early_discharge_supervision_sentence_deleted_rows'
     upper_bound_datetime_prev_: datetime.datetime = datetime.datetime(2020, 6, 29)
-    upper_bound_datetime_to_export_: datetime.datetime = datetime.datetime(2020, 7, 6)
+    upper_bound_datetime_to_export_: datetime.datetime = datetime.datetime(2020, 8, 6)
 
     with local_project_id_override(GCP_PROJECT_STAGING):
         region_ = regions.get_region(region_code_, is_direct_ingest=True)

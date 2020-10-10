@@ -354,6 +354,7 @@ class DirectIngestIngestViewExportManagerTest(unittest.TestCase):
             datetimes_contained_lower_bound_exclusive=export_args.upper_bound_datetime_prev,
             datetimes_contained_upper_bound_inclusive=export_args.upper_bound_datetime_to_export
         )
+        expected_metadata = attr.evolve(self.to_entity(metadata), export_time=_DATE_4)
 
         session.add(metadata)
         session.commit()
@@ -367,6 +368,11 @@ class DirectIngestIngestViewExportManagerTest(unittest.TestCase):
         self.mock_client.create_table_from_query_async.assert_not_called()
         self.mock_client.export_query_results_to_cloud_storage.assert_not_called()
         self.mock_client.delete_table.assert_not_called()
+
+        assert_session = SessionFactory.for_schema_base(OperationsBase)
+        found_metadata = self.to_entity(one(assert_session.query(schema.DirectIngestIngestFileMetadata).all()))
+        self.assertEqual(expected_metadata, found_metadata)
+        assert_session.close()
 
     def test_exportViewForArgs_detectRowDeletionView(self):
         # Arrange
