@@ -861,6 +861,13 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
                                 StatePersonExternalId(state_person_external_id_id='345E', id_type=US_PA_PBPP),
                             ],
                             state_person_races=[StatePersonRace(race='W')],
+                            ),
+                StatePerson(state_person_id='111A',
+                            gender='N',
+                            state_person_external_ids=[
+                                StatePersonExternalId(state_person_external_id_id='111A', id_type=US_PA_PBPP),
+                            ],
+                            state_person_races=[StatePersonRace(race='W')],
                             )
             ])
 
@@ -2567,6 +2574,21 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
             entities.StatePersonRace.new_with_defaults(
                 state_code=_STATE_CODE_UPPER, race=Race.OTHER, race_raw_text='N'),
         ]
+
+        person_6 = entities.StatePerson.new_with_defaults(
+            state_code=_STATE_CODE_UPPER,
+            gender=Gender.OTHER,
+            gender_raw_text='N',
+            external_ids=[
+                entities.StatePersonExternalId.new_with_defaults(
+                    state_code=_STATE_CODE_UPPER, external_id='111A', id_type=US_PA_PBPP),
+            ],
+            races=[entities.StatePersonRace.new_with_defaults(
+                state_code=_STATE_CODE_UPPER, race=Race.WHITE, race_raw_text='W'
+            )]
+        )
+
+        expected_people.append(person_6)
 
         populate_person_backedges(expected_people)
 

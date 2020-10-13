@@ -212,6 +212,9 @@ class UsPaController(CsvGcsfsDirectIngestController):
         Gender.FEMALE: ['FEMALE', 'F'],
         Gender.MALE: ['MALE', 'M', 'MM'],
 
+        # NOTE: We've only seen one instance of this as of 10/12/2020 - it could just be a typo.
+        Gender.OTHER: ['OTHER', 'N'],
+
         StateAssessmentType.CSSM: ['CSS-M'],
         StateAssessmentType.LSIR: ['LSI-R'],
         StateAssessmentType.PA_RST: ['RST'],
