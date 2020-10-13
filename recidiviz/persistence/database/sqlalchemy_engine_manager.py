@@ -146,7 +146,10 @@ class SQLAlchemyEngineManager:
 
     @classmethod
     def get_db_name(cls, schema_type: SchemaType) -> str:
-        return secrets.get_secret(cls.get_db_name_key(schema_type))
+        db_name = secrets.get_secret(cls.get_db_name_key(schema_type))
+        if db_name is None:
+            raise ValueError(f"Unable to retrieve database name for schema type [{schema_type}]")
+        return db_name
 
     @classmethod
     def get_cloudsql_instance_id_key(
@@ -164,6 +167,10 @@ class SQLAlchemyEngineManager:
         """
         instance_id_key = cls.get_cloudsql_instance_id_key(schema_type)
         instance_id_full = secrets.get_secret(instance_id_key)
+
+        if instance_id_full is None:
+            raise ValueError(f"Unable to retrieve instance id for schema type [{schema_type}]")
+
         # Remove Project ID and Zone information from Cloud SQL instance ID.
         # Expected format "project_id:zone:instance_id"
         instance_id = instance_id_full.split(':')[-1]

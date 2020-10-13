@@ -18,7 +18,7 @@
 """Secrets for use at runtime."""
 
 import logging
-from typing import Dict
+from typing import Dict, Optional
 
 from google.cloud import exceptions
 from google.cloud import secretmanager_v1beta1 as secretmanager
@@ -28,7 +28,7 @@ from recidiviz.utils import environment, metadata
 __sm = None
 
 
-def _sm():
+def _sm() -> secretmanager.SecretManagerServiceClient:
     global __sm
     if not __sm:
         __sm = secretmanager.SecretManagerServiceClient()
@@ -36,7 +36,7 @@ def _sm():
 
 
 @environment.test_only
-def clear_sm():
+def clear_sm() -> None:
     global __sm
     __sm = None
 
@@ -44,7 +44,7 @@ def clear_sm():
 CACHED_SECRETS: Dict[str, str] = {}
 
 
-def get_secret(secret_id):
+def get_secret(secret_id) -> Optional[str]:
     """Retrieve secret from local cache or the Secret Manager.
 
     A helper function for processes to retrieve secrets. First checks a local cache: if not found, this will pull from
@@ -57,10 +57,10 @@ def get_secret(secret_id):
         return secret_value
 
     project_id = metadata.project_id()
-    secret_name = _sm().secret_version_path(project_id, secret_id, 'latest')
+    secret_name = f"projects/{project_id}/secrets/{secret_id}/versions/latest"
 
     try:
-        response = _sm().access_secret_version(secret_name)
+        response = _sm().access_secret_version(name=secret_name)
     except exceptions.NotFound:
         logging.error("Couldn't locate secret: [%s].", secret_id)
         return None
@@ -74,5 +74,8 @@ def get_secret(secret_id):
         return None
 
     secret_value = response.payload.data.decode('UTF-8')
+    if secret_value is None:
+        logging.error("Couldn't decode secret: [%s].", secret_id)
+        return None
     CACHED_SECRETS[secret_id] = secret_value
     return secret_value
