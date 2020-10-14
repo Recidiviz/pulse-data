@@ -129,6 +129,7 @@ class UsMoController(CsvGcsfsDirectIngestController):
 
         # SQL Preprocessing View
         'tak001_offender_identification_v2',
+        'tak040_offender_cycles_v2',
     ]
 
     PRIMARY_COL_PREFIXES_BY_FILE_TAG = {
@@ -145,6 +146,7 @@ class UsMoController(CsvGcsfsDirectIngestController):
 
         # SQL Preprocessing View
         'tak001_offender_identification_v2': 'EK',
+        'tak040_offender_cycles_v2': 'DQ',
     }
 
     REVOKED_PROBATION_SENTENCE_STATUS_CODES = {
@@ -477,13 +479,15 @@ class UsMoController(CsvGcsfsDirectIngestController):
                 self.tak001_offender_identification_hydrate_alternate_ids,
                 self.normalize_sentence_group_ids,
             ]
+        tak040_offender_cycles_row_processors: List[Callable] = [
+                gen_label_single_external_id_hook(US_MO_DOC),
+                self.normalize_sentence_group_ids,
+            ]
+
         self.row_post_processors_by_file: Dict[str, List[Callable]] = {
             # Legacy
             'tak001_offender_identification': tak001_offender_identification_row_processors,
-            'tak040_offender_cycles': [
-                gen_label_single_external_id_hook(US_MO_DOC),
-                self.normalize_sentence_group_ids,
-            ],
+            'tak040_offender_cycles': tak040_offender_cycles_row_processors,
             'tak022_tak023_tak025_tak026_offender_sentence_institution': [
                 gen_normalize_county_codes_posthook(self.region.region_code,
                                                     CHARGE_COUNTY_CODE,
@@ -585,6 +589,7 @@ class UsMoController(CsvGcsfsDirectIngestController):
 
             # SQL Preprocessing View
             'tak001_offender_identification_v2': tak001_offender_identification_row_processors,
+            'tak040_offender_cycles_v2': tak040_offender_cycles_row_processors,
         }
 
         self.primary_key_override_by_file: Dict[str, Callable] = {
