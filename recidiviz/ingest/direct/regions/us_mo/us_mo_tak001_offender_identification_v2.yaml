@@ -1,0 +1,78 @@
+key_mappings:
+  EK_ALN: state_person.surname
+  EK_AFN: state_person.given_names
+  EK_AMI: state_person.middle_names
+  EK_AGS: state_person.name_suffix
+  EK_SEX: state_person.gender
+  DOB: state_person.birthdate
+
+child_key_mappings:
+  EK_CYC: state_sentence_group.state_sentence_group_id
+  EK_RAC: state_person_race.race
+  EK_ETH: state_person_ethnicity.ethnicity
+  EK_DOC: state_person_external_id.state_person_external_id_id
+
+primary_key:
+  EK_DOC: state_person.state_person_id
+
+keys_to_ignore:
+# TODO(#2604): Take another pass through these columns to document and ensure they should be ignored
+- EK_NRN
+- EK_SID  # Offender SID Number - Handled manually in the controller
+- EK_FBI  # Offender FBI Number - Handled manually in the controller
+- EK_OLN  # Offender Operator License Number - Handled manually in the controller
+- DOC_ID_DOB  # Unused - Duplicate of EK_DOC
+- DOB_VERIFIED_IND  # Unused - implied by its existence in VAK003
+- CREATE_DT  # Unused - Date Created (VAK003 cols)
+- CREATE_TM  # Unused - Time Created (VAK003 cols)
+- UPDATE_DT  # Unused - Date Last Updated (VAK003 cols)
+- UPDATE_TM  # Unused - Time Last Updated (VAK003 cols)
+- EK_OLC
+- EK_FOI
+- EK_PLC
+- EK_FLC
+- EK_OLA
+- EK_PLA
+- EK_FLA
+- EK_AV
+- EK_LE
+- EK_LTR
+- EK_TPF
+- EK_NM
+- EK_TAT
+- EK_WRF
+- EK_DTF
+- EK_WTF
+- EK_SOQ
+- EK_HTF
+- EK_HTI
+- EK_WGT
+- EK_BIL
+- EK_HAI
+- EK_EYE
+- EK_SKI
+- EK_MAS
+- EK_DEP
+- EK_SIB
+- EK_REL
+- EK_COF
+- EK_SCO
+- EK_XDM
+- EK_XDO
+- EK_XEM
+- EK_XEO
+- EK_XPM
+- EK_XPO
+- EK_XCM
+- EK_XCO
+- EK_XBM
+- EK_XBO
+- EK_PU
+- EK_PUL
+- EK_PRF
+- EK_DCR
+- EK_TCR
+- EK_DLU
+- EK_TLU
+- EK_REA
+- EK_UID
