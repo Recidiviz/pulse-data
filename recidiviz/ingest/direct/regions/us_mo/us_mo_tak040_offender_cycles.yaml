@@ -1,3 +1,4 @@
+# TODO(#4266): Clean up backwards compatibility code
 key_mappings:
   # Only here so this section isn't empty
   DQ$DOC: state_person.state_person_id

@@ -323,7 +323,9 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                         ]),
         ])
 
+        # TODO(#4266): Clean up backwards compatibility code
         self.run_parse_file_test(expected, 'tak040_offender_cycles')
+        self.run_parse_file_test(expected, 'tak040_offender_cycles_v2')
 
     def test_populate_data_tak022_tak023_offender_sentence_institutional(self):
         expected = IngestInfo(state_people=[
@@ -2024,8 +2026,17 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
         )
         person_710448.sentence_groups.append(sg_710448_20010414)
 
+        # TODO(#4266): Clean up backwards compatibility code
+        # Legacy
         # Act
         self._run_ingest_job_for_filename('tak040_offender_cycles.csv')
+
+        # Assert
+        self.assert_expected_db_people(expected_people)
+
+        # New
+        # Act
+        self._run_ingest_job_for_filename('tak040_offender_cycles_v2.csv')
 
         # Assert
         self.assert_expected_db_people(expected_people)
