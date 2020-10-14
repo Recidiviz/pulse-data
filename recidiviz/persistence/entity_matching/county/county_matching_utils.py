@@ -309,7 +309,7 @@ def close_multiple_open_bookings(bookings: List[entities.Booking]):
     Assigns all open |bookings| a release date which is the next booking's
     admission date by modifying bookings in place.
     """
-    for b1, b2 in pairwise(sorted(bookings, key=lambda b: b.admission_date)):
+    for b1, b2 in pairwise(sorted(bookings, key=lambda b: b.admission_date or datetime.date.max)):
         if not b1.release_date:
             b1.release_date = b2.admission_date
             b1.release_date_inferred = True

@@ -90,8 +90,10 @@ middleware = FlaskMiddleware(
     exporter=trace_exporter,
     propagator=google_cloud_format.GoogleCloudFormatPropagator())
 config_integration.trace_integrations([
-    # TODO(#4283): Investigate best way to hydrate spans in traces for calls to Google cloud libraries.
-    # 'google_cloud_clientlibs',
+    # TODO(#4283): The 'google_cloud_clientlibs' integration is currently not compatible with the 'proto-plus' objects
+    # used by the 2.0.0 versions of the client libraries. Investigate best way to hydrate spans in traces for these
+    # calls in the future.
+    'google_cloud_clientlibs',
     'requests',
     'sqlalchemy'
 ])
