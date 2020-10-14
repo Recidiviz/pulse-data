@@ -89,8 +89,12 @@ middleware = FlaskMiddleware(
     sampler=trace_sampler,
     exporter=trace_exporter,
     propagator=google_cloud_format.GoogleCloudFormatPropagator())
-config_integration.trace_integrations(
-    ['google_cloud_clientlibs', 'requests', 'sqlalchemy'])
+config_integration.trace_integrations([
+    # TODO(#4283): Investigate best way to hydrate spans in traces for calls to Google cloud libraries.
+    # 'google_cloud_clientlibs',
+    'requests',
+    'sqlalchemy'
+])
 
 @zope.event.classhandler.handler(events.MemoryUsageThresholdExceeded)
 def memory_condition_handler(event: events.MemoryUsageThresholdExceeded):
