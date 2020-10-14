@@ -220,7 +220,9 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                             ]),
             ])
 
+        # TODO(#4266): Clean up backwards compatibility code
         self.run_parse_file_test(expected, 'tak001_offender_identification')
+        self.run_parse_file_test(expected, 'tak001_offender_identification_v2')
 
     def test_populate_data_oras_assessments_weekly(self):
         expected = IngestInfo(
@@ -1939,9 +1941,17 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
 
         populate_person_backedges(expected_people)
 
+        # TODO(#4266): Clean up backwards compatibility code
+        # Legacy
         # Act
         self._run_ingest_job_for_filename('tak001_offender_identification.csv')
 
+        # Assert
+        self.assert_expected_db_people(expected_people)
+
+        # New
+        # Act
+        self._run_ingest_job_for_filename('tak001_offender_identification_v2.csv')
         # Assert
         self.assert_expected_db_people(expected_people)
 

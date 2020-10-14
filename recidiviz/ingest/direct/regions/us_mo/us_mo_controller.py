@@ -103,7 +103,7 @@ from recidiviz.ingest.models.ingest_object_cache import IngestObjectCache
 
 # TODO(#4266): Clean up backwards compatibility code
 def get_legacy_or_new_column_name(file_tag: str, str_content: str):
-    if file_tag.endswith('_v2'):  # New
+    if file_tag.endswith('_v2'):  # SQL Preprocessing View
         return str_content.replace('$', '_')
     # Legacy
     return str_content
@@ -126,6 +126,9 @@ class UsMoController(CsvGcsfsDirectIngestController):
         'tak034_tak026_tak039_apfx90_apfx91_supervision_enhancements_supervision_periods',
         'tak028_tak042_tak076_tak024_violation_reports',
         'tak291_tak292_tak024_citations',
+
+        # SQL Preprocessing View
+        'tak001_offender_identification_v2',
     ]
 
     PRIMARY_COL_PREFIXES_BY_FILE_TAG = {
@@ -139,6 +142,9 @@ class UsMoController(CsvGcsfsDirectIngestController):
         'tak034_tak026_tak039_apfx90_apfx91_supervision_enhancements_supervision_periods': '',
         'tak028_tak042_tak076_tak024_violation_reports': 'BY',
         'tak291_tak292_tak024_citations': 'JT',
+
+        # SQL Preprocessing View
+        'tak001_offender_identification_v2': 'EK',
     }
 
     REVOKED_PROBATION_SENTENCE_STATUS_CODES = {
@@ -463,16 +469,17 @@ class UsMoController(CsvGcsfsDirectIngestController):
             self._create_source_violation_response,
         ]
 
-        self.row_post_processors_by_file: Dict[str, List[Callable]] = {
-            # Legacy
-            'tak001_offender_identification': [
+        tak001_offender_identification_row_processors: List[Callable] = [
                 copy_name_to_alias,
                 # When first parsed, the info object just has a single
                 # external id - the DOC id.
                 gen_label_single_external_id_hook(US_MO_DOC),
                 self.tak001_offender_identification_hydrate_alternate_ids,
                 self.normalize_sentence_group_ids,
-            ],
+            ]
+        self.row_post_processors_by_file: Dict[str, List[Callable]] = {
+            # Legacy
+            'tak001_offender_identification': tak001_offender_identification_row_processors,
             'tak040_offender_cycles': [
                 gen_label_single_external_id_hook(US_MO_DOC),
                 self.normalize_sentence_group_ids,
@@ -575,6 +582,9 @@ class UsMoController(CsvGcsfsDirectIngestController):
                 self._set_violation_response_id_from_violation,
                 self._set_finally_formed_date_on_response,
             ],
+
+            # SQL Preprocessing View
+            'tak001_offender_identification_v2': tak001_offender_identification_row_processors,
         }
 
         self.primary_key_override_by_file: Dict[str, Callable] = {
