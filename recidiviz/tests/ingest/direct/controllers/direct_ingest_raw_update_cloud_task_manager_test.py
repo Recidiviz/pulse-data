@@ -55,7 +55,7 @@ class TestDirectIngestRawUpdateCloudTaskManager(unittest.TestCase):
         relative_uri = f'/direct/update_raw_data_latest_views_for_state?region={region_code}'
         body = {}
 
-        task = tasks_v2.Task(
+        task = tasks_v2.types.task_pb2.Task(
             name=task_path,
             app_engine_http_request={
                 'http_method': 'POST',

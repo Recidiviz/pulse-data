@@ -19,7 +19,7 @@
 might care about. The extracted information is put into the ingest data
 model and returned.
 """
-import collections
+import collections.abc
 import csv
 import logging
 from collections import defaultdict, OrderedDict
