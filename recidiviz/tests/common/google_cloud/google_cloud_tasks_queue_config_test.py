@@ -52,9 +52,9 @@ class TestGoogleCloudTasksQueueConfig(unittest.TestCase):
 
     def get_updated_queues(self) -> Dict[str, tasks_v2.Queue]:
         queues_updated_by_id: Dict[str, tasks_v2.Queue] = {}
-        for method_name, args, _kwargs in self.mock_client.mock_calls:
+        for method_name, _args, kwargs in self.mock_client.mock_calls:
             if method_name == 'update_queue':
-                queue = args[0]
+                queue = kwargs['queue']
                 if not isinstance(queue, tasks_v2.Queue):
                     self.fail(f"Unexpected type [{type(queue)}]")
                 _, queue_id = os.path.split(queue.name)

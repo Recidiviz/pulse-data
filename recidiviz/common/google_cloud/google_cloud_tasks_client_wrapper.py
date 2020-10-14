@@ -30,6 +30,7 @@ from google.protobuf import timestamp_pb2
 from recidiviz.common.common_utils import retry_grpc
 from recidiviz.utils import metadata
 
+
 class HttpMethod(Enum):
     GET = 'GET'
     POST = 'POST'
@@ -37,8 +38,8 @@ class HttpMethod(Enum):
     PATCH = 'PATCH'
 
 
-
 QUEUES_REGION = 'us-east1'
+
 
 class GoogleCloudTasksClientWrapper:
     """Wrapper with convenience functions on top of the
@@ -68,7 +69,7 @@ class GoogleCloudTasksClientWrapper:
             self.queues_region,
             queue_name)
 
-    def initialize_cloud_task_queue(self, queue_config: tasks_v2.Queue):
+    def initialize_cloud_task_queue(self, queue_config: tasks_v2.Queue) -> None:
         """
         Initializes a task queue with the given config. If a queue with a given
         name already exists, it is updated to have the given config. If it does
@@ -78,7 +79,7 @@ class GoogleCloudTasksClientWrapper:
         retry_grpc(
             self.NUM_GRPC_RETRIES,
             self.client.update_queue,
-            queue_config
+            queue=queue_config
         )
 
     def format_task_path(self,
@@ -106,7 +107,7 @@ class GoogleCloudTasksClientWrapper:
         task_name_prefix = self.format_task_path(queue_name, task_id_prefix)
         return [task for task in retry_grpc(self.NUM_GRPC_RETRIES,
                                             self.client.list_tasks,
-                                            self.format_queue_path(queue_name))
+                                            parent=self.format_queue_path(queue_name))
                 if task.name.startswith(task_name_prefix)]
 
     def create_task(self,
@@ -116,7 +117,7 @@ class GoogleCloudTasksClientWrapper:
                     relative_uri: str,
                     body: Optional[Dict[str, str]] = None,
                     schedule_delay_seconds: int = 0,
-                    http_method: HttpMethod = HttpMethod.POST):
+                    http_method: HttpMethod = HttpMethod.POST) -> None:
         """Creates a task with the given details.
 
         Args:
@@ -164,10 +165,10 @@ class GoogleCloudTasksClientWrapper:
             task=task
         )
 
-    def delete_task(self, task: tasks_v2.Task):
+    def delete_task(self, task: tasks_v2.Task) -> None:
         try:
             retry_grpc(self.NUM_GRPC_RETRIES,
                        self.client.delete_task,
-                       task.name)
+                       name=task.name)
         except exceptions.NotFound as e:
             logging.debug('Task not found: [%s]', e)

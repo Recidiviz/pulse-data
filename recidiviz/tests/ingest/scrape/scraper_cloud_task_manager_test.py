@@ -80,12 +80,12 @@ class TestScraperCloudTaskManager(unittest.TestCase):
             project_id,
             QUEUES_REGION,
             queue_name)
-        mock_client.return_value.list_tasks.assert_called_with(queue_path)
+        mock_client.return_value.list_tasks.assert_called_with(parent=queue_path)
         self.assertEqual(
             mock_client.return_value.delete_task.mock_calls,
             [
-                call(task1.name),
-                call(task2.name),
+                call(name=task1.name),
+                call(name=task2.name),
             ]
         )
 
@@ -126,7 +126,7 @@ class TestScraperCloudTaskManager(unittest.TestCase):
             project_id,
             QUEUES_REGION,
             queue_name)
-        mock_client.return_value.list_tasks.assert_called_with(queue_path)
+        mock_client.return_value.list_tasks.assert_called_with(parent=queue_path)
 
         self.assertCountEqual(tasks, [task1])
 
