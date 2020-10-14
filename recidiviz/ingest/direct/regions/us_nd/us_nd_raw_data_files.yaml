@@ -116,9 +116,8 @@ raw_files:
     # Using these primary keys, there's a few dupes, only differing by end_date and offender_end_reason.
     primary_key_cols:
       - OFFENDER_BOOK_ID
-      - PROGRAM_CODE
+      - PROGRAM_ID
       - START_DATE
-      - COURSE_ACTIVITIES_DESCRIPTION
     datetime_cols:
       - START_DATE
       - END_DATE
