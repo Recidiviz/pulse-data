@@ -66,7 +66,7 @@ class TestCalculateCloudTaskManager(unittest.TestCase):
 
         task_id = '12345-2019-04-14-random-uuid'
         task_path = f'{queue_path}/{task_id}'
-        task = tasks_v2.Task(
+        task = tasks_v2.types.task_pb2.Task(
             name=task_path,
             schedule_time=timestamp_pb2.Timestamp(
                 seconds=(now_utc_timestamp + delay_sec)),

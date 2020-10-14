@@ -60,7 +60,7 @@ class TestBQExportCloudTaskManager(unittest.TestCase):
             'schema_type': schema_type
         }
 
-        task = tasks_v2.Task(
+        task = tasks_v2.types.task_pb2.Task(
             name=task_path,
             app_engine_http_request={
                 'http_method': 'POST',
@@ -113,7 +113,7 @@ class TestBQExportCloudTaskManager(unittest.TestCase):
             'message': message,
         }
 
-        task = tasks_v2.Task(
+        task = tasks_v2.types.task_pb2.Task(
             name=task_path,
             schedule_time=timestamp_pb2.Timestamp(
                 seconds=(now_utc_timestamp + delay_sec)),

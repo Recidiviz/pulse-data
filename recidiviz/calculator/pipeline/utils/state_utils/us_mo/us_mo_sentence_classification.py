@@ -265,14 +265,13 @@ class UsMoSentenceMixin(Generic[SentenceType]):
         critical_statuses_by_day = defaultdict(list)
 
         for s in all_critical_statuses:
-            critical_statuses_by_day[s.status_date].append(s)
+            if s.status_date is not None:
+                critical_statuses_by_day[s.status_date].append(s)
 
         critical_days = sorted(critical_statuses_by_day.keys())
 
         supervision_type_spans = []
         for i, critical_day in enumerate(critical_days):
-            if critical_day is None:
-                continue
             start_date = critical_day
             end_date = critical_days[i+1] if i < len(critical_days) - 1 else None
 

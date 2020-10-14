@@ -677,8 +677,8 @@ def get_violation_and_response_history(
     most_severe_response_decision = None
     if responses_in_window_for_decision_evaluation:
         # Find the most recent response
-        responses_in_window_for_decision_evaluation.sort(key=lambda b: b.response_date)
-        most_recent_response = responses_in_window_for_decision_evaluation[-1]
+        most_recent_response = max(responses_in_window_for_decision_evaluation,
+                                   key=lambda b: b.response_date or date.min)
 
         if most_recent_response.supervision_violation_response_decisions:
             decision_entries = most_recent_response.supervision_violation_response_decisions
@@ -736,7 +736,7 @@ def _get_responses_in_window_before_revocation(revocation_date: date,
         logging.warning("No recorded responses before the revocation date.")
         return []
 
-    responses_before_revocation.sort(key=lambda b: b.response_date)
+    responses_before_revocation.sort(key=lambda b: b.response_date or date.min)
 
     last_response_before_revocation = responses_before_revocation[-1]
 
@@ -1280,7 +1280,8 @@ def find_assessment_score_change(state_code: str,
         # If this person had less than the min number of assessments then we cannot compare the first reliable
         # assessment to the most recent assessment.
         if assessments_in_period and len(assessments_in_period) >= min_assessments:
-            assessments_in_period.sort(key=lambda b: b.assessment_date)
+            # Mypy complains that assessment_date might be None, even though that has already been filtered above.
+            assessments_in_period.sort(key=lambda b: b.assessment_date) # type: ignore[arg-type,return-value]
 
             first_reliable_assessment = assessments_in_period[index_of_first_reliable_assessment]
             last_assessment = assessments_in_period[-1]

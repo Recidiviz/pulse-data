@@ -73,12 +73,9 @@ def find_most_recent_applicable_assessment_of_class_for_state(cutoff_date: date,
                 and assessment.assessment_date <= cutoff_date
             ]
 
-            if applicable_assessments_before_date:
-                applicable_assessments_before_date.sort(
-                    key=lambda b: b.assessment_date)
-
-                most_recent_assessment = applicable_assessments_before_date[-1]
-                return most_recent_assessment
+            return max(applicable_assessments_before_date,
+                       key=lambda a: a.assessment_date if a and a.assessment_date else date.min,
+                       default=None)
 
     return None
 

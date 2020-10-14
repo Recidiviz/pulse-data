@@ -125,8 +125,7 @@ def find_last_supervision_period_terminated_before_date(
     ]
 
     if previous_periods:
-        previous_periods.sort(key=lambda b: b.termination_date)
-        return previous_periods[-1]
+        return max(previous_periods, key=lambda p: p.termination_date or date.min)
 
     return None
 
