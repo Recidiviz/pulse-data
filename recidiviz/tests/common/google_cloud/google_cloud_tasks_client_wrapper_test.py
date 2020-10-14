@@ -100,7 +100,7 @@ class TestGoogleCloudTasksClientWrapper(unittest.TestCase):
         self.client_wrapper.initialize_cloud_task_queue(queue)
 
         # Assert
-        self.mock_client.update_queue.assert_called_with(queue)
+        self.mock_client.update_queue.assert_called_with(queue=queue)
 
     @staticmethod
     def _tasks_to_ids(tasks: List[tasks_v2.Task]) -> Set[str]:
@@ -129,14 +129,14 @@ class TestGoogleCloudTasksClientWrapper(unittest.TestCase):
         tasks = self.client_wrapper.list_tasks_with_prefix(self.QUEUE_NAME, '')
 
         self.mock_client.list_tasks.assert_called_with(
-            self.client_wrapper.format_queue_path(self.QUEUE_NAME))
+            parent=self.client_wrapper.format_queue_path(self.QUEUE_NAME))
 
         self.assertTrue(len(tasks), 3)
 
         # Prefix that returns all
         tasks = self.client_wrapper.list_tasks_with_prefix(self.QUEUE_NAME, 'u')
         self.mock_client.list_tasks.assert_called_with(
-            self.client_wrapper.format_queue_path(self.QUEUE_NAME))
+            parent=self.client_wrapper.format_queue_path(self.QUEUE_NAME))
 
         self.assertTrue(len(tasks), 3)
 
@@ -144,7 +144,7 @@ class TestGoogleCloudTasksClientWrapper(unittest.TestCase):
         tasks = self.client_wrapper.list_tasks_with_prefix(self.QUEUE_NAME,
                                                            'us-nd')
         self.mock_client.list_tasks.assert_called_with(
-            self.client_wrapper.format_queue_path(self.QUEUE_NAME))
+            parent=self.client_wrapper.format_queue_path(self.QUEUE_NAME))
 
         self.assertTrue(len(tasks), 2)
 
@@ -155,7 +155,7 @@ class TestGoogleCloudTasksClientWrapper(unittest.TestCase):
         tasks = self.client_wrapper.list_tasks_with_prefix(self.QUEUE_NAME,
                                                            'us-nd-task-2')
         self.mock_client.list_tasks.assert_called_with(
-            self.client_wrapper.format_queue_path(self.QUEUE_NAME))
+            parent=self.client_wrapper.format_queue_path(self.QUEUE_NAME))
 
         self.assertTrue(len(tasks), 1)
 
@@ -165,7 +165,7 @@ class TestGoogleCloudTasksClientWrapper(unittest.TestCase):
         tasks = self.client_wrapper.list_tasks_with_prefix(self.QUEUE_NAME,
                                                            'no-match-prefix')
         self.mock_client.list_tasks.assert_called_with(
-            self.client_wrapper.format_queue_path(self.QUEUE_NAME))
+            parent=self.client_wrapper.format_queue_path(self.QUEUE_NAME))
 
         self.assertFalse(tasks)
 
@@ -225,7 +225,7 @@ class TestGoogleCloudTasksClientWrapper(unittest.TestCase):
         self.client_wrapper.delete_task(
             tasks_v2.Task(name='task_name'))
 
-        self.mock_client.delete_task.assert_called_with('task_name')
+        self.mock_client.delete_task.assert_called_with(name='task_name')
 
     def test_delete_task_not_found(self):
         self.mock_client.delete_task.side_effect = exceptions.NotFound(
@@ -234,6 +234,6 @@ class TestGoogleCloudTasksClientWrapper(unittest.TestCase):
         self.client_wrapper.delete_task(
             tasks_v2.Task(name='task_name'))
 
-        self.mock_client.delete_task.assert_called_with('task_name')
+        self.mock_client.delete_task.assert_called_with(name='task_name')
 
         # Note: does not crash
