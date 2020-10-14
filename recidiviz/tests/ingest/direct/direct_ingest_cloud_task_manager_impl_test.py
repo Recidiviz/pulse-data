@@ -124,7 +124,7 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
 
         task_name = DIRECT_INGEST_SCHEDULER_QUEUE_V2 + \
             '/{}-{}-{}'.format(_REGION.region_code, '2019-07-20', uuid)
-        task = tasks_v2.Task(
+        task = tasks_v2.types.task_pb2.Task(
             name=task_name,
             schedule_time=time_proto,
             app_engine_http_request={
@@ -168,7 +168,7 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
 
         task_name = _REGION.shared_queue + '/{}-{}-{}'.format(
             _REGION.region_code, date, uuid)
-        task = tasks_v2.Task(
+        task = tasks_v2.types.task_pb2.Task(
             name=task_name,
             app_engine_http_request={
                 'http_method': 'POST',
@@ -215,7 +215,7 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
 
         task_name = _REGION.shared_queue + '/{}-{}-{}'.format(
             _REGION.region_code, date, uuid)
-        task = tasks_v2.Task(
+        task = tasks_v2.types.task_pb2.Task(
             name=task_name,
             app_engine_http_request={
                 'http_method': 'POST',
@@ -260,7 +260,7 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
 
         task_name = DIRECT_INGEST_BQ_IMPORT_EXPORT_QUEUE_V2 + '/{}-{}-{}'.format(
             _REGION.region_code, date, uuid)
-        task = tasks_v2.Task(
+        task = tasks_v2.types.task_pb2.Task(
             name=task_name,
             app_engine_http_request={
                 'http_method': 'POST',
@@ -304,7 +304,7 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
 
         task_name = DIRECT_INGEST_BQ_IMPORT_EXPORT_QUEUE_V2 + '/{}-{}-{}'.format(
             _REGION.region_code, date, uuid)
-        task = tasks_v2.Task(
+        task = tasks_v2.types.task_pb2.Task(
             name=task_name,
             app_engine_http_request={
                 'http_method': 'POST',
