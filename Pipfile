@@ -85,6 +85,7 @@ guppy3 = "*"
 zope.event = "*"
 psutil = "*"
 psycogreen = "*"
+apache-airflow = {extras = ["gcp"],version = "*"}
 
 [requires]
 python_version = "3.7"
