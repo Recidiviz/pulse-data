@@ -26,7 +26,7 @@ raw_files:
   - file_tag: FOCTEST_ORAS_ASSESSMENTS_WEEKLY
     primary_key_cols:
       - E04
-      - FOCTEST
+      - FOCLIST
     # Status Descriptions. Column prefix: FH.
   - file_tag: LBAKRCOD_TAK146
     primary_key_cols:
