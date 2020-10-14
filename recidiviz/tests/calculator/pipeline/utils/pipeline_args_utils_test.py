@@ -42,7 +42,8 @@ class TestPipelineArgsUtils(unittest.TestCase):
             'https://www.googleapis.com/compute/v1/projects/recidiviz-staging/regions/us-west1/subnetworks/default',
         'use_public_ips': False,
         'experiments': ['shuffle_mode=service', 'use_beam_bq_sink'],
-        'setup_file': './setup.py'
+        'setup_file': './setup.py',
+        'disk_size_gb': 50,
     }
 
     def test_minimal_incarceration_pipeline_args(self):
@@ -122,7 +123,8 @@ class TestPipelineArgsUtils(unittest.TestCase):
             'https://www.googleapis.com/compute/v1/projects/recidiviz-staging/regions/us-central1/subnetworks/default',
             'use_public_ips': False,
             'experiments': ['shuffle_mode=service', 'use_beam_bq_sink'],
-            'setup_file': './setup2.py'
+            'setup_file': './setup2.py',
+            'disk_size_gb': 50,
         }
 
         self.assertEqual(expected_apache_beam_options_dict, pipeline_options.get_all_options(drop_default=True))

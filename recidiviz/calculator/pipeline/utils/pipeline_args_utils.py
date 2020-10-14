@@ -177,6 +177,17 @@ def _get_parsed_full_apache_beam_args(argv: List[str],
                         help='The machine type for all job workers to use. See'
                              ' available machine types here: https://cloud.google.com/compute/docs/machine-types')
 
+    # NOTE: We set the Compute Engine disk size to 50GB, up from the default of 25GB for shuffle mode. At 25GB we were
+    # running out of disk space on certain VMs and Dataflow/Compute Engine did not always handle scaling gracefully. In
+    # some cases, jobs would fail with a `EOFError: marshal data too short` error, which we think was a result of some
+    # python byte code getting deleted out from under us.
+    parser.add_argument('--disk_size_gb',
+                        type=str,
+                        default='50',
+                        help='Disk size for each machine, see '
+                             'https://cloud.google.com/dataflow/docs/guides/specifying-exec-params'
+                             '#setting-other-cloud-dataflow-pipeline-options')
+
     parser.add_argument('--experiments=shuffle_mode=service',
                         action='store_true',
                         help='Enables service-based Dataflow Shuffle in the pipeline.',
