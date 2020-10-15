@@ -50,10 +50,12 @@ def deploy_pipeline_templates(template_yaml_path: str, project_id: str):
     logging.info("Deploying pipeline templates at %s to %s", template_yaml_path, project_id)
 
     with open(template_yaml_path, 'r') as yaml_file:
-        pipeline_yaml_dicts = yaml.full_load(yaml_file)
+        pipeline_config_yaml = yaml.full_load(yaml_file)
 
-        if pipeline_yaml_dicts:
-            for pipeline_yaml_dict in pipeline_yaml_dicts:
+        if pipeline_config_yaml:
+            pipeline_config_yaml_all_pipelines = pipeline_config_yaml['daily_pipelines'] + \
+                                                pipeline_config_yaml['historical_pipelines']
+            for pipeline_yaml_dict in pipeline_config_yaml_all_pipelines:
                 argv = ['--project', project_id,
                         '--save_as_template',
                         # Hard-coded region until there's a need to allow deploying into separate regions
