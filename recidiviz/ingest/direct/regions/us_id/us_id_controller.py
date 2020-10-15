@@ -63,7 +63,6 @@ from recidiviz.ingest.models.ingest_info import IngestObject, StateAssessment, S
     StateSupervisionViolationResponseDecisionEntry, StateSupervisionViolationTypeEntry, \
     StateEarlyDischarge, StateSupervisionContact, StateSupervisionCaseTypeEntry
 from recidiviz.ingest.models.ingest_object_cache import IngestObjectCache
-from recidiviz.utils import environment
 
 from recidiviz.utils.params import str_to_bool
 
@@ -524,7 +523,7 @@ class UsIdController(CsvGcsfsDirectIngestController):
 
     @classmethod
     def get_file_tag_rank_list(cls) -> List[str]:
-        tags = [
+        return [
             'offender_ofndr_dob_address',
             'ofndr_tst_ofndr_tst_cert',
             'mittimus_judge_sentence_offense_sentprob_incarceration_sentences',
@@ -536,14 +535,10 @@ class UsIdController(CsvGcsfsDirectIngestController):
             'ofndr_tst_tst_qstn_rspns_violation_reports',
             'ofndr_tst_tst_qstn_rspns_violation_reports_old',
             'sprvsn_cntc',
-        ]
-
-        # TODO(#3746): Remove this check once we've validated the output in staging.
-        if not environment.in_gae_production():
             # TODO(#4252): Determine long term strategy for deleting/tombstoning entities.
-            tags.append('early_discharge_incarceration_sentence_deleted_rows')
-            tags.append('early_discharge_supervision_sentence_deleted_rows')
-        return tags
+            'early_discharge_incarceration_sentence_deleted_rows',
+            'early_discharge_supervision_sentence_deleted_rows',
+        ]
 
     def generate_enum_overrides(self) -> EnumOverrides:
         """Provides Idaho-specific overrides for enum mappings."""
