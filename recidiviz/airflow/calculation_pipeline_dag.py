@@ -26,13 +26,16 @@ import yaml
 from google.cloud import pubsub
 
 from airflow import models
-from airflow.contrib.operators.dataflow_operator import DataflowTemplateOperator
 from airflow.operators.python_operator import PythonOperator
+from recidiviz_dataflow_operator import RecidivizDataflowTemplateOperator
+
 
 # If you update this file, you must re-upload it to the airflow/DAG file to this GCS bucket
 # pylint: disable=W0104 pointless-statement
 
 # This is the path to the directory where Composer can access the configuration file
+
+
 config_file = "/home/airflow/gcs/dags/production_calculation_pipeline_templates.yaml"
 publisher = pubsub.PublisherClient()
 project_id = os.environ.get('GCP_PROJECT_ID')
@@ -67,10 +70,10 @@ with models.DAG(dag_id="calculation_pipeline_dag",
                 'zone': 'us-west1-c',
                 'tempLocation': 'gs://{}-dataflow-templates/staging/'.format(project_id)
             }
-            for pipeline_yaml_dict in pipeline_yaml_dicts:
+            for pipeline_yaml_dict in pipeline_yaml_dicts['daily_pipelines']:
                 job_name = pipeline_yaml_dict['job_name']
-                calculation_pipeline = DataflowTemplateOperator(
-                    task_id="{}-airflow".format(job_name),
+                calculation_pipeline = RecidivizDataflowTemplateOperator(
+                    task_id=job_name,
                     template="gs://{}-dataflow-templates/templates/{}".format(project_id, job_name),
                     job_name=job_name,
                     dataflow_default_options=dataflow_default_args

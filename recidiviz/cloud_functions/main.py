@@ -140,7 +140,7 @@ def export_view_data(_event, _context):
     logging.info("The response status is %s", response.status_code)
 
 
-def trigger_calculation_pipeline_dag(_event, _context):
+def trigger_calculation_pipeline_dag(data, _context):
     """This function is triggered by a Pub/Sub event, triggers an Airflow DAG where all
     the calculation pipelines run simultaneously.
     """
@@ -157,7 +157,7 @@ def trigger_calculation_pipeline_dag(_event, _context):
     dag_name = 'calculation_pipeline_dag'
     webserver_url = 'https://{}.appspot.com/api/experimental/dags/{}/dag_runs'.format(webserver_id, dag_name)
 
-    monitor_response = make_iap_request(webserver_url, IAP_CLIENT_ID[project_id], method='POST')
+    monitor_response = make_iap_request(webserver_url, IAP_CLIENT_ID[project_id], method='POST', json={"conf": data})
     logging.info("The monitoring Airflow response is %s", monitor_response)
 
 
