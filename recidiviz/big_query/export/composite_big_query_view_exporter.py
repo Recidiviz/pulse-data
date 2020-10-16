@@ -85,7 +85,7 @@ class CompositeBigQueryViewExporter(BigQueryViewExporter):
 
     def _verify_staged_paths(self,
                              export_configs: Sequence[ExportBigQueryViewConfig],
-                             output_staging_paths: List[GcsfsFilePath]):
+                             output_staging_paths: List[GcsfsFilePath]) -> None:
         """Verifies that we've exported all expected paths and they actually exist in GCS."""
         expected_num_output_staging_paths = len(export_configs)*len(self.delegate_view_exporters)
         num_output_staging_paths = len(set(output_staging_paths))

@@ -83,7 +83,7 @@ def update_overrides_from_maps(
 
 def create_if_not_exists(obj: IngestObject,
                          parent_obj: IngestObject,
-                         objs_field_name: str):
+                         objs_field_name: str) -> None:
     """Create an object on |parent_obj| if an identical object does not
     already exist.
     """
@@ -99,7 +99,7 @@ def create_if_not_exists(obj: IngestObject,
     create_func(**obj.__dict__)
 
 
-def check_is_region_launched_in_env(region: Region):
+def check_is_region_launched_in_env(region: Region) -> None:
     """Checks if direct ingest has been launched for the provided |region| in the current GAE env and throws if it has
     not."""
     if not region.is_ingest_launched_in_env():

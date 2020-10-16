@@ -164,7 +164,7 @@ def export_table(schema_type: SchemaType, table_name: str, export_query: str) \
 
 def export_all_tables(schema_type: SchemaType,
                       tables: Tuple[sqlalchemy.Table, ...],
-                      export_queries: Dict[str, str]):
+                      export_queries: Dict[str, str]) -> None:
     for table in tables:
         try:
             export_query = export_queries[table.name]

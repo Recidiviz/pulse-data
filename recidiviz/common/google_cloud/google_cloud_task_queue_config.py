@@ -190,7 +190,7 @@ def _build_cloud_task_queue_configs(
     return queues
 
 
-def initialize_queues(google_auth_token: str):
+def initialize_queues(google_auth_token: str) -> None:
     cloud_tasks_client = tasks_v2.CloudTasksClient(
         credentials=credentials.Credentials(google_auth_token))
     client_wrapper = GoogleCloudTasksClientWrapper(

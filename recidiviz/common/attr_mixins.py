@@ -15,26 +15,29 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ============================================================================
 """Logic for Attr objects that can be built with a Builder."""
-
-from typing import Any, Dict, Optional
+from enum import Enum
+from typing import Any, Dict, Optional, Type, Set, TypeVar
 import datetime
 import attr
 
 from recidiviz.common.attr_utils import is_enum, is_forward_ref, get_enum_cls, is_date
 from recidiviz.common.str_field_utils import is_yyyymmdd_date, parse_yyyymmdd_date
+from recidiviz.utils.types import ClsType
+
+DefaultableAttrType = TypeVar('DefaultableAttrType', bound='DefaultableAttr')
 
 
 class DefaultableAttr:
     """Mixin to add method to attr class that creates default object"""
 
     # DefaultableAttr can only be mixed in with an attr class
-    def __new__(cls, *_args, **_kwargs):
+    def __new__(cls: Any, *_args: Any, **_kwargs: Any) -> Any:
         if not attr.has(cls):
             raise Exception('Parent class must be an attr class')
         return super().__new__(cls)
 
     @classmethod
-    def new_with_defaults(cls, **kwargs):
+    def new_with_defaults(cls: Type[DefaultableAttrType], **kwargs: Any) -> DefaultableAttrType:
         """Create a new object with default values if set, otherwise None.
 
         Note: This method should only be used in tests. In prod you should
@@ -54,7 +57,7 @@ class DefaultableAttr:
                 continue
 
             # Ignore Factories to allow them to render into a default value
-            if isinstance(default, attr.Factory):
+            if isinstance(default, attr.Factory):  # type: ignore
                 continue
 
             kwargs[field] = None if default is attr.NOTHING else default
@@ -66,7 +69,7 @@ class BuildableAttr:
     """Mixin used to make attr object buildable"""
 
     # BuildableAttr can only be mixed in with an attr class
-    def __new__(cls, *_args, **_kwargs):
+    def __new__(cls: Any, *_args: Any, **_kwargs: Any) -> Any:
         if not attr.has(cls):
             raise Exception('Parent class must be an attr class')
         return super().__new__(cls)
@@ -74,27 +77,27 @@ class BuildableAttr:
     class Builder:
         """Builder used to build the specified |cls| Attr object."""
 
-        def __init__(self, cls):
+        def __init__(self, cls: Type) -> None:
             # Directly set self.__dict__ to avoid invoking __setattr__
             self.__dict__['cls'] = cls
             self.__dict__['fields'] = {}
 
-        def __setattr__(self, key, value):
+        def __setattr__(self, key: str, value: Any) -> None:
             self.fields[key] = value
 
-        def __getattr__(self, key):
+        def __getattr__(self, key: str) -> Any:
             if key in self.fields:
                 return self.fields[key]
             raise AttributeError("{} object has no attribute {}".format(
                 self.__class__.__name__, key))
 
-        def build(self):
+        def build(self) -> Any:
             """Builds the given Attr class after verifying that all fields
             without a default value are set and that no extra fields are set."""
             self._verify_has_all_and_only_required_fields()
             return self.cls(**self.fields)
 
-        def _verify_has_all_and_only_required_fields(self):
+        def _verify_has_all_and_only_required_fields(self) -> None:
             """Throws a |BuilderException| if:
                 1. Any field without a default/factory value is left unset
                 2. Any field is set that doesn't exist on the Attr
@@ -112,7 +115,7 @@ class BuildableAttr:
                     self.cls, required_fields, fields_with_value)
 
     @classmethod
-    def builder(cls):
+    def builder(cls) -> Builder:
         return cls.Builder(cls)
 
     @classmethod
@@ -143,7 +146,7 @@ class BuildableAttr:
                                      f"ForwardRef fields: {build_dict}")
 
                 if is_enum(attribute):
-                    value = cls.extract_enum_value(build_dict, field, attribute)
+                    value: Optional[Any] = cls.extract_enum_value(build_dict, field, attribute)
                 elif is_date(attribute):
                     value = cls.extract_date_value(build_dict, field)
                 else:
@@ -154,35 +157,54 @@ class BuildableAttr:
         return cls_builder.build()
 
     @classmethod
-    def extract_enum_value(cls, build_dict, field, attribute):
+    def extract_enum_value(cls, build_dict: Dict[str, str], field: str, attribute: attr.Attribute) -> Optional[Enum]:
         enum_cls = get_enum_cls(attribute)
 
+        if not enum_cls:
+            raise ValueError(f'Did not find enum class for attribute [{attribute}]')
+
         value = build_dict.get(field)
 
-        return enum_cls(value) if value else None
+        if value is None:
+            return None
+
+        if not isinstance(value, str) and not isinstance(value, enum_cls):
+            raise ValueError(f'Unexpected type [{type(value)}] for value [{value}]')
+
+        return enum_cls(value)
 
     @classmethod
-    def extract_date_value(cls, build_dict, field):
+    def extract_date_value(cls, build_dict: Dict[str, Any], field: str) -> Optional[datetime.date]:
         value = build_dict.get(field)
 
-        if value and isinstance(value, str):
-            if is_yyyymmdd_date(value):
-                value = parse_yyyymmdd_date(value)
-            else:
-                value = datetime.datetime.strptime(value, '%Y-%m-%d').date()
+        if value is None:
+            return None
 
-        return value
+        if isinstance(value, str):
+            if is_yyyymmdd_date(value):
+                return parse_yyyymmdd_date(value)
+            return datetime.datetime.strptime(value, '%Y-%m-%d').date()
+
+        if isinstance(value, datetime.date):
+            return value
+
+        raise ValueError(f'Unexpected type [{type(value)}] for value [{value}].')
 
 
 class BuilderException(Exception):
     """Exception raised if the Attr object cannot be built."""
 
-    def __init__(self, cls, required_fields, fields_with_value):
+    def __init__(self,
+                 cls: ClsType,
+                 required_fields: Set[str],
+                 fields_with_value: Set[str]) -> None:
         message = _error_message(cls, required_fields, fields_with_value)
         super().__init__(message)
 
 
-def _error_message(cls, required_fields, fields_with_value):
+def _error_message(cls: ClsType,
+                   required_fields: Set[str],
+                   fields_with_value: Set[str]) -> str:
     return \
         """Failed to build {cls}.
         Expected Fields: {expected_fields}

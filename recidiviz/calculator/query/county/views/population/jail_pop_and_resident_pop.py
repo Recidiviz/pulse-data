@@ -78,7 +78,7 @@ JAIL_POP_AND_RESIDENT_POP_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     population_admissions_releases_race_gender_all_view=
     POPULATION_ADMISSIONS_RELEASES_RACE_GENDER_ALL_VIEW_BUILDER.view_id,
     resident_population_counts_view=RESIDENT_POPULATION_COUNTS_VIEW_BUILDER.view_id,
-    cutoff_year=CUTOFF_YEAR
+    cutoff_year=str(CUTOFF_YEAR)
 )
 
 if __name__ == '__main__':

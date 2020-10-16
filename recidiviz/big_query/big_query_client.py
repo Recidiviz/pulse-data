@@ -354,7 +354,7 @@ class BigQueryClient:
         """
 
     @abc.abstractmethod
-    def create_table_with_schema(self, dataset_id, table_id, schema_fields: List[bigquery.SchemaField]) -> \
+    def create_table_with_schema(self, dataset_id: str, table_id: str, schema_fields: List[bigquery.SchemaField]) -> \
             bigquery.Table:
         """Creates a table in the given dataset with the given schema fields. Raises an error if a table with the same
         table_id already exists in the dataset.
@@ -576,7 +576,7 @@ class BigQueryClientImpl(BigQueryClient):
                               table_id=export_config.intermediate_table_name)
         logging.info('Done deleting temporary intermediate tables.')
 
-    def delete_table(self, dataset_id: str, table_id: str):
+    def delete_table(self, dataset_id: str, table_id: str) -> None:
         dataset_ref = self.dataset_ref_for_id(dataset_id)
         table_ref = dataset_ref.table(table_id)
         logging.info('Deleting temporary table [%s] from dataset [%s].', table_id, dataset_id)
@@ -736,7 +736,7 @@ class BigQueryClientImpl(BigQueryClient):
             view.dataset_id, view.materialized_view_table_id, view.select_query, query_parameters=[], overwrite=True)
         create_job.result()
 
-    def create_table_with_schema(self, dataset_id, table_id, schema_fields: List[bigquery.SchemaField]) -> \
+    def create_table_with_schema(self, dataset_id: str, table_id: str, schema_fields: List[bigquery.SchemaField]) -> \
             bigquery.Table:
         dataset_ref = self.dataset_ref_for_id(dataset_id)
 

@@ -52,7 +52,7 @@ class BQExportCloudTaskManager:
     def get_bq_queue_info(self) -> CloudTaskQueueInfo:
         return self._get_queue_info(BIGQUERY_QUEUE_V2)
 
-    def create_bq_task(self, table_name: str, schema_type: str):
+    def create_bq_task(self, table_name: str, schema_type: str) -> None:
         """Create a BigQuery table export path.
 
         Args:

@@ -46,7 +46,7 @@ class MatchedEntities(BuildableAttr, Generic[SchemaPersonType]):
     database_cleanup_error_count: int = attr.ib(default=0)
     total_root_entities: int = attr.ib(default=0)
 
-    def __add__(self, other):
+    def __add__(self, other: 'MatchedEntities') -> 'MatchedEntities':
         return MatchedEntities(
             people=self.people + other.people,
             orphaned_entities=self.orphaned_entities + other.orphaned_entities,
@@ -103,9 +103,12 @@ class EntityTree:
             return self.ancestor_chain[0]
         return self.entity
 
-    def __eq__(self, other):
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, EntityTree):
+            return False
+
         return self.entity == other.entity \
-               and self.ancestor_chain == other.ancestor_chain
+            and self.ancestor_chain == other.ancestor_chain
 
 
 class IndividualMatchResult:
