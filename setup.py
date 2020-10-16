@@ -32,6 +32,10 @@ REQUIRED_PACKAGES = [
     'apache-beam',
     'cattrs',
     'dateparser',
+    # Must stay up-to-date with latest dill version in the Pipfile - this library is used for template serialization and
+    # it's critical that the local version used to serialize the templates and the version used to deserialize on the
+    # remote workers match.
+    'dill==0.3.2',
     'Flask',
     'google-api-core',
     'google-api-python-client',
