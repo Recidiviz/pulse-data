@@ -15,8 +15,11 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Validates that ingest_info protos conform to the schema requirements."""
+from typing import Iterable, Dict, Set, Any
 
 import iteration_utilities
+
+from recidiviz.ingest.models import ingest_info_pb2
 
 DUPLICATES = 'duplicate_ids'
 NON_EXISTING_IDS = 'ids_referenced_that_do_not_exist'
@@ -26,13 +29,13 @@ EXTRA_IDS = 'ids_never_referenced'
 class ValidationError(Exception):
     """Raised when encountering an error with ingest_info validation."""
 
-    def __init__(self, errors):
+    def __init__(self, errors: Dict[str, Dict[str, Set]]):
         # TODO(#1261): Return errors to caller instead of printing in exception
         super().__init__(errors)
         self.errors = errors
 
 
-def validate(ingest_info):
+def validate(ingest_info: ingest_info_pb2.IngestInfo) -> None:
     """Validates that the ingest_info is correctly structured."""
     errors = {
         'people': _person_errors(ingest_info),
@@ -51,14 +54,14 @@ def validate(ingest_info):
         raise ValidationError(errors)
 
 
-def _person_errors(ingest_info):
+def _person_errors(ingest_info: ingest_info_pb2.IngestInfo) -> Dict[str, Set]:
     return {
         DUPLICATES: _get_duplicates(
             person.person_id for person in ingest_info.people)
     }
 
 
-def _booking_errors(ingest_info):
+def _booking_errors(ingest_info: ingest_info_pb2.IngestInfo) -> Dict[str, Set]:
     booking_ids = {booking.booking_id for booking in ingest_info.bookings}
     referenced_booking_ids = set(iteration_utilities.flatten(
         person.booking_ids for person in ingest_info.people))
@@ -71,7 +74,7 @@ def _booking_errors(ingest_info):
     }
 
 
-def _arrest_errors(ingest_info):
+def _arrest_errors(ingest_info: ingest_info_pb2.IngestInfo) -> Dict[str, Set]:
     arrest_ids = {arrest.arrest_id for arrest in ingest_info.arrests}
     referenced_arrest_ids = {booking.arrest_id for booking in
                              ingest_info.bookings if
@@ -85,7 +88,7 @@ def _arrest_errors(ingest_info):
     }
 
 
-def _charge_errors(ingest_info):
+def _charge_errors(ingest_info: ingest_info_pb2.IngestInfo) -> Dict[str, Set]:
     charge_ids = {charge.charge_id for charge in ingest_info.charges}
     referenced_charge_ids = set(iteration_utilities.flatten(
         booking.charge_ids for booking in ingest_info.bookings))
@@ -98,7 +101,7 @@ def _charge_errors(ingest_info):
     }
 
 
-def _sentence_errors(ingest_info):
+def _sentence_errors(ingest_info: ingest_info_pb2.IngestInfo) -> Dict[str, Set]:
     sentence_ids = {sentence.sentence_id for sentence in ingest_info.sentences}
     referenced_sentence_ids = {charge.sentence_id for charge in
                                ingest_info.charges if
@@ -112,7 +115,7 @@ def _sentence_errors(ingest_info):
     }
 
 
-def _bond_errors(ingest_info):
+def _bond_errors(ingest_info: ingest_info_pb2.IngestInfo) -> Dict[str, Set]:
     bond_ids = {bond.bond_id for bond in ingest_info.bonds}
     referenced_bond_ids = {charge.bond_id for charge in
                            ingest_info.charges if
@@ -126,7 +129,7 @@ def _bond_errors(ingest_info):
     }
 
 
-def _state_person_errors(ingest_info):
+def _state_person_errors(ingest_info: ingest_info_pb2.IngestInfo) -> Dict[str, Set]:
     return {
         DUPLICATES:
             _get_duplicates(state_person.state_person_id
@@ -134,7 +137,7 @@ def _state_person_errors(ingest_info):
     }
 
 
-def _get_duplicates(collection):
+def _get_duplicates(collection: Iterable) -> Set:
     """Returns a set of all elements duplicated in the collection.
 
     Example: [1,2,3,3,3,4,4] -> {3,4}
@@ -142,14 +145,14 @@ def _get_duplicates(collection):
     return set(iteration_utilities.duplicates(collection))
 
 
-def _trim_all_empty_errors(all_errors):
+def _trim_all_empty_errors(all_errors: Dict[str, Dict[str, Set]]) -> Dict[str, Dict[str, Set]]:
     """Trims every empty value in the provided dict of all_errors."""
     trimmed_errors = {name: _trim_empty(error) for name, error in
                       all_errors.items()}
     return _trim_empty(trimmed_errors)
 
 
-def _trim_empty(dictionary):
+def _trim_empty(dictionary: Dict[str, Any]) -> Dict[str, Any]:
     """Returns the dict with all keys that point to an empty set removed.
 
     Example: {a: {1,2}, b: {}} -> {a: {1, 2}}

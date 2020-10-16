@@ -209,15 +209,16 @@ class UsMoGetSupervisionPeriodSupervisionTypeOnDateTest(unittest.TestCase):
         self.sentence_id_counter = 0
 
     def _inc_sentence_with_type(self, supervision_type: Optional[StateSupervisionType]) -> UsMoIncarcerationSentence:
+        start_date = datetime.date(year=2012, month=6, day=27)
         base_sentence = StateIncarcerationSentence.new_with_defaults(
             external_id=f'164735-20120627-{self.sentence_id_counter}',
             state_code='US_MO',
-            start_date=datetime.date(year=2012, month=6, day=27)
+            start_date=start_date
         )
         mo_sentence = FakeUsMoIncarcerationSentence.fake_sentence_from_sentence(
             base_sentence,
             supervision_type_spans=[
-                SupervisionTypeSpan(start_date=base_sentence.start_date,
+                SupervisionTypeSpan(start_date=start_date,
                                     end_date=None,
                                     supervision_type=supervision_type)
             ])
@@ -227,6 +228,7 @@ class UsMoGetSupervisionPeriodSupervisionTypeOnDateTest(unittest.TestCase):
         return mo_sentence
 
     def _sup_sentence_with_type(self, supervision_type: Optional[StateSupervisionType]) -> UsMoSupervisionSentence:
+        start_date = datetime.date(year=2012, month=6, day=27)
         base_sentence = StateSupervisionSentence.new_with_defaults(
             external_id=f'164735-20120627-{self.sentence_id_counter}',
             state_code='US_MO',
@@ -235,7 +237,7 @@ class UsMoGetSupervisionPeriodSupervisionTypeOnDateTest(unittest.TestCase):
         mo_sentence = FakeUsMoSupervisionSentence.fake_sentence_from_sentence(
             base_sentence,
             supervision_type_spans=[
-                SupervisionTypeSpan(start_date=base_sentence.start_date,
+                SupervisionTypeSpan(start_date=start_date,
                                     end_date=None,
                                     supervision_type=supervision_type)
             ])

@@ -222,7 +222,7 @@ def _has_non_punctuation(date_string: str) -> bool:
 
 
 def parse_datetime_with_negative_component(date_string: str,
-                                           settings: Dict[str, Any]):
+                                           settings: Dict[str, Any]) -> Optional[datetime.datetime]:
     """Handles relative date strings that have negative values in them, like
     '2 year -5month'.
 

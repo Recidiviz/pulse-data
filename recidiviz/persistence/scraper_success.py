@@ -29,7 +29,7 @@ from recidiviz.persistence.database.session_factory import SessionFactory
 
 
 def store_scraper_success(scraper_success: ScraperSuccessModel,
-                          jurisdiction_id: str):
+                          jurisdiction_id: str) -> bool:
     """Store a scraper success event"""
 
     jurisdiction_id = validate_jid(jurisdiction_id)

@@ -17,7 +17,7 @@
 """Contains logic for communicating with the persistence layer."""
 import datetime
 import logging
-from typing import Callable, List, Optional
+from typing import Callable, List, Optional, Union, Dict
 
 import psycopg2
 from psycopg2.errorcodes import SERIALIZATION_FAILURE
@@ -88,7 +88,7 @@ COUNTY_SYSTEM_LEVEL_ERROR_THRESHOLD = 0.5
 
 def infer_release_on_open_bookings(
         region_code: str, last_ingest_time: datetime.datetime,
-        custody_status: CustodyStatus):
+        custody_status: CustodyStatus) -> None:
     """
    Look up all open bookings whose last_seen_time is earlier than the
    provided last_ingest_time in the provided region, update those
@@ -132,7 +132,7 @@ def infer_release_on_open_bookings(
 
 def _infer_release_date_for_bookings(
         bookings: List[county_entities.Booking],
-        last_ingest_time: datetime.datetime, custody_status: CustodyStatus):
+        last_ingest_time: datetime.datetime, custody_status: CustodyStatus) -> None:
     """Marks the provided bookings with an inferred release date equal to the
     provided date. Updates the custody_status to the provided custody
     status. Also updates all children of the updated booking to have status
@@ -149,7 +149,7 @@ def _infer_release_date_for_bookings(
             _mark_children_removed_from_source(booking)
 
 
-def _mark_children_removed_from_source(booking: county_entities.Booking):
+def _mark_children_removed_from_source(booking: county_entities.Booking) -> None:
     """Marks all children of a booking with the status 'REMOVED_FROM_SOURCE'"""
     for hold in booking.holds:
         hold.status = HoldStatus.REMOVED_WITHOUT_INFO
@@ -167,11 +167,11 @@ def _mark_children_removed_from_source(booking: county_entities.Booking):
 
 
 def _should_abort(
-        total_root_entities,
+        total_root_entities: int,
         system_level: SystemLevel,
         conversion_result: IngestInfoConversionResult,
-        entity_matching_errors=0,
-        data_validation_errors=0):
+        entity_matching_errors: int = 0,
+        data_validation_errors: int = 0) -> bool:
     """
     Returns true if we should abort the current attempt to persist an IngestInfo
     object, given the number of errors we've encountered.
@@ -214,7 +214,7 @@ def _should_abort(
 def _calculate_error_ratio(conversion_result: IngestInfoConversionResult,
                            entity_matching_errors: int,
                            data_validation_errors: int,
-                           total_root_entities: int):
+                           total_root_entities: int) -> float:
     """Calculates the error ratio, given the total number of errors and root entities."""
     return (conversion_result.enum_parsing_errors +
             conversion_result.general_parsing_errors +
@@ -222,7 +222,7 @@ def _calculate_error_ratio(conversion_result: IngestInfoConversionResult,
             data_validation_errors) / total_root_entities
 
 
-def _get_system_level_error_threshold(system_level: SystemLevel):
+def _get_system_level_error_threshold(system_level: SystemLevel) -> float:
     """Returns the error threshold associated with a system level."""
     if system_level == SystemLevel.COUNTY:
         return COUNTY_SYSTEM_LEVEL_ERROR_THRESHOLD
@@ -275,7 +275,7 @@ def retry_transaction(session: Session, measurements: MeasurementMap,
 
 def write(ingest_info: IngestInfo, metadata: IngestMetadata,
           run_txn_fn: Callable[[Session, MeasurementMap, Callable[[Session], bool],
-                                Optional[int]], bool] = retry_transaction):
+                                Optional[int]], bool] = retry_transaction) -> bool:
     """
     If in prod or if 'PERSIST_LOCALLY' is set to true, persist each person in
     the ingest_info. If a person with the given surname/birthday already exists,
@@ -289,8 +289,9 @@ def write(ingest_info: IngestInfo, metadata: IngestMetadata,
     """
     ingest_info_validator.validate(ingest_info)
 
-    mtags = {monitoring.TagKey.SHOULD_PERSIST: should_persist(),
-             monitoring.TagKey.PERSISTED: False}
+    mtags: Dict[str, Union[bool, str]] = {
+        monitoring.TagKey.SHOULD_PERSIST: should_persist(),
+        monitoring.TagKey.PERSISTED: False}
     total_people = _get_total_people(ingest_info, metadata)
     with monitoring.measurements(mtags) as measurements:
 

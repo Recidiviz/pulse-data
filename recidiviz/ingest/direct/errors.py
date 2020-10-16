@@ -35,6 +35,6 @@ class DirectIngestError(Exception):
         super().__init__(msg)
         self.error_type = error_type
 
-    def is_bad_request(self):
+    def is_bad_request(self) -> bool:
         return self.error_type == DirectIngestErrorType.ENVIRONMENT_ERROR \
                or self.error_type == DirectIngestErrorType.INPUT_ERROR

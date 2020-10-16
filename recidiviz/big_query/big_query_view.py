@@ -16,7 +16,7 @@
 # =============================================================================
 """An implementation of bigquery.TableReference with extra functionality related to views."""
 import abc
-from typing import Optional, Dict, TypeVar, Generic
+from typing import Optional, Dict, TypeVar, Generic, Any
 
 from google.cloud import bigquery
 
@@ -35,7 +35,7 @@ class BigQueryView(bigquery.TableReference):
                  view_id: str,
                  view_query_template: str,
                  should_materialize: bool = False,
-                 **query_format_kwargs):
+                 **query_format_kwargs: Any):
 
         if project_id is None:
             project_id = metadata.project_id()
@@ -53,7 +53,7 @@ class BigQueryView(bigquery.TableReference):
         self._should_materialize = should_materialize
 
     @classmethod
-    def _format_view_query_without_project_id(cls, view_query_template: str, **query_format_kwargs):
+    def _format_view_query_without_project_id(cls, view_query_template: str, **query_format_kwargs: Any) -> str:
         """Formats the given |view_query_template| string with the given arguments, without injecting a value for the
         PROJECT_ID_KEY."""
         query_format_args = {
@@ -63,7 +63,7 @@ class BigQueryView(bigquery.TableReference):
 
         return view_query_template.format(**query_format_args)
 
-    def _format_view_query(self, view_query_template: str, inject_project_id: bool, **query_format_kwargs) -> str:
+    def _format_view_query(self, view_query_template: str, inject_project_id: bool, **query_format_kwargs: Any) -> str:
         """This builds the view_query with the given query_format_kwargs. If |inject_project_id| is set to True, sets
         the PROJECT_ID_KEY value in the template to the current project. Else, returns the formatted view_query with the
         PROJECT_ID_KEY as {PROJECT_ID_KEY}."""
@@ -80,7 +80,7 @@ class BigQueryView(bigquery.TableReference):
 
         return view_query_no_project_id.format(**project_id_format_args)
 
-    def _query_format_args_with_project_id(self, **query_format_kwargs) -> Dict[str, str]:
+    def _query_format_args_with_project_id(self, **query_format_kwargs: Any) -> Dict[str, str]:
         return {
             PROJECT_ID_KEY: self.project,
             **query_format_kwargs
@@ -109,13 +109,13 @@ class BigQueryView(bigquery.TableReference):
         """The table_id for a table that contains the result of the view_query if this view were to be materialized."""
         return self.view_id + '_materialized' if self._should_materialize else None
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f'{self.__class__.__name__}(' \
             f'view={self.project}.{self.dataset_id}.{self.view_id}, ' \
             f'view_query=\'{self.view_query}\')'
 
 
-def _validate_view_query_template(dataset_id: str, view_id: str, view_query_template: str):
+def _validate_view_query_template(dataset_id: str, view_id: str, view_query_template: str) -> None:
     """Validates that the view_query_template does not contain any raw GCP project_id values. Note that this prevents
     views from referencing project IDs directly in any comments or view descriptions."""
     for project_id in GCP_PROJECTS:
@@ -149,20 +149,24 @@ class SimpleBigQueryViewBuilder(BigQueryViewBuilder):
                  dataset_id: str,
                  view_id: str,
                  view_query_template: str,
-                 **kwargs):
+                 should_materialize: bool = False,
+                 # All query format kwargs args must have string values
+                 **query_format_kwargs: str):
         self.dataset_id = dataset_id
         self.view_id = view_id
         self.view_query_template = view_query_template
-        self.kwargs = kwargs
+        self.should_materialize = should_materialize
+        self.query_format_kwargs = query_format_kwargs
 
     def build(self) -> BigQueryView:
         return BigQueryView(
             dataset_id=self.dataset_id,
             view_id=self.view_id,
             view_query_template=self.view_query_template,
-            **self.kwargs)
+            should_materialize=False,
+            **self.query_format_kwargs)
 
-    def build_and_print(self):
+    def build_and_print(self) -> None:
         """Builds the BigQueryView and prints the view's view_query."""
         view = self.build()
         print(view.view_query)

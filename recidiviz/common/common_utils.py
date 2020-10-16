@@ -21,7 +21,7 @@ import logging
 import random
 import time
 import uuid
-from typing import Optional, Iterable, Any, Type
+from typing import Optional, Iterable, Any, Type, Callable, TypeVar
 
 import flask
 from google.api_core import exceptions  # pylint: disable=no-name-in-module
@@ -55,7 +55,7 @@ def get_external_id(*, synthetic_id: str) -> str:
     return DELIMITER.join(synthetic_id.split(DELIMITER)[1:])
 
 
-def get_trace_id_from_flask():
+def get_trace_id_from_flask() -> Optional[str]:
     """Get trace_id from flask request headers.
     """
     if flask is None or not flask.request:
@@ -71,7 +71,15 @@ def get_trace_id_from_flask():
     return trace_id
 
 
-def retry_grpc(num_retries, fn, *args, **kwargs):
+ReturnType = TypeVar('ReturnType')
+
+
+def retry_grpc(
+    num_retries: int,
+    fn: Callable[..., ReturnType],
+    *args: Any,
+    **kwargs: Any
+) -> ReturnType:
     """Retries a function call some number of times"""
     time_to_sleep = random.uniform(5, RETRY_SLEEP)
     for i in range(num_retries + 1):
@@ -86,16 +94,19 @@ def retry_grpc(num_retries, fn, *args, **kwargs):
                     logging.warning('Sleeping %.2f seconds and retrying',
                                     time_to_sleep)
                     time.sleep(time_to_sleep)
+                    continue
             else:
                 raise
+    raise exceptions.ServiceUnavailable(f"Function unsuccessful {num_retries + 1} times")
 
 
-def check_all_objs_have_type(objs: Iterable[Any], expected_type: Type):
+def check_all_objs_have_type(objs: Iterable[Any], expected_type: Type) -> None:
     if not all(isinstance(o, expected_type) for o in objs):
         raise ValueError(f"Not all objects are type [{expected_type.__name__}]")
 
 
-def date_intersects_with_span(*, point_in_time: datetime.date, start_date: datetime.date, end_date: datetime.date):
+def date_intersects_with_span(
+        *, point_in_time: datetime.date, start_date: datetime.date, end_date: datetime.date) -> bool:
     """Returns true if the provided |point_in_time| is within [start_date, end_date)"""
     return start_date <= point_in_time < end_date
 

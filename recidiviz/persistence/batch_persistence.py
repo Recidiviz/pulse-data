@@ -155,7 +155,7 @@ def _should_abort(failed_tasks: int, total_people: int) -> bool:
     return False
 
 
-def write(ingest_info: IngestInfo, scrape_key: ScrapeKey, task: Task):
+def write(ingest_info: IngestInfo, scrape_key: ScrapeKey, task: Task) -> None:
     session = sessions.get_current_session(scrape_key)
     if not session:
         raise DatastoreError(scrape_key.region_code, "write")
@@ -168,7 +168,7 @@ def write(ingest_info: IngestInfo, scrape_key: ScrapeKey, task: Task):
 
 
 def write_error(error: str, trace_id: Optional[str], task: Task,
-                scrape_key: ScrapeKey):
+                scrape_key: ScrapeKey) -> None:
     session = sessions.get_current_session(scrape_key)
     if not session:
         raise DatastoreError(scrape_key.region_code, "write_error")
@@ -230,12 +230,16 @@ def persist_to_database(region_code: str,
 
 @batch_blueprint.route('/read_and_persist')
 @authenticate_request
-def read_and_persist():
+def read_and_persist() -> Tuple[str, HTTPStatus]:
     """Reads all of the messages from Datastore for a region and persists
     them to the database.
     """
 
     region = request.args.get('region')
+
+    if not isinstance(region, str):
+        raise ValueError(f'Expected string region, found [{region}]')
+
     batch_tags = {monitoring.TagKey.STATUS: 'COMPLETED',
                   monitoring.TagKey.PERSISTED: False}
     # Note: measurements must be second so it receives the region tag.
@@ -245,6 +249,10 @@ def read_and_persist():
 
         session = sessions.get_most_recent_completed_session(
             region, ScrapeType.BACKGROUND)
+
+        if not session:
+            raise ValueError(f'Most recent session for region [{region}] is unexpectedly None')
+
         scrape_type = session.scrape_type
 
         try:
