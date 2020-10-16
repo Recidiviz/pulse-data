@@ -21,7 +21,7 @@ import logging
 import os
 import tempfile
 import uuid
-from typing import List, Optional, Union, Iterator, Callable
+from typing import List, Optional, Union, Iterator, Callable, Dict
 
 from google.api_core import retry, exceptions
 from google.cloud import storage
@@ -81,6 +81,14 @@ class GCSFileSystem:
     @abc.abstractmethod
     def exists(self, path: Union[GcsfsBucketPath, GcsfsFilePath]) -> bool:
         """Returns True if the object exists in the fs, False otherwise."""
+
+    @abc.abstractmethod
+    def get_file_size(self, path: GcsfsFilePath) -> Optional[int]:
+        """Returns the file size of the object if it exists in the fs, None otherwise."""
+
+    @abc.abstractmethod
+    def get_metadata(self, path: GcsfsFilePath) -> Optional[Dict]:
+        """Returns the metadata for the object at the given path if it exists in the fs, None otherwise."""
 
     @abc.abstractmethod
     def download_to_temp_file(self, path: GcsfsFilePath) -> Optional[GcsfsFileContentsHandle]:
@@ -145,6 +153,18 @@ class GCSFileSystemImpl(GCSFileSystem):
             return blob.exists(self.storage_client)
 
         raise ValueError(f'Unexpected path type [{type(path)}]')
+
+    @retry.Retry(predicate=retry_predicate)
+    def get_file_size(self, path: GcsfsFilePath) -> Optional[int]:
+        bucket = self.storage_client.get_bucket(path.bucket_name)
+        blob = bucket.get_blob(path.blob_name)
+        return blob.size if blob else None
+
+    @retry.Retry(predicate=retry_predicate)
+    def get_metadata(self, path: GcsfsFilePath) -> Optional[Dict]:
+        bucket = self.storage_client.get_bucket(path.bucket_name)
+        blob = bucket.get_blob(path.blob_name)
+        return blob.metadata if blob else None
 
     @retry.Retry(predicate=retry_predicate)
     def copy(self,

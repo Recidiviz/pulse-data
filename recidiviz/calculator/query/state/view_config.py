@@ -25,7 +25,8 @@ from recidiviz.calculator.query.state.dataset_config import DASHBOARD_VIEWS_DATA
     COVID_REPORT_DATASET, PO_REPORT_DATASET, PUBLIC_DASHBOARD_VIEWS_DATASET, REFERENCE_VIEWS_DATASET, \
     COVID_DASHBOARD_DATASET
 from recidiviz.calculator.query.state.views.covid_report.covid_report_views import COVID_REPORT_VIEW_BUILDERS
-from recidiviz.calculator.query.state.views.dashboard.dashboard_views import DASHBOARD_VIEW_BUILDERS
+from recidiviz.calculator.query.state.views.dashboard.dashboard_views import DASHBOARD_VIEW_BUILDERS, \
+    CORE_DASHBOARD_VIEW_BUILDERS, LANTERN_DASHBOARD_VIEW_BUILDERS
 from recidiviz.calculator.query.state.views.po_report.po_report_views import PO_REPORT_VIEW_BUILDERS
 from recidiviz.calculator.query.state.views.public_dashboard.public_dashboard_views import \
     PUBLIC_DASHBOARD_VIEW_BUILDERS
@@ -74,12 +75,21 @@ METRIC_DATASET_EXPORT_CONFIGS: List[ExportMetricDatasetConfig] = \
             state_code_filter=None
         ),
     ] + [
-        # Dashboard views for all relevant states
+        # Lantern Dashboard views for all relevant states
         ExportMetricDatasetConfig(
             dataset_id=DASHBOARD_VIEWS_DATASET,
-            metric_view_builders_to_export=DASHBOARD_VIEW_BUILDERS,
+            metric_view_builders_to_export=LANTERN_DASHBOARD_VIEW_BUILDERS,
             output_directory_uri_template=DASHBOARD_VIEWS_OUTPUT_DIRECTORY_URI,
             state_code_filter=state_code
         )
-        for state_code in ['US_MO', 'US_ND', 'US_PA']
+        for state_code in ['US_MO', 'US_PA']
+    ] + [
+        # Core Dashboard views for all relevant states
+        ExportMetricDatasetConfig(
+            dataset_id=DASHBOARD_VIEWS_DATASET,
+            metric_view_builders_to_export=CORE_DASHBOARD_VIEW_BUILDERS,
+            output_directory_uri_template=DASHBOARD_VIEWS_OUTPUT_DIRECTORY_URI,
+            state_code_filter=state_code
+        )
+        for state_code in ['US_ND']
     ]
