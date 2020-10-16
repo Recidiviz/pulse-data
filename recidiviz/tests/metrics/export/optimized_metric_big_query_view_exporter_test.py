@@ -27,6 +27,8 @@ from mock import call, create_autospec, patch
 
 from recidiviz.big_query.big_query_client import BigQueryClient
 from recidiviz.big_query.export.export_query_config import ExportBigQueryViewConfig
+from recidiviz.metrics.export.optimized_metric_big_query_view_export_validator import \
+    OptimizedMetricBigQueryViewExportValidator
 from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
 from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath
 from recidiviz.metrics.export import optimized_metric_big_query_view_exporter
@@ -339,8 +341,9 @@ class ConvertQueryResultsTest(unittest.TestCase):
                 process_fn(row)
 
         mock_bq_client.paged_read_and_process.side_effect = fake_paged_process_fn
+        mock_validator = create_autospec(OptimizedMetricBigQueryViewExportValidator)
 
-        view_exporter = OptimizedMetricBigQueryViewExporter(mock_bq_client)
+        view_exporter = OptimizedMetricBigQueryViewExporter(mock_bq_client, mock_validator)
 
         export_config = ExportBigQueryViewConfig(
             view=MetricBigQueryViewBuilder(
