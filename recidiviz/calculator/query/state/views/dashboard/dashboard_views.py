@@ -25,11 +25,21 @@ from recidiviz.calculator.query.state.views.dashboard.revocation_analysis import
 from recidiviz.calculator.query.state.views.dashboard.revocations import revocations_views
 from recidiviz.calculator.query.state.views.dashboard.supervision import supervision_views
 
-DASHBOARD_VIEW_BUILDERS: List[MetricBigQueryViewBuilder] = (
+
+CORE_DASHBOARD_VIEW_BUILDERS: List[MetricBigQueryViewBuilder] = (
     admissions_views.ADMISSIONS_VIEW_BUILDERS +
     reincarcerations_views.REINCARCERATIONS_VIEW_BUILDERS +
     revocations_views.REVOCATIONS_VIEW_BUILDERS +
     supervision_views.SUPERVISION_VIEW_BUILDERS +
-    program_evaluation_views.PROGRAM_EVALUATION_VIEW_BUILDERS +
+    program_evaluation_views.PROGRAM_EVALUATION_VIEW_BUILDERS
+)
+
+
+LANTERN_DASHBOARD_VIEW_BUILDERS: List[MetricBigQueryViewBuilder] = \
     revocation_analysis_views.REVOCATION_ANALYSIS_VIEW_BUILDERS
+
+
+DASHBOARD_VIEW_BUILDERS: List[MetricBigQueryViewBuilder] = (
+        CORE_DASHBOARD_VIEW_BUILDERS +
+        LANTERN_DASHBOARD_VIEW_BUILDERS
 )

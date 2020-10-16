@@ -66,6 +66,12 @@ class FakeGCSFileSystem(GCSFileSystem):
         with self.mutex:
             return path.abs_path() in [p.abs_path() for p in self.all_paths]
 
+    def get_file_size(self, path: GcsfsFilePath) -> Optional[int]:
+        raise ValueError('Must be implemented for use in tests.')
+
+    def get_metadata(self, path: GcsfsFilePath) -> Optional[Dict]:
+        raise ValueError('Must be implemented for use in tests.')
+
     def real_absolute_path_for_path(self, path: GcsfsFilePath) -> str:
         if path.abs_path() in self.uploaded_test_path_to_actual:
             return self.uploaded_test_path_to_actual[path.abs_path()]

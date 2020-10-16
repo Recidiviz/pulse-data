@@ -40,6 +40,8 @@ from recidiviz.big_query.export.big_query_view_exporter import BigQueryViewExpor
 from recidiviz.big_query.export.export_query_config import ExportBigQueryViewConfig
 
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
+from recidiviz.metrics.export.optimized_metric_big_query_view_export_validator import \
+    OptimizedMetricBigQueryViewExportValidator
 from recidiviz.metrics.metric_big_query_view import MetricBigQueryView
 
 # 10000 rows appears to be a reasonable balance of speed and memory usage from local testing
@@ -65,8 +67,11 @@ class OptimizedMetricBigQueryViewExporter(BigQueryViewExporter):
     matrix and then flattened into a single array, which is written to text files and exported to
     Google Cloud Storage."""
 
-    def __init__(self, bq_client: BigQueryClient, should_compress: bool = False):
-        super().__init__(bq_client)
+    def __init__(self,
+                 bq_client: BigQueryClient,
+                 validator: OptimizedMetricBigQueryViewExportValidator,
+                 should_compress: bool = False):
+        super().__init__(bq_client, validator)
         self.should_compress = should_compress
 
     def export(self, export_configs: Sequence[ExportBigQueryViewConfig[MetricBigQueryView]]) -> List[GcsfsFilePath]:
