@@ -52,7 +52,7 @@ def has_active_booking(person: county_entities.Person) -> bool:
     return any(is_booking_active(booking) for booking in person.bookings)
 
 
-def should_persist():
+def should_persist() -> bool:
     """
     Determines whether objects should be writed to the database in this context.
     """

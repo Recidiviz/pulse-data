@@ -47,7 +47,7 @@ default_args = {
 }
 
 
-def send_message_to_pubsub():
+def send_message_to_pubsub() -> None:
     message = 'Cloud Composer DAG triggering export of data from BigQuery to GCS'
     topic_path = publisher.topic_path(project_id, 'v1.export.view.data')
     publisher.publish(topic_path, data=message.encode('utf-8'))

@@ -16,7 +16,7 @@
 
 """Utilities for managing ingest infos stored on Datastore."""
 from datetime import datetime
-from typing import List, Optional
+from typing import List, Optional, Type, TypeVar
 import logging
 import attr
 import cattr
@@ -27,6 +27,7 @@ from recidiviz.common.common_utils import get_trace_id_from_flask
 from recidiviz.ingest.models.ingest_info import IngestInfo
 from recidiviz.common.common_utils import retry_grpc
 from recidiviz.utils import environment
+from recidiviz.utils.types import ClsType
 
 _ds = None
 
@@ -75,7 +76,7 @@ class DatastoreBatchDeleteError(Exception):
         super().__init__(msg)
 
 
-def ds():
+def ds() -> datastore.Client:
     global _ds
     if not _ds:
         _ds = environment.get_datastore_client()
@@ -83,7 +84,7 @@ def ds():
 
 
 @environment.test_only
-def clear_ds():
+def clear_ds() -> None:
     global _ds
     _ds = None
 
@@ -111,19 +112,20 @@ class BatchIngestInfoData:
     # The trace id of the failing request if it failed.  Used for debugging.
     trace_id: Optional[str] = attr.ib(default=None)
 
-    def to_serializable(self):
+    def to_serializable(self) -> str:
         return cattr.unstructure(self)
 
     @classmethod
-    def from_serializable(cls, serializable):
+    def from_serializable(cls: Type[ClsType], serializable: str) -> ClsType:
         return cattr.structure(serializable, cls)
 
+_DatastoreIngestInfoType = TypeVar('_DatastoreIngestInfoType', bound='_DatastoreIngestInfo')
 
 class _DatastoreIngestInfo:
     """Datastore model to describe an ingest info."""
 
     @classmethod
-    def get_batch_ingest_info_data(cls, entity):
+    def get_batch_ingest_info_data(cls, entity: datastore.Entity) -> BatchIngestInfoData:
         batch_ingest_info_data_serialized = \
             cls(entity).__dict__['_entity']['batch_ingest_info_data']
         batch_ingest_info_data = BatchIngestInfoData.from_serializable(
@@ -131,26 +133,27 @@ class _DatastoreIngestInfo:
         return batch_ingest_info_data
 
     @classmethod
-    def new(cls, key, session_start_time=None,
-            region=None, ingest_info=None, task_hash=None, error=None,
-            trace_id=None):
+    def new(cls: Type[_DatastoreIngestInfoType], key: datastore.key, task_hash: int,
+            session_start_time: Optional[datetime] = None,
+            region: Optional[str] = None,
+            ingest_info: Optional[IngestInfo] = None,
+            error: Optional[str] = None,
+            trace_id: Optional[str] = None) -> _DatastoreIngestInfoType:
         new_ingest_info = cls(datastore.Entity(key))
         batch_ingest_info_data = BatchIngestInfoData(task_hash=task_hash,
                                                      ingest_info=ingest_info,
                                                      error=error,
                                                      trace_id=trace_id)
         # pylint: disable=protected-access
-        new_ingest_info._entity['region']: str = region
-        new_ingest_info._entity['batch_ingest_info_data']: str = \
-            batch_ingest_info_data.to_serializable()
-        new_ingest_info._entity['session_start_time']: datetime = \
-            session_start_time
+        new_ingest_info._entity['region'] = region
+        new_ingest_info._entity['batch_ingest_info_data'] = batch_ingest_info_data.to_serializable()
+        new_ingest_info._entity['session_start_time'] = session_start_time
         return new_ingest_info
 
-    def __init__(self, entity):
+    def __init__(self, entity: datastore.Entity):
         self._entity = entity
 
-    def to_entity(self):
+    def to_entity(self) -> datastore.Entity:
         return self._entity
 
 
@@ -246,7 +249,7 @@ def batch_get_ingest_infos_for_region(region: str,
         _get_ingest_info_entities_for_region(region, session_start_time))
 
 
-def batch_delete_ingest_infos_for_region(region: str):
+def batch_delete_ingest_infos_for_region(region: str) -> None:
     """Batch deletes ingest infos for a particular region.
 
         Args:
@@ -289,7 +292,7 @@ def _batch_ingest_info_data_from_entities(
             in entity_list]
 
 
-def _get_ingest_info_entities_for_region(region: str, session_start_time=None) \
+def _get_ingest_info_entities_for_region(region: str, session_start_time: datetime = None) \
         -> List[datastore.Entity]:
     logging.info("Getting ingest info entities for region: [%s] and "
                  "session_start_time: [%s]", region, session_start_time)

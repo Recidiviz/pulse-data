@@ -31,7 +31,7 @@ from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.persistence_utils import should_persist
 
 
-def store_single_count(sc: SingleCount, jurisdiction_id: str):
+def store_single_count(sc: SingleCount, jurisdiction_id: str) -> bool:
     """Store a single count"""
 
     jurisdiction_id = validate_jid(jurisdiction_id)

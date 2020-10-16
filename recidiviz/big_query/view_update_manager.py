@@ -26,7 +26,7 @@ import argparse
 import logging
 import sys
 from enum import Enum
-from typing import Dict, List, Sequence
+from typing import Dict, List, Sequence, Tuple
 
 from opencensus.stats import measure, view as opencensus_view, aggregation
 
@@ -75,7 +75,7 @@ def create_dataset_and_update_all_views(materialized_views_only: bool = False) -
 def create_dataset_and_update_views_for_view_builders(
         view_namespace: BigQueryViewNamespace,
         view_builders_to_update: Dict[str, Sequence[BigQueryViewBuilder]],
-        materialized_views_only: bool = False):
+        materialized_views_only: bool = False) -> None:
     """Converts the map of dataset_ids to BigQueryViewBuilders lists into a map of dataset_ids to BigQueryViews by
     building each of the views. Then, calls create_dataset_and_update_views with those views and their parent
     datasets. If materialized_views_only is True, will only update views that have a set materialized_view_table_id
@@ -100,7 +100,7 @@ def create_dataset_and_update_views_for_view_builders(
         raise e
 
 
-def _create_dataset_and_update_views(views_to_update: Dict[str, List[BigQueryView]]):
+def _create_dataset_and_update_views(views_to_update: Dict[str, List[BigQueryView]]) -> None:
     """Create and update the given views and their parent datasets.
 
     For each dataset key in the given dictionary, creates the dataset if it does not exist, and creates or updates the
@@ -123,7 +123,7 @@ def _create_dataset_and_update_views(views_to_update: Dict[str, List[BigQueryVie
                 bq_client.materialize_view_to_table(view)
 
 
-def parse_arguments(argv):
+def parse_arguments(argv: List[str]) -> Tuple[argparse.Namespace, List[str]]:
     """Parses the required arguments."""
     parser = argparse.ArgumentParser()
 

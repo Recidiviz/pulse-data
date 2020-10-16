@@ -67,6 +67,7 @@ from recidiviz.common.constants.state.\
     )
 from recidiviz.persistence.database.database_entity import DatabaseEntity
 from recidiviz.persistence.database.session import Session
+from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.core_entity import CoreEntity
 from recidiviz.persistence.entity.entity_utils import \
     get_set_entity_field_names, EntityFieldType, get_entities_by_type, \
@@ -628,46 +629,51 @@ def generate_full_graph_state_person(
     person.program_assignments.extend(supervision_period.program_assignments)
 
     if set_back_edges:
-        person_children = \
-            person.external_ids + person.races + \
-            person.aliases + person.ethnicities + \
-            person.sentence_groups + person.assessments + \
-            person.program_assignments
+
+        person_children: List[Entity] = (
+            person.external_ids + person.races +  # type: ignore
+            person.aliases + person.ethnicities +  # type: ignore
+            person.sentence_groups + person.assessments +  # type: ignore
+            person.program_assignments  # type: ignore
+        )
         for child in person_children:
-            child.person = person
+            child.person = person  # type: ignore
 
-        sentence_group_children = \
-            sentence_group.incarceration_sentences + \
-            sentence_group.supervision_sentences + \
-            sentence_group.fines
+        sentence_group_children: List[Entity] = (
+            sentence_group.incarceration_sentences +  # type: ignore
+            sentence_group.supervision_sentences +  # type: ignore
+            sentence_group.fines  # type: ignore
+        )
         for child in sentence_group_children:
-            child.sentence_group = sentence_group
-            child.person = person
+            child.sentence_group = sentence_group  # type: ignore
+            child.person = person  # type: ignore
 
-        incarceration_sentence_children = \
-            incarceration_sentence.charges + \
-            incarceration_sentence.incarceration_periods + \
-            incarceration_sentence.supervision_periods + \
-            incarceration_sentence.early_discharges
+        incarceration_sentence_children = (
+            incarceration_sentence.charges +  # type: ignore
+            incarceration_sentence.incarceration_periods +  # type: ignore
+            incarceration_sentence.supervision_periods +  # type: ignore
+            incarceration_sentence.early_discharges  # type: ignore
+        )
 
         for child in incarceration_sentence_children:
             if hasattr(child, 'incarceration_sentences'):
                 child.incarceration_sentences = [incarceration_sentence]
             else:
-                child.incarceration_sentence = incarceration_sentence
+                child.incarceration_sentence = incarceration_sentence  # type: ignore
             child.person = person
 
-        supervision_sentence_children = \
-            supervision_sentence.charges + \
-            supervision_sentence.incarceration_periods + \
-            supervision_sentence.supervision_periods + \
-            supervision_sentence.early_discharges
+        supervision_sentence_children = (
+            supervision_sentence.charges +  # type: ignore
+            supervision_sentence.incarceration_periods +  # type: ignore
+            supervision_sentence.supervision_periods +  # type: ignore
+            supervision_sentence.early_discharges  # type: ignore
+        )
 
         for child in supervision_sentence_children:
             if hasattr(child, 'supervision_sentences'):
                 child.supervision_sentences = [supervision_sentence]
             else:
-                child.supervision_sentence = supervision_sentence
+                child.supervision_sentence = supervision_sentence  # type: ignore
             child.person = person
 
         court_case.charges = [charge, charge2, charge3]
@@ -675,15 +681,16 @@ def generate_full_graph_state_person(
         bond.charges = [charge, charge2, charge3]
         bond.person = person
 
-        incarceration_period_children = \
-            incarceration_period.parole_decisions + \
-            incarceration_period.assessments + \
-            incarceration_period.incarceration_incidents + \
-            incarceration_period.program_assignments
+        incarceration_period_children = (
+            incarceration_period.parole_decisions +  # type: ignore
+            incarceration_period.assessments +  # type: ignore
+            incarceration_period.incarceration_incidents +  # type: ignore
+            incarceration_period.program_assignments  # type: ignore
+        )
 
         for child in incarceration_period_children:
             if hasattr(child, 'incarceration_periods'):
-                child.incarceration_periods = [incarceration_period]
+                child.incarceration_periods = [incarceration_period]  # type: ignore
             else:
                 child.incarceration_period = incarceration_period
             child.person = person
@@ -695,18 +702,18 @@ def generate_full_graph_state_person(
             child.incarceration_incident = incarceration_incident
             child.person = person
 
-        supervision_period_children = \
-            supervision_period.supervision_violation_entries + \
-            supervision_period.assessments + \
-            supervision_period.program_assignments + \
-            supervision_period.case_type_entries + \
-            supervision_period.supervision_contacts
-
+        supervision_period_children = (
+            supervision_period.supervision_violation_entries +  # type: ignore
+            supervision_period.assessments +  # type: ignore
+            supervision_period.program_assignments +  # type: ignore
+            supervision_period.case_type_entries +  # type: ignore
+            supervision_period.supervision_contacts  # type: ignore
+        )
         for child in supervision_period_children:
             if hasattr(child, 'supervision_periods'):
                 child.supervision_periods = [supervision_period]
             else:
-                child.supervision_period = supervision_period
+                child.supervision_period = supervision_period  # type: ignore
             child.person = person
 
         supervision_violation_response.supervision_violation = \

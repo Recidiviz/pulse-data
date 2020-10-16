@@ -27,11 +27,10 @@ from apache_beam.typehints import with_input_types, with_output_types
 
 from recidiviz.calculator.pipeline.utils.execution_utils import select_all_query
 from recidiviz.common.attr_mixins import BuildableAttr
-from recidiviz.common.attr_utils import is_property_list, \
-    is_property_forward_ref
 from recidiviz.persistence.database.base_schema import StateBase
 from recidiviz.persistence.entity import entity_utils
-from recidiviz.persistence.entity.entity_utils import SchemaEdgeDirectionChecker
+from recidiviz.persistence.entity.entity_utils import SchemaEdgeDirectionChecker, is_property_list, \
+    is_property_forward_ref
 from recidiviz.persistence.entity.state import entities as state_entities
 from recidiviz.persistence.database import schema_utils
 

@@ -27,7 +27,8 @@ from functools import lru_cache
 
 import attr
 
-from recidiviz.common.attr_utils import get_non_flat_property_class_name
+from recidiviz.common.attr_utils import _is_list, _get_type_name_from_type, _is_union, \
+    _is_forward_ref, is_list, is_forward_ref
 from recidiviz.common.constants.state.state_agent import StateAgentType
 from recidiviz.common.constants.state.state_court_case import StateCourtType
 from recidiviz.common.constants.state.state_incarceration import \
@@ -744,3 +745,92 @@ def get_single_state_code(external_id_entities: Iterable[Union[ExternalIdEntity,
         raise ValueError('Expected at least one entity, found none.')
 
     return state_code
+
+
+def get_non_flat_property_class_name(obj: Union[list, Entity], property_name: str) -> Optional[str]:
+    """Returns the class name of the property with |property_name| on obj, or
+    None if the property is a flat field.
+    """
+    if not isinstance(obj, Entity) and not isinstance(obj, list):
+        raise TypeError(f'Unexpected type [{type(obj)}]')
+
+    if is_property_flat_field(obj, property_name):
+        return None
+
+    attribute = attr.fields_dict(obj.__class__).get(property_name)
+    if not attribute:
+        return None
+
+    attr_type = attribute.type
+
+    if not attr_type:
+        raise ValueError(f'Unexpected None type for attribute [{attribute}]')
+
+    if _is_list(attr_type):
+        list_elem_type = attr_type.__args__[0]  # type: ignore
+        return _get_type_name_from_type(list_elem_type)
+
+    if _is_union(attr_type):
+        type_names = [_get_type_name_from_type(t)
+                      for t in attr_type.__args__]  # type: ignore
+
+        type_names = [t for t in type_names if t != 'NoneType']
+        if len(type_names) > 1:
+            raise ValueError(f'Multiple nonnull types found: {type_names}')
+        if not type_names:
+            raise ValueError('Expected at least one nonnull type')
+        return type_names[0]
+
+    if _is_forward_ref(attr_type):
+        return _get_type_name_from_type(attr_type)
+
+    raise ValueError(
+        f'Non-flat field [{property_name}] on class [{obj.__class__}] should '
+        f'either correspond to list or union.')
+
+
+def is_property_list(obj: Union[list, Entity], property_name: str) -> bool:
+    """Returns true if the attribute corresponding to |property_name| on the
+     given object is a List type."""
+
+    if not isinstance(obj, Entity) and not isinstance(obj, list):
+        raise TypeError(f'Unexpected type [{type(obj)}]')
+
+    attribute = attr.fields_dict(obj.__class__).get(property_name)
+
+    if not attribute:
+        raise ValueError(f'Unexpected None attribute for property_name [{property_name}] on obj [{obj}]')
+
+    return is_list(attribute)
+
+
+def is_property_forward_ref(obj: Union[list, Entity], property_name: str) -> bool:
+    """Returns true if the attribute corresponding to |property_name| on the
+     given object is a ForwardRef type."""
+
+    if not isinstance(obj, Entity) and not isinstance(obj, list):
+        raise TypeError(f'Unexpected type [{type(obj)}]')
+
+    attribute = attr.fields_dict(obj.__class__).get(property_name)
+
+    if not attribute:
+        raise ValueError(f'Unexpected None attribute for property_name [{property_name}] on obj [{obj}]')
+
+    return is_forward_ref(attribute)
+
+
+# TODO(#1886): We should not consider objects which are not ForwardRefs, but are properly typed to an entity cls
+#  as a flat field
+def is_property_flat_field(obj: Union[list, Entity], property_name: str) -> bool:
+    """Returns true if the attribute corresponding to |property_name| on the
+     given object is a flat field (not a List, attr class, or ForwardRef)."""
+
+    if not isinstance(obj, Entity) and not isinstance(obj, list):
+        raise TypeError(f'Unexpected type [{type(obj)}]')
+
+    attribute = attr.fields_dict(obj.__class__).get(property_name)
+
+    if not attribute:
+        raise ValueError(f'Unexpected None attribute for property_name [{property_name}] on obj [{obj}]')
+
+    return not is_list(attribute) and not is_forward_ref(attribute)

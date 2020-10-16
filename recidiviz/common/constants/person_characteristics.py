@@ -19,6 +19,7 @@
 Constants related to a person's characteristics shared between county and state
 schemas.
 """
+from typing import Optional, Dict
 
 import recidiviz.common.constants.enum_canonical_strings as enum_strings
 from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
@@ -34,7 +35,7 @@ class Gender(EntityEnum, metaclass=EntityEnumMeta):
     TRANS_MALE = enum_strings.gender_trans_male
 
     @staticmethod
-    def _get_default_map():
+    def _get_default_map() -> Dict[str, Optional['Gender']]:
         return _GENDER_MAP
 
 
@@ -48,7 +49,7 @@ class Race(EntityEnum, metaclass=EntityEnumMeta):
     WHITE = enum_strings.race_white
 
     @staticmethod
-    def _get_default_map():
+    def _get_default_map() -> Dict[str, 'Race']:
         return _RACE_MAP
 
 
@@ -58,7 +59,7 @@ class Ethnicity(EntityEnum, metaclass=EntityEnumMeta):
     NOT_HISPANIC = enum_strings.ethnicity_not_hispanic
 
     @staticmethod
-    def _get_default_map():
+    def _get_default_map() -> Dict[str, 'Ethnicity']:
         return ETHNICITY_MAP
 
 
@@ -68,7 +69,7 @@ class ResidencyStatus(EntityEnum, metaclass=EntityEnumMeta):
     TRANSIENT = enum_strings.residency_status_transient
 
     @staticmethod
-    def _get_default_map():
+    def _get_default_map() -> Dict[str, 'ResidencyStatus']:
         raise RuntimeError("ResidencyStatus is not mapped directly")
 
 

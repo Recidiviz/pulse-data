@@ -162,7 +162,7 @@ def load_all_tables_concurrently(
         big_query_client: BigQueryClient,
         dataset_ref: bigquery.dataset.DatasetReference,
         tables: Tuple[sqlalchemy.Table, ...],
-        schema_type: SchemaType):
+        schema_type: SchemaType) -> None:
     """Start all table LoadJobs concurrently.
 
     Wait until completion to log results."""

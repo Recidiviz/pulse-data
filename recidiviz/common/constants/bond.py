@@ -18,6 +18,7 @@
 """
 Constants related to a bond shared between county and state schemas.
 """
+from typing import Dict, Optional
 
 import recidiviz.common.constants.enum_canonical_strings as enum_strings
 from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
@@ -33,7 +34,7 @@ class BondType(EntityEnum, metaclass=EntityEnumMeta):
     UNSECURED = enum_strings.bond_type_unsecured
 
     @staticmethod
-    def _get_default_map():
+    def _get_default_map() -> Dict[str, Optional['BondType']]:
         return BOND_TYPE_MAP
 
 
@@ -46,7 +47,7 @@ class BondStatus(EntityEnum, metaclass=EntityEnumMeta):
     SET = enum_strings.bond_status_set
 
     @staticmethod
-    def _get_default_map():
+    def _get_default_map() -> Dict[str, 'BondStatus']:
         return BOND_STATUS_MAP
 
 
