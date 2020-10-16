@@ -106,7 +106,7 @@ class MetricViewExportManagerTest(unittest.TestCase):
         )]
 
         mock_view_update_manager.assert_called()
-        mock_view_exporter.export.assert_called_with(view_export_configs)
+        mock_view_exporter.export_and_validate.assert_called_with(view_export_configs)
 
     @mock.patch('recidiviz.metrics.export.metric_view_export_manager.view_config')
     @mock.patch('recidiviz.big_query.view_update_manager.create_dataset_and_update_views_for_view_builders')
@@ -145,4 +145,4 @@ class MetricViewExportManagerTest(unittest.TestCase):
         )]
 
         mock_view_update_manager.assert_called()
-        mock_view_exporter.export.assert_called_with(view_export_configs)
+        mock_view_exporter.export_and_validate.assert_called_with(view_export_configs)

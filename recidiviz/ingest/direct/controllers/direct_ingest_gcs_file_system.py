@@ -23,7 +23,7 @@ import logging
 import os
 import tempfile
 import uuid
-from typing import List, Optional, Union, Callable
+from typing import List, Optional, Union, Callable, Dict
 
 from recidiviz.cloud_storage.gcs_file_system import GCSFileSystem, GcsfsFileContentsHandle
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import \
@@ -192,6 +192,12 @@ class DirectIngestGCSFileSystem(GCSFileSystem):
 
     def exists(self, path: Union[GcsfsBucketPath, GcsfsFilePath]) -> bool:
         return self.gcs_file_system.exists(path)
+
+    def get_file_size(self, path: GcsfsFilePath) -> Optional[int]:
+        return self.gcs_file_system.get_file_size(path)
+
+    def get_metadata(self, path: GcsfsFilePath) -> Optional[Dict]:
+        return self.gcs_file_system.get_metadata(path)
 
     def mv(self,
            src_path: GcsfsFilePath,

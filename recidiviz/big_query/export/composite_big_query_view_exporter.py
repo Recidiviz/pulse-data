@@ -33,6 +33,7 @@ from typing import List, Sequence
 
 from recidiviz.big_query.big_query_client import BigQueryClient
 from recidiviz.big_query.export.big_query_view_exporter import BigQueryViewExporter
+from recidiviz.big_query.export.big_query_view_export_validator import ExistsBigQueryViewExportValidator
 from recidiviz.big_query.export.export_query_config import ExportBigQueryViewConfig
 from recidiviz.cloud_storage.gcs_file_system import GCSFileSystem
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
@@ -43,13 +44,13 @@ QUERY_PAGE_SIZE = 1000
 class CompositeBigQueryViewExporter(BigQueryViewExporter):
     """View exporter which takes in multiple delegate view exporters, writes all of their contents to a
     staging location, i.e. not the final destination, and only when all contents have been staged does it move all of
-    them to the final destination."""
+    them to the final destination. Validates that all final destination paths exist."""
 
     def __init__(self,
                  bq_client: BigQueryClient,
                  fs: GCSFileSystem,
                  delegate_view_exporters: List[BigQueryViewExporter]):
-        super().__init__(bq_client)
+        super().__init__(bq_client, ExistsBigQueryViewExportValidator(fs))
         self.delegate_view_exporters = delegate_view_exporters
         self.fs = fs
 
@@ -58,42 +59,26 @@ class CompositeBigQueryViewExporter(BigQueryViewExporter):
 
         staging_configs = [config.pointed_to_staging_subdirectory() for config in export_configs]
 
-        output_staging_paths = []
+        all_staging_paths: List[GcsfsFilePath] = []
         for view_exporter in self.delegate_view_exporters:
             logging.info("Beginning staged export of results for view exporter delegate [%s]", view_exporter.__class__)
 
-            output_staging_paths.extend(view_exporter.export(staging_configs))
+            staging_paths = view_exporter.export_and_validate(staging_configs)
+            all_staging_paths.extend(staging_paths)
 
             logging.info("Completed staged export of results for view exporter delegate [%s]", view_exporter.__class__)
-
-        self._verify_staged_paths(export_configs, output_staging_paths)
 
         logging.info("Copying staged export results to final location")
 
         final_paths = []
-        for staging_path in output_staging_paths:
+        for staging_path in all_staging_paths:
             final_path = ExportBigQueryViewConfig.revert_staging_path_to_original(staging_path)
             self.fs.copy(staging_path, final_path)
             final_paths.append(final_path)
 
         logging.info("Deleting staged copies of the final output paths")
-        for staging_path in output_staging_paths:
+        for staging_path in all_staging_paths:
             self.fs.delete(staging_path)
 
         logging.info("Completed composite BigQuery view export.")
         return final_paths
-
-    def _verify_staged_paths(self,
-                             export_configs: Sequence[ExportBigQueryViewConfig],
-                             output_staging_paths: List[GcsfsFilePath]) -> None:
-        """Verifies that we've exported all expected paths and they actually exist in GCS."""
-        expected_num_output_staging_paths = len(export_configs)*len(self.delegate_view_exporters)
-        num_output_staging_paths = len(set(output_staging_paths))
-        if len(set(output_staging_paths)) != expected_num_output_staging_paths:
-            raise ValueError(f'Expected [{expected_num_output_staging_paths}] staging output paths, '
-                             f'found [{num_output_staging_paths}]')
-
-        for staging_path in output_staging_paths:
-            if not self.fs.exists(staging_path):
-                raise ValueError(
-                    f'File at path [{staging_path.uri()}] does not exist - export did not complete properly')
