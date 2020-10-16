@@ -27,6 +27,7 @@ import argparse
 import logging
 import sys
 from http import HTTPStatus
+from typing import Tuple, List
 
 import flask
 
@@ -43,14 +44,14 @@ calculation_data_storage_manager_blueprint = flask.Blueprint('calculation_data_s
 
 @calculation_data_storage_manager_blueprint.route('/prune_old_dataflow_data')
 @authenticate_request
-def prune_old_dataflow_data():
+def prune_old_dataflow_data()-> Tuple[str, HTTPStatus]:
     """Calls the move_old_dataflow_metrics_to_cold_storage function."""
     move_old_dataflow_metrics_to_cold_storage()
 
     return '', HTTPStatus.OK
 
 
-def move_old_dataflow_metrics_to_cold_storage():
+def move_old_dataflow_metrics_to_cold_storage() -> None:
     """Moves old output in Dataflow metrics tables to tables in a cold storage dataset. We only keep the
     MAX_DAYS_IN_DATAFLOW_METRICS_TABLE days worth of data in a Dataflow metric table at once. All other
     output is moved to cold storage.
@@ -132,7 +133,7 @@ def update_dataflow_metric_tables_schemas() -> None:
             bq_client.create_table_with_schema(dataflow_metrics_dataset_id, table_id, schema_for_metric_class)
 
 
-def parse_arguments(argv):
+def parse_arguments(argv: List[str]) -> Tuple[argparse.Namespace, List[str]]:
     """Parses the arguments needed to call the desired function."""
     parser = argparse.ArgumentParser()
 

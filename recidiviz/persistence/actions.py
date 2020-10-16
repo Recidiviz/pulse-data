@@ -17,6 +17,7 @@
 """Contains all HTTP endpoints for communicating with the persistence layer."""
 
 from http import HTTPStatus
+from typing import Tuple
 
 from flask import Blueprint
 
@@ -30,16 +31,15 @@ actions = Blueprint('actions', __name__)
 
 @actions.route("/v1/records", methods=['POST'])
 @authenticate_request
-def write_record():
-    # TODO: Something like `ingest_info = protobuf.read(request.data)`
+def write_record() -> Tuple[str, HTTPStatus]:
     ingest_info = None
     last_scraped_time = None
     region = None
     jurisdiction_id = None
 
     with monitoring.push_tags({monitoring.TagKey.REGION: region}):
-        metadata = IngestMetadata(region, jurisdiction_id, last_scraped_time)
+        metadata = IngestMetadata(region, jurisdiction_id, last_scraped_time)  # type: ignore
 
-        persistence.write(ingest_info, metadata)
+        persistence.write(ingest_info, metadata)  # type: ignore
 
         return '', HTTPStatus.NOT_IMPLEMENTED

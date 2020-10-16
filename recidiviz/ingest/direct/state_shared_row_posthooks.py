@@ -35,13 +35,16 @@ from recidiviz.ingest.models.ingest_info import IngestObject, StateAlias, \
     StateSupervisionSentence, StateIncarcerationSentence, IngestInfo, StatePersonEthnicity, StateAgent
 from recidiviz.ingest.models.ingest_object_cache import IngestObjectCache
 
+RowPosthookCallable = Callable[[str, Dict[str, str], List[IngestObject], IngestObjectCache], None]
+FilePostprocessorCallable = Callable[[str, IngestInfo, Optional[IngestObjectCache]], None]
+
 
 # TODO(#1882): This should no-longer be necessary once you can map a column
 #  value to multiple fields on the ingested object.
 def copy_name_to_alias(_file_tag: str,
                        _row: Dict[str, str],
                        extracted_objects: List[IngestObject],
-                       _cache: IngestObjectCache):
+                       _cache: IngestObjectCache) -> None:
     """Copy all name fields stored on a StatePerson object to a new StateAlias
     child object.
     """
@@ -61,7 +64,7 @@ def copy_name_to_alias(_file_tag: str,
                                  'state_aliases')
 
 
-def gen_rationalize_race_and_ethnicity(enum_overrides: Dict[EntityEnum, List[str]]) -> Callable:
+def gen_rationalize_race_and_ethnicity(enum_overrides: Dict[EntityEnum, List[str]]) -> RowPosthookCallable:
     """Generates a row post-hook that will identify provided races which are actually ethnicities, and record
     them as ethnicities instead of races."""
 
@@ -69,7 +72,7 @@ def gen_rationalize_race_and_ethnicity(enum_overrides: Dict[EntityEnum, List[str
             _file_tag: str,
             _row: Dict[str, str],
             extracted_objects: List[IngestObject],
-            _cache: IngestObjectCache):
+            _cache: IngestObjectCache) -> None:
         ethnicity_override_values = []
         for ethnicity in Ethnicity:
             ethnicity_override_values.extend(enum_overrides.get(ethnicity, []))
@@ -90,7 +93,7 @@ def gen_rationalize_race_and_ethnicity(enum_overrides: Dict[EntityEnum, List[str
 
 # TODO(#1882): If yaml format supported raw values, this would no-longer be
 #  necessary.
-def gen_label_single_external_id_hook(external_id_type: str) -> Callable:
+def gen_label_single_external_id_hook(external_id_type: str) -> RowPosthookCallable:
     """Generates a row post-hook that will hydrate the id_type field on the
     singular StatePersonExternalId in the extracted objects. Will throw if
     there is more than one external id to label.
@@ -99,7 +102,7 @@ def gen_label_single_external_id_hook(external_id_type: str) -> Callable:
     def _label_external_id(_file_tag: str,
                            _row: Dict[str, str],
                            extracted_objects: List[IngestObject],
-                           _cache: IngestObjectCache):
+                           _cache: IngestObjectCache) -> None:
         found = False
         for extracted_object in extracted_objects:
             if isinstance(extracted_object, StatePersonExternalId):
@@ -144,7 +147,7 @@ def gen_normalize_county_codes_posthook(
         custom_normalize_fn: Optional[Callable[[str,
                                                 Dict[str, str]],
                                                Optional[str]]] = None
-) -> Callable:
+) -> RowPosthookCallable:
     normalize_fn = custom_normalize_fn \
         if custom_normalize_fn is not None \
         else _default_normalized_county_code
@@ -155,7 +158,7 @@ def gen_normalize_county_codes_posthook(
             _file_tag: str,
             row: Dict[str, str],
             extracted_objects: List[IngestObject],
-            _cache: IngestObjectCache):
+            _cache: IngestObjectCache) -> None:
 
         county_code = row[col_name]
         normalized_code = normalize_fn(county_code, county_codes_map)
@@ -176,7 +179,7 @@ def gen_map_ymd_counts_to_max_length_field_posthook(
                                 StateSupervisionSentence]],
         test_for_fallback: Optional[Callable] = None,
         fallback_parser: Optional[Callable] = None
-):
+) -> RowPosthookCallable:
     """Generates a row post-hook that will hydrate the max_length field as
     formatted duration string on objects with the specified sentence type,
     based on the values in separate year, month, and day counts columns.
@@ -194,7 +197,7 @@ def gen_map_ymd_counts_to_max_length_field_posthook(
             _file_tag: str,
             row: Dict[str, str],
             extracted_objects: List[IngestObject],
-            _cache: IngestObjectCache):
+            _cache: IngestObjectCache) -> None:
 
         length_str = get_normalized_ymd_str(
             years_col_name, months_col_name, days_col_name, row)
@@ -213,7 +216,7 @@ def get_normalized_ymd_str(
         years_col_name: str,
         months_col_name: str,
         days_col_name: str,
-        row: Dict[str, str]):
+        row: Dict[str, str]) -> str:
     """Given a |row| and column names that correspond to fields with year,
     month, and day information, returns a single normalized string representing
     this information.
@@ -239,11 +242,11 @@ def gen_set_is_life_sentence_hook(
         sen_calc_type_col: str,
         is_life_val: str,
         ingest_type: Type[Union[StateSentenceGroup,
-                                StateIncarcerationSentence]]) -> Callable:
+                                StateIncarcerationSentence]]) -> RowPosthookCallable:
     def _set_is_life_sentence(_file_tag: str,
                               row: Dict[str, str],
                               extracted_objects: List[IngestObject],
-                              _cache: IngestObjectCache):
+                              _cache: IngestObjectCache) -> None:
         is_life_sentence = row[sen_calc_type_col] == is_life_val
 
         if not is_life_sentence and ingest_type == StateSentenceGroup:
@@ -259,12 +262,12 @@ def gen_set_is_life_sentence_hook(
 
 
 def gen_convert_person_ids_to_external_id_objects(
-        get_id_type: Callable[[str], Optional[str]]):
+        get_id_type: Callable[[str], Optional[str]]) -> FilePostprocessorCallable:
 
     def _convert_person_ids_to_external_id_objects(
             file_tag: str,
             ingest_info: IngestInfo,
-            cache: Optional[IngestObjectCache]):
+            cache: Optional[IngestObjectCache]) -> None:
         id_type = get_id_type(file_tag)
         if not id_type:
             return
@@ -302,7 +305,7 @@ def _concatenate_col_values(row: Dict[str, str],
 def gen_set_field_as_concatenated_values_hook(
         obj_cls: Type[IngestObject],
         field_name: str,
-        cols_to_concatenate: List[str]):
+        cols_to_concatenate: List[str]) -> RowPosthookCallable:
     """
     Generates a row post-hook that sets a field on all extracted objects of a
     certain type by concatenating the values of |cols_to_concatenate| with a '-'
@@ -320,7 +323,7 @@ def gen_set_field_as_concatenated_values_hook(
             row: Dict[str, str],
             extracted_objects: List[IngestObject],
             _cache: IngestObjectCache
-    ):
+    ) -> None:
         field_value = _concatenate_col_values(row, cols_to_concatenate)
         for obj in extracted_objects:
             if isinstance(obj, obj_cls):
@@ -330,13 +333,13 @@ def gen_set_field_as_concatenated_values_hook(
     return set_field_as_concatenated_values_hook
 
 
-def gen_set_agent_type(agent_type: StateAgentType) -> Callable:
+def gen_set_agent_type(agent_type: StateAgentType) -> RowPosthookCallable:
     """Generates a row post-hook that sets the StateAgentType.agent_type field to the given argument."""
 
     def _set_judge_agent_type(_file_tag: str,
                               _row: Dict[str, str],
                               extracted_objects: List[IngestObject],
-                              _cache: IngestObjectCache):
+                              _cache: IngestObjectCache) -> None:
         for extracted_object in extracted_objects:
             if isinstance(extracted_object, StateAgent):
                 extracted_object.agent_type = agent_type.value

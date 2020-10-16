@@ -32,9 +32,10 @@ from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import \
     GcsfsIngestArgs, GcsfsRawDataBQImportArgs, GcsfsIngestViewExportArgs
 from recidiviz.utils.regions import Region
 
+
 def _build_task_id(region_code: str,
                    task_id_tag: Optional[str],
-                   prefix_only: bool = False):
+                   prefix_only: bool = False) -> str:
     """Creates a task id for a task running for a particular region. Ids take
     the form:
     <region_code>(-<task_id_tag>)(-<uuid>).
@@ -68,7 +69,7 @@ class CloudTaskQueueInfo:
     # pylint:disable=not-an-iterable
     task_names: List[str] = attr.ib(factory=list)
 
-    def size(self):
+    def size(self) -> int:
         """Number of tasks currently queued in the queue for the given region.
         If this is generated from the queue itself, it will return at least 1.
         """
@@ -119,10 +120,10 @@ class BQImportExportCloudTaskQueueInfo(CloudTaskQueueInfo):
                                    task_args: Union[GcsfsRawDataBQImportArgs, GcsfsIngestViewExportArgs]) -> bool:
         return any(task_args.task_id_tag() in task_name for task_name in self.task_names)
 
-    def has_raw_data_import_jobs_queued(self):
+    def has_raw_data_import_jobs_queued(self) -> bool:
         return any(self._is_raw_data_export_task(task_name) for task_name in self.task_names)
 
-    def has_ingest_view_export_jobs_queued(self):
+    def has_ingest_view_export_jobs_queued(self) -> bool:
         return any(self._is_ingest_view_export_job(task_name) for task_name in self.task_names)
 
 
@@ -147,7 +148,7 @@ class DirectIngestCloudTaskManager:
     @abc.abstractmethod
     def create_direct_ingest_process_job_task(self,
                                               region: Region,
-                                              ingest_args: IngestArgs):
+                                              ingest_args: IngestArgs) -> None:
         """Queues a direct ingest process job task. All direct ingest data
         processing should happen through this endpoint.
         Args:
@@ -160,7 +161,7 @@ class DirectIngestCloudTaskManager:
             self,
             region: Region,
             just_finished_job: bool,
-            delay_sec: int):
+            delay_sec: int) -> None:
         """Creates a scheduler task for direct ingest for a given region.
         Scheduler tasks should be short-running and queue process_job tasks if
         there is more work to do.
@@ -175,23 +176,23 @@ class DirectIngestCloudTaskManager:
     @abc.abstractmethod
     def create_direct_ingest_handle_new_files_task(self,
                                                    region: Region,
-                                                   can_start_ingest: bool):
+                                                   can_start_ingest: bool) -> None:
         pass
 
     @abc.abstractmethod
     def create_direct_ingest_raw_data_import_task(self,
                                                   region: Region,
-                                                  data_import_args: GcsfsRawDataBQImportArgs):
+                                                  data_import_args: GcsfsRawDataBQImportArgs) -> None:
         pass
 
     @abc.abstractmethod
     def create_direct_ingest_ingest_view_export_task(self,
                                                      region: Region,
-                                                     ingest_view_export_args: GcsfsIngestViewExportArgs):
+                                                     ingest_view_export_args: GcsfsIngestViewExportArgs) -> None:
         pass
 
     @staticmethod
-    def json_to_cloud_task_args(json_data: dict):
+    def json_to_cloud_task_args(json_data: dict) -> Optional[CloudTaskArgs]:
         if 'cloud_task_args' in json_data and 'args_type' in json_data:
             args_type = json_data['args_type']
             cloud_task_args_dict = json_data['cloud_task_args']
@@ -254,7 +255,7 @@ class DirectIngestCloudTaskManagerImpl(DirectIngestCloudTaskManager):
 
     def create_direct_ingest_process_job_task(self,
                                               region: Region,
-                                              ingest_args: IngestArgs):
+                                              ingest_args: IngestArgs) -> None:
         task_id = _build_task_id(region.region_code,
                                  ingest_args.task_id_tag(),
                                  prefix_only=False)
@@ -273,7 +274,7 @@ class DirectIngestCloudTaskManagerImpl(DirectIngestCloudTaskManager):
             region: Region,
             just_finished_job: bool,
             delay_sec: int,
-    ):
+    ) -> None:
         task_id = _build_task_id(region.region_code,
                                  task_id_tag='scheduler',
                                  prefix_only=False)
@@ -290,7 +291,7 @@ class DirectIngestCloudTaskManagerImpl(DirectIngestCloudTaskManager):
 
     def create_direct_ingest_handle_new_files_task(self,
                                                    region: Region,
-                                                   can_start_ingest: bool):
+                                                   can_start_ingest: bool) -> None:
         task_id = _build_task_id(region.region_code,
                                  task_id_tag='handle_new_files',
                                  prefix_only=False)
@@ -307,7 +308,7 @@ class DirectIngestCloudTaskManagerImpl(DirectIngestCloudTaskManager):
 
     def create_direct_ingest_raw_data_import_task(self,
                                                   region: Region,
-                                                  data_import_args: GcsfsRawDataBQImportArgs):
+                                                  data_import_args: GcsfsRawDataBQImportArgs) -> None:
         task_id = _build_task_id(region.region_code,
                                  task_id_tag=data_import_args.task_id_tag(),
                                  prefix_only=False)
@@ -324,7 +325,7 @@ class DirectIngestCloudTaskManagerImpl(DirectIngestCloudTaskManager):
 
     def create_direct_ingest_ingest_view_export_task(self,
                                                      region: Region,
-                                                     ingest_view_export_args: GcsfsIngestViewExportArgs):
+                                                     ingest_view_export_args: GcsfsIngestViewExportArgs) -> None:
         task_id = _build_task_id(region.region_code,
                                  task_id_tag=ingest_view_export_args.task_id_tag(),
                                  prefix_only=False)

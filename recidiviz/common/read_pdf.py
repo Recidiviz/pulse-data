@@ -18,6 +18,7 @@
 to run tabula to parse PDFs. """
 import os
 import pickle
+from typing import Any
 
 import tabula
 
@@ -34,7 +35,7 @@ _CLIENT_ID = {
 
 
 def read_pdf(
-        location: str, filename: str, **kwargs):
+        location: str, filename: str, **kwargs: Any) -> Any:
     if environment.in_test():
         return tabula.read_pdf(filename, **kwargs)
 

@@ -18,7 +18,7 @@
 import datetime
 import unittest
 from sqlite3 import IntegrityError
-from typing import Type
+from typing import Type, List, Tuple
 
 from freezegun import freeze_time
 from mock import patch
@@ -394,7 +394,7 @@ class PostgresDirectIngestFileMetadataManagerTest(unittest.TestCase):
             metadata = metadata_manager.get_file_metadata(ingest_view_unprocessed_path)
             self.assertEqual(expected_metadata, metadata)
 
-        split_file_paths_and_metadata = []
+        split_file_paths_and_metadata: List[Tuple[GcsfsFilePath, DirectIngestIngestFileMetadata]] = []
         if split_file:
             metadata = metadata_manager.get_file_metadata(ingest_view_unprocessed_path)
             if not isinstance(metadata, DirectIngestIngestFileMetadata):
@@ -406,8 +406,12 @@ class PostgresDirectIngestFileMetadataManagerTest(unittest.TestCase):
                 self.run_split_ingest_file_progression_pre_processing(
                     metadata_manager, metadata, split_file_path, discovery_before_export_recorded)
 
-                split_file_paths_and_metadata.append((split_file_path,
-                                                      metadata_manager.get_file_metadata(split_file_path)))
+                split_file_metadata = metadata_manager.get_file_metadata(split_file_path)
+
+                if not isinstance(split_file_metadata, DirectIngestIngestFileMetadata):
+                    self.fail(f'Unexpected split_file_metadata type [{split_file_metadata}].')
+
+                split_file_paths_and_metadata.append((split_file_path, split_file_metadata))
 
         with freeze_time('2015-01-02T03:08:08'):
             metadata_manager.mark_file_as_processed(ingest_view_unprocessed_path)

@@ -18,6 +18,7 @@
 """
 Constants related to a charge shared between state and county schemas.
 """
+from typing import Dict, Optional
 
 import recidiviz.common.constants.enum_canonical_strings as enum_strings
 from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
@@ -37,7 +38,7 @@ class ChargeStatus(EntityEnum, metaclass=EntityEnumMeta):
     REMOVED_WITHOUT_INFO = enum_strings.removed_without_info
 
     @staticmethod
-    def _get_default_map():
+    def _get_default_map() -> Dict[str, Optional['ChargeStatus']]:
         return _CHARGE_STATUS_MAP
 
 

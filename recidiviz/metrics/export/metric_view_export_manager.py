@@ -22,6 +22,7 @@ Run this export locally with the following command:
 import argparse
 import logging
 import sys
+from typing import Tuple, List
 
 from google.cloud import storage
 
@@ -39,7 +40,7 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING, GCP_PROJECT_PRODUCT
 from recidiviz.utils.metadata import local_project_id_override
 
 
-def export_view_data_to_cloud_storage(view_exporter: BigQueryViewExporter = None):
+def export_view_data_to_cloud_storage(view_exporter: BigQueryViewExporter = None) -> None:
     """Exports data in BigQuery metric views to cloud storage buckets.
 
     Optionally takes in a BigQueryViewExporter for performing the export operation. If none is provided, this defaults
@@ -65,7 +66,7 @@ def export_view_data_to_cloud_storage(view_exporter: BigQueryViewExporter = None
         view_exporter.export(view_export_configs)
 
 
-def parse_arguments(argv):
+def parse_arguments(argv: List[str]) -> Tuple[argparse.Namespace, List[str]]:
     """Parses the required arguments."""
     parser = argparse.ArgumentParser()
 

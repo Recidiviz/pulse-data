@@ -18,14 +18,18 @@
 A subclass of DataflowTemplateOperator to ensure that the operator does not add a hash or
 unique id to the task_id name on Dataflow
 """
+from typing import Dict, Any
 
 from airflow.contrib.hooks.gcp_dataflow_hook import DataFlowHook
 from airflow.contrib.operators.dataflow_operator import DataflowTemplateOperator
 
 
 class RecidivizDataflowTemplateOperator(DataflowTemplateOperator):
-    # pylint: disable=unused-argument
-    def execute(self, context):
+    def execute(
+            self,
+            # Some context about the context: https://bcb.github.io/airflow/execute-context
+            context: Dict[str, Any]  # pylint: disable=unused-argument
+    ) -> None:
         hook = DataFlowHook(gcp_conn_id=self.gcp_conn_id,
                             delegate_to=self.delegate_to,
                             poll_sleep=self.poll_sleep)

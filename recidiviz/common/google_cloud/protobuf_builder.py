@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Util class for building protobuf Message objects."""
-from typing import TypeVar, Generic, Type
+from typing import TypeVar, Generic, Type, Any
 
 from google.protobuf.message import Message
 
@@ -44,7 +44,7 @@ class ProtobufBuilder(Generic[ProtoType]):
         self.proto_cls: Type[ProtoType] = proto_cls
         self.proto: ProtoType = proto_cls()
 
-    def update_args(self, **kwargs) -> 'ProtobufBuilder[ProtoType]':
+    def update_args(self, **kwargs: Any) -> 'ProtobufBuilder[ProtoType]':
         """Update proto message with provided args. If args already exist, will
         overwrite with these values.
         """

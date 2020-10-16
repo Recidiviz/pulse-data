@@ -33,7 +33,7 @@ def munge_date_string(date_string: str) -> str:
         _date_component_match, date_string, flags=re.IGNORECASE)
 
 
-def _date_component_match(match) -> str:
+def _date_component_match(match: re.Match) -> str:
     components = []
 
     if match.group('year'):

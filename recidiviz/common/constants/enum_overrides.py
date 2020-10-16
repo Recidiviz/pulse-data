@@ -80,7 +80,7 @@ class EnumOverrides:
     class Builder:
         """Builder for EnumOverrides objects."""
 
-        def __init__(self):
+        def __init__(self) -> None:
             self._str_mappings_dict: Dict[EntityEnumMeta, Dict[str, EntityEnum]] = defaultdict(dict)
             self._mappers_dict: Dict[EntityEnumMeta, Set[EnumMapper]] = defaultdict(set)
             self._ignores: Dict[EntityEnumMeta, Set[str]] = defaultdict(set)
@@ -95,7 +95,7 @@ class EnumOverrides:
         def add_mapper(self,
                        mapper: EnumMapper,
                        mapped_cls: EntityEnumMeta,
-                       from_field: EntityEnumMeta = None):
+                       from_field: EntityEnumMeta = None) -> 'EnumOverrides.Builder':
             """Adds a |mapper| which maps field values to enums within the |mapped_cls|. |mapper| must be a
             Callable which, given a string value, returns an enum of class |mapped_cls| or None.
 
@@ -109,6 +109,7 @@ class EnumOverrides:
             if from_field is None:
                 from_field = mapped_cls
             self._mappers_dict[from_field].add(mapper)
+            return self
 
         def add(self,
                 label: str,
@@ -127,7 +128,9 @@ class EnumOverrides:
             self._str_mappings_dict[from_field][label] = mapped_enum
             return self
 
-        def ignore_with_predicate(self, predicate: EnumIgnorePredicate, from_field: EntityEnumMeta):
+        def ignore_with_predicate(self,
+                                  predicate: EnumIgnorePredicate,
+                                  from_field: EntityEnumMeta) -> 'EnumOverrides.Builder':
             """Marks strings matching |predicate| as ignored values for |from_field| enum class."""
             self._ignore_predicates_dict[from_field].add(predicate)
             return self
