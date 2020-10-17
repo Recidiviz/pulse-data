@@ -63,6 +63,10 @@ def state_specific_officer_recommendation() -> str:
                 CASE WHEN most_severe_response_decision = 'SHOCK_INCARCERATION' THEN 'CODS'
                 WHEN most_severe_response_decision = 'WARRANT_ISSUED' THEN 'CAPIAS'
                 ELSE most_severe_response_decision END
+           WHEN state_code = 'US_PA' THEN
+                -- TODO(#3596): Remove this once we differentiate returns from true revocations 
+                CASE WHEN most_severe_response_decision = 'REVOCATION' THEN 'PLACEMENT_IN_DOC_FACILITY'
+                ELSE most_severe_response_decision END
            ELSE most_severe_response_decision
       END AS officer_recommendation"""
 
