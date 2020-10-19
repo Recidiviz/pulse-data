@@ -20,7 +20,7 @@
 import inspect
 import sys
 from types import ModuleType
-from typing import Iterator, Optional, Type, List
+from typing import Iterator, Optional, Type, List, Any
 
 from functools import lru_cache
 from sqlalchemy import Table
@@ -74,7 +74,7 @@ def get_operations_table_classes() -> Iterator[Table]:
     yield from get_all_table_classes_in_module(operations_schema)
 
 
-def get_non_history_state_database_entities():
+def get_non_history_state_database_entities() -> List[Type[DatabaseEntity]]:
     to_return = []
     for cls in _get_all_database_entities_in_module(state_schema):
         if not issubclass(cls, HistoryTableSharedColumns):
@@ -93,7 +93,7 @@ def _get_all_database_entities_in_module(
             yield member
 
 
-def _is_database_entity_subclass(member) -> bool:
+def _is_database_entity_subclass(member: Any) -> bool:
     return (inspect.isclass(member)
             and issubclass(member, DatabaseEntity)
             and member is not DatabaseEntity
@@ -111,7 +111,7 @@ def get_state_database_entity_with_name(class_name: str) -> Type[StateBase]:
         if member.__name__ == class_name:
             return member
 
-    raise LookupError(f"Entity class {class_name} does not exist in"
+    raise LookupError(f"Entity class {class_name} does not exist in "
                       f"{state_schema.__name__}.")
 
 
@@ -154,7 +154,7 @@ def schema_base_for_schema_module(module: ModuleType) -> DeclarativeMeta:
     raise ValueError(f"Unsupported module: {module}")
 
 
-def schema_base_for_object(schema_object: DatabaseEntity):
+def schema_base_for_object(schema_object: DatabaseEntity) -> DeclarativeMeta:
     if isinstance(schema_object, JailsBase):
         return JailsBase
     if isinstance(schema_object, StateBase):

@@ -28,6 +28,7 @@ from recidiviz.common.google_cloud.google_cloud_tasks_client_wrapper import \
     GoogleCloudTasksClientWrapper
 from recidiviz.ingest.direct.direct_ingest_cloud_task_manager import \
     CloudTaskQueueInfo
+from recidiviz.persistence.database.sqlalchemy_engine_manager import SchemaType
 
 
 class BQExportCloudTaskManager:
@@ -52,20 +53,19 @@ class BQExportCloudTaskManager:
     def get_bq_queue_info(self) -> CloudTaskQueueInfo:
         return self._get_queue_info(BIGQUERY_QUEUE_V2)
 
-    def create_bq_task(self, table_name: str, schema_type: str) -> None:
+    def create_bq_task(self, table_name: str, schema_type: SchemaType) -> None:
         """Create a BigQuery table export path.
 
         Args:
             table_name: Cloud SQL table to export to BQ. Must be defined in
-                the *_TABLES_TO_EXPORT for the given schema.
-            schema_type: The schema of the table being exported, either 'jails'
-                or 'state'.
+                one of the base_schema SchemaTypes.
+            schema_type: The SchemaType of the table being exported.
             url: App Engine worker URL.
         """
-        body = {'table_name': table_name, 'schema_type': schema_type}
+        body = {'table_name': table_name, 'schema_type': schema_type.value}
         task_id = '{}-{}-{}-{}'.format(
             table_name,
-            schema_type,
+            schema_type.value,
             str(datetime.datetime.utcnow().date()),
             uuid.uuid4())
 
