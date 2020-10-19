@@ -1,3 +1,4 @@
+# TODO(#4266): Clean up backwards compatibility code
 key_mappings:
   E10: state_assessment.assessment_date     # Date entered into UCCI system.
   E05: state_assessment.assessment_type
