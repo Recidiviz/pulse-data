@@ -23,6 +23,7 @@ import unittest
 from freezegun import freeze_time
 from google.cloud import tasks_v2
 from google.protobuf import timestamp_pb2
+import mock
 from mock import patch
 
 from recidiviz.calculator.query import bq_export_cloud_task_manager
@@ -33,6 +34,7 @@ from recidiviz.common.google_cloud.google_cloud_tasks_client_wrapper import (
 )
 from recidiviz.common.google_cloud.google_cloud_tasks_shared_queues import \
     JOB_MONITOR_QUEUE_V2, BIGQUERY_QUEUE_V2
+from recidiviz.persistence.database.sqlalchemy_engine_manager import SchemaType
 
 CLOUD_TASK_MANAGER_PACKAGE_NAME = bq_export_cloud_task_manager.__name__
 
@@ -43,16 +45,17 @@ class TestBQExportCloudTaskManager(unittest.TestCase):
     @patch(f'{CLOUD_TASK_MANAGER_PACKAGE_NAME}.uuid')
     @patch('google.cloud.tasks_v2.CloudTasksClient')
     @freeze_time('2019-04-12')
-    def test_create_bq_test(self, mock_client, mock_uuid):
+    def test_create_bq_task(
+            self, mock_client: mock.MagicMock, mock_uuid: mock.MagicMock) -> None:
         # Arrange
         uuid = 'random-uuid'
         mock_uuid.uuid4.return_value = uuid
 
         project_id = 'recidiviz-456'
         table_name = 'test_table'
-        schema_type = 'test_schema_type'
+        schema_type = SchemaType.JAILS.value
         queue_path = f'queue_path/{project_id}/{QUEUES_REGION}'
-        task_id = 'test_table-test_schema_type-2019-04-12-random-uuid'
+        task_id = f'test_table-{schema_type}-2019-04-12-random-uuid'
         task_path = f'{queue_path}/{task_id}'
 
         body = {
@@ -74,7 +77,7 @@ class TestBQExportCloudTaskManager(unittest.TestCase):
 
         # Act
         BQExportCloudTaskManager(project_id=project_id). \
-            create_bq_task(table_name=table_name, schema_type=schema_type)
+            create_bq_task(table_name=table_name, schema_type=SchemaType.JAILS)
 
         # Assert
         mock_client.return_value.queue_path.assert_called_with(
@@ -92,8 +95,8 @@ class TestBQExportCloudTaskManager(unittest.TestCase):
     @patch(f'{CLOUD_TASK_MANAGER_PACKAGE_NAME}.uuid')
     @patch('google.cloud.tasks_v2.CloudTasksClient')
     @freeze_time('2019-04-13')
-    def test_create_bq_monitor_test(
-            self, mock_client, mock_uuid):
+    def test_create_bq_monitor_task(
+            self, mock_client: mock.MagicMock, mock_uuid: mock.MagicMock) -> None:
         # Arrange
         delay_sec = 60
         now_utc_timestamp = int(datetime.datetime.now().timestamp())
