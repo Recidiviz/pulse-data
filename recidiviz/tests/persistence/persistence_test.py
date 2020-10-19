@@ -58,6 +58,9 @@ from recidiviz.persistence.database.schema_entity_converter import (
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.session import Session
 from recidiviz.persistence.entity.county import entities as county_entities
+from recidiviz.persistence.entity_matching.entity_matching_types import MatchedEntities
+from recidiviz.persistence.ingest_info_converter.base_converter import IngestInfoConversionResult
+from recidiviz.persistence.persistence import OVERALL_THRESHOLD, ENUM_THRESHOLD, ENTITY_MATCHING_THRESHOLD
 from recidiviz.tests.utils import fakes
 
 ARREST_ID = 'ARREST_ID_1'
@@ -104,6 +107,21 @@ ID = 1
 ID_2 = 2
 ID_3 = 3
 
+
+ERROR_THRESHOLDS_WITH_FORTY_PERCENT_RATIOS = {
+    SystemLevel.STATE:
+        {
+            OVERALL_THRESHOLD: 0.4,
+            ENUM_THRESHOLD: 0.4,
+            ENTITY_MATCHING_THRESHOLD: 0.4
+        },
+    SystemLevel.COUNTY:
+        {
+            OVERALL_THRESHOLD: 0.4,
+            ENUM_THRESHOLD: 0.4,
+            ENTITY_MATCHING_THRESHOLD: 0.4
+        }
+}
 
 @patch('os.getenv', Mock(return_value='production'))
 @patch.dict('os.environ', {'PERSIST_LOCALLY': 'false'})
@@ -241,6 +259,8 @@ class TestPersistence(TestCase):
         # Assert
         assert not result
 
+    @patch('recidiviz.persistence.persistence.SYSTEM_TYPE_TO_ERROR_THRESHOLD',
+           ERROR_THRESHOLDS_WITH_FORTY_PERCENT_RATIOS)
     def test_twoDifferentPeopleWithBooking_persistsNone(self):
         # Arrange
         ingest_info = IngestInfoProto()
@@ -261,6 +281,56 @@ class TestPersistence(TestCase):
         # Assert
         assert not result
 
+    @patch('recidiviz.persistence.ingest_info_converter.ingest_info_converter.convert_to_persistence_entities')
+    @patch('recidiviz.persistence.entity_validator.entity_validator.validate')
+    @patch('recidiviz.persistence.persistence.SYSTEM_TYPE_TO_ERROR_THRESHOLD',
+           ERROR_THRESHOLDS_WITH_FORTY_PERCENT_RATIOS)
+    def test_enum_error_threshold_should_abort_persistsNone(self, validator, entity_converter):
+        # Arrange
+        ingest_info = IngestInfoProto()
+        ingest_info.people.add(full_name=FULL_NAME_2)
+        ingest_info.people.add(full_name=FULL_NAME_1, person_id=EXTERNAL_PERSON_ID)
+
+        # Mock out 1 enum error, and no others
+        entity_converter.return_value = IngestInfoConversionResult(enum_parsing_errors=1,
+                                                                   general_parsing_errors=0,
+                                                                   protected_class_errors=0,
+                                                                   people=ingest_info.people)
+        validator.return_value = ingest_info.people, 0
+
+        # Act
+        self.assertFalse(persistence.write(ingest_info, DEFAULT_METADATA))
+        result = county_dao.read_people(
+            SessionFactory.for_schema_base(JailsBase))
+
+        # Assert
+        assert not result
+
+    @patch('recidiviz.persistence.entity_matching.entity_matching.match')
+    @patch('recidiviz.persistence.persistence.SYSTEM_TYPE_TO_ERROR_THRESHOLD',
+           ERROR_THRESHOLDS_WITH_FORTY_PERCENT_RATIOS)
+    def test_entity_match_error_threshold_should_abort_persistsNone(self, mock_entity_match):
+        # Mock out 1 entity matching error, and no others
+        mock_entity_match.return_value = MatchedEntities(people=[],
+                                                         orphaned_entities=[],
+                                                         error_count=1,
+                                                         total_root_entities=0)
+
+        # Arrange
+        ingest_info = IngestInfoProto()
+        ingest_info.people.add(person_id='2_GENERATE', full_name=FULL_NAME_2)
+        ingest_info.people.add(person_id='3_GENERATE', full_name=FULL_NAME_3)
+
+        # Act
+        self.assertFalse(persistence.write(ingest_info, DEFAULT_METADATA))
+        result = county_dao.read_people(
+            SessionFactory.for_schema_base(JailsBase))
+
+        # Assert
+        assert not result
+
+    @patch('recidiviz.persistence.persistence.SYSTEM_TYPE_TO_ERROR_THRESHOLD',
+           ERROR_THRESHOLDS_WITH_FORTY_PERCENT_RATIOS)
     def test_threeDifferentPeople_persistsTwoBelowThreshold(self):
         # Arrange
         ingest_info = IngestInfoProto()

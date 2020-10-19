@@ -34,7 +34,7 @@ m_matching_errors = measure.MeasureInt(
 
 matching_errors_by_entity_view = view.View(
     'recidiviz/persistence/entity_matching/error_count',
-    'Sum of the errors in the entit matching layer, by entity',
+    'Sum of the errors in the entity matching layer, by entity',
     [monitoring.TagKey.REGION, monitoring.TagKey.ENTITY_TYPE],
     m_matching_errors,
     aggregation.SumAggregation())
