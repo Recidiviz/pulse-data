@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Helpers for creating fake regions for use in tests."""
-from typing import Optional, Union
+from typing import Any, Dict, Optional, Union
 
 from mock import create_autospec
 
@@ -34,7 +34,9 @@ def fake_region(*,
                                          BaseDirectIngestController]] = None,
                 is_raw_vs_ingest_file_name_detection_enabled: bool = False,
                 are_raw_data_bq_imports_enabled_in_env: bool = False,
-                are_ingest_view_exports_enabled_in_env: bool = False):
+                are_ingest_view_exports_enabled_in_env: bool = False,
+                queue: Optional[Dict[str, Any]] = None,
+                shared_queue: Optional[str] = None):
     region = create_autospec(Region)
     region.region_code = region_code
     region.agency_type = agency_type
@@ -50,6 +52,8 @@ def fake_region(*,
     region.is_raw_vs_ingest_file_name_detection_enabled.return_value = is_raw_vs_ingest_file_name_detection_enabled
     region.are_raw_data_bq_imports_enabled_in_env.return_value = are_raw_data_bq_imports_enabled_in_env
     region.are_ingest_view_exports_enabled_in_env.return_value = are_ingest_view_exports_enabled_in_env
+    region.queue = queue
+    region.shared_queue = shared_queue
     return region
 
 
