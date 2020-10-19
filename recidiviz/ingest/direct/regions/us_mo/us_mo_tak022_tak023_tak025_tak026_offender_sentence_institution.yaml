@@ -1,3 +1,4 @@
+# TODO(#4266): Clean up backwards compatibility code
 key_mappings:
   BS$CNS: state_incarceration_sentence.county_code
   BS$PD: state_incarceration_sentence.projected_max_release_date

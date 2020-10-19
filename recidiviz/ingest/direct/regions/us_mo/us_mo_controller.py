@@ -130,6 +130,8 @@ class UsMoController(CsvGcsfsDirectIngestController):
         # SQL Preprocessing View
         'tak001_offender_identification_v2',
         'tak040_offender_cycles_v2',
+        'tak022_tak023_tak025_tak026_offender_sentence_institution_v2',
+        'tak022_tak024_tak025_tak026_offender_sentence_supervision_v2',
     ]
 
     PRIMARY_COL_PREFIXES_BY_FILE_TAG = {
@@ -147,6 +149,8 @@ class UsMoController(CsvGcsfsDirectIngestController):
         # SQL Preprocessing View
         'tak001_offender_identification_v2': 'EK',
         'tak040_offender_cycles_v2': 'DQ',
+        'tak022_tak023_tak025_tak026_offender_sentence_institution_v2': 'BS',
+        'tak022_tak024_tak025_tak026_offender_sentence_supervision_v2': 'BS',
     }
 
     REVOKED_PROBATION_SENTENCE_STATUS_CODES = {
@@ -488,71 +492,12 @@ class UsMoController(CsvGcsfsDirectIngestController):
             # Legacy
             'tak001_offender_identification': tak001_offender_identification_row_processors,
             'tak040_offender_cycles': tak040_offender_cycles_row_processors,
-            'tak022_tak023_tak025_tak026_offender_sentence_institution': [
-                gen_normalize_county_codes_posthook(self.region.region_code,
-                                                    CHARGE_COUNTY_CODE,
-                                                    StateCharge),
-                gen_normalize_county_codes_posthook(self.region.region_code,
-                                                    SENTENCE_COUNTY_CODE,
-                                                    StateIncarcerationSentence),
-                gen_map_ymd_counts_to_max_length_field_posthook(
-                    INCARCERATION_SENTENCE_LENGTH_YEARS,
-                    INCARCERATION_SENTENCE_LENGTH_MONTHS,
-                    INCARCERATION_SENTENCE_LENGTH_DAYS,
-                    StateIncarcerationSentence,
-                    test_for_fallback=self._test_length_string,
-                    fallback_parser=self._parse_days_with_long_range
-                ),
-                gen_set_is_life_sentence_hook(
-                    INCARCERATION_SENTENCE_MIN_RELEASE_TYPE,
-                    'LIF',
-                    StateIncarcerationSentence),
-                self._gen_clear_magical_date_value(
-                    'projected_max_release_date',
-                    INCARCERATION_SENTENCE_PROJECTED_MAX_DATE,
-                    self.SENTENCE_MAGICAL_DATES,
-                    StateIncarcerationSentence),
-                self._gen_clear_magical_date_value(
-                    'projected_min_release_date',
-                    INCARCERATION_SENTENCE_PROJECTED_MIN_DATE,
-                    self.SENTENCE_MAGICAL_DATES,
-                    StateIncarcerationSentence),
-                self._set_sentence_status,
-                self._set_completion_date_if_necessary,
-                self._clear_zero_date_string,
-                self.tak022_tak023_set_parole_eligibility_date,
-                self.set_charge_id_from_sentence_id,
-            ],
-            'tak022_tak024_tak025_tak026_offender_sentence_supervision': [
-                gen_normalize_county_codes_posthook(self.region.region_code,
-                                                    CHARGE_COUNTY_CODE,
-                                                    StateCharge),
-                gen_normalize_county_codes_posthook(self.region.region_code,
-                                                    SENTENCE_COUNTY_CODE,
-                                                    StateSupervisionSentence),
-                gen_map_ymd_counts_to_max_length_field_posthook(
-                    SUPERVISION_SENTENCE_LENGTH_YEARS,
-                    SUPERVISION_SENTENCE_LENGTH_MONTHS,
-                    SUPERVISION_SENTENCE_LENGTH_DAYS,
-                    StateSupervisionSentence,
-                    test_for_fallback=self._test_length_string,
-                    fallback_parser=self._parse_days_with_long_range
-                ),
-                self._gen_clear_magical_date_value(
-                    'start_date',
-                    SUPERVISION_SENTENCE_START_DATE,
-                    self.SENTENCE_MAGICAL_DATES,
-                    StateSupervisionSentence),
-                self._gen_clear_magical_date_value(
-                    'projected_completion_date',
-                    SUPERVISION_SENTENCE_PROJECTED_COMPLETION_DATE,
-                    self.SENTENCE_MAGICAL_DATES,
-                    StateSupervisionSentence),
-                self._set_sentence_status,
-                self._set_completion_date_if_necessary,
-                self._clear_zero_date_string,
-                self.set_charge_id_from_sentence_id,
-            ],
+            'tak022_tak023_tak025_tak026_offender_sentence_institution':
+                self.get_tak022_tak023_tak025_tak026_offender_sentence_institution_row_processors(
+                    'tak022_tak023_tak025_tak026_offender_sentence_institution'),
+            'tak022_tak024_tak025_tak026_offender_sentence_supervision':
+                self.get_tak022_tak023_tak025_tak026_offender_sentence_supervision_row_processors(
+                    'tak022_tak024_tak025_tak026_offender_sentence_supervision'),
             'tak158_tak023_tak026_incarceration_period_from_incarceration_sentence':
                 incarceration_period_row_posthooks,
             'tak158_tak024_tak026_incarceration_period_from_supervision_sentence':
@@ -590,9 +535,17 @@ class UsMoController(CsvGcsfsDirectIngestController):
             # SQL Preprocessing View
             'tak001_offender_identification_v2': tak001_offender_identification_row_processors,
             'tak040_offender_cycles_v2': tak040_offender_cycles_row_processors,
+            'tak022_tak023_tak025_tak026_offender_sentence_institution_v2':
+                self.get_tak022_tak023_tak025_tak026_offender_sentence_institution_row_processors(
+                    'tak022_tak023_tak025_tak026_offender_sentence_institution_v2'),
+            'tak022_tak024_tak025_tak026_offender_sentence_supervision_v2':
+                self.get_tak022_tak023_tak025_tak026_offender_sentence_supervision_row_processors(
+                    'tak022_tak024_tak025_tak026_offender_sentence_supervision_v2'),
+
         }
 
         self.primary_key_override_by_file: Dict[str, Callable] = {
+            # Legacy
             'oras_assessments_weekly':
                 self._generate_assessment_id_coords,
             'tak022_tak023_tak025_tak026_offender_sentence_institution':
@@ -609,9 +562,16 @@ class UsMoController(CsvGcsfsDirectIngestController):
                 self._generate_supervision_violation_id_coords_for_reports,
             'tak291_tak292_tak024_citations':
                 self._generate_supervision_violation_id_coords_for_citations,
+
+            # SQL Preprocessing View
+            'tak022_tak023_tak025_tak026_offender_sentence_institution_v2':
+                self._generate_incarceration_sentence_id_coords,
+            'tak022_tak024_tak025_tak026_offender_sentence_supervision_v2':
+                self._generate_supervision_sentence_id_coords,
         }
 
         self.ancestor_chain_override_by_file: Dict[str, Callable] = {
+            # Legacy
             'tak022_tak023_tak025_tak026_offender_sentence_institution':
                 self._sentence_group_ancestor_chain_override,
             'tak022_tak024_tak025_tak026_offender_sentence_supervision':
@@ -626,6 +586,12 @@ class UsMoController(CsvGcsfsDirectIngestController):
                 self._supervision_violation_report_ancestor_chain_override,
             'tak291_tak292_tak024_citations':
                 self._supervision_violation_citation_ancestor_chain_override,
+
+            # SQL Preprocessing View
+            'tak022_tak023_tak025_tak026_offender_sentence_institution_v2':
+                self._sentence_group_ancestor_chain_override,
+            'tak022_tak024_tak025_tak026_offender_sentence_supervision_v2':
+                self._sentence_group_ancestor_chain_override,
         }
 
     @classmethod
@@ -676,6 +642,11 @@ class UsMoController(CsvGcsfsDirectIngestController):
                 'tak034_tak026_tak039_apfx90_apfx91_supervision_enhancements_supervision_periods',
                 'tak028_tak042_tak076_tak024_violation_reports',
                 'tak291_tak292_tak024_citations',
+
+                # SQL Preprocessing View
+                'tak022_tak023_tak025_tak026_offender_sentence_institution_v2',
+                'tak022_tak024_tak025_tak026_offender_sentence_supervision_v2',
+
         ]:
             return US_MO_DOC
 
@@ -1517,3 +1488,72 @@ class UsMoController(CsvGcsfsDirectIngestController):
     def _sorted_list_from_col(cls, row: Dict[str, str], col_name: str):
         value = row.get(col_name, '')
         return sorted_list_from_str(value)
+
+    def get_tak022_tak023_tak025_tak026_offender_sentence_institution_row_processors(self, file_tag):
+        return [
+            gen_normalize_county_codes_posthook(self.region.region_code,
+                                                get_legacy_or_new_column_name(file_tag, CHARGE_COUNTY_CODE),
+                                                StateCharge),
+            gen_normalize_county_codes_posthook(self.region.region_code,
+                                                get_legacy_or_new_column_name(file_tag, SENTENCE_COUNTY_CODE),
+                                                StateIncarcerationSentence),
+            gen_map_ymd_counts_to_max_length_field_posthook(
+                    get_legacy_or_new_column_name(file_tag, INCARCERATION_SENTENCE_LENGTH_YEARS),
+                    get_legacy_or_new_column_name(file_tag, INCARCERATION_SENTENCE_LENGTH_MONTHS),
+                    get_legacy_or_new_column_name(file_tag, INCARCERATION_SENTENCE_LENGTH_DAYS),
+                    StateIncarcerationSentence,
+                    test_for_fallback=self._test_length_string,
+                    fallback_parser=self._parse_days_with_long_range
+            ),
+            gen_set_is_life_sentence_hook(
+                    get_legacy_or_new_column_name(file_tag, INCARCERATION_SENTENCE_MIN_RELEASE_TYPE),
+                    'LIF',
+                    StateIncarcerationSentence),
+            self._gen_clear_magical_date_value(
+                    'projected_max_release_date',
+                    get_legacy_or_new_column_name(file_tag, INCARCERATION_SENTENCE_PROJECTED_MAX_DATE),
+                    self.SENTENCE_MAGICAL_DATES,
+                    StateIncarcerationSentence),
+            self._gen_clear_magical_date_value(
+                    'projected_min_release_date',
+                    get_legacy_or_new_column_name(file_tag, INCARCERATION_SENTENCE_PROJECTED_MIN_DATE),
+                    self.SENTENCE_MAGICAL_DATES,
+                    StateIncarcerationSentence),
+            self._set_sentence_status,
+            self._set_completion_date_if_necessary,
+            self._clear_zero_date_string,
+            self.tak022_tak023_set_parole_eligibility_date,
+            self.set_charge_id_from_sentence_id,
+            ]
+
+    def get_tak022_tak023_tak025_tak026_offender_sentence_supervision_row_processors(self, file_tag):
+        return [
+            gen_normalize_county_codes_posthook(self.region.region_code,
+                                                get_legacy_or_new_column_name(file_tag, CHARGE_COUNTY_CODE),
+                                                StateCharge),
+            gen_normalize_county_codes_posthook(self.region.region_code,
+                                                get_legacy_or_new_column_name(file_tag, SENTENCE_COUNTY_CODE),
+                                                StateSupervisionSentence),
+            gen_map_ymd_counts_to_max_length_field_posthook(
+                get_legacy_or_new_column_name(file_tag, SUPERVISION_SENTENCE_LENGTH_YEARS),
+                get_legacy_or_new_column_name(file_tag, SUPERVISION_SENTENCE_LENGTH_MONTHS),
+                get_legacy_or_new_column_name(file_tag, SUPERVISION_SENTENCE_LENGTH_DAYS),
+                StateSupervisionSentence,
+                test_for_fallback=self._test_length_string,
+                fallback_parser=self._parse_days_with_long_range
+            ),
+            self._gen_clear_magical_date_value(
+                'start_date',
+                get_legacy_or_new_column_name(file_tag, SUPERVISION_SENTENCE_START_DATE),
+                self.SENTENCE_MAGICAL_DATES,
+                StateSupervisionSentence),
+            self._gen_clear_magical_date_value(
+                'projected_completion_date',
+                get_legacy_or_new_column_name(file_tag, SUPERVISION_SENTENCE_PROJECTED_COMPLETION_DATE),
+                self.SENTENCE_MAGICAL_DATES,
+                StateSupervisionSentence),
+            self._set_sentence_status,
+            self._set_completion_date_if_necessary,
+            self._clear_zero_date_string,
+            self.set_charge_id_from_sentence_id,
+        ]
