@@ -26,6 +26,7 @@ from freezegun import freeze_time
 from mock import patch, Mock, create_autospec
 from sqlalchemy.ext.declarative import DeclarativeMeta
 
+from recidiviz.common.ingest_metadata import SystemLevel
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_controller import \
     GcsfsDirectIngestController
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import GcsfsDirectIngestFileType, \
@@ -38,6 +39,7 @@ from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.entity.entity_utils import person_has_id, \
     print_entity_trees, prune_dangling_placeholders_from_tree
 from recidiviz.persistence.entity.state.entities import StatePerson
+from recidiviz.persistence.persistence import OVERALL_THRESHOLD, ENUM_THRESHOLD, ENTITY_MATCHING_THRESHOLD
 from recidiviz.tests.ingest.direct.direct_ingest_util import \
     run_task_queues_to_empty, \
     path_for_fixture_file
@@ -78,9 +80,11 @@ class BaseStateDirectIngestControllerTests(BaseDirectIngestControllerTests):
         # Set entity matching error threshold to a diminishingly small number
         # for tests. We cannot set it to 0 because we throw when errors *equal*
         # the error threshold.
-        self.entity_matching_error_threshold_patcher = patch(
-            'recidiviz.persistence.persistence.STATE_SYSTEM_LEVEL_ERROR_THRESHOLD',
-            pow(1, -10))
+        self.entity_matching_error_threshold_patcher = patch.dict(
+            'recidiviz.persistence.persistence.SYSTEM_TYPE_TO_ERROR_THRESHOLD',
+            {SystemLevel.STATE: {OVERALL_THRESHOLD: 0,
+                                 ENUM_THRESHOLD: 0,
+                                 ENTITY_MATCHING_THRESHOLD:0}})
 
         self.entity_matching_error_threshold_patcher.start()
 
