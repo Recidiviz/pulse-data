@@ -29,6 +29,7 @@ from recidiviz.calculator.query.state.dataset_config import STATE_BASE_DATASET
 from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath
 from recidiviz.persistence.database.base_schema import StateBase
 
+# TODO(#4302): Remove unused schema module imports
 # We need to import this to ensure that the Sql Alchemy table metadata referenced by StateBase is accessible later
 # pylint:disable=unused-import
 from recidiviz.persistence.database.schema.state import schema
