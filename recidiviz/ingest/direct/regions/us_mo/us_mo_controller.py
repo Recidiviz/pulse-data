@@ -129,6 +129,7 @@ class UsMoController(CsvGcsfsDirectIngestController):
 
         # SQL Preprocessing View
         'tak001_offender_identification_v2',
+        'oras_assessments_weekly_v2',
         'tak040_offender_cycles_v2',
         'tak022_tak023_tak025_tak026_offender_sentence_institution_v2',
         'tak022_tak024_tak025_tak026_offender_sentence_supervision_v2',
@@ -564,6 +565,8 @@ class UsMoController(CsvGcsfsDirectIngestController):
                 self._generate_supervision_violation_id_coords_for_citations,
 
             # SQL Preprocessing View
+            'oras_assessments_weekly_v2':
+                self._generate_assessment_id_coords,
             'tak022_tak023_tak025_tak026_offender_sentence_institution_v2':
                 self._generate_incarceration_sentence_id_coords,
             'tak022_tak024_tak025_tak026_offender_sentence_supervision_v2':
@@ -644,6 +647,7 @@ class UsMoController(CsvGcsfsDirectIngestController):
                 'tak291_tak292_tak024_citations',
 
                 # SQL Preprocessing View
+                'oras_assessments_weekly_v2',
                 'tak022_tak023_tak025_tak026_offender_sentence_institution_v2',
                 'tak022_tak024_tak025_tak026_offender_sentence_supervision_v2',
 
