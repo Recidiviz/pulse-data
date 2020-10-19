@@ -1,3 +1,4 @@
+# TODO(#4266): Clean up backwards compatibility code
 key_mappings:
   BS$CNS: state_supervision_sentence.county_code
   SENTENCE_TYPE: state_supervision_sentence.supervision_type
