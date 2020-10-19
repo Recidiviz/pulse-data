@@ -28,9 +28,9 @@ from recidiviz.persistence.database.sqlalchemy_engine_manager import SchemaType
 
 
 class CloudSqlExportTest(unittest.TestCase):
-    """Tests for bq_load.py."""
+    """Tests for cloudsql_export.py."""
 
-    def setUp(self):
+    def setUp(self) -> None:
         self.schema_type = SchemaType.JAILS
         self.mock_project_id = 'fake-recidiviz-project'
         self.mock_instance_id = 'test_instance_id'
@@ -38,58 +38,42 @@ class CloudSqlExportTest(unittest.TestCase):
         self.mock_export_uri = 'gs://fake-export-uri'
         self.mock_table_id = 'test_table'
         self.mock_table_query = 'SELECT NULL LIMIT 0'
-        self.mock_table_schema = [
-            {'name': 'my_column', 'type': 'STRING', 'mode': 'NULLABLE'}]
 
         self.client_patcher = mock.patch(
             'recidiviz.calculator.query.cloudsql_export.sqladmin_client')
         self.mock_client = self.client_patcher.start().return_value
 
-        metadata_values = {
-            'project_id.return_value': self.mock_project_id,
-        }
-        self.metadata_patcher = mock.patch(
-            'recidiviz.calculator.query.cloudsql_export.metadata',
-            **metadata_values)
-        self.metadata_patcher.start()
+        self.metadata_patcher = mock.patch('recidiviz.calculator.query.cloudsql_export.metadata')
+        self.mock_metadata = self.metadata_patcher.start()
+        self.mock_metadata.project_id.return_value = self.mock_project_id
 
         secrets_values = {
             'sqlalchemy_db_name': self.mock_database,
             'cloudsql_instance_id': '{}:zone:{}'.format(
                 self.mock_project_id, self.mock_instance_id)
         }
-        secrets_config_values = {
-            'get_secret.side_effect': secrets_values.get
-        }
-        self.secrets_patcher = mock.patch(
-            'recidiviz.persistence.database.sqlalchemy_engine_manager.secrets',
-            **secrets_config_values)
-        self.secrets_patcher.start()
+
+        self.secrets_patcher = mock.patch('recidiviz.persistence.database.sqlalchemy_engine_manager.secrets')
+        self.mock_secrets = self.secrets_patcher.start()
+        self.mock_secrets.get_secret.side_effect = secrets_values.get
 
         Table = collections.namedtuple('Table', ['name'])
-        test_tables = [Table('first_table'), Table('second_table')]
-        export_config_values = {
-            'gcs_export_uri.return_value': self.mock_export_uri,
-            'COUNTY_TABLE_EXPORT_QUERIES': {
-                self.mock_table_id: self.mock_table_query,
-                **{table.name: self.mock_table_query for table in test_tables}
-            },
-            'COUNTY_TABLES_TO_EXPORT': test_tables
-        }
-        self.export_config_patcher = mock.patch(
-            'recidiviz.calculator.query.cloudsql_export.export_config',
-            **export_config_values)
-        self.mock_export_config = self.export_config_patcher.start()
+        self.tables_to_export = [Table('first_table'), Table('second_table')]
+
+        self.mock_export_config = mock.Mock()
+        self.mock_export_config.schema_type = self.schema_type
+        self.mock_export_config.get_tables_to_export.return_value = self.tables_to_export
+        self.mock_export_config.get_table_export_query.return_value = self.mock_table_query
+        self.mock_export_config.get_gcs_export_uri_for_table.return_value = self.mock_export_uri
 
 
-    def tearDown(self):
+    def tearDown(self) -> None:
         self.client_patcher.stop()
         self.metadata_patcher.stop()
         self.secrets_patcher.stop()
-        self.export_config_patcher.stop()
 
 
-    def test_create_export_context(self):
+    def test_create_export_context(self) -> None:
         """Test that create_export_context returns the correct fields.
 
         Notably, 'databases' should be retrieved from secrets by
@@ -113,7 +97,7 @@ class CloudSqlExportTest(unittest.TestCase):
 
 
     @mock.patch('recidiviz.calculator.query.cloudsql_export.time.sleep')
-    def test_wait_until_operation_finished_waits(self, mock_time):
+    def test_wait_until_operation_finished_waits(self, mock_time: mock.MagicMock) -> None:
         """Test that wait_until_operation_finished waits until op. is done."""
         mock_time.side_effect = None
         mock_get_operation_calls = [
@@ -134,7 +118,7 @@ class CloudSqlExportTest(unittest.TestCase):
 
 
     @mock.patch('recidiviz.calculator.query.cloudsql_export.time.sleep')
-    def test_wait_until_operation_finished_surfaces_errors(self, mock_time):
+    def test_wait_until_operation_finished_surfaces_errors(self, mock_time: mock.MagicMock) -> None:
         """Test that errors are logged from wait_until_operation_finished."""
         mock_time.side_effect = None
         mock_get_operation_calls = [
@@ -160,12 +144,11 @@ class CloudSqlExportTest(unittest.TestCase):
             cloudsql_export.wait_until_operation_finished('fake-op')
 
     @mock.patch('recidiviz.calculator.query.cloudsql_export.wait_until_operation_finished')
-    def test_export_table(self, mock_wait):
+    def test_export_table(self, mock_wait: mock.MagicMock) -> None:
         """Test that client().instances().export() is called and
             wait_until_operation_finished is called.
         """
-        cloudsql_export.export_table(self.schema_type, self.mock_table_id,
-                                     self.mock_table_query)
+        cloudsql_export.export_table(self.mock_table_id, self.mock_export_config)
 
         mock_export = self.mock_client.instances.return_value.export
         mock_export.assert_called_with(
@@ -173,10 +156,25 @@ class CloudSqlExportTest(unittest.TestCase):
             instance=self.mock_instance_id,
             body=mock.ANY
         )
-        mock_wait.assert_called()
+        mock_wait.assert_called()    \
+
 
     @mock.patch('recidiviz.calculator.query.cloudsql_export.wait_until_operation_finished')
-    def test_export_table_api_fail(self, mock_wait):
+    def test_export_table_create_export_context(self, mock_wait: mock.MagicMock) -> None:
+        """Test that create_export_context is called with the schema_type, export_query, and export_uri.
+        """
+        with mock.patch('recidiviz.calculator.query.cloudsql_export.create_export_context') as mock_export_context:
+            cloudsql_export.export_table(self.mock_table_id, self.mock_export_config)
+            mock_export_context.assert_called_with(
+                self.schema_type,
+                self.mock_export_uri,
+                self.mock_table_query
+            )
+            mock_wait.assert_called()
+
+
+    @mock.patch('recidiviz.calculator.query.cloudsql_export.wait_until_operation_finished')
+    def test_export_table_api_fail(self, mock_wait: mock.MagicMock) -> None:
         """Test that export_table fails if the export API request fails."""
         mock_export = self.mock_client.instances.return_value.export
         mock_export_request = mock_export.return_value
@@ -184,41 +182,18 @@ class CloudSqlExportTest(unittest.TestCase):
             googleapiclient.errors.HttpError('', content=b'')
 
         with self.assertLogs(level='ERROR'):
-            success = cloudsql_export.export_table(self.schema_type,
-                                                   self.mock_table_id,
-                                                   self.mock_table_query)
+            success = cloudsql_export.export_table(self.mock_table_id, self.mock_export_config)
 
         self.assertFalse(success)
         mock_wait.assert_not_called()
 
 
     @mock.patch('recidiviz.calculator.query.cloudsql_export.export_table')
-    def test_export_all_tables(self, mock_export):
+    def test_export_all_tables(self, mock_export: mock.MagicMock) -> None:
         """Test that export_table is called for all tables specified."""
-        cloudsql_export.export_all_tables(
-            self.schema_type,
-            self.mock_export_config.COUNTY_TABLES_TO_EXPORT,
-            self.mock_export_config.COUNTY_TABLE_EXPORT_QUERIES)
+        cloudsql_export.export_all_tables(self.mock_export_config)
 
         mock_export.assert_has_calls(
-            [mock.call(self.schema_type,
-                       table.name,
-                       self.mock_export_config.COUNTY_TABLE_EXPORT_QUERIES[
-                           table.name])
-             for table in self.mock_export_config.COUNTY_TABLES_TO_EXPORT]
+            [mock.call(table.name, self.mock_export_config)
+             for table in self.tables_to_export]
         )
-
-
-    @mock.patch('recidiviz.calculator.query.cloudsql_export.export_table')
-    def test_export_all_tables_fail_no_table(self, mock_export):
-        """Test that export all tables fails if there is a table without
-        a corresponding query."""
-        Table = collections.namedtuple('Table', ['name'])
-
-        with self.assertLogs(level='ERROR'):
-            cloudsql_export.export_all_tables(
-                self.schema_type,
-                (Table('fake_table'), Table('second_table')),
-                self.mock_export_config.COUNTY_TABLE_EXPORT_QUERIES)
-
-        mock_export.assert_not_called()

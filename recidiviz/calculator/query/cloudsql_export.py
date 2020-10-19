@@ -19,14 +19,10 @@
 
 import logging
 import time
-from typing import Dict, Tuple
 
 import googleapiclient.errors
 
-# Importing only for typing.
-import sqlalchemy
-
-from recidiviz.persistence.database.export import export_config
+from recidiviz.persistence.database.export.cloud_sql_to_bq_export_config import CloudSqlToBQConfig
 from recidiviz.persistence.database.sqladmin_client import sqladmin_client
 from recidiviz.persistence.database.sqlalchemy_engine_manager import \
     SQLAlchemyEngineManager, SchemaType
@@ -44,8 +40,7 @@ def create_export_context(schema_type: SchemaType, export_uri: str,
     https://cloud.google.com/sql/docs/postgres/admin-api/v1beta4/instances/export
 
     Args:
-        schema_type: The schema, either SchemaType.JAILS or
-            SchemaType.STATE of the table being exported.
+        schema_type: The SchemaType of the table being exported.
         export_uri: GCS URI to write the exported CSV data to.
         export_query: SQL query defining the data to be exported.
 
@@ -71,7 +66,7 @@ def create_export_context(schema_type: SchemaType, export_uri: str,
 def wait_until_operation_finished(operation_id: str) -> bool:
     """Monitor a Cloud SQL operation's progress and wait until it completes.
 
-    We must wait until completion becuase only one Cloud SQL operation can run
+    We must wait until completion because only one Cloud SQL operation can run
     at a time.
 
     Args:
@@ -115,26 +110,24 @@ def wait_until_operation_finished(operation_id: str) -> bool:
     return operation_success
 
 
-def export_table(schema_type: SchemaType, table_name: str, export_query: str) \
-        -> bool:
+def export_table(table_name: str, cloud_sql_to_bq_config: CloudSqlToBQConfig) -> bool:
     """Export a Cloud SQL table to a CSV file on GCS.
 
     Given a table name and export_query, retrieve the export URI from
-    export_config, then execute the export operation and wait until it
+    cloud_sql_to_bq_config, then execute the export operation and wait until it
     completes.
 
     Args:
-        schema_type: The schema, either SchemaType.JAILS or
-            SchemaType.STATE, where this table lives.
         table_name: Table to export.
-        export_query: Corresponding query for the table.
+        cloud_sql_to_bq_config: The export config class for the table's SchemaType.
     Returns:
         True if operation succeeded without errors, False if not.
     """
+    schema_type = cloud_sql_to_bq_config.schema_type
+    export_query = cloud_sql_to_bq_config.get_table_export_query(table_name)
+    export_uri = cloud_sql_to_bq_config.get_gcs_export_uri_for_table(table_name)
 
-    export_uri = export_config.gcs_export_uri(table_name)
-    export_context = create_export_context(
-        schema_type, export_uri, export_query)
+    export_context = create_export_context(schema_type, export_uri, export_query)
 
     project_id = metadata.project_id()
     instance_id = \
@@ -144,7 +137,9 @@ def export_table(schema_type: SchemaType, table_name: str, export_query: str) \
         instance=instance_id,
         body=export_context)
 
+    logging.info("GCS URI [%s] in project [%s]", export_uri, project_id)
     logging.info("Starting export: [%s]", str(export_request.to_json()))
+
     try:
         response = export_request.execute()
     except googleapiclient.errors.HttpError:
@@ -162,16 +157,7 @@ def export_table(schema_type: SchemaType, table_name: str, export_query: str) \
     return operation_success
 
 
-def export_all_tables(schema_type: SchemaType,
-                      tables: Tuple[sqlalchemy.Table, ...],
-                      export_queries: Dict[str, str]) -> None:
+def export_all_tables(cloud_sql_to_bq_config: CloudSqlToBQConfig) -> None:
+    tables = cloud_sql_to_bq_config.get_tables_to_export()
     for table in tables:
-        try:
-            export_query = export_queries[table.name]
-        except KeyError:
-            logging.exception(
-                "Unknown table name [%s]. Is it listed in "
-                "the TABLES_TO_EXPORT for this module?", table.name)
-            return
-
-        export_table(schema_type, table.name, export_query)
+        export_table(table.name, cloud_sql_to_bq_config)
