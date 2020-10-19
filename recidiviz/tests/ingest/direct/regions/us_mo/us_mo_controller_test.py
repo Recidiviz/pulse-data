@@ -543,7 +543,9 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                         ])
         ])
 
+        # TODO(#4266): Clean up backwards compatibility code
         self.run_parse_file_test(expected, 'tak022_tak023_tak025_tak026_offender_sentence_institution')
+        self.run_parse_file_test(expected, 'tak022_tak023_tak025_tak026_offender_sentence_institution_v2')
 
     def test_populate_data_tak022_tak024_tak025_tak026_offender_sentence_supervision(self):
         expected = IngestInfo(state_people=[
@@ -690,7 +692,10 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                             )
                         ]),
         ])
+
+        # TODO(#4266): Clean up backwards compatibility code
         self.run_parse_file_test(expected, 'tak022_tak024_tak025_tak026_offender_sentence_supervision')
+        self.run_parse_file_test(expected, 'tak022_tak024_tak025_tak026_offender_sentence_supervision_v2')
 
     def test_populate_data_tak158_tak023_tak026_incarceration_period_from_incarceration_sentence(self):
         vr_110035_19890901_3 = StateSupervisionViolationResponse(
@@ -1951,7 +1956,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
         # Assert
         self.assert_expected_db_people(expected_people)
 
-        # New
+        # SQL Preprocessing View
         # Act
         self._run_ingest_job_for_filename('tak001_offender_identification_v2.csv')
         # Assert
@@ -2034,7 +2039,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
         # Assert
         self.assert_expected_db_people(expected_people)
 
-        # New
+        # SQL Preprocessing View
         # Act
         self._run_ingest_job_for_filename('tak040_offender_cycles_v2.csv')
 
@@ -2042,7 +2047,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
         self.assert_expected_db_people(expected_people)
 
         ##############################################################
-        # TAK020_TAK023_TAK025_TAK026 OFFENDER SENTENCE INSTITUTION
+        # TAK022_TAK023_TAK025_TAK026 OFFENDER SENTENCE INSTITUTION
         ##############################################################
         # Arrange
         sis_110035_19890901_1 = entities.StateIncarcerationSentence.new_with_defaults(
@@ -2306,14 +2311,23 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
         )
         sis_910324_19890825_1.charges = [charge_910324]
 
+        # TODO(#4266): Clean up backwards compatibility code
+        # Legacy
         # Act
         self._run_ingest_job_for_filename('tak022_tak023_tak025_tak026_offender_sentence_institution.csv')
 
         # Assert
         self.assert_expected_db_people(expected_people)
 
+        # SQL Preprocessing View
+        # Act
+        self._run_ingest_job_for_filename('tak022_tak023_tak025_tak026_offender_sentence_institution_v2.csv')
+
+        # Assert
+        self.assert_expected_db_people(expected_people)
+
         ##############################################################
-        # TAK020_TAK024_TAK025_TAK026 OFFENDER SENTENCE PROBATION
+        # TAK022_TAK024_TAK025_TAK026 OFFENDER SENTENCE PROBATION
         ##############################################################
         # Arrange
         sss_910324_19890825_1 = entities.StateSupervisionSentence.new_with_defaults(
@@ -2508,8 +2522,17 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
         )
         sss_110035_20081010_1.charges = [charge_110035_20081010_1]
 
+        # TODO(#4266): Clean up backwards compatibility code
+        # Legacy
         # Act
         self._run_ingest_job_for_filename('tak022_tak024_tak025_tak026_offender_sentence_supervision.csv')
+
+        # Assert
+        self.assert_expected_db_people(expected_people)
+
+        # SQL Preprocessing View
+        # Act
+        self._run_ingest_job_for_filename('tak022_tak024_tak025_tak026_offender_sentence_supervision_v2.csv')
 
         # Assert
         self.assert_expected_db_people(expected_people)
