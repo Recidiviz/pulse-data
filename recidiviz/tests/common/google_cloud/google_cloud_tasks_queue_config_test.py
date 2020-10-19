@@ -26,7 +26,8 @@ from google.protobuf import duration_pb2
 from mock import create_autospec, patch
 
 from recidiviz.common.google_cloud import google_cloud_task_queue_config
-from recidiviz.utils import metadata, regions
+from recidiviz.tests.utils.fake_region import fake_region
+from recidiviz.utils import metadata
 
 
 class TestGoogleCloudTasksQueueConfig(unittest.TestCase):
@@ -62,7 +63,15 @@ class TestGoogleCloudTasksQueueConfig(unittest.TestCase):
                 queues_updated_by_id[queue_id] = queue
         return queues_updated_by_id
 
-    def test_initialize_queues(self):
+    @patch("recidiviz.utils.regions.get_supported_regions")
+    def test_initialize_queues(self, mock_regions):
+        # Arrange
+        region_xx = fake_region(region_code='us_xx', queue={'rate_limits': {'max_dispatches_per_second': 0.3}})
+        region_xx.get_queue_name.return_value = 'us_xx_queue'
+        region_yy = fake_region(region_code='us_yy')
+        region_yy.get_queue_name.return_value = 'us_yy_queue'
+        mock_regions.return_value = [region_xx, region_yy]
+
         # Act
         with metadata.local_project_id_override('my-project-id'):
             google_cloud_task_queue_config.initialize_queues(
@@ -89,16 +98,13 @@ class TestGoogleCloudTasksQueueConfig(unittest.TestCase):
             queue = queues_updated_by_id[queue_id]
             self.assertEqual(queue.rate_limits.max_concurrent_dispatches, 1)
 
-        for region in regions.get_supported_regions():
-            self.assertTrue(region.get_queue_name() in queues_updated_by_id)
-
         # Test that composition works as expected
         self.assertEqual(
-            queues_updated_by_id[regions.get_region('us_ny').get_queue_name()],
+            queues_updated_by_id[region_xx.get_queue_name()],
             queue_pb2.Queue(
-                name='projects/my-project-id/locations/us-east1/queues/us-ny-scraper-v2',
+                name='projects/my-project-id/locations/us-east1/queues/us_xx_queue',
                 rate_limits=queue_pb2.RateLimits(
-                    # This is overridden in the manifest.yaml
+                    # This is overridden in the mock above
                     max_dispatches_per_second=0.3,
                     max_concurrent_dispatches=3,
                 ),
@@ -113,9 +119,9 @@ class TestGoogleCloudTasksQueueConfig(unittest.TestCase):
 
         # Test that other regions are unaffected
         self.assertEqual(
-            queues_updated_by_id[regions.get_region('us_pa').get_queue_name()],
+            queues_updated_by_id[region_yy.get_queue_name()],
             queue_pb2.Queue(
-                name='projects/my-project-id/locations/us-east1/queues/us-pa-scraper-v2',
+                name='projects/my-project-id/locations/us-east1/queues/us_yy_queue',
                 rate_limits=queue_pb2.RateLimits(
                     max_dispatches_per_second=0.08333333333,
                     max_concurrent_dispatches=3,
