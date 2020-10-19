@@ -82,8 +82,14 @@ retried_transactions_view = view.View("recidiviz/persistence/num_transaction_ret
 monitoring.register_views(
     [people_persisted_view, aborted_writes_view, errors_persisted_view, retried_transactions_view])
 
-STATE_SYSTEM_LEVEL_ERROR_THRESHOLD = 0.5
-COUNTY_SYSTEM_LEVEL_ERROR_THRESHOLD = 0.5
+OVERALL_THRESHOLD = "overall_threshold"
+ENUM_THRESHOLD = "enum_threshold"
+ENTITY_MATCHING_THRESHOLD = "entity_matching_threshold"
+
+SYSTEM_TYPE_TO_ERROR_THRESHOLD: Dict[SystemLevel, Dict[str, float]] = {
+    SystemLevel.COUNTY: {OVERALL_THRESHOLD: 0.5, ENUM_THRESHOLD: 0.5, ENTITY_MATCHING_THRESHOLD: 0.5},
+    SystemLevel.STATE: {OVERALL_THRESHOLD: 0.5, ENUM_THRESHOLD: 0.5, ENTITY_MATCHING_THRESHOLD: 0.5}
+}
 
 
 def infer_release_on_open_bookings(
@@ -189,32 +195,32 @@ def _should_abort(
             m.measure_int_put(m_aborts, 1)
         return True
 
-    error_ratio = _calculate_error_ratio(conversion_result,
-                                         entity_matching_errors,
-                                         data_validation_errors,
-                                         total_root_entities)
+    error_thresholds = _get_thresholds_for_system_level(system_level)
 
-    if error_ratio >= _get_system_level_error_threshold(system_level):
-        logging.error(
-            "Aborting because we exceeded the error threshold of [%s] with "
-            "[%s] enum_parsing errors, [%s] general_parsing_errors, [%s] "
-            "entity_matching_errors, and [%s] data_validation_errors",
-            _get_system_level_error_threshold(system_level),
-            conversion_result.enum_parsing_errors,
-            conversion_result.general_parsing_errors,
-            entity_matching_errors,
-            data_validation_errors)
-        with monitoring.measurements(
-                {monitoring.TagKey.REASON: 'THRESHOLD'}) as m:
-            m.measure_int_put(m_aborts, 1)
+    overall_error_ratio = _calculate_overall_error_ratio(conversion_result,
+                                                         entity_matching_errors,
+                                                         data_validation_errors,
+                                                         total_root_entities)
+
+    if overall_error_ratio > error_thresholds[OVERALL_THRESHOLD]:
+        _log_error(OVERALL_THRESHOLD, error_thresholds, overall_error_ratio)
         return True
+
+    if conversion_result.enum_parsing_errors / total_root_entities > error_thresholds[ENUM_THRESHOLD]:
+        _log_error(ENUM_THRESHOLD, error_thresholds,  conversion_result.enum_parsing_errors / total_root_entities)
+        return True
+
+    if entity_matching_errors / total_root_entities > error_thresholds[ENTITY_MATCHING_THRESHOLD]:
+        _log_error(ENTITY_MATCHING_THRESHOLD, error_thresholds, entity_matching_errors / total_root_entities)
+        return True
+
     return False
 
 
-def _calculate_error_ratio(conversion_result: IngestInfoConversionResult,
-                           entity_matching_errors: int,
-                           data_validation_errors: int,
-                           total_root_entities: int) -> float:
+def _calculate_overall_error_ratio(conversion_result: IngestInfoConversionResult,
+                                   entity_matching_errors: int,
+                                   data_validation_errors: int,
+                                   total_root_entities: int) -> float:
     """Calculates the error ratio, given the total number of errors and root entities."""
     return (conversion_result.enum_parsing_errors +
             conversion_result.general_parsing_errors +
@@ -222,14 +228,23 @@ def _calculate_error_ratio(conversion_result: IngestInfoConversionResult,
             data_validation_errors) / total_root_entities
 
 
-def _get_system_level_error_threshold(system_level: SystemLevel) -> float:
-    """Returns the error threshold associated with a system level."""
-    if system_level == SystemLevel.COUNTY:
-        return COUNTY_SYSTEM_LEVEL_ERROR_THRESHOLD
-    if system_level == SystemLevel.STATE:
-        return STATE_SYSTEM_LEVEL_ERROR_THRESHOLD
+def _get_thresholds_for_system_level(system_level: SystemLevel) -> Dict[str, float]:
+    """Returns the dictionary of error thresholds for a given system level."""
+    error_thresholds = SYSTEM_TYPE_TO_ERROR_THRESHOLD.get(system_level)
+    if error_thresholds is None:
+        raise ValueError(f'Found no error thresholds associated with `system_level=[{system_level}]`')
 
-    raise ValueError(f'Found no error threshold associated with `system_level=[{system_level}]`')
+    return error_thresholds
+
+
+def _log_error(threshold_type: str, error_thresholds: Dict[str, float], error_ratio: float) -> None:
+    logging.error(
+        "Aborting because we exceeded the [%s] threshold of [%s] with an error ratio of [%s]",
+        threshold_type,
+        error_thresholds.get(threshold_type),
+        error_ratio)
+    with monitoring.measurements({monitoring.TagKey.REASON: threshold_type}) as m:
+        m.measure_int_put(m_aborts, 1)
 
 
 def retry_transaction(session: Session, measurements: MeasurementMap,

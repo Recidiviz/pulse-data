@@ -25,6 +25,7 @@ from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.ingest_metadata import IngestMetadata, SystemLevel
 from recidiviz.ingest.models.ingest_info_pb2 import IngestInfo
 from recidiviz.persistence import persistence
+from recidiviz.persistence.persistence import OVERALL_THRESHOLD, ENTITY_MATCHING_THRESHOLD, ENUM_THRESHOLD
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.base_schema import StateBase
 from recidiviz.persistence.database.schema.state import schema, dao
@@ -54,6 +55,13 @@ SENTENCE_GROUP_ID = 'SG1'
 SENTENCE_GROUP_ID_2 = 'SG2'
 SENTENCE_GROUP_ID_3 = 'SG3'
 
+STATE_ERROR_THRESHOLDS_WITH_FORTY_PERCENT_RATIOS = {SystemLevel.STATE:
+                                            {
+                                                OVERALL_THRESHOLD: 0.4,
+                                                ENUM_THRESHOLD: 0.4,
+                                                ENTITY_MATCHING_THRESHOLD: 0.4
+                                            }
+}
 
 @patch('os.getenv', Mock(return_value='production'))
 @patch.dict('os.environ', {'PERSIST_LOCALLY': 'false'})
@@ -85,6 +93,8 @@ class TestStatePersistence(TestCase):
         return converter.convert_schema_object_to_entity(
             schema_obj, populate_back_edges=True)
 
+    @patch('recidiviz.persistence.persistence.SYSTEM_TYPE_TO_ERROR_THRESHOLD',
+           STATE_ERROR_THRESHOLDS_WITH_FORTY_PERCENT_RATIOS)
     def test_state_threeSentenceGroups_dontPersistAboveThreshold(self):
         # Arrange
         ingest_info = IngestInfo()
@@ -153,6 +163,8 @@ class TestStatePersistence(TestCase):
         self.assertEqual([expected_person, expected_person_2],
                          converter.convert_schema_objects_to_entity(persons))
 
+    @patch('recidiviz.persistence.persistence.SYSTEM_TYPE_TO_ERROR_THRESHOLD',
+           STATE_ERROR_THRESHOLDS_WITH_FORTY_PERCENT_RATIOS)
     def test_state_threeSentenceGroups_persistsTwoBelowThreshold(self):
         # Arrange
         ingest_info = IngestInfo()
