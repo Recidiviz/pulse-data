@@ -999,7 +999,10 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                         ]),
         ])
 
+        # TODO(#4266): Clean up backwards compatibility code
+        # Legacy
         self.run_parse_file_test(expected, 'tak158_tak023_tak026_incarceration_period_from_incarceration_sentence')
+        self.run_parse_file_test(expected, 'tak158_tak023_tak026_incarceration_period_from_incarceration_sentence_v2')
 
     def test_populate_data_tak158_tak024_tak026_incarceration_period_from_supervision_sentence(self):
         expected = IngestInfo(state_people=[
@@ -2938,8 +2941,18 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
 
         expected_people.append(person_867530)
 
+        # TODO(#4266): Clean up backwards compatibility code
+        # Legacy
         # Act
         self._run_ingest_job_for_filename('tak158_tak023_tak026_incarceration_period_from_incarceration_sentence.csv')
+
+        # Assert
+        self.assert_expected_db_people(expected_people)
+
+        # SQL Preprocessing View
+        # Act
+        self._run_ingest_job_for_filename(
+            'tak158_tak023_tak026_incarceration_period_from_incarceration_sentence_v2.csv')
 
         # Assert
         self.assert_expected_db_people(expected_people)
@@ -3839,7 +3852,9 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
         """
         self.controller.file_split_line_limit = 1
 
-        self._run_ingest_job_for_filename('tak158_tak023_tak026_incarceration_period_from_incarceration_sentence.csv')
+        # SQL Preprocessing View
+        self._run_ingest_job_for_filename(
+            'tak158_tak023_tak026_incarceration_period_from_incarceration_sentence_v2.csv')
 
         session = SessionFactory.for_schema_base(StateBase)
         found_people_from_db = dao.read_people(session)
