@@ -21,7 +21,7 @@ if [[ ! ${GIT_VERSION_TAG} =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
     run_cmd exit 1
 fi
 
-LAST_DEPLOYED_GIT_VERSION_TAG=$(gcloud app versions list --project=recidiviz-123 --hide-no-traffic --service=default --format=yaml | pipenv run yq .id | tr -d \" | tr '-' '.') || exit_on_fail
+LAST_DEPLOYED_GIT_VERSION_TAG=$(last_deployed_production_version_tag) || exit_on_fail
 if ! version_less_than ${LAST_DEPLOYED_GIT_VERSION_TAG} ${GIT_VERSION_TAG}; then
     echo_error "Deploy version [$GIT_VERSION_TAG] must be greater than last deployed tag [$LAST_DEPLOYED_GIT_VERSION_TAG]."
     run_cmd exit 1
@@ -55,7 +55,8 @@ then
 fi
 
 echo "Updating configuration / infrastructure in preparation for deploy"
-pre_deploy_configure_infrastructure 'recidiviz-123'
+DEBUG_BUILD_NAME='' # A production build is not a debug build
+pre_deploy_configure_infrastructure 'recidiviz-123' "$DEBUG_BUILD_NAME"
 
 GAE_VERSION=$(echo ${GIT_VERSION_TAG} | tr '.' '-') || exit_on_fail
 STAGING_IMAGE_URL=us.gcr.io/recidiviz-staging/appengine/default.${GAE_VERSION}:latest || exit_on_fail
@@ -65,6 +66,9 @@ echo "Starting deploy of main app"
 run_cmd gcloud -q container images add-tag ${STAGING_IMAGE_URL} ${PROD_IMAGE_URL}
 run_cmd gcloud -q app deploy prod.yaml --project=recidiviz-123 --version=${GAE_VERSION} --image-url=${PROD_IMAGE_URL}
 
+echo "Deploy succeeded - triggering post-deploy jobs."
+post_deploy_triggers 'recidiviz-123'
+
 script_prompt "Have you completed all Post-Deploy tasks listed at http://go/deploy-checklist?"
 
-echo "Deploy succeeded"
+echo "Production deploy complete."

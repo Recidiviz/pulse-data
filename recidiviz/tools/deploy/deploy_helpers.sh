@@ -32,6 +32,13 @@ function last_version_tag_on_branch {
     echo ${LAST_VERSION_TAG_ON_BRANCH}
 }
 
+# Returns the last deployed production version tag
+function last_deployed_production_version_tag {
+    LAST_DEPLOYED_GIT_VERSION_TAG=$(gcloud app versions list --project=recidiviz-123 --hide-no-traffic --service=default --format=yaml | pipenv run yq .id | tr -d \" | tr '-' '.') || exit_on_fail
+
+    echo ${LAST_DEPLOYED_GIT_VERSION_TAG}
+}
+
 function next_alpha_version {
     PREVIOUS_VERSION=$1
     PREVIOUS_VERSION_PARTS=($(parse_version ${PREVIOUS_VERSION})) || exit_on_fail
@@ -86,46 +93,65 @@ function check_commit_is_green {
     echo "Build is passing for commit [$COMMIT]."
 }
 
+# If there have been changes since the last deploy that indicate pipeline results may have changed, returns a non-empty
+# string. Otherwise, if there have been no changes impacting pipelines, returns an empty result.
+function calculation_pipeline_changes_since_last_deploy {
+    PROJECT=$1
+
+    if [[ ${PROJECT} == 'recidiviz-staging' ]]; then
+        LAST_VERSION_TAG=$(last_version_tag_on_branch HEAD) || exit_on_fail
+    elif [[ ${PROJECT} == 'recidiviz-123' ]]; then
+        LAST_VERSION_TAG=$(last_deployed_production_version_tag) || exit_on_fail
+    else
+        echo_error "Unexpected project for last version ${PROJECT}"
+        exit 1
+    fi
+
+    MIGRATION_CHANGES=$(git diff tags/${LAST_VERSION_TAG} -- ${BASH_SOURCE_DIR}/../../../recidiviz/persistence/database/migrations)
+    CALCULATOR_CHANGES=$(git diff tags/${LAST_VERSION_TAG} -- ${BASH_SOURCE_DIR}/../../../recidiviz/calculator)
+
+    echo "${MIGRATION_CHANGES}${CALCULATOR_CHANGES}"
+}
+
 # Helper for deploying any infrastructure changes before we deploy a new version of the application. Requires that we
 # have checked out the commit for the version that will be deployed.
 function pre_deploy_configure_infrastructure {
     PROJECT=$1
+    DEBUG_BUILD_NAME=$2
 
     echo "Deploying cron.yaml"
     run_cmd gcloud -q app deploy cron.yaml --project=${PROJECT}
 
+    echo "Initializing task queues"
+    run_cmd pipenv run python -m recidiviz.tools.initialize_google_cloud_task_queues --project_id ${PROJECT} --google_auth_token $(gcloud auth print-access-token)
+
     echo "Updating the BigQuery Dataflow metric table schemas to match the metric classes"
     run_cmd pipenv run python -m recidiviz.calculator.calculation_data_storage_manager --project_id ${PROJECT} --function_to_execute update_schemas
 
-    if [[ ${PROJECT} == 'recidiviz-staging' ]]; then
-        echo "Deploying stage-only calculation pipelines to templates in ${PROJECT}."
-        run_cmd pipenv run python -m recidiviz.tools.deploy.deploy_pipeline_templates --project_id ${PROJECT} --templates_to_deploy staging
+    if [[ -z ${DEBUG_BUILD_NAME} ]]; then
+        # If it's not a debug build (i.e. local to staging), we deploy pipeline templates.
+        if [[ ${PROJECT} == 'recidiviz-staging' ]]; then
+            echo "Deploying stage-only calculation pipelines to templates in ${PROJECT}."
+            run_cmd pipenv run python -m recidiviz.tools.deploy.deploy_pipeline_templates --project_id ${PROJECT} --templates_to_deploy staging
+        fi
+
+        echo "Deploying prod-ready calculation pipelines to templates in ${PROJECT}."
+        run_cmd pipenv run python -m recidiviz.tools.deploy.deploy_pipeline_templates --project_id ${PROJECT} --templates_to_deploy production
+
+        # Automatically adding the DAG and templates to the airflow GCS storage bucket
+        echo "Copying pipeline configurations to DAG bucket in ${PROJECT} GCS."
+        if [[ ${PROJECT} == 'recidiviz-staging' ]]; then
+            run_cmd gsutil cp recidiviz/calculator/pipeline/production_calculation_pipeline_templates.yaml gs://us-west3-calculation-pipeli-0fb68009-bucket/dags/
+            run_cmd gsutil cp recidiviz/airflow/* gs://us-west3-calculation-pipeli-0fb68009-bucket/dags/
+        fi
+
+        if [[ ${PROJECT} == 'recidiviz-123' ]]; then
+          run_cmd gsutil cp recidiviz/calculator/pipeline/production_calculation_pipeline_templates.yaml gs://us-west3-calculation-pipeli-c49818a8-bucket/dags/
+          run_cmd gsutil cp recidiviz/airflow/* gs://us-west3-calculation-pipeli-c49818a8-bucket/dags/
+        fi
+    else
+        echo "Skipping pipeline template deploy for debug build."
     fi
-
-    echo "Deploying prod-ready calculation pipelines to templates in ${PROJECT}."
-    run_cmd pipenv run python -m recidiviz.tools.deploy.deploy_pipeline_templates --project_id ${PROJECT} --templates_to_deploy production
-
-    # Automatically adding the DAG and templates to the airflow GCS storage bucket
-    echo "Copying pipeline configurations to DAG bucket in ${PROJECT} GCS."
-    if [[ ${PROJECT} == 'recidiviz-staging' ]]; then
-        run_cmd gsutil cp recidiviz/calculator/pipeline/production_calculation_pipeline_templates.yaml gs://us-west3-calculation-pipeli-0fb68009-bucket/dags/
-        run_cmd gsutil cp recidiviz/airflow/* gs://us-west3-calculation-pipeli-0fb68009-bucket/dags/
-    fi
-
-    if [[ ${PROJECT} == 'recidiviz-123' ]]; then
-      run_cmd gsutil cp recidiviz/calculator/pipeline/production_calculation_pipeline_templates.yaml gs://us-west3-calculation-pipeli-c49818a8-bucket/dags/
-      run_cmd gsutil cp recidiviz/airflow/* gs://us-west3-calculation-pipeli-c49818a8-bucket/dags/
-    fi
-
-    # We trigger historical calculations with every deploy because code changes may impact historical metric output
-    echo "Triggering historical calculation pipelines"
-
-    # Note: using exit_on_fail instead of run_cmd since the quoted string doesn't translate well when passed to run_cmd
-    gcloud pubsub topics publish v1.calculator.historical_incarceration_us_nd --project ${PROJECT} --message="Trigger Dataflow job" || exit_on_fail
-    gcloud pubsub topics publish v1.calculator.historical_supervision_us_nd --project ${PROJECT} --message="Trigger Dataflow job" || exit_on_fail
-
-    echo "Initializing task queues"
-    run_cmd pipenv run python -m recidiviz.tools.initialize_google_cloud_task_queues --project_id ${PROJECT} --google_auth_token $(gcloud auth print-access-token)
 }
 
 function check_docker_installed {
@@ -195,4 +221,20 @@ function verify_can_deploy {
 
     echo "Checking for too many currently serving versions"
     run_cmd check_for_too_many_serving_versions ${PROJECT_ID}
+}
+
+function post_deploy_triggers {
+    PROJECT=$1
+
+    if [[ ! -z $(calculation_pipeline_changes_since_last_deploy ${PROJECT}) ]]; then
+        # We trigger historical calculations with every deploy where we believe there could be code changes that impact
+        # historical metric output.
+        echo "Triggering historical calculation pipelines"
+
+        # Note: using exit_on_fail instead of run_cmd since the quoted string doesn't translate well when passed to run_cmd
+        gcloud pubsub topics publish v1.calculator.historical_incarceration_us_nd --project ${PROJECT} --message="Trigger Dataflow job" || exit_on_fail
+        gcloud pubsub topics publish v1.calculator.historical_supervision_us_nd --project ${PROJECT} --message="Trigger Dataflow job" || exit_on_fail
+    else
+        echo "Skipping historical calculation pipeline trigger - no relevant code changes"
+    fi
 }
