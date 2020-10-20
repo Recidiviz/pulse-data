@@ -27,7 +27,7 @@ from google.cloud import pubsub
 
 from airflow import models
 from airflow.operators.python_operator import PythonOperator
-from recidiviz_dataflow_operator import RecidivizDataflowTemplateOperator
+from recidiviz_dataflow_operator import RecidivizDataflowTemplateOperator  # type: ignore[import]
 
 
 # If you update this file, you must re-upload it to the airflow/DAG file to this GCS bucket

@@ -45,7 +45,7 @@ class GcsfsFileContentsHandle(FileContentsHandle[str]):
                     break
                 yield line
 
-    def __del__(self):
+    def __del__(self) -> None:
         """This ensures that the file contents on local disk are deleted when
         this handle is garbage collected.
         """
@@ -87,7 +87,7 @@ class GCSFileSystem:
         """Returns the file size of the object if it exists in the fs, None otherwise."""
 
     @abc.abstractmethod
-    def get_metadata(self, path: GcsfsFilePath) -> Optional[Dict]:
+    def get_metadata(self, path: GcsfsFilePath) -> Optional[Dict[str, str]]:
         """Returns the metadata for the object at the given path if it exists in the fs, None otherwise."""
 
     @abc.abstractmethod
@@ -161,7 +161,7 @@ class GCSFileSystemImpl(GCSFileSystem):
         return blob.size if blob else None
 
     @retry.Retry(predicate=retry_predicate)
-    def get_metadata(self, path: GcsfsFilePath) -> Optional[Dict]:
+    def get_metadata(self, path: GcsfsFilePath) -> Optional[Dict[str, str]]:
         bucket = self.storage_client.get_bucket(path.bucket_name)
         blob = bucket.get_blob(path.blob_name)
         return blob.metadata if blob else None

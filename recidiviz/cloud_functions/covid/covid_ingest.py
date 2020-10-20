@@ -27,7 +27,11 @@ import xlrd
 
 import gcsfs
 
-from covid import covid_aggregator
+# Mypy error "Cannot find implementation or library stub for module named 'covid'" ignored here because cloud functions
+# require that imports are declared relative to the cloud functions package itself. In general, we should avoid shipping
+# complex code in cloud functions. The function itself should call an API endpoint that can live in an external package
+# with proper import resolution.
+from covid import covid_aggregator  # type: ignore[import]
 
 
 SOURCES_BUCKET = '{}-covid-aggregation'

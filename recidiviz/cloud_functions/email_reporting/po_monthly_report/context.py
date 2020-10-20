@@ -26,10 +26,16 @@ import copy
 import json
 from typing import List
 
-from context_utils import singular_or_plural, month_number_to_name, round_float_value_to_int, \
+# Mypy errors "Cannot find implementation or library stub for module named 'xxxx'" ignored here because cloud functions
+# require that imports are declared relative to the cloud functions package itself. In general, we should avoid shipping
+# complex code in cloud functions. The function itself should call an API endpoint that can live in an external package
+# with proper import resolution.
+from context_utils import (  # type: ignore[import]
+    singular_or_plural, month_number_to_name, round_float_value_to_int,
     round_float_value_to_number_of_digits
-import email_reporting_utils as utils
-from report_context import ReportContext
+)
+import email_reporting_utils as utils  # type: ignore[import]
+from report_context import ReportContext  # type: ignore[import]
 
 AVERAGE_VALUES_SIGNIFICANT_DIGITS = 3
 

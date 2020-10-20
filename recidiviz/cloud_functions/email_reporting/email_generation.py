@@ -27,8 +27,12 @@ from string import Template
 
 from google.cloud import pubsub_v1
 
-import email_reporting_utils as utils
-from report_context import ReportContext
+# Mypy errors "Cannot find implementation or library stub for module named 'xxxx'" ignored here because cloud functions
+# require that imports are declared relative to the cloud functions package itself. In general, we should avoid shipping
+# complex code in cloud functions. The function itself should call an API endpoint that can live in an external package
+# with proper import resolution.
+import email_reporting_utils as utils  # type: ignore[import]
+from report_context import ReportContext  # type: ignore[import]
 
 
 def generate(report_context: ReportContext) -> None:

@@ -33,7 +33,7 @@ from google.cloud import storage
 from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Mail, Email
 
-import email_reporting_utils as utils
+import email_reporting_utils as utils  # type: ignore[import]
 
 EMAIL_SUBJECT = "Your monthly Recidiviz report"
 
