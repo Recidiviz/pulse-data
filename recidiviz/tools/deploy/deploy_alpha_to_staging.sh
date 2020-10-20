@@ -31,4 +31,4 @@ run_cmd `git tag -m "Version $NEW_VERSION release - $(date +'%Y-%m-%d %H:%M:%S')
 echo "Pushing tags to remote"
 run_cmd git push origin --tags
 
-echo "Deploy succeeded"
+echo "Alpha staging deploy complete."
