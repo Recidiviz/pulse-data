@@ -87,4 +87,4 @@ if [[ ${RELEASE_CANDIDATE_BASE_BRANCH} == "master" ]]; then
     run_cmd git push --set-upstream origin ${NEW_RELEASE_BRANCH}
 fi
 
-echo "Deploy succeeded"
+echo "Release candidate staging deploy complete."
