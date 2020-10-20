@@ -1035,7 +1035,11 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                         ]),
         ])
 
+        # TODO(#4266): Clean up backwards compatibility code
+        # Legacy
         self.run_parse_file_test(expected, 'tak158_tak024_tak026_incarceration_period_from_supervision_sentence')
+        self.run_parse_file_test(expected, 'tak158_tak024_tak026_incarceration_period_from_supervision_sentence_v2')
+
 
     def test_populate_data_tak034_tak026_tak039_apfx90_apfx91_supervision_enhancements_supervision_periods(self):
 
@@ -2964,8 +2968,17 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
         ip_910324_19890825_1_0.supervision_sentences = [sss_910324_19890825_1]
         sss_910324_19890825_1.incarceration_periods = [ip_910324_19890825_1_0]
 
+        # TODO(#4266): Clean up backwards compatibility code
+        # Legacy
         # Act
         self._run_ingest_job_for_filename('tak158_tak024_tak026_incarceration_period_from_supervision_sentence.csv')
+
+        # Assert
+        self.assert_expected_db_people(expected_people)
+
+        # SQL Preprocessing View
+        # Act
+        self._run_ingest_job_for_filename('tak158_tak024_tak026_incarceration_period_from_supervision_sentence_v2.csv')
 
         # Assert
         self.assert_expected_db_people(expected_people)
