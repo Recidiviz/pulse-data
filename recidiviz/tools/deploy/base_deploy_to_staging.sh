@@ -57,7 +57,7 @@ echo "Performing pre-deploy verification"
 run_cmd verify_can_deploy recidiviz-staging
 
 if [[ ! -z ${PROMOTE} || ! -z ${DEBUG_BUILD_NAME} ]]; then
-    pre_deploy_configure_infrastructure 'recidiviz-staging'
+    pre_deploy_configure_infrastructure 'recidiviz-staging' "${DEBUG_BUILD_NAME}"
 else
     echo "Skipping configuration and pipeline deploy steps for no promote release build."
 fi
@@ -90,4 +90,11 @@ if [[ ! -z ${PROMOTE} ]]; then
     echo "App deployed to \`${VERSION}\`.recidiviz-staging.appspot.com"
 else
     echo "App deployed (but not promoted) to \`${VERSION}\`.recidiviz-staging.appspot.com"
+fi
+
+if [[ ! -z ${PROMOTE} ]]; then
+    echo "Deploy succeeded - triggering post-deploy jobs."
+    post_deploy_triggers 'recidiviz-staging'
+else
+    echo "Deploy succeeded - skipping post deploy triggers for no promote build."
 fi
