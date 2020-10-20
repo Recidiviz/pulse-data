@@ -19,7 +19,7 @@ import datetime
 import os
 import time
 import unittest
-from typing import List, Union, Optional, Dict, Type
+from typing import List, Union, Optional, Dict, Type, TextIO
 
 import attr
 import gcsfs
@@ -60,9 +60,9 @@ class TestSafeGcsCsvReader(GcsfsCsvReader):
         super().__init__(create_autospec(gcsfs.GCSFileSystem))
         self.fs = fs
 
-    def _file_pointer_for_path(self, path: GcsfsFilePath, encoding: str):
+    def _file_pointer_for_path(self, path: GcsfsFilePath, encoding: str) -> TextIO:
         try:
-            path_str = self.fs.gcs_file_system.real_absolute_path_for_path(path)
+            path_str = self.fs.real_absolute_path_for_path(path)
         except AttributeError:
             path_str = self.fs.real_absolute_path_for_path(path)
         return open(path_str, encoding=encoding)
@@ -73,7 +73,7 @@ class DirectIngestFakeGCSFileSystemDelegate(FakeGCSFileSystemDelegate):
         self.controller = controller
         self.can_start_ingest = can_start_ingest
 
-    def on_file_added(self, path: GcsfsFilePath):
+    def on_file_added(self, path: GcsfsFilePath) -> None:
         if path.abs_path().startswith(self.controller.ingest_directory_path.abs_path()):
             self.controller.handle_file(path, start_ingest=self.can_start_ingest)
 

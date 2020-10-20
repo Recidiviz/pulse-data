@@ -69,7 +69,7 @@ class FakeGCSFileSystem(GCSFileSystem):
     def get_file_size(self, path: GcsfsFilePath) -> Optional[int]:
         raise ValueError('Must be implemented for use in tests.')
 
-    def get_metadata(self, path: GcsfsFilePath) -> Optional[Dict]:
+    def get_metadata(self, path: GcsfsFilePath) -> Optional[Dict[str, str]]:
         raise ValueError('Must be implemented for use in tests.')
 
     def real_absolute_path_for_path(self, path: GcsfsFilePath) -> str:

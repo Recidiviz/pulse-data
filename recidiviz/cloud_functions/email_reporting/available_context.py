@@ -17,8 +17,12 @@
 
 """Utilities for selecting from available report contexts."""
 
-from po_monthly_report.context import PoMonthlyReportContext
-from report_context import ReportContext
+# Mypy errors "Cannot find implementation or library stub for module named 'xxxx'" ignored here because cloud functions
+# require that imports are declared relative to the cloud functions package itself. In general, we should avoid shipping
+# complex code in cloud functions. The function itself should call an API endpoint that can live in an external package
+# with proper import resolution.
+from po_monthly_report.context import PoMonthlyReportContext  # type: ignore[import]
+from report_context import ReportContext  # type: ignore[import]
 
 
 def get_report_context(state_code: str, report_type: str, recipient_data: dict) -> ReportContext:

@@ -140,6 +140,10 @@ def _parse_date(filename: str) -> datetime.date:
     end = base_filename.index('.pdf')
     start = 4
     d = str_field_utils.parse_date(base_filename[start:end])
+
+    if d is None:
+        raise ValueError(f'Unexpected null date parsed from filename [{filename}]')
+
     return aggregate_ingest_utils.on_last_day_of_month(d)
 
 
@@ -220,8 +224,7 @@ def _format_table(df: pd.DataFrame, is_female: bool, year: int) -> pd.DataFrame:
     df = df.dropna(how='all')
 
     # Sometimes there are missing values, the best we can do is make them zeros?
-    # TODO The real trouble here is that column shifts might happen if
-    # missing values occur in smashed columns.
+    # The real trouble here is that column shifts might happen if missing values occur in smashed columns.
     df = df.fillna(0)
 
     df = df.replace('`', 0)

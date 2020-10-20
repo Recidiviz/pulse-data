@@ -26,9 +26,13 @@ import json
 import logging
 from typing import List
 
-import email_generation
-import email_reporting_utils as utils
-from available_context import get_report_context
+# Mypy errors "Cannot find implementation or library stub for module named 'xxxx'" ignored here because cloud functions
+# require that imports are declared relative to the cloud functions package itself. In general, we should avoid shipping
+# complex code in cloud functions. The function itself should call an API endpoint that can live in an external package
+# with proper import resolution.
+import email_generation   # type: ignore[import]
+import email_reporting_utils as utils  # type: ignore[import]
+from available_context import get_report_context   # type: ignore[import]
 
 
 def start(state_code: str, report_type: str) -> str:
