@@ -27,9 +27,13 @@ import base64
 import json
 import logging
 
-import data_retrieval
-import email_delivery
-import email_generation
+# Mypy errors "Cannot find implementation or library stub for module named 'xxxx'" ignored here because cloud functions
+# require that imports are declared relative to the cloud functions package itself. In general, we should avoid shipping
+# complex code in cloud functions. The function itself should call an API endpoint that can live in an external package
+# with proper import resolution.
+import data_retrieval  # type: ignore[import]
+import email_delivery  # type: ignore[import]
+import email_generation  # type: ignore[import]
 
 
 # pylint:disable=bare-except

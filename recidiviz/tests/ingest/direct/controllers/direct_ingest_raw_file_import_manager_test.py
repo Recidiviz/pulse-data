@@ -116,7 +116,7 @@ class DirectIngestRawFileImportManagerTest(unittest.TestCase):
             region_raw_file_config=self.region_raw_file_config,
             big_query_client=self.mock_big_query_client
         )
-        self.import_manager.csv_reader = TestSafeGcsCsvReader(self.fs)
+        self.import_manager.csv_reader = TestSafeGcsCsvReader(self.fs.gcs_file_system)
 
         self.time_patcher = patch('recidiviz.ingest.direct.controllers.direct_ingest_raw_file_import_manager.time')
         self.mock_time = self.time_patcher.start()

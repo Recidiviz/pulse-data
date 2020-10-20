@@ -20,11 +20,17 @@ import logging
 import os
 import traceback
 
-from cloud_function_utils import IAP_CLIENT_ID, make_iap_request, \
-    get_state_region_code_from_direct_ingest_bucket, \
-    get_dataflow_template_bucket, \
+# Mypy errors "Cannot find implementation or library stub for module named 'xxxx'" ignored here because cloud functions
+# require that imports are declared relative to the cloud functions package itself. In general, we should avoid shipping
+# complex code in cloud functions. The function itself should call an API endpoint that can live in an external package
+# with proper import resolution.
+from cloud_function_utils import (  # type: ignore[import]
+    IAP_CLIENT_ID, make_iap_request,
+    get_state_region_code_from_direct_ingest_bucket,
+    get_dataflow_template_bucket,
     trigger_dataflow_job_from_template
-from covid import covid_ingest
+)
+from covid import covid_ingest  # type: ignore[import]
 
 
 _STATE_AGGREGATE_CLOUD_FUNCTION_URL = (

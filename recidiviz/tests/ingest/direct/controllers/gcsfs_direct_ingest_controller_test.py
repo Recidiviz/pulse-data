@@ -660,7 +660,7 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
 
 
     @patch("recidiviz.utils.regions.get_region", Mock(return_value=TEST_STATE_REGION))
-    def test_do_not_schedule_more_than_one_delayed_scheduler_job(self):
+    def test_do_not_schedule_more_than_one_delayed_scheduler_job(self) -> None:
         controller = build_gcsfs_controller_for_tests(
             StateTestGcsfsDirectIngestController,
             self.FIXTURE_PATH_PREFIX,

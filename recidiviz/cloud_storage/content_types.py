@@ -19,7 +19,7 @@ import abc
 from typing import TypeVar, Generic, Iterator
 
 # Type for a single row/chunk returned by the ingest contents iterator.
-FileContentsRowType = TypeVar('IngestContentsRowType')
+FileContentsRowType = TypeVar('FileContentsRowType')
 
 
 class FileContentsHandle(Generic[FileContentsRowType]):

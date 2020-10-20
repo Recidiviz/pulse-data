@@ -28,7 +28,7 @@ import attr
 from google.cloud import storage
 
 
-def strip_forward_slash(string: str):
+def strip_forward_slash(string: str) -> str:
     if string.startswith('/'):
         return string[1:]
     return string
@@ -181,7 +181,7 @@ class GcsfsFilePath(GcsfsPath):
     @classmethod
     def from_directory_and_file_name(cls,
                                      dir_path: 'GcsfsDirectoryPath',
-                                     file_name: str):
+                                     file_name: str) -> 'GcsfsFilePath':
         relative_dir = dir_path.relative_path
         new_blob_name = os.path.join(relative_dir, file_name)
         return GcsfsFilePath(bucket_name=dir_path.bucket_name,

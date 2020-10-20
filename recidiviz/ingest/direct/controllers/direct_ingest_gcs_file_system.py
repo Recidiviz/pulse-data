@@ -23,7 +23,7 @@ import logging
 import os
 import tempfile
 import uuid
-from typing import List, Optional, Union, Callable, Dict
+from typing import List, Optional, Union, Callable, Dict, TypeVar, Generic
 
 from recidiviz.cloud_storage.gcs_file_system import GCSFileSystem, GcsfsFileContentsHandle
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import \
@@ -182,12 +182,15 @@ def to_normalized_processed_file_path_from_normalized_path(
         file_type_override=file_type_override)
 
 
-class DirectIngestGCSFileSystem(GCSFileSystem):
+GCSFileSystemType = TypeVar('GCSFileSystemType', bound=GCSFileSystem)
+
+
+class DirectIngestGCSFileSystem(Generic[GCSFileSystemType], GCSFileSystem):
     """A wrapper built on top of the GCSFileSystem class with helpers for manipulating files and file names
     expected by direct ingest.
     """
 
-    def __init__(self, gcs_file_system: GCSFileSystem):
+    def __init__(self, gcs_file_system: GCSFileSystemType):
         self.gcs_file_system = gcs_file_system
 
     def exists(self, path: Union[GcsfsBucketPath, GcsfsFilePath]) -> bool:
