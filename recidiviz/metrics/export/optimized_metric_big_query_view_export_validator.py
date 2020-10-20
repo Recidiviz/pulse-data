@@ -32,6 +32,10 @@ class OptimizedMetricBigQueryViewExportValidator(BigQueryViewExportValidator):
             return False
 
         data_points = metadata.get('total_data_points')
+
+        if not data_points:
+            return False
+
         try:
             total_data_points = int(data_points)
             return total_data_points > 0
