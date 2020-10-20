@@ -1,3 +1,4 @@
+# TODO(#4266): Clean up backwards compatibility code
 key_mappings:
   SUB_SUBCYCLE_START_DT: state_incarceration_period.admission_date
   START_SCD_CODES: state_incarceration_period.admission_reason
