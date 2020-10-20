@@ -52,15 +52,22 @@ REVOCATION_MATRIX_COMPARISON_SUPERVISION_POPULATION_QUERY_TEMPLATE = \
       SELECT state_code as region_code, SUM(total_supervision_count) as total_supervision
       FROM `{project_id}.{view_dataset}.revocations_matrix_distribution_by_race`
       GROUP BY state_code
+    ),
+    by_officer as (
+      SELECT state_code as region_code, SUM(total_supervision_count) as total_supervision
+      FROM `{project_id}.{view_dataset}.revocations_matrix_distribution_by_officer`
+      GROUP BY state_code
     )
     SELECT bd.region_code,
            bd.total_supervision as district_sum,
            brl.total_supervision as risk_level_sum,
            bg.total_supervision as gender_sum,
-           br.total_supervision as race_sum
+           br.total_supervision as race_sum,
+           bo.total_supervision as officer_sum
     FROM by_district bd JOIN by_risk_level brl on bd.region_code = brl.region_code
     JOIN by_gender bg on brl.region_code = bg.region_code
     JOIN by_race br on bg.region_code = br.region_code
+    JOIN by_officer bo on br.region_code = bo.region_code
 """
 
 REVOCATION_MATRIX_COMPARISON_SUPERVISION_POPULATION_VIEW_BUILDER = SimpleBigQueryViewBuilder(
