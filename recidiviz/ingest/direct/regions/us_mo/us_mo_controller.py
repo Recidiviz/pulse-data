@@ -134,6 +134,7 @@ class UsMoController(CsvGcsfsDirectIngestController):
         'tak022_tak023_tak025_tak026_offender_sentence_institution_v2',
         'tak022_tak024_tak025_tak026_offender_sentence_supervision_v2',
         'tak158_tak023_tak026_incarceration_period_from_incarceration_sentence_v2',
+        'tak158_tak024_tak026_incarceration_period_from_supervision_sentence_v2',
     ]
 
     PRIMARY_COL_PREFIXES_BY_FILE_TAG = {
@@ -154,6 +155,7 @@ class UsMoController(CsvGcsfsDirectIngestController):
         'tak022_tak023_tak025_tak026_offender_sentence_institution_v2': 'BS',
         'tak022_tak024_tak025_tak026_offender_sentence_supervision_v2': 'BS',
         'tak158_tak023_tak026_incarceration_period_from_incarceration_sentence_v2': 'BT',
+        'tak158_tak024_tak026_incarceration_period_from_supervision_sentence_v2': 'BU',
     }
 
     REVOKED_PROBATION_SENTENCE_STATUS_CODES = {
@@ -546,6 +548,8 @@ class UsMoController(CsvGcsfsDirectIngestController):
                     'tak022_tak024_tak025_tak026_offender_sentence_supervision_v2'),
             'tak158_tak023_tak026_incarceration_period_from_incarceration_sentence_v2':
                 incarceration_period_row_posthooks,
+            'tak158_tak024_tak026_incarceration_period_from_supervision_sentence_v2':
+                incarceration_period_row_posthooks,
         }
 
         self.primary_key_override_by_file: Dict[str, Callable] = {
@@ -576,6 +580,8 @@ class UsMoController(CsvGcsfsDirectIngestController):
                 self._generate_supervision_sentence_id_coords,
             'tak158_tak023_tak026_incarceration_period_from_incarceration_sentence_v2':
                 self._generate_incarceration_period_id_coords,
+            'tak158_tak024_tak026_incarceration_period_from_supervision_sentence_v2':
+                self._generate_incarceration_period_id_coords,
         }
 
         self.ancestor_chain_override_by_file: Dict[str, Callable] = {
@@ -602,6 +608,8 @@ class UsMoController(CsvGcsfsDirectIngestController):
                 self._sentence_group_ancestor_chain_override,
             'tak158_tak023_tak026_incarceration_period_from_incarceration_sentence_v2':
                 self._incarceration_sentence_ancestor_chain_override,
+            'tak158_tak024_tak026_incarceration_period_from_supervision_sentence_v2':
+                self._supervision_sentence_ancestor_chain_override,
         }
 
     @classmethod
@@ -658,6 +666,7 @@ class UsMoController(CsvGcsfsDirectIngestController):
                 'tak022_tak023_tak025_tak026_offender_sentence_institution_v2',
                 'tak022_tak024_tak025_tak026_offender_sentence_supervision_v2',
                 'tak158_tak023_tak026_incarceration_period_from_incarceration_sentence_v2',
+                'tak158_tak024_tak026_incarceration_period_from_supervision_sentence_v2',
 
         ]:
             return US_MO_DOC
