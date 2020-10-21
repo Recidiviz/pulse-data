@@ -138,7 +138,15 @@ raw_files:
       - DOC_ID_DOB
     # Officer information.
   - file_tag: LBCMDATA_APFX90
-    primary_key_cols: []
+    primary_key_cols:
+      - BDGNO
+      - EMPSSN
+      - STRDTE
+      - DEPCLS
     # Officer information.
   - file_tag: LBCMDATA_APFX91
-    primary_key_cols: []
+    primary_key_cols:
+      - BDGNO
+      - EMPSSN
+      - STRDTE
+      - DEPCLS
