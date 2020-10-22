@@ -150,3 +150,6 @@ raw_files:
       - EMPSSN
       - STRDTE
       - DEPCLS
+    # Supervision Enhancements.
+  - file_tag: OFNDR_PDB_FOC_SUPERVISION_ENHANCEMENTS_VW
+    primary_key_cols: []
