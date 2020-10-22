@@ -482,6 +482,7 @@ state_supervision_contact_type = Enum(
     state_enum_strings.state_supervision_contact_type_face_to_face,
     state_enum_strings.state_supervision_contact_type_telephone,
     state_enum_strings.state_supervision_contact_type_written_message,
+    state_enum_strings.state_supervision_contact_type_virtual,
     name='state_supervision_contact_type'
 )
 

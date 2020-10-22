@@ -31,6 +31,7 @@ class StateSupervisionContactType(EntityEnum, metaclass=EntityEnumMeta):
     FACE_TO_FACE = state_enum_strings.state_supervision_contact_type_face_to_face
     TELEPHONE = state_enum_strings.state_supervision_contact_type_telephone
     WRITTEN_MESSAGE = state_enum_strings.state_supervision_contact_type_written_message
+    VIRTUAL = state_enum_strings.state_supervision_contact_type_virtual
 
     @staticmethod
     def _get_default_map():
@@ -115,4 +116,5 @@ _STATE_SUPERVISION_CONTACT_TYPE_MAP = {
     'FACE TO FACE': StateSupervisionContactType.FACE_TO_FACE,
     'TELEPHONE': StateSupervisionContactType.TELEPHONE,
     'WRITTEN MESSAGE': StateSupervisionContactType.WRITTEN_MESSAGE,
+    'VIRTUAL': StateSupervisionContactType.VIRTUAL,
 }
