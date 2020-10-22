@@ -32,20 +32,30 @@ INCARCERATION_POPULATION_BY_FACILITY_BY_DEMOGRAPHICS_VIEW_QUERY_TEMPLATE = \
     SELECT
       state_code,
       date_of_stay,
-      IFNULL(facility_shorthand, facility) as facility,
-      {state_specific_race_or_ethnicity_groupings},
+      facility,
+      race_or_ethnicity,
       gender,
       age_bucket,
       COUNT(DISTINCT(person_id)) as total_population
-    FROM
-      `{project_id}.{reference_views_dataset}.most_recent_daily_incarceration_population_materialized` 
-    LEFT JOIN
-      `{project_id}.{static_reference_dataset}.state_incarceration_facility_capacity`
-    USING (state_code, facility),
-      {facility_dimension},
-      {unnested_race_or_ethnicity_dimension},
-      {gender_dimension},
-      {age_dimension}
+    FROM (
+      SELECT 
+        state_code,
+        person_id,
+        date_of_stay,
+        COALESCE(facility_shorthand, facility, 'INTERNAL_UNKNOWN') as facility, 
+        {state_specific_race_or_ethnicity_groupings},
+        gender,
+        age_bucket
+      FROM
+        `{project_id}.{reference_views_dataset}.most_recent_daily_incarceration_population_materialized` 
+      LEFT JOIN
+        `{project_id}.{static_reference_dataset}.state_incarceration_facility_capacity`
+      USING (state_code, facility),
+        {facility_dimension},
+        {unnested_race_or_ethnicity_dimension},
+        {gender_dimension},
+        {age_dimension}
+    )
     WHERE (race_or_ethnicity != 'ALL' AND gender = 'ALL' AND age_bucket = 'ALL') -- Race breakdown
       OR (race_or_ethnicity = 'ALL' AND gender != 'ALL' AND age_bucket = 'ALL') -- Gender breakdown
       OR (race_or_ethnicity = 'ALL' AND gender = 'ALL' AND age_bucket != 'ALL') -- Age breakdown

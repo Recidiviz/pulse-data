@@ -34,7 +34,7 @@ FACILITY_POPULATION_BY_AGE_WITH_CAPACITY_BY_DAY_QUERY_TEMPLATE = \
     /*{description}*/
     SELECT
       state_code,
-      IFNULL(facility_shorthand, facility) as facility,
+      COALESCE(facility_shorthand, facility, 'INTERNAL_UNKNOWN') as facility,
       date_of_stay,
       pop_no_age,
       pop_0_19,

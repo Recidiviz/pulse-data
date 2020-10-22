@@ -21,6 +21,7 @@ from enum import Enum
 from typing import List, Set
 
 import attr
+from google.cloud.bigquery import QueryJob
 
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.validation.checks.validation_checker import ValidationChecker
@@ -47,7 +48,7 @@ class SamenessDataValidationCheck(DataValidationCheck):
     # The list of columns whose values should be compared
     comparison_columns: List[str] = attr.ib(factory=list)
     @comparison_columns.validator
-    def _check_comparison_columns(self, _attribute: attr.Attribute, value: List):
+    def _check_comparison_columns(self, _attribute: attr.Attribute, value: List) -> None:
         if len(value) < 2:
             raise ValueError(f'Found only [{len(value)}] comparison columns, expected at least 2.')
 
@@ -57,7 +58,7 @@ class SamenessDataValidationCheck(DataValidationCheck):
     # The acceptable margin of error across the range of compared values. Defaults to 0.0 (no difference allowed)
     max_allowed_error: float = attr.ib(default=0.0)
     @max_allowed_error.validator
-    def _check_max_allowed_error(self, _attribute: attr.Attribute, value: float):
+    def _check_max_allowed_error(self, _attribute: attr.Attribute, value: float) -> None:
         if not isinstance(value, float):
             raise ValueError(f'Unexpected type [{type(value)}] for error value [{value}]')
 
@@ -93,15 +94,30 @@ class SamenessValidationChecker(ValidationChecker[SamenessDataValidationCheck]):
         raise ValueError(f"Unexpected sameness_check_type of {validation_job.validation.sameness_check_type}.")
 
     @staticmethod
-    def run_check_for_numbers(validation_job, comparison_columns, max_allowed_error, query_job) -> \
-            DataValidationJobResult:
+    def run_check_for_numbers(validation_job: DataValidationJob[SamenessDataValidationCheck],
+                              comparison_columns: List[str],
+                              max_allowed_error: float,
+                              query_job: QueryJob) -> DataValidationJobResult:
         """Performs the validation check for sameness check types, where the values being compares are numbers (either
         ints or floats)."""
         was_successful = True
         failed_rows = []
 
         for row in query_job:
-            comparison_values = [row[column] for column in comparison_columns]
+            comparison_values: List[float] = []
+            for column in comparison_columns:
+                if row[column] is None:
+                    raise ValueError(
+                        f'Unexpected None value for column [{column}] in validation '
+                        f'[{validation_job.validation.validation_name}].')
+                try:
+                    float_value = float(row[column])
+                except ValueError as e:
+                    raise ValueError(
+                        f'Could not cast value [{row[column]}] in column [{column}] to a float in validation '
+                        f'[{validation_job.validation.validation_name}].') from e
+                comparison_values.append(float_value)
+
             max_value = max(comparison_values)
             min_value = min(comparison_values)
 
@@ -129,8 +145,10 @@ class SamenessValidationChecker(ValidationChecker[SamenessDataValidationCheck]):
                                        failure_description=description)
 
     @staticmethod
-    def run_check_for_strings(validation_job, comparison_columns, max_allowed_error, query_job) -> \
-            DataValidationJobResult:
+    def run_check_for_strings(validation_job: DataValidationJob[SamenessDataValidationCheck],
+                              comparison_columns: List[str],
+                              max_allowed_error: float,
+                              query_job: QueryJob) -> DataValidationJobResult:
         """Performs the validation check for sameness check types, where the values being compared are strings."""
         num_errors = 0
         num_rows = 0
@@ -146,16 +164,14 @@ class SamenessValidationChecker(ValidationChecker[SamenessDataValidationCheck]):
                 elif isinstance(value, str):
                     unique_string_values.add(value)
                 else:
-                    # The value is not a string.
-                    num_errors += 1
-                    continue
+                    raise ValueError(
+                        f'Unexpected type [{type(value)}] for value [{value}] in STRING validation '
+                        f'[{validation_job.validation.validation_name}].')
 
-            # If there is only one unique string value in the row, then there's no issue
-            if len(unique_string_values) == 1:
-                continue
-
-            # Increment the number of errors
-            num_errors += 1
+            # If there is more than one unique string value in the row, then there's an issue
+            if len(unique_string_values) > 1:
+                # Increment the number of errors
+                num_errors += 1
 
         error_rate = (num_errors / num_rows) if num_rows > 0 else 0.0
         was_successful = error_rate <= max_allowed_error

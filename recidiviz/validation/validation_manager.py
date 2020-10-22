@@ -19,7 +19,7 @@
 from concurrent import futures
 from http import HTTPStatus
 import logging
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, Tuple
 
 from opencensus.stats import aggregation, measure, view
 
@@ -66,7 +66,7 @@ validation_manager_blueprint = Blueprint('validation_manager', __name__)
 
 @validation_manager_blueprint.route('/validate')
 @authenticate_request
-def handle_validation_request():
+def handle_validation_request() -> Tuple[str, HTTPStatus]:
     """API endpoint to service data validation requests."""
     should_update_views = get_bool_param_value('should_update_views', request.args, default=False)
     failed_validations = execute_validation(should_update_views=should_update_views)
@@ -140,7 +140,7 @@ def _fetch_validation_jobs_to_perform(region_code_filter: Optional[str] = None) 
 
 
 def _emit_failures(failed_to_run_validations: List[DataValidationJob],
-                   failed_validations: List[DataValidationJobResult]):
+                   failed_validations: List[DataValidationJobResult]) -> None:
     def tags_for_job(job: DataValidationJob) -> Dict[str, Any]:
         return {
             monitoring.TagKey.REGION: job.region_code,

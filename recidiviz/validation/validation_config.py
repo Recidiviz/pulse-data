@@ -64,7 +64,7 @@ class ValidationMaxAllowedErrorOverride:
     # The new max_allowed_error value
     max_allowed_error_override: float = attr.ib()
     @max_allowed_error_override.validator
-    def _check_max_allowed_error(self, _attribute: attr.Attribute, value: float):
+    def _check_max_allowed_error(self, _attribute: attr.Attribute, value: float) -> None:
         if not isinstance(value, float):
             raise ValueError(f'Unexpected type [{type(value)}] for error value [{value}]')
 
