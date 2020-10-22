@@ -129,6 +129,24 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
                                     alias_type='GIVEN_NAME')
                                 ],
                             current_address="33 HOME ST, CITY, ID, 99999"),
+                StatePerson(state_person_id='4444',
+                            surname='LAST_4',
+                            given_names='FIRST_4',
+                            middle_names='MIDDLE_4',
+                            gender='F',
+                            birthdate='01/01/05',
+                            state_person_external_ids=[
+                                StatePersonExternalId(state_person_external_id_id='4444', id_type=US_ID_DOC)
+                            ],
+                            state_person_races=[StatePersonRace(race='O')],
+                            state_aliases=[
+                                StateAlias(
+                                    surname='LAST_4',
+                                    given_names='FIRST_4',
+                                    middle_names='MIDDLE_4',
+                                    alias_type='GIVEN_NAME')
+                            ],
+                            current_address="44 HOME ST, CITY, ID, 99999"),
             ])
 
         self.run_parse_file_test(expected, 'offender_ofndr_dob_address')
@@ -1167,6 +1185,41 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
                         ),
                     ]
                 ),
+                StatePerson(
+                    state_person_id='4444',
+                    state_person_external_ids=[
+                        StatePersonExternalId(state_person_external_id_id='4444', id_type=US_ID_DOC)
+                    ],
+                    state_sentence_groups=[
+                        StateSentenceGroup(
+                            state_supervision_sentences=[
+                                StateSupervisionSentence(
+                                    state_supervision_periods=[
+                                        StateSupervisionPeriod(
+                                            state_supervision_contacts=[
+                                                StateSupervisionContact(
+                                                    state_supervision_contact_id='4',
+                                                    verified_employment='Y',
+                                                    location='RESIDENCE',
+                                                    status='ATTEMPTED',
+                                                    resulted_in_arrest='False',
+                                                    contact_type='VIRTUAL',
+                                                    contact_reason='72 HOUR INITIAL',
+                                                    contact_date='2017-01-01 00:00:00',
+                                                    contacted_agent=StateAgent(
+                                                        state_agent_id='po4',
+                                                        full_name='NAME4',
+                                                        agent_type='SUPERVISION_OFFICER',
+                                                    ),
+                                                ),
+                                            ]
+                                        ),
+                                    ]
+                                )
+                            ],
+                        ),
+                    ]
+                ),
             ]
         )
 
@@ -1254,7 +1307,32 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
                     state_code=_STATE_CODE_UPPER, race=Race.OTHER, race_raw_text='O'),
                 ],
         )
-        expected_people = [person_1, person_2, person_3]
+        person_4 = entities.StatePerson.new_with_defaults(
+            full_name='{"given_names": "FIRST_4", "middle_names": "MIDDLE_4", "surname": "LAST_4"}',
+            gender=Gender.FEMALE,
+            gender_raw_text='F',
+            birthdate=datetime.date(year=2005, month=1, day=1),
+            birthdate_inferred_from_age=False,
+            current_address="44 HOME ST, CITY, ID, 99999",
+            state_code=_STATE_CODE_UPPER,
+            residency_status=ResidencyStatus.PERMANENT,
+            external_ids=[
+                entities.StatePersonExternalId.new_with_defaults(
+                    state_code=_STATE_CODE_UPPER, external_id='4444', id_type=US_ID_DOC),
+            ],
+            aliases=[
+                entities.StatePersonAlias.new_with_defaults(
+                    full_name='{"given_names": "FIRST_4", "middle_names": "MIDDLE_4", "surname": "LAST_4"}',
+                    state_code=_STATE_CODE_UPPER,
+                    alias_type=StatePersonAliasType.GIVEN_NAME,
+                    alias_type_raw_text='GIVEN_NAME')
+            ],
+            races=[
+                entities.StatePersonRace.new_with_defaults(
+                    state_code=_STATE_CODE_UPPER, race=Race.OTHER, race_raw_text='O'),
+            ],
+        )
+        expected_people = [person_1, person_2, person_3, person_4]
         populate_person_backedges(expected_people)
 
         # Act
@@ -2481,6 +2559,53 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
         sg_3333_placeholder_2.supervision_sentences.append(ss_3333_placeholder_2)
         ss_3333_placeholder_2.supervision_periods.append(sp_3333_placeholder_2)
         sp_3333_1.supervision_contacts.append(sc_3333_1)
+
+        po_4 = entities.StateAgent.new_with_defaults(
+            external_id='PO4',
+            state_code=_STATE_CODE_UPPER,
+            full_name='{"full_name": "NAME4"}',
+            agent_type=StateAgentType.SUPERVISION_OFFICER,
+            agent_type_raw_text='SUPERVISION_OFFICER',
+        )
+        sg_4444_placeholder_1 = entities.StateSentenceGroup.new_with_defaults(
+            state_code=_STATE_CODE_UPPER,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+            person=person_4
+        )
+        ss_4444_placeholder_1 = entities.StateSupervisionSentence.new_with_defaults(
+            state_code=_STATE_CODE_UPPER,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+            sentence_group=sg_4444_placeholder_1,
+            person=sg_4444_placeholder_1.person)
+        sp_4444_placeholder_1 = entities.StateSupervisionPeriod.new_with_defaults(
+            state_code=_STATE_CODE_UPPER,
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
+            supervision_sentences=[ss_4444_placeholder_1],
+            person=ss_4444_placeholder_1.person
+        )
+        sc_4444_1 = entities.StateSupervisionContact.new_with_defaults(
+            state_code=_STATE_CODE_UPPER,
+            external_id='4',
+            resulted_in_arrest=False,
+            verified_employment=True,
+            location=StateSupervisionContactLocation.RESIDENCE,
+            location_raw_text='RESIDENCE',
+            status=StateSupervisionContactStatus.ATTEMPTED,
+            status_raw_text='ATTEMPTED',
+            contact_type=StateSupervisionContactType.VIRTUAL,
+            contact_type_raw_text='VIRTUAL',
+            contact_reason=StateSupervisionContactReason.INITIAL_CONTACT,
+            contact_reason_raw_text='72 HOUR INITIAL',
+            contact_date=datetime.date(year=2017, month=1, day=1),
+            contacted_agent=po_4,
+            supervision_periods=[sp_4444_placeholder_1],
+            person=sp_4444_placeholder_1.person,
+        )
+
+        person_4.sentence_groups.append(sg_4444_placeholder_1)
+        sg_4444_placeholder_1.supervision_sentences.append(ss_4444_placeholder_1)
+        ss_4444_placeholder_1.supervision_periods.append(sp_4444_placeholder_1)
+        sp_4444_placeholder_1.supervision_contacts.append(sc_4444_1)
 
         # Act
         self._run_ingest_job_for_filename('sprvsn_cntc.csv')

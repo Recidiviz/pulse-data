@@ -2,3 +2,4 @@ docno,lnam,title,fnam,mnam,sex_cd,ethnic_cd,activ_flg,sealed_flg,noter_fac,fbi_n
 1111,LAST_1,,FIRST_1,MIDDLE_1,M,W,H,,,FBI_1,,,,,,,,,,1,,HS,HS,0,,2002-01-01 13:00,H,,,,,,,1,1111,01/01/75,1111,"11 HOME ST, CITY, ID, 99999",,,
 2222,LAST_2,,FIRST_2,MIDDLE_2,F,H,H,,,FBI_2,,,,,,,,,,2,,HS,HS,0,,2004-01-01 13:00,H,,,,,,,1,2222,01/01/85,2222,"22 HOME ST, CITY, ID, 99999",,,
 3333,LAST_3,,FIRST_3,MIDDLE_3,F,O,H,,,,,,,,,,,,,1,,HS,HS,0,,2010-01-01 13:00,H,,,,,,,1,3333,01/01/95,3333,"33 HOME ST, CITY, ID, 99999",,,
+4444,LAST_4,,FIRST_4,MIDDLE_4,F,O,H,,,,,,,,,,,,,1,,HS,HS,0,,2010-01-01 13:00,H,,,,,,,1,3333,01/01/05,4444,"44 HOME ST, CITY, ID, 99999",,,
