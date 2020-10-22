@@ -16,6 +16,7 @@
 # =============================================================================
 
 """Defines subclasses of BigQueryView used in the direct ingest flow."""
+import re
 import string
 from typing import List, Optional
 
@@ -138,6 +139,8 @@ DATETIME_COL_NORMALIZATION_TEMPLATE = """
             {col_name}
         ) AS {col_name},"""
 
+CREATE_TEMP_TABLE_REGEX = re.compile(r'CREATE\s+((TEMP|TEMPORARY)\s+)TABLE')
+
 
 class DirectIngestRawDataTableBigQueryView(BigQueryView):
     """A base class for BigQuery views that give us a view of a region's raw data on a given date."""
@@ -167,7 +170,7 @@ class DirectIngestRawDataTableBigQueryView(BigQueryView):
                          supplemental_order_by_clause=supplemental_order_by_clause)
 
     @staticmethod
-    def _supplemental_order_by_clause_for_config(raw_file_config: DirectIngestRawFileConfig):
+    def _supplemental_order_by_clause_for_config(raw_file_config: DirectIngestRawFileConfig) -> str:
         if not raw_file_config.supplemental_order_by_clause:
             return ''
 
@@ -252,7 +255,26 @@ class DirectIngestPreProcessedIngestView(BigQueryView):
                  region_raw_table_config: DirectIngestRegionRawFileConfig,
                  order_by_cols: Optional[str],
                  is_detect_row_deletion_view: bool,
-                 primary_key_tables_for_entity_deletion: List[str]):
+                 primary_key_tables_for_entity_deletion: List[str],
+                 materialize_raw_data_table_views: bool = False):
+        """Builds a view for holding direct ingest pre-processing SQL queries, that can be used to export files for
+        import into our Postgres DB.
+
+        Args:
+            ingest_view_name: (str) The name of the view.
+            view_query_template: (str) The template for the query, formatted for hydration of raw table views.
+            region_raw_table_config: (DirectIngestRegionRawFileConfig) Raw table configurations for the region this
+                view corresponds to.
+            order_by_cols: (str) An optional, comma-separated string of columns to sort the final results by.
+            is_detect_row_deletion_view: (bool) When true, this view will be built to detect that rows have been deleted
+                since the previous raw data update for this view.
+            primary_key_tables_for_entity_deletion: (str) A list of table names that are used to build the primary keys
+                for this table - must be non-empty when |is_detect_row_deletion_view| is True.
+            materialize_raw_data_table_views: (bool) When True, the raw table subqueries for this query will be hydrated
+                as separate, materialized CREATE TEMP TABLE statements. Should be used for queries that are too complex
+                to run otherwise (i.e. they produce a 'too many subqueries' error). This will slow down your query by a
+                factor of 4-5.
+        """
         DirectIngestPreProcessedIngestView._validate_order_by(
             ingest_view_name=ingest_view_name, view_query_template=view_query_template)
 
@@ -261,11 +283,13 @@ class DirectIngestPreProcessedIngestView(BigQueryView):
         raw_table_dependency_configs = self._get_raw_table_dependency_configs(view_query_template,
                                                                               region_raw_table_config)
 
-        latest_view_query = self._format_expanded_view_query(region_code=region_code,
-                                                             raw_table_dependency_configs=raw_table_dependency_configs,
-                                                             view_query_template=view_query_template,
-                                                             order_by_cols=order_by_cols,
-                                                             parametrize_query=False)
+        latest_view_query = self._format_expanded_view_query(
+            region_code=region_code,
+            raw_table_dependency_configs=raw_table_dependency_configs,
+            view_query_template=view_query_template,
+            order_by_cols=order_by_cols,
+            parametrize_query=False,
+            materialize_raw_data_table_views=materialize_raw_data_table_views)
 
         dataset_id = f'{region_code.lower()}_ingest_views'
         super().__init__(dataset_id=dataset_id,
@@ -278,7 +302,8 @@ class DirectIngestPreProcessedIngestView(BigQueryView):
             raw_table_dependency_configs=raw_table_dependency_configs,
             view_query_template=view_query_template,
             order_by_cols=order_by_cols,
-            parametrize_query=True)
+            parametrize_query=True,
+            materialize_raw_data_table_views=materialize_raw_data_table_views)
         self._date_parametrized_view_query = date_parametrized_view_query.format(**self.
                                                                                  _query_format_args_with_project_id())
         self._is_detect_row_deletion_view = is_detect_row_deletion_view
@@ -350,7 +375,7 @@ class DirectIngestPreProcessedIngestView(BigQueryView):
         return f'{raw_table_config.file_tag}_generated_view'
 
     @staticmethod
-    def add_order_by_suffix(query: str, order_by_cols: Optional[str]):
+    def add_order_by_suffix(query: str, order_by_cols: Optional[str]) -> str:
         if order_by_cols:
             query = query.rstrip().rstrip(';')
             query = f'{query} \nORDER BY {order_by_cols};'
@@ -362,7 +387,8 @@ class DirectIngestPreProcessedIngestView(BigQueryView):
                                     raw_table_dependency_configs: List[DirectIngestRawFileConfig],
                                     view_query_template: str,
                                     order_by_cols: Optional[str],
-                                    parametrize_query: bool) -> str:
+                                    parametrize_query: bool,
+                                    materialize_raw_data_table_views: bool) -> str:
         """Formats the given template with expanded subqueries for each raw table dependency."""
         table_subquery_strs = []
         format_args = {}
@@ -370,14 +396,26 @@ class DirectIngestPreProcessedIngestView(BigQueryView):
             table_subquery_strs.append(cls._get_table_subquery_str(region_code, raw_table_config, parametrize_query))
             format_args[raw_table_config.file_tag] = cls._table_subbquery_name(raw_table_config)
 
-        table_subquery_clause = ',\n'.join(table_subquery_strs)
+        if materialize_raw_data_table_views:
+            temp_table_query_strs = [f'CREATE TEMP TABLE {table_subquery_str};'
+                                     for table_subquery_str in table_subquery_strs]
+            table_subquery_clause = '\n'.join(temp_table_query_strs)
+            view_query_template = f'{table_subquery_clause}\n{view_query_template}'
+        else:
+            if re.search(CREATE_TEMP_TABLE_REGEX, view_query_template):
+                raise ValueError(
+                    'Found CREATE TEMP TABLE clause in this query - you must set |materialize_raw_data_table_views| '
+                    'to True to include a temp table subquery in your view.')
 
-        view_query_template = view_query_template.strip()
-        if view_query_template.startswith(cls.WITH_PREFIX):
-            view_query_template = view_query_template[len(cls.WITH_PREFIX):].lstrip()
-            table_subquery_clause = table_subquery_clause + ','
+            table_subquery_clause = ',\n'.join(table_subquery_strs)
 
-        view_query_template = f'{cls.WITH_PREFIX}\n{table_subquery_clause}\n{view_query_template}'
+            view_query_template = view_query_template.strip()
+            if view_query_template.startswith(cls.WITH_PREFIX):
+                view_query_template = view_query_template[len(cls.WITH_PREFIX):].lstrip()
+                table_subquery_clause = table_subquery_clause + ','
+
+            view_query_template = f'{cls.WITH_PREFIX}\n{table_subquery_clause}\n{view_query_template}'
+
         view_query_template = cls.add_order_by_suffix(query=view_query_template, order_by_cols=order_by_cols)
 
         # We don't want to inject the project_id outside of the BigQueryView initializer
@@ -435,7 +473,7 @@ class DirectIngestPreProcessedIngestView(BigQueryView):
                                                   raw_file_config=raw_table_config).select_query_uninjected_project_id
 
     @staticmethod
-    def _validate_order_by(ingest_view_name: str, view_query_template: str):
+    def _validate_order_by(ingest_view_name: str, view_query_template: str) -> None:
         query = view_query_template.upper()
         final_sub_query = query.split('FROM')[-1]
         order_by_count = final_sub_query.count('ORDER BY')
@@ -449,9 +487,9 @@ class DirectIngestPreProcessedIngestView(BigQueryView):
                 f'or otherwise refactoring the query so no ORDER BY statements occur after the final `FROM`')
 
     @staticmethod
-    def _validate_can_detect_row_deletion(ingest_view_name,
+    def _validate_can_detect_row_deletion(ingest_view_name: str,
                                           primary_key_tables_for_entity_deletion: List[str],
-                                          raw_configs: List[DirectIngestRawFileConfig]):
+                                          raw_configs: List[DirectIngestRawFileConfig]) -> None:
         if not primary_key_tables_for_entity_deletion:
             raise ValueError(f'Ingest view {ingest_view_name} was marked as `is_detect_row_deletion_view`; however no '
                              f'`primary_key_tables_for_entity_deletion` were defined. When the view is constructed, '
@@ -493,13 +531,15 @@ class DirectIngestPreProcessedIngestViewBuilder(BigQueryViewBuilder[DirectIngest
                  view_query_template: str,
                  order_by_cols: Optional[str],
                  is_detect_row_deletion_view: bool = False,
-                 primary_key_tables_for_entity_deletion: Optional[List[str]] = None):
+                 primary_key_tables_for_entity_deletion: Optional[List[str]] = None,
+                 materialize_raw_data_table_views: bool = False):
         self.region = region
         self.ingest_view_name = ingest_view_name
         self.view_query_template = view_query_template
         self.order_by_cols = order_by_cols
         self.is_detect_row_deletion_view = is_detect_row_deletion_view
         self.primary_key_tables_for_entity_deletion = primary_key_tables_for_entity_deletion or []
+        self.materialize_raw_data_table_views = materialize_raw_data_table_views
 
     def build(self) -> DirectIngestPreProcessedIngestView:
         """Builds an instance of a DirectIngestPreProcessedIngestView with the provided args."""
@@ -509,10 +549,11 @@ class DirectIngestPreProcessedIngestViewBuilder(BigQueryViewBuilder[DirectIngest
             region_raw_table_config=get_region_raw_file_config(self.region),
             order_by_cols=self.order_by_cols,
             is_detect_row_deletion_view=self.is_detect_row_deletion_view,
-            primary_key_tables_for_entity_deletion=self.primary_key_tables_for_entity_deletion
+            primary_key_tables_for_entity_deletion=self.primary_key_tables_for_entity_deletion,
+            materialize_raw_data_table_views=self.materialize_raw_data_table_views
         )
 
-    def build_and_print(self):
+    def build_and_print(self) -> None:
         """For local testing, prints out the parametrized and latest versions of the view's query."""
         view = self.build()
         print('****************************** PARAMETRIZED ******************************')

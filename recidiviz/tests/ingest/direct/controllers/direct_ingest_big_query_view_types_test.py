@@ -38,10 +38,10 @@ class DirectIngestBigQueryViewTypesTest(unittest.TestCase):
         self.mock_project_id_fn = self.metadata_patcher.start()
         self.mock_project_id_fn.return_value = self.PROJECT_ID
 
-    def tearDown(self):
+    def tearDown(self) -> None:
         self.metadata_patcher.stop()
 
-    def test_raw_latest_view(self):
+    def test_raw_latest_view(self) -> None:
         view = DirectIngestRawDataTableLatestView(
             region_code='us_xx',
             raw_file_config=DirectIngestRawFileConfig(
@@ -75,7 +75,7 @@ class DirectIngestBigQueryViewTypesTest(unittest.TestCase):
         self.assertEqual('SELECT * FROM `recidiviz-456.us_xx_raw_data_up_to_date_views.table_name_latest`',
                          view.select_query)
 
-    def test_raw_latest_historical_file_view(self):
+    def test_raw_latest_historical_file_view(self) -> None:
         view = DirectIngestRawDataTableLatestView(
             region_code='us_xx',
             raw_file_config=DirectIngestRawFileConfig(
@@ -109,7 +109,7 @@ class DirectIngestBigQueryViewTypesTest(unittest.TestCase):
         self.assertEqual('SELECT * FROM `recidiviz-456.us_xx_raw_data_up_to_date_views.table_name_latest`',
                          view.select_query)
 
-    def test_raw_up_to_date_view(self):
+    def test_raw_up_to_date_view(self) -> None:
         view = DirectIngestRawDataTableUpToDateView(
             region_code='us_xx',
             raw_file_config=DirectIngestRawFileConfig(
@@ -153,7 +153,7 @@ class DirectIngestBigQueryViewTypesTest(unittest.TestCase):
         self.assertEqual('SELECT * FROM `recidiviz-456.us_xx_raw_data_up_to_date_views.table_name_by_update_date`',
                          view.select_query)
 
-    def test_raw_up_to_date_historical_file_view(self):
+    def test_raw_up_to_date_historical_file_view(self) -> None:
         view = DirectIngestRawDataTableUpToDateView(
             region_code='us_xx',
             raw_file_config=DirectIngestRawFileConfig(
@@ -197,7 +197,7 @@ class DirectIngestBigQueryViewTypesTest(unittest.TestCase):
         self.assertEqual('SELECT * FROM `recidiviz-456.us_xx_raw_data_up_to_date_views.table_name_by_update_date`',
                          view.select_query)
 
-    def test_direct_ingest_preprocessed_view(self):
+    def test_direct_ingest_preprocessed_view(self) -> None:
         region_config = DirectIngestRegionRawFileConfig(
             region_code='us_xx',
             yaml_config_file_path=fixtures.as_filepath('us_xx_raw_data_files.yaml'),
@@ -276,7 +276,7 @@ ORDER BY col1, col2;"""
         self.assertEqual(expected_parametrized_view_query,
                          view.date_parametrized_view_query('my_update_timestamp_param_name'))
 
-    def test_direct_ingest_preprocessed_view_detect_row_deletion_no_historical_table(self):
+    def test_direct_ingest_preprocessed_view_detect_row_deletion_no_historical_table(self) -> None:
         region_config = DirectIngestRegionRawFileConfig(
             region_code='us_xx',
             yaml_config_file_path=fixtures.as_filepath('us_xx_raw_data_files.yaml'),
@@ -286,17 +286,19 @@ ORDER BY col1, col2;"""
 LEFT OUTER JOIN {file_tag_second}
 USING (col1);"""
 
-        with self.assertRaises(ValueError):
-            DirectIngestPreProcessedIngestView(
-                ingest_view_name='ingest_view_tag',
-                view_query_template=view_query_template,
-                region_raw_table_config=region_config,
-                order_by_cols='col1, col2',
-                is_detect_row_deletion_view=True,
-                primary_key_tables_for_entity_deletion=['file_tag_second'],
-            )
+        for materialize_raw_data_table_views in {True, False}:
+            with self.assertRaises(ValueError):
+                DirectIngestPreProcessedIngestView(
+                    ingest_view_name='ingest_view_tag',
+                    view_query_template=view_query_template,
+                    region_raw_table_config=region_config,
+                    order_by_cols='col1, col2',
+                    is_detect_row_deletion_view=True,
+                    primary_key_tables_for_entity_deletion=['file_tag_second'],
+                    materialize_raw_data_table_views=materialize_raw_data_table_views
+                )
 
-    def test_direct_ingest_preprocessed_view_detect_row_deletion_no_pk_tables_specified(self):
+    def test_direct_ingest_preprocessed_view_detect_row_deletion_no_pk_tables_specified(self) -> None:
         region_config = DirectIngestRegionRawFileConfig(
             region_code='us_xx',
             yaml_config_file_path=fixtures.as_filepath('us_xx_raw_data_files.yaml'),
@@ -306,17 +308,19 @@ USING (col1);"""
         LEFT OUTER JOIN {tagFullHistoricalExport}
         USING (col1);"""
 
-        with self.assertRaises(ValueError):
-            DirectIngestPreProcessedIngestView(
-                ingest_view_name='ingest_view_tag',
-                view_query_template=view_query_template,
-                region_raw_table_config=region_config,
-                order_by_cols='col1, col2',
-                is_detect_row_deletion_view=True,
-                primary_key_tables_for_entity_deletion=[],
-            )
+        for materialize_raw_data_table_views in {True, False}:
+            with self.assertRaises(ValueError):
+                DirectIngestPreProcessedIngestView(
+                    ingest_view_name='ingest_view_tag',
+                    view_query_template=view_query_template,
+                    region_raw_table_config=region_config,
+                    order_by_cols='col1, col2',
+                    is_detect_row_deletion_view=True,
+                    primary_key_tables_for_entity_deletion=[],
+                    materialize_raw_data_table_views=materialize_raw_data_table_views
+                )
 
-    def test_direct_ingest_preprocessed_view_detect_row_deletion_unknown_pk_table_specified(self):
+    def test_direct_ingest_preprocessed_view_detect_row_deletion_unknown_pk_table_specified(self) -> None:
         region_config = DirectIngestRegionRawFileConfig(
             region_code='us_xx',
             yaml_config_file_path=fixtures.as_filepath('us_xx_raw_data_files.yaml'),
@@ -326,17 +330,19 @@ USING (col1);"""
         LEFT OUTER JOIN {tagFullHistoricalExport}
         USING (col1);"""
 
-        with self.assertRaises(ValueError):
-            DirectIngestPreProcessedIngestView(
-                ingest_view_name='ingest_view_tag',
-                view_query_template=view_query_template,
-                region_raw_table_config=region_config,
-                order_by_cols='col1, col2',
-                is_detect_row_deletion_view=True,
-                primary_key_tables_for_entity_deletion=['tagFullHistoricalExport', 'unknown'],
-            )
+        for materialize_raw_data_table_views in {True, False}:
+            with self.assertRaises(ValueError):
+                DirectIngestPreProcessedIngestView(
+                    ingest_view_name='ingest_view_tag',
+                    view_query_template=view_query_template,
+                    region_raw_table_config=region_config,
+                    order_by_cols='col1, col2',
+                    is_detect_row_deletion_view=True,
+                    primary_key_tables_for_entity_deletion=['tagFullHistoricalExport', 'unknown'],
+                    materialize_raw_data_table_views=materialize_raw_data_table_views
+                )
 
-    def test_direct_ingest_preprocessed_view_detect_row_deletion(self):
+    def test_direct_ingest_preprocessed_view_detect_row_deletion(self) -> None:
         region_config = DirectIngestRegionRawFileConfig(
             region_code='us_xx',
             yaml_config_file_path=fixtures.as_filepath('us_xx_raw_data_files.yaml'),
@@ -430,7 +436,7 @@ ORDER BY col1, col2;"""
         self.assertEqual(expected_parametrized_view_query,
                          view.date_parametrized_view_query('my_update_timestamp_param_name'))
 
-    def test_direct_ingest_preprocessed_view_with_reference_table(self):
+    def test_direct_ingest_preprocessed_view_with_reference_table(self) -> None:
         region_config = DirectIngestRegionRawFileConfig(
             region_code='us_xx',
             yaml_config_file_path=fixtures.as_filepath('us_xx_raw_data_files.yaml'),
@@ -488,7 +494,7 @@ ORDER BY col1, col2;"""
 
         self.assertEqual(expected_date_parametrized_view_query, view.date_parametrized_view_query('my_param'))
 
-    def test_direct_ingest_preprocessed_view_same_table_multiple_places(self):
+    def test_direct_ingest_preprocessed_view_same_table_multiple_places(self) -> None:
         region_config = DirectIngestRegionRawFileConfig(
             region_code='us_xx',
             yaml_config_file_path=fixtures.as_filepath('us_xx_raw_data_files.yaml'),
@@ -521,7 +527,7 @@ ORDER BY col1, col2;"""
 
         self.assertEqual(expected_view_query, view.view_query)
 
-    def test_direct_ingest_preprocessed_view_with_subqueries(self):
+    def test_direct_ingest_preprocessed_view_with_subqueries(self) -> None:
         region_config = DirectIngestRegionRawFileConfig(
             region_code='us_xx',
             yaml_config_file_path=fixtures.as_filepath('us_xx_raw_data_files.yaml'),
@@ -621,7 +627,7 @@ ORDER BY col1, col2;"""
         self.assertEqual(expected_view_query, view.view_query)
         self.assertEqual(expected_parametrized_view_query, view.date_parametrized_view_query())
 
-    def test_direct_ingest_preprocessed_view_throws_for_unexpected_tag(self):
+    def test_direct_ingest_preprocessed_view_throws_for_unexpected_tag(self) -> None:
         region_config = DirectIngestRegionRawFileConfig(
             region_code='us_xx',
             yaml_config_file_path=fixtures.as_filepath('us_xx_raw_data_files.yaml'),
@@ -640,3 +646,158 @@ USING (col1);"""
                 is_detect_row_deletion_view=False,
                 primary_key_tables_for_entity_deletion=[],
             )
+
+    def test_direct_ingest_preprocessed_view_materialized_raw_table_subqueries(self) -> None:
+        region_config = DirectIngestRegionRawFileConfig(
+            region_code='us_xx',
+            yaml_config_file_path=fixtures.as_filepath('us_xx_raw_data_files.yaml'),
+        )
+
+        view_query_template = """SELECT * FROM {file_tag_first}
+LEFT OUTER JOIN {file_tag_second}
+USING (col1);"""
+
+        view = DirectIngestPreProcessedIngestView(
+            ingest_view_name='ingest_view_tag',
+            view_query_template=view_query_template,
+            region_raw_table_config=region_config,
+            order_by_cols='col1, col2',
+            is_detect_row_deletion_view=False,
+            primary_key_tables_for_entity_deletion=[],
+            materialize_raw_data_table_views=True
+        )
+
+        self.assertEqual(['file_tag_first', 'file_tag_second'],
+                         [c.file_tag for c in view.raw_table_dependency_configs])
+
+        expected_view_query = """CREATE TEMP TABLE file_tag_first_generated_view AS (
+    SELECT * FROM `recidiviz-456.us_xx_raw_data_up_to_date_views.file_tag_first_latest`
+);
+CREATE TEMP TABLE file_tag_second_generated_view AS (
+    SELECT * FROM `recidiviz-456.us_xx_raw_data_up_to_date_views.file_tag_second_latest`
+);
+SELECT * FROM file_tag_first_generated_view
+LEFT OUTER JOIN file_tag_second_generated_view
+USING (col1) 
+ORDER BY col1, col2;"""
+
+        self.assertEqual(expected_view_query, view.view_query)
+
+        expected_parametrized_view_query = """CREATE TEMP TABLE file_tag_first_generated_view AS (
+    WITH rows_with_recency_rank AS (
+        SELECT 
+            * EXCEPT (file_id, update_datetime), 
+            ROW_NUMBER() OVER (PARTITION BY col_name_1a, col_name_1b
+                               ORDER BY update_datetime DESC) AS recency_rank
+        FROM 
+            `recidiviz-456.us_xx_raw_data.file_tag_first`
+        WHERE 
+            update_datetime <= @my_update_timestamp_param_name
+    )
+
+    SELECT * 
+    EXCEPT (recency_rank)
+    FROM rows_with_recency_rank
+    WHERE recency_rank = 1
+);
+CREATE TEMP TABLE file_tag_second_generated_view AS (
+    WITH rows_with_recency_rank AS (
+        SELECT 
+            * EXCEPT (file_id, update_datetime), 
+            ROW_NUMBER() OVER (PARTITION BY col_name_2a
+                               ORDER BY update_datetime DESC) AS recency_rank
+        FROM 
+            `recidiviz-456.us_xx_raw_data.file_tag_second`
+        WHERE 
+            update_datetime <= @my_update_timestamp_param_name
+    )
+
+    SELECT * 
+    EXCEPT (recency_rank)
+    FROM rows_with_recency_rank
+    WHERE recency_rank = 1
+);
+SELECT * FROM file_tag_first_generated_view
+LEFT OUTER JOIN file_tag_second_generated_view
+USING (col1) 
+ORDER BY col1, col2;"""
+
+        self.assertEqual(expected_parametrized_view_query,
+                         view.date_parametrized_view_query('my_update_timestamp_param_name'))
+
+    def test_direct_ingest_preprocessed_view_other_materialized_subquery_materialize_flag_is_false(self) -> None:
+        region_config = DirectIngestRegionRawFileConfig(
+            region_code='us_xx',
+            yaml_config_file_path=fixtures.as_filepath('us_xx_raw_data_files.yaml'),
+        )
+
+        view_query_template = """
+CREATE TEMP TABLE my_subquery AS (SELECT * FROM {file_tag_first});
+SELECT * FROM my_subquery;"""
+
+        with self.assertRaises(ValueError) as e:
+            _ = DirectIngestPreProcessedIngestView(
+                ingest_view_name='ingest_view_tag',
+                view_query_template=view_query_template,
+                region_raw_table_config=region_config,
+                order_by_cols='col1, col2',
+                is_detect_row_deletion_view=False,
+                primary_key_tables_for_entity_deletion=[],
+            )
+        self.assertEqual(str(e.exception),
+                         'Found CREATE TEMP TABLE clause in this query - you must set '
+                         '|materialize_raw_data_table_views| to True to include a temp table subquery in your view.')
+
+    def test_direct_ingest_preprocessed_view_other_materialized_subquery(self) -> None:
+        region_config = DirectIngestRegionRawFileConfig(
+            region_code='us_xx',
+            yaml_config_file_path=fixtures.as_filepath('us_xx_raw_data_files.yaml'),
+        )
+
+        view_query_template = """
+CREATE TEMP TABLE my_subquery AS (SELECT * FROM {file_tag_first});
+SELECT * FROM my_subquery;"""
+
+        view = DirectIngestPreProcessedIngestView(
+            ingest_view_name='ingest_view_tag',
+            view_query_template=view_query_template,
+            region_raw_table_config=region_config,
+            order_by_cols='col1, col2',
+            is_detect_row_deletion_view=False,
+            primary_key_tables_for_entity_deletion=[],
+            materialize_raw_data_table_views=True
+        )
+        expected_view_query = """CREATE TEMP TABLE file_tag_first_generated_view AS (
+    SELECT * FROM `recidiviz-456.us_xx_raw_data_up_to_date_views.file_tag_first_latest`
+);
+
+CREATE TEMP TABLE my_subquery AS (SELECT * FROM file_tag_first_generated_view);
+SELECT * FROM my_subquery 
+ORDER BY col1, col2;"""
+
+        self.assertEqual(expected_view_query, view.view_query)
+
+        expected_parametrized_view_query = """CREATE TEMP TABLE file_tag_first_generated_view AS (
+    WITH rows_with_recency_rank AS (
+        SELECT 
+            * EXCEPT (file_id, update_datetime), 
+            ROW_NUMBER() OVER (PARTITION BY col_name_1a, col_name_1b
+                               ORDER BY update_datetime DESC) AS recency_rank
+        FROM 
+            `recidiviz-456.us_xx_raw_data.file_tag_first`
+        WHERE 
+            update_datetime <= @my_update_timestamp_param_name
+    )
+
+    SELECT * 
+    EXCEPT (recency_rank)
+    FROM rows_with_recency_rank
+    WHERE recency_rank = 1
+);
+
+CREATE TEMP TABLE my_subquery AS (SELECT * FROM file_tag_first_generated_view);
+SELECT * FROM my_subquery 
+ORDER BY col1, col2;"""
+
+        self.assertEqual(expected_parametrized_view_query,
+                         view.date_parametrized_view_query('my_update_timestamp_param_name'))
