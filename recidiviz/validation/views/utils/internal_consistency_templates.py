@@ -81,7 +81,7 @@ def _breakdown_sums_table_query(partition_columns: List[str],
     full_template = f"{rows_table_name} AS (\n" \
         f"  SELECT * \n" \
         f"  FROM `{{project_id}}.{{validated_table_dataset_id}}.{{validated_table_id}}`\n" \
-        f"  WHERE {mutually_exclusive_breakdown_column} != 'ALL'\n" \
+        f"  WHERE ({mutually_exclusive_breakdown_column} IS NULL OR {mutually_exclusive_breakdown_column} != 'ALL')\n" \
         f"),\n" \
         f"{mutually_exclusive_breakdown_column}_breakdown_sums AS (\n" \
         f"{sums_query}\n" \
@@ -107,7 +107,7 @@ ORDER BY {order_by_cols}
 def internal_consistency_query(partition_columns: List[str],
                                mutually_exclusive_breakdown_columns: List[str],
                                calculated_columns_to_validate: List[str],
-                               non_mutually_exclusive_breakdown_columns: Optional[List[str]] = None):
+                               non_mutually_exclusive_breakdown_columns: Optional[List[str]] = None) -> str:
     """
     Builds and returns a query that can be used to ensure that the various metric breakdowns sum to the values
     represented in the aggregate ('ALL') columns in each query.

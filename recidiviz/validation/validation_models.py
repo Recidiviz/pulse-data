@@ -48,7 +48,7 @@ class DataValidationCheck(BuildableAttr):
     validation_name_suffix: Optional[str] = attr.ib(default=None)
 
     @property
-    def validation_name(self):
+    def validation_name(self) -> str:
         return self.view.view_id + (f'_{self.validation_name_suffix}' if self.validation_name_suffix else '')
 
     @abc.abstractmethod
@@ -95,7 +95,7 @@ class DataValidationJobResult(BuildableAttr):
     # Description of failure, if there was a failure
     failure_description: Optional[str] = attr.ib()
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f'DataValidationJobResult[' \
                f'\n\twas_successful: {self.was_successful},' \
                f'\n\tfailure_description: {self.failure_description},' \

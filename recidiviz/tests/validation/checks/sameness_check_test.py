@@ -222,7 +222,7 @@ class TestSamenessValidationChecker(TestCase):
         self.assertEqual(result,
                          DataValidationJobResult(validation_job=job, was_successful=True, failure_description=None))
 
-    def test_string_sameness_check_same_values_all_none(self):
+    def test_string_sameness_check_strings_values_all_none(self):
         self.mock_client.run_query_async.return_value = [{'a': None, 'b': None, 'c': None}]
 
         job = DataValidationJob(region_code='US_VA',
@@ -238,6 +238,43 @@ class TestSamenessValidationChecker(TestCase):
 
         self.assertEqual(result,
                          DataValidationJobResult(validation_job=job, was_successful=True, failure_description=None))
+
+    def test_string_sameness_check_numbers_values_all_none(self):
+        self.mock_client.run_query_async.return_value = [{'a': None, 'b': None, 'c': None}]
+
+        job = DataValidationJob(region_code='US_VA',
+                                validation=SamenessDataValidationCheck(
+                                    validation_type=ValidationCheckType.SAMENESS,
+                                    comparison_columns=['a', 'b', 'c'],
+                                    sameness_check_type=SamenessDataValidationCheckType.NUMBERS,
+                                    view=BigQueryView(dataset_id='my_dataset',
+                                                      view_id='test_view',
+                                                      view_query_template='select * from literally_anything')
+                                ))
+
+        with self.assertRaises(ValueError) as e:
+            _ = SamenessValidationChecker.run_check(job)
+
+        self.assertEqual(str(e.exception), 'Unexpected None value for column [a] in validation [test_view].')
+
+
+    def test_string_sameness_check_numbers_one_none(self):
+        self.mock_client.run_query_async.return_value = [{'a': 3, 'b': 3, 'c': None}]
+
+        job = DataValidationJob(region_code='US_VA',
+                                validation=SamenessDataValidationCheck(
+                                    validation_type=ValidationCheckType.SAMENESS,
+                                    comparison_columns=['a', 'b', 'c'],
+                                    sameness_check_type=SamenessDataValidationCheckType.NUMBERS,
+                                    view=BigQueryView(dataset_id='my_dataset',
+                                                      view_id='test_view',
+                                                      view_query_template='select * from literally_anything')
+                                ))
+
+        with self.assertRaises(ValueError) as e:
+            _ = SamenessValidationChecker.run_check(job)
+
+        self.assertEqual(str(e.exception), 'Unexpected None value for column [c] in validation [test_view].')
 
     def test_string_sameness_check_different_values_no_allowed_error(self):
         self.mock_client.run_query_async.return_value = [{'a': 'a', 'b': 'b', 'c': 'c'}]
@@ -297,16 +334,11 @@ class TestSamenessValidationChecker(TestCase):
                                                       view_id='test_view',
                                                       view_query_template='select * from literally_anything')
                                 ))
-        result = SamenessValidationChecker.run_check(job)
+        with self.assertRaises(ValueError) as e:
+            _ = SamenessValidationChecker.run_check(job)
 
-        self.assertEqual(result,
-                         DataValidationJobResult(
-                             validation_job=job,
-                             was_successful=False,
-                             failure_description='1 out of 1 row(s) did not contain matching strings. '
-                                                 'The acceptable margin of error is only 0.0, but the '
-                                                 'validation returned an error rate of 1.0.',
-                         ))
+        self.assertEqual(str(e.exception),
+                         'Unexpected type [<class \'int\'>] for value [1245] in STRING validation [test_view].')
 
     def test_string_sameness_check_different_values_within_margin(self):
         num_bad_rows = 2
