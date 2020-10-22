@@ -135,6 +135,7 @@ class UsMoController(CsvGcsfsDirectIngestController):
         'tak022_tak024_tak025_tak026_offender_sentence_supervision_v2',
         'tak158_tak023_tak026_incarceration_period_from_incarceration_sentence_v2',
         'tak158_tak024_tak026_incarceration_period_from_supervision_sentence_v2',
+        'tak291_tak292_tak024_citations_v2',
     ]
 
     PRIMARY_COL_PREFIXES_BY_FILE_TAG = {
@@ -156,6 +157,7 @@ class UsMoController(CsvGcsfsDirectIngestController):
         'tak022_tak024_tak025_tak026_offender_sentence_supervision_v2': 'BS',
         'tak158_tak023_tak026_incarceration_period_from_incarceration_sentence_v2': 'BT',
         'tak158_tak024_tak026_incarceration_period_from_supervision_sentence_v2': 'BU',
+        'tak291_tak292_tak024_citations_v2': 'JT',
     }
 
     REVOKED_PROBATION_SENTENCE_STATUS_CODES = {
@@ -493,6 +495,15 @@ class UsMoController(CsvGcsfsDirectIngestController):
                 self.normalize_sentence_group_ids,
             ]
 
+        tak291_tak292_tak024_citations_row_processors: List[Callable] = [
+            self._gen_violation_response_type_posthook(
+                StateSupervisionViolationResponseType.CITATION),
+            self._set_deciding_body_as_supervising_officer,
+            self._set_violated_conditions_on_violation,
+            self._set_violation_response_id_from_violation,
+            self._set_finally_formed_date_on_response,
+        ]
+
         self.row_post_processors_by_file: Dict[str, List[Callable]] = {
             # Legacy
             'tak001_offender_identification': tak001_offender_identification_row_processors,
@@ -528,14 +539,7 @@ class UsMoController(CsvGcsfsDirectIngestController):
                 self._set_finally_formed_date_on_response,
                 self._set_decision_agent,
             ],
-            'tak291_tak292_tak024_citations': [
-                self._gen_violation_response_type_posthook(
-                    StateSupervisionViolationResponseType.CITATION),
-                self._set_deciding_body_as_supervising_officer,
-                self._set_violated_conditions_on_violation,
-                self._set_violation_response_id_from_violation,
-                self._set_finally_formed_date_on_response,
-            ],
+            'tak291_tak292_tak024_citations': tak291_tak292_tak024_citations_row_processors,
 
             # SQL Preprocessing View
             'tak001_offender_identification_v2': tak001_offender_identification_row_processors,
@@ -550,6 +554,7 @@ class UsMoController(CsvGcsfsDirectIngestController):
                 incarceration_period_row_posthooks,
             'tak158_tak024_tak026_incarceration_period_from_supervision_sentence_v2':
                 incarceration_period_row_posthooks,
+            'tak291_tak292_tak024_citations_v2': tak291_tak292_tak024_citations_row_processors,
         }
 
         self.primary_key_override_by_file: Dict[str, Callable] = {
@@ -582,6 +587,8 @@ class UsMoController(CsvGcsfsDirectIngestController):
                 self._generate_incarceration_period_id_coords,
             'tak158_tak024_tak026_incarceration_period_from_supervision_sentence_v2':
                 self._generate_incarceration_period_id_coords,
+            'tak291_tak292_tak024_citations_v2':
+                self._generate_supervision_violation_id_coords_for_citations,
         }
 
         self.ancestor_chain_override_by_file: Dict[str, Callable] = {
@@ -610,6 +617,8 @@ class UsMoController(CsvGcsfsDirectIngestController):
                 self._incarceration_sentence_ancestor_chain_override,
             'tak158_tak024_tak026_incarceration_period_from_supervision_sentence_v2':
                 self._supervision_sentence_ancestor_chain_override,
+            'tak291_tak292_tak024_citations_v2':
+                self._supervision_violation_citation_ancestor_chain_override,
         }
 
     @classmethod
@@ -667,6 +676,7 @@ class UsMoController(CsvGcsfsDirectIngestController):
                 'tak022_tak024_tak025_tak026_offender_sentence_supervision_v2',
                 'tak158_tak023_tak026_incarceration_period_from_incarceration_sentence_v2',
                 'tak158_tak024_tak026_incarceration_period_from_supervision_sentence_v2',
+                'tak291_tak292_tak024_citations_v2',
 
         ]:
             return US_MO_DOC
