@@ -20,6 +20,7 @@
 
 import unittest
 from datetime import date
+from itertools import permutations
 
 import attr
 
@@ -1639,16 +1640,17 @@ class TestUsNdPrepareIncarcerationPeriodsForCalculations(unittest.TestCase):
 
         incarceration_periods = [temporary_custody_1, temporary_custody_2, valid_incarceration_period]
 
-        validated_incarceration_periods = prepare_incarceration_periods_for_calculations(
-            state_code,
-            incarceration_periods,
-            collapse_transfers=True,
-            collapse_temporary_custody_periods_with_revocation=False,
-            collapse_transfers_with_different_pfi=True,
-            overwrite_facility_information_in_transfers=True
-        )
+        for ip_order_combo in permutations(incarceration_periods):
+            validated_incarceration_periods = prepare_incarceration_periods_for_calculations(
+                state_code,
+                ip_order_combo,
+                collapse_transfers=True,
+                collapse_temporary_custody_periods_with_revocation=False,
+                collapse_transfers_with_different_pfi=True,
+                overwrite_facility_information_in_transfers=True
+            )
 
-        self.assertEqual(validated_incarceration_periods, [valid_incarceration_period])
+            self.assertEqual(validated_incarceration_periods, [valid_incarceration_period])
 
     def test_prepare_incarceration_periods_for_calculations_multiple_temporary_and_transfer(self):
         state_code = 'US_ND'
@@ -1713,15 +1715,6 @@ class TestUsNdPrepareIncarcerationPeriodsForCalculations(unittest.TestCase):
                                  valid_incarceration_period_2,
                                  valid_incarceration_period_3]
 
-        validated_incarceration_periods = prepare_incarceration_periods_for_calculations(
-            state_code,
-            incarceration_periods,
-            collapse_transfers=True,
-            collapse_temporary_custody_periods_with_revocation=False,
-            collapse_transfers_with_different_pfi=True,
-            overwrite_facility_information_in_transfers=True
-        )
-
         collapsed_incarceration_period = \
             StateIncarcerationPeriod.new_with_defaults(
                 incarceration_period_id=valid_incarceration_period_1.incarceration_period_id,
@@ -1734,7 +1727,17 @@ class TestUsNdPrepareIncarcerationPeriodsForCalculations(unittest.TestCase):
                 release_reason=valid_incarceration_period_3.release_reason
             )
 
-        self.assertEqual(validated_incarceration_periods, [collapsed_incarceration_period])
+        for ip_order_combo in permutations(incarceration_periods):
+            validated_incarceration_periods = prepare_incarceration_periods_for_calculations(
+                state_code,
+                ip_order_combo,
+                collapse_transfers=True,
+                collapse_temporary_custody_periods_with_revocation=False,
+                collapse_transfers_with_different_pfi=True,
+                overwrite_facility_information_in_transfers=True
+            )
+
+            self.assertEqual(validated_incarceration_periods, [collapsed_incarceration_period])
 
     def test_prepare_incarceration_periods_for_calculations_valid_then_temporary(self):
         state_code = 'US_ND'
@@ -1761,16 +1764,17 @@ class TestUsNdPrepareIncarcerationPeriodsForCalculations(unittest.TestCase):
 
         incarceration_periods = [valid_incarceration_period, temporary_custody]
 
-        validated_incarceration_periods = prepare_incarceration_periods_for_calculations(
-            state_code,
-            incarceration_periods,
-            collapse_transfers=True,
-            collapse_temporary_custody_periods_with_revocation=False,
-            collapse_transfers_with_different_pfi=True,
-            overwrite_facility_information_in_transfers=True
-        )
+        for ip_order_combo in permutations(incarceration_periods):
+            validated_incarceration_periods = prepare_incarceration_periods_for_calculations(
+                state_code,
+                ip_order_combo,
+                collapse_transfers=True,
+                collapse_temporary_custody_periods_with_revocation=False,
+                collapse_transfers_with_different_pfi=True,
+                overwrite_facility_information_in_transfers=True
+            )
 
-        self.assertEqual(validated_incarceration_periods, [valid_incarceration_period])
+            self.assertEqual(validated_incarceration_periods, [valid_incarceration_period])
 
 
 class TestInferMissingDatesAndStatuses(unittest.TestCase):
@@ -1821,8 +1825,6 @@ class TestInferMissingDatesAndStatuses(unittest.TestCase):
                                  valid_incarceration_period_2,
                                  invalid_open_period]
 
-        updated_incarceration_periods = _infer_missing_dates_and_statuses(incarceration_periods)
-
         updated_open_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1110,
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
@@ -1835,12 +1837,19 @@ class TestInferMissingDatesAndStatuses(unittest.TestCase):
             release_reason=ReleaseReason.INTERNAL_UNKNOWN
         )
 
-        self.assertListEqual([
-            updated_open_period,
-            valid_incarceration_period_1,
-            valid_incarceration_period_2,
-            valid_incarceration_period_3
-        ], updated_incarceration_periods)
+        for ip_order_combo in permutations(incarceration_periods):
+            ips_for_test = [
+                attr.evolve(ip) for ip in ip_order_combo
+            ]
+
+            updated_incarceration_periods = _infer_missing_dates_and_statuses(ips_for_test)
+
+            self.assertEqual([
+                updated_open_period,
+                valid_incarceration_period_1,
+                valid_incarceration_period_2,
+                valid_incarceration_period_3
+            ], updated_incarceration_periods)
 
     def test_infer_missing_dates_and_statuses_all_valid(self):
         valid_incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
@@ -1877,7 +1886,7 @@ class TestInferMissingDatesAndStatuses(unittest.TestCase):
         valid_open_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1110,
             status=StateIncarcerationPeriodStatus.IN_CUSTODY,
-            external_id='5',
+            external_id='6',
             state_code='US_ND',
             admission_date=date(2015, 11, 20),
             admission_reason=AdmissionReason.NEW_ADMISSION,
@@ -1888,9 +1897,55 @@ class TestInferMissingDatesAndStatuses(unittest.TestCase):
                                  valid_incarceration_period_2,
                                  valid_incarceration_period_3]
 
-        updated_incarceration_periods = _infer_missing_dates_and_statuses(incarceration_periods)
+        ordered_periods = [valid_incarceration_period_1,
+                           valid_incarceration_period_2,
+                           valid_incarceration_period_3,
+                           valid_open_period]
 
-        self.assertListEqual(incarceration_periods, updated_incarceration_periods)
+        for ip_order_combo in permutations(incarceration_periods):
+            ips_for_test = [
+                attr.evolve(ip) for ip in ip_order_combo
+            ]
+
+            updated_incarceration_periods = _infer_missing_dates_and_statuses(ips_for_test)
+
+            self.assertEqual(ordered_periods, updated_incarceration_periods)
+
+    def test_infer_missing_dates_and_statuses_all_valid_shared_release(self):
+        valid_incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=1111,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            external_id='3',
+            state_code='US_ND',
+            admission_date=date(2011, 11, 20),
+            admission_reason=AdmissionReason.NEW_ADMISSION,
+            release_date=date(2012, 12, 4),
+            release_reason=ReleaseReason.TRANSFER)
+
+        valid_incarceration_period_2 = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=1112,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            external_id='4',
+            state_code='US_ND',
+            admission_date=date(2012, 11, 29),
+            admission_reason=AdmissionReason.TRANSFER,
+            release_date=date(2012, 12, 4),
+            release_reason=ReleaseReason.TRANSFER)
+
+        incarceration_periods = [valid_incarceration_period_1,
+                                 valid_incarceration_period_2]
+
+        ordered_periods = [valid_incarceration_period_1,
+                           valid_incarceration_period_2]
+
+        for ip_order_combo in permutations(incarceration_periods):
+            ips_for_test = [
+                attr.evolve(ip) for ip in ip_order_combo
+            ]
+
+            updated_incarceration_periods = _infer_missing_dates_and_statuses(ips_for_test)
+
+            self.assertEqual(ordered_periods, updated_incarceration_periods)
 
     def test_infer_missing_dates_and_statuses_set_empty_reasons(self):
         valid_incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
@@ -1938,9 +1993,6 @@ class TestInferMissingDatesAndStatuses(unittest.TestCase):
                                  valid_incarceration_period_2,
                                  valid_incarceration_period_3]
 
-        updated_incarceration_periods = _infer_missing_dates_and_statuses(incarceration_periods)
-
-
         expected_output = [
             StateIncarcerationPeriod.new_with_defaults(
                 incarceration_period_id=1111,
@@ -1964,7 +2016,14 @@ class TestInferMissingDatesAndStatuses(unittest.TestCase):
             valid_open_period
         ]
 
-        self.assertListEqual(expected_output, updated_incarceration_periods)
+        for ip_order_combo in permutations(incarceration_periods):
+            ips_for_test = [
+                attr.evolve(ip) for ip in ip_order_combo
+            ]
+
+            updated_incarceration_periods = _infer_missing_dates_and_statuses(ips_for_test)
+
+            self.assertEqual(expected_output, updated_incarceration_periods)
 
     def test_infer_missing_dates_and_statuses_only_open(self):
         valid_open_period = StateIncarcerationPeriod.new_with_defaults(
@@ -1980,7 +2039,7 @@ class TestInferMissingDatesAndStatuses(unittest.TestCase):
 
         updated_incarceration_periods = _infer_missing_dates_and_statuses(incarceration_periods)
 
-        self.assertListEqual(incarceration_periods, updated_incarceration_periods)
+        self.assertEqual(incarceration_periods, updated_incarceration_periods)
 
     def test_infer_missing_dates_and_statuses_open_with_release_reason(self):
         valid_open_period = StateIncarcerationPeriod.new_with_defaults(
@@ -2009,7 +2068,7 @@ class TestInferMissingDatesAndStatuses(unittest.TestCase):
             release_reason=ReleaseReason.SENTENCE_SERVED
         )
 
-        self.assertListEqual([updated_period], updated_incarceration_periods)
+        self.assertEqual([updated_period], updated_incarceration_periods)
 
     def test_infer_missing_dates_and_statuses_only_one_closed(self):
         closed_period = StateIncarcerationPeriod.new_with_defaults(
@@ -2036,7 +2095,7 @@ class TestInferMissingDatesAndStatuses(unittest.TestCase):
             release_reason=ReleaseReason.SENTENCE_SERVED,
         )
 
-        self.assertListEqual([updated_period], updated_incarceration_periods)
+        self.assertEqual([updated_period], updated_incarceration_periods)
 
     def test_infer_missing_dates_and_statuses_missing_admission(self):
         valid_incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
@@ -2085,8 +2144,6 @@ class TestInferMissingDatesAndStatuses(unittest.TestCase):
                                  valid_incarceration_period_2,
                                  invalid_period_no_admission]
 
-        updated_incarceration_periods = _infer_missing_dates_and_statuses(incarceration_periods)
-
         updated_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1110,
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
@@ -2098,12 +2155,91 @@ class TestInferMissingDatesAndStatuses(unittest.TestCase):
             release_reason=ReleaseReason.SENTENCE_SERVED
         )
 
-        self.assertListEqual([
-            valid_incarceration_period_1,
-            valid_incarceration_period_2,
-            valid_incarceration_period_3,
-            updated_period
-        ], updated_incarceration_periods)
+        for ip_order_combo in permutations(incarceration_periods):
+            ips_for_test = [
+                attr.evolve(ip) for ip in ip_order_combo
+            ]
+
+            updated_incarceration_periods = _infer_missing_dates_and_statuses(ips_for_test)
+
+            self.assertEqual([
+                valid_incarceration_period_1,
+                valid_incarceration_period_2,
+                valid_incarceration_period_3,
+                updated_period
+            ], updated_incarceration_periods)
+
+    def test_infer_missing_dates_and_statuses_missing_admission_same_day_transfer(self):
+        valid_incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=1111,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            external_id='5-6',
+            state_code='US_XX',
+            admission_date=date(2015, 12, 3),
+            admission_reason=AdmissionReason.TRANSFER,
+            release_date=date(2016, 2, 11),
+            release_reason=ReleaseReason.TRANSFER)
+
+        # Invalid period without an admission_date, where the release_date is the same as the release_date on
+        invalid_period_no_admission = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=1112,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            external_id='7',
+            state_code='US_XX',
+            release_date=date(2016, 2, 11),
+            release_reason=ReleaseReason.TRANSFER
+        )
+
+        valid_incarceration_period_2 = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=1113,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            external_id='8-9',
+            state_code='US_XX',
+            admission_date=date(2016, 2, 11),
+            admission_reason=AdmissionReason.TRANSFER,
+            release_date=date(2016, 2, 11),
+            release_reason=ReleaseReason.TRANSFER)
+
+        valid_incarceration_period_3 = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=1114,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            external_id='10-11',
+            state_code='US_XX',
+            admission_date=date(2016, 2, 11),
+            admission_reason=AdmissionReason.TRANSFER,
+            release_date=date(2016, 4, 5),
+            release_reason=ReleaseReason.SENTENCE_SERVED)
+
+        incarceration_periods = [invalid_period_no_admission,
+                                 valid_incarceration_period_3,
+                                 valid_incarceration_period_1,
+                                 valid_incarceration_period_2,
+                                 ]
+
+        updated_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=1112,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            external_id='7',
+            state_code='US_XX',
+            admission_date=valid_incarceration_period_1.release_date,
+            admission_reason=AdmissionReason.TRANSFER,
+            release_date=date(2016, 2, 11),
+            release_reason=ReleaseReason.TRANSFER
+        )
+
+        for ip_order_combo in permutations(incarceration_periods):
+            ips_for_test = [
+                attr.evolve(ip) for ip in ip_order_combo
+            ]
+
+            updated_incarceration_periods = _infer_missing_dates_and_statuses(ips_for_test)
+
+            self.assertEqual([
+                valid_incarceration_period_1,
+                updated_period,
+                valid_incarceration_period_2,
+                valid_incarceration_period_3,
+            ], updated_incarceration_periods)
 
     def test_infer_missing_dates_and_statuses_mismatch_admission_release(self):
         # Open incarceration period with no release_date
@@ -2127,8 +2263,6 @@ class TestInferMissingDatesAndStatuses(unittest.TestCase):
 
         incarceration_periods = [invalid_closed_period, invalid_open_period]
 
-        updated_incarceration_periods = _infer_missing_dates_and_statuses(incarceration_periods)
-
         updated_open_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1113,
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
@@ -2151,10 +2285,17 @@ class TestInferMissingDatesAndStatuses(unittest.TestCase):
             release_reason=ReleaseReason.SENTENCE_SERVED
         )
 
-        self.assertListEqual([
-            updated_open_period,
-            updated_closed_period
-        ], updated_incarceration_periods)
+        for ip_order_combo in permutations(incarceration_periods):
+            ips_for_test = [
+                attr.evolve(ip) for ip in ip_order_combo
+            ]
+
+            updated_incarceration_periods = _infer_missing_dates_and_statuses(ips_for_test)
+
+            self.assertEqual([
+                updated_open_period,
+                updated_closed_period
+            ], updated_incarceration_periods)
 
     def test_infer_missing_dates_and_statuses_valid_open_admission(self):
         valid_incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
@@ -2179,9 +2320,13 @@ class TestInferMissingDatesAndStatuses(unittest.TestCase):
 
         incarceration_periods = [valid_incarceration_period_1, valid_open_period]
 
-        updated_incarceration_periods = _infer_missing_dates_and_statuses(incarceration_periods)
+        for ip_order_combo in permutations(incarceration_periods):
+            ips_for_test = [
+                attr.evolve(ip) for ip in ip_order_combo
+            ]
 
-        self.assertListEqual(incarceration_periods, updated_incarceration_periods)
+            updated_incarceration_periods = _infer_missing_dates_and_statuses(ips_for_test)
+            self.assertEqual(incarceration_periods, updated_incarceration_periods)
 
     def test_infer_missing_dates_and_statuses_two_open_two_invalid_closed(self):
         open_incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
@@ -2220,8 +2365,6 @@ class TestInferMissingDatesAndStatuses(unittest.TestCase):
                                  open_incarceration_period_2,
                                  closed_incarceration_period_1,
                                  closed_incarceration_period_2]
-
-        updated_incarceration_periods = _infer_missing_dates_and_statuses(incarceration_periods)
 
         updated_open_incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
@@ -2266,12 +2409,19 @@ class TestInferMissingDatesAndStatuses(unittest.TestCase):
             release_date=date(2001, 7, 17),
             release_reason=ReleaseReason.TRANSFER)
 
-        self.assertListEqual([
-            updated_open_incarceration_period_1,
-            updated_open_incarceration_period_2,
-            updated_closed_incarceration_period_1,
-            updated_closed_incarceration_period_2
-        ], updated_incarceration_periods)
+        for ip_order_combo in permutations(incarceration_periods):
+            ips_for_test = [
+                attr.evolve(ip) for ip in ip_order_combo
+            ]
+
+            updated_incarceration_periods = _infer_missing_dates_and_statuses(ips_for_test)
+
+            self.assertEqual([
+                updated_open_incarceration_period_1,
+                updated_open_incarceration_period_2,
+                updated_closed_incarceration_period_1,
+                updated_closed_incarceration_period_2
+            ], updated_incarceration_periods)
 
     def test_infer_missing_dates_and_statuses_multiple_open_periods(self):
         open_incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
@@ -2301,8 +2451,6 @@ class TestInferMissingDatesAndStatuses(unittest.TestCase):
         incarceration_periods = [open_incarceration_period_1,
                                  open_incarceration_period_2,
                                  open_incarceration_period_3]
-
-        updated_incarceration_periods = _infer_missing_dates_and_statuses(incarceration_periods)
 
         updated_open_incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
@@ -2335,11 +2483,18 @@ class TestInferMissingDatesAndStatuses(unittest.TestCase):
             release_reason=ReleaseReason.TRANSFER
         )
 
-        self.assertListEqual([
-            updated_open_incarceration_period_3,
-            updated_open_incarceration_period_1,
-            updated_open_incarceration_period_2
-        ], updated_incarceration_periods)
+        for ip_order_combo in permutations(incarceration_periods.copy()):
+            ips_for_test = [
+                attr.evolve(ip) for ip in ip_order_combo
+            ]
+
+            updated_incarceration_periods = _infer_missing_dates_and_statuses(ips_for_test)
+
+            self.assertEqual([
+                updated_open_incarceration_period_3,
+                updated_open_incarceration_period_1,
+                updated_open_incarceration_period_2
+            ], updated_incarceration_periods)
 
     def test_infer_missing_dates_and_statuses_no_periods(self):
         incarceration_periods = []
@@ -2372,9 +2527,7 @@ class TestInferMissingDatesAndStatuses(unittest.TestCase):
         incarceration_periods = [first_incarceration_period,
                                  second_incarceration_period]
 
-        updated_incarceration_periods = _infer_missing_dates_and_statuses(incarceration_periods)
-
-        self.assertEqual(updated_incarceration_periods, [
+        expected_output = [
             StateIncarcerationPeriod.new_with_defaults(
                 external_id='1',
                 incarceration_period_id=1111,
@@ -2393,7 +2546,16 @@ class TestInferMissingDatesAndStatuses(unittest.TestCase):
                 admission_reason=AdmissionReason.TRANSFER,
                 release_date=date(2010, 4, 14),
                 release_reason=ReleaseReason.SENTENCE_SERVED)
-        ])
+        ]
+
+        for ip_order_combo in permutations(incarceration_periods):
+            ips_for_test = [
+                attr.evolve(ip) for ip in ip_order_combo
+            ]
+
+            updated_incarceration_periods = _infer_missing_dates_and_statuses(ips_for_test)
+
+            self.assertEqual(expected_output, updated_incarceration_periods)
 
     def test_infer_missing_dates_and_statuses_same_dates_sort_by_external_id(self):
         first_incarceration_period = StateIncarcerationPeriod.new_with_defaults(
@@ -2419,11 +2581,16 @@ class TestInferMissingDatesAndStatuses(unittest.TestCase):
         incarceration_periods = [second_incarceration_period,
                                  first_incarceration_period]
 
-        updated_incarceration_periods = _infer_missing_dates_and_statuses(incarceration_periods)
-
         updated_order = [first_incarceration_period, second_incarceration_period]
 
-        self.assertEqual(updated_incarceration_periods, updated_order)
+        for ip_order_combo in permutations(incarceration_periods):
+            ips_for_test = [
+                attr.evolve(ip) for ip in ip_order_combo
+            ]
+
+            updated_incarceration_periods = _infer_missing_dates_and_statuses(ips_for_test)
+
+            self.assertEqual(updated_order, updated_incarceration_periods)
 
     def test_infer_missing_dates_and_statuses_same_admission_dates_sort_by_external_id(self):
         first_incarceration_period = StateIncarcerationPeriod.new_with_defaults(
@@ -2445,8 +2612,6 @@ class TestInferMissingDatesAndStatuses(unittest.TestCase):
         incarceration_periods = [second_incarceration_period,
                                  first_incarceration_period]
 
-        updated_incarceration_periods = _infer_missing_dates_and_statuses(incarceration_periods)
-
         updated_first_incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             external_id='1',
             incarceration_period_id=1111,
@@ -2460,7 +2625,14 @@ class TestInferMissingDatesAndStatuses(unittest.TestCase):
 
         expected_output = [updated_first_incarceration_period, second_incarceration_period]
 
-        self.assertEqual(expected_output, updated_incarceration_periods)
+        for ip_order_combo in permutations(incarceration_periods):
+            ips_for_test = [
+                attr.evolve(ip) for ip in ip_order_combo
+            ]
+
+            updated_incarceration_periods = _infer_missing_dates_and_statuses(ips_for_test)
+
+            self.assertEqual(expected_output, updated_incarceration_periods)
 
     def test_infer_missing_dates_and_statuses_same_admission_dates_sort_by_statuses(self):
         first_incarceration_period = StateIncarcerationPeriod.new_with_defaults(
@@ -2482,8 +2654,6 @@ class TestInferMissingDatesAndStatuses(unittest.TestCase):
         incarceration_periods = [second_incarceration_period,
                                  first_incarceration_period]
 
-        updated_incarceration_periods = _infer_missing_dates_and_statuses(incarceration_periods)
-
         updated_second_incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             external_id='2',
             incarceration_period_id=2222,
@@ -2497,7 +2667,14 @@ class TestInferMissingDatesAndStatuses(unittest.TestCase):
 
         expected_output = [updated_second_incarceration_period, first_incarceration_period]
 
-        self.assertEqual(expected_output, updated_incarceration_periods)
+        for ip_order_combo in permutations(incarceration_periods):
+            ips_for_test = [
+                attr.evolve(ip) for ip in ip_order_combo
+            ]
+
+            updated_incarceration_periods = _infer_missing_dates_and_statuses(ips_for_test)
+
+            self.assertEqual(expected_output, updated_incarceration_periods)
 
     def test_infer_missing_dates_and_statuses_no_admission_dates(self):
         first_incarceration_period = StateIncarcerationPeriod.new_with_defaults(
@@ -2518,8 +2695,6 @@ class TestInferMissingDatesAndStatuses(unittest.TestCase):
 
         incarceration_periods = [second_incarceration_period,
                                  first_incarceration_period]
-
-        updated_incarceration_periods = _infer_missing_dates_and_statuses(incarceration_periods)
 
         updated_first_incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             external_id='1',
@@ -2544,4 +2719,11 @@ class TestInferMissingDatesAndStatuses(unittest.TestCase):
 
         expected_output = [updated_first_incarceration_period, second_incarceration_period]
 
-        self.assertEqual(expected_output, updated_incarceration_periods)
+        for ip_order_combo in permutations(incarceration_periods):
+            ips_for_test = [
+                attr.evolve(ip) for ip in ip_order_combo
+            ]
+
+            updated_incarceration_periods = _infer_missing_dates_and_statuses(ips_for_test)
+
+            self.assertEqual(expected_output, updated_incarceration_periods)
