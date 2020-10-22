@@ -163,7 +163,7 @@ class SimpleBigQueryViewBuilder(BigQueryViewBuilder):
             dataset_id=self.dataset_id,
             view_id=self.view_id,
             view_query_template=self.view_query_template,
-            should_materialize=False,
+            should_materialize=self.should_materialize,
             **self.query_format_kwargs)
 
     def build_and_print(self) -> None:
