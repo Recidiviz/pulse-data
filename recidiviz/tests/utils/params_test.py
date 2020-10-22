@@ -56,23 +56,19 @@ class TestParams(unittest.TestCase):
 
     def test_get_bool_param_value(self):
         self.assertEqual(
-            params.get_bool_param_value('false_bool_param', PARAMS), False)
+            params.get_bool_param_value('false_bool_param', PARAMS, default=True), False)
         self.assertEqual(
-            params.get_bool_param_value('true_bool_param', PARAMS), True)
+            params.get_bool_param_value('true_bool_param', PARAMS, default=False), True)
 
     def test_get_bool_param_value_default(self):
         self.assertEqual(
             params.get_bool_param_value('foo', PARAMS, default=True), True)
         self.assertEqual(
-            params.get_bool_param_value('foo', PARAMS, default=None), None)
-
-    def test_get_bool_param_value_no_default(self):
-        self.assertEqual(
-            params.get_bool_param_value('foo', PARAMS), None)
+            params.get_bool_param_value('foo', PARAMS, default=False), False)
 
     def test_get_bool_param_value_malformed(self):
         with self.assertRaises(ValueError):
-            params.get_bool_param_value('malformed_bool_param', PARAMS)
+            params.get_bool_param_value('malformed_bool_param', PARAMS, default=False)
 
         with self.assertRaises(ValueError):
-            params.get_bool_param_value('empty_bool_param', PARAMS)
+            params.get_bool_param_value('empty_bool_param', PARAMS, default=False)

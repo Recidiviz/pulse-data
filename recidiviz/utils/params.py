@@ -46,8 +46,7 @@ def get_str_param_value(
                                  preserve_case=preserve_case)
 
 
-def get_bool_param_value(
-        arg_key: str, args, default: Optional[bool] = None) -> Optional[bool]:
+def get_bool_param_value(arg_key: str, args, default: bool) -> bool:
 
     str_value = get_str_param_value(arg_key, args)
 
