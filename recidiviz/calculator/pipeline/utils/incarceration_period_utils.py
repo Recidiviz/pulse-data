@@ -318,6 +318,36 @@ def _sort_ips_by_set_dates_and_statuses(incarceration_periods: List[StateIncarce
             return -1 if (ip_b.release_date - ip_b.admission_date).days else 1
         raise ValueError("At least one of the periods is expected to have a release_date at this point.")
 
+    def _sort_share_date_not_admission(ip_a: StateIncarcerationPeriod, ip_b: StateIncarcerationPeriod) -> int:
+        both_a_set = (ip_a.admission_date is not None and ip_a.release_date is not None)
+        both_b_set = (ip_b.admission_date is not None and ip_b.release_date is not None)
+
+        if not both_a_set and not both_b_set:
+            # One has an admission date and the other has a release date on the same day. Order the admission before
+            # the release.
+            return -1 if ip_a.admission_date else 1
+
+        # One period has both an admission_date and release_date, and the other has only a release_date.
+        if not ip_a.admission_date:
+            if ip_a.release_date == ip_b.admission_date:
+                # ip_a is missing an admission_date, and its release_date matches ip_b's admission_date. We want to
+                # order the release before the admission that has a later release.
+                return -1
+            # These share a release_date, and ip_a does not have an admission_date. Order the period with the set,
+            # earlier admission first.
+            return 1
+        if not ip_b.admission_date:
+            if ip_b.release_date == ip_a.admission_date:
+                # ip_b is missing an admission_date, and its release_date matches ip_a's admission_date. We want to
+                # order the release before the admission that has a later release.
+                return 1
+            # These share a release_date, and ip_b does not have an admission_date. Order the period with the set,
+            # earlier admission first.
+            return -1
+        raise ValueError("It should not be possible to reach this point. If either, but not both, ip_a or ip_b only"
+                         "have one date set, and they don't have equal None admission_dates, then we expect either"
+                         "ip_a or ip_b to have a missing admission_date here.")
+
     def _sort_function(ip_a: StateIncarcerationPeriod, ip_b: StateIncarcerationPeriod) -> int:
         if ip_a.admission_date == ip_b.admission_date:
             return _sort_equal_admission_date(ip_a, ip_b)
@@ -330,13 +360,8 @@ def _sort_ips_by_set_dates_and_statuses(incarceration_periods: List[StateIncarce
         if not date_b:
             raise ValueError(f'Found period with no admission or release date {ip_b}')
         if date_a == date_b:
-            if ip_a.release_date and ip_b.release_date:
-                # These share a release date. Sort by external_id.
-                return _sort_by_external_id(ip_a, ip_b)
+            return _sort_share_date_not_admission(ip_a, ip_b)
 
-            # One has an admission date and the other has a release date on the same day. Order the admission before
-            # the release.
-            return -1 if ip_a.admission_date else 1
         return (date_a - date_b).days
 
     incarceration_periods.sort(key=cmp_to_key(_sort_function))
