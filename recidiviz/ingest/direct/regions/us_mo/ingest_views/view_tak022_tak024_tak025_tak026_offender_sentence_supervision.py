@@ -20,6 +20,8 @@ from recidiviz.ingest.direct.controllers.direct_ingest_big_query_view_types impo
     DirectIngestPreProcessedIngestViewBuilder
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
+from recidiviz.ingest.direct.regions.us_mo.ingest_views.us_mo_view_query_fragments import \
+    NON_INVESTIGATION_SUPERVISION_SENTENCES_FRAGMENT
 
 SUPERVISION_SENTENCE_STATUS_XREF_FRAGMENT = \
     """
@@ -139,15 +141,6 @@ SUPERVISION_SENTENCE_STATUS_XREF_FRAGMENT = \
             status_xref_bv.BV_CYC = classified_status_bw.BW_CYC AND
             status_xref_bv.BV_SSO = classified_status_bw.BW_SSO
         WHERE CAST(BV_FSO as INT64) > 0
-    )"""
-
-NON_INVESTIGATION_SUPERVISION_SENTENCES_FRAGMENT = \
-    """
-    non_investigation_supervision_sentences_bu AS (
-        -- Chooses only probation sentences that are non-investigation (not INV)
-        SELECT *
-        FROM {LBAKRDTA_TAK024} sentence_prob_bu
-        WHERE BU_PBT != 'INV'
     )"""
 
 DISTINCT_SUPERVISION_SENTENCE_IDS_FRAGMENT = \
