@@ -190,3 +190,31 @@ STATUSES_BY_DATE_FRAGMENT = \
         GROUP BY BW_DOC, BW_CYC, BW_SY
     )
     """
+
+NON_INVESTIGATION_SUPERVISION_SENTENCES_FRAGMENT = \
+    """
+    non_investigation_supervision_sentences_bu AS (
+        -- Chooses only probation sentences that are non-investigation (not INV)
+        SELECT *
+        FROM {LBAKRDTA_TAK024} sentence_prob_bu
+        WHERE BU_PBT != 'INV'
+    )"""
+
+TAK142_FINALLY_FORMED_DOCUMENT_FRAGMENT = \
+    """
+        -- Finally formed documents are ones which are no longer in a draft
+        -- state.
+        SELECT
+            finally_formed_documents_e6.E6_DOC,
+            finally_formed_documents_e6.E6_CYC,
+            finally_formed_documents_e6.E6_DOS,
+            MAX(COALESCE(finally_formed_documents_e6.E6_DCR, '0')) as FINAL_FORMED_CREATE_DATE,
+            MAX(COALESCE(finally_formed_documents_e6.E6_DLU, '0')) as FINAL_FORMED_UPDATE_DATE
+        FROM
+            {{LBAKRDTA_TAK142}} finally_formed_documents_e6
+        WHERE
+            finally_formed_documents_e6.E6_DON = '{document_type_code}'
+        GROUP BY
+            finally_formed_documents_e6.E6_DOC,
+            finally_formed_documents_e6.E6_CYC,
+            finally_formed_documents_e6.E6_DOS"""

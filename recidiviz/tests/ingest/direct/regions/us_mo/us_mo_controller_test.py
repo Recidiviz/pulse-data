@@ -1724,7 +1724,9 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                                     sis_910324_19890825_1]
                             )])])
 
+        # TODO(#4266): Clean up backwards compatibility code
         self.run_parse_file_test(expected, 'tak291_tak292_tak024_citations')
+        self.run_parse_file_test(expected, 'tak291_tak292_tak024_citations_v2')
 
     def test_run_full_ingest_all_files_specific_order(self) -> None:
         self.maxDiff = None
@@ -3838,8 +3840,17 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
         sp_910324_19890825_2_0.supervision_violation_entries.append(ssv_910324_19890825_c1_1)
         sis_910324_19890825_1.supervision_periods.append(placeholder_ssp2_910324_19890825_1)
 
+        # TODO(#4266): Clean up backwards compatibility code
+        # Legacy
         # Act
         self._run_ingest_job_for_filename('tak291_tak292_tak024_citations.csv')
+
+        # Assert
+        self.assert_expected_db_people(expected_people)
+
+        # SQL Preprocessing View
+        # Act
+        self._run_ingest_job_for_filename('tak291_tak292_tak024_citations_v2.csv')
 
         # Assert
         self.assert_expected_db_people(expected_people)

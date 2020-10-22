@@ -1,3 +1,4 @@
+# TODO(#4266): Clean up backwards compatibility code
 key_mappings:
   # Violated conditions field is handled manually, only present to ensure we
   # update the entity to make sure it gets processed by the manual post-hook
