@@ -46,7 +46,7 @@ LEFT JOIN
 ON
     udc_agnt1_id = usr_id
 WHERE
-    cntc_typ_desc = 'FACE TO FACE'
+    cntc_typ_desc IN ('FACE TO FACE', 'VIRTUAL')
     # TOOD(3394): Ingest all of contacts not just those since 2019 once we have time / need.
     AND CAST(cntc_dt AS DATETIME) > CAST('2019-01-01' AS DATETIME) 
 """

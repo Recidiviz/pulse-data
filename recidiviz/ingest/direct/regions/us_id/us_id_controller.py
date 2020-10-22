@@ -370,6 +370,9 @@ class UsIdController(CsvGcsfsDirectIngestController):
             'EMAIL',
             'MAIL',
         ],
+        StateSupervisionContactType.VIRTUAL: [
+            'VIRTUAL',
+        ],
 
         StateSupervisionContactReason.INITIAL_CONTACT: [
             '72 HOUR INITIAL'

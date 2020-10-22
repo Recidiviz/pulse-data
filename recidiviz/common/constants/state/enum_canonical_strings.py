@@ -308,6 +308,7 @@ state_early_discharge_decision_status_invalid = 'INVALID'
 state_supervision_contact_type_face_to_face = 'FACE_TO_FACE'
 state_supervision_contact_type_telephone = 'TELEPHONE'
 state_supervision_contact_type_written_message = 'WRITTEN_MESSAGE'
+state_supervision_contact_type_virtual = 'VIRTUAL'
 
 state_supervision_contact_reason_emergency_contact = 'EMERGENCY_CONTACT'
 state_supervision_contact_reason_general_contact = 'GENERAL_CONTACT'
