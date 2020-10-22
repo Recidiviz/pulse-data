@@ -73,12 +73,20 @@ class ViewManagerTest(unittest.TestCase):
         materialized_view_table_id when the materialized_views_only flag is set to True."""
         dataset = bigquery.dataset.DatasetReference(_PROJECT_ID, _DATASET_NAME)
 
-        sample_views = [
-            {'view_id': 'my_fake_view', 'view_query': 'SELECT NULL LIMIT 0', 'materialized_view_table_id': 'table_id'},
-            {'view_id': 'my_other_fake_view', 'view_query': 'SELECT NULL LIMIT 0'},
+        mock_view_builders = [
+            SimpleBigQueryViewBuilder(
+                dataset_id=_DATASET_NAME,
+                view_id='my_fake_view',
+                view_query_template='SELECT NULL LIMIT 0',
+                should_materialize=True
+            ),
+            SimpleBigQueryViewBuilder(
+                dataset_id=_DATASET_NAME,
+                view_id='my_fake_view_2',
+                view_query_template='SELECT NULL LIMIT 0',
+                should_materialize=False
+            )
         ]
-        mock_view_builders = [SimpleBigQueryViewBuilder(
-            dataset_id=_DATASET_NAME, view_query_template='a', **view) for view in sample_views]
 
         self.mock_client.dataset_ref_for_id.return_value = dataset
 
@@ -91,8 +99,7 @@ class ViewManagerTest(unittest.TestCase):
         self.mock_client.dataset_ref_for_id.assert_called_with(_DATASET_NAME)
         self.mock_client.create_dataset_if_necessary.assert_called_with(dataset)
         self.mock_client.create_or_update_view.assert_has_calls(
-            [mock.call(dataset, view_builder.build()) for view_builder in mock_view_builders
-             if view_builder.build().materialized_view_table_id is not None])
+            [mock.call(dataset, mock_view_builders[0].build())])
 
     def test_create_dataset_and_update_views(self):
         """Test that create_dataset_and_update_views creates a dataset if necessary, and updates all views."""
