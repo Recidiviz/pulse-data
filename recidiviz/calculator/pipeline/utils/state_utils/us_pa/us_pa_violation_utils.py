@@ -29,16 +29,18 @@ _ELECTRONIC_MONITORING_SUBTYPE_STR: str = 'ELEC_MONITORING'
 _SUBSTANCE_ABUSE_SUBTYPE_STR: str = 'SUBSTANCE_ABUSE'
 
 _UNSUPPORTED_VIOLATION_SUBTYPE_VALUES = [
-    # We don't expect to see this type in US_PA
+    # We don't expect to see these types in US_PA
     StateSupervisionViolationType.ESCAPED.value,
+    StateSupervisionViolationType.FELONY.value,
+    StateSupervisionViolationType.MISDEMEANOR.value,
+    StateSupervisionViolationType.MUNICIPAL.value,
+
     # We expect all violations of type TECHNICAL to have expected special subtypes
     StateSupervisionViolationType.TECHNICAL.value
 ]
 
 _VIOLATION_TYPE_AND_SUBTYPE_SHORTHAND_ORDERED_MAP: List[Tuple[StateSupervisionViolationType, str, str]] = [
-    (StateSupervisionViolationType.FELONY, StateSupervisionViolationType.FELONY.value, 'fel'),
-    (StateSupervisionViolationType.MISDEMEANOR, StateSupervisionViolationType.MISDEMEANOR.value, 'misd'),
-    (StateSupervisionViolationType.MUNICIPAL, StateSupervisionViolationType.MUNICIPAL.value, 'summ'),
+    (StateSupervisionViolationType.LAW, StateSupervisionViolationType.LAW.value, 'law'),
     (StateSupervisionViolationType.TECHNICAL, _HIGH_TECHNICAL_SUBTYPE_STR, 'high_tech'),
     (StateSupervisionViolationType.ABSCONDED, StateSupervisionViolationType.ABSCONDED.value, 'absc'),
     (StateSupervisionViolationType.TECHNICAL, _SUBSTANCE_ABUSE_SUBTYPE_STR, 'subs'),
@@ -48,9 +50,7 @@ _VIOLATION_TYPE_AND_SUBTYPE_SHORTHAND_ORDERED_MAP: List[Tuple[StateSupervisionVi
 ]
 
 _VIOLATION_TYPE_SEVERITY_ORDER = [
-    StateSupervisionViolationType.FELONY,
-    StateSupervisionViolationType.MISDEMEANOR,
-    StateSupervisionViolationType.MUNICIPAL,
+    StateSupervisionViolationType.LAW,
     StateSupervisionViolationType.ABSCONDED,
     StateSupervisionViolationType.TECHNICAL
 ]

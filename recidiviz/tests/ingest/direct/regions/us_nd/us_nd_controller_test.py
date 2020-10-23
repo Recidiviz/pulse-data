@@ -997,8 +997,8 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
             ])
 
         violation_for_147777 = StateSupervisionViolation(
-            violation_type='FELONY',
-            state_supervision_violation_types=[StateSupervisionViolationTypeEntry(violation_type='FELONY')],
+            violation_type='LAW',
+            state_supervision_violation_types=[StateSupervisionViolationTypeEntry(violation_type='LAW')],
             is_violent='True',
             state_supervision_violation_responses=[
                 StateSupervisionViolationResponse(
@@ -2832,16 +2832,16 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
             supervision_sentences=[supervision_sentence_147777],
             person=supervision_sentence_147777.person)
         supervision_violation_147777 = entities.StateSupervisionViolation.new_with_defaults(
-            violation_type=StateSupervisionViolationType.FELONY,
-            violation_type_raw_text='FELONY',
+            violation_type=StateSupervisionViolationType.LAW,
+            violation_type_raw_text='LAW',
             is_violent=True,
             state_code=_STATE_CODE,
             supervision_periods=[supervision_period_147777],
             person=supervision_period_147777.person)
         supervision_violation_type_entry_147777 = entities.StateSupervisionViolationTypeEntry(
             state_code=_STATE_CODE,
-            violation_type=StateSupervisionViolationType.FELONY,
-            violation_type_raw_text='FELONY',
+            violation_type=StateSupervisionViolationType.LAW,
+            violation_type_raw_text='LAW',
             person=supervision_period_147777.person,
             supervision_violation=supervision_violation_147777)
         supervision_violation_response_147777 = entities.StateSupervisionViolationResponse.new_with_defaults(

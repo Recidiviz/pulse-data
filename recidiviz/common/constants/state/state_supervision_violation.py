@@ -17,6 +17,7 @@
 
 """Constants related to a StateSupervisionViolation."""
 from enum import unique
+from typing import Dict
 
 import recidiviz.common.constants.state.enum_canonical_strings as \
     state_enum_strings
@@ -25,16 +26,33 @@ from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 
 @unique
 class StateSupervisionViolationType(EntityEnum, metaclass=EntityEnumMeta):
+    # A person has been written up for absconding (failing to appear for meetings or losing contact with PO)
     ABSCONDED = state_enum_strings.state_supervision_violation_type_absconded
+
+    # A person has escaped from some sort of non-prison facility
     ESCAPED = state_enum_strings.state_supervision_violation_type_escaped
+
+    # A person has been written up as having committed a felony offense - this does not necessarily mean this person
+    # was charged or found guilty.
     FELONY = state_enum_strings.state_supervision_violation_type_felony
-    MISDEMEANOR = \
-        state_enum_strings.state_supervision_violation_type_misdemeanor
+
+    # A person has been written up as having committed an unspecified criminal or civil offense - this does not
+    # necessarily mean this person was charged or found guilty.
+    LAW = state_enum_strings.state_supervision_violation_type_law
+
+    # A person has been written up as having committed a misdemeanor offense - this does not necessarily mean this
+    # person was charged or found guilty.
+    MISDEMEANOR = state_enum_strings.state_supervision_violation_type_misdemeanor
+
+    # A person has been written up as having committed a civil offense - this does not necessarily mean this person
+    # was charged or found guilty.
     MUNICIPAL = state_enum_strings.state_supervision_violation_type_municipal
+
+    # A person has committed a technical violation of one of their conditions of supervision
     TECHNICAL = state_enum_strings.state_supervision_violation_type_technical
 
     @staticmethod
-    def _get_default_map():
+    def _get_default_map() -> Dict[str, 'StateSupervisionViolationType']:
         return _STATE_SUPERVISION_VIOLATION_TYPE_MAP
 
 
@@ -44,9 +62,8 @@ _STATE_SUPERVISION_VIOLATION_TYPE_MAP = {
     'ABSCONDER': StateSupervisionViolationType.ABSCONDED,
     'ESCAPED': StateSupervisionViolationType.ESCAPED,
     'FELONY': StateSupervisionViolationType.FELONY,
-    'F': StateSupervisionViolationType.FELONY,
+    'LAW': StateSupervisionViolationType.LAW,
     'MISDEMEANOR': StateSupervisionViolationType.MISDEMEANOR,
-    'M': StateSupervisionViolationType.MISDEMEANOR,
     'MUNICIPAL': StateSupervisionViolationType.MUNICIPAL,
     'TECHNICAL': StateSupervisionViolationType.TECHNICAL,
 }
