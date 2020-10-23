@@ -28,6 +28,8 @@ MOST_RECENT_DAILY_SUPERVISION_POPULATION_VIEW_NAME = \
 MOST_RECENT_DAILY_SUPERVISION_POPULATION_DESCRIPTION = \
     """Event based supervision population for the most recent date of supervision."""
 
+
+# TODO(#4294): Use the prioritized_race_or_ethnicity column
 MOST_RECENT_DAILY_SUPERVISION_POPULATION_QUERY_TEMPLATE = \
     """
     /*{description}*/

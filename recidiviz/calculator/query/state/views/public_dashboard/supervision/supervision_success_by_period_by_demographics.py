@@ -27,6 +27,8 @@ SUPERVISION_SUCCESS_BY_PERIOD_BY_DEMOGRAPHICS_VIEW_NAME = 'supervision_success_b
 SUPERVISION_SUCCESS_BY_PERIOD_BY_DEMOGRAPHICS_VIEW_DESCRIPTION = \
     """Rates of successful completion of supervision by period, grouped by demographic dimensions."""
 
+
+# TODO(#4294): Use the prioritized_race_or_ethnicity column
 SUPERVISION_SUCCESS_BY_PERIOD_BY_DEMOGRAPHICS_VIEW_QUERY_TEMPLATE = \
     """
     /*{description}*/

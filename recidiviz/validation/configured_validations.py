@@ -174,8 +174,7 @@ def get_all_validations() -> List[DataValidationCheck]:
         # This version of this validation excludes the race column explicitly since we have chosen to count people with
         # multiple races in counts for each individual race, so the sum of the race breakdowns will not match the total.
         SamenessDataValidationCheck(view=REVOCATION_MATRIX_COMPARISON_SUPERVISION_POPULATION_VIEW_BUILDER.build(),
-                                    validation_name_suffix='without_race',
-                                    comparison_columns=['district_sum', 'risk_level_sum', 'gender_sum', 'officer_sum']),
+                                    comparison_columns=['district_sum', 'risk_level_sum', 'gender_sum', 'officer_sum', 'race_sum']),
         # This version of the validation checks to make sure the race sum isn't far off from the other sums, even
         # though we expect them to be different (e.g. make sure it isn't zero).
         SamenessDataValidationCheck(
