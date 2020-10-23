@@ -43,7 +43,7 @@ SUPERVISION_MATRIX_BY_PERSON_QUERY_TEMPLATE = \
             gender,
             {state_specific_assessment_bucket},
             age_bucket,
-            race, ethnicity,
+            prioritized_race_or_ethnicity,
             supervision_type,
             {state_specific_supervision_level},
             case_type,
@@ -87,7 +87,7 @@ SUPERVISION_MATRIX_BY_PERSON_QUERY_TEMPLATE = \
         person_id, person_external_id,
         gender, age_bucket,
         assessment_score_bucket as risk_level,
-        race, ethnicity
+        prioritized_race_or_ethnicity
     FROM person_based_supervision,
     {district_dimension},
     {supervision_type_dimension},

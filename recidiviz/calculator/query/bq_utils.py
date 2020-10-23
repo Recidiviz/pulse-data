@@ -38,6 +38,7 @@ def unnest_metric_period_months() -> str:
     return "UNNEST ([1, 3, 6, 12, 36]) AS metric_period_months"
 
 
+# TODO(#4294): Remove this once all views are using the prioritized_race_or_ethnicity field
 def unnest_race_and_ethnicity() -> str:
     return """UNNEST(
             SPLIT(

@@ -30,6 +30,8 @@ SUPERVISION_POPULATION_BY_PRIORITIZED_RACE_AND_ETHNICITY_BY_PERIOD_VIEW_DESCRIPT
     """Supervision population by metric period, broken down by race/ethnicity, where a person is counted towards only
     the race/ethnicity category that is least represented in the population of the state."""
 
+
+# TODO(#4294): Use the prioritized_race_or_ethnicity column
 SUPERVISION_POPULATION_BY_PRIORITIZED_RACE_AND_ETHNICITY_BY_PERIOD_VIEW_QUERY_TEMPLATE = \
     """
     /*{description}*/

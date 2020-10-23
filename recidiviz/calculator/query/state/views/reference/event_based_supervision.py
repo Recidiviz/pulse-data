@@ -31,6 +31,7 @@ EVENT_BASED_SUPERVISION_DESCRIPTION = """
  Expanded Dimensions: district, supervision_type
  """
 
+# TODO(#4294): Replace the race and ethnicity fields with prioritized_race_or_ethnicity
 EVENT_BASED_SUPERVISION_QUERY_TEMPLATE = \
     """
     /*{description}*/

@@ -28,6 +28,8 @@ MOST_RECENT_DAILY_INCARCERATION_POPULATION_VIEW_NAME = \
 MOST_RECENT_DAILY_INCARCERATION_POPULATION_DESCRIPTION = \
     """Event based incarceration population for the most recent date of incarceration."""
 
+
+# TODO(#4294): Use the prioritized_race_or_ethnicity column
 MOST_RECENT_DAILY_INCARCERATION_POPULATION_QUERY_TEMPLATE = \
     """
     /*{description}*/
