@@ -23,6 +23,7 @@ import pytest
 
 from recidiviz.calculator.pipeline.utils import calculator_utils
 from recidiviz.calculator.pipeline.utils.calculator_utils import person_characteristics
+from recidiviz.calculator.pipeline.utils.person_utils import PersonMetadata
 from recidiviz.common.constants.person_characteristics import Gender
 from recidiviz.common.constants.state.state_supervision_violation_response import \
     StateSupervisionViolationResponseDecision
@@ -338,12 +339,15 @@ class TestAddPersonCharacteristics(unittest.TestCase):
 
         event_date = date(2010, 9, 1)
 
-        updated_characteristics = person_characteristics(person, event_date, 'pipeline')
+        person_metadata = PersonMetadata(prioritized_race_or_ethnicity='ASIAN')
+
+        updated_characteristics = person_characteristics(person, event_date, person_metadata, 'pipeline')
 
         expected_output = {
             'person_id': person.person_id,
             'age_bucket': '25-29',
             'race': [Race.ASIAN],
+            'prioritized_race_or_ethnicity': 'ASIAN',
             'gender': Gender.FEMALE
         }
 
@@ -365,13 +369,16 @@ class TestAddPersonCharacteristics(unittest.TestCase):
 
         event_date = date(2010, 9, 1)
 
-        updated_characteristics = person_characteristics(person, event_date, 'pipeline')
+        person_metadata = PersonMetadata(prioritized_race_or_ethnicity='BLACK')
+
+        updated_characteristics = person_characteristics(person, event_date, person_metadata, 'pipeline')
 
         expected_output = {
             'age_bucket': '25-29',
             'race': [Race.ASIAN, Race.BLACK],
             'gender': Gender.FEMALE,
-            'person_id': person.person_id
+            'person_id': person.person_id,
+            'prioritized_race_or_ethnicity': 'BLACK'
         }
 
         self.assertEqual(updated_characteristics, expected_output)
@@ -395,14 +402,17 @@ class TestAddPersonCharacteristics(unittest.TestCase):
 
         event_date = date(2010, 9, 1)
 
-        updated_characteristics = person_characteristics(person, event_date, 'pipeline')
+        person_metadata = PersonMetadata(prioritized_race_or_ethnicity='HISPANIC')
+
+        updated_characteristics = person_characteristics(person, event_date, person_metadata, 'pipeline')
 
         expected_output = {
             'age_bucket': '25-29',
             'race': [Race.ASIAN],
             'gender': Gender.FEMALE,
             'ethnicity': [Ethnicity.HISPANIC],
-            'person_id': person.person_id
+            'person_id': person.person_id,
+            'prioritized_race_or_ethnicity': 'HISPANIC'
         }
 
         self.assertEqual(updated_characteristics, expected_output)
@@ -423,7 +433,9 @@ class TestAddPersonCharacteristics(unittest.TestCase):
 
         event_date = date(2010, 9, 1)
 
-        updated_characteristics = person_characteristics(person, event_date, 'pipeline')
+        person_metadata = PersonMetadata()
+
+        updated_characteristics = person_characteristics(person, event_date, person_metadata, 'pipeline')
 
         expected_output = {
             'age_bucket': '25-29',
@@ -438,7 +450,9 @@ class TestAddPersonCharacteristics(unittest.TestCase):
 
         event_date = date(2010, 9, 1)
 
-        updated_characteristics = person_characteristics(person, event_date, 'pipeline')
+        person_metadata = PersonMetadata()
+
+        updated_characteristics = person_characteristics(person, event_date, person_metadata, 'pipeline')
 
         expected_output = {'person_id': person.person_id}
 
@@ -469,7 +483,9 @@ class TestAddPersonCharacteristics(unittest.TestCase):
 
         event_date = date(2010, 9, 1)
 
-        updated_characteristics = person_characteristics(person, event_date, 'supervision')
+        person_metadata = PersonMetadata()
+
+        updated_characteristics = person_characteristics(person, event_date, person_metadata, 'supervision')
 
         expected_output = {
             'age_bucket': '25-29',

@@ -30,6 +30,7 @@ from recidiviz.calculator.pipeline.supervision.supervision_time_bucket import Su
 from recidiviz.calculator.pipeline.utils.execution_utils import year_and_month_for_today
 from recidiviz.calculator.pipeline.utils.metric_utils import MetricMethodologyType, RecidivizMetric, \
     PersonLevelMetric
+from recidiviz.calculator.pipeline.utils.person_utils import PersonMetadata
 from recidiviz.common.constants.state.external_id_types import US_ID_DOC, US_MO_DOC, US_PA_CONTROL, US_PA_PBPP
 from recidiviz.common.constants.state.state_supervision_violation_response \
     import StateSupervisionViolationResponseDecision
@@ -74,6 +75,7 @@ DECISION_SEVERITY_ORDER = [
 
 def person_characteristics(person: StatePerson,
                            event_date: date,
+                           person_metadata: PersonMetadata,
                            pipeline: str) -> Dict[str, Any]:
     """Adds the person's demographic characteristics to the given |characteristics| dictionary. For the 'age_bucket'
     field, calculates the person's age on the |event_date|. Adds the person's person_id and, if applicable, a
@@ -87,6 +89,8 @@ def person_characteristics(person: StatePerson,
         characteristics['age_bucket'] = event_age_bucket
     if person.gender is not None:
         characteristics['gender'] = person.gender
+    # TODO(#4294): Remove the support of the race and ethnicity attributes, which have been replaced by
+    #  prioritized_race_or_ethnicity
     if person.races:
         races = [race_object.race for race_object in person.races if race_object.race is not None]
         if races:
@@ -96,6 +100,8 @@ def person_characteristics(person: StatePerson,
                        if ethnicity_object.ethnicity is not None]
         if ethnicities:
             characteristics['ethnicity'] = ethnicities
+    if person_metadata and person_metadata.prioritized_race_or_ethnicity:
+        characteristics['prioritized_race_or_ethnicity'] = person_metadata.prioritized_race_or_ethnicity
 
     characteristics['person_id'] = person.person_id
 
@@ -356,23 +362,29 @@ def characteristics_dict_builder(
         pipeline: str,
         event: Union[IncarcerationEvent, ProgramEvent, ReleaseEvent, SupervisionTimeBucket],
         metric_class: Type[RecidivizMetric],
-        person: StatePerson, event_date: date, include_person_attributes: bool) -> Dict[str, Any]:
+        person: StatePerson,
+        event_date: date,
+        include_person_attributes: bool,
+        person_metadata: PersonMetadata) -> Dict[str, Any]:
     """Builds a dictionary from the provided event and person that will eventually populate the values on the given
     metric_class. Only adds attributes to the dictionary that are relevant to the metric_class.
 
     Args:
-        - state_code: The state_code corresponding to the event
         - pipeline: The name of the pipeline this dictionary is being populated for
         - event: The event that was a product of the pipeline's identifier step
         - metric_class: The type of RecidivizMetric that this event will contribute to
         - person: The StatePerson related to this event
+        - event_date: The date on which the |event| occurred
+        - include_person_attributes: Whether or not to include person-level information in the dictionary
+        - person_metadata: A dictionary containing information about the StatePerson that may be necessary for the
+            metrics.
 
     """
     characteristics: Dict[str, Any] = {}
     metric_attributes = attr.fields_dict(metric_class).keys()
 
     if include_person_attributes:
-        person_attributes = person_characteristics(person, event_date, pipeline)
+        person_attributes = person_characteristics(person, event_date, person_metadata, pipeline)
 
         # Add relevant demographic and person-level dimensions
         for attribute, value in person_attributes.items():

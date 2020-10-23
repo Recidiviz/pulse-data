@@ -80,11 +80,17 @@ class RecidivizMetric(BuildableAttr):
     # '35-39'
     age_bucket: Optional[str] = attr.ib(default=None)
 
+    # TODO(#4294): Remove this attribute, which is replaced by prioritized_race_or_ethnicity
     # The race of the persons the metric describes
     race: Optional[List[Race]] = attr.ib(default=None)
 
+    # TODO(#4294): Remove this attribute, which is replaced by prioritized_race_or_ethnicity
     # The ethnicity of the persons the metric describes
     ethnicity: Optional[List[Ethnicity]] = attr.ib(default=None)
+
+    # The race or ethnicity value of the persons the metric describes that is least represented in the state’s
+    # population
+    prioritized_race_or_ethnicity: Optional[str] = attr.ib(default=None)
 
     # The gender of the persons the metric describes
     gender: Optional[Gender] = attr.ib(default=None)
@@ -173,6 +179,8 @@ def json_serializable_metric_key(metric_key: Dict[str, Any]) -> Dict[str, Any]:
             serializable_dict[key] = v.value
         elif isinstance(v, datetime.date) and v is not None:
             serializable_dict[key] = v.strftime('%Y-%m-%d')
+        # TODO(#4294): Remove the support of the race and ethnicity attributes, which have been replaced by
+        #  prioritized_race_or_ethnicity
         elif isinstance(v, list):
             # These are the only two metric fields that support lists
             if key in ('race', 'ethnicity'):

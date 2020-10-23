@@ -36,6 +36,7 @@ from recidiviz.calculator.pipeline.utils.calculator_utils import last_day_of_mon
     get_calculation_month_upper_bound_date, characteristics_dict_builder
 from recidiviz.calculator.pipeline.utils.metric_utils import \
     MetricMethodologyType
+from recidiviz.calculator.pipeline.utils.person_utils import PersonMetadata
 from recidiviz.common.constants.state.state_incarceration_period import is_revocation_admission
 from recidiviz.persistence.entity.state.entities import StatePerson
 
@@ -58,7 +59,8 @@ def map_incarceration_combinations(person: StatePerson,
                                    List[IncarcerationEvent],
                                    metric_inclusions: Dict[IncarcerationMetricType, bool],
                                    calculation_end_month: Optional[str],
-                                   calculation_month_count: int) -> List[Tuple[Dict[str, Any], Any]]:
+                                   calculation_month_count: int,
+                                   person_metadata: PersonMetadata) -> List[Tuple[Dict[str, Any], Any]]:
     """Transforms IncarcerationEvents and a StatePerson into metric combinations.
 
     Takes in a StatePerson and all of their IncarcerationEvent and returns an array of "incarceration combinations".
@@ -77,6 +79,7 @@ def map_incarceration_combinations(person: StatePerson,
             calculated. If unset, ends with the current month.
         calculation_month_count: The number of months (including the month of the calculation_month_upper_bound) to
             limit the monthly calculation output to. If set to -1, does not limit the calculations.
+        person_metadata: Contains information about the StatePerson that is necessary for the metrics.
     Returns:
         A list of key-value tuples representing specific metric combinations and the value corresponding to that metric.
     """
@@ -122,7 +125,7 @@ def map_incarceration_combinations(person: StatePerson,
                 'No metric class mapped to incarceration event of type {}'.format(type(incarceration_event)))
 
         if metric_inclusions.get(metric_type):
-            characteristic_combo = characteristics_dict(person, incarceration_event, metric_class)
+            characteristic_combo = characteristics_dict(person, incarceration_event, metric_class, person_metadata)
 
             metrics.extend(map_metric_combinations(
                 characteristic_combo, incarceration_event,
@@ -135,7 +138,8 @@ def map_incarceration_combinations(person: StatePerson,
 
 def characteristics_dict(person: StatePerson,
                          incarceration_event: IncarcerationEvent,
-                         metric_class: Type[IncarcerationMetric]) -> Dict[str, Any]:
+                         metric_class: Type[IncarcerationMetric],
+                         person_metadata: PersonMetadata) -> Dict[str, Any]:
     """Builds a dictionary that describes the characteristics of the person and event.
 
     Args:
@@ -143,6 +147,7 @@ def characteristics_dict(person: StatePerson,
         incarceration_event: the IncarcerationEvent we are picking characteristics from
         metric_class: The IncarcerationMetric provided determines which fields should be added to the characteristics
             dictionary
+        person_metadata: Contains information about the StatePerson that is necessary for the metrics.
     Returns:
         A dictionary populated with all relevant characteristics.
     """
@@ -153,7 +158,8 @@ def characteristics_dict(person: StatePerson,
                                                    metric_class=metric_class,
                                                    person=person,
                                                    event_date=event_date,
-                                                   include_person_attributes=True)
+                                                   include_person_attributes=True,
+                                                   person_metadata=person_metadata)
     return characteristics
 
 

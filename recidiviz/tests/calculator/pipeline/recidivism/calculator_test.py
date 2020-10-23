@@ -34,6 +34,7 @@ from recidiviz.calculator.pipeline.utils.metric_utils import \
     MetricMethodologyType
 from recidiviz.calculator.pipeline.recidivism.release_event import \
     ReincarcerationReturnType
+from recidiviz.calculator.pipeline.utils.person_utils import PersonMetadata
 from recidiviz.common.constants.state.state_supervision_period import StateSupervisionPeriodSupervisionType
 from recidiviz.common.constants.state.state_supervision_violation import \
     StateSupervisionViolationType
@@ -469,10 +470,12 @@ class TestRecidivismValueForMetric(unittest.TestCase):
         self.assertEqual(0, value)
 
 
-ALL_METRIC_INCLUSIONS_DICT = {
+_ALL_METRIC_INCLUSIONS_DICT = {
     MetricType.REINCARCERATION_COUNT: True,
     MetricType.REINCARCERATION_RATE: True
 }
+
+_DEFAULT_PERSON_METADATA = PersonMetadata(prioritized_race_or_ethnicity='BLACK')
 
 
 class TestMapRecidivismCombinations(unittest.TestCase):
@@ -539,7 +542,7 @@ class TestMapRecidivismCombinations(unittest.TestCase):
         days_at_liberty = (date(2014, 5, 12) - date(2008, 9, 19)).days
 
         recidivism_combinations = calculator.map_recidivism_combinations(
-            person, release_events_by_cohort, ALL_METRIC_INCLUSIONS_DICT)
+            person, release_events_by_cohort, _ALL_METRIC_INCLUSIONS_DICT, _DEFAULT_PERSON_METADATA)
 
         expected_combos_count = self.expected_metric_combos_count(release_events_by_cohort)
 
@@ -593,7 +596,7 @@ class TestMapRecidivismCombinations(unittest.TestCase):
         days_at_liberty_2 = (date(1914, 7, 15) - date(1912, 8, 19)).days
 
         recidivism_combinations = calculator.map_recidivism_combinations(
-            person, release_events_by_cohort, ALL_METRIC_INCLUSIONS_DICT)
+            person, release_events_by_cohort, _ALL_METRIC_INCLUSIONS_DICT, _DEFAULT_PERSON_METADATA)
 
         # For the first event:
         #   For the first 5 periods:
@@ -661,7 +664,7 @@ class TestMapRecidivismCombinations(unittest.TestCase):
         days_at_liberty_1 = (date(1908, 5, 12) - date(1908, 1, 19)).days
 
         recidivism_combinations = calculator.map_recidivism_combinations(
-            person, release_events_by_cohort, ALL_METRIC_INCLUSIONS_DICT)
+            person, release_events_by_cohort, _ALL_METRIC_INCLUSIONS_DICT, _DEFAULT_PERSON_METADATA)
 
         expected_combos_count = self.expected_metric_combos_count(release_events_by_cohort)
 
@@ -708,7 +711,7 @@ class TestMapRecidivismCombinations(unittest.TestCase):
         }
 
         recidivism_combinations = calculator.map_recidivism_combinations(
-            person, release_events_by_cohort, ALL_METRIC_INCLUSIONS_DICT)
+            person, release_events_by_cohort, _ALL_METRIC_INCLUSIONS_DICT, _DEFAULT_PERSON_METADATA)
 
         expected_combos_count = self.expected_metric_combos_count(release_events_by_cohort)
 
@@ -746,7 +749,7 @@ class TestMapRecidivismCombinations(unittest.TestCase):
         days_at_liberty = (date(2008, 10, 12) - date(1998, 9, 19)).days
 
         recidivism_combinations = calculator.map_recidivism_combinations(
-            person, release_events_by_cohort, ALL_METRIC_INCLUSIONS_DICT)
+            person, release_events_by_cohort, _ALL_METRIC_INCLUSIONS_DICT, _DEFAULT_PERSON_METADATA)
 
         expected_combos_count = self.expected_metric_combos_count(release_events_by_cohort)
 
@@ -799,7 +802,7 @@ class TestMapRecidivismCombinations(unittest.TestCase):
         days_at_liberty = (date(2014, 5, 12) - date(2008, 9, 19)).days
 
         recidivism_combinations = calculator.map_recidivism_combinations(
-            person, release_events_by_cohort, ALL_METRIC_INCLUSIONS_DICT)
+            person, release_events_by_cohort, _ALL_METRIC_INCLUSIONS_DICT, _DEFAULT_PERSON_METADATA)
 
         expected_combos_count = self.expected_metric_combos_count(release_events_by_cohort)
 
@@ -852,7 +855,7 @@ class TestMapRecidivismCombinations(unittest.TestCase):
         days_at_liberty = (date(2014, 5, 12) - date(2008, 9, 19)).days
 
         recidivism_combinations = calculator.map_recidivism_combinations(
-            person, release_events_by_cohort, ALL_METRIC_INCLUSIONS_DICT)
+            person, release_events_by_cohort, _ALL_METRIC_INCLUSIONS_DICT, _DEFAULT_PERSON_METADATA)
 
         expected_combos_count = self.expected_metric_combos_count(release_events_by_cohort)
 
@@ -910,7 +913,7 @@ class TestMapRecidivismCombinations(unittest.TestCase):
         days_at_liberty = (date(2014, 5, 12) - date(2008, 9, 19)).days
 
         recidivism_combinations = calculator.map_recidivism_combinations(
-            person, release_events_by_cohort, ALL_METRIC_INCLUSIONS_DICT)
+            person, release_events_by_cohort, _ALL_METRIC_INCLUSIONS_DICT, _DEFAULT_PERSON_METADATA)
 
         expected_combos_count = self.expected_metric_combos_count(release_events_by_cohort)
 
@@ -962,7 +965,7 @@ class TestMapRecidivismCombinations(unittest.TestCase):
         days_at_liberty = (date(2014, 5, 12) - date(2008, 9, 19)).days
 
         recidivism_combinations = calculator.map_recidivism_combinations(
-            person, release_events_by_cohort, ALL_METRIC_INCLUSIONS_DICT)
+            person, release_events_by_cohort, _ALL_METRIC_INCLUSIONS_DICT, _DEFAULT_PERSON_METADATA)
         expected_combos_count = self.expected_metric_combos_count(release_events_by_cohort)
 
         self.assertEqual(expected_combos_count, len(recidivism_combinations))
@@ -1016,7 +1019,7 @@ class TestMapRecidivismCombinations(unittest.TestCase):
         days_at_liberty = (date(2014, 5, 12) - date(2008, 9, 19)).days
 
         recidivism_combinations = calculator.map_recidivism_combinations(
-            person, release_events_by_cohort, ALL_METRIC_INCLUSIONS_DICT)
+            person, release_events_by_cohort, _ALL_METRIC_INCLUSIONS_DICT, _DEFAULT_PERSON_METADATA)
 
         expected_combos_count = self.expected_metric_combos_count(release_events_by_cohort)
 
@@ -1072,7 +1075,7 @@ class TestMapRecidivismCombinations(unittest.TestCase):
         days_at_liberty = (date(2014, 5, 12) - date(2008, 9, 19)).days
 
         recidivism_combinations = calculator.map_recidivism_combinations(
-            person, release_events_by_cohort, ALL_METRIC_INCLUSIONS_DICT)
+            person, release_events_by_cohort, _ALL_METRIC_INCLUSIONS_DICT, _DEFAULT_PERSON_METADATA)
 
         expected_combos_count = self.expected_metric_combos_count(release_events_by_cohort)
 
@@ -1129,7 +1132,7 @@ class TestMapRecidivismCombinations(unittest.TestCase):
         }
 
         recidivism_combinations = calculator.map_recidivism_combinations(
-            person, release_events_by_cohort, ALL_METRIC_INCLUSIONS_DICT)
+            person, release_events_by_cohort, _ALL_METRIC_INCLUSIONS_DICT, _DEFAULT_PERSON_METADATA)
 
         expected_combos_count = self.expected_metric_combos_count(release_events_by_cohort)
 
@@ -1170,7 +1173,7 @@ class TestMapRecidivismCombinations(unittest.TestCase):
         }
 
         recidivism_combinations = calculator.map_recidivism_combinations(
-            person, release_events_by_cohort, ALL_METRIC_INCLUSIONS_DICT)
+            person, release_events_by_cohort, _ALL_METRIC_INCLUSIONS_DICT, _DEFAULT_PERSON_METADATA)
 
         assert all(value == 0 for _combination, value
                    in recidivism_combinations)
@@ -1212,7 +1215,7 @@ class TestMapRecidivismCombinations(unittest.TestCase):
         days_at_liberty_2 = (date(1914, 9, 1) - date(1914, 7, 3)).days
 
         recidivism_combinations = calculator.map_recidivism_combinations(
-            person, release_events_by_cohort, ALL_METRIC_INCLUSIONS_DICT)
+            person, release_events_by_cohort, _ALL_METRIC_INCLUSIONS_DICT, _DEFAULT_PERSON_METADATA)
 
         # For the first event:
         #   For the first 5 periods:
@@ -1290,7 +1293,7 @@ class TestMapRecidivismCombinations(unittest.TestCase):
         days_at_liberty_2 = (date(1914, 3, 30) - date(1914, 3, 19)).days
 
         recidivism_combinations = calculator.map_recidivism_combinations(
-            person, release_events_by_cohort, ALL_METRIC_INCLUSIONS_DICT)
+            person, release_events_by_cohort, _ALL_METRIC_INCLUSIONS_DICT, _DEFAULT_PERSON_METADATA)
 
         # For the first event:
         #   For the first 5 periods:
@@ -1327,31 +1330,33 @@ class TestMapRecidivismCombinations(unittest.TestCase):
 
 class TestCharacteristicCombinations(unittest.TestCase):
     """Tests the characteristic_combinations function."""
-    def test_characteristic_combinations_rate(self):
-        person = StatePerson.new_with_defaults(person_id=12345,
-                                               birthdate=date(1984, 8, 31),
-                                               gender=Gender.FEMALE)
+    def setUp(self) -> None:
+        self.person = StatePerson.new_with_defaults(person_id=12345,
+                                                    birthdate=date(1984, 8, 31),
+                                                    gender=Gender.FEMALE)
 
-        race = StatePersonRace.new_with_defaults(state_code='CA',
-                                                 race=Race.WHITE)
+        race_white = StatePersonRace.new_with_defaults(state_code='US_MO', race=Race.WHITE)
+        race_black = StatePersonRace.new_with_defaults(state_code='US_MO', race=Race.BLACK)
 
-        person.races = [race]
+        self.person.races = [race_white, race_black]
 
         ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code='CA',
+            state_code='US_MO',
             ethnicity=Ethnicity.NOT_HISPANIC)
 
-        person.ethnicities = [ethnicity]
+        self.person.ethnicities = [ethnicity]
 
+    def test_characteristic_combinations_rate(self):
         release_event = RecidivismReleaseEvent(
             'CA', date(2005, 7, 19), date(2008, 9, 19), 'Hudson',
             _COUNTY_OF_RESIDENCE,
             date(2014, 5, 12), 'Upstate',
             ReincarcerationReturnType.NEW_ADMISSION)
 
-        characteristic_dict = calculator.characteristics_dict(person,
+        characteristic_dict = calculator.characteristics_dict(self.person,
                                                               release_event,
-                                                              ReincarcerationRecidivismRateMetric)
+                                                              ReincarcerationRecidivismRateMetric,
+                                                              _DEFAULT_PERSON_METADATA)
 
         expected_output = {'county_of_residence': 'county',
                            'release_cohort': 2008,
@@ -1359,51 +1364,39 @@ class TestCharacteristicCombinations(unittest.TestCase):
                            'stay_length_bucket': '36-48',
                            'age_bucket': '<25',
                            'gender': Gender.FEMALE,
-                           'race': [Race.WHITE],
+                           'race': [Race.WHITE, Race.BLACK],
                            'ethnicity': [Ethnicity.NOT_HISPANIC],
                            'person_id': 12345,
-                           'return_type': ReincarcerationReturnType.NEW_ADMISSION
+                           'return_type': ReincarcerationReturnType.NEW_ADMISSION,
+                           'prioritized_race_or_ethnicity': _DEFAULT_PERSON_METADATA.prioritized_race_or_ethnicity
                            }
 
         self.assertEqual(expected_output, characteristic_dict)
 
     def test_characteristic_combinations_count(self):
-        person = StatePerson.new_with_defaults(person_id=12345,
-                                               birthdate=date(1984, 8, 31),
-                                               gender=Gender.FEMALE)
-
-        race = StatePersonRace.new_with_defaults(state_code='CA',
-                                                 race=Race.WHITE)
-
-        person.races = [race]
-
-        ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code='CA',
-            ethnicity=Ethnicity.NOT_HISPANIC)
-
-        person.ethnicities = [ethnicity]
-
         release_event = RecidivismReleaseEvent(
             state_code='CA', original_admission_date=date(2005, 7, 19), release_date=date(2008, 9, 19),
             release_facility='Hudson', county_of_residence=_COUNTY_OF_RESIDENCE,
             reincarceration_date=date(2014, 5, 12), reincarceration_facility='Upstate',
             return_type=ReincarcerationReturnType.NEW_ADMISSION)
 
-        characteristic_dict = calculator.characteristics_dict(person,
+        characteristic_dict = calculator.characteristics_dict(self.person,
                                                               release_event,
-                                                              ReincarcerationRecidivismCountMetric)
+                                                              ReincarcerationRecidivismCountMetric,
+                                                              _DEFAULT_PERSON_METADATA)
 
         expected_output = {'county_of_residence': 'county',
                            'release_facility': 'Hudson',
                            'stay_length_bucket': '36-48',
                            'age_bucket': '<25',
                            'gender': Gender.FEMALE,
-                           'race': [Race.WHITE],
+                           'race': [Race.WHITE, Race.BLACK],
                            'ethnicity': [Ethnicity.NOT_HISPANIC],
                            'person_id': 12345,
                            'return_type': ReincarcerationReturnType.NEW_ADMISSION,
                            'days_at_liberty': (date(2014, 5, 12) - date(2008, 9, 19)).days,
-                           'reincarceration_date': date(2014, 5, 12)
+                           'reincarceration_date': date(2014, 5, 12),
+                           'prioritized_race_or_ethnicity': _DEFAULT_PERSON_METADATA.prioritized_race_or_ethnicity
                            }
 
         self.assertEqual(expected_output, characteristic_dict)

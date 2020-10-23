@@ -20,11 +20,11 @@ run.
 import argparse
 import datetime
 import logging
-from typing import Dict, Any, List, Tuple, Set, Optional, Sequence
+from typing import Dict, Any, List, Tuple, Set, Optional, cast
 
 import apache_beam as beam
 from apache_beam.options.pipeline_options import SetupOptions, PipelineOptions
-from apache_beam.pvalue import AsDict
+from apache_beam.pvalue import AsDict, AsList
 from apache_beam.typehints import with_input_types, with_output_types
 
 from recidiviz.calculator.calculation_data_storage_config import DATAFLOW_METRICS_TO_TABLES
@@ -33,10 +33,13 @@ from recidiviz.calculator.pipeline.program.metrics import ProgramMetric, \
     ProgramReferralMetric, ProgramParticipationMetric
 from recidiviz.calculator.pipeline.program.metrics import ProgramMetricType
 from recidiviz.calculator.pipeline.program.program_event import ProgramEvent
-from recidiviz.calculator.pipeline.utils.beam_utils import ConvertDictToKVTuple, RecidivizMetricWritableDict
-from recidiviz.calculator.pipeline.utils.execution_utils import get_job_id, person_and_kwargs_for_identifier, \
-    select_all_by_person_query
+from recidiviz.calculator.pipeline.utils.beam_utils import RecidivizMetricWritableDict, ImportTableAsKVTuples, \
+    ImportTable
+from recidiviz.calculator.pipeline.utils.event_utils import IdentifierEvent
+from recidiviz.calculator.pipeline.utils.execution_utils import get_job_id, person_and_kwargs_for_identifier
 from recidiviz.calculator.pipeline.utils.extractor_utils import BuildRootEntity
+from recidiviz.calculator.pipeline.utils.person_utils import PersonMetadata, BuildPersonMetadata, \
+    ExtractPersonEventsMetadata
 from recidiviz.calculator.pipeline.utils.pipeline_args_utils import add_shared_pipeline_arguments
 from recidiviz.calculator.query.state.views.reference.supervision_period_to_agent_association import \
     SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION_VIEW_NAME
@@ -61,8 +64,7 @@ def clear_job_id():
     _job_id = None
 
 
-@with_input_types(beam.typehints.Tuple[entities.StatePerson,
-                                       List[ProgramEvent]])
+@with_input_types(beam.typehints.Tuple[entities.StatePerson, List[IdentifierEvent], PersonMetadata])
 @with_output_types(ProgramMetric)
 class GetProgramMetrics(beam.PTransform):
     """Transforms a StatePerson and their ProgramEvents into ProgramMetrics."""
@@ -110,8 +112,7 @@ class GetProgramMetrics(beam.PTransform):
                   beam.typehints.Optional[Dict[Any,
                                                Tuple[Any, Dict[str, Any]]]]
                   )
-@with_output_types(beam.typehints.Tuple[entities.StatePerson,
-                                        List[ProgramEvent]])
+@with_output_types(beam.typehints.Tuple[int, Tuple[entities.StatePerson, List[ProgramEvent]]])
 class ClassifyProgramAssignments(beam.DoFn):
     """Classifies program assignments as program events, such as referrals to a program."""
 
@@ -134,13 +135,13 @@ class ClassifyProgramAssignments(beam.DoFn):
                 "No valid program events for person with id: %d. Excluding them from the "
                 "calculations.", person.person_id)
         else:
-            yield (person, program_events)
+            yield person.person_id, (person, program_events)
 
     def to_runner_api_parameter(self, _):
         pass  # Passing unused abstract method.
 
 
-@with_input_types(beam.typehints.Tuple[entities.StatePerson, Sequence[ProgramEvent]],
+@with_input_types(beam.typehints.Tuple[entities.StatePerson, List[IdentifierEvent], PersonMetadata],
                   beam.typehints.Optional[str],
                   beam.typehints.Optional[int],
                   beam.typehints.Dict[ProgramMetricType, bool])
@@ -164,7 +165,10 @@ class CalculateProgramMetricCombinations(beam.DoFn):
         Yields:
             Each program metric combination.
         """
-        person, program_events = element
+        person, program_events, person_metadata = element
+
+        # Assert all events are of type IncarcerationEvent
+        program_events = cast(List[ProgramEvent], program_events)
 
         # Calculate program metric combinations for this person and their program events
         metric_combinations = \
@@ -172,7 +176,8 @@ class CalculateProgramMetricCombinations(beam.DoFn):
                                                 program_events=program_events,
                                                 metric_inclusions=metric_inclusions,
                                                 calculation_end_month=calculation_end_month,
-                                                calculation_month_count=calculation_month_count)
+                                                calculation_month_count=calculation_month_count,
+                                                person_metadata=person_metadata)
 
         # Return each of the program metric combinations
         for metric_combination in metric_combinations:
@@ -270,7 +275,8 @@ def get_arg_parser() -> argparse.ArgumentParser:
 
 def run(apache_beam_pipeline_options: PipelineOptions,
         data_input: str,
-        reference_input: str,
+        reference_view_input: str,
+        static_reference_input: str,
         output: str,
         calculation_month_count: int,
         metric_types: List[str],
@@ -289,9 +295,11 @@ def run(apache_beam_pipeline_options: PipelineOptions,
 
     # Get pipeline job details
     all_pipeline_options = apache_beam_pipeline_options.get_all_options()
+    project_id = all_pipeline_options['project']
 
-    input_dataset = all_pipeline_options['project'] + '.' + data_input
-    reference_dataset = all_pipeline_options['project'] + '.' + reference_input
+    input_dataset = project_id + '.' + data_input
+    reference_dataset = project_id + '.' + reference_view_input
+    static_reference_dataset = project_id + '.' + static_reference_input
 
     person_id_filter_set = set(person_filter_ids) if person_filter_ids else None
 
@@ -328,21 +336,24 @@ def run(apache_beam_pipeline_options: PipelineOptions,
                                                unifying_id_field_filter_set=person_id_filter_set,
                                                state_code=state_code))
 
-        supervision_period_to_agent_association_query = select_all_by_person_query(
-            reference_dataset, SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION_VIEW_NAME, state_code, person_id_filter_set)
-
-        supervision_period_to_agent_associations = (
-            p | "Read Supervision Period to Agent table from BigQuery" >>
-            beam.io.Read(beam.io.BigQuerySource
-                         (query=supervision_period_to_agent_association_query, use_standard_sql=True)))
-
-        # Convert the association table rows into key-value tuples with the value for the supervision_period_id column
-        # as the key
         supervision_period_to_agent_associations_as_kv = (
-            supervision_period_to_agent_associations |
-            'Convert Supervision Period to Agent table to KV tuples' >>
-            beam.ParDo(ConvertDictToKVTuple(), 'supervision_period_id')
-        )
+                p | 'Load supervision_period_to_agent_associations_as_kv' >>
+                ImportTableAsKVTuples(
+                    dataset_id=reference_dataset,
+                    table_id=SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION_VIEW_NAME,
+                    table_key='supervision_period_id',
+                    state_code_filter=state_code,
+                    person_id_filter_set=person_id_filter_set
+                ))
+
+        state_race_ethnicity_population_counts = (
+                p | 'Load state_race_ethnicity_population_counts' >>
+                ImportTable(
+                    dataset_id=static_reference_dataset,
+                    table_id='state_race_ethnicity_population_counts',
+                    state_code_filter=state_code,
+                    person_id_filter_set=None
+                ))
 
         # Group each StatePerson with their other entities
         persons_entities = (
@@ -361,6 +372,21 @@ def run(apache_beam_pipeline_options: PipelineOptions,
                          AsDict(supervision_period_to_agent_associations_as_kv))
         )
 
+        person_metadata = (persons
+                           | "Build the person_metadata dictionary" >>
+                           beam.ParDo(BuildPersonMetadata(),
+                                      AsList(state_race_ethnicity_population_counts)))
+
+        person_program_events_with_metadata = (
+            {
+                'person_events': person_program_events,
+                'person_metadata': person_metadata
+            }
+            | 'Group ProgramEvents with person-level metadata' >> beam.CoGroupByKey()
+            | 'Organize StatePerson, PersonMetadata and ProgramEvents for calculations' >>
+            beam.ParDo(ExtractPersonEventsMetadata())
+        )
+
         # Get pipeline job details for accessing job_id
         all_pipeline_options = apache_beam_pipeline_options.get_all_options()
 
@@ -372,7 +398,7 @@ def run(apache_beam_pipeline_options: PipelineOptions,
         metric_types_set = set(metric_types)
 
         # Get program metrics
-        program_metrics = (person_program_events | 'Get Program Metrics' >>
+        program_metrics = (person_program_events_with_metadata | 'Get Program Metrics' >>
                            GetProgramMetrics(
                                pipeline_options=all_pipeline_options,
                                metric_types=metric_types_set,

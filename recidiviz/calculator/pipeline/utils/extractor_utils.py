@@ -18,8 +18,9 @@
 calculations."""
 import abc
 import logging
-from typing import Any, Dict, Optional, Type, Tuple, Set
+from typing import Any, Dict, Optional, Type, Tuple, Set, TypeVar, Iterable
 
+from apache_beam import Pipeline
 from more_itertools import one
 
 import apache_beam as beam
@@ -101,7 +102,7 @@ class BuildRootEntity(beam.PTransform):
         # Get root entities
         root_entities = (input_or_inputs
                          | f"Extract root {self._root_entity_class.__name__}"
-                         f" instances" >>
+                           f" instances" >>
                          _ExtractEntity(dataset=self._dataset,
                                         entity_class=self._root_entity_class,
                                         unifying_id_field=self._unifying_id_field,
@@ -113,8 +114,8 @@ class BuildRootEntity(beam.PTransform):
             # Get the related property entities
             properties_dict = (input_or_inputs
                                | 'Extract relationship property entities for '
-                               f"the {self._root_entity_class.__name__} "
-                               "instances" >>
+                                 f"the {self._root_entity_class.__name__} "
+                                 "instances" >>
                                _ExtractRelationshipPropertyEntities(
                                    dataset=self._dataset,
                                    parent_schema_class=self._root_schema_class,
@@ -132,7 +133,7 @@ class BuildRootEntity(beam.PTransform):
         # Group the cross-entity attributes to the root entities
         grouped_entities = (properties_dict
                             | f"Group {self._root_entity_class.__name__}"
-                            f" instances to cross-entity attributes" >>
+                              f" instances to cross-entity attributes" >>
                             beam.CoGroupByKey()
                             )
 
@@ -141,10 +142,31 @@ class BuildRootEntity(beam.PTransform):
         # Returned hydrated root entity instances
         return (grouped_entities
                 | f"Hydrate cross-entity relationships on the"
-                f" {self._root_entity_class.__name__} instances." >>
+                  f" {self._root_entity_class.__name__} instances." >>
                 beam.ParDo(
                     _HydrateRootEntitiesWithRelationshipPropertyEntities(),
                     **hydrate_kwargs))
+
+
+TypeToLift = TypeVar('TypeToLift')
+
+
+@with_input_types(TypeToLift)
+@with_output_types(TypeToLift)
+class LiftToPCollectionElement(beam.DoFn):
+    """Takes in the input and yields as an element in a PCollection. Does not manipulate the input in any
+    way.
+
+    Note: This is used when reading from BigQuery to avoid errors that we have encountered when passing output from
+    a BigQuerySource as a SideInput without yet processing it as an element in a PCollection.
+    """
+
+    # pylint: disable=arguments-differ
+    def process(self, element: TypeToLift) -> Iterable[TypeToLift]:
+        yield element
+
+    def to_runner_api_parameter(self, _):
+        pass  # Passing unused abstract method.
 
 
 class ReadFromBigQuery(beam.PTransform):
@@ -154,16 +176,22 @@ class ReadFromBigQuery(beam.PTransform):
         super().__init__()
         self._query = query
 
-    def expand(self, input_or_inputs):
-        return (input_or_inputs
+    # pylint: disable=arguments-differ
+    def expand(self, pipeline: Pipeline):
+        return (pipeline
                 | "Read from BigQuery" >>
                 beam.io.Read(beam.io.BigQuerySource
                              (query=self._query,
-                              use_standard_sql=True)))
+                              use_standard_sql=True,
+                              validate=True))
+                | 'Process table rows as elements' >>
+                beam.ParDo(LiftToPCollectionElement())
+                )
 
 
 class _ExtractEntityBase(beam.PTransform):
     """Shared functionality between any PTransforms doing entity extraction."""
+
     def __init__(self,
                  dataset: Optional[str],
                  entity_class: Type[state_entities.Entity],
@@ -259,7 +287,7 @@ class _ExtractEntity(_ExtractEntityBase):
                  unifying_id_field_filter_set: Optional[Set[int]],
                  state_code: Optional[str]):
         super().__init__(dataset, entity_class, unifying_id_field, parent_id_field,
-                                             unifying_id_field_filter_set, state_code)
+                         unifying_id_field_filter_set, state_code)
 
     def expand(self, input_or_inputs):
         entities_raw = self._get_entities_raw_pcollection(input_or_inputs)
@@ -431,9 +459,9 @@ class _ExtractEntityWithAssociationTable(_ExtractEntityBase):
 
         # Read association table from BQ
         association_tuples_raw = (
-            input_or_inputs
-            | f"Read {self._association_table} from BigQuery" >>
-            ReadFromBigQuery(query=association_table_query))
+                input_or_inputs
+                | f"Read {self._association_table} from BigQuery" >>
+                ReadFromBigQuery(query=association_table_query))
 
         return association_tuples_raw
 
@@ -456,18 +484,18 @@ class _ExtractEntityWithAssociationTable(_ExtractEntityBase):
                             'association_table_entity_id_field': self._association_table_entity_id_field}
 
         association_tuples = (
-            association_tuples_raw
-            | f"Get parent_ids and entity_ids from"
-            f" {self._association_table} in tuples" >>
-            beam.ParDo(_FormAssociationIDTuples(), **id_tuples_kwargs)
+                association_tuples_raw
+                | f"Get parent_ids and entity_ids from"
+                  f" {self._association_table} in tuples" >>
+                beam.ParDo(_FormAssociationIDTuples(), **id_tuples_kwargs)
         )
 
         entities_tuples = (
-            {'child_entity_with_unifying_id': hydrated_entities,
-             'parent_entity_ids': association_tuples}
-            | f"Group hydrated {self._entity_class} instances to associated"
-            f" ids"
-            >> beam.CoGroupByKey()
+                {'child_entity_with_unifying_id': hydrated_entities,
+                 'parent_entity_ids': association_tuples}
+                | f"Group hydrated {self._entity_class} instances to associated"
+                  f" ids"
+                >> beam.CoGroupByKey()
         )
 
         return (entities_tuples
@@ -646,9 +674,9 @@ class _HydrateRootEntitiesWithRelationshipPropertyEntities(beam.DoFn):
         schema_class = kwargs.get('schema_class')
 
         if not schema_class:
-            raise(ValueError("Must pass schema Base class to "
-                             "HydrateRootEntitiesWithRelationship"
-                             "PropertyEntities."))
+            raise (ValueError("Must pass schema Base class to "
+                              "HydrateRootEntitiesWithRelationship"
+                              "PropertyEntities."))
 
         relationship_property_names = \
             schema_class.get_relationship_property_names()
@@ -747,7 +775,7 @@ class _FormAssociationIDTuples(beam.DoFn):
         parent_id = element.get(parent_id_field)
 
         if entity_id and parent_id:
-            yield(entity_id, parent_id)
+            yield (entity_id, parent_id)
 
     def to_runner_api_parameter(self, unused_context):
         pass

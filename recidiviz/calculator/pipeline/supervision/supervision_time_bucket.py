@@ -21,7 +21,7 @@ from typing import Optional, List
 import attr
 
 from recidiviz.calculator.pipeline.supervision.supervision_case_compliance import SupervisionCaseCompliance
-from recidiviz.calculator.pipeline.utils.event_utils import AssessmentEventMixin
+from recidiviz.calculator.pipeline.utils.event_utils import AssessmentEventMixin, IdentifierEvent
 from recidiviz.common.attr_mixins import BuildableAttr
 from recidiviz.common.constants.state.state_assessment import \
     StateAssessmentType, StateAssessmentLevel
@@ -37,14 +37,11 @@ from recidiviz.common.constants.state.state_supervision_violation_response \
 
 
 @attr.s(frozen=True)
-class SupervisionTimeBucket(BuildableAttr, AssessmentEventMixin):
+class SupervisionTimeBucket(IdentifierEvent, AssessmentEventMixin):
     """Models details related to a bucket of time on supervision.
 
     Describes a month in which a person spent any amount of time on supervision. This includes the information
     pertaining to time on supervision that we will want to track when calculating supervision and revocation metrics."""
-
-    # The state where the supervision took place
-    state_code: str = attr.ib()
 
     # Year for when the person was on supervision
     year: int = attr.ib()
