@@ -31,6 +31,7 @@ from recidiviz.calculator.pipeline.utils import calculator_utils
 from recidiviz.calculator.pipeline.utils.calculator_utils import last_day_of_month
 from recidiviz.calculator.pipeline.utils.metric_utils import \
     MetricMethodologyType
+from recidiviz.calculator.pipeline.utils.person_utils import PersonMetadata
 from recidiviz.common.constants.person_characteristics import Gender, Race, \
     Ethnicity
 from recidiviz.common.constants.state.state_assessment import \
@@ -45,6 +46,8 @@ from recidiviz.tests.calculator.calculator_test_utils import combo_has_enum_valu
 ALL_METRICS_INCLUSIONS_DICT = {
     metric_type: True for metric_type in ProgramMetricType
 }
+
+_DEFAULT_PERSON_METADATA = PersonMetadata(prioritized_race_or_ethnicity='BLACK')
 
 CALCULATION_METHODOLOGIES = len(MetricMethodologyType)
 
@@ -87,7 +90,8 @@ class TestMapProgramCombinations(unittest.TestCase):
         program_combinations = calculator.map_program_combinations(
             person, program_events, ALL_METRICS_INCLUSIONS_DICT,
             calculation_end_month=None,
-            calculation_month_count=-1
+            calculation_month_count=-1,
+            person_metadata=_DEFAULT_PERSON_METADATA
         )
 
         expected_combinations_count = expected_metric_combos_count(program_events)
@@ -136,7 +140,8 @@ class TestMapProgramCombinations(unittest.TestCase):
         program_combinations = calculator.map_program_combinations(
             person, program_events, ALL_METRICS_INCLUSIONS_DICT,
             calculation_end_month='2009-10',
-            calculation_month_count=1
+            calculation_month_count=1,
+            person_metadata=_DEFAULT_PERSON_METADATA
         )
 
         expected_combinations_count = expected_metric_combos_count(program_events)
@@ -185,7 +190,8 @@ class TestMapProgramCombinations(unittest.TestCase):
         program_combinations = calculator.map_program_combinations(
             person, program_events, ALL_METRICS_INCLUSIONS_DICT,
             calculation_end_month='2009-10',
-            calculation_month_count=-1
+            calculation_month_count=-1,
+            person_metadata=_DEFAULT_PERSON_METADATA
         )
 
         expected_combinations_count = expected_metric_combos_count(program_events)
@@ -251,7 +257,8 @@ class TestMapProgramCombinations(unittest.TestCase):
         program_combinations = calculator.map_program_combinations(
             person, program_events, ALL_METRICS_INCLUSIONS_DICT,
             calculation_end_month='2009-10',
-            calculation_month_count=-1
+            calculation_month_count=-1,
+            person_metadata=_DEFAULT_PERSON_METADATA
         )
 
         expected_combinations_count = expected_metric_combos_count(
@@ -311,7 +318,8 @@ class TestMapProgramCombinations(unittest.TestCase):
         program_combinations = calculator.map_program_combinations(
             person, program_events, ALL_METRICS_INCLUSIONS_DICT,
             calculation_end_month=None,
-            calculation_month_count=-1
+            calculation_month_count=-1,
+            person_metadata=_DEFAULT_PERSON_METADATA
         )
 
         expected_combinations_count = expected_metric_combos_count(
@@ -363,7 +371,8 @@ class TestMapProgramCombinations(unittest.TestCase):
         program_combinations = calculator.map_program_combinations(
             person, program_events, ALL_METRICS_INCLUSIONS_DICT,
             calculation_end_month=None,
-            calculation_month_count=-1
+            calculation_month_count=-1,
+            person_metadata=_DEFAULT_PERSON_METADATA
         )
 
         expected_combinations_count = expected_metric_combos_count(
@@ -415,7 +424,8 @@ class TestMapProgramCombinations(unittest.TestCase):
         program_combinations = calculator.map_program_combinations(
             person, program_events, ALL_METRICS_INCLUSIONS_DICT,
             calculation_end_month=None,
-            calculation_month_count=-1
+            calculation_month_count=-1,
+            person_metadata=_DEFAULT_PERSON_METADATA
         )
 
         relevant_periods = [36, 12]
@@ -478,7 +488,8 @@ class TestMapProgramCombinations(unittest.TestCase):
         program_combinations = calculator.map_program_combinations(
             person, program_events, ALL_METRICS_INCLUSIONS_DICT,
             calculation_end_month=None,
-            calculation_month_count=1
+            calculation_month_count=1,
+            person_metadata=_DEFAULT_PERSON_METADATA
         )
 
         expected_combinations_count = expected_metric_combos_count(
@@ -521,7 +532,8 @@ class TestMapProgramCombinations(unittest.TestCase):
         program_combinations = calculator.map_program_combinations(
             person, program_events, ALL_METRICS_INCLUSIONS_DICT,
             calculation_end_month=None,
-            calculation_month_count=36
+            calculation_month_count=36,
+            person_metadata=_DEFAULT_PERSON_METADATA
         )
 
         expected_combinations_count = expected_metric_combos_count(
@@ -564,7 +576,8 @@ class TestMapProgramCombinations(unittest.TestCase):
         program_combinations = calculator.map_program_combinations(
             person, program_events, ALL_METRICS_INCLUSIONS_DICT,
             calculation_end_month=None,
-            calculation_month_count=36
+            calculation_month_count=36,
+            person_metadata=_DEFAULT_PERSON_METADATA
         )
 
         expected_combinations_count = expected_metric_combos_count(
@@ -582,23 +595,21 @@ class TestMapProgramCombinations(unittest.TestCase):
 class TestCharacteristicsDict(unittest.TestCase):
     """Tests the characteristics_dict function."""
 
-    @classmethod
-    def setUpClass(cls):
-        """Initialize the test person for the characteristics dict."""
-        cls.person = StatePerson.new_with_defaults(person_id=12345,
-                                                   birthdate=date(1984, 8, 31),
-                                                   gender=Gender.FEMALE)
+    def setUp(self) -> None:
+        self.person = StatePerson.new_with_defaults(person_id=12345,
+                                                    birthdate=date(1984, 8, 31),
+                                                    gender=Gender.FEMALE)
 
-        race = StatePersonRace.new_with_defaults(state_code='US_ND',
-                                                 race=Race.WHITE)
+        race_white = StatePersonRace.new_with_defaults(state_code='US_MO', race=Race.WHITE)
+        race_black = StatePersonRace.new_with_defaults(state_code='US_MO', race=Race.BLACK)
 
-        cls.person.races = [race]
+        self.person.races = [race_white, race_black]
 
         ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code='US_ND',
+            state_code='US_MO',
             ethnicity=Ethnicity.NOT_HISPANIC)
 
-        cls.person.ethnicities = [ethnicity]
+        self.person.ethnicities = [ethnicity]
 
     def test_characteristics_dict_program_referral_event(self):
 
@@ -616,13 +627,14 @@ class TestCharacteristicsDict(unittest.TestCase):
 
         characteristic_dict = calculator.characteristics_dict(self.person,
                                                               program_referral_event,
-                                                              ProgramReferralMetric)
+                                                              ProgramReferralMetric,
+                                                              _DEFAULT_PERSON_METADATA)
 
         expected_output = {
             'program_id': 'XXX',
             'age_bucket': '25-29',
             'gender': Gender.FEMALE,
-            'race': [Race.WHITE],
+            'race': [Race.WHITE, Race.BLACK],
             'ethnicity': [Ethnicity.NOT_HISPANIC],
             'person_id': 12345,
             'supervision_type': StateSupervisionType.PAROLE,
@@ -631,6 +643,7 @@ class TestCharacteristicsDict(unittest.TestCase):
             'assessment_type': StateAssessmentType.LSIR,
             'supervising_officer_external_id': 'OFFICER',
             'supervising_district_external_id': 'DISTRICT',
+            'prioritized_race_or_ethnicity': _DEFAULT_PERSON_METADATA.prioritized_race_or_ethnicity
         }
 
         self.assertEqual(expected_output, characteristic_dict)
@@ -647,18 +660,20 @@ class TestCharacteristicsDict(unittest.TestCase):
 
         characteristic_dict = calculator.characteristics_dict(self.person,
                                                               program_participation_event,
-                                                              ProgramParticipationMetric)
+                                                              ProgramParticipationMetric,
+                                                              _DEFAULT_PERSON_METADATA)
 
         expected_output = {
             'date_of_participation': program_participation_event.event_date,
             'program_id': 'XXX',
             'age_bucket': '25-29',
             'gender': Gender.FEMALE,
-            'race': [Race.WHITE],
+            'race': [Race.WHITE, Race.BLACK],
             'ethnicity': [Ethnicity.NOT_HISPANIC],
             'person_id': 12345,
             'supervision_type': StateSupervisionType.PAROLE,
             'program_location_id': 'YYY',
+            'prioritized_race_or_ethnicity': _DEFAULT_PERSON_METADATA.prioritized_race_or_ethnicity
         }
 
         self.assertEqual(expected_output, characteristic_dict)

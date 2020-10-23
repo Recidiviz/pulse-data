@@ -39,6 +39,7 @@ from recidiviz.calculator.pipeline.supervision.metrics import \
     SuccessfulSupervisionSentenceDaysServedMetric, SupervisionRevocationAnalysisMetric, \
     SupervisionRevocationViolationTypeAnalysisMetric
 from recidiviz.calculator.pipeline.utils.metric_utils import MetricMethodologyType
+from recidiviz.calculator.pipeline.utils.person_utils import PersonMetadata
 from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_manager import \
     supervision_types_mutually_exclusive_for_state
 from recidiviz.persistence.entity.state.entities import StatePerson
@@ -48,7 +49,8 @@ def map_supervision_combinations(person: StatePerson,
                                  supervision_time_buckets: List[SupervisionTimeBucket],
                                  metric_inclusions: Dict[SupervisionMetricType, bool],
                                  calculation_end_month: Optional[str],
-                                 calculation_month_count: int) -> List[Tuple[Dict[str, Any], Any]]:
+                                 calculation_month_count: int,
+                                 person_metadata: PersonMetadata) -> List[Tuple[Dict[str, Any], Any]]:
     """Transforms SupervisionTimeBuckets and a StatePerson into metric combinations.
 
     Takes in a StatePerson and all of her SupervisionTimeBuckets and returns an array of "supervision combinations".
@@ -66,6 +68,7 @@ def map_supervision_combinations(person: StatePerson,
             calculated. If unset, ends with the current month.
         calculation_month_count: The number of months (including the month of the calculation_end_month) to
             limit the monthly calculation output to. If set to -1, does not limit the calculations.
+        person_metadata: Contains information about the StatePerson that is necessary for the metrics.
     Returns:
         A list of key-value tuples representing specific metric combinations and the value corresponding to that metric.
     """
@@ -92,7 +95,7 @@ def map_supervision_combinations(person: StatePerson,
         if isinstance(supervision_time_bucket, ProjectedSupervisionCompletionBucket):
             if metric_inclusions.get(SupervisionMetricType.SUPERVISION_SUCCESS):
                 characteristic_combo_success = characteristics_dict(
-                    person, supervision_time_bucket, SupervisionSuccessMetric)
+                    person, supervision_time_bucket, SupervisionSuccessMetric, person_metadata)
 
                 supervision_success_metrics = map_metric_combinations(
                     characteristic_combo_success, supervision_time_bucket,
@@ -109,7 +112,7 @@ def map_supervision_combinations(person: StatePerson,
                 # metric
                 characteristic_combo_successful_sentence_length = characteristics_dict(
                     person, supervision_time_bucket, SuccessfulSupervisionSentenceDaysServedMetric
-                )
+                , person_metadata)
 
                 successful_sentence_length_metrics = map_metric_combinations(
                     characteristic_combo_successful_sentence_length, supervision_time_bucket,
@@ -122,7 +125,7 @@ def map_supervision_combinations(person: StatePerson,
         elif isinstance(supervision_time_bucket, SupervisionTerminationBucket):
             if metric_inclusions.get(SupervisionMetricType.SUPERVISION_TERMINATION):
                 characteristic_combo_termination = characteristics_dict(
-                    person, supervision_time_bucket, SupervisionTerminationMetric)
+                    person, supervision_time_bucket, SupervisionTerminationMetric, person_metadata)
 
                 termination_metrics = map_metric_combinations(
                     characteristic_combo_termination, supervision_time_bucket,
@@ -135,7 +138,7 @@ def map_supervision_combinations(person: StatePerson,
                         (NonRevocationReturnSupervisionTimeBucket, RevocationReturnSupervisionTimeBucket)):
             if metric_inclusions.get(SupervisionMetricType.SUPERVISION_POPULATION):
                 characteristic_combo_population = characteristics_dict(
-                    person, supervision_time_bucket, SupervisionPopulationMetric)
+                    person, supervision_time_bucket, SupervisionPopulationMetric, person_metadata)
 
                 population_metrics = map_metric_combinations(
                     characteristic_combo_population, supervision_time_bucket,
@@ -151,7 +154,7 @@ def map_supervision_combinations(person: StatePerson,
                     and isinstance(supervision_time_bucket, NonRevocationReturnSupervisionTimeBucket)
                     and supervision_time_bucket.case_compliance is not None):
                 characteristic_combo_compliance = characteristics_dict(
-                    person, supervision_time_bucket, SupervisionCaseComplianceMetric)
+                    person, supervision_time_bucket, SupervisionCaseComplianceMetric, person_metadata)
 
                 compliance_metrics = map_metric_combinations(
                     characteristic_combo_compliance, supervision_time_bucket,
@@ -166,7 +169,7 @@ def map_supervision_combinations(person: StatePerson,
             if isinstance(supervision_time_bucket, RevocationReturnSupervisionTimeBucket):
                 if metric_inclusions.get(SupervisionMetricType.SUPERVISION_REVOCATION):
                     characteristic_combo_revocation = characteristics_dict(
-                        person, supervision_time_bucket, SupervisionRevocationMetric)
+                        person, supervision_time_bucket, SupervisionRevocationMetric, person_metadata)
 
                     revocation_metrics = map_metric_combinations(
                         characteristic_combo_revocation,
@@ -182,7 +185,8 @@ def map_supervision_combinations(person: StatePerson,
 
                 if metric_inclusions.get(SupervisionMetricType.SUPERVISION_REVOCATION_ANALYSIS):
                     characteristic_combo_revocation_analysis = characteristics_dict(
-                        person, supervision_time_bucket, SupervisionRevocationAnalysisMetric)
+                        person, supervision_time_bucket, SupervisionRevocationAnalysisMetric,
+                        person_metadata)
 
                     revocation_analysis_metrics = map_metric_combinations(
                         characteristic_combo_revocation_analysis,
@@ -202,7 +206,7 @@ def map_supervision_combinations(person: StatePerson,
                     characteristic_combo_revocation_violation_type_analysis = characteristics_dict(
                         person,
                         supervision_time_bucket,
-                        SupervisionRevocationViolationTypeAnalysisMetric)
+                        SupervisionRevocationViolationTypeAnalysisMetric, person_metadata)
 
                     revocation_violation_type_analysis_metrics = get_revocation_violation_type_analysis_metrics(
                         supervision_time_bucket, characteristic_combo_revocation_violation_type_analysis,
@@ -220,7 +224,8 @@ def map_supervision_combinations(person: StatePerson,
 
 def characteristics_dict(person: StatePerson,
                          supervision_time_bucket: SupervisionTimeBucket,
-                         metric_class: Type[SupervisionMetric]) -> Dict[str, Any]:
+                         metric_class: Type[SupervisionMetric],
+                         person_metadata: PersonMetadata) -> Dict[str, Any]:
     """Builds a dictionary that describes the characteristics of the person and supervision_time_bucket.
 
     Args:
@@ -228,6 +233,7 @@ def characteristics_dict(person: StatePerson,
         supervision_time_bucket: the SupervisionTimeBucket we are picking characteristics from
         metric_class: The SupervisionMetric provided determines which fields should be added to the characteristics
             dictionary
+        person_metadata: Contains information about the StatePerson that is necessary for the metrics.
 
     Returns:
         A dictionary populated with all relevant characteristics.
@@ -247,7 +253,8 @@ def characteristics_dict(person: StatePerson,
                                                    metric_class=metric_class,
                                                    person=person,
                                                    event_date=event_date,
-                                                   include_person_attributes=include_person_attributes)
+                                                   include_person_attributes=include_person_attributes,
+                                                   person_metadata=person_metadata)
     return characteristics
 
 

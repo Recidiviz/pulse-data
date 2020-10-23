@@ -23,7 +23,7 @@ from unittest import mock
 
 import apache_beam as beam
 import pytest
-from apache_beam.pvalue import AsDict
+from apache_beam.pvalue import AsDict, AsList
 from apache_beam.testing.util import assert_that, equal_to, BeamAssertException
 from apache_beam.testing.test_pipeline import TestPipeline
 from apache_beam.options.pipeline_options import PipelineOptions
@@ -52,6 +52,8 @@ from recidiviz.calculator.pipeline.utils.entity_hydration_utils import ConvertSe
 from recidiviz.calculator.pipeline.utils.metric_utils import \
     MetricMethodologyType
 from recidiviz.calculator.pipeline.utils import extractor_utils
+from recidiviz.calculator.pipeline.utils.person_utils import PersonMetadata, BuildPersonMetadata, \
+    ExtractPersonEventsMetadata
 from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_sentence_classification import SupervisionTypeSpan
 from recidiviz.common.constants.state.state_assessment import \
     StateAssessmentType
@@ -146,6 +148,7 @@ class TestSupervisionPipeline(unittest.TestCase):
             self, fake_person_id: int, fake_supervision_period_id: int):
         """Builds a data_dict for a basic run of the pipeline."""
         fake_person = schema.StatePerson(
+            state_code='US_XX',
             person_id=fake_person_id, gender=Gender.MALE,
             birthdate=date(1970, 1, 1),
             residency_status=ResidencyStatus.PERMANENT)
@@ -628,6 +631,18 @@ class TestSupervisionPipeline(unittest.TestCase):
                        'supervision_period_id')
         )
 
+        state_race_ethnicity_population_count = {
+            'state_code': 'US_XX',
+            'race_or_ethnicity': 'BLACK',
+            'population_count': 1,
+            'representation_priority': 1
+        }
+
+        state_race_ethnicity_population_counts = (
+            test_pipeline | 'Create state_race_ethnicity_population_count table' >> beam.Create(
+                [state_race_ethnicity_population_count])
+        )
+
         # Identify SupervisionTimeBuckets from the StatePerson's
         # StateSupervisionSentences and StateIncarcerationPeriods
         person_time_buckets = (
@@ -636,6 +651,21 @@ class TestSupervisionPipeline(unittest.TestCase):
                 pipeline.ClassifySupervisionTimeBuckets(),
                 AsDict(ssvr_agent_associations_as_kv),
                 AsDict(supervision_periods_to_agent_associations_as_kv)))
+
+        person_metadata = (persons
+                           | "Build the person_metadata dictionary" >>
+                           beam.ParDo(BuildPersonMetadata(),
+                                      AsList(state_race_ethnicity_population_counts)))
+
+        person_time_buckets_with_metadata = (
+            {
+                'person_events': person_time_buckets,
+                'person_metadata': person_metadata
+            }
+            | 'Group SupervisionTimeBuckets with person-level metadata' >> beam.CoGroupByKey()
+            | 'Organize StatePerson, PersonMetadata and SupervisionTimeBuckets for calculations' >>
+            beam.ParDo(ExtractPersonEventsMetadata())
+        )
 
         # Get pipeline job details for accessing job_id
         all_pipeline_options = PipelineOptions().get_all_options()
@@ -647,7 +677,7 @@ class TestSupervisionPipeline(unittest.TestCase):
         metric_types = metric_types_filter if metric_types_filter else {'ALL'}
 
         # Get supervision metrics
-        supervision_metrics = (person_time_buckets
+        supervision_metrics = (person_time_buckets_with_metadata
                                | 'Get Supervision Metrics' >>  # type: ignore
                                pipeline.GetSupervisionMetrics(
                                    pipeline_options=all_pipeline_options,
@@ -674,6 +704,7 @@ class TestSupervisionPipeline(unittest.TestCase):
         fake_violation_id = 345789
 
         fake_person = schema.StatePerson(
+            state_code='US_XX',
             person_id=fake_person_id, gender=Gender.FEMALE,
             birthdate=date(1990, 1, 1),
             residency_status=ResidencyStatus.PERMANENT
@@ -904,8 +935,11 @@ class TestSupervisionPipeline(unittest.TestCase):
         fake_svr_id = 5582552
         fake_violation_id = 4702488
 
-        fake_person = schema.StatePerson(person_id=fake_person_id, gender=Gender.MALE, birthdate=date(1991, 8, 16),
-                                         residency_status=ResidencyStatus.PERMANENT)
+        fake_person = schema.StatePerson(
+            state_code='US_XX',
+            person_id=fake_person_id, gender=Gender.MALE,
+            birthdate=date(1991, 8, 16),
+            residency_status=ResidencyStatus.PERMANENT)
 
         persons_data = [normalized_database_base_dict(fake_person)]
 
@@ -1166,6 +1200,7 @@ class TestSupervisionPipeline(unittest.TestCase):
         fake_violation_id = 345789
 
         fake_person = schema.StatePerson(
+            state_code='US_XX',
             person_id=fake_person_id, gender=Gender.FEMALE,
             birthdate=date(1990, 1, 1),
             residency_status=ResidencyStatus.PERMANENT
@@ -1398,6 +1433,7 @@ class TestSupervisionPipeline(unittest.TestCase):
         fake_person_id_1 = 12345
 
         fake_person_1 = schema.StatePerson(
+            state_code='US_XX',
             person_id=fake_person_id_1, gender=Gender.MALE,
             birthdate=date(1970, 1, 1),
             residency_status=ResidencyStatus.PERMANENT)
@@ -1405,6 +1441,7 @@ class TestSupervisionPipeline(unittest.TestCase):
         fake_person_id_2 = 6789
 
         fake_person_2 = schema.StatePerson(
+            state_code='US_XX',
             person_id=fake_person_id_2, gender=Gender.FEMALE,
             birthdate=date(1990, 1, 1),
             residency_status=ResidencyStatus.PERMANENT)
@@ -1763,8 +1800,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             supervision_level_raw_text=supervision_period.supervision_level_raw_text,
         ))
 
-        correct_output = [
-            (fake_person, expected_buckets)]
+        correct_output = [(fake_person.person_id, (fake_person, expected_buckets))]
 
         test_pipeline = TestPipeline()
 
@@ -1964,8 +2000,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             )
         ])
 
-        correct_output = [
-            (fake_person, expected_buckets)]
+        correct_output = [(fake_person.person_id, (fake_person, expected_buckets))]
 
         test_pipeline = TestPipeline()
 
@@ -2177,7 +2212,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             )
         ])
 
-        correct_output = [(fake_person, expected_buckets)]
+        correct_output = [(fake_person.person_id, (fake_person, expected_buckets))]
 
         test_pipeline = TestPipeline()
 
@@ -2309,8 +2344,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             )
         ])
 
-        correct_output = [
-            (fake_person, expected_buckets)]
+        correct_output = [(fake_person.person_id, (fake_person, expected_buckets))]
 
         test_pipeline = TestPipeline()
 
@@ -2431,7 +2465,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             )
         ])
 
-        correct_output = [(fake_person, expected_buckets)]
+        correct_output = [(fake_person.person_id, (fake_person, expected_buckets))]
 
         test_pipeline = TestPipeline()
 
@@ -2586,14 +2620,18 @@ class TestCalculateSupervisionMetricCombinations(unittest.TestCase):
     """Tests the CalculateSupervisionMetricCombinations DoFn in the pipeline."""
 
     def setUp(self) -> None:
+        self.fake_person_id = 12345
+
         self.metric_inclusions_dict: Dict[SupervisionMetricType, bool] = {
             metric_type: True for metric_type in SupervisionMetricType
         }
 
+        self.person_metadata = PersonMetadata(prioritized_race_or_ethnicity='BLACK')
+
     def testCalculateSupervisionMetricCombinations(self):
         """Tests the CalculateSupervisionMetricCombinations DoFn."""
         fake_person = StatePerson.new_with_defaults(
-            person_id=123, gender=Gender.MALE,
+            person_id=self.fake_person_id, gender=Gender.MALE,
             birthdate=date(1970, 1, 1),
             residency_status=ResidencyStatus.PERMANENT)
 
@@ -2623,8 +2661,14 @@ class TestCalculateSupervisionMetricCombinations(unittest.TestCase):
 
         test_pipeline = TestPipeline()
 
+        inputs = [(self.fake_person_id, {
+            'person_events': [(fake_person, supervision_time_buckets)],
+            'person_metadata': [self.person_metadata]
+        })]
+
         output = (test_pipeline
-                  | beam.Create([(fake_person, supervision_time_buckets)])
+                  | beam.Create(inputs)
+                  | beam.ParDo(ExtractPersonEventsMetadata())
                   | 'Calculate Supervision Metrics' >>
                   beam.ParDo(pipeline.CalculateSupervisionMetricCombinations(),
                              calculation_end_month=None,
@@ -2642,11 +2686,11 @@ class TestCalculateSupervisionMetricCombinations(unittest.TestCase):
         """Tests the CalculateSupervisionMetricCombinations DoFn where
         revocations are identified."""
         fake_person = StatePerson.new_with_defaults(
-            person_id=123, gender=Gender.MALE,
+            person_id=self.fake_person_id, gender=Gender.MALE,
             birthdate=date(1970, 1, 1),
             residency_status=ResidencyStatus.PERMANENT)
 
-        supervision_months = [
+        supervision_time_buckets = [
             RevocationReturnSupervisionTimeBucket(
                 state_code='CA', year=2015, month=2,
                 bucket_date=date(2015, 2, 1),
@@ -2664,7 +2708,7 @@ class TestCalculateSupervisionMetricCombinations(unittest.TestCase):
         ]
 
         # Multiply by the number of months and by 2 (to account for methodology)
-        expected_metric_count = len(supervision_months) * 2
+        expected_metric_count = len(supervision_time_buckets) * 2
 
         expected_combination_counts = {
             SupervisionMetricType.SUPERVISION_REVOCATION.value: expected_metric_count,
@@ -2674,8 +2718,14 @@ class TestCalculateSupervisionMetricCombinations(unittest.TestCase):
 
         test_pipeline = TestPipeline()
 
+        inputs = [(self.fake_person_id, {
+            'person_events': [(fake_person, supervision_time_buckets)],
+            'person_metadata': [self.person_metadata]
+        })]
+
         output = (test_pipeline
-                  | beam.Create([(fake_person, supervision_months)])
+                  | beam.Create(inputs)
+                  | beam.ParDo(ExtractPersonEventsMetadata())
                   | 'Calculate Supervision Metrics' >>
                   beam.ParDo(pipeline.CalculateSupervisionMetricCombinations(),
                              calculation_end_month=None,
@@ -2693,14 +2743,20 @@ class TestCalculateSupervisionMetricCombinations(unittest.TestCase):
         no supervision months. This should never happen because any person
         without supervision time is dropped entirely from the pipeline."""
         fake_person = StatePerson.new_with_defaults(
-            person_id=123, gender=Gender.MALE,
+            person_id=self.fake_person_id, gender=Gender.MALE,
             birthdate=date(1970, 1, 1),
             residency_status=ResidencyStatus.PERMANENT)
+
+        inputs = [(self.fake_person_id, {
+            'person_events': [(fake_person, [])],
+            'person_metadata': [self.person_metadata]
+        })]
 
         test_pipeline = TestPipeline()
 
         output = (test_pipeline
-                  | beam.Create([(fake_person, [])])
+                  | beam.Create(inputs)
+                  | beam.ParDo(ExtractPersonEventsMetadata())
                   | 'Calculate Supervision Metrics' >>
                   beam.ParDo(pipeline.CalculateSupervisionMetricCombinations(),
                              calculation_end_month=None,
@@ -2720,6 +2776,7 @@ class TestCalculateSupervisionMetricCombinations(unittest.TestCase):
 
         output = (test_pipeline
                   | beam.Create([])
+                  | beam.ParDo(ExtractPersonEventsMetadata())
                   | 'Calculate Supervision Metrics' >>
                   beam.ParDo(pipeline.CalculateSupervisionMetricCombinations(),
                              calculation_end_month=None,

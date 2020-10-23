@@ -20,11 +20,11 @@ run.
 import argparse
 import datetime
 import logging
-from typing import Dict, Any, List, Tuple, Set, Optional
+from typing import Dict, Any, List, Tuple, Set, Optional, cast
 
 import apache_beam as beam
 from apache_beam.options.pipeline_options import SetupOptions, PipelineOptions
-from apache_beam.pvalue import AsDict
+from apache_beam.pvalue import AsDict, AsList
 from apache_beam.typehints import with_input_types, with_output_types
 
 from recidiviz.calculator.calculation_data_storage_config import DATAFLOW_METRICS_TO_TABLES
@@ -38,12 +38,16 @@ from recidiviz.calculator.pipeline.supervision.metrics import \
     SupervisionMetricType
 from recidiviz.calculator.pipeline.supervision.supervision_time_bucket import \
     SupervisionTimeBucket
-from recidiviz.calculator.pipeline.utils.beam_utils import ConvertDictToKVTuple, RecidivizMetricWritableDict
+from recidiviz.calculator.pipeline.utils.beam_utils import ConvertDictToKVTuple, RecidivizMetricWritableDict, \
+    ImportTableAsKVTuples, ImportTable
 from recidiviz.calculator.pipeline.utils.entity_hydration_utils import \
     SetViolationResponseOnIncarcerationPeriod, SetViolationOnViolationsResponse, ConvertSentencesToStateSpecificType
+from recidiviz.calculator.pipeline.utils.event_utils import IdentifierEvent
 from recidiviz.calculator.pipeline.utils.execution_utils import get_job_id, person_and_kwargs_for_identifier, \
     select_all_by_person_query
 from recidiviz.calculator.pipeline.utils.extractor_utils import BuildRootEntity
+from recidiviz.calculator.pipeline.utils.person_utils import PersonMetadata, BuildPersonMetadata, \
+    ExtractPersonEventsMetadata
 from recidiviz.calculator.pipeline.utils.pipeline_args_utils import add_shared_pipeline_arguments
 from recidiviz.calculator.query.state.views.reference.ssvr_to_agent_association import \
     SSVR_TO_AGENT_ASSOCIATION_VIEW_NAME
@@ -73,7 +77,7 @@ def clear_job_id():
     _job_id = None
 
 
-@with_input_types(beam.typehints.Tuple[entities.StatePerson, List[SupervisionTimeBucket]])
+@with_input_types(beam.typehints.Tuple[entities.StatePerson, List[IdentifierEvent], PersonMetadata])
 @with_output_types(SupervisionMetric)
 class GetSupervisionMetrics(beam.PTransform):
     """Transforms a StatePerson and their SupervisionTimeBuckets into SupervisionMetrics."""
@@ -118,7 +122,7 @@ class GetSupervisionMetrics(beam.PTransform):
 @with_input_types(beam.typehints.Tuple[int, Dict[str, Any]],
                   beam.typehints.Optional[Dict[Any, Tuple[Any, Dict[str, Any]]]],
                   beam.typehints.Optional[Dict[Any, Tuple[Any, Dict[str, Any]]]])
-@with_output_types(beam.typehints.Tuple[entities.StatePerson, List[SupervisionTimeBucket]])
+@with_output_types(beam.typehints.Tuple[int, Tuple[entities.StatePerson, List[SupervisionTimeBucket]]])
 class ClassifySupervisionTimeBuckets(beam.DoFn):
     """Classifies time on supervision according to multiple types of measurement."""
 
@@ -141,13 +145,13 @@ class ClassifySupervisionTimeBuckets(beam.DoFn):
             logging.info("No valid supervision time buckets for person with id: %d. Excluding them from the "
                          "calculations.", person.person_id)
         else:
-            yield person, supervision_time_buckets
+            yield person.person_id, (person, supervision_time_buckets)
 
     def to_runner_api_parameter(self, _):
         pass  # Passing unused abstract method.
 
 
-@with_input_types(beam.typehints.Tuple[entities.StatePerson, List[SupervisionTimeBucket]],
+@with_input_types(beam.typehints.Tuple[entities.StatePerson, List[IdentifierEvent], PersonMetadata],
                   beam.typehints.Optional[str],
                   beam.typehints.Optional[int],
                   beam.typehints.Dict[SupervisionMetricType, bool])
@@ -163,7 +167,7 @@ class CalculateSupervisionMetricCombinations(beam.DoFn):
         supervision combinations.
 
         Args:
-            element: Tuple containing a StatePerson and their SupervisionTimeBuckets
+            element: Dictionary containing the person, SupervisionTimeBuckets, and person_metadata
             calculation_end_month: The year and month of the last month for which metrics should be calculated.
             calculation_month_count: The number of months to limit the monthly calculation output to.
             metric_inclusions: A dictionary where the keys are each SupervisionMetricType, and the values are boolean
@@ -171,14 +175,18 @@ class CalculateSupervisionMetricCombinations(beam.DoFn):
         Yields:
             Each supervision metric combination.
         """
-        person, supervision_time_buckets = element
+        person, supervision_time_buckets, person_metadata = element
+
+        # Assert all events are of type SupervisionTimeBucket
+        supervision_time_buckets = cast(List[SupervisionTimeBucket], supervision_time_buckets)
 
         # Calculate supervision metric combinations for this person and their supervision time buckets
         metric_combinations = calculator.map_supervision_combinations(person,
                                                                       supervision_time_buckets,
                                                                       metric_inclusions,
                                                                       calculation_end_month,
-                                                                      calculation_month_count)
+                                                                      calculation_month_count,
+                                                                      person_metadata)
 
         # Return each of the supervision metric combinations
         for metric_combination in metric_combinations:
@@ -292,7 +300,8 @@ def get_arg_parser() -> argparse.ArgumentParser:
 
 def run(apache_beam_pipeline_options: PipelineOptions,
         data_input: str,
-        reference_input: str,
+        reference_view_input: str,
+        static_reference_input: str,
         output: str,
         calculation_month_count: int,
         metric_types: List[str],
@@ -311,9 +320,11 @@ def run(apache_beam_pipeline_options: PipelineOptions,
 
     # Get pipeline job details
     all_pipeline_options = apache_beam_pipeline_options.get_all_options()
+    project_id = all_pipeline_options['project']
 
-    input_dataset = all_pipeline_options['project'] + '.' + data_input
-    reference_dataset = all_pipeline_options['project'] + '.' + reference_input
+    input_dataset = project_id + '.' + data_input
+    reference_dataset = project_id + '.' + reference_view_input
+    static_reference_dataset = project_id + '.' + static_reference_input
 
     person_id_filter_set = set(person_filter_ids) if person_filter_ids else None
 
@@ -406,37 +417,45 @@ def run(apache_beam_pipeline_options: PipelineOptions,
             state_code=state_code
         ))
 
-        # Bring in the table that associates StateSupervisionViolationResponses to information about StateAgents
-        ssvr_to_agent_association_query = select_all_by_person_query(
-            reference_dataset, SSVR_TO_AGENT_ASSOCIATION_VIEW_NAME, state_code, person_id_filter_set)
+        ssvr_agent_associations_as_kv = (p | 'Load ssvr_agent_associations_as_kv' >> ImportTableAsKVTuples(
+            dataset_id=reference_dataset,
+            table_id=SSVR_TO_AGENT_ASSOCIATION_VIEW_NAME,
+            table_key='supervision_period_id',
+            state_code_filter=state_code,
+            person_id_filter_set=None
+        ))
 
-        ssvr_to_agent_associations = (p | "Read SSVR to Agent table from BigQuery" >>
-                                      beam.io.Read(beam.io.BigQuerySource
-                                                   (query=ssvr_to_agent_association_query,
-                                                    use_standard_sql=True)))
+        supervision_period_to_agent_associations_as_kv = (
+                p | 'Load supervision_period_to_agent_associations_as_kv' >>
+                ImportTableAsKVTuples(
+                    dataset_id=reference_dataset,
+                    table_id=SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION_VIEW_NAME,
+                    table_key='supervision_period_id',
+                    state_code_filter=state_code,
+                    person_id_filter_set=None
+                ))
 
-        # Convert the association table rows into key-value tuples with the value for the
-        # supervision_violation_response_id column as the key
-        ssvr_agent_associations_as_kv = (ssvr_to_agent_associations | 'Convert SSVR to Agent table to KV tuples' >>
-                                         beam.ParDo(ConvertDictToKVTuple(),
-                                                    'supervision_violation_response_id')
-                                         )
+        # Bring in the judicial districts associated with supervision_periods
+        sp_to_judicial_district_kv = (
+                p | 'Load sp_to_judicial_district_kv' >>
+                ImportTableAsKVTuples(
+                    dataset_id=reference_dataset,
+                    table_id=SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_NAME,
+                    state_code_filter=state_code,
+                    person_id_filter_set=person_id_filter_set,
+                    table_key='person_id'
+                )
+        )
 
-        supervision_period_to_agent_association_query = select_all_by_person_query(
-            reference_dataset, SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION_VIEW_NAME, state_code, person_id_filter_set)
-
-        supervision_period_to_agent_associations = (p | "Read Supervision Period to Agent table from BigQuery" >>
-                                                    beam.io.Read(beam.io.BigQuerySource
-                                                                 (query=supervision_period_to_agent_association_query,
-                                                                  use_standard_sql=True)))
-
-        # Convert the association table rows into key-value tuples with the value for the supervision_period_id column
-        # as the key
-        supervision_period_to_agent_associations_as_kv = (supervision_period_to_agent_associations |
-                                                          'Convert Supervision Period to Agent table to KV tuples' >>
-                                                          beam.ParDo(ConvertDictToKVTuple(),
-                                                                     'supervision_period_id')
-                                                          )
+        state_race_ethnicity_population_counts = (
+                p | 'Load state_race_ethnicity_population_counts' >>
+                ImportTable(
+                    dataset_id=static_reference_dataset,
+                    table_id='state_race_ethnicity_population_counts',
+                    state_code_filter=state_code,
+                    person_id_filter_set=None,
+                )
+        )
 
         if state_code is None or state_code == 'US_MO':
             # Bring in the reference table that includes sentence status ranking information
@@ -469,22 +488,6 @@ def run(apache_beam_pipeline_options: PipelineOptions,
             | 'Convert to state-specific sentences' >>
             beam.ParDo(ConvertSentencesToStateSpecificType()).with_outputs('incarceration_sentences',
                                                                            'supervision_sentences')
-        )
-
-        # Bring in the judicial districts associated with supervision_periods
-        sp_to_judicial_district_query = select_all_by_person_query(
-            reference_dataset,
-            SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_NAME,
-            state_code,
-            person_id_filter_set)
-
-        sp_to_judicial_district_kv = (
-            p | "Read supervision_period to judicial_district associations from BigQuery" >>
-            beam.io.Read(beam.io.BigQuerySource(
-                query=sp_to_judicial_district_query,
-                use_standard_sql=True))
-            | "Convert supervision_period to judicial_district association table to KV" >>
-            beam.ParDo(ConvertDictToKVTuple(), 'person_id')
         )
 
         # Group StateSupervisionViolationResponses and StateSupervisionViolations by person_id
@@ -547,6 +550,21 @@ def run(apache_beam_pipeline_options: PipelineOptions,
                        AsDict(ssvr_agent_associations_as_kv),
                        AsDict(supervision_period_to_agent_associations_as_kv)))
 
+        person_metadata = (persons
+                           | "Build the person_metadata dictionary" >>
+                           beam.ParDo(BuildPersonMetadata(),
+                                      AsList(state_race_ethnicity_population_counts)))
+
+        person_time_buckets_with_metadata = (
+            {
+                'person_events': person_time_buckets,
+                'person_metadata': person_metadata
+            }
+            | 'Group SupervisionTimeBuckets with person-level metadata' >> beam.CoGroupByKey()
+            | 'Organize StatePerson, PersonMetadata and SupervisionTimeBuckets for calculations' >>
+            beam.ParDo(ExtractPersonEventsMetadata())
+        )
+
         # Get pipeline job details for accessing job_id
         all_pipeline_options = apache_beam_pipeline_options.get_all_options()
 
@@ -558,7 +576,7 @@ def run(apache_beam_pipeline_options: PipelineOptions,
         all_pipeline_options['job_timestamp'] = job_timestamp
 
         # Get supervision metrics
-        supervision_metrics = (person_time_buckets | 'Get Supervision Metrics' >>
+        supervision_metrics = (person_time_buckets_with_metadata | 'Get Supervision Metrics' >>
                                GetSupervisionMetrics(
                                    pipeline_options=all_pipeline_options,
                                    metric_types=metric_types_set,

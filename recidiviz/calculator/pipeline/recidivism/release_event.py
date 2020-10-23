@@ -24,7 +24,7 @@ from typing import Optional
 import attr
 from dateutil.relativedelta import relativedelta
 
-from recidiviz.common.attr_mixins import BuildableAttr
+from recidiviz.calculator.pipeline.utils.event_utils import IdentifierEvent
 from recidiviz.common.constants.state.state_supervision_period import StateSupervisionPeriodSupervisionType
 from recidiviz.common.constants.state.state_supervision_violation import \
     StateSupervisionViolationType
@@ -41,14 +41,11 @@ class ReincarcerationReturnType(Enum):
 
 
 @attr.s
-class ReleaseEvent(BuildableAttr):
+class ReleaseEvent(IdentifierEvent):
     """Models details related to a release from incarceration.
 
     This includes the information pertaining to a release from incarceration
     that we will want to track when calculating recidivism metrics."""
-
-    # The state where the incarceration took place
-    state_code: str = attr.ib()
 
     # A Date for when the person first was admitted for this period of
     # incarceration.
