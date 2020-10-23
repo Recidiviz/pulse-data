@@ -49,7 +49,7 @@ REVOCATIONS_BY_OFFICER_BY_MONTH_QUERY_TEMPLATE = \
       SELECT
         state_code, year, month,
         officer_external_id,
-        COUNT(DISTINCT IF(most_severe_violation_type IN ('FELONY', 'MISDEMEANOR'), person_id, NULL)) AS crime_revocations,
+        COUNT(DISTINCT IF(most_severe_violation_type IN ('FELONY', 'MISDEMEANOR', 'LAW'), person_id, NULL)) AS crime_revocations,
         COUNT(DISTINCT IF(most_severe_violation_type = 'TECHNICAL', person_id, NULL)) AS technical_revocations
       FROM revocations
       GROUP BY state_code, year, month, officer_external_id

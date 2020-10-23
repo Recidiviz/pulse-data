@@ -51,7 +51,6 @@ def state_specific_most_severe_violation_type_subtype_grouping() -> str:
                      ELSE most_severe_violation_type END
                 WHEN state_code = 'US_PA' THEN
                     CASE WHEN most_severe_violation_type = 'TECHNICAL' THEN most_severe_violation_type_subtype
-                         WHEN most_severe_violation_type = 'MUNICIPAL' THEN 'SUMMARY_OFFENSE'
                          ELSE most_severe_violation_type END
                 WHEN most_severe_violation_type IS NULL THEN 'NO_VIOLATIONS'
                 ELSE most_severe_violation_type
@@ -73,7 +72,6 @@ def state_specific_officer_recommendation() -> str:
 
 def state_specific_violation_count_type_grouping() -> str:
     return """CASE WHEN state_code = 'US_MO' AND violation_count_type = 'LAW_CITATION' THEN 'MISDEMEANOR'
-              WHEN state_code = 'US_PA' AND violation_count_type = 'MUNICIPAL' THEN 'SUMMARY_OFFENSE'
               ELSE violation_count_type
         END as violation_count_type"""
 
@@ -93,8 +91,7 @@ def state_specific_violation_count_type_categories() -> str:
         SUM(IF(state_code = 'US_PA' AND violation_count_type = 'ELEC_MONITORING', count, 0)) as elec_monitoring_count,
         SUM(IF(state_code = 'US_PA' AND violation_count_type = 'LOW_TECH', count, 0)) as low_tech_count,
         SUM(IF(state_code = 'US_PA' AND violation_count_type = 'MED_TECH', count, 0)) as med_tech_count,
-        SUM(IF(state_code = 'US_PA' AND violation_count_type = 'HIGH_TECH', count, 0)) as high_tech_count,
-        SUM(IF(state_code = 'US_PA' AND violation_count_type = 'SUMMARY_OFFENSE', count, 0)) AS summary_offense_count"""
+        SUM(IF(state_code = 'US_PA' AND violation_count_type = 'HIGH_TECH', count, 0)) as high_tech_count"""
 
 
 def state_specific_supervision_level() -> str:

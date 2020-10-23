@@ -60,10 +60,10 @@ REVOCATIONS_BY_SITE_ID_BY_PERIOD_QUERY_TEMPLATE = \
       SELECT
         state_code,
         supervision_type,
-        COUNT(IF(source_violation_type = 'FELONY', person_id, NULL)) AS felony_count,
-        COUNT(IF(source_violation_type = 'TECHNICAL', person_id, NULL)) AS technical_count,
-        COUNT(IF(source_violation_type = 'ABSCONDED', person_id, NULL)) AS absconsion_count,
-        COUNT(person_id) AS all_violation_types_count,
+        COUNT(DISTINCT IF(source_violation_type IN ('FELONY', 'MISDEMEANOR', 'LAW'), person_id, NULL)) AS felony_count,
+        COUNT(DISTINCT IF(source_violation_type = 'TECHNICAL', person_id, NULL)) AS technical_count,
+        COUNT(DISTINCT IF(source_violation_type IN ('ESCAPED', 'ABSCONDED'), person_id, NULL)) AS absconsion_count,
+        COUNT(DISTINCT person_id) AS all_violation_types_count,
         district,
         metric_period_months
       FROM (

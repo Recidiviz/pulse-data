@@ -83,6 +83,7 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_VIOLATION_QUERY_TEMPLATE = \
         SUM(IF(violation_count_type = 'MUNICIPAL', count, 0)) AS municipal_count,
         SUM(IF(violation_count_type = 'MISDEMEANOR', count, 0)) AS misdemeanor_count,
         SUM(IF(violation_count_type = 'SUBSTANCE_ABUSE', count, 0)) AS substance_count,
+        SUM(IF(violation_count_type = 'LAW', count, 0)) AS law_count,
         -- State-specific violation categories --
         {state_specific_violation_categories},
         -- Overall violation count --
