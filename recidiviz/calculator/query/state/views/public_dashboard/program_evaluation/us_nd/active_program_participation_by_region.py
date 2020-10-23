@@ -27,6 +27,8 @@ ACTIVE_PROGRAM_PARTICIPATION_BY_REGION_VIEW_NAME = 'active_program_participation
 ACTIVE_PROGRAM_PARTICIPATION_BY_REGION_VIEW_DESCRIPTION = \
     """Active program participation counts by the region of the program location."""
 
+
+# TODO(#4294): Use the prioritized_race_or_ethnicity column
 ACTIVE_PROGRAM_PARTICIPATION_BY_REGION_VIEW_QUERY_TEMPLATE = \
     """
     /*{description}*/
