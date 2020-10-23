@@ -32,6 +32,7 @@ SUPERVISION_REVOCATIONS_BY_PERIOD_BY_TYPE_BY_DEMOGRAPHICS_VIEW_VIEW_DESCRIPTION 
     with respect to metric_period_months and supervision_type. If a person has more than one revocation of the same
     supervision type in a given metric period, the most recent one is chosen."""
 
+# TODO(#4294): Replace the race and ethnicity fields with prioritized_race_or_ethnicity
 SUPERVISION_REVOCATIONS_BY_PERIOD_BY_TYPE_BY_DEMOGRAPHICS_VIEW_VIEW_QUERY_TEMPLATE = \
     """
     /*{description}*/
