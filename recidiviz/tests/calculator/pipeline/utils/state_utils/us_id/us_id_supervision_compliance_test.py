@@ -108,6 +108,67 @@ class TestCaseCompliance(unittest.TestCase):
                 face_to_face_frequency_sufficient=True
             ), compliance)
 
+    def test_us_id_case_compliance_with_virtual_contact_on_date(self):
+        supervision_period = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=111,
+            external_id='sp1',
+            state_code='US_ID',
+            custodial_authority='US_ID_DOC',
+            start_date=date(2018, 3, 5),
+            termination_date=date(2018, 5, 19),
+            admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
+            termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_level=StateSupervisionLevel.MEDIUM,
+            supervision_level_raw_text='MODERATE'
+        )
+
+        case_type = StateSupervisionCaseType.GENERAL
+
+        assessments = [StateAssessment.new_with_defaults(
+            state_code='US_ID',
+            assessment_type=StateAssessmentType.LSIR,
+            assessment_score=33,
+            assessment_level=StateAssessmentLevel.HIGH,
+            assessment_date=date(2018, 3, 10)
+        )]
+
+        supervision_contacts = [
+            StateSupervisionContact.new_with_defaults(
+                state_code='US_ID',
+                contact_date=date(2018, 3, 6),
+                contact_type=StateSupervisionContactType.VIRTUAL,
+                status=StateSupervisionContactStatus.COMPLETED
+            ),
+            StateSupervisionContact.new_with_defaults(
+                state_code='US_ID',
+                contact_date=date(2018, 4, 6),
+                contact_type=StateSupervisionContactType.FACE_TO_FACE,
+                status=StateSupervisionContactStatus.COMPLETED
+            ),
+        ]
+
+        start_of_supervision = supervision_period.start_date
+        compliance_evaluation_date = date(2018, 4, 30)
+
+        compliance = us_id_case_compliance_on_date(
+            supervision_period,
+            case_type,
+            start_of_supervision,
+            compliance_evaluation_date,
+            assessments,
+            supervision_contacts
+        )
+
+        self.assertEqual(
+            SupervisionCaseCompliance(
+                date_of_evaluation=compliance_evaluation_date,
+                assessment_count=0,
+                assessment_up_to_date=True,
+                face_to_face_count=1,
+                face_to_face_frequency_sufficient=True
+            ), compliance)
+
     def test_us_id_case_compliance_on_date_no_assessment_no_contacts(self):
         supervision_period = \
             StateSupervisionPeriod.new_with_defaults(
