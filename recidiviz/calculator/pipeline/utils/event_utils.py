@@ -19,7 +19,15 @@ import logging
 
 import attr
 
+from recidiviz.common.attr_mixins import BuildableAttr
 from recidiviz.common.constants.state.state_assessment import StateAssessmentType
+
+
+@attr.s
+class IdentifierEvent(BuildableAttr):
+    """Base class for events created by the identifier step of each pipeline."""
+    # The state where the event took place
+    state_code: str = attr.ib()
 
 
 @attr.s

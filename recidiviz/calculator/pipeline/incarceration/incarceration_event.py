@@ -19,7 +19,8 @@ from datetime import date
 from typing import Optional
 
 import attr
-from recidiviz.common.attr_mixins import BuildableAttr
+
+from recidiviz.calculator.pipeline.utils.event_utils import IdentifierEvent
 from recidiviz.common.constants.state.state_incarceration_period import \
     StateIncarcerationPeriodAdmissionReason, \
     StateIncarcerationPeriodReleaseReason, StateSpecializedPurposeForIncarceration
@@ -27,15 +28,12 @@ from recidiviz.common.constants.state.state_supervision_period import StateSuper
 
 
 @attr.s(frozen=True)
-class IncarcerationEvent(BuildableAttr):
+class IncarcerationEvent(IdentifierEvent):
     """Models details related to an incarceration event.
 
     Describes a date on which a person interacted with incarceration. This includes the information pertaining to the
     interaction that we will want to track when calculating incarceration metrics.
     """
-
-    # The state where the incarceration took place
-    state_code: str = attr.ib()
 
     # Event date when the interaction took place
     event_date: date = attr.ib()

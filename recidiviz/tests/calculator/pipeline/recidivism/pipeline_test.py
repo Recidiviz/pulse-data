@@ -18,13 +18,12 @@
 # pylint: disable=unused-import,wrong-import-order
 
 """Tests for recidivism/pipeline.py."""
-import json
 import unittest
 from typing import Optional, Set
 
 import apache_beam as beam
 import pytest
-from apache_beam.pvalue import AsDict
+from apache_beam.pvalue import AsDict, AsList
 from apache_beam.testing.util import assert_that, equal_to, BeamAssertException
 from apache_beam.testing.test_pipeline import TestPipeline
 from apache_beam.options.pipeline_options import PipelineOptions
@@ -36,10 +35,10 @@ from enum import Enum
 
 from mock import patch
 
-from recidiviz.calculator.pipeline.recidivism import calculator, pipeline
+from recidiviz.calculator.pipeline.recidivism import pipeline
 from recidiviz.calculator.pipeline.recidivism.metrics import \
     ReincarcerationRecidivismMetric, \
-    ReincarcerationRecidivismRateMetric, ReincarcerationRecidivismCountMetric
+    ReincarcerationRecidivismRateMetric
 from recidiviz.calculator.pipeline.recidivism.metrics import \
     ReincarcerationRecidivismMetricType as MetricType
 from recidiviz.calculator.pipeline.utils.beam_utils import ConvertDictToKVTuple, RecidivizMetricWritableDict
@@ -50,6 +49,7 @@ from recidiviz.calculator.pipeline.recidivism.pipeline import ClassifyReleaseEve
 from recidiviz.calculator.pipeline.recidivism.release_event import \
     ReincarcerationReturnType, RecidivismReleaseEvent, \
     NonRecidivismReleaseEvent
+from recidiviz.calculator.pipeline.utils.person_utils import PersonMetadata, BuildPersonMetadata
 from recidiviz.common.constants.person_characteristics import Ethnicity, ResidencyStatus, Gender, Race
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_period import \
@@ -80,6 +80,7 @@ class TestRecidivismPipeline(unittest.TestCase):
     def build_data_dict(fake_person_id: int):
         """Builds a data_dict for a basic run of the pipeline."""
         fake_person = schema.StatePerson(
+            state_code='US_XX',
             person_id=fake_person_id, gender=Gender.MALE,
             birthdate=date(1970, 1, 1),
             residency_status=ResidencyStatus.PERMANENT)
@@ -243,6 +244,7 @@ class TestRecidivismPipeline(unittest.TestCase):
         fake_person_id_1 = 12345
 
         fake_person_1 = schema.StatePerson(
+            state_code='US_XX',
             person_id=fake_person_id_1, gender=Gender.MALE,
             birthdate=date(1970, 1, 1),
             residency_status=ResidencyStatus.PERMANENT)
@@ -250,6 +252,7 @@ class TestRecidivismPipeline(unittest.TestCase):
         fake_person_id_2 = 6789
 
         fake_person_2 = schema.StatePerson(
+            state_code='US_XX',
             person_id=fake_person_id_2, gender=Gender.FEMALE,
             birthdate=date(1990, 1, 1),
             residency_status=ResidencyStatus.PERMANENT)
@@ -515,10 +518,38 @@ class TestRecidivismPipeline(unittest.TestCase):
             | "Convert to KV" >>
             beam.ParDo(ConvertDictToKVTuple(), 'person_id')
         )
-        person_events = (
+
+        state_race_ethnicity_population_count = {
+            'state_code': 'US_XX',
+            'race_or_ethnicity': 'BLACK',
+            'population_count': 1,
+            'representation_priority': 1
+        }
+
+        state_race_ethnicity_population_counts = (
+            test_pipeline | 'Create state_race_ethnicity_population_count table' >> beam.Create(
+                [state_race_ethnicity_population_count])
+        )
+
+        person_release_events = (
             person_and_incarceration_periods
             | "ClassifyReleaseEvents" >>
             beam.ParDo(ClassifyReleaseEvents(), AsDict(person_id_to_county_kv))
+        )
+
+        person_metadata = (persons
+                           | "Build the person_metadata dictionary" >>
+                           beam.ParDo(BuildPersonMetadata(),
+                                      AsList(state_race_ethnicity_population_counts)))
+
+        person_release_events_with_metadata = (
+                {
+                    'person_events': person_release_events,
+                    'person_metadata': person_metadata
+                }
+                | 'Group ReleaseEvents with person-level metadata' >> beam.CoGroupByKey()
+                | 'Organize StatePerson, PersonMetadata and ReleaseEvents for calculations' >>
+                beam.ParDo(pipeline.ExtractPersonReleaseEventsMetadata())
         )
 
         # Get pipeline job details for accessing job_id
@@ -531,7 +562,7 @@ class TestRecidivismPipeline(unittest.TestCase):
         metric_types = metric_types_filter if metric_types_filter else {'ALL'}
 
         # Get recidivism metrics
-        recidivism_metrics = (person_events
+        recidivism_metrics = (person_release_events_with_metadata
                               | 'Get Recidivism Metrics' >>  # type: ignore
                               pipeline.GetRecidivismMetrics(
                                   all_pipeline_options,
@@ -611,10 +642,12 @@ class TestClassifyReleaseEvents(unittest.TestCase):
             return_type=ReincarcerationReturnType.NEW_ADMISSION)
 
         correct_output = [
-            (fake_person, {initial_incarceration.release_date.year:
-                           [first_recidivism_release_event],
-                           first_reincarceration.release_date.year:
-                           [second_recidivism_release_event]})]
+            (fake_person.person_id, (
+                fake_person, {initial_incarceration.release_date.year: [first_recidivism_release_event],
+                              first_reincarceration.release_date.year: [second_recidivism_release_event]}
+            )
+             )
+        ]
 
         test_pipeline = TestPipeline()
 
@@ -669,9 +702,9 @@ class TestClassifyReleaseEvents(unittest.TestCase):
             only_incarceration.release_date, only_incarceration.facility,
             _COUNTY_OF_RESIDENCE)
 
-        correct_output = [(fake_person,
+        correct_output = [(fake_person.person_id, (fake_person,
                            {only_incarceration.release_date.year:
-                            [non_recidivism_release_event]})]
+                            [non_recidivism_release_event]}))]
 
         test_pipeline = TestPipeline()
 
@@ -804,9 +837,9 @@ class TestClassifyReleaseEvents(unittest.TestCase):
             return_type=ReincarcerationReturnType.NEW_ADMISSION)
 
         correct_output = [
-            (fake_person, {initial_incarceration.release_date.year:
+            (fake_person.person_id, (fake_person, {initial_incarceration.release_date.year:
                            [first_recidivism_release_event,
-                            second_recidivism_release_event]})]
+                            second_recidivism_release_event]}))]
 
         test_pipeline = TestPipeline()
         fake_person_id_to_county_query_result = [
@@ -897,10 +930,9 @@ class TestClassifyReleaseEvents(unittest.TestCase):
             return_type=ReincarcerationReturnType.NEW_ADMISSION)
 
         correct_output = [
-            (fake_person, {initial_incarceration.release_date.year:
-                           [first_recidivism_release_event],
-                           first_reincarceration.release_date.year:
-                           [second_recidivism_release_event]})]
+            (fake_person.person_id, (fake_person, {
+                initial_incarceration.release_date.year: [first_recidivism_release_event],
+                first_reincarceration.release_date.year: [second_recidivism_release_event]}))]
 
         test_pipeline = TestPipeline()
 
@@ -931,12 +963,15 @@ class TestCalculateRecidivismMetricCombinations(unittest.TestCase):
     """Tests for the CalculateRecidivismMetricCombinations DoFn in the
     pipeline."""
 
+    def setUp(self) -> None:
+        self.fake_person_id = 12345
+
+        self.person_metadata = PersonMetadata(prioritized_race_or_ethnicity='BLACK')
+
     def testCalculateRecidivismMetricCombinations(self):
         """Tests the CalculateRecidivismMetricCombinations DoFn in the pipeline."""
-        fake_person_id = 12345
-
         fake_person = entities.StatePerson.new_with_defaults(
-            person_id=fake_person_id, gender=Gender.MALE,
+            person_id=self.fake_person_id, gender=Gender.MALE,
             residency_status=ResidencyStatus.PERMANENT)
 
         first_recidivism_release_event = RecidivismReleaseEvent(
@@ -957,11 +992,16 @@ class TestCalculateRecidivismMetricCombinations(unittest.TestCase):
             county_of_residence=_COUNTY_OF_RESIDENCE,
             return_type=ReincarcerationReturnType.NEW_ADMISSION)
 
-        person_events = [
+        person_release_events = [
             (fake_person, {first_recidivism_release_event.release_date.year:
                            [first_recidivism_release_event],
                            second_recidivism_release_event.release_date.year:
                                [second_recidivism_release_event]})]
+
+        inputs = [(self.fake_person_id, {
+            'person_events': person_release_events,
+            'person_metadata': [self.person_metadata]
+        })]
 
         # We do not track metrics for periods that start after today, so we need to subtract for some number of periods
         # that go beyond whatever today is.
@@ -988,7 +1028,8 @@ class TestCalculateRecidivismMetricCombinations(unittest.TestCase):
         test_pipeline = TestPipeline()
 
         output = (test_pipeline
-                  | beam.Create(person_events)
+                  | beam.Create(inputs)
+                  | beam.ParDo(pipeline.ExtractPersonReleaseEventsMetadata())
                   | 'Calculate Metric Combinations' >>
                   beam.ParDo(pipeline.CalculateRecidivismMetricCombinations(), ALL_METRIC_INCLUSIONS_DICT)
                   )
@@ -1001,19 +1042,22 @@ class TestCalculateRecidivismMetricCombinations(unittest.TestCase):
     def testCalculateRecidivismMetricCombinations_NoResults(self):
         """Tests the CalculateRecidivismMetricCombinations DoFn in the pipeline
         when there are no ReleaseEvents associated with the entities.StatePerson."""
-
-        fake_person_id = 12345
-
         fake_person = entities.StatePerson.new_with_defaults(
-            person_id=fake_person_id, gender=Gender.MALE,
+            person_id=self.fake_person_id, gender=Gender.MALE,
             residency_status=ResidencyStatus.PERMANENT)
 
-        person_events = [(fake_person, {})]
+        person_release_events = [(fake_person, {})]
+
+        inputs = [(self.fake_person_id, {
+            'person_events': person_release_events,
+            'person_metadata': [self.person_metadata]
+        })]
 
         test_pipeline = TestPipeline()
 
         output = (test_pipeline
-                  | beam.Create(person_events)
+                  | beam.Create(inputs)
+                  | beam.ParDo(pipeline.ExtractPersonReleaseEventsMetadata())
                   | 'Calculate Metric Combinations' >>
                   beam.ParDo(pipeline.CalculateRecidivismMetricCombinations(), ALL_METRIC_INCLUSIONS_DICT)
                   )
@@ -1026,12 +1070,13 @@ class TestCalculateRecidivismMetricCombinations(unittest.TestCase):
         """Tests the CalculateRecidivismMetricCombinations DoFn in the pipeline
         when there is no entities.StatePerson and no ReleaseEvents."""
 
-        person_events = []
+        inputs = []
 
         test_pipeline = TestPipeline()
 
         output = (test_pipeline
-                  | beam.Create(person_events)
+                  | beam.Create(inputs)
+                  | beam.ParDo(pipeline.ExtractPersonReleaseEventsMetadata())
                   | 'Calculate Metric Combinations' >>
                   beam.ParDo(pipeline.CalculateRecidivismMetricCombinations(), ALL_METRIC_INCLUSIONS_DICT)
                   )

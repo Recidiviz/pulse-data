@@ -24,14 +24,15 @@ from __future__ import absolute_import
 import argparse
 import logging
 
-from typing import Any, Dict, List, Tuple, Set, Optional
+from typing import Any, Dict, List, Tuple, Set, Optional, Iterable
 import datetime
 
-from apache_beam.pvalue import AsDict
+from apache_beam.pvalue import AsDict, AsList
 
 import apache_beam as beam
 from apache_beam.options.pipeline_options import SetupOptions, PipelineOptions
 from apache_beam.typehints import with_input_types, with_output_types
+from more_itertools import one
 
 from recidiviz.calculator.calculation_data_storage_config import DATAFLOW_METRICS_TO_TABLES
 from recidiviz.calculator.pipeline.recidivism import identifier
@@ -41,12 +42,13 @@ from recidiviz.calculator.pipeline.recidivism.metrics import \
     ReincarcerationRecidivismRateMetric, ReincarcerationRecidivismCountMetric, \
     ReincarcerationRecidivismMetric
 from recidiviz.calculator.pipeline.recidivism.metrics import ReincarcerationRecidivismMetricType
-from recidiviz.calculator.pipeline.utils.beam_utils import ConvertDictToKVTuple, RecidivizMetricWritableDict
+from recidiviz.calculator.pipeline.utils.beam_utils import RecidivizMetricWritableDict, \
+    ImportTableAsKVTuples, ImportTable
 from recidiviz.calculator.pipeline.utils.entity_hydration_utils import \
     SetViolationResponseOnIncarcerationPeriod, SetViolationOnViolationsResponse
-from recidiviz.calculator.pipeline.utils.execution_utils import get_job_id, person_and_kwargs_for_identifier, \
-    select_all_by_person_query
+from recidiviz.calculator.pipeline.utils.execution_utils import get_job_id, person_and_kwargs_for_identifier
 from recidiviz.calculator.pipeline.utils.extractor_utils import BuildRootEntity
+from recidiviz.calculator.pipeline.utils.person_utils import PersonMetadata, BuildPersonMetadata
 from recidiviz.calculator.pipeline.utils.pipeline_args_utils import add_shared_pipeline_arguments
 from recidiviz.calculator.query.state.views.reference.persons_to_recent_county_of_residence import \
     PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_VIEW_NAME
@@ -71,7 +73,35 @@ def clear_job_id():
     _job_id = None
 
 
-@with_input_types(beam.typehints.Tuple[entities.StatePerson, Dict[int, List[ReleaseEvent]]])
+@with_input_types(beam.typehints.Tuple[int, Dict[str, Iterable[Any]]])
+@with_output_types(beam.typehints.Tuple[entities.StatePerson, Dict[int, ReleaseEvent], PersonMetadata])
+class ExtractPersonReleaseEventsMetadata(beam.DoFn):
+    # pylint: disable=arguments-differ
+    def process(self,
+                element: Tuple[int, Dict[str, Iterable[Any]]]) -> \
+            Iterable[Tuple[entities.StatePerson, Dict[int, ReleaseEvent], PersonMetadata]]:
+        """Extracts the StatePerson, dict of release years and ReleaseEvents, and PersonMetadata for use in the
+        calculator step of the pipeline.
+
+        Note: This is a pipeline-specific version of the ExtractPersonEventsMetadata DoFn in utils/beam_utils.py
+        """
+        _, element_data = element
+
+        person_events = element_data.get('person_events')
+        person_metadata_group = element_data.get('person_metadata')
+
+        # If there isn't a person associated with this person_id_person, continue
+        if person_events and person_metadata_group:
+            person, events = one(person_events)
+            person_metadata = one(person_metadata_group)
+
+            yield person, events, person_metadata
+
+    def to_runner_api_parameter(self, _):
+        pass  # Passing unused abstract method.
+
+
+@with_input_types(beam.typehints.Tuple[entities.StatePerson, Dict[int, ReleaseEvent], PersonMetadata])
 @with_output_types(ReincarcerationRecidivismMetric)
 class GetRecidivismMetrics(beam.PTransform):
     """Transforms a StatePerson and ReleaseEvents into RecidivismMetrics."""
@@ -151,13 +181,13 @@ class ClassifyReleaseEvents(beam.DoFn):
                          "id: %d. Excluding them from the "
                          "calculations.", person.person_id)
         else:
-            yield person, release_events_by_cohort_year
+            yield person.person_id, (person, release_events_by_cohort_year)
 
     def to_runner_api_parameter(self, _):
         pass  # Passing unused abstract method.
 
 
-@with_input_types(beam.typehints.Tuple[entities.StatePerson, Dict[int, List[ReleaseEvent]]],
+@with_input_types(beam.typehints.Tuple[entities.StatePerson, Dict[int, ReleaseEvent], PersonMetadata],
                   beam.typehints.Dict[ReincarcerationRecidivismMetricType, bool])
 @with_output_types(beam.typehints.Tuple[Dict[str, Any], Any])
 class CalculateRecidivismMetricCombinations(beam.DoFn):
@@ -177,10 +207,11 @@ class CalculateRecidivismMetricCombinations(beam.DoFn):
         Yields:
             Each recidivism metric combination.
         """
-        person, release_events = element
+        person, release_events, person_metadata = element
 
         # Calculate recidivism metric combinations for this person and events
-        metric_combinations = calculator.map_recidivism_combinations(person, release_events, metric_inclusions)
+        metric_combinations = calculator.map_recidivism_combinations(
+            person, release_events, metric_inclusions, person_metadata)
 
         # Return each of the recidivism metric combinations
         for metric_combination in metric_combinations:
@@ -283,7 +314,8 @@ def get_arg_parser() -> argparse.ArgumentParser:
 
 def run(apache_beam_pipeline_options: PipelineOptions,
         data_input: str,
-        reference_input: str,
+        reference_view_input: str,
+        static_reference_input: str,
         output: str,
         metric_types: List[str],
         state_code: Optional[str],
@@ -302,9 +334,11 @@ def run(apache_beam_pipeline_options: PipelineOptions,
 
     # Get pipeline job details
     all_pipeline_options = apache_beam_pipeline_options.get_all_options()
+    project_id = all_pipeline_options['project']
 
-    query_dataset = all_pipeline_options['project'] + '.' + data_input
-    reference_dataset = all_pipeline_options['project'] + '.' + reference_input
+    input_dataset = project_id + '.' + data_input
+    reference_dataset = project_id + '.' + reference_view_input
+    static_reference_dataset = project_id + '.' + static_reference_input
 
     person_id_filter_set = set(person_filter_ids) if person_filter_ids else None
 
@@ -312,14 +346,14 @@ def run(apache_beam_pipeline_options: PipelineOptions,
         # Get StatePersons
         persons = (p
                    | 'Load Persons' >>
-                   BuildRootEntity(dataset=query_dataset, root_entity_class=entities.StatePerson,
+                   BuildRootEntity(dataset=input_dataset, root_entity_class=entities.StatePerson,
                                    unifying_id_field=entities.StatePerson.get_class_id_name(),
                                    build_related_entities=True, unifying_id_field_filter_set=person_id_filter_set))
 
         # Get StateIncarcerationPeriods
         incarceration_periods = (p
                                  | 'Load IncarcerationPeriods' >>
-                                 BuildRootEntity(dataset=query_dataset,
+                                 BuildRootEntity(dataset=input_dataset,
                                                  root_entity_class=entities.StateIncarcerationPeriod,
                                                  unifying_id_field=entities.StatePerson.get_class_id_name(),
                                                  build_related_entities=True,
@@ -331,7 +365,7 @@ def run(apache_beam_pipeline_options: PipelineOptions,
         supervision_violations = \
             (p
              | 'Load SupervisionViolations' >>
-             BuildRootEntity(dataset=query_dataset, root_entity_class=entities.StateSupervisionViolation,
+             BuildRootEntity(dataset=input_dataset, root_entity_class=entities.StateSupervisionViolation,
                              unifying_id_field=entities.StatePerson.get_class_id_name(), build_related_entities=True,
                              unifying_id_field_filter_set=person_id_filter_set,
                              state_code=state_code
@@ -342,7 +376,7 @@ def run(apache_beam_pipeline_options: PipelineOptions,
         supervision_violation_responses = \
             (p
              | 'Load SupervisionViolationResponses' >>
-             BuildRootEntity(dataset=query_dataset, root_entity_class=entities.StateSupervisionViolationResponse,
+             BuildRootEntity(dataset=input_dataset, root_entity_class=entities.StateSupervisionViolationResponse,
                              unifying_id_field=entities.StatePerson.get_class_id_name(), build_related_entities=True,
                              unifying_id_field_filter_set=person_id_filter_set,
                              state_code=state_code
@@ -395,31 +429,43 @@ def run(apache_beam_pipeline_options: PipelineOptions,
         )
 
         # Bring in the table that associates people and their county of residence
-        person_id_to_county_query = select_all_by_person_query(
-            reference_dataset,
-            PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_VIEW_NAME,
-            # TODO(#3602): Once we put state_code on StatePerson objects, we can update the
-            # persons_to_recent_county_of_residence query to have a state_code field, allowing us to also filter the
-            # output by state_code.
-            state_code_filter=None,
-            person_id_filter_set=person_id_filter_set)
+        person_id_to_county_kv = (p | 'Load person_id_to_county_kv' >> ImportTableAsKVTuples(
+            dataset_id=reference_dataset,
+            table_id=PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_VIEW_NAME,
+            table_key='person_id',
+            state_code_filter=state_code,
+            person_id_filter_set=person_id_filter_set
+        ))
 
-        person_id_to_county_kv = (
-            p
-            | "Read person_id to county associations from BigQuery" >>
-            beam.io.Read(beam.io.BigQuerySource(
-                query=person_id_to_county_query,
-                use_standard_sql=True))
-            | "Convert person_id to county association table to KV" >>
-            beam.ParDo(ConvertDictToKVTuple(), 'person_id')
-        )
+        state_race_ethnicity_population_counts = (
+                p | 'Load state_race_ethnicity_population_counts' >>
+                ImportTable(
+                    dataset_id=static_reference_dataset,
+                    table_id='state_race_ethnicity_population_counts',
+                    state_code_filter=state_code,
+                    person_id_filter_set=None
+                ))
 
-        # Identify ReleaseEvents events from the StatePerson's
-        # StateIncarcerationPeriods
-        person_events = (
+        # Identify ReleaseEvents events from the StatePerson's StateIncarcerationPeriods
+        person_release_events = (
             person_and_incarceration_periods
             | "ClassifyReleaseEvents" >>
             beam.ParDo(ClassifyReleaseEvents(), AsDict(person_id_to_county_kv))
+        )
+
+        person_metadata = (persons
+                           | "Build the person_metadata dictionary" >>
+                           beam.ParDo(BuildPersonMetadata(),
+                                      AsList(state_race_ethnicity_population_counts)))
+
+        person_release_events_with_metadata = (
+            {
+                'person_events': person_release_events,
+                'person_metadata': person_metadata
+            }
+            | 'Group ReleaseEvents with person-level metadata' >> beam.CoGroupByKey()
+            | 'Organize StatePerson, PersonMetadata and ReleaseEvents for calculations' >>
+            beam.ParDo(ExtractPersonReleaseEventsMetadata())
         )
 
         # Get pipeline job details for accessing job_id
@@ -433,7 +479,7 @@ def run(apache_beam_pipeline_options: PipelineOptions,
         metric_types_set = set(metric_types)
 
         # Get recidivism metrics
-        recidivism_metrics = (person_events
+        recidivism_metrics = (person_release_events_with_metadata
                               | 'Get Recidivism Metrics' >>
                               GetRecidivismMetrics(
                                   pipeline_options=all_pipeline_options,

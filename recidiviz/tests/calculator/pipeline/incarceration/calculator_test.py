@@ -31,6 +31,7 @@ from recidiviz.calculator.pipeline.incarceration.metrics import IncarcerationMet
 from recidiviz.calculator.pipeline.utils import calculator_utils
 from recidiviz.calculator.pipeline.utils.metric_utils import \
     MetricMethodologyType
+from recidiviz.calculator.pipeline.utils.person_utils import PersonMetadata
 from recidiviz.common.constants.person_characteristics import Gender, Race, \
     Ethnicity
 from recidiviz.common.constants.state.state_incarceration_period import \
@@ -51,6 +52,8 @@ CALCULATION_METHODOLOGIES = len(MetricMethodologyType)
 _COUNTY_OF_RESIDENCE = 'county'
 _STATUTE = 'XXXX'
 _NCIC_CODE = '1234'
+
+_DEFAULT_PERSON_METADATA = PersonMetadata(prioritized_race_or_ethnicity='BLACK')
 
 
 class TestMapIncarcerationCombinations(unittest.TestCase):
@@ -84,10 +87,11 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
             incarceration_events=incarceration_events,
             metric_inclusions=ALL_METRICS_INCLUSIONS_DICT,
             calculation_end_month='2000-03',
-            calculation_month_count=1
+            calculation_month_count=1,
+            person_metadata=_DEFAULT_PERSON_METADATA
         )
 
-        expected_combinations_count = expected_metric_combos_count(incarceration_events)
+        expected_combinations_count= expected_metric_combos_count(incarceration_events)
 
         self.assertEqual(expected_combinations_count, len(incarceration_combinations))
         assert all(value == 1 for _combination, value in incarceration_combinations)
@@ -148,10 +152,11 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
             incarceration_events=incarceration_events,
             metric_inclusions=ALL_METRICS_INCLUSIONS_DICT,
             calculation_end_month=None,
-            calculation_month_count=-1
+            calculation_month_count=-1,
+            person_metadata=_DEFAULT_PERSON_METADATA
         )
 
-        expected_combinations_count = expected_metric_combos_count(incarceration_events)
+        expected_combinations_count= expected_metric_combos_count(incarceration_events)
 
         self.assertEqual(expected_combinations_count, len(incarceration_combinations))
         assert all(value == 1 for _combination, value in incarceration_combinations)
@@ -189,10 +194,11 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
             incarceration_events=incarceration_events,
             metric_inclusions=ALL_METRICS_INCLUSIONS_DICT,
             calculation_end_month=None,
-            calculation_month_count=-1
+            calculation_month_count=-1,
+            person_metadata=_DEFAULT_PERSON_METADATA
         )
 
-        expected_combinations_count = expected_metric_combos_count(incarceration_events)
+        expected_combinations_count= expected_metric_combos_count(incarceration_events)
 
         self.assertEqual(expected_combinations_count, len(incarceration_combinations))
         assert all(value == 1 for _combination, value in incarceration_combinations)
@@ -228,10 +234,11 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
             incarceration_events=incarceration_events,
             metric_inclusions=ALL_METRICS_INCLUSIONS_DICT,
             calculation_end_month=None,
-            calculation_month_count=-1
+            calculation_month_count=-1,
+            person_metadata=_DEFAULT_PERSON_METADATA
         )
 
-        expected_combinations_count = expected_metric_combos_count(incarceration_events)
+        expected_combinations_count= expected_metric_combos_count(incarceration_events)
 
         self.assertEqual(expected_combinations_count, len(incarceration_combinations))
         assert all(value == 1 for _combination, value in incarceration_combinations)
@@ -278,10 +285,11 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
             incarceration_events=incarceration_events,
             metric_inclusions=ALL_METRICS_INCLUSIONS_DICT,
             calculation_end_month=None,
-            calculation_month_count=-1
+            calculation_month_count=-1,
+            person_metadata=_DEFAULT_PERSON_METADATA
         )
 
-        expected_combinations_count = expected_metric_combos_count(incarceration_events)
+        expected_combinations_count= expected_metric_combos_count(incarceration_events)
 
         self.assertEqual(expected_combinations_count, len(incarceration_combinations))
         assert all(value == 1 for _combination, value in incarceration_combinations)
@@ -328,10 +336,11 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
             incarceration_events=incarceration_events,
             metric_inclusions=ALL_METRICS_INCLUSIONS_DICT,
             calculation_end_month=None,
-            calculation_month_count=-1
+            calculation_month_count=-1,
+            person_metadata=_DEFAULT_PERSON_METADATA
         )
 
-        expected_combinations_count = expected_metric_combos_count(incarceration_events)
+        expected_combinations_count= expected_metric_combos_count(incarceration_events)
 
         self.assertEqual(expected_combinations_count, len(incarceration_combinations))
         assert all(value == 1 for _combination, value in incarceration_combinations)
@@ -381,10 +390,11 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
             incarceration_events=incarceration_events,
             metric_inclusions=ALL_METRICS_INCLUSIONS_DICT,
             calculation_end_month=None,
-            calculation_month_count=-1
+            calculation_month_count=-1,
+            person_metadata=_DEFAULT_PERSON_METADATA
         )
 
-        expected_combinations_count = expected_metric_combos_count(incarceration_events)
+        expected_combinations_count= expected_metric_combos_count(incarceration_events)
 
         self.assertEqual(expected_combinations_count,
                          len(incarceration_combinations))
@@ -436,10 +446,11 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
             incarceration_events=incarceration_events,
             metric_inclusions=ALL_METRICS_INCLUSIONS_DICT,
             calculation_end_month=None,
-            calculation_month_count=-1
+            calculation_month_count=-1,
+            person_metadata=_DEFAULT_PERSON_METADATA
         )
 
-        expected_combinations_count = expected_metric_combos_count(incarceration_events)
+        expected_combinations_count= expected_metric_combos_count(incarceration_events)
 
         self.assertEqual(expected_combinations_count,
                          len(incarceration_combinations))
@@ -491,10 +502,11 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
             incarceration_events=incarceration_events,
             metric_inclusions=ALL_METRICS_INCLUSIONS_DICT,
             calculation_end_month=None,
-            calculation_month_count=-1
+            calculation_month_count=-1,
+            person_metadata=_DEFAULT_PERSON_METADATA
         )
 
-        expected_combinations_count = expected_metric_combos_count(incarceration_events)
+        expected_combinations_count= expected_metric_combos_count(incarceration_events)
 
         self.assertEqual(expected_combinations_count,
                          len(incarceration_combinations))
@@ -534,10 +546,11 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
             incarceration_events=incarceration_events,
             metric_inclusions=ALL_METRICS_INCLUSIONS_DICT,
             calculation_end_month=None,
-            calculation_month_count=-1
+            calculation_month_count=-1,
+            person_metadata=_DEFAULT_PERSON_METADATA
         )
 
-        expected_combinations_count = expected_metric_combos_count(
+        expected_combinations_count= expected_metric_combos_count(
             incarceration_events, len(calculator_utils.METRIC_PERIOD_MONTHS))
 
         self.assertEqual(expected_combinations_count, len(incarceration_combinations))
@@ -578,10 +591,11 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
             incarceration_events=incarceration_events,
             metric_inclusions=ALL_METRICS_INCLUSIONS_DICT,
             calculation_end_month=None,
-            calculation_month_count=-1
+            calculation_month_count=-1,
+            person_metadata=_DEFAULT_PERSON_METADATA
         )
 
-        expected_combinations_count = expected_metric_combos_count(
+        expected_combinations_count= expected_metric_combos_count(
             incarceration_events, 0, len(calculator_utils.METRIC_PERIOD_MONTHS))
 
         self.assertEqual(expected_combinations_count,
@@ -629,10 +643,11 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
             incarceration_events=incarceration_events,
             metric_inclusions=ALL_METRICS_INCLUSIONS_DICT,
             calculation_end_month=None,
-            calculation_month_count=-1
+            calculation_month_count=-1,
+            person_metadata=_DEFAULT_PERSON_METADATA
         )
 
-        expected_combinations_count = expected_metric_combos_count(
+        expected_combinations_count= expected_metric_combos_count(
             incarceration_events,
             len(calculator_utils.METRIC_PERIOD_MONTHS),
             len(calculator_utils.METRIC_PERIOD_MONTHS))
@@ -682,10 +697,11 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
             incarceration_events=incarceration_events,
             metric_inclusions=ALL_METRICS_INCLUSIONS_DICT,
             calculation_end_month=None,
-            calculation_month_count=-1
+            calculation_month_count=-1,
+            person_metadata=_DEFAULT_PERSON_METADATA
         )
 
-        expected_combinations_count = expected_metric_combos_count(
+        expected_combinations_count= expected_metric_combos_count(
             incarceration_events,
             len(calculator_utils.METRIC_PERIOD_MONTHS))
 
@@ -736,10 +752,11 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
             incarceration_events=incarceration_events,
             metric_inclusions=ALL_METRICS_INCLUSIONS_DICT,
             calculation_end_month=None,
-            calculation_month_count=-1
+            calculation_month_count=-1,
+            person_metadata=_DEFAULT_PERSON_METADATA
         )
 
-        expected_combinations_count = expected_metric_combos_count(
+        expected_combinations_count= expected_metric_combos_count(
             incarceration_events, len(calculator_utils.METRIC_PERIOD_MONTHS))
 
         self.assertEqual(expected_combinations_count,
@@ -789,10 +806,11 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
             incarceration_events=incarceration_events,
             metric_inclusions=ALL_METRICS_INCLUSIONS_DICT,
             calculation_end_month='2000-03',
-            calculation_month_count=1
+            calculation_month_count=1,
+            person_metadata=_DEFAULT_PERSON_METADATA
         )
 
-        expected_combinations_count = expected_metric_combos_count(
+        expected_combinations_count= expected_metric_combos_count(
             incarceration_events, num_relevant_periods_admissions=len(calculator_utils.METRIC_PERIOD_MONTHS))
 
         self.assertEqual(expected_combinations_count,
@@ -833,8 +851,10 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
             incarceration_events=incarceration_events,
             metric_inclusions=ALL_METRICS_INCLUSIONS_DICT,
             calculation_end_month=None,
-            calculation_month_count=1
+            calculation_month_count=1,
+            person_metadata=_DEFAULT_PERSON_METADATA
         )
+
 
         self.assertEqual(0, len(incarceration_combinations))
 
@@ -876,10 +896,11 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
             incarceration_events=incarceration_events,
             metric_inclusions=ALL_METRICS_INCLUSIONS_DICT,
             calculation_end_month=None,
-            calculation_month_count=36
+            calculation_month_count=36,
+            person_metadata=_DEFAULT_PERSON_METADATA
         )
 
-        expected_combinations_count = expected_metric_combos_count(
+        expected_combinations_count= expected_metric_combos_count(
             [incarceration_event_include], num_relevant_periods_admissions=len(calculator_utils.METRIC_PERIOD_MONTHS))
 
         self.assertEqual(expected_combinations_count,
@@ -920,7 +941,8 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
             incarceration_events=incarceration_events,
             metric_inclusions=ALL_METRICS_INCLUSIONS_DICT,
             calculation_end_month=None,
-            calculation_month_count=37
+            calculation_month_count=37,
+            person_metadata=_DEFAULT_PERSON_METADATA
         )
 
         expected_combinations_count = expected_metric_combos_count(incarceration_events)
@@ -983,10 +1005,11 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
             incarceration_events=incarceration_events,
             metric_inclusions=ALL_METRICS_INCLUSIONS_DICT,
             calculation_end_month=None,
-            calculation_month_count=-1
+            calculation_month_count=-1,
+            person_metadata=_DEFAULT_PERSON_METADATA
         )
 
-        expected_combinations_count = expected_metric_combos_count(incarceration_events)
+        expected_combinations_count= expected_metric_combos_count(incarceration_events)
 
         self.assertEqual(expected_combinations_count,
                          len(incarceration_combinations))
@@ -998,22 +1021,23 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
 class TestCharacteristicsDict(unittest.TestCase):
     """Tests the characteristics_dict function."""
 
-    def test_characteristics_dict_admission_event(self):
-        person = StatePerson.new_with_defaults(person_id=12345,
-                                               birthdate=date(1984, 8, 31),
-                                               gender=Gender.FEMALE)
+    def setUp(self) -> None:
+        self.person = StatePerson.new_with_defaults(person_id=12345,
+                                                    birthdate=date(1984, 8, 31),
+                                                    gender=Gender.FEMALE)
 
-        race = StatePersonRace.new_with_defaults(state_code='CA',
-                                                 race=Race.WHITE)
+        race_white = StatePersonRace.new_with_defaults(state_code='US_MO', race=Race.WHITE)
+        race_black = StatePersonRace.new_with_defaults(state_code='US_MO', race=Race.BLACK)
 
-        person.races = [race]
+        self.person.races = [race_white, race_black]
 
         ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code='CA',
+            state_code='US_MO',
             ethnicity=Ethnicity.NOT_HISPANIC)
 
-        person.ethnicities = [ethnicity]
+        self.person.ethnicities = [ethnicity]
 
+    def test_characteristics_dict_admission_event(self):
         incarceration_event = IncarcerationAdmissionEvent(
             state_code='CA',
             event_date=date(2018, 9, 13),
@@ -1021,37 +1045,24 @@ class TestCharacteristicsDict(unittest.TestCase):
             county_of_residence=_COUNTY_OF_RESIDENCE,
         )
 
-        characteristic_dict = calculator.characteristics_dict(person, incarceration_event, IncarcerationAdmissionMetric)
+        characteristic_dict = calculator.characteristics_dict(
+            self.person, incarceration_event, IncarcerationAdmissionMetric, _DEFAULT_PERSON_METADATA)
 
         expected_output = {
             'facility': 'SAN QUENTIN',
             'county_of_residence': 'county',
             'age_bucket': '30-34',
             'gender': Gender.FEMALE,
-            'race': [Race.WHITE],
+            'race': [Race.WHITE, Race.BLACK],
             'ethnicity': [Ethnicity.NOT_HISPANIC],
             'person_id': 12345,
             'admission_date': date(2018, 9, 13),
+            'prioritized_race_or_ethnicity': _DEFAULT_PERSON_METADATA.prioritized_race_or_ethnicity
         }
 
         self.assertEqual(expected_output, characteristic_dict)
 
     def test_characteristics_dict_stay_event(self):
-        person = StatePerson.new_with_defaults(person_id=12345,
-                                               birthdate=date(1984, 8, 31),
-                                               gender=Gender.FEMALE)
-
-        race = StatePersonRace.new_with_defaults(state_code='CA',
-                                                 race=Race.WHITE)
-
-        person.races = [race]
-
-        ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code='CA',
-            ethnicity=Ethnicity.NOT_HISPANIC)
-
-        person.ethnicities = [ethnicity]
-
         incarceration_event = IncarcerationStayEvent(
             state_code='CA',
             event_date=date(2018, 9, 13),
@@ -1061,41 +1072,26 @@ class TestCharacteristicsDict(unittest.TestCase):
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON
         )
 
-        characteristic_dict = calculator.characteristics_dict(person,
-                                                              incarceration_event,
-                                                              IncarcerationPopulationMetric)
+        characteristic_dict = calculator.characteristics_dict(
+            self.person, incarceration_event, IncarcerationPopulationMetric, _DEFAULT_PERSON_METADATA)
 
         expected_output = {
             'facility': 'SAN QUENTIN',
             'county_of_residence': 'county',
             'age_bucket': '30-34',
             'gender': Gender.FEMALE,
-            'race': [Race.WHITE],
+            'race': [Race.WHITE, Race.BLACK],
             'ethnicity': [Ethnicity.NOT_HISPANIC],
             'person_id': 12345,
             'date_of_stay': date(2018, 9, 13),
             'judicial_district_code': 'NORTHEAST',
             'specialized_purpose_for_incarceration': StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON,
+            'prioritized_race_or_ethnicity': _DEFAULT_PERSON_METADATA.prioritized_race_or_ethnicity
         }
 
         self.assertEqual(expected_output, characteristic_dict)
 
     def test_characteristics_dict_release_event(self):
-        person = StatePerson.new_with_defaults(person_id=12345,
-                                               birthdate=date(1984, 8, 31),
-                                               gender=Gender.FEMALE)
-
-        race = StatePersonRace.new_with_defaults(state_code='CA',
-                                                 race=Race.WHITE)
-
-        person.races = [race]
-
-        ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code='CA',
-            ethnicity=Ethnicity.NOT_HISPANIC)
-
-        person.ethnicities = [ethnicity]
-
         incarceration_event = IncarcerationReleaseEvent(
             state_code='CA',
             event_date=date(2018, 9, 13),
@@ -1108,16 +1104,15 @@ class TestCharacteristicsDict(unittest.TestCase):
             total_days_incarcerated=190
         )
 
-        characteristic_dict = calculator.characteristics_dict(person,
-                                                              incarceration_event,
-                                                              IncarcerationReleaseMetric)
+        characteristic_dict = calculator.characteristics_dict(
+            self.person, incarceration_event, IncarcerationReleaseMetric, _DEFAULT_PERSON_METADATA)
 
         expected_output = {
             'facility': 'SAN QUENTIN',
             'county_of_residence': 'county',
             'age_bucket': '30-34',
             'gender': Gender.FEMALE,
-            'race': [Race.WHITE],
+            'race': [Race.WHITE, Race.BLACK],
             'ethnicity': [Ethnicity.NOT_HISPANIC],
             'person_id': 12345,
             'release_date': date(2018, 9, 13),
@@ -1126,6 +1121,7 @@ class TestCharacteristicsDict(unittest.TestCase):
             'release_reason': StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
             'admission_reason': StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
             'total_days_incarcerated': 190,
+            'prioritized_race_or_ethnicity': _DEFAULT_PERSON_METADATA.prioritized_race_or_ethnicity
         }
 
         self.assertEqual(expected_output, characteristic_dict)
