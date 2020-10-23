@@ -211,7 +211,8 @@ def _get_applicable_face_to_face_contacts_between_dates(supervision_contacts: Li
     return [
         contact for contact in supervision_contacts
         # These are the types of contacts that can satisfy the face-to-face contact requirement
-        if contact.contact_type in (StateSupervisionContactType.FACE_TO_FACE, StateSupervisionContactType.TELEPHONE)
+        if contact.contact_type in (StateSupervisionContactType.FACE_TO_FACE, StateSupervisionContactType.TELEPHONE,
+                                    StateSupervisionContactType.VIRTUAL)
         # Contact must be marked as completed
         and contact.status == StateSupervisionContactStatus.COMPLETED
         and contact.contact_date is not None
