@@ -52,10 +52,10 @@ REVOCATIONS_BY_VIOLATION_TYPE_BY_MONTH_QUERY_TEMPLATE = \
     LEFT JOIN (
       SELECT
         state_code, year, month,
-        COUNT(IF(source_violation_type = 'FELONY', person_id, NULL)) AS felony_count,
-        COUNT(IF(source_violation_type = 'TECHNICAL', person_id, NULL)) AS technical_count,
-        COUNT(IF(source_violation_type = 'ABSCONDED', person_id, NULL)) AS absconsion_count,
-        COUNT(person_id) AS all_violation_types_count,
+        COUNT(DISTINCT IF(source_violation_type IN ('FELONY', 'MISDEMEANOR', 'LAW'), person_id, NULL)) AS felony_count,
+        COUNT(DISTINCT IF(source_violation_type = 'TECHNICAL', person_id, NULL)) AS technical_count,
+        COUNT(DISTINCT IF(source_violation_type IN ('ESCAPED', 'ABSCONDED'), person_id, NULL)) AS absconsion_count,
+        COUNT(DISTINCT person_id) AS all_violation_types_count,
         supervision_type,
         district
       FROM (
