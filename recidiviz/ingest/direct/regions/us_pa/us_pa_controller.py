@@ -397,16 +397,10 @@ class UsPaController(CsvGcsfsDirectIngestController):
         StateSupervisionViolationType.ABSCONDED: [
             'H09',  # Absconding
         ],
-        StateSupervisionViolationType.FELONY: [
-            # TODO(#3312): Join the supervision_violation view against dbo_LU_TreatTrackClosingCodes
-            # to determine FELONY vs MISDEMEANOR
+        StateSupervisionViolationType.LAW: [
             'H04',  # Pending criminal charges (UCV) Detained/Not detained
-        ],
-        StateSupervisionViolationType.MISDEMEANOR: [
             'M20',  # Conviction of Misdemeanor Offense
-        ],
-        StateSupervisionViolationType.MUNICIPAL: [
-            'M13',  # Conviction of a summary offense
+            'M13',  # Conviction of a summary offense (a minor criminal, not civil offense)
         ],
         StateSupervisionViolationType.TECHNICAL: [
             'H06',  # Failure to report upon release

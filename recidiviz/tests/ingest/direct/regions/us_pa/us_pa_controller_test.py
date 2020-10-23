@@ -3162,7 +3162,7 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
         )
         p5_sv_3_te_7 = entities.StateSupervisionViolationTypeEntry.new_with_defaults(
             state_code=_STATE_CODE_UPPER, person=person_5, supervision_violation=p5_sv_3,
-            violation_type=StateSupervisionViolationType.FELONY, violation_type_raw_text='H04',
+            violation_type=StateSupervisionViolationType.LAW, violation_type_raw_text='H04',
         )
         p5_sv_3.supervision_violation_types.extend([p5_sv_3_te_3, p5_sv_3_te_7])
 
@@ -3221,7 +3221,7 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
         )
         p4_sv_2_te_7 = entities.StateSupervisionViolationTypeEntry.new_with_defaults(
             state_code=_STATE_CODE_UPPER, person=person_4, supervision_violation=p4_sv_2,
-            violation_type=StateSupervisionViolationType.MUNICIPAL, violation_type_raw_text='M13',
+            violation_type=StateSupervisionViolationType.LAW, violation_type_raw_text='M13',
         )
         p4_sv_2_te_8 = entities.StateSupervisionViolationTypeEntry.new_with_defaults(
             state_code=_STATE_CODE_UPPER, person=person_4, supervision_violation=p4_sv_2,
