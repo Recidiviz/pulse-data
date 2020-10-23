@@ -344,6 +344,7 @@ state_supervision_violation_type = Enum(
     state_enum_strings.state_supervision_violation_type_absconded,
     state_enum_strings.state_supervision_violation_type_escaped,
     state_enum_strings.state_supervision_violation_type_felony,
+    state_enum_strings.state_supervision_violation_type_law,
     state_enum_strings.state_supervision_violation_type_misdemeanor,
     state_enum_strings.state_supervision_violation_type_municipal,
     state_enum_strings.state_supervision_violation_type_technical,

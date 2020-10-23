@@ -16,6 +16,7 @@
 # =============================================================================
 """Tests the us_mo_violation_utils.py file."""
 import unittest
+from typing import List
 
 import pytest
 
@@ -23,7 +24,7 @@ import pytest
 # pylint: disable=protected-access
 from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_violation_utils import \
     _VIOLATION_TYPE_AND_SUBTYPE_SHORTHAND_ORDERED_MAP, _LAW_CITATION_SUBTYPE_STR, \
-    us_mo_filter_violation_responses, _normalize_violations_on_responses, \
+    us_mo_filter_violation_responses, _normalize_violations_on_responses, _UNSUPPORTED_VIOLATION_SUBTYPE_VALUES, \
     us_mo_sorted_violation_subtypes_by_severity, us_mo_get_violation_type_subtype_strings_for_violation, \
     us_mo_violation_type_from_subtype, us_mo_shorthand_for_violation_subtype
 from recidiviz.common.constants.state.state_supervision_violation import StateSupervisionViolationType
@@ -36,7 +37,7 @@ _STATE_CODE = 'US_MO'
 
 class TestUsMoGetViolationTypeSubstringsForViolation(unittest.TestCase):
     """Tests the us_mo_get_violation_type_subtype_strings_for_violation function."""
-    def test_us_mo_get_violation_type_subtype_strings_for_violation(self):
+    def test_us_mo_get_violation_type_subtype_strings_for_violation(self) -> None:
         # Arrange
         violation = StateSupervisionViolation.new_with_defaults(
             state_code=_STATE_CODE,
@@ -53,7 +54,7 @@ class TestUsMoGetViolationTypeSubstringsForViolation(unittest.TestCase):
         expected_type_subtype_strings = ['FELONY']
         self.assertEqual(expected_type_subtype_strings, type_subtype_strings)
 
-    def test_us_mo_get_violation_type_subtype_strings_for_violation_substance(self):
+    def test_us_mo_get_violation_type_subtype_strings_for_violation_substance(self) -> None:
         # Arrange
         violation = StateSupervisionViolation.new_with_defaults(
             state_code=_STATE_CODE,
@@ -74,7 +75,7 @@ class TestUsMoGetViolationTypeSubstringsForViolation(unittest.TestCase):
         expected_type_subtype_strings = ['SUBSTANCE_ABUSE']
         self.assertEqual(expected_type_subtype_strings, type_subtype_strings)
 
-    def test_us_mo_get_violation_type_subtype_strings_for_violation_law_citation(self):
+    def test_us_mo_get_violation_type_subtype_strings_for_violation_law_citation(self) -> None:
         # Arrange
         violation = StateSupervisionViolation.new_with_defaults(
             state_code=_STATE_CODE,
@@ -95,7 +96,7 @@ class TestUsMoGetViolationTypeSubstringsForViolation(unittest.TestCase):
         expected_type_subtype_strings = ['LAW_CITATION']
         self.assertEqual(expected_type_subtype_strings, type_subtype_strings)
 
-    def test_us_mo_get_violation_type_subtype_strings_for_violation_technical(self):
+    def test_us_mo_get_violation_type_subtype_strings_for_violation_technical(self) -> None:
         # Arrange
         violation = StateSupervisionViolation.new_with_defaults(
             state_code=_STATE_CODE,
@@ -116,7 +117,7 @@ class TestUsMoGetViolationTypeSubstringsForViolation(unittest.TestCase):
         expected_type_subtype_strings = ['EMP', 'TECHNICAL']
         self.assertEqual(expected_type_subtype_strings, type_subtype_strings)
 
-    def test_us_mo_get_violation_type_subtype_strings_for_violation_no_types(self):
+    def test_us_mo_get_violation_type_subtype_strings_for_violation_no_types(self) -> None:
         # Arrange
         violation = StateSupervisionViolation.new_with_defaults(
             state_code=_STATE_CODE,
@@ -127,13 +128,13 @@ class TestUsMoGetViolationTypeSubstringsForViolation(unittest.TestCase):
         type_subtype_strings = us_mo_get_violation_type_subtype_strings_for_violation(violation)
 
         # Assert
-        expected_type_subtype_strings = []
+        expected_type_subtype_strings: List[str] = []
         self.assertEqual(expected_type_subtype_strings, type_subtype_strings)
 
 
 class TestUsMoSortedViolationSubtypesBySeverity(unittest.TestCase):
     """Tests the us_mo_sorted_violation_subtypes_by_severity function."""
-    def test_us_mo_sorted_violation_subtypes_by_severity(self):
+    def test_us_mo_sorted_violation_subtypes_by_severity(self) -> None:
         violation_subtypes = ['TECHNICAL', 'FELONY', 'ABSCONDED']
 
         sorted_subtypes = us_mo_sorted_violation_subtypes_by_severity(violation_subtypes)
@@ -142,7 +143,7 @@ class TestUsMoSortedViolationSubtypesBySeverity(unittest.TestCase):
 
         self.assertEqual(expected_sorted_subtypes, sorted_subtypes)
 
-    def test_us_mo_sorted_violation_subtypes_by_severity_law_citation(self):
+    def test_us_mo_sorted_violation_subtypes_by_severity_law_citation(self) -> None:
         violation_subtypes = ['ABSCONDED', 'LAW_CITATION']
 
         sorted_subtypes = us_mo_sorted_violation_subtypes_by_severity(violation_subtypes)
@@ -151,7 +152,7 @@ class TestUsMoSortedViolationSubtypesBySeverity(unittest.TestCase):
 
         self.assertEqual(expected_sorted_subtypes, sorted_subtypes)
 
-    def test_us_mo_sorted_violation_subtypes_by_severity_substance(self):
+    def test_us_mo_sorted_violation_subtypes_by_severity_substance(self) -> None:
         violation_subtypes = ['EMP', 'SUBSTANCE_ABUSE', 'SPC']
 
         sorted_subtypes = us_mo_sorted_violation_subtypes_by_severity(violation_subtypes)
@@ -164,46 +165,49 @@ class TestUsMoSortedViolationSubtypesBySeverity(unittest.TestCase):
 class TestUsMoViolationUtilsSubtypeFunctions(unittest.TestCase):
     """Tests multiple functions in us_mo_violation_utils related to violation subtypes."""
 
-    def test_us_mo_violation_type_from_subtype(self):
+    def test_us_mo_violation_type_from_subtype(self) -> None:
         # Assert that all of the StateSupervisionViolationType raw values map to their corresponding violation_type
         for violation_type in StateSupervisionViolationType:
-            violation_type_from_subtype = us_mo_violation_type_from_subtype(violation_type.value)
+            if violation_type.value not in _UNSUPPORTED_VIOLATION_SUBTYPE_VALUES:
+                violation_type_from_subtype = us_mo_violation_type_from_subtype(violation_type.value)
 
-            self.assertEqual(violation_type, violation_type_from_subtype)
+                self.assertEqual(violation_type, violation_type_from_subtype)
 
-    def test_us_mo_violation_type_from_subtype_law_citation(self):
+    def test_us_mo_violation_type_from_subtype_law_citation(self) -> None:
         violation_subtype = 'LAW_CITATION'
 
         violation_type_from_subtype = us_mo_violation_type_from_subtype(violation_subtype)
 
         self.assertEqual(StateSupervisionViolationType.TECHNICAL, violation_type_from_subtype)
 
-    def test_us_mo_violation_type_from_subtype_substance_abuse(self):
+    def test_us_mo_violation_type_from_subtype_substance_abuse(self) -> None:
         violation_subtype = 'SUBSTANCE_ABUSE'
 
         violation_type_from_subtype = us_mo_violation_type_from_subtype(violation_subtype)
 
         self.assertEqual(StateSupervisionViolationType.TECHNICAL, violation_type_from_subtype)
 
-    def test_us_mo_shorthand_for_violation_subtype(self):
+    def test_us_mo_shorthand_for_violation_subtype(self) -> None:
         # Assert that all of the StateSupervisionViolationType values are supported
         for violation_type in StateSupervisionViolationType:
-            _ = us_mo_shorthand_for_violation_subtype(violation_type.value)
+            if violation_type.value not in _UNSUPPORTED_VIOLATION_SUBTYPE_VALUES:
+                _ = us_mo_shorthand_for_violation_subtype(violation_type.value)
 
-    def test_violationTypeAndSubtypeShorthandMap_isComplete(self):
+    def test_violationTypeAndSubtypeShorthandMap_isComplete(self) -> None:
         all_types_subtypes = [
             violation_type
             for violation_type, _, _ in _VIOLATION_TYPE_AND_SUBTYPE_SHORTHAND_ORDERED_MAP
         ]
 
         for violation_type in StateSupervisionViolationType:
-            self.assertTrue(violation_type in all_types_subtypes)
+            if violation_type.value not in _UNSUPPORTED_VIOLATION_SUBTYPE_VALUES:
+                self.assertTrue(violation_type in all_types_subtypes)
 
 
 class TestNormalizeViolationsOnResponsesUsMo(unittest.TestCase):
     """Test the _normalize_violations_on_responses function."""
 
-    def test_normalize_violations_on_responses_us_mo(self):
+    def test_normalize_violations_on_responses_us_mo(self) -> None:
         # Arrange
         supervision_violation = \
             StateSupervisionViolation.new_with_defaults(
@@ -235,7 +239,7 @@ class TestNormalizeViolationsOnResponsesUsMo(unittest.TestCase):
             StateSupervisionViolatedConditionEntry.new_with_defaults(condition=_LAW_CITATION_SUBTYPE_STR),
         ])
 
-    def test_normalize_violations_on_responses_us_mo_no_conditions(self):
+    def test_normalize_violations_on_responses_us_mo_no_conditions(self) -> None:
         # Arrange
         supervision_violation = \
             StateSupervisionViolation.new_with_defaults(
@@ -262,7 +266,7 @@ class TestNormalizeViolationsOnResponsesUsMo(unittest.TestCase):
         ], supervision_violation.supervision_violation_types)
         self.assertEqual([], supervision_violation.supervision_violated_conditions)
 
-    def test_normalize_violations_on_responses_violation_report_us_mo(self):
+    def test_normalize_violations_on_responses_violation_report_us_mo(self) -> None:
         # Arrange
         supervision_violation = \
             StateSupervisionViolation.new_with_defaults(
@@ -288,7 +292,7 @@ class TestNormalizeViolationsOnResponsesUsMo(unittest.TestCase):
             StateSupervisionViolatedConditionEntry.new_with_defaults(condition='LAW'),
         ])
 
-    def test_normalize_violations_on_responses_not_us_mo(self):
+    def test_normalize_violations_on_responses_not_us_mo(self) -> None:
         # Arrange
         supervision_violation = \
             StateSupervisionViolation.new_with_defaults(
@@ -313,7 +317,7 @@ class TestNormalizeViolationsOnResponsesUsMo(unittest.TestCase):
 
 class TestFilterViolationResponses(unittest.TestCase):
     """Tests the us_mo_filter_violation_responses function."""
-    def test_filter_violation_responses_INI(self):
+    def test_filter_violation_responses_INI(self) -> None:
         supervision_violation_responses = [
             StateSupervisionViolationResponse.new_with_defaults(
                 state_code='US_MO',
@@ -331,7 +335,7 @@ class TestFilterViolationResponses(unittest.TestCase):
 
         self.assertEqual(supervision_violation_responses, filtered_responses)
 
-    def test_filter_violation_responses_ITR(self):
+    def test_filter_violation_responses_ITR(self) -> None:
         supervision_violation_responses = [
             StateSupervisionViolationResponse.new_with_defaults(
                 state_code='US_MO',
@@ -349,7 +353,7 @@ class TestFilterViolationResponses(unittest.TestCase):
 
         self.assertEqual(supervision_violation_responses, filtered_responses)
 
-    def test_filter_violation_responses_do_not_include_supplemental(self):
+    def test_filter_violation_responses_do_not_include_supplemental(self) -> None:
         supervision_violation_responses = [
             StateSupervisionViolationResponse.new_with_defaults(
                 state_code='US_MO',
@@ -373,7 +377,7 @@ class TestFilterViolationResponses(unittest.TestCase):
 
         self.assertEqual(expected_output, filtered_responses)
 
-    def test_filter_violation_responses_do_include_supplemental(self):
+    def test_filter_violation_responses_do_include_supplemental(self) -> None:
         supervision_violation_responses = [
             StateSupervisionViolationResponse.new_with_defaults(
                 state_code='US_MO',
@@ -402,7 +406,7 @@ class TestFilterViolationResponses(unittest.TestCase):
 
         self.assertEqual(expected_output, filtered_responses)
 
-    def test_filter_violation_responses_none_valid(self):
+    def test_filter_violation_responses_none_valid(self) -> None:
         supervision_violation_responses = [
             StateSupervisionViolationResponse.new_with_defaults(
                 state_code='US_MO',
@@ -418,11 +422,11 @@ class TestFilterViolationResponses(unittest.TestCase):
 
         filtered_responses = us_mo_filter_violation_responses(supervision_violation_responses,
                                                               include_follow_up_responses=False)
-        expected_output = []
+        expected_output: List[StateSupervisionViolationResponse] = []
 
         self.assertEqual(expected_output, filtered_responses)
 
-    def test_filter_violation_responses_unexpected_subtype(self):
+    def test_filter_violation_responses_unexpected_subtype(self) -> None:
         supervision_violation_responses = [
             StateSupervisionViolationResponse.new_with_defaults(
                 state_code='US_MO',
