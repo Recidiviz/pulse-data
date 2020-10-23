@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Admissions by type by month"""
-# pylint: disable=trailing-whitespace
+# pylint: disable=trailing-whitespace, line-too-long
 
 from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config
@@ -73,7 +73,7 @@ ADMISSIONS_BY_TYPE_BY_MONTH_QUERY_TEMPLATE = \
           state_code, year, month,
           COUNT(IF(source_violation_type = 'NEW_ADMISSION', person_id, NULL)) AS new_admissions,
           COUNT(IF(source_violation_type = 'TECHNICAL', person_id, NULL)) AS technicals,
-          COUNT(IF(source_violation_type IN ('ABSCONDED', 'FELONY'), person_id, NULL)) AS non_technicals,
+          COUNT(IF(source_violation_type IN ('ABSCONDED', 'ESCAPED', 'FELONY', 'MISDEMEANOR', 'LAW'), person_id, NULL)) AS non_technicals,
           COUNT(person_id) AS all_violation_types_count,
           supervision_type,
           district
