@@ -23,7 +23,7 @@ from apache_beam.options.pipeline_options import PipelineOptions
 from recidiviz.calculator.pipeline.utils.execution_utils import calculation_month_count_arg,\
     calculation_end_month_arg
 from recidiviz.calculator.query.state.dataset_config import REFERENCE_VIEWS_DATASET, DATAFLOW_METRICS_DATASET, \
-    STATE_BASE_DATASET
+    STATE_BASE_DATASET, STATIC_REFERENCE_TABLES_DATASET
 
 
 def add_shared_pipeline_arguments(parser: argparse.ArgumentParser, include_calculation_limit_args: bool = False):
@@ -34,10 +34,15 @@ def add_shared_pipeline_arguments(parser: argparse.ArgumentParser, include_calcu
                         help='BigQuery dataset to query.',
                         default=STATE_BASE_DATASET)
 
-    parser.add_argument('--reference_input',
+    parser.add_argument('--reference_view_input',
                         type=str,
-                        help='BigQuery reference dataset to query.',
+                        help='BigQuery reference view dataset to query.',
                         default=REFERENCE_VIEWS_DATASET)
+
+    parser.add_argument('--static_reference_input',
+                        type=str,
+                        help='BigQuery static reference table dataset to query.',
+                        default=STATIC_REFERENCE_TABLES_DATASET)
 
     parser.add_argument('--state_code',
                         dest='state_code',

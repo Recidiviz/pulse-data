@@ -16,12 +16,16 @@
 # =============================================================================
 """Utils for beam calculations."""
 # pylint: disable=abstract-method, arguments-differ, redefined-builtin
-from typing import Any, Dict, NamedTuple
+from typing import Any, Dict, NamedTuple, Optional, Set
 
 import apache_beam as beam
+from apache_beam import Pipeline
 from apache_beam.typehints import with_input_types, with_output_types
 
+from recidiviz.calculator.pipeline.utils.execution_utils import select_all_by_person_query
+from recidiviz.calculator.pipeline.utils.extractor_utils import ReadFromBigQuery
 from recidiviz.calculator.pipeline.utils.metric_utils import RecidivizMetric, json_serializable_metric_key
+
 
 AverageFnResult = NamedTuple('AverageFnResult', [
         ('average_of_inputs', float),
@@ -85,7 +89,7 @@ class ConvertDictToKVTuple(beam.DoFn):
         key_value = element.get(key)
 
         if key_value:
-            yield(key_value, element)
+            yield key_value, element
 
     def to_runner_api_parameter(self, _):
         pass  # Passing unused abstract method.
@@ -120,3 +124,69 @@ class RecidivizMetricWritableDict(beam.DoFn):
 
     def to_runner_api_parameter(self, _):
         pass  # Passing unused abstract method.
+
+
+@with_input_types(beam.typehints.Any)
+@with_output_types(beam.typehints.Dict[str, Any])
+class ImportTable(beam.PTransform):
+    """Reads in rows from the given dataset_id.table_id table in BigQuery. Returns each row as a dict."""
+    def __init__(self,
+                 dataset_id: str,
+                 table_id: str,
+                 state_code_filter: Optional[str],
+                 person_id_filter_set: Optional[Set[int]]):
+        super().__init__()
+        self.dataset_id = dataset_id
+        self.table_id = table_id
+        self.state_code_filter = state_code_filter
+        self.person_id_filter_set = person_id_filter_set
+
+    def expand(self, pipeline: Pipeline):
+        # Bring in the table from BigQuery
+        table_query = select_all_by_person_query(
+            self.dataset_id, self.table_id, self.state_code_filter, self.person_id_filter_set)
+
+        table_contents = (pipeline
+                          | f"Read {self.dataset_id}.{self.table_id} table from BigQuery" >>
+                          ReadFromBigQuery(query=table_query))
+
+        return table_contents
+
+
+@with_input_types(beam.typehints.Any)
+@with_output_types(beam.typehints.Tuple[Any, Dict[str, Any]])
+class ImportTableAsKVTuples(beam.PTransform):
+    """Reads in rows from the given dataset_id.table_id table in BigQuery. Converts the output rows into key-value
+    tuples, where the keys are the values for the self.table_key column in the table."""
+    def __init__(self,
+                 dataset_id: str,
+                 table_id: str,
+                 table_key: str,
+                 state_code_filter: Optional[str],
+                 person_id_filter_set: Optional[Set[int]]):
+        super().__init__()
+        self.dataset_id = dataset_id
+        self.table_id = table_id
+        self.table_key = table_key
+        self.state_code_filter = state_code_filter
+        self.person_id_filter_set = person_id_filter_set
+
+    def expand(self, pipeline: Pipeline):
+        # Read in the table from BigQuery
+        table_contents = (pipeline
+                          | f"Read {self.dataset_id}.{self.table_id} from BigQuery" >>
+                          ImportTable(
+                              dataset_id=self.dataset_id,
+                              table_id=self.table_id,
+                              state_code_filter=self.state_code_filter,
+                              person_id_filter_set=self.person_id_filter_set
+                          ))
+
+        # Convert the table rows into key-value tuples with the value for the self.table_key column as the key
+        table_contents_as_kv = (table_contents
+                                | f"Convert {self.dataset_id}.{self.table_id} table to KV tuples" >>
+                                beam.ParDo(ConvertDictToKVTuple(),
+                                           self.table_key)
+                                )
+
+        return table_contents_as_kv

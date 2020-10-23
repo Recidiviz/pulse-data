@@ -44,6 +44,7 @@ from recidiviz.calculator.pipeline.utils.metric_utils import \
     MetricMethodologyType
 from recidiviz.calculator.pipeline.utils.calculator_utils import augment_combination, last_day_of_month, \
     relevant_metric_periods, characteristics_dict_builder
+from recidiviz.calculator.pipeline.utils.person_utils import PersonMetadata
 from recidiviz.common.constants.state.state_supervision_period import StateSupervisionPeriodSupervisionType
 from recidiviz.common.constants.state.state_supervision_violation import \
     StateSupervisionViolationType
@@ -55,7 +56,8 @@ FOLLOW_UP_PERIODS = range(1, 11)
 
 def map_recidivism_combinations(person: StatePerson,
                                 release_events: Dict[int, List[ReleaseEvent]],
-                                metric_inclusions: Dict[ReincarcerationRecidivismMetricType, bool]) \
+                                metric_inclusions: Dict[ReincarcerationRecidivismMetricType, bool],
+                                person_metadata: PersonMetadata) \
         -> List[Tuple[Dict[str, Any], Any]]:
     """Transforms ReleaseEvents and a StatePerson into metric combinations.
 
@@ -87,6 +89,8 @@ def map_recidivism_combinations(person: StatePerson,
             ReleaseEvents for the given StatePerson.
         metric_inclusions: A dictionary where the keys are each ReincarcerationRecidivismMetricType, and the values
             are boolean flags for whether or not to include that metric type in the calculations
+        person_metadata: Contains information about the StatePerson that is necessary for the metrics.
+
     Returns:
         A list of key-value tuples representing specific metric combinations and
         the recidivism value corresponding to that metric.
@@ -100,7 +104,7 @@ def map_recidivism_combinations(person: StatePerson,
         for event in events:
             if metric_inclusions.get(ReincarcerationRecidivismMetricType.REINCARCERATION_RATE):
                 characteristic_combo_rate = \
-                    characteristics_dict(person, event, ReincarcerationRecidivismRateMetric)
+                    characteristics_dict(person, event, ReincarcerationRecidivismRateMetric, person_metadata)
 
                 rate_metrics = map_recidivism_rate_combinations(
                     characteristic_combo_rate, event,
@@ -111,7 +115,7 @@ def map_recidivism_combinations(person: StatePerson,
             if metric_inclusions.get(ReincarcerationRecidivismMetricType.REINCARCERATION_COUNT) and \
                     isinstance(event, RecidivismReleaseEvent):
                 characteristic_combo_count = \
-                    characteristics_dict(person, event, ReincarcerationRecidivismCountMetric)
+                    characteristics_dict(person, event, ReincarcerationRecidivismCountMetric, person_metadata)
 
                 count_metrics = map_recidivism_count_combinations(characteristic_combo_count,
                                                                   event,
@@ -395,7 +399,8 @@ def relevant_follow_up_periods(release_date: date, current_date: date,
 
 def characteristics_dict(person: StatePerson,
                          event: ReleaseEvent,
-                         metric_class: Type[ReincarcerationRecidivismMetric]) -> Dict[str, Any]:
+                         metric_class: Type[ReincarcerationRecidivismMetric],
+                         person_metadata: PersonMetadata) -> Dict[str, Any]:
     """Builds a dictionary that describes the characteristics of the person and the release event.
 
     Release cohort, follow-up period, and methodology are not included in the output here. They are added into
@@ -406,6 +411,8 @@ def characteristics_dict(person: StatePerson,
         event: the ReleaseEvent we are picking characteristics from
         metric_class: The ReincarcerationRecidivismMetric provided determines which fields should be added to the
             characteristics dictionary
+        person_metadata: Contains information about the StatePerson that is necessary for the metrics.
+
     Returns:
         A dictionary populated with all relevant characteristics.
     """
@@ -416,7 +423,8 @@ def characteristics_dict(person: StatePerson,
                                                    metric_class=metric_class,
                                                    person=person,
                                                    event_date=event_date,
-                                                   include_person_attributes=True)
+                                                   include_person_attributes=True,
+                                                   person_metadata=person_metadata)
 
     return characteristics
 

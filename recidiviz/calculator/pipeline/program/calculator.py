@@ -33,6 +33,7 @@ from recidiviz.calculator.pipeline.utils.calculator_utils import last_day_of_mon
     get_calculation_month_lower_bound_date, get_calculation_month_upper_bound_date, characteristics_dict_builder
 from recidiviz.calculator.pipeline.utils.metric_utils import \
     MetricMethodologyType
+from recidiviz.calculator.pipeline.utils.person_utils import PersonMetadata
 from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_manager import \
     supervision_types_mutually_exclusive_for_state
 from recidiviz.persistence.entity.state.entities import StatePerson
@@ -43,7 +44,8 @@ def map_program_combinations(person: StatePerson,
                              List[ProgramEvent],
                              metric_inclusions: Dict[ProgramMetricType, bool],
                              calculation_end_month: Optional[str],
-                             calculation_month_count: int) -> List[Tuple[Dict[str, Any], Any]]:
+                             calculation_month_count: int,
+                             person_metadata: PersonMetadata) -> List[Tuple[Dict[str, Any], Any]]:
     """Transforms ProgramEvents and a StatePerson into metric combinations.
 
     Takes in a StatePerson and all of her ProgramEvents and returns an array of "program combinations". These are
@@ -61,6 +63,8 @@ def map_program_combinations(person: StatePerson,
             calculated. If unset, ends with the current month.
         calculation_month_count: The number of months (including the month of the calculation_end_month) to
             limit the monthly calculation output to. If set to -1, does not limit the calculations.
+        person_metadata: Contains information about the StatePerson that is necessary for the metrics.
+
     Returns:
         A list of key-value tuples representing specific metric combinations and the value corresponding to that metric.
     """
@@ -97,7 +101,7 @@ def map_program_combinations(person: StatePerson,
     for program_event in program_events:
         if (isinstance(program_event, ProgramReferralEvent)
                 and metric_inclusions.get(ProgramMetricType.PROGRAM_REFERRAL)):
-            characteristic_combo = characteristics_dict(person, program_event, ProgramReferralMetric)
+            characteristic_combo = characteristics_dict(person, program_event, ProgramReferralMetric, person_metadata)
 
             program_referral_metrics_event_based = map_metric_combinations(
                 characteristic_combo, program_event,
@@ -109,7 +113,8 @@ def map_program_combinations(person: StatePerson,
             metrics.extend(program_referral_metrics_event_based)
         elif (isinstance(program_event, ProgramParticipationEvent)
               and metric_inclusions.get(ProgramMetricType.PROGRAM_PARTICIPATION)):
-            characteristic_combo = characteristics_dict(person, program_event, ProgramParticipationMetric)
+            characteristic_combo = characteristics_dict(
+                person, program_event, ProgramParticipationMetric, person_metadata)
 
             program_participation_metrics_event_based = map_metric_combinations(
                 characteristic_combo,
@@ -130,7 +135,8 @@ def map_program_combinations(person: StatePerson,
 
 def characteristics_dict(person: StatePerson,
                          program_event: ProgramEvent,
-                         metric_class: Type[ProgramMetric]) -> Dict[str, Any]:
+                         metric_class: Type[ProgramMetric],
+                         person_metadata: PersonMetadata) -> Dict[str, Any]:
     """Builds a dictionary that describes the characteristics of the person and event.
 
     Args:
@@ -138,6 +144,8 @@ def characteristics_dict(person: StatePerson,
         program_event: the ProgramEvent we are picking characteristics from
         metric_class: The ProgramMetric provided determines which fields should be added to the characteristics
             dictionary
+        person_metadata: Contains information about the StatePerson that is necessary for the metrics.
+
     Returns:
         A dictionary populated with all relevant characteristics.
     """
@@ -148,7 +156,8 @@ def characteristics_dict(person: StatePerson,
                                                    metric_class=metric_class,
                                                    person=person,
                                                    event_date=event_date,
-                                                   include_person_attributes=True)
+                                                   include_person_attributes=True,
+                                                   person_metadata=person_metadata)
 
     return characteristics
 

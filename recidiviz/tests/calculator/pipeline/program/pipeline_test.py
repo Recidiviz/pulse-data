@@ -23,7 +23,7 @@ from unittest import mock
 
 import apache_beam as beam
 import pytest
-from apache_beam.pvalue import AsDict
+from apache_beam.pvalue import AsDict, AsList
 from apache_beam.testing.util import assert_that, equal_to, BeamAssertException
 from apache_beam.testing.test_pipeline import TestPipeline
 from apache_beam.options.pipeline_options import PipelineOptions
@@ -40,7 +40,10 @@ from recidiviz.calculator.pipeline.program.metrics import ProgramMetric, \
 from recidiviz.calculator.pipeline.program.program_event import \
     ProgramReferralEvent, ProgramParticipationEvent
 from recidiviz.calculator.pipeline.utils import extractor_utils
+from recidiviz.calculator.pipeline.utils.beam_utils import ConvertDictToKVTuple
 from recidiviz.calculator.pipeline.utils.metric_utils import MetricMethodologyType
+from recidiviz.calculator.pipeline.utils.person_utils import PersonMetadata, BuildPersonMetadata, \
+    ExtractPersonEventsMetadata
 from recidiviz.common.constants.state.state_assessment import \
     StateAssessmentType
 from recidiviz.common.constants.state.state_program_assignment import StateProgramAssignmentParticipationStatus
@@ -81,6 +84,7 @@ class TestProgramPipeline(unittest.TestCase):
                         fake_supervision_period_id: int):
         """Builds a data_dict for a basic run of the pipeline."""
         fake_person = schema.StatePerson(
+            state_code='US_XX',
             person_id=fake_person_id, gender=Gender.MALE,
             birthdate=date(1970, 1, 1),
             residency_status=ResidencyStatus.PERMANENT)
@@ -199,7 +203,8 @@ class TestProgramPipeline(unittest.TestCase):
 
         with patch('recidiviz.calculator.pipeline.utils.extractor_utils.ReadFromBigQuery',
                    self.fake_bq_source_factory.create_fake_bq_source_constructor(dataset, data_dict)):
-            self.run_test_pipeline(dataset, fake_supervision_period_id, unifying_id_field_filter_set={fake_person_id})
+            self.run_test_pipeline(
+                dataset, fake_supervision_period_id, unifying_id_field_filter_set={fake_person_id})
 
     def run_test_pipeline(self,
                           dataset: str,
@@ -267,8 +272,20 @@ class TestProgramPipeline(unittest.TestCase):
         supervision_period_to_agent_associations_as_kv = (
             supervision_period_to_agent_associations |
             'Convert SupervisionPeriod to Agent table to KV tuples' >>
-            beam.ParDo(pipeline.ConvertDictToKVTuple(),
+            beam.ParDo(ConvertDictToKVTuple(),
                        'supervision_period_id')
+        )
+
+        state_race_ethnicity_population_count = {
+            'state_code': 'US_XX',
+            'race_or_ethnicity': 'BLACK',
+            'population_count': 1,
+            'representation_priority': 1
+        }
+
+        state_race_ethnicity_population_counts = (
+            test_pipeline | 'Create state_race_ethnicity_population_count table' >> beam.Create(
+                [state_race_ethnicity_population_count])
         )
 
         # Group each StatePerson with their other entities
@@ -292,6 +309,21 @@ class TestProgramPipeline(unittest.TestCase):
                          ))
         )
 
+        person_metadata = (persons
+                           | "Build the person_metadata dictionary" >>
+                           beam.ParDo(BuildPersonMetadata(),
+                                      AsList(state_race_ethnicity_population_counts)))
+
+        person_program_events_with_metadata = (
+            {
+                'person_events': person_program_events,
+                'person_metadata': person_metadata
+            }
+            | 'Group ProgramEvents with person-level metadata' >> beam.CoGroupByKey()
+            | 'Organize StatePerson, PersonMetadata and ProgramEvents for calculations' >>
+            beam.ParDo(ExtractPersonEventsMetadata())
+        )
+
         # Get pipeline job details for accessing job_id
         all_pipeline_options = PipelineOptions().get_all_options()
 
@@ -302,7 +334,7 @@ class TestProgramPipeline(unittest.TestCase):
         metric_types = metric_types_filter if metric_types_filter else {'ALL'}
 
         # Get program metrics
-        program_metrics = (person_program_events
+        program_metrics = (person_program_events_with_metadata
                            | 'Get Program Metrics' >>  # type: ignore
                            pipeline.GetProgramMetrics(
                                pipeline_options=all_pipeline_options,
@@ -321,11 +353,13 @@ class TestProgramPipeline(unittest.TestCase):
         fake_person_id_2 = 9876
 
         fake_person = schema.StatePerson(
+            state_code='US_XX',
             person_id=fake_person_id, gender=Gender.MALE,
             birthdate=date(1970, 1, 1),
             residency_status=ResidencyStatus.PERMANENT)
 
         fake_person_2 = schema.StatePerson(
+            state_code='US_XX',
             person_id=fake_person_id_2, gender=Gender.MALE,
             birthdate=date(1974, 3, 12),
             residency_status=ResidencyStatus.PERMANENT)
@@ -501,8 +535,7 @@ class TestClassifyProgramAssignments(unittest.TestCase):
             supervision_type=supervision_period.supervision_type
         )]
 
-        correct_output = [
-            (fake_person, program_events)]
+        correct_output = [(fake_person.person_id, (fake_person, program_events))]
 
         test_pipeline = TestPipeline()
 
@@ -523,7 +556,7 @@ class TestClassifyProgramAssignments(unittest.TestCase):
         supervision_periods_to_agent_associations_as_kv = (
             supervision_period_to_agent_associations |
             'Convert SupervisionPeriod to Agent table to KV tuples' >>
-            beam.ParDo(pipeline.ConvertDictToKVTuple(),
+            beam.ParDo(ConvertDictToKVTuple(),
                        'supervision_period_id')
         )
 
@@ -596,7 +629,7 @@ class TestClassifyProgramAssignments(unittest.TestCase):
         supervision_periods_to_agent_associations_as_kv = (
             supervision_period_to_agent_associations |
             'Convert SupervisionPeriod to Agent table to KV tuples' >>
-            beam.ParDo(pipeline.ConvertDictToKVTuple(),
+            beam.ParDo(ConvertDictToKVTuple(),
                        'supervision_period_id')
         )
 
@@ -656,8 +689,7 @@ class TestClassifyProgramAssignments(unittest.TestCase):
             supervising_district_external_id='10'
         )
 
-        correct_output = [
-            (fake_person, [program_event])]
+        correct_output = [(fake_person.person_id, (fake_person, [program_event]))]
 
         test_pipeline = TestPipeline()
 
@@ -678,7 +710,7 @@ class TestClassifyProgramAssignments(unittest.TestCase):
         supervision_periods_to_agent_associations_as_kv = (
             supervision_period_to_agent_associations |
             'Convert SupervisionPeriod to Agent table to KV tuples' >>
-            beam.ParDo(pipeline.ConvertDictToKVTuple(),
+            beam.ParDo(ConvertDictToKVTuple(),
                        'supervision_period_id')
         )
 
@@ -732,8 +764,7 @@ class TestClassifyProgramAssignments(unittest.TestCase):
             assessment_type=StateAssessmentType.ORAS,
         )
 
-        correct_output = [
-            (fake_person, [program_event])]
+        correct_output = [(fake_person.person_id, (fake_person, [program_event]))]
 
         test_pipeline = TestPipeline()
 
@@ -750,7 +781,7 @@ class TestClassifyProgramAssignments(unittest.TestCase):
         supervision_periods_to_agent_associations_as_kv = (
             supervision_period_to_agent_associations |
             'Convert SupervisionPeriod to Agent table to KV tuples' >>
-            beam.ParDo(pipeline.ConvertDictToKVTuple(),
+            beam.ParDo(ConvertDictToKVTuple(),
                        'supervision_period_id')
         )
 
@@ -770,11 +801,16 @@ class TestClassifyProgramAssignments(unittest.TestCase):
 
 class TestCalculateProgramMetricCombinations(unittest.TestCase):
     """Tests the CalculateProgramMetricCombinations DoFn in the pipeline."""
+    def setUp(self) -> None:
+        self.fake_person_id = 12345
+
+        self.person_metadata = PersonMetadata(prioritized_race_or_ethnicity='BLACK')
 
     def testCalculateProgramMetricCombinations(self):
         """Tests the CalculateProgramMetricCombinations DoFn."""
 
         fake_person = StatePerson.new_with_defaults(
+            state_code='US_XX',
             person_id=123, gender=Gender.MALE,
             birthdate=date(1970, 1, 1),
             residency_status=ResidencyStatus.PERMANENT)
@@ -801,8 +837,14 @@ class TestCalculateProgramMetricCombinations(unittest.TestCase):
 
         test_pipeline = TestPipeline()
 
+        inputs = [(self.fake_person_id, {
+            'person_events': [(fake_person, program_events)],
+            'person_metadata': [self.person_metadata]
+        })]
+
         output = (test_pipeline
-                  | beam.Create([(fake_person, program_events)])
+                  | beam.Create(inputs)
+                  | beam.ParDo(ExtractPersonEventsMetadata())
                   | 'Calculate Program Metrics' >>
                   beam.ParDo(pipeline.CalculateProgramMetricCombinations(),
                              None, -1, ALL_METRIC_INCLUSIONS_DICT)
@@ -824,8 +866,14 @@ class TestCalculateProgramMetricCombinations(unittest.TestCase):
 
         test_pipeline = TestPipeline()
 
+        inputs = [(self.fake_person_id, {
+            'person_events': [(fake_person, [])],
+            'person_metadata': [self.person_metadata]
+        })]
+
         output = (test_pipeline
-                  | beam.Create([(fake_person, [])])
+                  | beam.Create(inputs)
+                  | beam.ParDo(ExtractPersonEventsMetadata())
                   | 'Calculate Program Metrics' >>
                   beam.ParDo(pipeline.CalculateProgramMetricCombinations(),
                              None, -1, ALL_METRIC_INCLUSIONS_DICT)
@@ -843,6 +891,7 @@ class TestCalculateProgramMetricCombinations(unittest.TestCase):
 
         output = (test_pipeline
                   | beam.Create([])
+                  | beam.ParDo(ExtractPersonEventsMetadata())
                   | 'Calculate Program Metrics' >>
                   beam.ParDo(pipeline.CalculateProgramMetricCombinations(),
                              None, -1, ALL_METRIC_INCLUSIONS_DICT)

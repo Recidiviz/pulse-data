@@ -23,10 +23,10 @@ from __future__ import absolute_import
 import argparse
 import logging
 
-from typing import Any, Dict, List, Tuple, Set, Optional, Sequence
+from typing import Any, Dict, List, Tuple, Set, Optional, cast
 import datetime
 
-from apache_beam.pvalue import AsDict
+from apache_beam.pvalue import AsDict, AsList
 
 import apache_beam as beam
 from apache_beam.options.pipeline_options import SetupOptions, PipelineOptions
@@ -39,12 +39,16 @@ from recidiviz.calculator.pipeline.incarceration.incarceration_event import \
 from recidiviz.calculator.pipeline.incarceration.metrics import \
     IncarcerationMetric, IncarcerationAdmissionMetric, \
     IncarcerationReleaseMetric, IncarcerationPopulationMetric, IncarcerationMetricType
-from recidiviz.calculator.pipeline.utils.beam_utils import ConvertDictToKVTuple, RecidivizMetricWritableDict
+from recidiviz.calculator.pipeline.utils.beam_utils import ConvertDictToKVTuple, RecidivizMetricWritableDict, \
+    ImportTableAsKVTuples, ImportTable
 from recidiviz.calculator.pipeline.utils.entity_hydration_utils import SetSentencesOnSentenceGroup, \
     ConvertSentencesToStateSpecificType
+from recidiviz.calculator.pipeline.utils.event_utils import IdentifierEvent
 from recidiviz.calculator.pipeline.utils.execution_utils import get_job_id, person_and_kwargs_for_identifier, \
     select_all_by_person_query
 from recidiviz.calculator.pipeline.utils.extractor_utils import BuildRootEntity
+from recidiviz.calculator.pipeline.utils.person_utils import PersonMetadata, BuildPersonMetadata, \
+    ExtractPersonEventsMetadata
 from recidiviz.calculator.pipeline.utils.pipeline_args_utils import add_shared_pipeline_arguments
 from recidiviz.calculator.query.state.views.reference.incarceration_period_judicial_district_association import \
     INCARCERATION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_NAME
@@ -72,7 +76,7 @@ def clear_job_id():
     _job_id = None
 
 
-@with_input_types(beam.typehints.Tuple[entities.StatePerson, List[IncarcerationEvent]])
+@with_input_types(beam.typehints.Tuple[entities.StatePerson, List[IdentifierEvent], PersonMetadata])
 @with_output_types(IncarcerationMetric)
 class GetIncarcerationMetrics(beam.PTransform):
     """Transforms a StatePerson and IncarcerationEvents into IncarcerationMetrics."""
@@ -118,15 +122,12 @@ class GetIncarcerationMetrics(beam.PTransform):
 
 @with_input_types(beam.typehints.Tuple[int, Dict[str, Any]],
                   beam.typehints.Optional[Dict[Any, Tuple[Any, Dict[str, Any]]]])
-@with_output_types(beam.typehints.Tuple[entities.StatePerson,
-                                        List[IncarcerationEvent]])
+@with_output_types(beam.typehints.Tuple[int, Tuple[entities.StatePerson, List[IncarcerationEvent]]])
 class ClassifyIncarcerationEvents(beam.DoFn):
     """Classifies incarceration periods as admission and release events."""
 
     # pylint: disable=arguments-differ
-    def process(self,
-                element,
-                person_id_to_county):
+    def process(self, element, person_id_to_county):
         """Identifies instances of admission and release from incarceration."""
         _, person_entities = element
 
@@ -147,13 +148,13 @@ class ClassifyIncarcerationEvents(beam.DoFn):
             logging.info("No valid incarceration events for person with id: %d. Excluding them from the "
                          "calculations.", person.person_id)
         else:
-            yield person, incarceration_events
+            yield person.person_id, (person, incarceration_events)
 
     def to_runner_api_parameter(self, _):
         pass  # Passing unused abstract method.
 
 
-@with_input_types(beam.typehints.Tuple[entities.StatePerson, Sequence[IncarcerationEvent]],
+@with_input_types(beam.typehints.Tuple[entities.StatePerson, List[IdentifierEvent], PersonMetadata],
                   beam.typehints.Optional[str],
                   beam.typehints.Optional[int],
                   beam.typehints.Dict[IncarcerationMetricType, bool])
@@ -177,14 +178,18 @@ class CalculateIncarcerationMetricCombinations(beam.DoFn):
         Yields:
             Each incarceration metric combination.
         """
-        person, incarceration_events = element
+        person, incarceration_events, person_metadata = element
+
+        # Assert all events are of type IncarcerationEvent
+        incarceration_events = cast(List[IncarcerationEvent], incarceration_events)
 
         # Calculate incarceration metric combinations for this person and events
         metric_combinations = calculator.map_incarceration_combinations(person,
                                                                         incarceration_events,
                                                                         metric_inclusions,
                                                                         calculation_end_month,
-                                                                        calculation_month_count)
+                                                                        calculation_month_count,
+                                                                        person_metadata)
 
         # Return each of the incarceration metric combinations
         for metric_combination in metric_combinations:
@@ -286,7 +291,8 @@ def get_arg_parser() -> argparse.ArgumentParser:
 
 def run(apache_beam_pipeline_options: PipelineOptions,
         data_input: str,
-        reference_input: str,
+        reference_view_input: str,
+        static_reference_input: str,
         output: str,
         calculation_month_count: int,
         metric_types: List[str],
@@ -304,24 +310,26 @@ def run(apache_beam_pipeline_options: PipelineOptions,
     apache_beam_pipeline_options.view_as(SetupOptions).save_main_session = True
 
     # Get pipeline job details
-    all_apache_beam_pipeline_options = apache_beam_pipeline_options.get_all_options()
+    all_pipeline_options = apache_beam_pipeline_options.get_all_options()
+    project_id = all_pipeline_options['project']
 
-    query_dataset = all_apache_beam_pipeline_options['project'] + '.' + data_input
-    reference_dataset = all_apache_beam_pipeline_options['project'] + '.' + reference_input
+    input_dataset = project_id + '.' + data_input
+    reference_dataset = project_id + '.' + reference_view_input
+    static_reference_dataset = project_id + '.' + static_reference_input
 
     person_id_filter_set = set(person_filter_ids) if person_filter_ids else None
 
     with beam.Pipeline(options=apache_beam_pipeline_options) as p:
         # Get StatePersons
         persons = (p | 'Load StatePersons' >>
-                   BuildRootEntity(dataset=query_dataset, root_entity_class=entities.StatePerson,
+                   BuildRootEntity(dataset=input_dataset, root_entity_class=entities.StatePerson,
                                    unifying_id_field=entities.StatePerson.get_class_id_name(),
                                    build_related_entities=True, unifying_id_field_filter_set=person_id_filter_set))
 
         # Get StateSentenceGroups
         sentence_groups = (p | 'Load StateSentenceGroups' >>
                            BuildRootEntity(
-                               dataset=query_dataset,
+                               dataset=input_dataset,
                                root_entity_class=entities.StateSentenceGroup,
                                unifying_id_field=entities.StatePerson.get_class_id_name(),
                                build_related_entities=True,
@@ -332,7 +340,7 @@ def run(apache_beam_pipeline_options: PipelineOptions,
         # Get StateIncarcerationSentences
         incarceration_sentences = (p | 'Load StateIncarcerationSentences' >>
                                    BuildRootEntity(
-                                       dataset=query_dataset,
+                                       dataset=input_dataset,
                                        root_entity_class=entities.StateIncarcerationSentence,
                                        unifying_id_field=entities.StatePerson.get_class_id_name(),
                                        build_related_entities=True,
@@ -343,7 +351,7 @@ def run(apache_beam_pipeline_options: PipelineOptions,
         # Get StateSupervisionSentences
         supervision_sentences = (p | 'Load StateSupervisionSentences' >>
                                  BuildRootEntity(
-                                     dataset=query_dataset,
+                                     dataset=input_dataset,
                                      root_entity_class=entities.StateSupervisionSentence,
                                      unifying_id_field=entities.StatePerson.get_class_id_name(),
                                      build_related_entities=True,
@@ -399,39 +407,32 @@ def run(apache_beam_pipeline_options: PipelineOptions,
         )
 
         # Bring in the table that associates people and their county of residence
-        person_id_to_county_query = select_all_by_person_query(
-            reference_dataset,
-            PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_VIEW_NAME,
-            # TODO(#3602): Once we put state_code on StatePerson objects, we can update the
-            # persons_to_recent_county_of_residence query to have a state_code field, allowing us to also filter the
-            # output by state_code.
-            state_code_filter=None,
-            person_id_filter_set=person_id_filter_set)
-
-        person_id_to_county_kv = (
-            p | "Read person_id to county associations from BigQuery" >>
-            beam.io.Read(beam.io.BigQuerySource(
-                query=person_id_to_county_query,
-                use_standard_sql=True))
-            | "Convert person_id to county association table to KV" >>
-            beam.ParDo(ConvertDictToKVTuple(), 'person_id')
-        )
-
-        # Bring in the judicial districts associated with incarceration_periods
-        ip_to_judicial_district_query = select_all_by_person_query(
-            reference_dataset,
-            INCARCERATION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_NAME,
-            state_code,
-            person_id_filter_set)
+        person_id_to_county_kv = (p | 'Load person_id_to_county_kv' >> ImportTableAsKVTuples(
+            dataset_id=reference_dataset,
+            table_id=PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_VIEW_NAME,
+            table_key='person_id',
+            state_code_filter=state_code,
+            person_id_filter_set=person_id_filter_set
+        ))
 
         ip_to_judicial_district_kv = (
-            p | "Read incarceration_period to judicial_district associations from BigQuery" >>
-            beam.io.Read(beam.io.BigQuerySource(
-                query=ip_to_judicial_district_query,
-                use_standard_sql=True))
-            | "Convert incarceration_period to judicial_district association table to KV" >>
-            beam.ParDo(ConvertDictToKVTuple(), 'person_id')
-        )
+                p | 'Load ip_to_judicial_district_kv' >>
+                ImportTableAsKVTuples(
+                    dataset_id=reference_dataset,
+                    table_id=INCARCERATION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_NAME,
+                    table_key='supervision_period_id',
+                    state_code_filter=state_code,
+                    person_id_filter_set=person_id_filter_set
+                ))
+
+        state_race_ethnicity_population_counts = (
+                p | 'Load state_race_ethnicity_population_counts' >>
+                ImportTable(
+                    dataset_id=static_reference_dataset,
+                    table_id='state_race_ethnicity_population_counts',
+                    state_code_filter=state_code,
+                    person_id_filter_set=None
+                ))
 
         # Group each StatePerson with their related entities
         person_entities = (
@@ -444,22 +445,37 @@ def run(apache_beam_pipeline_options: PipelineOptions,
         )
 
         # Identify IncarcerationEvents events from the StatePerson's StateIncarcerationPeriods
-        person_events = (person_entities | 'Classify Incarceration Events' >>
-                         beam.ParDo(ClassifyIncarcerationEvents(),
-                                    AsDict(person_id_to_county_kv)))
+        person_incarceration_events = (person_entities | 'Classify Incarceration Events' >>
+                                       beam.ParDo(ClassifyIncarcerationEvents(),
+                                                  AsDict(person_id_to_county_kv)))
+
+        person_metadata = (persons
+                           | "Build the person_metadata dictionary" >>
+                           beam.ParDo(BuildPersonMetadata(),
+                                      AsList(state_race_ethnicity_population_counts)))
+
+        person_incarceration_events_with_metadata = (
+            {
+                'person_events': person_incarceration_events,
+                'person_metadata': person_metadata
+            }
+            | 'Group IncarcerationEvents with person-level metadata' >> beam.CoGroupByKey()
+            | 'Organize StatePerson, PersonMetadata and IncarcerationEvents for calculations' >>
+            beam.ParDo(ExtractPersonEventsMetadata())
+        )
 
         # Get pipeline job details for accessing job_id
         all_pipeline_options = apache_beam_pipeline_options.get_all_options()
 
         # Add timestamp for local jobs
         job_timestamp = datetime.datetime.now().strftime('%Y-%m-%d_%H_%M_%S.%f')
-        all_apache_beam_pipeline_options['job_timestamp'] = job_timestamp
+        all_pipeline_options['job_timestamp'] = job_timestamp
 
         # Get the type of metric to calculate
         metric_types_set = set(metric_types)
 
         # Get IncarcerationMetrics
-        incarceration_metrics = (person_events | 'Get Incarceration Metrics' >>
+        incarceration_metrics = (person_incarceration_events_with_metadata | 'Get Incarceration Metrics' >>
                                  GetIncarcerationMetrics(
                                      pipeline_options=all_pipeline_options,
                                      metric_types=metric_types_set,

@@ -36,7 +36,8 @@ usage: python -m recidiviz.tools.run_calculation_pipelines.py
           [--region REGION] \
           [--runner RUNNER] \
           [--input INPUT] \
-          [--reference_input REFERENCE_INPUT] \
+          [--reference_view_input REFERENCE_VIEW_INPUT] \
+          [--static_reference_input STATIC_REFERENCE_VIEW_INPUT]
           [--include_age INCLUDE_AGE] \
           [--include_gender INCLUDE_GENDER] \
           [--include_race INCLUDE_RACE] \

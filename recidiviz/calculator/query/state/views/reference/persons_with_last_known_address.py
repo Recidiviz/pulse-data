@@ -30,7 +30,7 @@ PERSONS_WITH_LAST_KNOWN_ADDRESS_VIEW_QUERY_TEMPLATE = \
     """
     /*{description}*/
 
-    SELECT person.person_id, last_known_address
+    SELECT state_code, person.person_id, last_known_address
     FROM
     `{project_id}.{base_dataset}.state_person` person
     LEFT JOIN
