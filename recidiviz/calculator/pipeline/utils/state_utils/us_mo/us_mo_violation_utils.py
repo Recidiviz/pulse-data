@@ -30,6 +30,10 @@ _LAW_CONDITION_STR = 'LAW'
 _LAW_CITATION_SUBTYPE_STR: str = 'LAW_CITATION'
 _SUBSTANCE_ABUSE_SUBTYPE_STR: str = 'SUBSTANCE_ABUSE'
 
+_UNSUPPORTED_VIOLATION_SUBTYPE_VALUES = [
+    # We don't expect to see these types in US_MO
+    StateSupervisionViolationType.LAW.value,
+]
 
 _VIOLATION_TYPE_AND_SUBTYPE_SHORTHAND_ORDERED_MAP: List[Tuple[StateSupervisionViolationType, str, str]] = [
     (StateSupervisionViolationType.FELONY, StateSupervisionViolationType.FELONY.value, 'fel'),

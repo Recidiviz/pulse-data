@@ -1045,7 +1045,7 @@ def _record_revocation_on_violation(violation: StateSupervisionViolation, row: D
     violation_types = []
     violation_type = None
     if revocation_for_new_offense:
-        violation_type = StateSupervisionViolationType.FELONY.value
+        violation_type = StateSupervisionViolationType.LAW.value
         violation_types.append(violation_type)
 
         ncic_codes = _get_ncic_codes()

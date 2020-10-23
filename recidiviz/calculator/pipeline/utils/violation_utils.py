@@ -27,9 +27,10 @@ from recidiviz.persistence.entity.state.entities import StateSupervisionViolatio
 
 SUBSTANCE_ABUSE_SUBTYPE_STR: str = 'SUBSTANCE_ABUSE'
 
-DEFAULT_VIOLATION_SUBTYPE_SEVERITY_ORDER = [
+DEFAULT_VIOLATION_SUBTYPE_SEVERITY_ORDER: List[str] = [
     StateSupervisionViolationType.FELONY.value,
     StateSupervisionViolationType.MISDEMEANOR.value,
+    StateSupervisionViolationType.LAW.value,
     StateSupervisionViolationType.ABSCONDED.value,
     StateSupervisionViolationType.MUNICIPAL.value,
     StateSupervisionViolationType.ESCAPED.value,
@@ -37,7 +38,8 @@ DEFAULT_VIOLATION_SUBTYPE_SEVERITY_ORDER = [
 ]
 
 
-def get_violations_of_type(violations: List[StateSupervisionViolation], violation_type: StateSupervisionViolationType):
+def get_violations_of_type(violations: List[StateSupervisionViolation],
+                           violation_type: StateSupervisionViolationType) -> List[StateSupervisionViolation]:
     """Returns the violations in |violations| that contain a StateSupervisionViolationTypeEntry with a violation_type
     matching |violation_type|."""
     return [violation for violation in violations if is_violation_of_type(violation, violation_type)]
@@ -52,8 +54,8 @@ def is_violation_of_type(violation: StateSupervisionViolation, violation_type: S
     return False
 
 
-def shorthand_description_for_ranked_violation_counts(state_code: str, subtype_counts: Dict[str, int]) -> \
-        Optional[str]:
+def shorthand_description_for_ranked_violation_counts(state_code: str,
+                                                      subtype_counts: Dict[str, int]) -> Optional[str]:
     """Converts the dictionary mapping types of violations to the number of that type into a string listing the types
     and counts, ordered by the violation type severity defined by state-specific logic. If there aren't any counts of
     any violations, returns None."""

@@ -26,7 +26,7 @@ from recidiviz.persistence.entity.state.entities import StateSupervisionViolatio
 class TestIdentifyMostSevereViolationType(unittest.TestCase):
     """Tests code that identifies the most severe violation type."""
 
-    def test_identify_most_severe_violation_type(self):
+    def test_identify_most_severe_violation_type(self) -> None:
         violation = StateSupervisionViolation.new_with_defaults(
             state_code='US_XX',
             supervision_violation_types=[
@@ -44,10 +44,10 @@ class TestIdentifyMostSevereViolationType(unittest.TestCase):
         self.assertEqual(most_severe_violation_type, StateSupervisionViolationType.FELONY)
         self.assertEqual(most_severe_violation_type_subtype, StateSupervisionViolationType.FELONY.value)
 
-    def test_identify_most_severe_violation_type_test_all_types(self):
+    def test_identify_most_severe_violation_type_test_all_types(self) -> None:
         for violation_type in StateSupervisionViolationType:
             violation = StateSupervisionViolation.new_with_defaults(
-                state_code='US_MO',
+                state_code='US_XX',
                 supervision_violation_types=[
                     StateSupervisionViolationTypeEntry.new_with_defaults(
                         violation_type=violation_type)
@@ -62,7 +62,7 @@ class TestIdentifyMostSevereViolationType(unittest.TestCase):
 class TestGetViolationTypeFrequencyCounter(unittest.TestCase):
     """Tests the get_violation_type_frequency_counter function."""
 
-    def test_get_violation_type_frequency_counter(self):
+    def test_get_violation_type_frequency_counter(self) -> None:
         violations = [
             StateSupervisionViolation.new_with_defaults(
                 state_code='US_XX',
@@ -81,7 +81,7 @@ class TestGetViolationTypeFrequencyCounter(unittest.TestCase):
 
         self.assertEqual([['ABSCONDED', 'FELONY']], violation_type_frequency_counter)
 
-    def test_get_violation_type_frequency_counter_no_types(self):
+    def test_get_violation_type_frequency_counter_no_types(self) -> None:
         violations = [
             StateSupervisionViolation.new_with_defaults(
                 state_code='US_XX',
@@ -93,7 +93,7 @@ class TestGetViolationTypeFrequencyCounter(unittest.TestCase):
 
         self.assertIsNone(violation_type_frequency_counter)
 
-    def test_get_violation_type_frequency_counter_us_mo(self):
+    def test_get_violation_type_frequency_counter_us_mo(self) -> None:
         violations = [
             StateSupervisionViolation.new_with_defaults(
                 state_code='US_MO',
@@ -118,7 +118,7 @@ class TestGetViolationTypeFrequencyCounter(unittest.TestCase):
         self.assertEqual([['ABSCONDED', 'FELONY', 'SUBSTANCE_ABUSE']],
                          violation_type_frequency_counter)
 
-    def test_get_violation_type_frequency_counter_us_mo_technical_only(self):
+    def test_get_violation_type_frequency_counter_us_mo_technical_only(self) -> None:
         violations = [
             StateSupervisionViolation.new_with_defaults(
                 state_code='US_MO',
@@ -139,7 +139,7 @@ class TestGetViolationTypeFrequencyCounter(unittest.TestCase):
 
         self.assertEqual([['SUBSTANCE_ABUSE']], violation_type_frequency_counter)
 
-    def test_get_violation_type_frequency_counter_us_mo_technical_only_no_conditions(self):
+    def test_get_violation_type_frequency_counter_us_mo_technical_only_no_conditions(self) -> None:
         violations = [
             StateSupervisionViolation.new_with_defaults(
                 state_code='US_MO',
@@ -156,7 +156,7 @@ class TestGetViolationTypeFrequencyCounter(unittest.TestCase):
         self.assertEqual([[StateSupervisionViolationType.TECHNICAL.value]],
                          violation_type_frequency_counter)
 
-    def test_get_violation_type_frequency_counter_us_mo_multiple_violations(self):
+    def test_get_violation_type_frequency_counter_us_mo_multiple_violations(self) -> None:
         violations = [
             StateSupervisionViolation.new_with_defaults(
                 state_code='US_MO',
@@ -200,7 +200,7 @@ class TestGetViolationTypeFrequencyCounter(unittest.TestCase):
         self.assertEqual([['ABSCONDED', 'FELONY', 'WEA'], ['MISDEMEANOR', 'SUBSTANCE_ABUSE', 'EMP']],
                          violation_type_frequency_counter)
 
-    def test_get_violation_type_frequency_counter_us_pa(self):
+    def test_get_violation_type_frequency_counter_us_pa(self) -> None:
         violations = [
             StateSupervisionViolation.new_with_defaults(
                 state_code='US_PA',
