@@ -43,6 +43,9 @@ class BqLoadTest(unittest.TestCase):
             self.mock_project_id, self.mock_dataset_id)
         self.mock_table = self.mock_dataset.table(self.mock_table_id)
 
+        self.project_id_patcher = mock.patch('recidiviz.utils.metadata.project_id')
+        self.project_id_patcher.start().return_value = self.mock_project_id
+
         self.mock_load_job_patcher = mock.patch(
             'google.cloud.bigquery.job.LoadJob')
         self.mock_load_job = self.mock_load_job_patcher.start()
@@ -57,6 +60,7 @@ class BqLoadTest(unittest.TestCase):
 
     def tearDown(self) -> None:
         self.mock_load_job_patcher.stop()
+        self.project_id_patcher.stop()
 
     def test_start_table_load_table_load_called(self) -> None:
         """Test that start_table_load calls load_table_from_cloud_storage_async."""

@@ -448,6 +448,8 @@ class TestBatchPersistence(TestCase):
 class TestReadAndPersist(TestCase):
     """Tests read and persist"""
 
+
+    @patch('recidiviz.utils.metadata.project_number', Mock(return_value='123456789'))
     @patch("recidiviz.persistence.batch_persistence.ScraperCloudTaskManager")
     @patch(
         "recidiviz.ingest.scrape.sessions.get_most_recent_completed_session")

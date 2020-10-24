@@ -27,6 +27,7 @@ from http import HTTPStatus
 import logging
 import os
 from functools import wraps
+import sys
 from typing import Optional
 
 import requests
@@ -82,10 +83,6 @@ def in_gae_production() -> bool:
 
 def in_gae_staging() -> bool:
     return in_gae() and get_gae_environment() == GaeEnvironment.STAGING.value
-
-
-def in_travis() -> bool:
-    return os.getenv('HOSTNAME', 'local').startswith('travis')
 
 
 def get_datastore_client() -> datastore.Client:
@@ -145,7 +142,12 @@ def local_only(func):
 
 def in_test():
     """Check whether we are running in a test"""
-    return hasattr(recidiviz, 'called_from_test')
+    # Pytest sets recidiviz.called_from_test in conftest.py
+    if not hasattr(recidiviz, 'called_from_test'):
+        # If it is not set, we may have been called from unittest. Check if unittest has been imported, if it has then
+        # we assume we are running from a unittest
+        recidiviz.called_from_test = 'unittest' in sys.modules.keys()
+    return recidiviz.called_from_test
 
 
 def test_only(func):

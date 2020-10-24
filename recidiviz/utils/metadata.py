@@ -22,7 +22,7 @@ from typing import Dict
 
 import requests
 
-from recidiviz.utils.environment import local_only
+from recidiviz.utils import environment
 
 BASE_METADATA_URL = 'http://metadata/computeMetadata/v1/'
 HEADERS = {'Metadata-Flavor': 'Google'}
@@ -30,10 +30,16 @@ TIMEOUT = 2
 
 _metadata_cache: Dict[str, str] = {}
 
+# Only used for this files tests
+allow_local_metadata_call = False
 
 def _get_metadata(url: str):
     if url in _metadata_cache:
         return _metadata_cache[url]
+
+    if not allow_local_metadata_call:
+        if environment.in_test() or not environment.in_gae():
+            raise RuntimeError("May not be called from test, should this have a local override?")
 
     try:
         r = requests.get(
@@ -79,7 +85,7 @@ class local_project_id_override:
         self.project_id_override = project_id_override
         self.original_project_id = None
 
-    @local_only
+    @environment.local_only
     def __enter__(self):
         global _override_set
         if _override_set:

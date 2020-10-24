@@ -40,6 +40,7 @@ TEST_POSTGRES_USER_NAME = 'recidiviz_test_usr'
 _in_memory_sqlite_connection_thread_ids: Set[int] = set()
 
 
+@environment.test_only
 def use_in_memory_sqlite_database(declarative_base: DeclarativeMeta) -> None:
     """Creates a new SqlDatabase object used to communicate to a fake in-memory
     sqlite database.
@@ -54,9 +55,6 @@ def use_in_memory_sqlite_database(declarative_base: DeclarativeMeta) -> None:
     assert if you attempt to create connections from multiple threads within the context of a single test - SQLite does
     not handle multi-threading well and will often lock or crash when used in a multi-threading scenario.
     """
-    if environment.in_gae():
-        raise ValueError('Running test-only code in Google App Engine.')
-
     def connection_creator() -> sqlite3.Connection:
         global _in_memory_sqlite_connection_thread_ids
 
@@ -80,16 +78,15 @@ def use_in_memory_sqlite_database(declarative_base: DeclarativeMeta) -> None:
     )
 
 
+@environment.test_only
 def teardown_in_memory_sqlite_databases():
     """Cleans up state after a test started with use_in_memory_sqlite_database() is complete."""
-    if environment.in_gae():
-        raise ValueError('Running test-only code in Google App Engine.')
-
     global _in_memory_sqlite_connection_thread_ids
     _in_memory_sqlite_connection_thread_ids.clear()
     SQLAlchemyEngineManager.teardown_engines()
 
 
+@environment.test_only
 def use_on_disk_sqlite_database(declarative_base: DeclarativeMeta) -> None:
     """Creates a new SqlDatabase object used to communicate to an on-disk
     sqlite database.
@@ -99,9 +96,6 @@ def use_on_disk_sqlite_database(declarative_base: DeclarativeMeta) -> None:
     2. Create all tables in the newly created sqlite database
     3. Bind the global SessionMaker to the new database engine
     """
-    if environment.in_gae():
-        raise ValueError('Running test-only code in Google App Engine.')
-
     SQLAlchemyEngineManager.init_engine_for_db_instance(
         db_url='sqlite:///recidiviz.db',
         schema_base=declarative_base)
@@ -146,12 +140,10 @@ def _run_command(command: str, assert_success: bool = True, as_user: Optional[pw
     return out
 
 
+@environment.test_only
 def start_on_disk_postgresql_database() -> None:
     """Starts and initializes a local postgres database for use in tests. Should be called in the setUpClass function so
     this only runs once per test class."""
-    if environment.in_gae():
-        raise ValueError('Running test-only code in Google App Engine.')
-
     # Create the directory to use for the postgres database, if it does not already exist.
     os.makedirs('/usr/local/var/postgres', exist_ok=True)
 
@@ -183,12 +175,10 @@ def start_on_disk_postgresql_database() -> None:
                  assert_success=False)
 
 
+@environment.test_only
 def stop_and_clear_on_disk_postgresql_database() -> None:
     """Drops all tables in the local postgres database and stops the postgres server. Should be called in the
     tearDownClass function so this only runs once per test class."""
-    if environment.in_gae():
-        raise ValueError('Running test-only code in Google App Engine.')
-
     _clear_on_disk_postgresql_database()
     _stop_on_disk_postgresql_database()
 
@@ -207,6 +197,7 @@ def _clear_on_disk_postgresql_database():
         SQLAlchemyEngineManager.teardown_engine_for_schema(declarative_base)
 
 
+@environment.test_only
 def use_on_disk_postgresql_database(declarative_base: DeclarativeMeta) -> None:
     """Connects SQLAlchemy to a local test postgres server. Should be called after the test database and user have
     already been initialized.
@@ -215,9 +206,6 @@ def use_on_disk_postgresql_database(declarative_base: DeclarativeMeta) -> None:
     1. Create all tables in the newly created sqlite database
     2. Bind the global SessionMaker to the new database engine
     """
-    if environment.in_gae():
-        raise ValueError('Running test-only code in Google App Engine.')
-
     if declarative_base not in DECLARATIVE_BASES:
         raise ValueError(f"Unexpected declarative base: {declarative_base}.")
 
@@ -226,15 +214,13 @@ def use_on_disk_postgresql_database(declarative_base: DeclarativeMeta) -> None:
         schema_base=declarative_base)
 
 
+@environment.test_only
 def teardown_on_disk_postgresql_database(declarative_base: DeclarativeMeta) -> None:
     """Clears state in an on-disk postgres database for a given schema, for use once a single test has completed. As an
     optimization, does not actually drop tables, just clears them. As a best practice, you should call
     stop_and_clear_on_disk_postgresql_database() once all tests in a test class are complete to actually drop the
     tables.
     """
-    if environment.in_gae():
-        raise ValueError('Running test-only code in Google App Engine.')
-
     session = SessionFactory.for_schema_base(declarative_base)
     try:
         for table in reversed(declarative_base.metadata.sorted_tables):

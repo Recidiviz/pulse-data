@@ -23,7 +23,7 @@ import json
 
 import pytest
 from flask import Flask
-from mock import create_autospec, patch
+from mock import Mock, create_autospec, patch
 
 from recidiviz.ingest.scrape import constants, scrape_phase, sessions, worker
 from recidiviz.ingest.scrape.task_params import QueueRequest, Task
@@ -44,6 +44,8 @@ app.register_blueprint(worker.worker)
 app.config['TESTING'] = True
 
 
+@patch('recidiviz.utils.metadata.project_id', Mock(return_value='test-project'))
+@patch('recidiviz.utils.metadata.project_number', Mock(return_value='123456789'))
 class TestWorker:
     """Tests for requests to the Worker API."""
 

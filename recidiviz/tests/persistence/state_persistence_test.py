@@ -63,7 +63,8 @@ STATE_ERROR_THRESHOLDS_WITH_FORTY_PERCENT_RATIOS = {SystemLevel.STATE:
                                             }
 }
 
-@patch('os.getenv', Mock(return_value='production'))
+@patch('recidiviz.environment.in_gae', Mock(return_value=True))
+@patch('recidiviz.utils.metadata.project_id', Mock(return_value='fake-project'))
 @patch.dict('os.environ', {'PERSIST_LOCALLY': 'false'})
 class TestStatePersistence(TestCase):
     """Test that the persistence layer correctly writes to the SQL database for

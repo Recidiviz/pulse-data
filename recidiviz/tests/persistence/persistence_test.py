@@ -123,7 +123,8 @@ ERROR_THRESHOLDS_WITH_FORTY_PERCENT_RATIOS = {
         }
 }
 
-@patch('os.getenv', Mock(return_value='production'))
+@patch('recidiviz.utils.metadata.project_id', Mock(return_value='test-project'))
+@patch('recidiviz.environment.in_gae', Mock(return_value=True))
 @patch.dict('os.environ', {'PERSIST_LOCALLY': 'false'})
 class TestPersistence(TestCase):
     """Test that the persistence layer correctly writes to the SQL database."""
@@ -135,7 +136,7 @@ class TestPersistence(TestCase):
         fakes.teardown_in_memory_sqlite_databases()
 
     def test_localRun(self):
-        with patch('os.getenv', Mock(return_value='Local')):
+        with patch('recidiviz.environment.in_gae', Mock(return_value=False)):
             # Arrange
             ingest_info = IngestInfoProto()
             ingest_info.people.add(full_name=FULL_NAME_1)
@@ -150,7 +151,7 @@ class TestPersistence(TestCase):
 
     def test_persistLocally(self):
         # Arrange
-        with patch('os.getenv', Mock(return_value='local')) \
+        with patch('recidiviz.environment.in_gae', Mock(return_value=False)) \
              and patch.dict('os.environ', {'PERSIST_LOCALLY': 'true'}):
             ingest_info = IngestInfoProto()
             ingest_info.people.add(full_name=FULL_NAME_1)
@@ -1051,6 +1052,7 @@ class MultipleStateTestMixin():
         assert result[2].sentence_groups[0].status == 'COMPLETED'
 
 
+@patch('recidiviz.utils.metadata.project_id', Mock(return_value='test-project'))
 @patch('os.getenv', Mock(return_value='production'))
 class TestPersistenceMultipleThreadsOverlapping(TestCase, MultipleStateTestMixin):
     """Test that the persistence layer writes to Postgres from multiple threads in an overlapping fashion
@@ -1176,6 +1178,7 @@ def _get_run_transaction_after_other_fn(other_precommit_event: threading.Event, 
     return run_transaction_after_other
 
 
+@patch('recidiviz.utils.metadata.project_id', Mock(return_value='test-project'))
 @patch('os.getenv', Mock(return_value='production'))
 class TestPersistenceMultipleThreadsInterleaved(TestCase, MultipleStateTestMixin):
     """Test that the persistence layer writes to Postgres from multiple threads in an interleaved fashion
