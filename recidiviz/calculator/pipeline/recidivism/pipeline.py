@@ -348,7 +348,8 @@ def run(apache_beam_pipeline_options: PipelineOptions,
                    | 'Load Persons' >>
                    BuildRootEntity(dataset=input_dataset, root_entity_class=entities.StatePerson,
                                    unifying_id_field=entities.StatePerson.get_class_id_name(),
-                                   build_related_entities=True, unifying_id_field_filter_set=person_id_filter_set))
+                                   build_related_entities=True, unifying_id_field_filter_set=person_id_filter_set,
+                                   state_code=state_code))
 
         # Get StateIncarcerationPeriods
         incarceration_periods = (p

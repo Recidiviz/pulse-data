@@ -206,6 +206,7 @@ class TestProgramPipeline(unittest.TestCase):
             self.run_test_pipeline(
                 dataset, fake_supervision_period_id, unifying_id_field_filter_set={fake_person_id})
 
+    # TODO(#4375): Update tests to run actual pipeline code and only mock BQ I/O
     def run_test_pipeline(self,
                           dataset: str,
                           fake_supervision_period_id: int,
