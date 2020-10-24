@@ -22,7 +22,7 @@
 
 import pytest
 from flask import Flask, request
-from mock import patch
+from mock import Mock, patch
 
 from recidiviz.utils import auth
 
@@ -45,36 +45,40 @@ class TestAuthenticateRequest:
         dummy_app.config['TESTING'] = True
         self.client = dummy_app.test_client()
 
-    @patch('recidiviz.utils.metadata.project_id')
-    def test_authenticate_request_different_app_id(self, mock_project_id):
-        mock_project_id.return_value = 'test-project'
-
+    @patch('recidiviz.utils.metadata.project_id', Mock(return_value='test-project'))
+    @patch('recidiviz.utils.metadata.project_number', Mock(return_value='123456789'))
+    def test_authenticate_request_different_app_id(self):
         response = self.client.get(
             '/', headers={'X-Appengine-Inbound-Appid': 'blah'})
         assert response.status_code == 401
         assert response.get_data().decode() == \
                 'Failed: Unauthorized external request.'
 
-    @patch('recidiviz.utils.metadata.project_id')
-    def test_authenticate_request_same_app_id(self, mock_project_id):
-        mock_project_id.return_value = 'test-project'
-
+    @patch('recidiviz.utils.metadata.project_id', Mock(return_value='test-project'))
+    @patch('recidiviz.utils.metadata.project_number', Mock(return_value='123456789'))
+    def test_authenticate_request_same_app_id(self):
         response = self.client.get(
             '/', headers={'X-Appengine-Inbound-Appid': 'test-project'})
         assert response.status_code == 200
         assert response.get_data().decode() == BEST_ALBUM
 
+    @patch('recidiviz.utils.metadata.project_id', Mock(return_value='test-project'))
+    @patch('recidiviz.utils.metadata.project_number', Mock(return_value='123456789'))
     def test_authenticate_request_is_cron(self):
         response = self.client.get('/', headers={'X-Appengine-Cron': "True"})
         assert response.status_code == 200
         assert response.get_data().decode() == BEST_ALBUM
 
+    @patch('recidiviz.utils.metadata.project_id', Mock(return_value='test-project'))
+    @patch('recidiviz.utils.metadata.project_number', Mock(return_value='123456789'))
     def test_authenticate_request_is_task(self):
         response = self.client.get(
             '/', headers={'X-Appengine-QueueName': "us_ny"})
         assert response.status_code == 200
         assert response.get_data().decode() == BEST_ALBUM
 
+    @patch('recidiviz.utils.metadata.project_id', Mock(return_value='test-project'))
+    @patch('recidiviz.utils.metadata.project_number', Mock(return_value='123456789'))
     @patch("recidiviz.utils.validate_jwt.validate_iap_jwt_from_app_engine")
     def test_authenticate_request_from_iap(self, mock_jwt):
         mock_jwt.return_value = ('user', 'email', None)
@@ -84,6 +88,8 @@ class TestAuthenticateRequest:
         assert response.status_code == 200
         assert response.get_data().decode() == BEST_ALBUM
 
+    @patch('recidiviz.utils.metadata.project_id', Mock(return_value='test-project'))
+    @patch('recidiviz.utils.metadata.project_number', Mock(return_value='123456789'))
     @patch("recidiviz.utils.validate_jwt.validate_iap_jwt_from_app_engine")
     def test_authenticate_request_from_iap_invalid(self, mock_jwt):
         mock_jwt.return_value = (None, None, 'INVALID TOKEN')
@@ -93,6 +99,8 @@ class TestAuthenticateRequest:
         assert response.status_code == 401
         assert response.get_data().decode() == 'Error: INVALID TOKEN'
 
+    @patch('recidiviz.utils.metadata.project_id', Mock(return_value='test-project'))
+    @patch('recidiviz.utils.metadata.project_number', Mock(return_value='123456789'))
     def test_authenticate_request_unauthorized(self):
         response = self.client.get('/')
         assert response.status_code == 401

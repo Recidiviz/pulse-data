@@ -21,12 +21,14 @@ import unittest
 from unittest import mock
 
 import flask
+from mock import Mock
 
 from recidiviz.calculator.pipeline.utils import dataflow_monitor_manager
 
 MONITOR_MANAGER_PACKAGE_NAME = dataflow_monitor_manager.__name__
 
 
+@mock.patch('recidiviz.utils.metadata.project_number', Mock(return_value='123456789'))
 class DataflowMonitorManagerTest(unittest.TestCase):
     """Tests for dataflow_monitor_manager.py."""
 

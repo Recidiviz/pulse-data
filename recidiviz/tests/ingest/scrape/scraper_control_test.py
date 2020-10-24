@@ -20,7 +20,7 @@ import unittest
 
 import pytz
 from flask import Flask
-from mock import call, patch, create_autospec
+from mock import Mock, call, patch, create_autospec
 
 from recidiviz.ingest.models.scrape_key import ScrapeKey
 from recidiviz.ingest.scrape import (constants, scrape_phase, scraper_control,
@@ -51,6 +51,8 @@ def _MockSupported(timezone=None, stripes=None):
     return regions
 
 
+@patch('recidiviz.utils.metadata.project_id', Mock(return_value='test-project'))
+@patch('recidiviz.utils.metadata.project_number', Mock(return_value='123456789'))
 class TestScraperStart(unittest.TestCase):
     """Tests for requests to the Scraper Start API."""
 
@@ -289,6 +291,8 @@ class TestScraperStart(unittest.TestCase):
         mock_supported.assert_called_with(stripes=[], timezone=None)
 
 
+@patch('recidiviz.utils.metadata.project_id', Mock(return_value='test-project'))
+@patch('recidiviz.utils.metadata.project_number', Mock(return_value='123456789'))
 class TestScraperStop(unittest.TestCase):
     """Tests for requests to the Scraper Stop API."""
 
@@ -501,6 +505,8 @@ class TestScraperStop(unittest.TestCase):
             ], any_order=True)
 
 
+@patch('recidiviz.utils.metadata.project_id', Mock(return_value='test-project'))
+@patch('recidiviz.utils.metadata.project_number', Mock(return_value='123456789'))
 class TestScraperResume(unittest.TestCase):
     """Tests for requests to the Scraper Resume API."""
 

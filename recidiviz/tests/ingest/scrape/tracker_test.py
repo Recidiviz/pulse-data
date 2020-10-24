@@ -27,13 +27,14 @@ from google.api_core import \
     datetime_helpers  # pylint: disable=no-name-in-module
 from google.cloud.pubsub_v1 import types
 from google.protobuf import timestamp_pb2  # pylint: disable=no-name-in-module
-from mock import call, patch
+from mock import Mock, call, patch
 
 from recidiviz.ingest.models.scrape_key import ScrapeKey
 from recidiviz.ingest.scrape import (constants, docket, scrape_phase, sessions,
                                      tracker)
 
 
+@patch('recidiviz.utils.metadata.project_id', Mock(return_value='test-project'))
 class TestTracker:
     """Tests for the methods in the module."""
 
@@ -139,6 +140,8 @@ class TestTrackerIntegration:
     the systems work together correctly.
     """
     def setup_method(self, _test_method):
+        self.project_id_patcher = patch('recidiviz.utils.metadata.project_id')
+        self.project_id_patcher.start().return_value = 'test-project'
         self.sessions_to_delete = []
 
     def teardown_method(self, _test_method):
@@ -146,6 +149,7 @@ class TestTrackerIntegration:
             docket.purge_query_docket(
                 ScrapeKey(region, constants.ScrapeType.BACKGROUND))
         sessions.ds().delete_multi(self.sessions_to_delete)
+        self.project_id_patcher.stop()
 
     def test_iterate_docket_item(self):
         scrape_key = ScrapeKey(REGIONS[0], constants.ScrapeType.BACKGROUND)

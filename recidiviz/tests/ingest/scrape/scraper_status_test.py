@@ -19,7 +19,7 @@
 import unittest
 
 from flask import Flask
-from mock import call, create_autospec, patch
+from mock import Mock, call, create_autospec, patch
 
 from recidiviz.ingest.models.scrape_key import ScrapeKey
 from recidiviz.ingest.scrape import (constants, scrape_phase, scraper_control,
@@ -37,6 +37,8 @@ def create_test_client():
     return app.test_client()
 
 
+@patch('recidiviz.utils.metadata.project_id', Mock(return_value='test-project'))
+@patch('recidiviz.utils.metadata.project_number', Mock(return_value='123456789'))
 class TestScraperStatus(unittest.TestCase):
     """Tests for scraper_status.py"""
 
