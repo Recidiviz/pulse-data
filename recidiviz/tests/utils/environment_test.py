@@ -20,8 +20,9 @@
 """Tests for utils/environment.py."""
 
 
+import sys
 import pytest
-from mock import mock_open, patch
+from mock import Mock, mock_open, patch
 
 import recidiviz
 from recidiviz.utils import environment
@@ -65,6 +66,10 @@ def test_local_only_is_prod(mock_os):
     assert response == ('Not available, see service logs.', 500)
 
 
+def test_test_in_test():
+    assert environment.in_test()
+
+
 def test_test_only_is_test():
     track = 'Emerald Rush'
 
@@ -82,7 +87,7 @@ def test_test_only_not_test():
     def get():
         return track
 
-    with patch.dict('recidiviz.__dict__'):
+    with patch.dict('recidiviz.__dict__'), patch.object(sys, 'modules', dict()):
         del recidiviz.__dict__['called_from_test']
         assert not hasattr(recidiviz, 'called_from_test')
 

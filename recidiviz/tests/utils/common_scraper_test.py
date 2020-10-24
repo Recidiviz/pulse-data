@@ -43,11 +43,14 @@ class CommonScraperTest(IndividualIngestTest):
         self.task_client_patcher = patch(
             'google.cloud.tasks_v2.CloudTasksClient')
         self.task_client_patcher.start()
+        self.project_id_patcher = patch('recidiviz.utils.metadata.project_id')
+        self.project_id_patcher.start().return_value = 'fake-project'
 
         self._init_scraper_and_yaml()
 
     def tearDown(self):
         self.task_client_patcher.stop()
+        self.project_id_patcher.stop()
 
     def test_scraper_not_none(self):
         if not self.scraper:

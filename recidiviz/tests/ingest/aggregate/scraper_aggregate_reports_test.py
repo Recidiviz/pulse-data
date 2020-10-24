@@ -68,6 +68,8 @@ def _MockGet(url, **_):
     return ret
 
 
+@patch.object(metadata, 'project_id', Mock(return_value=TEST_ENV))
+@patch.object(metadata, 'project_number', Mock(return_value=TEST_ENV))
 class TestScraperAggregateReports(TestCase):
     """Test that tx_aggregate_site_scraper correctly scrapes urls."""
 
@@ -79,14 +81,11 @@ class TestScraperAggregateReports(TestCase):
         self.upload_bucket = \
             scrape_aggregate_reports.UPLOAD_BUCKET.format(TEST_ENV)
 
-    @patch.object(metadata, 'project_id')
     @patch.object(gcsfs, 'GCSFileSystem')
     @patch.object(requests, 'get')
     @patch.object(builtins, 'open')
     @patch.object(tx_aggregate_site_scraper, 'get_urls_to_download')
-    def testExistsNoUpload(
-            self, mock_get_all_tx, mock_open, mock_get, mock_fs, mock_env):
-        mock_env.return_value = TEST_ENV
+    def testExistsNoUpload(self, mock_get_all_tx, mock_open, mock_get, mock_fs):
         # Make the info call return an older modified time than the server time.
         mock_fs_return = Mock()
         mock_fs.return_value = mock_fs_return
@@ -106,17 +105,14 @@ class TestScraperAggregateReports(TestCase):
         self.assertEqual(mock_fs_return.put.called, False)
         self.assertEqual(mock_open.called, False)
 
-    @patch.object(metadata, 'project_id')
     @patch.object(gcsfs, 'GCSFileSystem')
     @patch.object(requests, 'get')
     @patch.object(builtins, 'open')
     @patch.object(ny_aggregate_site_scraper, 'get_urls_to_download')
-    def testExistsIsNyUpload(
-            self, mock_get_all_tx, mock_open, mock_get, mock_fs, mock_env):
+    def testExistsIsNyUpload(self, mock_get_all_tx, mock_open, mock_get, mock_fs):
         upload_bucket = os.path.join(
             self.upload_bucket, 'new_york', EXISTING_PDF_NAME)
         temploc = os.path.join(tempfile.gettempdir(), EXISTING_PDF_NAME)
-        mock_env.return_value = TEST_ENV
         # Make the info call return an older modified time than the server time.
         mock_fs_return = Mock()
         mock_fs.return_value = mock_fs_return
@@ -136,17 +132,14 @@ class TestScraperAggregateReports(TestCase):
         mock_open.assert_called_with(temploc, 'wb')
         mock_get.assert_called_with(EXISTING_TEST_URL)
 
-    @patch.object(metadata, 'project_id')
     @patch.object(gcsfs, 'GCSFileSystem')
     @patch.object(requests, 'get')
     @patch.object(builtins, 'open')
     @patch.object(tx_aggregate_site_scraper, 'get_urls_to_download')
-    def testNoExistsUpload200(
-            self, mock_get_all_tx, mock_open, mock_get, mock_fs, mock_env):
+    def testNoExistsUpload200(self, mock_get_all_tx, mock_open, mock_get, mock_fs):
         upload_bucket = os.path.join(
             self.upload_bucket, 'texas', EXISTING_PDF_NAME)
         temploc = os.path.join(tempfile.gettempdir(), EXISTING_PDF_NAME)
-        mock_env.return_value = TEST_ENV
         # Make the info call return an older modified time than the server time.
         mock_fs_return = Mock()
         mock_fs.return_value = mock_fs_return
@@ -167,20 +160,13 @@ class TestScraperAggregateReports(TestCase):
         mock_open.assert_called_with(temploc, 'wb')
         mock_get.assert_called_with(EXISTING_TEST_URL)
 
-    @patch.object(metadata, 'project_id')
-    @patch.object(metadata, 'project_number')
     @patch.object(gcsfs, 'GCSFileSystem')
     @patch.object(requests, 'post')
     @patch.object(builtins, 'open')
     @patch.object(ca_aggregate_site_scraper, 'get_urls_to_download')
-    def testCaNoExistsUpload200(
-            self, mock_get_all_ca, mock_open, mock_post, mock_fs,
-            mock_number, mock_env):
-        upload_bucket = os.path.join(
-            self.upload_bucket, 'california', EXISTING_CA_NAME)
+    def testCaNoExistsUpload200(self, mock_get_all_ca, mock_open, mock_post, mock_fs):
+        upload_bucket = os.path.join(self.upload_bucket, 'california', EXISTING_CA_NAME)
         temploc = os.path.join(tempfile.gettempdir(), EXISTING_CA_NAME)
-        mock_env.return_value = TEST_ENV
-        mock_number.return_value = TEST_ENV
         # Make the info call return an older modified time than the server time.
         mock_fs_return = Mock()
         mock_fs.return_value = mock_fs_return
@@ -202,20 +188,17 @@ class TestScraperAggregateReports(TestCase):
         mock_open.assert_called_with(temploc, 'wb')
         mock_post.assert_called_with(EXISTING_TEST_URL_CA, data=CA_POST_DATA)
 
-    @patch.object(metadata, 'project_id')
     @patch.object(gcsfs, 'GCSFileSystem')
     @patch.object(requests, 'get')
     @patch.object(builtins, 'open')
     @patch.object(tx_aggregate_site_scraper, 'get_urls_to_download')
-    def testMultipleUrlsAll200(
-            self, mock_get_all_tx, mock_open, mock_get, mock_fs, mock_env):
+    def testMultipleUrlsAll200(self, mock_get_all_tx, mock_open, mock_get, mock_fs):
         upload_bucket1 = os.path.join(
             self.upload_bucket, 'texas', EXISTING_PDF_NAME)
         upload_bucket2 = os.path.join(
             self.upload_bucket, 'texas', EXISTING_PDF_NAME2)
         temploc1 = os.path.join(tempfile.gettempdir(), EXISTING_PDF_NAME)
         temploc2 = os.path.join(tempfile.gettempdir(), EXISTING_PDF_NAME2)
-        mock_env.return_value = TEST_ENV
         # Make the info call return an older modified time than the server time.
         mock_fs_return = Mock()
         mock_fs.return_value = mock_fs_return
@@ -247,13 +230,11 @@ class TestScraperAggregateReports(TestCase):
                                call(temploc2, 'wb')]
         self.assertCountEqual(mock_open.call_args_list, expected_open_calls)
 
-    @patch.object(metadata, 'project_id')
     @patch.object(gcsfs, 'GCSFileSystem')
     @patch.object(requests, 'get')
     @patch.object(builtins, 'open')
     @patch.object(tx_aggregate_site_scraper, 'get_urls_to_download')
-    def testMultipleUrlsOne200OneNoExists(
-            self, mock_get_all_tx, mock_open, mock_get, mock_fs, mock_env):
+    def testMultipleUrlsOne200OneNoExists(self, mock_get_all_tx, mock_open, mock_get, mock_fs):
         historical_path1 = os.path.join(
             self.historical_bucket, 'texas', EXISTING_PDF_NAME)
         historical_path2 = os.path.join(
@@ -269,7 +250,6 @@ class TestScraperAggregateReports(TestCase):
         upload_bucket2 = os.path.join(
             self.upload_bucket, 'texas', EXISTING_PDF_NAME2)
         temploc2 = os.path.join(tempfile.gettempdir(), EXISTING_PDF_NAME2)
-        mock_env.return_value = TEST_ENV
         # Make the info call return an older modified time than the server time.
         mock_fs_return = Mock()
         mock_fs.return_value = mock_fs_return

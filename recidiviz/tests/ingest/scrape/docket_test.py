@@ -32,10 +32,15 @@ REGIONS = ['us_ny', 'us_va']
 @pytest.mark.usefixtures('emulator')
 class TestDocket:
     """Tests for the methods related to population of items in the docket."""
+    def setup_method(self, _test_method):
+        self.project_id_patcher = patch('recidiviz.utils.metadata.project_id')
+        self.project_id_patcher.start().return_value = 'test-project'
+
     def teardown_method(self, _test_method):
         for region in REGIONS:
             docket.purge_query_docket(
                 ScrapeKey(region, constants.ScrapeType.BACKGROUND))
+        self.project_id_patcher.stop()
 
     def test_add_to_query_docket_background(self):
         scrape_key = ScrapeKey(REGIONS[0], constants.ScrapeType.BACKGROUND)

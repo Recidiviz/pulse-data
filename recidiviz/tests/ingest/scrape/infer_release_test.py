@@ -20,7 +20,7 @@ from datetime import datetime
 from unittest import TestCase
 
 from flask import Flask
-from mock import call, patch
+from mock import Mock, call, patch
 
 from recidiviz.common.constants.county.booking import CustodyStatus
 from recidiviz.ingest.scrape import constants, infer_release, scrape_phase
@@ -64,6 +64,8 @@ _REGIONS = [
 ]
 
 
+@patch('recidiviz.utils.metadata.project_id', Mock(return_value='test-project'))
+@patch('recidiviz.utils.metadata.project_number', Mock(return_value='123456789'))
 class TestInferRelease(TestCase):
     """Tests for requests to the infer release API"""
 

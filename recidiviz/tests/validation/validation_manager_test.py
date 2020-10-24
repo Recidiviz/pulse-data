@@ -73,9 +73,10 @@ class TestHandleRequest(TestCase):
     """Tests for the Validation Manager API endpoint."""
 
     def setUp(self) -> None:
-        self.metadata_patcher = patch('recidiviz.utils.metadata.project_id')
-        self.mock_project_id_fn = self.metadata_patcher.start()
-        self.mock_project_id_fn.return_value = 'recidiviz-456'
+        self.project_id_patcher = patch('recidiviz.utils.metadata.project_id')
+        self.project_id_patcher.start().return_value = 'recidiviz-456'
+        self.project_number_patcher = patch('recidiviz.utils.metadata.project_number')
+        self.project_number_patcher.start().return_value = '123456789'
 
         app = Flask(__name__)
         app.register_blueprint(validation_manager_blueprint)
@@ -85,7 +86,8 @@ class TestHandleRequest(TestCase):
         self._TEST_VALIDATIONS = get_test_validations()
 
     def tearDown(self):
-        self.metadata_patcher.stop()
+        self.project_id_patcher.stop()
+        self.project_number_patcher.stop()
 
     @patch("recidiviz.validation.validation_manager._emit_failures")
     @patch("recidiviz.validation.validation_manager._run_job")
