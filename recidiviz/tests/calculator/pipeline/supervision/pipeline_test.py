@@ -383,6 +383,7 @@ class TestSupervisionPipeline(unittest.TestCase):
                                    expected_aggregate_metric_types,
                                    unifying_id_field_filter_set={fake_person_id})
 
+    # TODO(#4375): Update tests to run actual pipeline code and only mock BQ I/O
     @staticmethod
     def run_test_pipeline(dataset: str,
                           fake_person_id: int,

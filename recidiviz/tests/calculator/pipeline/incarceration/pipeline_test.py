@@ -315,6 +315,7 @@ class TestIncarcerationPipeline(unittest.TestCase):
             self.run_test_pipeline(fake_person_id, _STATE_CODE, dataset, unifying_id_field_filter_set={fake_person_id},
                                    expected_metric_types=ALL_METRIC_TYPES_SET)
 
+    # TODO(#4375): Update tests to run actual pipeline code and only mock BQ I/O
     @staticmethod
     def run_test_pipeline(fake_person_id: int,
                           state_code: str,
