@@ -32,7 +32,7 @@ PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_QUERY_TEMPLATE = \
     """
 /*{description}*/
     SELECT
-      state_code,
+      CONCAT('US_', UPPER(state_code)) AS state_code,
       person_id,
       CONCAT('US_', UPPER(state_code), '_', UPPER(county)) AS county_of_residence
     FROM (

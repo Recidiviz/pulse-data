@@ -77,7 +77,7 @@ ADMISSIONS_BY_TYPE_BY_PERIOD_QUERY_TEMPLATE = \
         SELECT
           state_code, metric_period_months,
           COUNT(IF(source_violation_type = 'NEW_ADMISSION', person_id, NULL)) AS new_admissions,
-          COUNT(IF(source_violation_type IN 'TECHNICAL', person_id, NULL)) AS technicals,
+          COUNT(IF(source_violation_type = 'TECHNICAL', person_id, NULL)) AS technicals,
           COUNT(IF(source_violation_type IN ('ABSCONDED', 'ESCAPED', 'FELONY', 'MISDEMEANOR', 'LAW'), person_id, NULL)) AS non_technicals,
           COUNT(person_id) AS all_violation_types_count,
           supervision_type,
