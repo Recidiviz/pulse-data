@@ -147,6 +147,7 @@ class TestCovertSentenceToStateSpecificType(unittest.TestCase):
                                self.TEST_MO_SENTENCE_STATUS_ROWS,
                                expected_sentence)
 
+    # TODO(#4375): Update tests to run actual pipeline code and only mock BQ I/O
     def run_test_pipeline(self,
                           person_id: int,
                           sentence: SentenceType,

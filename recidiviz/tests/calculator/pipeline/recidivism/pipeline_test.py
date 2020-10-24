@@ -405,6 +405,7 @@ class TestRecidivismPipeline(unittest.TestCase):
                    self.fake_bq_source_factory.create_fake_bq_source_constructor(dataset, data_dict)):
             self.run_test_pipeline(dataset, fake_person_id_1)
 
+    # TODO(#4375): Update tests to run actual pipeline code and only mock BQ I/O
     def run_test_pipeline(self,
                           dataset: str,
                           fake_person_id_1: int,
