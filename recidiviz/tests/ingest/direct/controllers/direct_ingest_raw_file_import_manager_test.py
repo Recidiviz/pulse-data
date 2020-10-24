@@ -91,6 +91,8 @@ class DirectIngestRawFileImportManagerTest(unittest.TestCase):
 
     def setUp(self) -> None:
         self.project_id = 'recidiviz-456'
+        self.project_id_patcher = patch('recidiviz.utils.metadata.project_id')
+        self.project_id_patcher.start().return_value = self.project_id
         self.test_region = fake_region(region_code='us_xx',
                                        are_raw_data_bq_imports_enabled_in_env=True)
         self.fs = DirectIngestGCSFileSystem(FakeGCSFileSystem())
@@ -128,6 +130,7 @@ class DirectIngestRawFileImportManagerTest(unittest.TestCase):
 
     def tearDown(self) -> None:
         self.time_patcher.stop()
+        self.project_id_patcher.stop()
 
     def mock_import_raw_file_to_big_query(self,
                                           *,

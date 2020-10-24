@@ -36,9 +36,10 @@ class CalculationDataStorageManagerTest(unittest.TestCase):
         self.mock_dataset = bigquery.dataset.DatasetReference(
             self.project_id, self.mock_view_dataset_name)
 
-        self.metadata_patcher = mock.patch('recidiviz.utils.metadata.project_id')
-        self.mock_project_id_fn = self.metadata_patcher.start()
-        self.mock_project_id_fn.return_value = self.project_id
+        self.project_id_patcher = patch('recidiviz.utils.metadata.project_id')
+        self.project_id_patcher.start().return_value = self.project_id
+        self.project_number_patcher = patch('recidiviz.utils.metadata.project_number')
+        self.project_number_patcher.start().return_value = '123456789'
 
         self.bq_client_patcher = mock.patch(
             'recidiviz.calculator.calculation_data_storage_manager.BigQueryClientImpl')
@@ -69,7 +70,8 @@ class CalculationDataStorageManagerTest(unittest.TestCase):
 
     def tearDown(self):
         self.bq_client_patcher.stop()
-        self.metadata_patcher.stop()
+        self.project_id_patcher.stop()
+        self.project_number_patcher.stop()
         self.data_storage_config_patcher.stop()
 
     def test_move_old_dataflow_metrics_to_cold_storage(self):

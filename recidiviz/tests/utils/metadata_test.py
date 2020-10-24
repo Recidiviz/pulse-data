@@ -24,6 +24,12 @@ from recidiviz.utils.metadata import local_project_id_override
 class MetadataTest(unittest.TestCase):
     """Tests for utils/metadata.py."""
 
+    def setUp(self) -> None:
+        metadata.allow_local_metadata_call = True
+
+    def tearDown(self) -> None:
+        metadata.allow_local_metadata_call = False
+
     def test_local_project_id_override(self):
         original_project = metadata.project_id()
 

@@ -23,6 +23,7 @@ import unittest
 from unittest import mock
 
 import flask
+from mock import Mock
 
 from recidiviz.persistence.database.export import cloud_sql_to_bq_export_manager
 from recidiviz.persistence.database.sqlalchemy_engine_manager import SchemaType
@@ -121,14 +122,13 @@ class ExportManagerTestCounty(unittest.TestCase):
 
         mock_parent.assert_has_calls(export_all_then_load_all_calls)
 
-    @mock.patch('recidiviz.utils.metadata.project_id')
+    @mock.patch('recidiviz.utils.metadata.project_id', Mock(return_value='test-project'))
+    @mock.patch('recidiviz.utils.metadata.project_number', Mock(return_value='123456789'))
     @mock.patch('recidiviz.persistence.database.export.cloud_sql_to_bq_export_manager.export_table_then_load_table')
-    def test_handle_bq_export_task(self, mock_export, mock_project_id):
+    def test_handle_bq_export_task(self, mock_export):
         """Tests that the export is called for a given table and module when
         the /export_manager/export endpoint is hit."""
         mock_export.return_value = True
-
-        mock_project_id.return_value = 'test-project'
 
         self.mock_export_config.for_schema_type.return_value = self.mock_export_config
 
@@ -147,14 +147,13 @@ class ExportManagerTestCounty(unittest.TestCase):
                                        table,
                                        self.mock_export_config)
 
-    @mock.patch('recidiviz.utils.metadata.project_id')
+    @mock.patch('recidiviz.utils.metadata.project_id', Mock(return_value='test-project'))
+    @mock.patch('recidiviz.utils.metadata.project_number', Mock(return_value='123456789'))
     @mock.patch('recidiviz.persistence.database.export.cloud_sql_to_bq_export_manager.export_table_then_load_table')
-    def test_handle_bq_export_task_invalid_module(self, mock_export,
-                                                  mock_project_id):
+    def test_handle_bq_export_task_invalid_module(self, mock_export):
         """Tests that there is an error when the /export_manager/export
         endpoint is hit with an invalid module."""
         mock_export.return_value = True
-        mock_project_id.return_value = 'test-project'
         table = 'fake_table'
         module = 'INVALID'
         route = '/export'
@@ -168,13 +167,13 @@ class ExportManagerTestCounty(unittest.TestCase):
         assert response.status_code == HTTPStatus.BAD_REQUEST
         mock_export.assert_not_called()
 
-    @mock.patch('recidiviz.utils.metadata.project_id')
+    @mock.patch('recidiviz.utils.metadata.project_id', Mock(return_value='test-project'))
+    @mock.patch('recidiviz.utils.metadata.project_number', Mock(return_value='123456789'))
     @mock.patch('recidiviz.persistence.database.export.cloud_sql_to_bq_export_manager.pubsub_helper')
     @mock.patch('recidiviz.persistence.database.export.cloud_sql_to_bq_export_manager.BQExportCloudTaskManager')
     def test_handle_bq_monitor_task_requeue(self,
                                             mock_task_manager,
-                                            mock_pubsub_helper,
-                                            mock_project_id):
+                                            mock_pubsub_helper):
         """Test that a new bq monitor task is added to the queue when there are
         still unfinished tasks on the bq queue."""
         queue_path = 'test-queue-path'
@@ -187,7 +186,6 @@ class ExportManagerTestCounty(unittest.TestCase):
                                    f'{queue_path}/table_name-789',
                                ])
 
-        mock_project_id.return_value = 'test-project'
         topic = 'fake_topic'
         message = 'fake_message'
         route = '/bq_monitor'
@@ -203,18 +201,17 @@ class ExportManagerTestCounty(unittest.TestCase):
             create_bq_monitor_task.assert_called_with(topic, message)
         mock_pubsub_helper.publish_message_to_topic.assert_not_called()
 
-    @mock.patch('recidiviz.utils.metadata.project_id')
+    @mock.patch('recidiviz.utils.metadata.project_id', Mock(return_value='test-project'))
+    @mock.patch('recidiviz.utils.metadata.project_number', Mock(return_value='123456789'))
     @mock.patch('recidiviz.persistence.database.export.cloud_sql_to_bq_export_manager.pubsub_helper')
     @mock.patch('recidiviz.persistence.database.export.cloud_sql_to_bq_export_manager.BQExportCloudTaskManager')
     def test_handle_bq_monitor_task_publish(self, mock_task_manager,
-                                            mock_pubsub_helper,
-                                            mock_project_id):
+                                            mock_pubsub_helper):
         """Tests that a message is published to the Pub/Sub topic when there
         are no tasks on the bq queue."""
         mock_task_manager.return_value.get_bq_queue_info.return_value = \
             CloudTaskQueueInfo(queue_name='queue_name', task_names=[])
 
-        mock_project_id.return_value = 'test-project'
         topic = 'fake_topic'
         message = 'fake_message'
         route = '/bq_monitor'
