@@ -19,8 +19,8 @@
 
 Example usage (run from `pipenv shell`):
 
-python -m recidiviz.export.state_table_export_to_csv --project-id recidiviz-staging \
---dry-run True --target-bucket-suffix jessex-test --state-code US_PA
+python -m recidiviz.persistence.database.export.state_table_export_to_csv --project-id recidiviz-staging \
+--dry-run True --target-bucket recidiviz-staging-jessex-test --state-code US_PA
 """
 
 
@@ -39,10 +39,9 @@ from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.utils.params import str_to_bool
 
 
-def run_export(project_id: str,
-               dry_run: bool,
+def run_export(dry_run: bool,
                state_code: str,
-               target_bucket_suffix: str):
+               target_bucket: str):
     """Performs the export operation, exporting rows for the given state codes from the tables from the state dataset
     in the given project to CSV files with the same names as the tables to the given GCS bucket."""
     today = datetime.date.today()
@@ -57,14 +56,13 @@ def run_export(project_id: str,
     export_configs = []
     for table in tables:
         logging.info("******************************")
-        export_query = state_table_export_query_str(table, [state_code])
+        export_query = state_table_export_query_str(table, [state_code.upper()])
         logging.info(export_query)
 
         if not export_query:
             continue
 
-        target_bucket_name = f'{project_id}-{target_bucket_suffix}'
-        export_dir = gcs_export_directory(target_bucket_name, today, state_code)
+        export_dir = gcs_export_directory(target_bucket, today, state_code.lower())
         export_file_name = f'{table.table_id}_{today.isoformat()}_export.csv'
         file = GcsfsFilePath.from_directory_and_file_name(export_dir, export_file_name)
         output_uri = file.uri()
@@ -73,7 +71,7 @@ def run_export(project_id: str,
             query=export_query,
             query_parameters=[],
             intermediate_dataset_id='export_temporary_tables',
-            intermediate_table_name=f'{dataset_ref.dataset_id}_{table.table_id}',
+            intermediate_table_name=f'{dataset_ref.dataset_id}_{table.table_id}_{state_code.lower()}',
             output_uri=output_uri,
             output_format=bigquery.DestinationFormat.CSV,
         )
@@ -99,9 +97,8 @@ if __name__ == '__main__':
     parser.add_argument('--dry-run', default=True, type=str_to_bool,
                         help='Runs script in dry-run mode, only prints the operations it would perform.')
 
-    parser.add_argument('--target-bucket-suffix', required=True,
-                        help='The suffix of the target Google Cloud Storage bucket to export data to, e.g. if the '
-                             'bucket name is recidiviz-123-some-data, then this should be some-data')
+    parser.add_argument('--target-bucket', required=True,
+                        help='The target Google Cloud Storage bucket to export data to, e.g. recidiviz-123-some-data')
 
     parser.add_argument('--state-code', required=True, help='The state code to export data for')
 
@@ -109,4 +106,6 @@ if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO, format='%(message)s')
 
     with local_project_id_override(args.project_id):
-        run_export(args.project_id, args.dry_run, args.state_code, args.target_bucket_suffix)
+        run_export(dry_run=args.dry_run,
+                   state_code=args.state_code,
+                   target_bucket=args.target_bucket)
