@@ -20,25 +20,22 @@ This file is uploaded to GCS on deploy.
 """
 import datetime
 import os
+from typing import List, Dict
+import collections
 
 import yaml
 
-from google.cloud import pubsub
-
 from airflow import models
-from airflow.operators.python_operator import PythonOperator
-from recidiviz_dataflow_operator import RecidivizDataflowTemplateOperator  # type: ignore[import]
+from recidiviz_dataflow_operator import RecidivizDataflowTemplateOperator  # type: ignore
+from iap_httprequest_operator import IAPHTTPRequestOperator  # type: ignore
 
-
-# If you update this file, you must re-upload it to the airflow/DAG file to this GCS bucket
+# Need a disable pointless statement because Python views the chaining operator ('>>') as a "pointless" statement
 # pylint: disable=W0104 pointless-statement
 
 # This is the path to the directory where Composer can access the configuration file
-
-
 config_file = "/home/airflow/gcs/dags/production_calculation_pipeline_templates.yaml"
-publisher = pubsub.PublisherClient()
 project_id = os.environ.get('GCP_PROJECT_ID')
+_VIEW_DATA_EXPORT_CLOUD_FUNCTION_URL = 'http://{}.appspot.com/cloud_function/view_data_export?export_job_filter={}'
 
 default_args = {
     'start_date': datetime.date.today().strftime('%Y-%m-%d'),
@@ -47,10 +44,11 @@ default_args = {
 }
 
 
-def send_message_to_pubsub() -> None:
-    message = 'Cloud Composer DAG triggering export of data from BigQuery to GCS'
-    topic_path = publisher.topic_path(project_id, 'v1.export.view.data')
-    publisher.publish(topic_path, data=message.encode('utf-8'))
+def pipelines_by_state(pipelines) -> Dict[str, List[str]]:  # type: ignore
+    pipes_by_state = collections.defaultdict(list)
+    for pipe in pipelines:
+        pipes_by_state[pipe['state_code']].append(pipe['job_name'])
+    return pipes_by_state
 
 
 with models.DAG(dag_id="calculation_pipeline_dag",
@@ -58,11 +56,11 @@ with models.DAG(dag_id="calculation_pipeline_dag",
                 schedule_interval=None) as dag:
     with open(config_file) as f:
         pipeline_yaml_dicts = yaml.full_load(f)
-
         if pipeline_yaml_dicts:
-            calculation_pipeline_completion_task = PythonOperator(
-                task_id='export_view_data',
-                python_callable=send_message_to_pubsub
+            pipeline_dict = pipelines_by_state(pipeline_yaml_dicts['daily_pipelines'])
+            covid_export = IAPHTTPRequestOperator(
+                task_id='COVID_bq_metric_export',
+                url=_VIEW_DATA_EXPORT_CLOUD_FUNCTION_URL.format(project_id, "COVID_DASHBOARD")
             )
             dataflow_default_args = {
                 'project': project_id,
@@ -70,14 +68,19 @@ with models.DAG(dag_id="calculation_pipeline_dag",
                 'zone': 'us-west1-c',
                 'tempLocation': 'gs://{}-dataflow-templates/staging/'.format(project_id)
             }
-            for pipeline_yaml_dict in pipeline_yaml_dicts['daily_pipelines']:
-                job_name = pipeline_yaml_dict['job_name']
-                calculation_pipeline = RecidivizDataflowTemplateOperator(
-                    task_id=job_name,
-                    template="gs://{}-dataflow-templates/templates/{}".format(project_id, job_name),
-                    job_name=job_name,
-                    dataflow_default_options=dataflow_default_args
+            for state_code, state_pipelines in pipeline_dict.items():
+                state_export = IAPHTTPRequestOperator(
+                    task_id='{}_bq_metric_export'.format(state_code),
+                    url=_VIEW_DATA_EXPORT_CLOUD_FUNCTION_URL.format(project_id, state_code)
                 )
-                # This >> ensures that all the calculation pipelines will run before the Pub / Sub message
-                # is published saying the pipelines are done.
-                calculation_pipeline >> calculation_pipeline_completion_task
+                for pipeline_to_run in state_pipelines:
+                    calculation_pipeline = RecidivizDataflowTemplateOperator(
+                        task_id=pipeline_to_run,
+                        template="gs://{}-dataflow-templates/templates/{}".format(project_id, pipeline_to_run),
+                        job_name=pipeline_to_run,
+                        dataflow_default_options=dataflow_default_args
+                    )
+                    # This >> ensures that all the calculation pipelines will run before the Pub / Sub message
+                    # is published saying the pipelines are done.
+                    calculation_pipeline >> state_export
+                    calculation_pipeline >> covid_export

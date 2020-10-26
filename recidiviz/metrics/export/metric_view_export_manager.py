@@ -17,12 +17,12 @@
 """Export data from BigQuery metric views to configurable locations.
 
 Run this export locally with the following command:
-    python -m recidiviz.metrics.export.metric_view_export_manager --project_id [PROJECT_ID]
+    python -m recidiviz.metrics.export.metric_view_export_manager --project_id [PROJECT_ID] --state_code [STATE_CODE]
 """
 import argparse
 import logging
 import sys
-from typing import Tuple, List
+from typing import Tuple, List, Optional
 
 from recidiviz.big_query import view_update_manager
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
@@ -41,7 +41,8 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING, GCP_PROJECT_PRODUCT
 from recidiviz.utils.metadata import local_project_id_override
 
 
-def export_view_data_to_cloud_storage(view_exporter: BigQueryViewExporter = None) -> None:
+def export_view_data_to_cloud_storage(export_job_filter: Optional[str] = None,
+                                      view_exporter: BigQueryViewExporter = None) -> None:
     """Exports data in BigQuery metric views to cloud storage buckets.
 
     Optionally takes in a BigQueryViewExporter for performing the export operation. If none is provided, this defaults
@@ -71,7 +72,12 @@ def export_view_data_to_cloud_storage(view_exporter: BigQueryViewExporter = None
 
     project_id = metadata.project_id()
 
+    # If the state code is set to COVID then it will match when the state_filter is None in
+    # view_config.METRIC_DATASET_EXPORT_CONFIGS
     for dataset_export_config in view_config.METRIC_DATASET_EXPORT_CONFIGS:
+        if not dataset_export_config.matches_filter(export_job_filter):
+            continue
+
         view_export_configs = dataset_export_config.export_configs_for_views_to_export(project_id=project_id)
 
         # The export will error if the validations fail for the set of view_export_configs. We want to log this failure
@@ -97,6 +103,13 @@ def parse_arguments(argv: List[str]) -> Tuple[argparse.Namespace, List[str]]:
                         choices=[GCP_PROJECT_STAGING, GCP_PROJECT_PRODUCTION],
                         required=True)
 
+    parser.add_argument('--export_job_filter',
+                        dest='export_job_filter',
+                        type=str,
+                        choices=([c.state_code_filter for c in view_config.METRIC_DATASET_EXPORT_CONFIGS] +
+                                 [c.export_name for c in view_config.METRIC_DATASET_EXPORT_CONFIGS]),
+                        required=False)
+
     return parser.parse_known_args(argv)
 
 
@@ -105,4 +118,4 @@ if __name__ == '__main__':
     known_args, _ = parse_arguments(sys.argv)
 
     with local_project_id_override(known_args.project_id):
-        export_view_data_to_cloud_storage()
+        export_view_data_to_cloud_storage(known_args.export_job_filter)

@@ -119,11 +119,23 @@ def state_aggregate():
 @cloud_functions_blueprint.route('/view_data_export')
 @authenticate_request
 def view_data_export():
-    """Calls the view export manager."""
+    """Calls the view export manager. Option to add state code to URL.
 
+    Example:
+        cloud_functions/view_data_export?export_job_filter=US_ID
+    URL parameters:
+        export_job_filter: (string) Kind of jobs to initiate export for. Can either be an export_name (e.g. LANTERN)
+                                    or a state_code (e.g. US_ND)
+    Args:
+        N/A
+    Returns:
+        N/A
+    """
     logging.info("Attempting to export view data to cloud storage")
 
-    metric_view_export_manager.export_view_data_to_cloud_storage()
+    export_job_filter = get_str_param_value("export_job_filter", request.args)
+
+    metric_view_export_manager.export_view_data_to_cloud_storage(export_job_filter)
 
     return '', HTTPStatus.OK
 
