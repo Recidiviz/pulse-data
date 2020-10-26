@@ -218,3 +218,54 @@ TAK142_FINALLY_FORMED_DOCUMENT_FRAGMENT = \
             finally_formed_documents_e6.E6_DOC,
             finally_formed_documents_e6.E6_CYC,
             finally_formed_documents_e6.E6_DOS"""
+
+ALL_OFFICERS_FRAGMENT = \
+    """all_officers AS (
+        -- Combination of 2 officer tables into one source of truth. Both tables
+        -- contain information about different groups of officers. From
+        -- conversations with MO contacts, we should use a combination of both
+        -- tables to get a full understanding of all officers.
+        SELECT
+            officers_1.*
+        FROM
+            {LBCMDATA_APFX90} officers_1
+        WHERE BDGNO != ''
+        UNION DISTINCT
+        SELECT
+            officers_2.*,
+            -- These three columns are present in officers_1 and not in
+            -- officers_2, so we add dummy values just so the tables can
+            -- be combined.
+            '0' AS ENDDTE,
+            '0' AS UPDDTE,
+            '0' AS UPDTME
+        FROM
+            {LBCMDATA_APFX91} officers_2
+        WHERE BDGNO != ''
+    ),
+    normalized_all_officers AS (
+        SELECT
+            BDGNO,
+            -- This is the actual job code
+            DEPCLS,
+            -- This is the job name, may differ slightly for the same job code
+            MAX(CLSTTL) AS CLSTTL,
+            LNAME,
+            FNAME,
+            MINTL,
+            STRDTE,
+            DTEORD,
+             -- When we find out about an officer with the exact same role,
+             -- etc from both tables, pick the largest end date.
+            MAX(ENDDTE) AS ENDDTE
+        FROM all_officers
+        GROUP BY
+            BDGNO,
+            DEPCLS,
+            LNAME,
+            FNAME,
+            MINTL,
+            STRDTE,
+            DTEORD
+    )
+    """
