@@ -87,7 +87,7 @@ from recidiviz.ingest.direct.state_shared_row_posthooks import \
     gen_map_ymd_counts_to_max_length_field_posthook, \
     gen_set_is_life_sentence_hook, \
     gen_convert_person_ids_to_external_id_objects, \
-    gen_set_field_as_concatenated_values_hook
+    gen_set_field_as_concatenated_values_hook, RowPosthookCallable
 from recidiviz.ingest.extractor.csv_data_extractor import IngestFieldCoordinates
 from recidiviz.ingest.models.ingest_info import IngestObject, StatePerson, \
     StatePersonExternalId, StateSentenceGroup, StateCharge, \
@@ -102,7 +102,7 @@ from recidiviz.ingest.models.ingest_object_cache import IngestObjectCache
 
 
 # TODO(#4266): Clean up backwards compatibility code
-def get_legacy_or_new_column_name(file_tag: str, str_content: str):
+def get_legacy_or_new_column_name(file_tag: str, str_content: str) -> str:
     if file_tag.endswith('_v2'):  # SQL Preprocessing View
         return str_content.replace('$', '_')
     # Legacy
@@ -473,7 +473,7 @@ class UsMoController(CsvGcsfsDirectIngestController):
         self.enum_overrides = self.generate_enum_overrides()
         self.row_pre_processors_by_file: Dict[str, List[Callable]] = {}
 
-        incarceration_period_row_posthooks = [
+        incarceration_period_row_posthooks: List[RowPosthookCallable] = [
             self._gen_clear_magical_date_value(
                 'release_date', PERIOD_RELEASE_DATE, self.PERIOD_MAGICAL_DATES, StateIncarcerationPeriod),
             self._set_incarceration_period_status,
@@ -718,7 +718,7 @@ class UsMoController(CsvGcsfsDirectIngestController):
             _file_tag: str,
             row: Dict[str, str],
             extracted_objects: List[IngestObject],
-            _cache: IngestObjectCache):
+            _cache: IngestObjectCache) -> None:
         sentence_start_date = parse_yyyymmdd_date(
             row[get_legacy_or_new_column_name(_file_tag, INCARCERATION_SENTENCE_START_DATE)])
         if not sentence_start_date:
@@ -741,7 +741,7 @@ class UsMoController(CsvGcsfsDirectIngestController):
             _file_tag: str,
             _row: Dict[str, str],
             extracted_objects: List[IngestObject],
-            _cache: IngestObjectCache):
+            _cache: IngestObjectCache) -> None:
         for obj in extracted_objects:
             if isinstance(obj, StateIncarcerationSentence):
                 sentence_id = obj.state_incarceration_sentence_id
@@ -767,7 +767,7 @@ class UsMoController(CsvGcsfsDirectIngestController):
                 _file_tag: str,
                 _row: Dict[str, str],
                 extracted_objects: List[IngestObject],
-                _cache: IngestObjectCache):
+                _cache: IngestObjectCache) -> None:
             for obj in extracted_objects:
                 if isinstance(obj, StateSupervisionViolation):
                     for response in obj.state_supervision_violation_responses:
@@ -780,7 +780,7 @@ class UsMoController(CsvGcsfsDirectIngestController):
             _file_tag: str,
             _row: Dict[str, str],
             extracted_objects: List[IngestObject],
-            _cache: IngestObjectCache):
+            _cache: IngestObjectCache) -> None:
         for obj in extracted_objects:
             if isinstance(obj, StateSupervisionViolation):
                 for response in obj.state_supervision_violation_responses:
@@ -794,7 +794,7 @@ class UsMoController(CsvGcsfsDirectIngestController):
             _file_tag: str,
             _row: Dict[str, str],
             extracted_objects: List[IngestObject],
-            _cache: IngestObjectCache):
+            _cache: IngestObjectCache) -> None:
         for obj in extracted_objects:
             if isinstance(obj, StateSupervisionViolation):
                 violation_id = obj.state_supervision_violation_id
@@ -807,7 +807,7 @@ class UsMoController(CsvGcsfsDirectIngestController):
             _file_tag: str,
             row: Dict[str, str],
             extracted_objects: List[IngestObject],
-            _cache: IngestObjectCache):
+            _cache: IngestObjectCache) -> None:
         """Finally formed documents are the ones that are no longer in a draft state.
 
         Updates the SupervisionViolationResponses in |extracted_objects| based on whether or not a finally formed
@@ -831,7 +831,7 @@ class UsMoController(CsvGcsfsDirectIngestController):
             _file_tag: str,
             row: Dict[str, str],
             extracted_objects: List[IngestObject],
-            _cache: IngestObjectCache):
+            _cache: IngestObjectCache) -> None:
         """Manually adds StateSupervisionViolatedConditionEntries to StateSupervisionViolations."""
         conditions_txt = row.get(SUPERVISION_VIOLATION_VIOLATED_CONDITIONS, '')
         if conditions_txt == '':
@@ -851,7 +851,7 @@ class UsMoController(CsvGcsfsDirectIngestController):
             _file_tag: str,
             row: Dict[str, str],
             extracted_objects: List[IngestObject],
-            _cache: IngestObjectCache):
+            _cache: IngestObjectCache) -> None:
         """Manually adds StateSupervisionViolationTypeEntries to StateSupervisionViolations."""
         violation_types_txt = row.get(get_legacy_or_new_column_name(_file_tag, SUPERVISION_VIOLATION_TYPES), '')
         if violation_types_txt == '':
@@ -869,7 +869,7 @@ class UsMoController(CsvGcsfsDirectIngestController):
             _file_tag: str,
             row: Dict[str, str],
             extracted_objects: List[IngestObject],
-            _cache: IngestObjectCache):
+            _cache: IngestObjectCache) -> None:
         """Manually adds StateSupervisionViolationResponses to StateSupervisionViolations."""
         recommendation_txt = \
             row.get(get_legacy_or_new_column_name(_file_tag, SUPERVISION_VIOLATION_RECOMMENDATIONS), '')
@@ -933,7 +933,7 @@ class UsMoController(CsvGcsfsDirectIngestController):
             _file_tag: str,
             row: Dict[str, str],
             extracted_objects: List[IngestObject],
-            _cache: IngestObjectCache):
+            _cache: IngestObjectCache) -> None:
         """Adds the responding agent to any SupervisionViolationRespones."""
         agent_to_create = cls._get_agent_from_row(row)
         if not agent_to_create:
@@ -950,7 +950,7 @@ class UsMoController(CsvGcsfsDirectIngestController):
             _file_tag: str,
             row: Dict[str, str],
             extracted_objects: List[IngestObject],
-            _cache: IngestObjectCache):
+            _cache: IngestObjectCache) -> None:
 
         agent_to_create = cls._get_agent_from_row(row)
         if not agent_to_create:
@@ -966,7 +966,7 @@ class UsMoController(CsvGcsfsDirectIngestController):
             _file_tag: str,
             row: Dict[str, str],
             extracted_objects: List[IngestObject],
-            _cache: IngestObjectCache):
+            _cache: IngestObjectCache) -> None:
 
         case_types = cls._sorted_list_from_col(row, 'CASE_TYPE_LIST')
 
@@ -982,7 +982,7 @@ class UsMoController(CsvGcsfsDirectIngestController):
             _file_tag: str,
             _row: Dict[str, str],
             extracted_objects: List[IngestObject],
-            _cache: IngestObjectCache):
+            _cache: IngestObjectCache) -> None:
 
         for obj in extracted_objects:
             if isinstance(obj, StateSupervisionPeriod):
@@ -1014,7 +1014,7 @@ class UsMoController(CsvGcsfsDirectIngestController):
             _file_tag: str,
             row: Dict[str, str],
             extracted_objects: List[IngestObject],
-            _cache: IngestObjectCache):
+            _cache: IngestObjectCache) -> None:
 
         completion_date = row[get_legacy_or_new_column_name(_file_tag, MOST_RECENT_SENTENCE_STATUS_DATE)]
         for obj in extracted_objects:
@@ -1030,7 +1030,7 @@ class UsMoController(CsvGcsfsDirectIngestController):
                              _file_tag: str,
                              row: Dict[str, str],
                              extracted_objects: List[IngestObject],
-                             _cache: IngestObjectCache):
+                             _cache: IngestObjectCache) -> None:
 
         status_enum_str = self._sentence_status_enum_str_from_row(_file_tag, row)
         for obj in extracted_objects:
@@ -1072,7 +1072,7 @@ class UsMoController(CsvGcsfsDirectIngestController):
                                 _file_tag: str,
                                 row: Dict[str, str],
                                 extracted_objects: List[IngestObject],
-                                _cache: IngestObjectCache):
+                                _cache: IngestObjectCache) -> None:
         offense_date = row.get(get_legacy_or_new_column_name(_file_tag, SENTENCE_OFFENSE_DATE), None)
 
         if offense_date and offense_date == '0':
@@ -1085,12 +1085,12 @@ class UsMoController(CsvGcsfsDirectIngestController):
                                       field_name: str,
                                       column_code: str,
                                       magical_dates: List[str],
-                                      sentence_type: Type[IngestObject]):
+                                      sentence_type: Type[IngestObject]) -> Callable:
 
         def _clear_magical_date_values(_file_tag: str,
                                        row: Dict[str, str],
                                        extracted_objects: List[IngestObject],
-                                       _cache: IngestObjectCache):
+                                       _cache: IngestObjectCache) -> None:
             date_str = row.get(column_code, None)
 
             for obj in extracted_objects:
@@ -1105,7 +1105,7 @@ class UsMoController(CsvGcsfsDirectIngestController):
                                           _file_tag: str,
                                           row: Dict[str, str],
                                           extracted_objects: List[IngestObject],
-                                          _cache: IngestObjectCache):
+                                          _cache: IngestObjectCache) -> None:
         """Creates a source supervision violation response directly on the incarceration period created in the given
         row, if appropriate."""
         for obj in extracted_objects:
@@ -1167,7 +1167,7 @@ class UsMoController(CsvGcsfsDirectIngestController):
                                          _file_tag: str,
                                          _row: Dict[str, str],
                                          extracted_objects: List[IngestObject],
-                                         _cache: IngestObjectCache):
+                                         _cache: IngestObjectCache) -> None:
         for obj in extracted_objects:
             if isinstance(obj, StateIncarcerationPeriod):
                 if obj.release_date:
@@ -1178,7 +1178,7 @@ class UsMoController(CsvGcsfsDirectIngestController):
     @classmethod
     def _sentence_group_ancestor_chain_override(cls,
                                                 file_tag: str,
-                                                row: Dict[str, str]):
+                                                row: Dict[str, str]) -> Dict[str, str]:
         coords = cls._generate_sentence_group_id_coords(file_tag, row)
         return {
             coords.class_name: coords.field_value
@@ -1187,7 +1187,7 @@ class UsMoController(CsvGcsfsDirectIngestController):
     @classmethod
     def _incarceration_sentence_ancestor_chain_override(cls,
                                                         file_tag: str,
-                                                        row: Dict[str, str]):
+                                                        row: Dict[str, str]) -> Dict[str, str]:
         group_coords = cls._generate_sentence_group_id_coords(file_tag, row)
         sentence_coords = cls._generate_incarceration_sentence_id_coords(file_tag, row)
 
@@ -1199,7 +1199,7 @@ class UsMoController(CsvGcsfsDirectIngestController):
     @classmethod
     def _supervision_sentence_ancestor_chain_override(cls,
                                                       file_tag: str,
-                                                      row: Dict[str, str]):
+                                                      row: Dict[str, str]) -> Dict[str, str]:
         group_coords = cls._generate_sentence_group_id_coords(file_tag, row)
         sentence_coords = cls._generate_supervision_sentence_id_coords(file_tag, row)
 
@@ -1212,7 +1212,7 @@ class UsMoController(CsvGcsfsDirectIngestController):
     def _supervision_violation_report_ancestor_chain_override(
             cls,
             file_tag: str,
-            row: Dict[str, str]):
+            row: Dict[str, str]) -> Dict[str, str]:
         group_coords = cls._generate_sentence_group_id_coords(file_tag, row)
         if row.get(f'{TAK076_PREFIX}${FIELD_KEY_SEQ}', '0') == '0':
             sentence_coords = cls._generate_incarceration_sentence_id_coords(file_tag, row, TAK076_PREFIX)
@@ -1227,7 +1227,7 @@ class UsMoController(CsvGcsfsDirectIngestController):
     def _supervision_violation_citation_ancestor_chain_override(
             cls,
             file_tag: str,
-            row: Dict[str, str]):
+            row: Dict[str, str]) -> Dict[str, str]:
         group_coords = cls._generate_sentence_group_id_coords(file_tag, row)
         if row.get(get_legacy_or_new_column_name(file_tag, f'{TAK291_PREFIX}${FIELD_KEY_SEQ}'), '0') == '0':
             sentence_coords = cls._generate_incarceration_sentence_id_coords(file_tag, row, TAK291_PREFIX)
@@ -1244,7 +1244,7 @@ class UsMoController(CsvGcsfsDirectIngestController):
             file_tag: str,
             row: Dict[str, str],
             extracted_objects: List[IngestObject],
-            _cache: IngestObjectCache):
+            _cache: IngestObjectCache) -> None:
         col_prefix = cls.primary_col_prefix_for_file_tag(file_tag)
         for obj in extracted_objects:
             if isinstance(obj, StateSentenceGroup):
@@ -1516,11 +1516,12 @@ class UsMoController(CsvGcsfsDirectIngestController):
         return date.isoformat()
 
     @classmethod
-    def _sorted_list_from_col(cls, row: Dict[str, str], col_name: str):
+    def _sorted_list_from_col(cls, row: Dict[str, str], col_name: str) -> List[str]:
         value = row.get(col_name, '')
         return sorted_list_from_str(value)
 
-    def get_tak022_tak023_tak025_tak026_offender_sentence_institution_row_processors(self, file_tag):
+    def get_tak022_tak023_tak025_tak026_offender_sentence_institution_row_processors(
+            self, file_tag: str) -> List[RowPosthookCallable]:
         return [
             gen_normalize_county_codes_posthook(self.region.region_code,
                                                 get_legacy_or_new_column_name(file_tag, CHARGE_COUNTY_CODE),
@@ -1557,7 +1558,8 @@ class UsMoController(CsvGcsfsDirectIngestController):
             self.set_charge_id_from_sentence_id,
             ]
 
-    def get_tak022_tak023_tak025_tak026_offender_sentence_supervision_row_processors(self, file_tag):
+    def get_tak022_tak023_tak025_tak026_offender_sentence_supervision_row_processors(
+            self, file_tag: str) -> List[RowPosthookCallable]:
         return [
             gen_normalize_county_codes_posthook(self.region.region_code,
                                                 get_legacy_or_new_column_name(file_tag, CHARGE_COUNTY_CODE),
