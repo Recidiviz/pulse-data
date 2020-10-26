@@ -58,21 +58,24 @@ METRIC_DATASET_EXPORT_CONFIGS: List[ExportMetricDatasetConfig] = \
             dataset_id=PO_REPORT_DATASET,
             metric_view_builders_to_export=[PO_MONTHLY_REPORT_DATA_VIEW_BUILDER],
             output_directory_uri_template=PO_REPORT_OUTPUT_DIRECTORY_URI,
-            state_code_filter='US_ID'
+            state_code_filter='US_ID',
+            export_name='PO_MONTHLY'
         ),
         # Public Dashboard views for US_ND
         ExportMetricDatasetConfig(
             dataset_id=PUBLIC_DASHBOARD_VIEWS_DATASET,
             metric_view_builders_to_export=PUBLIC_DASHBOARD_VIEW_BUILDERS,
             output_directory_uri_template=PUBLIC_DASHBOARD_VIEWS_OUTPUT_DIRECTORY_URI,
-            state_code_filter='US_ND'
+            state_code_filter='US_ND',
+            export_name='PUBLIC_DASHBOARD'
         ),
         # COVID Dashboard views (not state-specific)
         ExportMetricDatasetConfig(
             dataset_id=COVID_DASHBOARD_DATASET,
             metric_view_builders_to_export=COVID_DASHBOARD_VIEW_BUILDERS,
             output_directory_uri_template=COVID_DASHBOARD_OUTPUT_DIRECTORY_URI,
-            state_code_filter=None
+            state_code_filter=None,
+            export_name='COVID_DASHBOARD'
         ),
     ] + [
         # Lantern Dashboard views for all relevant states
@@ -80,7 +83,8 @@ METRIC_DATASET_EXPORT_CONFIGS: List[ExportMetricDatasetConfig] = \
             dataset_id=DASHBOARD_VIEWS_DATASET,
             metric_view_builders_to_export=LANTERN_DASHBOARD_VIEW_BUILDERS,
             output_directory_uri_template=DASHBOARD_VIEWS_OUTPUT_DIRECTORY_URI,
-            state_code_filter=state_code
+            state_code_filter=state_code,
+            export_name='LANTERN'
         )
         for state_code in ['US_MO', 'US_PA']
     ] + [
@@ -89,7 +93,8 @@ METRIC_DATASET_EXPORT_CONFIGS: List[ExportMetricDatasetConfig] = \
             dataset_id=DASHBOARD_VIEWS_DATASET,
             metric_view_builders_to_export=CORE_DASHBOARD_VIEW_BUILDERS,
             output_directory_uri_template=DASHBOARD_VIEWS_OUTPUT_DIRECTORY_URI,
-            state_code_filter=state_code
+            state_code_filter=state_code,
+            export_name='CORE',
         )
         for state_code in ['US_ND']
     ]

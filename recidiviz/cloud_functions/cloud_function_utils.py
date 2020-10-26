@@ -58,6 +58,7 @@ GCSFS_NO_CACHING = -1
 
 # pylint: disable=protected-access
 
+
 def make_iap_request(url: str, client_id: str, method='GET', **kwargs):
     """Makes a request to an application protected by Identity-Aware Proxy.
 

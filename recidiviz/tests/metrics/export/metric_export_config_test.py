@@ -27,6 +27,7 @@ from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
 
 class TestExportMetricDatasetConfig(unittest.TestCase):
     """Tests the functionality of the ExportMetricDatasetConfig class."""
+
     def setUp(self):
         self.mock_project_id = 'fake-recidiviz-project'
         self.mock_dataset_id = 'base_dataset'
@@ -55,7 +56,8 @@ class TestExportMetricDatasetConfig(unittest.TestCase):
             dataset_id='dataset_id',
             metric_view_builders_to_export=self.views_for_dataset,
             output_directory_uri_template="gs://{project_id}-bucket-without-state-codes",
-            state_code_filter=None
+            state_code_filter=None,
+            export_name=None
         )
 
         view_configs_to_export = state_agnostic_dataset_export_config.export_configs_for_views_to_export(
@@ -80,14 +82,73 @@ class TestExportMetricDatasetConfig(unittest.TestCase):
     def test_metric_export_state_specific(self):
         """Tests the export_configs_for_views_to_export function on the ExportMetricDatasetConfig class when the
         export is state-specific."""
-        state_agnostic_dataset_export_config = ExportMetricDatasetConfig(
+        specific_state_dataset_export_config = ExportMetricDatasetConfig(
             dataset_id='dataset_id',
             metric_view_builders_to_export=self.views_for_dataset,
             output_directory_uri_template="gs://{project_id}-bucket",
-            state_code_filter='US_XX'
+            state_code_filter='US_XX',
+            export_name=None
         )
 
-        view_configs_to_export = state_agnostic_dataset_export_config.export_configs_for_views_to_export(
+        view_configs_to_export = specific_state_dataset_export_config.export_configs_for_views_to_export(
+            project_id=self.mock_project_id
+        )
+
+        expected_view = self.mock_view_builder.build()
+
+        expected_view_export_configs = [ExportMetricBigQueryViewConfig(
+            view=expected_view,
+            view_filter_clause=" WHERE state_code = 'US_XX'",
+            intermediate_table_name=f"{expected_view.view_id}_table_US_XX",
+            output_directory=GcsfsDirectoryPath.from_absolute_path(
+                f"gs://{self.mock_project_id}-bucket/US_XX"
+            )
+        )]
+
+        self.assertEqual(expected_view_export_configs, view_configs_to_export)
+
+    def test_metric_export_lantern_dashboard(self):
+        """Tests the export_configs_for_views_to_export function on the ExportMetricDatasetConfig class when the
+            export is state-agnostic."""
+        lantern_dashboard_dataset_export_config = ExportMetricDatasetConfig(
+            dataset_id='dataset_id',
+            metric_view_builders_to_export=self.views_for_dataset,
+            output_directory_uri_template="gs://{project_id}-bucket-without-state-codes",
+            state_code_filter=None,
+            export_name="TEST_EXPORT"
+        )
+
+        view_configs_to_export = lantern_dashboard_dataset_export_config.export_configs_for_views_to_export(
+            project_id=self.mock_project_id
+        )
+
+        expected_view = self.mock_view_builder.build()
+
+        expected_view_export_configs = [ExportMetricBigQueryViewConfig(
+            view=expected_view,
+            view_filter_clause=None,
+            intermediate_table_name=f"{expected_view.view_id}_table",
+            output_directory=GcsfsDirectoryPath.from_absolute_path(
+                lantern_dashboard_dataset_export_config.output_directory_uri_template.format(
+                    project_id=self.mock_project_id,
+                )
+            )
+        )]
+
+        self.assertEqual(expected_view_export_configs, view_configs_to_export)
+
+    def test_metric_export_lantern_dashboard_with_state(self):
+        """Tests the export_configs_for_views_to_export function on the ExportMetricDatasetConfig class when the
+            export is state-specific."""
+        lantern_dashboard_with_state_dataset_export_config = ExportMetricDatasetConfig(
+            dataset_id='dataset_id',
+            metric_view_builders_to_export=self.views_for_dataset,
+            output_directory_uri_template="gs://{project_id}-bucket",
+            state_code_filter="US_XX",
+            export_name="TEST_EXPORT"
+        )
+
+        view_configs_to_export = lantern_dashboard_with_state_dataset_export_config.export_configs_for_views_to_export(
             project_id=self.mock_project_id
         )
 
