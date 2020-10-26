@@ -27,6 +27,8 @@ from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath
 from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
 from recidiviz.metrics.export import metric_view_export_manager
 
+mock_state_code = 'US_XX'
+
 
 class MetricViewExportManagerTest(unittest.TestCase):
     """Tests for metric_view_export_manager.py."""
@@ -65,7 +67,8 @@ class MetricViewExportManagerTest(unittest.TestCase):
                 dataset_id=self.mock_dataset_id,
                 metric_view_builders_to_export=self.views_for_dataset,
                 output_directory_uri_template="gs://{project_id}-dataset-location/subdirectory",
-                state_code_filter='US_XX'
+                state_code_filter=mock_state_code,
+                export_name=None
             )
         ]
 
@@ -89,7 +92,7 @@ class MetricViewExportManagerTest(unittest.TestCase):
     @mock.patch('recidiviz.big_query.export.big_query_view_exporter.BigQueryViewExporter')
     def test_export_dashboard_data_to_cloud_storage(self, mock_view_exporter, mock_view_update_manager):
         """Tests the table is created from the view and then extracted."""
-        metric_view_export_manager.export_view_data_to_cloud_storage(mock_view_exporter)
+        metric_view_export_manager.export_view_data_to_cloud_storage(mock_state_code, mock_view_exporter)
 
         view = self.mock_view_builder.build()
 
@@ -122,14 +125,16 @@ class MetricViewExportManagerTest(unittest.TestCase):
                 dataset_id='dataset_id',
                 metric_view_builders_to_export=[self.mock_view_builder],
                 output_directory_uri_template="gs://{project_id}-bucket-without-state-codes",
-                state_code_filter=None
+                state_code_filter=None,
+                export_name=None
             ),
         ]
 
         mock_view_config.VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE = self.views_to_update
         mock_view_config.METRIC_DATASET_EXPORT_CONFIGS = state_agnostic_dataset_export_configs
 
-        metric_view_export_manager.export_view_data_to_cloud_storage(mock_view_exporter)
+        metric_view_export_manager.export_view_data_to_cloud_storage(export_job_filter=None,
+                                                                     view_exporter=mock_view_exporter)
 
         view = self.mock_view_builder.build()
 
