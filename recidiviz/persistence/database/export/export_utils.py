@@ -65,7 +65,7 @@ def state_code_in_clause(state_codes: List[str]) -> str:
     state_code_in_clause(['US_ID']) --> "state_code = 'US_ID'"
     """
     if len(state_codes) == 1:
-        return f'state_code = {state_codes[0].upper()}'
+        return f'state_code = \'{state_codes[0].upper()}\''
 
     listed = ','.join([f"'{code.upper()}'" for code in state_codes])
     return f'state_code in ({listed})'
