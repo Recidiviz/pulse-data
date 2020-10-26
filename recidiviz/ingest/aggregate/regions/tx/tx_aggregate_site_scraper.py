@@ -17,11 +17,11 @@
 
 """Scrapes the texas aggregate site and finds pdfs to download."""
 from typing import Set
-from lxml import html
+
 import requests
+from lxml import html
 
 STATE_AGGREGATE_URL = 'https://www.tcjs.state.tx.us/historical-population-reports/'
-PDF_URL_TEMPLATE = 'https://www.tcjs.state.tx.us/docs/AbbreviatedPopReports/{}'
 
 
 def get_urls_to_download() -> Set[str]:
@@ -29,13 +29,4 @@ def get_urls_to_download() -> Set[str]:
     page = requests.get(STATE_AGGREGATE_URL).text
     html_tree = html.fromstring(page)
     links = html_tree.xpath('//a/@href')
-
-    aggregate_report_urls = set()
-    for link in links:
-        if 'AbbreviatedPopReports' in link:
-            filename = link.split('/')[-1]
-            url = PDF_URL_TEMPLATE.format(filename)
-            aggregate_report_urls.add(url)
-        elif 'AbbreRpt' in link:
-            aggregate_report_urls.add(link)
-    return aggregate_report_urls
+    return {link for link in links if 'Abbre' in link and '.pdf' in link}
