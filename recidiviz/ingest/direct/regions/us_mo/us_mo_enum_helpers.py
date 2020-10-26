@@ -727,7 +727,7 @@ def supervision_period_termination_reason_mapper(label: str) -> Optional[StateSu
     # TODO(#2865): Update enum normalization so that we separate by commas instead of spaces
     statuses = sorted_list_from_str(label, ' ')
 
-    def status_rank(status: str):
+    def status_rank(status: str) -> int:
         """In the case that there are multiple statuses on the same day, we pick the status that is most likely to
         give us accurate info about the reason this supervision period was terminated. In the case of supervision
         period terminations, we pick statuses first that have the pattern 99O* (e.g. '99O9020'), since those
@@ -897,5 +897,5 @@ def supervising_officer_mapper(label: str) -> Optional[StateAgentType]:
     return StateAgentType.INTERNAL_UNKNOWN
 
 
-def _status_rank_str(status: str, rank_fn: Callable[[str], int]):
+def _status_rank_str(status: str, rank_fn: Callable[[str], int]) -> str:
     return f'{str({rank_fn(status)}).zfill(3)}{status}'
