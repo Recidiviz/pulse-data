@@ -396,6 +396,8 @@ class BaseHistoricalSnapshotUpdater(Generic[SchemaPersonType]):
         for schema_object in root_schema_objects:
             type_name = type(schema_object).__name__
             key = schema_object.get_primary_key()
+            if key is None:
+                raise ValueError(f"Primary key not set for object of type [{type_name}]")
             if key in keys_by_type[type_name]:
                 raise AssertionError(
                     "Duplicate entities passed of type {} with ID {}".format(
