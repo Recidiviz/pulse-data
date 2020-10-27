@@ -44,7 +44,7 @@ def clear_sm() -> None:
 CACHED_SECRETS: Dict[str, str] = {}
 
 
-def get_secret(secret_id) -> Optional[str]:
+def get_secret(secret_id: str) -> Optional[str]:
     """Retrieve secret from local cache or the Secret Manager.
 
     A helper function for processes to retrieve secrets. First checks a local cache: if not found, this will pull from

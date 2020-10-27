@@ -16,6 +16,7 @@
 # =============================================================================
 """SQLAlchemy table mixin that defines all columns common on ahistory table"""
 
+from typing import Any, Dict
 from sqlalchemy import Column, DateTime
 
 
@@ -23,7 +24,7 @@ class HistoryTableSharedColumns:
     """A mixin which defines all columns common to any history table"""
 
     # Consider this class a mixin and only allow instantiating subclasses
-    def __new__(cls, *_, **__):
+    def __new__(cls, *_: Any, **__: Dict[str, Any]) -> 'HistoryTableSharedColumns':
         if cls is HistoryTableSharedColumns:
             raise Exception(f'[{cls}] cannot be instantiated')
         return super().__new__(cls)
