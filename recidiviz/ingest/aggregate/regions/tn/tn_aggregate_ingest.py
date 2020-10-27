@@ -114,7 +114,7 @@ def _parse_table(location: str, filename: str, is_female: bool,
              else [2, 3, 4])
     table = read_pdf(location, filename, pages=pages, multiple_tables=True)
 
-    if report_date.year == 2020 and report_date.month in (4, 5):
+    if is_female and report_date.year == 2020 and report_date.month in (4, 5, 6):
         table = [table[0],
                  pd.concat((table[1], table[2])),
                  pd.concat((table[3], table[4]))]
