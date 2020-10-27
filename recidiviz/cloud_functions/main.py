@@ -168,9 +168,8 @@ def trigger_calculation_pipeline_dag(data, _context):
 
 
 def run_calculation_pipelines(_event, _context):
-    """This function, which is triggered by a Pub/Sub event, kicks off a
-    Dataflow job with the given job_name where the template for the job lives at
-    gs://{bucket}/templates/{template_name} for the given project.
+    """This function, which is triggered by a Pub/Sub event, kicks off
+    the historical ND pipelines on deployment.
 
     On successful triggering of the job, this function makes a call to the app
     to begin monitoring the progress of the job.
