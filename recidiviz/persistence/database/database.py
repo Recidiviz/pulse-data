@@ -37,7 +37,7 @@ _DUMMY_BOOKING_ID = -1
 def write_people(session: Session,
                  people: List[SchemaPersonType],
                  metadata: IngestMetadata,
-                 orphaned_entities: List[DatabaseEntity] = None):
+                 orphaned_entities: List[DatabaseEntity] = None) -> List[SchemaPersonType]:
     """
     Converts the given |people| into (SchemaPersonType) objects and persists
     their corresponding record trees. Returns the list of persisted
@@ -52,7 +52,7 @@ def write_people(session: Session,
 def write_person(session: Session,
                  person: SchemaPersonType,
                  metadata: IngestMetadata,
-                 orphaned_entities: List[DatabaseEntity] = None):
+                 orphaned_entities: List[DatabaseEntity] = None) -> SchemaPersonType:
     """
     Converts the given |person| into a (SchemaPersonType) object and persists
     the record tree rooted at that |person|. Returns the persisted
@@ -71,7 +71,7 @@ def write_person(session: Session,
 def _save_record_trees(session: Session,
                        root_people: List[SchemaPersonType],
                        orphaned_entities: List[DatabaseEntity],
-                       metadata: IngestMetadata):
+                       metadata: IngestMetadata) -> List[SchemaPersonType]:
     """Persists all record trees rooted at |root_people|. Also performs any
     historical snapshot updates required for any entities in any of these
     record trees. Returns the list of persisted (SchemaPersonType) objects.

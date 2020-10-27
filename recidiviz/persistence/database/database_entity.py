@@ -16,23 +16,24 @@
 # =============================================================================
 
 """Mixin class for database entities"""
-from typing import Optional
+from typing import Dict, List, Optional, Set, Type, TypeVar
 
 from sqlalchemy.inspection import inspect
+from sqlalchemy.orm.properties import ColumnProperty
+from sqlalchemy.orm.relationships import RelationshipProperty
+from sqlalchemy.sql.sqltypes import Boolean
 
 from recidiviz.persistence.entity.core_entity import CoreEntity
-
 
 class DatabaseEntity(CoreEntity):
     """Mixin class to provide helper methods to expose database entity
     properties
     """
 
-    _COLUMN_PROPERTY_TYPE_NAME = 'ColumnProperty'
-    _RELATIONSHIP_PROPERTY_TYPE_NAME = 'RelationshipProperty'
+    Property = TypeVar('Property', RelationshipProperty, ColumnProperty)
 
     @classmethod
-    def get_primary_key_column_name(cls):
+    def get_primary_key_column_name(cls) -> str:
         """Returns string name of primary key column of the table
 
         NOTE: This name is the *column* name on the table, which is not
@@ -42,7 +43,7 @@ class DatabaseEntity(CoreEntity):
         return inspect(cls).primary_key[0].name
 
     @classmethod
-    def get_column_property_names(cls):
+    def get_column_property_names(cls) -> Set[str]:
         """Returns set of string names of all properties of the entity that
         correspond to columns in the table.
 
@@ -51,46 +52,44 @@ class DatabaseEntity(CoreEntity):
         distinction is important in cases where a different attribute name is
         used because the column name is a Python reserved keyword like "class".
         """
-        return cls._get_entity_property_names_by_type(
-            cls._COLUMN_PROPERTY_TYPE_NAME)
+        return cls._get_entity_property_names_by_type(ColumnProperty)
 
     @classmethod
-    def get_foreign_key_names(cls):
+    def get_foreign_key_names(cls) -> List[str]:
         """Returns set of string names of all properties of the entity that
         correspond to foreign keys of other database entities.
         """
         return [col.name for col in inspect(cls).columns if col.foreign_keys]
 
     @classmethod
-    def get_relationship_property_names(cls):
+    def get_relationship_property_names(cls) -> Set[str]:
         """Returns set of string names of all properties of the entity that
         correspond to relationships to other database entities.
         """
         return inspect(cls).relationships.keys()
 
     @classmethod
-    def is_relationship_property(cls, property_name):
+    def is_relationship_property(cls, property_name: str) -> Boolean:
         return property_name in cls.get_relationship_property_names()
 
     @classmethod
     def get_relationship_property_class_name(
-            cls, property_name) -> Optional[str]:
+            cls, property_name: str) -> Optional[str]:
         if not cls.is_relationship_property(property_name):
             return None
         prop = inspect(cls).relationships[property_name]
         return prop.entity.class_.__name__
 
     @classmethod
-    def get_relationship_property_names_and_properties(cls):
+    def get_relationship_property_names_and_properties(cls) -> RelationshipProperty:
         """Returns a dictionary where the keys are the string names of all
         properties of |cls| that correspond to relationships to other database
         entities, and the values are the corresponding properties.
         """
-        return cls._get_entity_names_and_properties_by_type(
-            cls._RELATIONSHIP_PROPERTY_TYPE_NAME)
+        return cls._get_entity_names_and_properties_by_type(RelationshipProperty)
 
     @classmethod
-    def get_property_name_by_column_name(cls, column_name):
+    def get_property_name_by_column_name(cls, column_name: str) -> str:
         """Returns string name of ORM object attribute corresponding to
         |column_name| on table
         """
@@ -98,12 +97,12 @@ class DatabaseEntity(CoreEntity):
                     for name in cls.get_column_property_names()
                     if column_name == name)
 
-    def get_primary_key(self):
+    def get_primary_key(self) -> Optional[int]:
         """Returns primary key value for entity"""
         return getattr(self, type(self)._get_primary_key_property_name(), None)
 
     @classmethod
-    def _get_primary_key_property_name(cls):
+    def _get_primary_key_property_name(cls) -> str:
         """Returns string name of primary key column property of the entity
 
         NOTE: This name is the *attribute* name on the ORM object, which is not
@@ -113,16 +112,16 @@ class DatabaseEntity(CoreEntity):
             cls.get_primary_key_column_name())
 
     @classmethod
-    def _get_entity_property_names_by_type(cls, type_name: str):
+    def _get_entity_property_names_by_type(cls, property_type: Type[Property]) -> Set[str]:
         """Returns set of string names of all properties of |cls| that match the
-        type of |type_name|.
+        type of |property_type|.
         """
-        return set(cls._get_entity_names_and_properties_by_type(type_name).keys())
+        return set(cls._get_entity_names_and_properties_by_type(property_type).keys())
 
     @classmethod
-    def _get_entity_names_and_properties_by_type(cls, type_name: str):
+    def _get_entity_names_and_properties_by_type(cls, property_type: Type[Property]) -> Dict[str, Property]:
         """Returns a dictionary where the keys are the string names of all
-        properties of |cls| that match the type of |type_name|, and the
+        properties of |cls| that are of type |property_type|, and the
         values are the corresponding properties.
         """
 
@@ -130,12 +129,12 @@ class DatabaseEntity(CoreEntity):
 
         # pylint: disable=protected-access
         for name, property_object in inspect(cls)._props.items():
-            if type(property_object).__name__ == type_name:
+            if isinstance(property_object, property_type):
                 names_to_properties[name] = property_object
 
         return names_to_properties
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         """String representation of a DatabaseEntity object that prints DB IDs and external ids for better debugging."""
         property_strs = sorted([f'{key}={value}'
                                 for key, value in self.__dict__.items()

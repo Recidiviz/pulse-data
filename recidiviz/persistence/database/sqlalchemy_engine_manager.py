@@ -17,7 +17,7 @@
 """A class to manage all SQLAlchemy Engines for our database instances."""
 import enum
 import logging
-from typing import Dict, Optional, List
+from typing import Any, Dict, Optional, List
 
 import sqlalchemy
 from sqlalchemy.engine import Engine
@@ -40,16 +40,20 @@ class SQLAlchemyEngineManager:
 
     _engine_for_schema: Dict[DeclarativeMeta, Engine] = {}
 
-    _SCHEMA_TO_INSTANCE_ID_KEY: Dict[SchemaType, str] = {
+    # An instance id can be None if the schema exists but there is not yet a cloud sql instance for it. In that case
+    # the app will skip over trying to connect to it.
+    _SCHEMA_TO_INSTANCE_ID_KEY: Dict[SchemaType, Optional[str]] = {
         SchemaType.JAILS: 'cloudsql_instance_id',
         SchemaType.STATE: 'state_cloudsql_instance_id',
         SchemaType.OPERATIONS: 'operations_cloudsql_instance_id',
+        SchemaType.JUSTICE_COUNTS: None,
     }
 
     _SCHEMA_TO_DB_NAME_KEY: Dict[SchemaType, str] = {
         SchemaType.JAILS: 'sqlalchemy_db_name',
         SchemaType.STATE: 'state_db_name',
         SchemaType.OPERATIONS: 'operations_db_name',
+        SchemaType.JUSTICE_COUNTS: 'justice_counts_db_name',
     }
 
     @classmethod
@@ -73,7 +77,7 @@ class SQLAlchemyEngineManager:
             cls,
             db_url: str,
             schema_base: DeclarativeMeta,
-            **dialect_specific_kwargs) -> None:
+            **dialect_specific_kwargs: Any) -> None:
         """Initializes a sqlalchemy Engine object for the given database / schema and caches it for future use."""
 
         if schema_base in cls._engine_for_schema:
@@ -87,7 +91,7 @@ class SQLAlchemyEngineManager:
         cls._engine_for_schema[schema_base] = engine
 
     @staticmethod
-    def get_isolation_level(schema_base):
+    def get_isolation_level(schema_base: DeclarativeMeta) -> Optional[str]:
         # Set isolation level to SERIALIZABLE for states. This ensures that data read during a transaction is still
         # valid when the transaction is committed, avoiding any inconsistency issues such as #2989. See the following
         # for details on transaction isolation guarantees within Postgres:
@@ -102,11 +106,11 @@ class SQLAlchemyEngineManager:
         return None
 
     @classmethod
-    def teardown_engine_for_schema(cls, declarative_base: DeclarativeMeta):
+    def teardown_engine_for_schema(cls, declarative_base: DeclarativeMeta) -> None:
         cls._engine_for_schema.pop(declarative_base).dispose()
 
     @classmethod
-    def teardown_engines(cls):
+    def teardown_engines(cls) -> None:
         for engine in cls._engine_for_schema.values():
             engine.dispose()
         cls._engine_for_schema.clear()
@@ -153,19 +157,22 @@ class SQLAlchemyEngineManager:
 
     @classmethod
     def get_cloudsql_instance_id_key(
-            cls, schema_type: SchemaType) -> str:
+            cls, schema_type: SchemaType) -> Optional[str]:
         return cls._SCHEMA_TO_INSTANCE_ID_KEY[schema_type]
 
     @classmethod
     def get_stripped_cloudsql_instance_id(
-            cls, schema_type: SchemaType) -> str:
-        """The full instance id stored in secrets has the form
-        project_id:zone:instance_id. This returns just the final instance_id
-        For example, 'dev-data' or 'prod-state-data'.
+            cls, schema_type: SchemaType) -> Optional[str]:
+        """The full instance id stored in secrets has the form project_id:zone:instance_id.
+
+        This returns just the final instance_id, for example, 'dev-data' or 'prod-state-data'. If a key is not
+        configured for the given schema, returns None.
 
         Should be used when using the sqladmin_client().
         """
         instance_id_key = cls.get_cloudsql_instance_id_key(schema_type)
+        if instance_id_key is None:
+            return None
         instance_id_full = secrets.get_secret(instance_id_key)
 
         if instance_id_full is None:
@@ -179,50 +186,48 @@ class SQLAlchemyEngineManager:
 
     @classmethod
     def get_all_stripped_cloudsql_instance_ids(cls) -> List[str]:
-        """Returns all stripped instance ids for all sql instances in this
-        project. See get_stripped_cloudsql_instance_id() for more info.
+        """Returns stripped instance ids for all sql instances in this project.
+
+        See get_stripped_cloudsql_instance_id() for more info.
         """
-        return [cls.get_stripped_cloudsql_instance_id(schema_type)
-                for schema_type in SchemaType]
+        ids_for_all_schemas = [cls.get_stripped_cloudsql_instance_id(schema_type) for schema_type in SchemaType]
+        return [instance_id for instance_id in ids_for_all_schemas if instance_id is not None]
 
     @classmethod
     def _get_state_server_postgres_instance_url(cls) -> str:
         return cls._get_server_postgres_instance_url(
             db_user_key='state_db_user',
             db_password_key='state_db_password',
-            db_name_key=cls.get_db_name_key(SchemaType.STATE),
-            cloudsql_instance_id_key=
-            cls.get_cloudsql_instance_id_key(SchemaType.STATE))
+            schema_type=SchemaType.STATE)
 
     @classmethod
     def _get_jails_server_postgres_instance_url(cls) -> str:
         return cls._get_server_postgres_instance_url(
             db_user_key='sqlalchemy_db_user',
             db_password_key='sqlalchemy_db_password',
-            db_name_key=cls.get_db_name_key(SchemaType.JAILS),
-            cloudsql_instance_id_key=
-            cls.get_cloudsql_instance_id_key(SchemaType.JAILS))
+            schema_type=SchemaType.JAILS)
 
     @classmethod
     def _get_operations_server_postgres_instance_url(cls) -> str:
         return cls._get_server_postgres_instance_url(
             db_user_key='operations_db_user',
             db_password_key='operations_db_password',
-            db_name_key=cls.get_db_name_key(SchemaType.OPERATIONS),
-            cloudsql_instance_id_key=
-            cls.get_cloudsql_instance_id_key(SchemaType.OPERATIONS))
+            schema_type=SchemaType.OPERATIONS)
 
     @classmethod
     def _get_server_postgres_instance_url(cls,
                                           *,
                                           db_user_key: str,
                                           db_password_key: str,
-                                          db_name_key: str,
-                                          cloudsql_instance_id_key: str) -> str:
+                                          schema_type: SchemaType) -> str:
+        instance_id_key = cls.get_cloudsql_instance_id_key(schema_type)
+        if instance_id_key is None:
+            raise ValueError(f'Instance id is not configured for schema type [{schema_type}]')
+
         db_user = secrets.get_secret(db_user_key)
         db_password = secrets.get_secret(db_password_key)
-        db_name = secrets.get_secret(db_name_key)
-        cloudsql_instance_id = secrets.get_secret(cloudsql_instance_id_key)
+        db_name = secrets.get_secret(cls.get_db_name(schema_type))
+        cloudsql_instance_id = secrets.get_secret(instance_id_key)
 
         sqlalchemy_url = ('postgresql://{db_user}:{db_password}@/{db_name}'
                           '?host=/cloudsql/{cloudsql_instance_id}').format(
