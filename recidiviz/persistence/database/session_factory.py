@@ -43,12 +43,12 @@ class SessionFactory:
         return session
 
     @classmethod
-    def _apply_session_listener_for_schema_base(cls, schema_base: DeclarativeMeta, session):
+    def _apply_session_listener_for_schema_base(cls, schema_base: DeclarativeMeta, session: Session) -> None:
         if schema_base == OperationsBase:
             operations_session_listener(session)
 
     @classmethod
-    def _alter_session_variables(cls, session: Session):
+    def _alter_session_variables(cls, session: Session) -> None:
         # Postgres uses a query cost analysis heuristic to decide what type of read to use for a particular query. It
         # sometimes chooses to use a sequential read because for hard disk drives (HDDs, as opposed to solid state
         # drives, SSDs) that may be faster than jumping around to random pages of an index. This is especially likely
