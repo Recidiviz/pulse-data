@@ -28,13 +28,15 @@ SUPERVISION_POPULATION_BY_MONTH_BY_DEMOGRAPHICS_VIEW_NAME = 'supervision_populat
 SUPERVISION_POPULATION_BY_MONTH_BY_DEMOGRAPHICS_VIEW_DESCRIPTION = \
         """First of the month supervision population counts broken down by demographics."""
 
+# TODO(#4294): Migrate this view to use the prioritized_race_or_ethnicity in the metric table, rather than the
+#   manually derived value from population_with_prioritized_race_or_ethnicity below.
 SUPERVISION_POPULATION_BY_MONTH_BY_DEMOGRAPHICS_VIEW_QUERY_TEMPLATE = \
     """
     /*{description}*/
     
     WITH population_with_race_or_ethnicity_priorities AS (
       SELECT
-         *,
+         * EXCEPT (prioritized_race_or_ethnicity),
          ROW_NUMBER () OVER (PARTITION BY state_code, year, month, date_of_supervision, supervision_type, person_id ORDER BY representation_priority) as inclusion_priority
       FROM
         `{project_id}.{metrics_dataset}.supervision_population_metrics`

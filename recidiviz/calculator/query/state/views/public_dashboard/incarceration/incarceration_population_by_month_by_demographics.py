@@ -28,13 +28,15 @@ INCARCERATION_POPULATION_BY_MONTH_BY_DEMOGRAPHICS_VIEW_NAME = 'incarceration_pop
 INCARCERATION_POPULATION_BY_MONTH_BY_DEMOGRAPHICS_VIEW_DESCRIPTION = \
         """First of the month incarceration population counts broken down by demographics."""
 
+# TODO(#4294): Migrate this view to use the prioritized_race_or_ethnicity in the metric table, rather than the
+#   manually derived value from population_with_prioritized_race_or_ethnicity below.
 INCARCERATION_POPULATION_BY_MONTH_BY_DEMOGRAPHICS_VIEW_QUERY_TEMPLATE = \
     """
     /*{description}*/
     
     WITH population_with_race_or_ethnicity_priorities AS (
       SELECT
-         *,
+         * EXCEPT (prioritized_race_or_ethnicity),
          ROW_NUMBER () OVER (PARTITION BY state_code, year, month, date_of_stay, person_id ORDER BY representation_priority) as inclusion_priority
       FROM
         `{project_id}.{metrics_dataset}.incarceration_population_metrics`
