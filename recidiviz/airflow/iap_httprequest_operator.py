@@ -25,11 +25,13 @@ from airflow.utils.decorators import apply_defaults
 from cloud_function_utils import make_iap_request, IAP_CLIENT_ID
 
 
-class IAPHTTPRequestOperator(PythonOperator):
-    def make_iap_export_request(self, url: str) -> None:
-        # make_iap_request raises an exception if the returned status code is not 200
-        make_iap_request(url, self.client_id)
+def make_iap_export_request(url: str) -> None:
+    client_id = IAP_CLIENT_ID[os.environ.get('GCP_PROJECT_ID')]
+    # make_iap_request raises an exception if the returned status code is not 200
+    make_iap_request(url, client_id)
 
+
+class IAPHTTPRequestOperator(PythonOperator):
     @apply_defaults
     def __init__(
             self,
@@ -37,8 +39,6 @@ class IAPHTTPRequestOperator(PythonOperator):
             url: str,
             *args, **kwargs) -> None:
         super().__init__(task_id=task_id,
-                         python_callable=self.make_iap_export_request,
+                         python_callable=make_iap_export_request,
                          op_kwargs={'url': url},
-                         provide_context=True,
                          *args, **kwargs)
-        self.client_id = IAP_CLIENT_ID[os.environ.get('GCP_PROJECT_ID')]

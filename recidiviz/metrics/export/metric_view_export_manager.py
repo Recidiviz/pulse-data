@@ -76,7 +76,12 @@ def export_view_data_to_cloud_storage(export_job_filter: Optional[str] = None,
     # view_config.METRIC_DATASET_EXPORT_CONFIGS
     for dataset_export_config in view_config.METRIC_DATASET_EXPORT_CONFIGS:
         if not dataset_export_config.matches_filter(export_job_filter):
+            logging.info("Skipped metric export for config [%s] with filter [%s]", dataset_export_config,
+                         export_job_filter)
             continue
+
+        logging.info("Starting metric export for dataset_config [%s] with filter [%s]", dataset_export_config,
+                     export_job_filter)
 
         view_export_configs = dataset_export_config.export_configs_for_views_to_export(project_id=project_id)
 
