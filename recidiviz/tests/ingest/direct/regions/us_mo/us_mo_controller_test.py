@@ -960,9 +960,10 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                                         state_incarceration_periods=[
                                             StateIncarcerationPeriod(
                                                 state_incarceration_period_id='523523-19890617-1-0',
-                                                status='IN_CUSTODY',
+                                                status='NOT_IN_CUSTODY',
                                                 admission_date='19890617',
                                                 admission_reason='10I1000',
+                                                release_date='20101020',
                                                 specialized_purpose_for_incarceration='S',
                                             )
                                         ]
@@ -999,10 +1000,17 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                         ]),
         ])
 
+        self.run_parse_file_test(expected, 'tak158_tak023_tak026_incarceration_period_from_incarceration_sentence_v2')
+
         # TODO(#4266): Clean up backwards compatibility code
         # Legacy
+        state_incarceration_period_with_99999999_date = \
+            expected.state_people[4].state_sentence_groups[0].state_incarceration_sentences[0]. \
+            state_incarceration_periods[0]
+        state_incarceration_period_with_99999999_date.release_date = None
+        state_incarceration_period_with_99999999_date.status = 'IN_CUSTODY'
+
         self.run_parse_file_test(expected, 'tak158_tak023_tak026_incarceration_period_from_incarceration_sentence')
-        self.run_parse_file_test(expected, 'tak158_tak023_tak026_incarceration_period_from_incarceration_sentence_v2')
 
     def test_populate_data_tak158_tak024_tak026_incarceration_period_from_supervision_sentence(self):
         expected = IngestInfo(state_people=[
@@ -1033,13 +1041,40 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                                 ]
                             )
                         ]),
+            StatePerson(state_person_id='523523',
+                        state_person_external_ids=[
+                            StatePersonExternalId(
+                                state_person_external_id_id='523523',
+                                id_type=US_MO_DOC),
+                        ],
+                        state_sentence_groups=[
+                            StateSentenceGroup(
+                                state_sentence_group_id='523523-19890617',
+                                state_supervision_sentences=[
+                                    StateSupervisionSentence(
+                                        state_supervision_sentence_id='523523-19890617-1',
+                                        state_incarceration_periods=[
+                                            StateIncarcerationPeriod(
+                                                state_incarceration_period_id='523523-19890617-1-0',
+                                                status='NOT_IN_CUSTODY',
+                                                admission_date='19890617',
+                                                admission_reason='10I1000',
+                                                release_date='20101020',
+                                                specialized_purpose_for_incarceration='S',
+                                            )
+                                        ]
+                                    )
+                                ]
+                            )
+                        ]),
         ])
 
-        # TODO(#4266): Clean up backwards compatibility code
-        # Legacy
-        self.run_parse_file_test(expected, 'tak158_tak024_tak026_incarceration_period_from_supervision_sentence')
         self.run_parse_file_test(expected, 'tak158_tak024_tak026_incarceration_period_from_supervision_sentence_v2')
 
+        # TODO(#4266): Clean up backwards compatibility code
+        del expected.state_people[1]
+        # Legacy
+        self.run_parse_file_test(expected, 'tak158_tak024_tak026_incarceration_period_from_supervision_sentence')
 
     def test_populate_data_tak034_tak026_tak039_apfx90_apfx91_supervision_enhancements_supervision_periods(self):
 
@@ -2957,6 +2992,10 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
         # Assert
         self.assert_expected_db_people(expected_people)
 
+        ip_523523_19890617_1_0.release_date = datetime.date(year=2010, month=10, day=20)
+        ip_523523_19890617_1_0.status = StateIncarcerationPeriodStatus.NOT_IN_CUSTODY
+        ip_523523_19890617_1_0.status_raw_text = 'NOT_IN_CUSTODY'
+
         # SQL Preprocessing View
         # Act
         self._run_ingest_job_for_filename(
@@ -2979,6 +3018,17 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
 
         # Assert
         self.assert_expected_db_people(expected_people)
+        sss_523523_19890617_1 = entities.StateSupervisionSentence.new_with_defaults(
+            state_code=_STATE_CODE_UPPER,
+            external_id='523523-19890617-1',
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+            person=person_523523,
+            sentence_group=sg_523523_19890617,
+        )
+
+        sg_523523_19890617.supervision_sentences.append(sss_523523_19890617_1)
+        ip_523523_19890617_1_0.supervision_sentences = [sss_523523_19890617_1]
+        sss_523523_19890617_1.incarceration_periods = [ip_523523_19890617_1_0]
 
         # SQL Preprocessing View
         # Act

@@ -21,11 +21,12 @@ from recidiviz.ingest.direct.controllers.direct_ingest_big_query_view_types impo
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.ingest.direct.regions.us_mo.ingest_views.us_mo_view_query_fragments import \
-    INCARCERATION_SUB_SUBCYCLE_SPANS_FRAGMENT, STATUSES_BY_DATE_FRAGMENT
+    INCARCERATION_SUB_SUBCYCLE_SPANS_FRAGMENT, STATUSES_BY_DATE_FRAGMENT, MOST_RECENT_STATUS_UPDATES_FRAGMENT
 
 VIEW_QUERY_TEMPLATE = f"""
     WITH {INCARCERATION_SUB_SUBCYCLE_SPANS_FRAGMENT},
     {STATUSES_BY_DATE_FRAGMENT},
+    {MOST_RECENT_STATUS_UPDATES_FRAGMENT},
     incarceration_subcycle_from_incarceration_sentence AS (
         SELECT
             sentence_inst_ids.BT_DOC,
@@ -60,7 +61,8 @@ VIEW_QUERY_TEMPLATE = f"""
     SELECT
         incarceration_periods_from_incarceration_sentence.*,
         start_codes.STATUS_CODES AS START_SCD_CODES,
-        end_codes.STATUS_CODES AS END_SCD_CODES
+        end_codes.STATUS_CODES AS END_SCD_CODES,
+        most_recent_status_updates.MOST_RECENT_SENTENCE_STATUS_DATE 
     FROM
         incarceration_periods_from_incarceration_sentence
     LEFT OUTER JOIN
@@ -75,6 +77,11 @@ VIEW_QUERY_TEMPLATE = f"""
         incarceration_periods_from_incarceration_sentence.F1_DOC = end_codes.BW_DOC AND
         incarceration_periods_from_incarceration_sentence.F1_CYC = end_codes.BW_CYC AND
         incarceration_periods_from_incarceration_sentence.SUB_SUBCYCLE_END_DT = end_codes.STATUS_DATE
+    LEFT OUTER JOIN
+      most_recent_status_updates
+    ON
+        incarceration_periods_from_incarceration_sentence.F1_DOC = most_recent_status_updates.BW_DOC AND
+        incarceration_periods_from_incarceration_sentence.F1_CYC = most_recent_status_updates.BW_CYC 
     """
 
 VIEW_BUILDER = DirectIngestPreProcessedIngestViewBuilder(

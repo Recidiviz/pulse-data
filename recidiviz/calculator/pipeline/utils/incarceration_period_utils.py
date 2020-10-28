@@ -383,7 +383,7 @@ def _infer_missing_dates_and_statuses(
                     ip.release_date = ip.admission_date
                     ip.release_reason = ReleaseReason.INTERNAL_UNKNOWN
                 elif ip.release_reason or ip.release_reason_raw_text:
-                    # TODO(#2981): Update MO ingest to pull in status date of last TAK026 status to use when the release
+                    # TODO(#4054): Update MO ingest to pull in status date of last TAK026 status to use when the release
                     #  date is 99999999. This should eliminate the 600ish instances of this we're seeing.
                     # There is no release date on this period, but the set release_reason indicates that the person
                     # is no longer in custody. Set the release date to the admission date.
