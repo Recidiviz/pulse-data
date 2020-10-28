@@ -31,39 +31,51 @@ class SQLAlchemyEngineManagerTest(TestCase):
     @patch('sqlalchemy.create_engine')
     @patch('recidiviz.environment.in_gae_production')
     @patch('recidiviz.environment.in_gae')
-    @patch.object(SQLAlchemyEngineManager, '_get_server_postgres_instance_url', lambda **_: 'path')
-    def testInitEngines_usesCorrectIsolationLevels(self, mock_in_gae, mock_in_production, mock_create_engine):
+    @patch('recidiviz.utils.secrets.get_secret')
+    def testInitEngines_usesCorrectIsolationLevels(
+            self, mock_get_secret, mock_in_gae, mock_in_production, mock_create_engine):
         # Arrange
         mock_in_gae.return_value = True
         mock_in_production.return_value = True
+        # Pretend all secret values are just the key suffixed with '_value'
+        mock_get_secret.side_effect = lambda key: f'{key}_value'
 
         # Act
         SQLAlchemyEngineManager.init_engines_for_server_postgres_instances()
 
         # Assert
         assert mock_create_engine.call_args_list == [
-            call('path', isolation_level=None, pool_recycle=600),
-            call('path', isolation_level='SERIALIZABLE', pool_recycle=600),
-            call('path', isolation_level=None, pool_recycle=600),
+            call('postgresql://sqlalchemy_db_user_value:sqlalchemy_db_password_value@/sqlalchemy_db_name_value'
+                 '?host=/cloudsql/cloudsql_instance_id_value', isolation_level=None, pool_recycle=600),
+            call('postgresql://state_db_user_value:state_db_password_value@/state_db_name_value'
+                 '?host=/cloudsql/state_cloudsql_instance_id_value', isolation_level='SERIALIZABLE', pool_recycle=600),
+            call('postgresql://operations_db_user_value:operations_db_password_value@/operations_db_name_value'
+                 '?host=/cloudsql/operations_cloudsql_instance_id_value', isolation_level=None, pool_recycle=600),
         ]
 
     @patch('sqlalchemy.create_engine')
     @patch('recidiviz.environment.in_gae_staging')
     @patch('recidiviz.environment.in_gae')
-    @patch.object(SQLAlchemyEngineManager, '_get_server_postgres_instance_url', lambda **_: 'path')
-    def testInitEngines_usesCorrectIsolationLevelsInStaging(self, mock_in_gae, mock_in_staging, mock_create_engine):
+    @patch('recidiviz.utils.secrets.get_secret')
+    def testInitEngines_usesCorrectIsolationLevelsInStaging(
+        self, mock_get_secret, mock_in_gae, mock_in_staging, mock_create_engine):
         # Arrange
         mock_in_gae.return_value = True
         mock_in_staging.return_value = True
+        # Pretend all secret values are just the key suffixed with '_value'
+        mock_get_secret.side_effect = lambda key: f'{key}_value'
 
         # Act
         SQLAlchemyEngineManager.init_engines_for_server_postgres_instances()
 
         # Assert
         assert mock_create_engine.call_args_list == [
-            call('path', isolation_level=None, pool_recycle=600),
-            call('path', isolation_level='SERIALIZABLE', pool_recycle=600),
-            call('path', isolation_level=None, pool_recycle=600),
+            call('postgresql://sqlalchemy_db_user_value:sqlalchemy_db_password_value@/sqlalchemy_db_name_value'
+                 '?host=/cloudsql/cloudsql_instance_id_value', isolation_level=None, pool_recycle=600),
+            call('postgresql://state_db_user_value:state_db_password_value@/state_db_name_value'
+                 '?host=/cloudsql/state_cloudsql_instance_id_value', isolation_level='SERIALIZABLE', pool_recycle=600),
+            call('postgresql://operations_db_user_value:operations_db_password_value@/operations_db_name_value'
+                 '?host=/cloudsql/operations_cloudsql_instance_id_value', isolation_level=None, pool_recycle=600),
         ]
 
     @patch('recidiviz.utils.secrets.get_secret')

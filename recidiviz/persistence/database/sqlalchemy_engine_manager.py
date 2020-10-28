@@ -226,7 +226,7 @@ class SQLAlchemyEngineManager:
 
         db_user = secrets.get_secret(db_user_key)
         db_password = secrets.get_secret(db_password_key)
-        db_name = secrets.get_secret(cls.get_db_name(schema_type))
+        db_name = cls.get_db_name(schema_type)
         cloudsql_instance_id = secrets.get_secret(instance_id_key)
 
         sqlalchemy_url = ('postgresql://{db_user}:{db_password}@/{db_name}'
