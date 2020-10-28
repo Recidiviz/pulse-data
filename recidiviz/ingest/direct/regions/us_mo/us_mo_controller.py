@@ -69,15 +69,11 @@ from recidiviz.ingest.direct.regions.us_mo.us_mo_constants import \
     VIOLATION_KEY_SEQ, CITATION_ID_PREFIX, CITATION_KEY_SEQ, DOC_ID, CYCLE_ID, \
     SENTENCE_KEY_SEQ, FIELD_KEY_SEQ, \
     SUPERVISION_SENTENCE_LENGTH_MONTHS, SUPERVISION_SENTENCE_LENGTH_DAYS, \
-    INCARCERATION_SENTENCE_PROJECTED_MIN_DATE, \
-    INCARCERATION_SENTENCE_PROJECTED_MAX_DATE, \
-    SUPERVISION_SENTENCE_PROJECTED_COMPLETION_DATE, PERIOD_RELEASE_DATE, \
     PERIOD_PURPOSE_FOR_INCARCERATION, PERIOD_START_DATE, SUPERVISION_VIOLATION_VIOLATED_CONDITIONS, \
     SUPERVISION_VIOLATION_TYPES, SUPERVISION_VIOLATION_RECOMMENDATIONS, \
     PERIOD_CLOSE_CODE_SUBTYPE, PERIOD_CLOSE_CODE, \
     ORAS_ASSESSMENTS_DOC_ID, ORAS_ASSESSMENT_ID, \
-    SUPERVISION_SENTENCE_START_DATE, MOST_RECENT_SENTENCE_STATUS_DATE, \
-    SUPERVISION_PERIOD_RELEASE_DATE, SUPERVISION_SENTENCE_TYPE
+    MOST_RECENT_SENTENCE_STATUS_DATE, SUPERVISION_SENTENCE_TYPE
 from recidiviz.ingest.direct.regions.us_mo.us_mo_enum_helpers import supervision_period_admission_reason_mapper, \
     supervision_period_termination_reason_mapper, PAROLE_REVOKED_WHILE_INCARCERATED_STATUS_CODES, \
     incarceration_period_admission_reason_mapper, supervising_officer_mapper
@@ -476,8 +472,9 @@ class UsMoController(CsvGcsfsDirectIngestController):
         self.row_pre_processors_by_file: Dict[str, List[Callable]] = {}
 
         incarceration_period_row_posthooks: List[RowPosthookCallable] = [
+            self._replace_invalid_release_date,
             self._gen_clear_magical_date_value(
-                'release_date', PERIOD_RELEASE_DATE, self.PERIOD_MAGICAL_DATES, StateIncarcerationPeriod),
+                'release_date', self.PERIOD_MAGICAL_DATES, StateIncarcerationPeriod),
             self._set_incarceration_period_status,
             gen_set_field_as_concatenated_values_hook(
                 StateIncarcerationPeriod, 'release_reason', [PERIOD_CLOSE_CODE, PERIOD_CLOSE_CODE_SUBTYPE]),
@@ -535,7 +532,6 @@ class UsMoController(CsvGcsfsDirectIngestController):
             'tak034_tak026_tak039_apfx90_apfx91_supervision_enhancements_supervision_periods': [
                 self._gen_clear_magical_date_value(
                     'termination_date',
-                    SUPERVISION_PERIOD_RELEASE_DATE,
                     self.PERIOD_MAGICAL_DATES,
                     StateSupervisionPeriod),
                 self._set_supervising_officer_on_period,
@@ -1093,23 +1089,31 @@ class UsMoController(CsvGcsfsDirectIngestController):
                     obj.offense_date = None
 
     @classmethod
+    def _replace_invalid_release_date(cls,
+                                      _file_tag: str,
+                                      row: Dict[str, str],
+                                      extracted_objects: List[IngestObject],
+                                      _cache: IngestObjectCache) -> None:
+        """Replaces a 99999999 release date with the most recent status update date."""
+        for obj in extracted_objects:
+            if isinstance(obj, StateIncarcerationPeriod):
+                if obj.release_date == '99999999':
+                    obj.release_date = row.get(MOST_RECENT_SENTENCE_STATUS_DATE, None)
+
+    @classmethod
     def _gen_clear_magical_date_value(cls,
                                       field_name: str,
-                                      column_code: str,
                                       magical_dates: List[str],
                                       sentence_type: Type[IngestObject]) -> Callable:
 
         def _clear_magical_date_values(_file_tag: str,
-                                       row: Dict[str, str],
+                                       _row: Dict[str, str],
                                        extracted_objects: List[IngestObject],
                                        _cache: IngestObjectCache) -> None:
-            date_str = row.get(column_code, None)
-
             for obj in extracted_objects:
                 if isinstance(obj, sentence_type):
-                    if obj.__getattribute__(field_name):
-                        if date_str in magical_dates:
-                            obj.__setattr__(field_name, None)
+                    if obj.__getattribute__(field_name) in magical_dates:
+                        obj.__setattr__(field_name, None)
 
         return _clear_magical_date_values
 
@@ -1555,12 +1559,10 @@ class UsMoController(CsvGcsfsDirectIngestController):
                     StateIncarcerationSentence),
             self._gen_clear_magical_date_value(
                     'projected_max_release_date',
-                    get_legacy_or_new_column_name(file_tag, INCARCERATION_SENTENCE_PROJECTED_MAX_DATE),
                     self.SENTENCE_MAGICAL_DATES,
                     StateIncarcerationSentence),
             self._gen_clear_magical_date_value(
                     'projected_min_release_date',
-                    get_legacy_or_new_column_name(file_tag, INCARCERATION_SENTENCE_PROJECTED_MIN_DATE),
                     self.SENTENCE_MAGICAL_DATES,
                     StateIncarcerationSentence),
             self._set_sentence_status,
@@ -1589,12 +1591,10 @@ class UsMoController(CsvGcsfsDirectIngestController):
             ),
             self._gen_clear_magical_date_value(
                 'start_date',
-                get_legacy_or_new_column_name(file_tag, SUPERVISION_SENTENCE_START_DATE),
                 self.SENTENCE_MAGICAL_DATES,
                 StateSupervisionSentence),
             self._gen_clear_magical_date_value(
                 'projected_completion_date',
-                get_legacy_or_new_column_name(file_tag, SUPERVISION_SENTENCE_PROJECTED_COMPLETION_DATE),
                 self.SENTENCE_MAGICAL_DATES,
                 StateSupervisionSentence),
             self._set_sentence_status,

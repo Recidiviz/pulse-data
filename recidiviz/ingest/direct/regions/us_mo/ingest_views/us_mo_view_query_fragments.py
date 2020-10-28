@@ -191,6 +191,18 @@ STATUSES_BY_DATE_FRAGMENT = \
     )
     """
 
+# For use in same query as INCARCERATION_SUB_SUBCYCLE_SPANS_FRAGMENT
+MOST_RECENT_STATUS_UPDATES_FRAGMENT = \
+    """
+    most_recent_status_updates as (
+        SELECT
+            BW_DOC, BW_CYC,
+            MAX(BW_SY) AS MOST_RECENT_SENTENCE_STATUS_DATE
+        FROM status_bw
+        GROUP BY BW_DOC, BW_CYC
+    )
+    """
+
 NON_INVESTIGATION_SUPERVISION_SENTENCES_FRAGMENT = \
     """
     non_investigation_supervision_sentences_bu AS (
