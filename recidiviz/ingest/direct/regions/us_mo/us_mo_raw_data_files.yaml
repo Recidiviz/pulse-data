@@ -152,4 +152,5 @@ raw_files:
       - DEPCLS
     # Supervision Enhancements.
   - file_tag: OFNDR_PDB_FOC_SUPERVISION_ENHANCEMENTS_VW
-    primary_key_cols: []
+    primary_key_cols:
+      - SUPERVSN_ENH_REF_ID
