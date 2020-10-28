@@ -49,6 +49,27 @@ class TestExportMetricDatasetConfig(unittest.TestCase):
     def tearDown(self):
         self.metadata_patcher.stop()
 
+    def test_matches_filter(self):
+        """Tests matches_filter function to ensure that state codes and export names correctly match"""
+        state_dataset_export_config = ExportMetricDatasetConfig(
+            dataset_id='dataset_id',
+            metric_view_builders_to_export=self.views_for_dataset,
+            output_directory_uri_template="gs://{project_id}-bucket",
+            state_code_filter='US_XX',
+            export_name=None
+        )
+        self.assertTrue(state_dataset_export_config.matches_filter('US_XX'))
+
+        dataset_export_config = ExportMetricDatasetConfig(
+            dataset_id='dataset_id',
+            metric_view_builders_to_export=self.views_for_dataset,
+            output_directory_uri_template="gs://{project_id}-bucket",
+            state_code_filter=None,
+            export_name='VALID_EXPORT_NAME'
+        )
+        self.assertTrue(dataset_export_config.matches_filter('VALID_EXPORT_NAME'))
+        self.assertFalse(dataset_export_config.matches_filter('INVALID_EXPORT_NAME'))
+
     def test_metric_export_state_agnostic(self):
         """Tests the export_configs_for_views_to_export function on the ExportMetricDatasetConfig class when the
         export is state-agnostic."""

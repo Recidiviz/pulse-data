@@ -15,7 +15,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Config classes for exporting metric views to Google Cloud Storage."""
-import re
 from typing import List, Optional, Sequence
 
 import attr
@@ -23,10 +22,6 @@ import attr
 from recidiviz.big_query.export.export_query_config import ExportBigQueryViewConfig
 from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath
 from recidiviz.metrics.metric_big_query_view import MetricBigQueryView, MetricBigQueryViewBuilder
-
-
-def is_state_code(export_job_filter: str) -> bool:
-    return re.search(r'^US_.{2}$', export_job_filter) is not None
 
 
 class ExportMetricBigQueryViewConfig(ExportBigQueryViewConfig[MetricBigQueryView]):
@@ -56,8 +51,7 @@ class ExportMetricDatasetConfig:
     def matches_filter(self, export_job_filter: Optional[str] = None) -> bool:
         if export_job_filter is None:
             return True
-        return self.export_name == export_job_filter or (
-                    is_state_code(export_job_filter) and self.state_code_filter == export_job_filter)
+        return export_job_filter in (self.export_name, self.state_code_filter)
 
     def export_configs_for_views_to_export(self, project_id: str) -> Sequence[ExportMetricBigQueryViewConfig]:
         """Builds a list of ExportMetricBigQueryViewConfigs that define how all metric views in
