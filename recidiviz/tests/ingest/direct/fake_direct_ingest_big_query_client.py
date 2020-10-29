@@ -29,7 +29,7 @@ from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 
 class FakeQueryJob:
     """A fake implementation of bigquery.QueryJob for use in direct ingest tests."""
-    def result(self, _page_size=None, _max_results=None, _retry=None, _timeout=None):
+    def result(self, _page_size=None, _max_results=None, _retry=None, _timeout=None) -> None:
         return
 
 
@@ -80,6 +80,14 @@ class FakeDirectIngestBigQueryClient(BigQueryClient):
             destination_table_schema: List[bigquery.SchemaField]) -> bigquery.job.LoadJob:
         raise ValueError('Must be implemented for use in tests.')
 
+    def load_table_from_table_async(self,
+                                    source_dataset_id: str,
+                                    source_table_id: str,
+                                    destination_dataset_id: str,
+                                    destination_table_id: str,
+                                    allow_field_additions: bool = False) -> bigquery.QueryJob:
+        raise ValueError('Must be implemented for use in tests.')
+
     def export_table_to_cloud_storage_async(
             self,
             source_table_dataset_ref: bigquery.dataset.DatasetReference,
@@ -113,9 +121,13 @@ class FakeDirectIngestBigQueryClient(BigQueryClient):
                                       overwrite: Optional[bool] = False) -> bigquery.QueryJob:
         return FakeQueryJob()
 
-    def insert_into_table_from_table_async(self, source_dataset_id: str, source_table_id: str,
-                                           destination_dataset_id: str, destination_table_id: str,
+    def insert_into_table_from_table_async(self,
+                                           source_dataset_id: str,
+                                           source_table_id: str,
+                                           destination_dataset_id: str,
+                                           destination_table_id: str,
                                            source_data_filter_clause: Optional[str] = None,
+                                           hydrate_missing_columns_with_null: bool = False,
                                            allow_field_additions: bool = False) -> bigquery.QueryJob:
         raise ValueError('Must be implemented for use in tests.')
 
@@ -131,11 +143,11 @@ class FakeDirectIngestBigQueryClient(BigQueryClient):
     def materialize_view_to_table(self, view: BigQueryView) -> None:
         raise ValueError('Must be implemented for use in tests.')
 
-    def add_missing_fields_to_schema(self, dataset_id: str, table_id: str, schema_fields: List[bigquery.SchemaField]) \
-            -> None:
+    def add_missing_fields_to_schema(self, dataset_id: str, table_id: str,
+                                     desired_schema_fields: List[bigquery.SchemaField]) -> None:
         raise ValueError('Must be implemented for use in tests.')
 
-    def create_table_with_schema(self, dataset_id, table_id, schema_fields: List[bigquery.SchemaField]) -> \
+    def create_table_with_schema(self, dataset_id: str, table_id: str, schema_fields: List[bigquery.SchemaField]) -> \
             bigquery.Table:
         raise ValueError('Must be implemented for use in tests.')
 

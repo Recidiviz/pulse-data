@@ -19,7 +19,6 @@
 
 import concurrent
 import logging
-from typing import Optional
 
 from google.cloud import bigquery
 from google.cloud import exceptions
@@ -30,15 +29,128 @@ from recidiviz.utils import metadata
 
 _BQ_LOAD_WAIT_TIMEOUT_SECONDS = 300
 
+TEMP_TABLE_NAME = '{table_name}_temp'
 
-def start_table_load(
-        big_query_client: BigQueryClient,
-        table_name: str,
-        cloud_sql_to_bq_config: CloudSqlToBQConfig) -> Optional[bigquery.job.LoadJob]:
+
+def refresh_bq_table_from_gcs_export_synchronous(big_query_client: BigQueryClient,
+                                                 table_name: str,
+                                                 cloud_sql_to_bq_config: CloudSqlToBQConfig) -> None:
+    """Loads data from Cloud SQL export and rows excluded from the SQL export from the current BQ table
+        into a target BQ table. If target BQ table does not exist, it is created.
+
+        For example:
+        1. Load data from GCS to temp table and wait.
+        2. Load data from stale BQ table to temp table and wait and filter for rows excluded from SQL export.
+            If stale BQ table does not exist, create the table. If the temp table has schema fields missing in the
+            stale BQ table, add missing fields to the BQ table query.
+        3. Load data from the temp table to the final BQ table. Overwrite all the data with the temp table and add any
+            missing fields to the destination table.
+        4. Delete temporary table.
+
+        Waits until each BigQuery load is completed.
+
+        Args:
+            big_query_client: A BigQueryClient.
+            table_name: Table to import from temp table. Table must be defined
+                in the metadata_base class for its corresponding SchemaType.
+            cloud_sql_to_bq_config: The config class for the given SchemaType.
+        Returns:
+            If the table load succeeds, returns None. If it fails it raises a ValueError.
+    """
+    temp_table_name = TEMP_TABLE_NAME.format(table_name=table_name)
+    # Load GCS exported CSVs to temp table
+    load_table_from_gcs_and_wait(
+        big_query_client,
+        table_name,
+        cloud_sql_to_bq_config,
+        destination_table_id=temp_table_name
+    )
+
+    # Load rows excluded from CloudSQL export to temp table if table exists.
+    # If table does not exist, create BQ destination table.
+    dataset_ref = cloud_sql_to_bq_config.get_dataset_ref(big_query_client)
+
+    if big_query_client.table_exists(dataset_ref=dataset_ref, table_id=table_name):
+        load_rows_excluded_from_refresh_into_temp_table_and_wait(
+            big_query_client,
+            table_name,
+            cloud_sql_to_bq_config,
+            destination_table_id=temp_table_name)
+    else:
+        logging.info("Destination table [%s.%s] does not exist! Creating table from schema.",
+                     cloud_sql_to_bq_config.dataset_id, table_name)
+
+        create_table_success = big_query_client.create_table_with_schema(
+            dataset_id=cloud_sql_to_bq_config.dataset_id,
+            table_id=table_name,
+            schema_fields=cloud_sql_to_bq_config.get_bq_schema_for_table(table_name))
+
+        if not create_table_success:
+            raise ValueError(f'Failed to create table [{table_name}. Skipping table refresh from GCS.')
+
+    logging.info('Loading BQ Table [%s] from temp table [%s]', table_name, temp_table_name)
+
+    load_job = big_query_client.load_table_from_table_async(
+        source_dataset_id=cloud_sql_to_bq_config.dataset_id,
+        source_table_id=temp_table_name,
+        destination_dataset_id=cloud_sql_to_bq_config.dataset_id,
+        destination_table_id=table_name)
+
+    table_load_success = wait_for_table_load(big_query_client, load_job)
+
+    if not table_load_success:
+        raise ValueError(f"Failed to load BigQuery table [{table_name}] from temp table [{temp_table_name}].")
+
+    delete_temp_table_if_exists(big_query_client, temp_table_name, cloud_sql_to_bq_config)
+
+
+def load_rows_excluded_from_refresh_into_temp_table_and_wait(big_query_client: BigQueryClient,
+                                                             table_name: str,
+                                                             cloud_sql_to_bq_config: CloudSqlToBQConfig,
+                                                             destination_table_id: str) -> None:
+    """Load the stale rows excluded from the CLoudSQL export to the temporary table.
+
+        New columns in the CloudSQL export data that are missing from the stale BQ Table will be added to the schema,
+        using the flag hydrate_missing_columns_with_null.
+
+        Because we are using bigquery.WriteDisposition.WRITE_APPEND, the table is not truncated and new data
+        is appended.
+
+        Args:
+            big_query_client: A BigQueryClient.
+            table_name: Table to select from to copy rows into the temp table.
+            cloud_sql_to_bq_config: Export config class for a specific SchemaType.
+            destination_table_id: Name for the temp table. If it doesn't exist, it will be created.
+        Returns:
+            If the table load succeeds, returns None. If it fails it raises a ValueError.
+        """
+    table_refresh_query_builder = \
+        cloud_sql_to_bq_config.get_stale_bq_rows_for_excluded_regions_query_builder(table_name)
+
+    load_job = big_query_client.insert_into_table_from_table_async(
+        source_dataset_id=cloud_sql_to_bq_config.dataset_id,
+        source_table_id=table_name,
+        destination_dataset_id=cloud_sql_to_bq_config.dataset_id,
+        destination_table_id=destination_table_id,
+        source_data_filter_clause=table_refresh_query_builder.filter_clause(),
+        hydrate_missing_columns_with_null=True,
+        allow_field_additions=True)
+
+    table_load_success = wait_for_table_load(big_query_client, load_job)
+
+    if not table_load_success:
+        raise ValueError(f'Failed to load temp table with excluded rows from existing BQ table. Skipping copy of '
+                         f'temp table [{destination_table_id}] to BQ table [{table_name}]')
+
+
+def load_table_from_gcs_and_wait(big_query_client: BigQueryClient,
+                                 table_name: str,
+                                 cloud_sql_to_bq_config: CloudSqlToBQConfig,
+                                 destination_table_id: str) -> None:
     """Loads a table from CSV data in GCS to BigQuery.
 
-    Given a table name, retrieve the export URI and schema from cloud_sql_to_bq_config,
-    then load the table into BigQuery.
+    Given a table name and a destination_table_id, retrieve the export URI and schema from cloud_sql_to_bq_config,
+    then load the table into the destination_table_id.
 
     This starts the job, but does not wait until it completes.
 
@@ -51,10 +163,10 @@ def start_table_load(
         big_query_client: A BigQueryClient.
         table_name: Table to import. Table must be defined in the base schema.
         cloud_sql_to_bq_config: Export config class for a specific SchemaType.
+        destination_table_id: Optional destination table name. If none is given,
+        the provided table name is used.
     Returns:
-        (load_job, table_ref) where load_job is the LoadJob object containing
-            job details, and table_ref is the destination TableReference object.
-            If the job fails to start, returns None.
+        If the table load succeeds, returns None. If it fails it raises a ValueError.
     """
     uri = cloud_sql_to_bq_config.get_gcs_export_uri_for_table(table_name)
 
@@ -66,11 +178,14 @@ def start_table_load(
     load_job = big_query_client.load_table_from_cloud_storage_async(
         source_uri=uri,
         destination_dataset_ref=dataset_ref,
-        destination_table_id=table_name,
+        destination_table_id=destination_table_id,
         destination_table_schema=bq_schema
     )
 
-    return load_job
+    table_load_success = wait_for_table_load(big_query_client, load_job)
+
+    if not table_load_success:
+        raise ValueError(f'Copy from cloud storage to temp table failed. Skipping refresh for BQ table [{table_name}]')
 
 
 def wait_for_table_load(big_query_client: BigQueryClient,
@@ -111,42 +226,12 @@ def wait_for_table_load(big_query_client: BigQueryClient,
         return False
 
 
-def start_table_load_and_wait(
-        big_query_client: BigQueryClient,
-        table_name: str,
-        cloud_sql_to_bq_config: CloudSqlToBQConfig) -> bool:
-    """Loads a table from CSV data in GCS to BigQuery, waits until completion.
-
-    See start_table_load and wait_for_table_load for details.
-
-    Returns:
-        True if no errors were raised, else False.
-    """
-
-    load_job = start_table_load(big_query_client, table_name, cloud_sql_to_bq_config)
-    if load_job:
-        table_load_success = wait_for_table_load(big_query_client, load_job)
-
-        return table_load_success
-
-    return False
-
-
-def load_all_tables_concurrently(
-        big_query_client: BigQueryClient,
-        cloud_sql_to_bq_config: CloudSqlToBQConfig) -> None:
-    """Start all table LoadJobs concurrently.
-
-    Wait until completion to log results."""
-    tables = cloud_sql_to_bq_config.get_tables_to_export()
-
-    # Kick off all table LoadJobs at the same time.
-    load_jobs = [
-        start_table_load(big_query_client, table.name, cloud_sql_to_bq_config)
-        for table in tables
-    ]
-
-    # Wait for all jobs to finish, log results.
-    for load_job in load_jobs:
-        if load_job:
-            wait_for_table_load(big_query_client, load_job)
+def delete_temp_table_if_exists(big_query_client: BigQueryClient,
+                                temp_table_name: str,
+                                cloud_sql_to_bq_config: CloudSqlToBQConfig) -> None:
+    dataset_ref = cloud_sql_to_bq_config.get_dataset_ref(big_query_client)
+    if not big_query_client.table_exists(dataset_ref=dataset_ref, table_id=temp_table_name):
+        logging.info('Delete temp table failed, table [%s] does not exist.', temp_table_name)
+        return
+    big_query_client.delete_table(dataset_id=cloud_sql_to_bq_config.dataset_id, table_id=temp_table_name)
+    logging.info('Deleted temporary table [%s]', temp_table_name)

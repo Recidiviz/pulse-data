@@ -23,11 +23,10 @@ Run this export locally with the following command:
         --schema_type [STATE, JAILS, OPERATIONS]
 
 """
-import argparse
 from http import HTTPStatus
 import json
 import logging
-import sys
+from typing import Tuple
 
 import flask
 from flask import request
@@ -41,15 +40,16 @@ from recidiviz.calculator.query.bq_export_cloud_task_manager import \
 from recidiviz.persistence.database.sqlalchemy_engine_manager import SchemaType
 from recidiviz.utils.auth import authenticate_request
 from recidiviz.utils import pubsub_helper
-from recidiviz.utils.environment import GCP_PROJECT_STAGING, GCP_PROJECT_PRODUCTION
-from recidiviz.utils.metadata import local_project_id_override
 
 
 def export_table_then_load_table(
         big_query_client: BigQueryClient,
         table: str,
-        cloud_sql_to_bq_config: CloudSqlToBQConfig) -> bool:
+        cloud_sql_to_bq_config: CloudSqlToBQConfig) -> None:
     """Exports a Cloud SQL table to CSV, then loads it into BigQuery.
+
+    If a table excludes some region codes, it first loads all the GCS and the excluded region's data to a temp table.
+    See for details: load_table_with_excluded_regions
 
     Waits until the BigQuery load is completed.
 
@@ -63,35 +63,10 @@ def export_table_then_load_table(
     """
     export_success = cloudsql_export.export_table(table, cloud_sql_to_bq_config)
 
-    if export_success:  # pylint: disable=no-else-return
-        load_success = bq_load.start_table_load_and_wait(big_query_client, table, cloud_sql_to_bq_config)
-        return load_success
-    else:
-        logging.error("Skipping BigQuery load of table [%s], "
-                      "which failed to export.", table)
-        return False
+    if not export_success:
+        raise ValueError(f"Failure to export CloudSQL table to GCS, skipping BigQuery load of table [{table}].")
 
-
-def export_all_then_load_all(big_query_client: BigQueryClient,
-                             cloud_sql_to_bq_config: CloudSqlToBQConfig):
-    """Export all tables from Cloud SQL in the given schema, then load all
-    tables to BigQuery.
-
-    Exports happen in sequence (one at a time),
-    then once all exports are completed, the BigQuery loads happen in parallel.
-
-    For example, for tables A, B, C:
-    1. Export Table A
-    2. Export Table B
-    3. Export Table C
-    4. Load Tables A, B, C in parallel.
-    """
-
-    logging.info("Beginning CloudSQL export")
-    cloudsql_export.export_all_tables(cloud_sql_to_bq_config)
-
-    logging.info("Beginning BQ table load")
-    bq_load.load_all_tables_concurrently(big_query_client, cloud_sql_to_bq_config)
+    bq_load.refresh_bq_table_from_gcs_export_synchronous(big_query_client, table, cloud_sql_to_bq_config)
 
 
 export_manager_blueprint = flask.Blueprint('export_manager', __name__)
@@ -99,7 +74,7 @@ export_manager_blueprint = flask.Blueprint('export_manager', __name__)
 
 @export_manager_blueprint.route('/export', methods=['POST'])
 @authenticate_request
-def handle_bq_export_task():
+def handle_bq_export_task() -> Tuple[str, int]:
     """Worker function to handle BQ export task requests.
 
     Form data must be a bytes-encoded JSON object with parameters listed below.
@@ -123,15 +98,13 @@ def handle_bq_export_task():
 
     logging.info("Starting BQ export task for table: %s", table_name)
 
-    success = export_table_then_load_table(
-        bq_client, table_name, cloud_sql_to_bq_config)
-
-    return ('', HTTPStatus.OK if success else HTTPStatus.INTERNAL_SERVER_ERROR)
+    export_table_then_load_table(bq_client, table_name, cloud_sql_to_bq_config)
+    return ('', HTTPStatus.OK)
 
 
 @export_manager_blueprint.route('/bq_monitor', methods=['POST'])
 @authenticate_request
-def handle_bq_monitor_task():
+def handle_bq_monitor_task() -> Tuple[str, int]:
     """Worker function to publish a message to a Pub/Sub topic once all tasks in
     the BIGQUERY_QUEUE queue have completed.
     """
@@ -159,7 +132,7 @@ def handle_bq_monitor_task():
 
 @export_manager_blueprint.route('/create_export_tasks')
 @authenticate_request
-def create_all_bq_export_tasks():
+def create_all_bq_export_tasks() -> Tuple[str, int]:
     """Creates an export task for each table to be exported.
 
     A task is created for each table defined in the JailsBase schema.
@@ -178,7 +151,7 @@ def create_all_bq_export_tasks():
 
 @export_manager_blueprint.route('/create_state_export_tasks')
 @authenticate_request
-def create_all_state_bq_export_tasks():
+def create_all_state_bq_export_tasks() -> Tuple[str, int]:
     """Creates an export task for each table to be exported.
 
     A task is created for each table defined in the StateBase schema.
@@ -201,7 +174,7 @@ def create_all_state_bq_export_tasks():
 
 @export_manager_blueprint.route('/create_operations_export_tasks')
 @authenticate_request
-def create_all_operations_bq_export_tasks():
+def create_all_operations_bq_export_tasks() -> Tuple[str, int]:
     """Creates an export task for each table to be exported.
 
     A task is created for each table defined in the OperationsBase schema.
@@ -216,32 +189,3 @@ def create_all_operations_bq_export_tasks():
     for table in cloud_sql_to_bq_config.get_tables_to_export():
         task_manager.create_bq_task(table.name, SchemaType.OPERATIONS)
     return ('', HTTPStatus.OK)
-
-
-def parse_arguments(argv):
-    """Parses the required arguments."""
-    parser = argparse.ArgumentParser()
-
-    parser.add_argument('--project_id',
-                        dest='project_id',
-                        type=str,
-                        choices=[GCP_PROJECT_STAGING, GCP_PROJECT_PRODUCTION],
-                        required=True)
-
-    parser.add_argument('--schema_type',
-                        dest='local_export_schema_type',
-                        type=str.upper,
-                        choices=[SchemaType.STATE.value, SchemaType.JAILS.value, SchemaType.OPERATIONS.value],
-                        required=True)
-
-    return parser.parse_known_args(argv)
-
-
-if __name__ == '__main__':
-    logging.getLogger().setLevel(logging.INFO)
-    known_args, _ = parse_arguments(sys.argv)
-    schema_type_enum = SchemaType(known_args.local_export_schema_type)
-    config = CloudSqlToBQConfig.for_schema_type(schema_type_enum)
-
-    with local_project_id_override(known_args.project_id):
-        export_all_then_load_all(BigQueryClientImpl(), config)

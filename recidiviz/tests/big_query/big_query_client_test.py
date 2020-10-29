@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests for BigQueryClientImpl"""
+
 from concurrent import futures
 import unittest
 from unittest import mock
@@ -32,7 +33,7 @@ from recidiviz.big_query.export.export_query_config import ExportQueryConfig
 class BigQueryClientImplTest(unittest.TestCase):
     """Tests for BigQueryClientImpl"""
 
-    def setUp(self):
+    def setUp(self) -> None:
         self.mock_project_id = 'fake-recidiviz-project'
         self.mock_dataset_id = 'fake-dataset'
         self.mock_table_id = 'test_table'
@@ -56,29 +57,29 @@ class BigQueryClientImplTest(unittest.TestCase):
 
         self.bq_client = BigQueryClientImpl()
 
-    def tearDown(self):
+    def tearDown(self) -> None:
         self.client_patcher.stop()
         self.metadata_patcher.stop()
 
-    def test_create_dataset_if_necessary(self):
+    def test_create_dataset_if_necessary(self) -> None:
         """Check that a dataset is created if it does not exist."""
         self.mock_client.get_dataset.side_effect = exceptions.NotFound('!')
         self.bq_client.create_dataset_if_necessary(self.mock_dataset)
         self.mock_client.create_dataset.assert_called()
 
-    def test_create_dataset_if_necessary_dataset_exists(self):
+    def test_create_dataset_if_necessary_dataset_exists(self) -> None:
         """Check that a dataset is not created if it already exists."""
         self.mock_client.get_dataset.side_effect = None
         self.bq_client.create_dataset_if_necessary(self.mock_dataset)
         self.mock_client.create_dataset.assert_not_called()
 
-    def test_table_exists(self):
+    def test_table_exists(self) -> None:
         """Check that table_exists returns True if the table exists."""
         self.mock_client.get_table.side_effect = None
         self.assertTrue(
             self.bq_client.table_exists(self.mock_dataset, self.mock_table_id))
 
-    def test_table_exists_does_not_exist(self):
+    def test_table_exists_does_not_exist(self) -> None:
         """Check that table_exists returns False if the table does not exist."""
         self.mock_client.get_table.side_effect = exceptions.NotFound('!')
         with self.assertLogs(level='WARNING'):
@@ -86,21 +87,21 @@ class BigQueryClientImplTest(unittest.TestCase):
                 self.mock_dataset, self.mock_table_id)
             self.assertFalse(table_exists)
 
-    def test_create_or_update_view_creates_view(self):
+    def test_create_or_update_view_creates_view(self) -> None:
         """create_or_update_view creates a View if it does not exist."""
         self.mock_client.get_table.side_effect = exceptions.NotFound('!')
         self.bq_client.create_or_update_view(self.mock_dataset, self.mock_view)
         self.mock_client.create_table.assert_called()
         self.mock_client.update_table.assert_not_called()
 
-    def test_create_or_update_view_updates_view(self):
+    def test_create_or_update_view_updates_view(self) -> None:
         """create_or_update_view updates a View if it already exist."""
         self.mock_client.get_table.side_effect = None
         self.bq_client.create_or_update_view(self.mock_dataset, self.mock_view)
         self.mock_client.update_table.assert_called()
         self.mock_client.create_table.assert_not_called()
 
-    def test_export_to_cloud_storage(self):
+    def test_export_to_cloud_storage(self) -> None:
         """export_to_cloud_storage extracts the table corresponding to the
         view."""
         self.assertIsNotNone(self.bq_client.export_table_to_cloud_storage_async(
@@ -111,7 +112,7 @@ class BigQueryClientImplTest(unittest.TestCase):
         ))
         self.mock_client.extract_table.assert_called()
 
-    def test_export_to_cloud_storage_no_table(self):
+    def test_export_to_cloud_storage_no_table(self) -> None:
         """export_to_cloud_storage does not extract from a table if the table
         does not exist."""
         self.mock_client.get_table.side_effect = exceptions.NotFound('!')
@@ -123,7 +124,7 @@ class BigQueryClientImplTest(unittest.TestCase):
                 destination_format=bigquery.DestinationFormat.NEWLINE_DELIMITED_JSON))
             self.mock_client.extract_table.assert_not_called()
 
-    def test_load_table_async_create_dataset(self):
+    def test_load_table_async_create_dataset(self) -> None:
         """Test that load_table_from_cloud_storage_async tries to create a parent dataset."""
 
         self.mock_client.get_dataset.side_effect = exceptions.NotFound('!')
@@ -137,7 +138,7 @@ class BigQueryClientImplTest(unittest.TestCase):
         self.mock_client.create_dataset.assert_called()
         self.mock_client.load_table_from_uri.assert_called()
 
-    def test_load_table_async_dataset_exists(self):
+    def test_load_table_async_dataset_exists(self) -> None:
         """Test that load_table_from_cloud_storage_async does not try to create a parent dataset if it already exists.
         """
 
@@ -150,7 +151,7 @@ class BigQueryClientImplTest(unittest.TestCase):
         self.mock_client.create_dataset.assert_not_called()
         self.mock_client.load_table_from_uri.assert_called()
 
-    def test_export_query_results_to_cloud_storage_no_table(self):
+    def test_export_query_results_to_cloud_storage_no_table(self) -> None:
         bucket = self.mock_project_id + '-bucket'
         self.mock_client.get_table.side_effect = exceptions.NotFound('!')
         with self.assertLogs(level='WARNING'):
@@ -163,13 +164,13 @@ class BigQueryClientImplTest(unittest.TestCase):
                     output_format=bigquery.DestinationFormat.NEWLINE_DELIMITED_JSON)
             ])
 
-    def test_export_query_results_to_cloud_storage(self):
+    def test_export_query_results_to_cloud_storage(self) -> None:
         """export_query_results_to_cloud_storage creates the table from the view query and
         exports the table."""
         bucket = self.mock_project_id + '-bucket'
-        query_job = futures.Future()
+        query_job: futures.Future = futures.Future()
         query_job.set_result([])
-        extract_job = futures.Future()
+        extract_job: futures.Future = futures.Future()
         extract_job.set_result(None)
         self.mock_client.query.return_value = query_job
         self.mock_client.extract_table.return_value = extract_job
@@ -186,23 +187,46 @@ class BigQueryClientImplTest(unittest.TestCase):
         self.mock_client.delete_table.assert_called_with(
             bigquery.DatasetReference(self.mock_project_id, self.mock_view.dataset_id).table(self.mock_table_id))
 
-    def test_create_table_from_query(self):
+    def test_create_table_from_query(self) -> None:
         """Tests that the create_table_from_query function calls the function to create a table from a query."""
         self.bq_client.create_table_from_query_async(self.mock_dataset_id, self.mock_table_id,
                                                      query="SELECT * FROM some.fake.table",
                                                      query_parameters=[])
         self.mock_client.query.assert_called()
 
-    def test_insert_into_table_from_table(self):
-        """Tests that the insert_into_table_from_table function runs a query."""
-        self.bq_client.insert_into_table_from_table_async('fake_source_dataset_id', 'fake_table_id',
-                                                          self.mock_dataset_id, self.mock_table_id)
+    @mock.patch('google.cloud.bigquery.job.QueryJobConfig')
+    def test_insert_into_table_from_table_async(self, mock_job_config: mock.MagicMock) -> None:
+        """Tests that the insert_into_table_from_table_async function runs a query."""
+        self.bq_client.insert_into_table_from_table_async(source_dataset_id=self.mock_dataset_id,
+                                                          source_table_id=self.mock_table_id,
+                                                          destination_dataset_id=self.mock_dataset_id,
+                                                          destination_table_id='fake_table_temp')
+        expected_query = f"SELECT * FROM `fake-recidiviz-project.{self.mock_dataset_id}.{self.mock_table_id}`"
         self.mock_client.get_table.assert_called()
-        self.mock_client.query.assert_called()
+        self.mock_client.query.assert_called_with(expected_query, job_config=mock_job_config())
 
-    def test_insert_into_table_from_table_invalid_destination(self):
-        """Tests that the insert_into_table_from_table function does not run the query if the destination table does
-        not exist."""
+    @mock.patch('google.cloud.bigquery.job.QueryJobConfig')
+    def test_insert_into_table_from_table_async_hydrate_missing_columns(self, mock_job_config: mock.MagicMock) -> None:
+        """Tests that the insert_into_table_from_table_async generates a query with missing columns as NULL."""
+        with mock.patch('recidiviz.big_query.big_query_client.BigQueryClientImpl'
+                        '._get_schema_fields_missing_from_table') as mock_missing:
+            mock_missing.return_value = [bigquery.SchemaField('state_code', 'STRING', 'REQUIRED'),
+                                         bigquery.SchemaField('new_column_name', 'INTEGER', 'REQUIRED')]
+            self.mock_destination_id = 'fake_table_temp'
+            self.bq_client.insert_into_table_from_table_async(source_dataset_id=self.mock_dataset_id,
+                                                              source_table_id=self.mock_table_id,
+                                                              destination_dataset_id=self.mock_dataset_id,
+                                                              destination_table_id=self.mock_destination_id,
+                                                              hydrate_missing_columns_with_null=True,
+                                                              allow_field_additions=True)
+            expected_query = "SELECT *, CAST(NULL AS STRING) AS state_code, CAST(NULL AS INTEGER) AS new_column_name " \
+                             f"FROM `fake-recidiviz-project.{self.mock_dataset_id}.{self.mock_table_id}`"
+            self.mock_client.query.assert_called_with(expected_query, job_config=mock_job_config())    \
+
+
+    def test_insert_into_table_from_table_invalid_destination(self) -> None:
+        """Tests that the insert_into_table_from_table_async function does not run the query if the destination
+        table does not exist."""
         self.mock_client.get_table.side_effect = exceptions.NotFound('!')
 
         with pytest.raises(ValueError):
@@ -211,7 +235,28 @@ class BigQueryClientImplTest(unittest.TestCase):
         self.mock_client.get_table.assert_called()
         self.mock_client.query.assert_not_called()
 
-    def test_insert_into_table_from_cloud_storage_async(self):
+    def test_insert_into_table_from_table_invalid_filter_clause(self) -> None:
+        """Tests that the insert_into_table_from_table_async function does not run the query if the filter clause
+        does not start with a WHERE."""
+        with pytest.raises(ValueError):
+            self.bq_client.insert_into_table_from_table_async(self.mock_dataset_id, self.mock_table_id,
+                                                              'fake_source_dataset_id', 'fake_table_id',
+                                                              source_data_filter_clause='bad filter clause')
+        self.mock_client.query.assert_not_called()
+
+    @mock.patch('google.cloud.bigquery.job.QueryJobConfig')
+    def test_insert_into_table_from_table_with_filter_clause(self, mock_job_config: mock.MagicMock) -> None:
+        """Tests that the insert_into_table_from_table_async generates a valid query when given a filter clause."""
+        filter_clause = "WHERE state_code IN ('US_ND')"
+        job_config = mock_job_config()
+        self.bq_client.insert_into_table_from_table_async(self.mock_dataset_id, self.mock_table_id,
+                                                          'fake_source_dataset_id', 'fake_table_id',
+                                                          source_data_filter_clause=filter_clause)
+        expected_query = "SELECT * FROM `fake-recidiviz-project.fake-dataset.test_table` " \
+                         "WHERE state_code IN ('US_ND')"
+        self.mock_client.query.assert_called_with(expected_query, job_config=job_config)
+
+    def test_insert_into_table_from_cloud_storage_async(self) -> None:
         self.mock_client.get_dataset.side_effect = exceptions.NotFound('!')
 
         self.bq_client.insert_into_table_from_cloud_storage_async(
@@ -223,23 +268,23 @@ class BigQueryClientImplTest(unittest.TestCase):
         self.mock_client.create_dataset.assert_called()
         self.mock_client.load_table_from_uri.assert_called()
 
-    def test_delete_from_table(self):
+    def test_delete_from_table(self) -> None:
         """Tests that the delete_from_table function runs a query."""
         self.bq_client.delete_from_table_async(self.mock_dataset_id, self.mock_table_id, filter_clause="WHERE x > y")
         self.mock_client.query.assert_called()
 
-    def test_delete_from_table_invalid_filter_clause(self):
+    def test_delete_from_table_invalid_filter_clause(self) -> None:
         """Tests that the delete_from_table function does not run a query when the filter clause is invalid."""
         with pytest.raises(ValueError):
             self.bq_client.delete_from_table_async(self.mock_dataset_id, self.mock_table_id, filter_clause="x > y")
         self.mock_client.query.assert_not_called()
 
-    def test_materialize_view_to_table(self):
+    def test_materialize_view_to_table(self) -> None:
         """Tests that the materialize_view_to_table function calls the function to create a table from a query."""
         self.bq_client.materialize_view_to_table(self.mock_view)
         self.mock_client.query.assert_called()
 
-    def test_materialize_view_to_table_no_materialized_view_table_id(self):
+    def test_materialize_view_to_table_no_materialized_view_table_id(self) -> None:
         """Tests that the materialize_view_to_table function does not call the function to create a table from a
         query if there is no set materialized_view_table_id on the view."""
         invalid_view = BigQueryView(
@@ -253,7 +298,7 @@ class BigQueryClientImplTest(unittest.TestCase):
             self.bq_client.materialize_view_to_table(invalid_view)
         self.mock_client.query.assert_not_called()
 
-    def test_create_table_with_schema(self):
+    def test_create_table_with_schema(self) -> None:
         """Tests that the create_table_with_schema function calls the create_table function on the client."""
         self.mock_client.get_table.side_effect = exceptions.NotFound('!')
         schema_fields = [bigquery.SchemaField('new_schema_field', 'STRING')]
@@ -261,7 +306,7 @@ class BigQueryClientImplTest(unittest.TestCase):
         self.bq_client.create_table_with_schema(self.mock_dataset_id, self.mock_table_id, schema_fields)
         self.mock_client.create_table.assert_called()
 
-    def test_create_table_with_schema_table_exists(self):
+    def test_create_table_with_schema_table_exists(self) -> None:
         """Tests that the create_table_with_schema function raises an error when the table already exists."""
         self.mock_client.get_table.side_effect = None
         schema_fields = [bigquery.SchemaField('new_schema_field', 'STRING')]
@@ -270,7 +315,7 @@ class BigQueryClientImplTest(unittest.TestCase):
             self.bq_client.create_table_with_schema(self.mock_dataset_id, self.mock_table_id, schema_fields)
         self.mock_client.create_table.assert_not_called()
 
-    def test_add_missing_fields_to_schema(self):
+    def test_add_missing_fields_to_schema(self) -> None:
         """Tests that the add_missing_fields_to_schema function calls the client to update the table."""
         table_ref = bigquery.TableReference(self.mock_dataset, self.mock_table_id)
         schema_fields = [bigquery.SchemaField('fake_schema_field', 'STRING')]
@@ -283,7 +328,7 @@ class BigQueryClientImplTest(unittest.TestCase):
 
         self.mock_client.update_table.assert_called()
 
-    def test_add_missing_fields_to_schema_no_missing_fields(self):
+    def test_add_missing_fields_to_schema_no_missing_fields(self) -> None:
         """Tests that the add_missing_fields_to_schema function does not call the client to update the table when all
         of the fields are already present."""
         table_ref = bigquery.TableReference(self.mock_dataset, self.mock_table_id)
@@ -297,7 +342,7 @@ class BigQueryClientImplTest(unittest.TestCase):
 
         self.mock_client.update_table.assert_not_called()
 
-    def test_add_missing_fields_to_schema_no_table(self):
+    def test_add_missing_fields_to_schema_no_table(self) -> None:
         """Tests that the add_missing_fields_to_schema function does not call the client to update the table when the
         table does not exist."""
         self.mock_client.get_table.side_effect = exceptions.NotFound('!')
@@ -308,7 +353,7 @@ class BigQueryClientImplTest(unittest.TestCase):
 
         self.mock_client.update_table.assert_not_called()
 
-    def test_add_missing_fields_to_schema_fields_with_same_name_different_type(self):
+    def test_add_missing_fields_to_schema_fields_with_same_name_different_type(self) -> None:
         """Tests that the add_missing_fields_to_schema function raises an error when the user is trying to add a field
         with the same name but different field_type as an existing field."""
         table_ref = bigquery.TableReference(self.mock_dataset, self.mock_table_id)
@@ -323,7 +368,7 @@ class BigQueryClientImplTest(unittest.TestCase):
 
         self.mock_client.update_table.assert_not_called()
 
-    def test_add_missing_fields_to_schema_fields_with_same_name_different_mode(self):
+    def test_add_missing_fields_to_schema_fields_with_same_name_different_mode(self) -> None:
         """Tests that the add_missing_fields_to_schema function raises an error when the user is trying to add a field
         with the same name but different mode as an existing field."""
         table_ref = bigquery.TableReference(self.mock_dataset, self.mock_table_id)
@@ -338,13 +383,13 @@ class BigQueryClientImplTest(unittest.TestCase):
 
         self.mock_client.update_table.assert_not_called()
 
-    def test_delete_table(self):
+    def test_delete_table(self) -> None:
         """Tests that our delete table function calls the correct client method."""
         self.bq_client.delete_table(self.mock_dataset_id, self.mock_table_id)
         self.mock_client.delete_table.assert_called()
 
     @mock.patch('google.cloud.bigquery.QueryJob')
-    def test_paged_read_single_page_single_row(self, mock_query_job):
+    def test_paged_read_single_page_single_row(self, mock_query_job: mock.MagicMock) -> None:
         first_row = bigquery.table.Row(
             ['parole', 15, '10N'],
             {'supervision_type': 0, 'revocations': 1, 'district': 2},
@@ -367,7 +412,7 @@ class BigQueryClientImplTest(unittest.TestCase):
         ])
 
     @mock.patch('google.cloud.bigquery.QueryJob')
-    def test_paged_read_single_page_multiple_rows(self, mock_query_job):
+    def test_paged_read_single_page_multiple_rows(self, mock_query_job: mock.MagicMock) -> None:
         first_row = bigquery.table.Row(
             ['parole', 15, '10N'],
             {'supervision_type': 0, 'revocations': 1, 'district': 2},
@@ -394,7 +439,7 @@ class BigQueryClientImplTest(unittest.TestCase):
         ])
 
     @mock.patch('google.cloud.bigquery.QueryJob')
-    def test_paged_read_multiple_pages(self, mock_query_job):
+    def test_paged_read_multiple_pages(self, mock_query_job: mock.MagicMock) -> None:
         p1_r1 = bigquery.table.Row(
             ['parole', 15, '10N'],
             {'supervision_type': 0, 'revocations': 1, 'district': 2},
