@@ -74,12 +74,14 @@ def export_view_data_to_cloud_storage(export_job_filter: Optional[str] = None,
 
     # If the state code is set to COVID then it will match when the state_filter is None in
     # view_config.METRIC_DATASET_EXPORT_CONFIGS
+    matched_export_config = False
     for dataset_export_config in view_config.METRIC_DATASET_EXPORT_CONFIGS:
         if not dataset_export_config.matches_filter(export_job_filter):
             logging.info("Skipped metric export for config [%s] with filter [%s]", dataset_export_config,
                          export_job_filter)
             continue
 
+        matched_export_config = True
         logging.info("Starting metric export for dataset_config [%s] with filter [%s]", dataset_export_config,
                      export_job_filter)
 
@@ -96,6 +98,9 @@ def export_view_data_to_cloud_storage(export_job_filter: Optional[str] = None,
                 warning_message += f" for state: {dataset_export_config.state_code_filter}"
 
             logging.warning(warning_message)
+
+    if not matched_export_config:
+        raise ValueError("Export filter did not match any export configs: ", export_job_filter)
 
 
 def parse_arguments(argv: List[str]) -> Tuple[argparse.Namespace, List[str]]:
