@@ -47,13 +47,17 @@ from recidiviz.persistence.database.schema.aggregate import schema as aggregate_
 from recidiviz.persistence.database.schema.justice_counts import schema as justice_counts_schema
 
 from recidiviz.persistence.database.sqlalchemy_engine_manager import SchemaType
-from recidiviz.utils.environment import GCP_PROJECT_STAGING, GCP_PROJECT_PRODUCTION
+from recidiviz.utils import environment
 from recidiviz.persistence.database import base_schema
 from recidiviz.utils import metadata
 from recidiviz.calculator.query.county import dataset_config as county_dataset_config
 from recidiviz.calculator.query.state import dataset_config as state_dataset_config
 from recidiviz.calculator.query.operations import dataset_config as operations_dataset_config
 from recidiviz.calculator.query.justice_counts import dataset_config as justice_counts_dataset_config
+from recidiviz.persistence.database.schema_utils import get_table_class_by_name, BQ_TYPES, get_region_code_col, \
+    include_region_code_col_via_join_table
+from recidiviz.persistence.database.export.schema_table_region_filtered_query_builder \
+    import SchemaTableRegionFilteredQueryBuilder
 
 
 class CloudSqlToBQConfig:
@@ -73,26 +77,23 @@ class CloudSqlToBQConfig:
     def __init__(self,
                  metadata_base: DeclarativeMeta,
                  schema_type: SchemaType,
-                 dataset_ref: str,
+                 dataset_id: str,
                  columns_to_exclude: Optional[Dict[str, List[str]]] = None,
-                 history_tables_to_include: Optional[List[str]] = None):
+                 history_tables_to_include: Optional[List[str]] = None,
+                 region_codes_to_exclude: Optional[List[str]] = None):
         if history_tables_to_include is None:
             history_tables_to_include = []
         if columns_to_exclude is None:
             columns_to_exclude = {}
+        if region_codes_to_exclude is None:
+            region_codes_to_exclude = []
         self.metadata_base = metadata_base
         self.schema_type = schema_type
-        self.dataset_ref = dataset_ref
+        self.dataset_id = dataset_id
         self.sorted_tables: List[Table] = metadata_base.metadata.sorted_tables
         self.columns_to_exclude = columns_to_exclude
         self.history_tables_to_include = history_tables_to_include
-
-    def _get_table_class_by_name(self, table_name) -> Table:
-        """Return a Table class object by its table_name"""
-        for table in self.sorted_tables:
-            if table.name == table_name:
-                return table
-        raise ValueError(f'{table_name}: Table name not found in the schema.')
+        self.region_codes_to_exclude = region_codes_to_exclude
 
     def _get_tables_to_exclude(self) -> List[Optional[Table]]:
         """Return List of table classes to exclude from export"""
@@ -104,47 +105,61 @@ class CloudSqlToBQConfig:
 
         return []
 
-    def _get_all_table_columns(self, table_name) -> List[str]:
-        """Return a List of all column names for a given table name"""
-        table = self._get_table_class_by_name(table_name)
-        return [column.name for column in table.columns]
-
-    def _get_table_columns_to_export(self, table_name) -> List[str]:
-        """Return a List of column objects to export for a given table name"""
+    def _get_table_columns_to_export(self, table: Table) -> List[str]:
+        """Return a List of column objects to export for a given table"""
         return list(
-            column for column in self._get_all_table_columns(table_name)
-            if column not in self.columns_to_exclude.get(table_name, [])
+            column.name for column in table.columns
+            if column not in self.columns_to_exclude.get(table.name, [])
         )
 
     def get_bq_schema_for_table(self, table_name: str) -> List[bigquery.SchemaField]:
-        """Return a List of SchemaField objects for a given table name"""
-        table = self._get_table_class_by_name(table_name)
-        return [
+        """Return a List of SchemaField objects for a given table name
+            If it is an association table for a schema that includes the region code, a region code schema field
+            is appended.
+        """
+        table = get_table_class_by_name(table_name, self.sorted_tables)
+        columns = [
             bigquery.SchemaField(
                 column.name,
                 BQ_TYPES[type(column.type)],
                 'NULLABLE' if column.nullable else 'REQUIRED')
             for column in table.columns
-            if column.name in self._get_table_columns_to_export(table_name)
+            if column.name in self._get_table_columns_to_export(table)
         ]
+
+        if not include_region_code_col_via_join_table(self.metadata_base, table_name):
+            return columns
+
+        region_code_col = get_region_code_col(self.metadata_base, table)
+        columns.append(bigquery.SchemaField(region_code_col, BQ_TYPES[sqlalchemy.String], 'NULLABLE'))
+
+        return columns
 
     def get_gcs_export_uri_for_table(self, table_name: str) -> str:
         """Return export URI location in Google Cloud Storage given a table name."""
-        project_id = metadata.project_id()
-        if project_id not in {GCP_PROJECT_STAGING, GCP_PROJECT_PRODUCTION}:
-            raise ValueError(
-                'Unexpected project_id [{project_id}]. If you are running a manual export, '
-                'you must set the GOOGLE_CLOUD_PROJECT environment variable to specify '
-                'which project bucket to export into.')
+        project_id = self._get_project_id()
         bucket = '{}-dbexport'.format(project_id)
-        GCS_EXPORT_URI_FORMAT = 'gs://{bucket}/{table_name}.csv'
-        uri = GCS_EXPORT_URI_FORMAT.format(bucket=bucket, table_name=table_name)
+        gcs_export_uri_format = 'gs://{bucket}/{table_name}.csv'
+        uri = gcs_export_uri_format.format(bucket=bucket, table_name=table_name)
         return uri
 
     def get_table_export_query(self, table_name: str) -> str:
-        """Return a formatted SQL query for a given table name"""
-        columns = self._get_table_columns_to_export(table_name)
-        return TABLE_EXPORT_QUERY.format(columns=', '.join(columns), table=table_name)
+        """Return a formatted SQL query for a given table name
+
+            For association tables, it adds a region code column to the select statement through a join.
+
+            If there are region codes to exclude from the export, it either:
+                1. Returns a query that excludes rows by region codes from the table
+                2. Returns a query that joins an association table to its referred table to filter
+                    by region code. It also includes the region code column in the association table's
+                    select statement (i.e. state_code, region_code).
+
+        """
+        table = get_table_class_by_name(table_name, self.sorted_tables)
+        columns = self._get_table_columns_to_export(table)
+        query_builder = SchemaTableRegionFilteredQueryBuilder(self.metadata_base, table, columns,
+                                                              region_codes_to_exclude=self.region_codes_to_exclude)
+        return query_builder.full_query()
 
     def get_tables_to_export(self) -> List[Table]:
         """Return List of table classes to include in export"""
@@ -154,61 +169,79 @@ class CloudSqlToBQConfig:
         )
 
     def get_dataset_ref(self, big_query_client: BigQueryClient) -> Optional[bigquery.DatasetReference]:
-        """Uses the dataset config reference to request the BigQuery dataset to load the table into.
+        """Uses the dataset_id to request the BigQuery dataset reference to load the table into.
             Gets created if it does not already exist."""
-        return big_query_client.dataset_ref_for_id(self.dataset_ref)
+        return big_query_client.dataset_ref_for_id(self.dataset_id)
+
+    def get_stale_bq_rows_for_excluded_regions_query_builder(self, table_name: str) -> \
+            SchemaTableRegionFilteredQueryBuilder:
+        table = get_table_class_by_name(table_name, self.sorted_tables)
+        columns = self._get_table_columns_to_export(table)
+        # Include region codes in query that were excluded from the export to GCS
+        # If no region codes are excluded, an empty list will generate a query for zero rows.
+        region_codes_to_include = self.region_codes_to_exclude if self.region_codes_to_exclude else []
+        return SchemaTableRegionFilteredQueryBuilder(self.metadata_base, table, columns,
+                                                     region_codes_to_include=region_codes_to_include)
+
+    @staticmethod
+    def _get_project_id() -> str:
+        project_id = metadata.project_id()
+        if project_id not in {environment.GCP_PROJECT_STAGING, environment.GCP_PROJECT_PRODUCTION}:
+            raise ValueError(
+                'Unexpected project_id [{project_id}]. If you are running a manual export, '
+                'you must set the GOOGLE_CLOUD_PROJECT environment variable to specify '
+                'which project bucket to export into.')
+        return project_id
+
+    @classmethod
+    def _get_excluded_region_codes_by_project_id(cls) -> List[str]:
+        project_id = cls._get_project_id()
+        return REGION_CODES_TO_EXCLUDE[project_id]
 
     @classmethod
     def for_schema_type(cls, schema_type: SchemaType) -> 'CloudSqlToBQConfig':
+        """Logic for instantiating a config object for a schema type."""
         if schema_type == SchemaType.JAILS:
             return CloudSqlToBQConfig(
                 metadata_base=base_schema.JailsBase,
                 schema_type=SchemaType.JAILS,
-                dataset_ref=county_dataset_config.COUNTY_BASE_DATASET,
+                dataset_id=county_dataset_config.COUNTY_BASE_DATASET,
                 columns_to_exclude=COUNTY_COLUMNS_TO_EXCLUDE)
         if schema_type == SchemaType.JUSTICE_COUNTS:
             return CloudSqlToBQConfig(
                 metadata_base=base_schema.JusticeCountsBase,
                 schema_type=SchemaType.JUSTICE_COUNTS,
-                dataset_ref=justice_counts_dataset_config.JUSTICE_COUNTS_BASE_DATASET)
+                dataset_id=justice_counts_dataset_config.JUSTICE_COUNTS_BASE_DATASET)
         if schema_type == SchemaType.OPERATIONS:
             return CloudSqlToBQConfig(
                 metadata_base=base_schema.OperationsBase,
                 schema_type=SchemaType.OPERATIONS,
-                dataset_ref=operations_dataset_config.OPERATIONS_BASE_DATASET)
+                region_codes_to_exclude=cls._get_excluded_region_codes_by_project_id(),
+                dataset_id=operations_dataset_config.OPERATIONS_BASE_DATASET)
         if schema_type == SchemaType.STATE:
             return CloudSqlToBQConfig(
                 metadata_base=base_schema.StateBase,
                 schema_type=SchemaType.STATE,
-                dataset_ref=state_dataset_config.STATE_BASE_DATASET,
+                dataset_id=state_dataset_config.STATE_BASE_DATASET,
+                region_codes_to_exclude=cls._get_excluded_region_codes_by_project_id(),
                 history_tables_to_include=STATE_HISTORY_TABLES_TO_INCLUDE_IN_EXPORT)
 
         raise ValueError(f'Unexpected schema type value [{schema_type}]')
 
 
+# List of region codes to exclude from export to BQ
+# For now we expect to use this only for State and Operations schemas
+REGION_CODES_TO_EXCLUDE: Dict[str, List[str]] = {
+    environment.GCP_PROJECT_STAGING: [],
+    environment.GCP_PROJECT_PRODUCTION: []
+}
+
 # Mapping from table name to a list of columns to be excluded for that table.
-COUNTY_COLUMNS_TO_EXCLUDE = {
+COUNTY_COLUMNS_TO_EXCLUDE: Dict[str, List[str]] = {
     'person': ['full_name', 'birthdate_inferred_from_age']
 }
 
 # History tables that should be included in the export
-STATE_HISTORY_TABLES_TO_INCLUDE_IN_EXPORT = [
+STATE_HISTORY_TABLES_TO_INCLUDE_IN_EXPORT: List[str] = [
     'state_person_history'
 ]
-
-############################################
-### ONLY MODIFY VALUES ABOVE THIS BLOCK ###
-############################################
-
-BQ_TYPES = {
-    sqlalchemy.Boolean: 'BOOL',
-    sqlalchemy.Date: 'DATE',
-    sqlalchemy.DateTime: 'DATETIME',
-    sqlalchemy.Enum: 'STRING',
-    sqlalchemy.Integer: 'INT64',
-    sqlalchemy.String: 'STRING',
-    sqlalchemy.Text: 'STRING',
-    sqlalchemy.ARRAY: 'ARRAY',
-}
-
-TABLE_EXPORT_QUERY = 'SELECT {columns} FROM {table}'

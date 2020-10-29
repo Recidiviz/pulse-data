@@ -60,7 +60,7 @@ class SQLAlchemyEngineManager:
     def init_engine_for_postgres_instance(
             cls,
             db_url: str,
-            schema_base: DeclarativeMeta)  -> None:
+            schema_base: DeclarativeMeta) -> None:
         """Initializes a sqlalchemy Engine object for the given Postgres database / schema and caches it for future use.
         """
         cls.init_engine_for_db_instance(
