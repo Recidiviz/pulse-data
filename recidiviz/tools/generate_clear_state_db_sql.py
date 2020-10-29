@@ -29,6 +29,7 @@ import sqlalchemy
 
 from recidiviz.persistence.database.base_schema import StateBase
 from recidiviz.persistence.database.schema.state import schema
+from recidiviz.persistence.database.schema_utils import get_foreign_key_constraints
 
 PERSON_IDS_TEMP_TABLE_NAME = 'person_ids_to_delete'
 
@@ -66,9 +67,7 @@ def _commands_for_table(state_code: str, table: sqlalchemy.Table) -> List[str]:
     if not table.name.endswith(ASSOCIATION_TABLE_NAME_SUFFIX):
         raise ValueError(f'Unexpected non-association table is missing a state_code field: [{table.name}]')
 
-    foreign_key_constraints = [
-        constraint for constraint in table.constraints
-        if isinstance(constraint, sqlalchemy.ForeignKeyConstraint)]
+    foreign_key_constraints = get_foreign_key_constraints(table)
 
     table_commands = []
     for c in foreign_key_constraints:

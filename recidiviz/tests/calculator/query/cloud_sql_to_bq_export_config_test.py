@@ -27,6 +27,9 @@ from google.cloud import bigquery
 
 from recidiviz.persistence.database.export import cloud_sql_to_bq_export_config
 from recidiviz.persistence.database.export.cloud_sql_to_bq_export_config import CloudSqlToBQConfig
+from recidiviz.persistence.database.export.schema_table_region_filtered_query_builder import \
+    SchemaTableRegionFilteredQueryBuilder
+from recidiviz.persistence.database.schema_utils import is_association_table
 from recidiviz.persistence.database.sqlalchemy_engine_manager import SchemaType
 
 
@@ -36,44 +39,36 @@ class CloudSqlToBQConfigTest(unittest.TestCase):
     def setUp(self) -> None:
         self.schema_types = list(SchemaType)
         self.mock_project_id = 'fake-recidiviz-project'
-        self.environment_patcher = mock.patch(
-            'recidiviz.persistence.database.export.cloud_sql_to_bq_export_config.GCP_PROJECT_STAGING',
-            self.mock_project_id
+        self.mock_region_codes_to_exclude = {
+            self.mock_project_id: ['US_ND']
+        }
+        self.region_codes_patcher = mock.patch(
+            'recidiviz.persistence.database.export.cloud_sql_to_bq_export_config.REGION_CODES_TO_EXCLUDE',
+            self.mock_region_codes_to_exclude
         )
+        self.environment_patcher = mock.patch(
+            'recidiviz.persistence.database.export.cloud_sql_to_bq_export_config.environment')
         self.metadata_patcher = mock.patch(
             'recidiviz.persistence.database.export.cloud_sql_to_bq_export_config.metadata')
         self.mock_metadata = self.metadata_patcher.start()
         self.mock_metadata.project_id.return_value = self.mock_project_id
-        self.environment_patcher.start()
+        self.mock_environment = self.environment_patcher.start()
+        self.mock_environment.GCP_PROJECT_STAGING = self.mock_project_id
+        self.mock_region_codes = self.region_codes_patcher.start()
 
     def tearDown(self) -> None:
-        self.environment_patcher.stop()
         self.metadata_patcher.stop()
-
+        self.environment_patcher.stop()
+        self.region_codes_patcher.stop()
 
     def test_for_schema_type_raises_error(self) -> None:
         with self.assertRaises(ValueError):
             CloudSqlToBQConfig.for_schema_type('random-schema-type')  # type: ignore[arg-type]
 
-
     def test_for_schema_type_returns_instance(self) -> None:
         for schema_type in self.schema_types:
             config = CloudSqlToBQConfig.for_schema_type(schema_type)
             self.assertIsInstance(config, CloudSqlToBQConfig)
-
-
-    def test_get_gcs_export_uri_for_table(self) -> None:
-        """Test that get_gcs_export_uri_for_table generates a GCS URI
-            with the correct project ID and table name.
-        """
-        config = CloudSqlToBQConfig.for_schema_type(SchemaType.JAILS)
-        fake_table = 'my_fake_table'
-        bucket = '{}-dbexport'.format(self.mock_project_id)
-        gcs_export_uri = 'gs://{bucket}/{table_name}.csv'.format(
-            bucket=bucket, table_name=fake_table)
-        self.assertEqual(
-            gcs_export_uri, config.get_gcs_export_uri_for_table(fake_table))
-
 
     def test_get_bq_schema_for_table(self) -> None:
         """Test that get_bq_schema_for_table returns a list
@@ -95,6 +90,48 @@ class CloudSqlToBQConfigTest(unittest.TestCase):
                     msg='Column "{}" should not be included. It is found in '
                         'COUNTY_COLUMNS_TO_EXCLUDE` for this table "{}".')
 
+    def test_get_bq_schema_for_table_region_code_in_schema(self) -> None:
+        """Assert that the region code is included in the schema for association tables in the State schema."""
+        association_table_name = 'state_supervision_period_program_assignment_association'
+        config = CloudSqlToBQConfig.for_schema_type(SchemaType.STATE)
+        region_code_col = 'state_code'
+        schema = config.get_bq_schema_for_table(association_table_name)
+
+        self.assertIn(region_code_col, [schema_field.name for schema_field in schema])
+
+    def test_get_gcs_export_uri_for_table(self) -> None:
+        """Test that get_gcs_export_uri_for_table generates a GCS URI
+            with the correct project ID and table name.
+        """
+        config = CloudSqlToBQConfig.for_schema_type(SchemaType.JAILS)
+        fake_table = 'my_fake_table'
+        bucket = '{}-dbexport'.format(self.mock_project_id)
+        gcs_export_uri = 'gs://{bucket}/{table_name}.csv'.format(
+            bucket=bucket, table_name=fake_table)
+        self.assertEqual(
+            gcs_export_uri, config.get_gcs_export_uri_for_table(fake_table))
+
+    def test_get_table_export_query(self) -> None:
+        """For each SchemaType and for each table:
+            1. Assert that each export query is of type string
+            2. Assert that excluded columns are not in the query
+        """
+        for schema_type in self.schema_types:
+            config = CloudSqlToBQConfig.for_schema_type(schema_type)
+            config.region_codes_to_exclude = []
+
+            for table in config.sorted_tables:
+                query = config.get_table_export_query(table.name)
+                self.assertIsInstance(query, str)
+
+                for column in config.columns_to_exclude:
+                    search_pattern = '[ ]*{}[, ]+'.format(f'{table.name}.{column}')
+                    self.assertNotRegex(
+                        query, search_pattern,
+                        msg='Column "{}" not excluded properly from table "{}".'
+                            ' Check cloud_sql_to_bq_export_config.COUNTY_TABLE_COLUMNS_TO_EXPORT'.format(
+                                column, table.name)
+                    )
 
     def test_get_tables_to_export(self) -> None:
         """Assertions for the method get_tables_to_export
@@ -121,9 +158,8 @@ class CloudSqlToBQConfigTest(unittest.TestCase):
                     if 'history' in table.name and table.name not in config.history_tables_to_include:
                         self.assertNotIn(table, tables_to_export)
 
-
-    def test_dataset_ref(self) -> None:
-        """Make sure dataset_ref is defined correctly.
+    def test_dataset_id(self) -> None:
+        """Make sure dataset_id is defined correctly.
 
         Checks that it is a string, checks that it has characters,
         and checks that those characters are letters, numbers, or _.
@@ -132,32 +168,54 @@ class CloudSqlToBQConfigTest(unittest.TestCase):
             config = CloudSqlToBQConfig.for_schema_type(schema_type)
             allowed_characters = set(string.ascii_letters + string.digits + '_')
 
-            self.assertIsInstance(config.dataset_ref, str)
+            self.assertIsInstance(config.dataset_id, str)
 
-            for char in config.dataset_ref:
+            for char in config.dataset_id:
                 self.assertIn(char, allowed_characters)
 
+    def test_get_stale_bq_rows_for_excluded_regions_query_builder(self) -> None:
+        """Given a table name, assert that it returns a query builder that filters for rows
+            excluded from the export query"""
+        config = CloudSqlToBQConfig.for_schema_type(SchemaType.STATE)
+        config.region_codes_to_exclude = ['US_VA', 'us_id', 'US_hi']
+        for table in config.get_tables_to_export():
+            if is_association_table(table.name):
+                # This is tested in the SchemaTableRegionFilteredQueryBuilder class
+                continue
+            filter_clause = "WHERE state_code IN ('US_VA','US_ID','US_HI')"
+            query_builder = config.get_stale_bq_rows_for_excluded_regions_query_builder(table.name)
 
-    def test_get_table_export_query(self) -> None:
-        """For each SchemaType and for each table:
-            1. Assert that each export query is of type string
-            2. Assert that excluded columns are not in the query
-        """
-        for schema_type in self.schema_types:
-            config = CloudSqlToBQConfig.for_schema_type(schema_type)
-            for table in config.sorted_tables:
-                query = config.get_table_export_query(table.name)
-                self.assertIsInstance(query, str)
+            self.assertIsInstance(query_builder, SchemaTableRegionFilteredQueryBuilder)
+            self.assertIn(filter_clause, query_builder.full_query())
 
-                for column in config.columns_to_exclude:
-                    search_pattern = '[ ]*{}[, ]+'.format(column)
-                    self.assertNotRegex(
-                        query, search_pattern,
-                        msg='Column "{}" not excluded properly from table "{}".'
-                            ' Check cloud_sql_to_bq_export_config.COUNTY_TABLE_COLUMNS_TO_EXPORT'.format(
-                                column, table.name)
-                    )
+    def test_get_stale_bq_rows_for_excluded_regions_query_builder_no_excluded_regions(self) -> None:
+        """Given a table name and no excluded region codes, assert that it returns a query builder
+            that returns no rows"""
+        config = CloudSqlToBQConfig.for_schema_type(SchemaType.STATE)
+        config.region_codes_to_exclude = []
+        filter_clause = "WHERE FALSE"
+        for table in config.get_tables_to_export():
+            query_builder = config.get_stale_bq_rows_for_excluded_regions_query_builder(table.name)
 
+            self.assertIsInstance(query_builder, SchemaTableRegionFilteredQueryBuilder)
+            self.assertEqual(filter_clause, query_builder.filter_clause())
+
+    def test_get_stale_bq_rows_for_excluded_regions_query_builder_jails_schema(self) -> None:
+        """Given a JAILS schema, a table name and None for region_codes_to_exclude, assert that it returns a
+            query builder that returns no rows"""
+        filter_clause = "WHERE FALSE"
+        config = CloudSqlToBQConfig.for_schema_type(SchemaType.JAILS)
+        for table in config.get_tables_to_export():
+            query_builder = config.get_stale_bq_rows_for_excluded_regions_query_builder(table.name)
+            self.assertIsInstance(query_builder, SchemaTableRegionFilteredQueryBuilder)
+            self.assertEqual(filter_clause, query_builder.filter_clause())
+
+    @mock.patch('recidiviz.persistence.database.export.cloud_sql_to_bq_export_config.metadata.project_id',
+                mock.Mock(return_value='a-new-fake-id'))
+    def test_incorrect_environment(self) -> None:
+        with self.assertRaises(ValueError):
+            config = CloudSqlToBQConfig.for_schema_type(SchemaType.STATE)
+            self.assertEqual(config.region_codes_to_exclude, [])
 
     def test_COUNTY_COLUMNS_TO_EXCLUDE_typos(self) -> None:
         """Make sure COUNTY_COLUMNS_TO_EXCLUDE are defined correctly in case of

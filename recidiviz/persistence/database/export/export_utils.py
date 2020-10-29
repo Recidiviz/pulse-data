@@ -21,7 +21,6 @@ import datetime
 import logging
 from typing import List, Optional, cast
 
-import sqlalchemy
 from google.cloud import bigquery
 
 from recidiviz.big_query.big_query_client import ExportQueryConfig, BigQueryClient
@@ -38,13 +37,13 @@ from recidiviz.persistence.database.schema.state import schema
 def copy_table_to_dataset(target_dataset: str,
                           target_table: str,
                           export_query: str,
-                          bq_client: BigQueryClient):
+                          bq_client: BigQueryClient) -> None:
     """Copies the results of the given query to the target table and dataset, overwriting what lives there if the
     table already exists."""
     bq_client.create_table_from_query_async(target_dataset, target_table, export_query, [], True)
 
 
-def export_tables_to_cloud_storage(export_configs: List[ExportQueryConfig], bq_client: BigQueryClient):
+def export_tables_to_cloud_storage(export_configs: List[ExportQueryConfig], bq_client: BigQueryClient) -> None:
     """Exports tables with the given export configurations to Google Cloud Storage."""
     bq_client.export_query_results_to_cloud_storage(export_configs)
 
@@ -59,16 +58,27 @@ def gcs_export_directory(bucket_name: str, today: datetime.date, state_code: str
     return cast(GcsfsDirectoryPath, path)
 
 
+def format_columns_for_sql(columns: List[str], table_prefix: Optional[str] = None) -> str:
+    if table_prefix:
+        return ','.join(map(lambda col: f'{table_prefix}.{col}', columns))
+    return ','.join(columns)
+
+
+def format_region_codes_for_sql(region_codes: List[str]) -> str:
+    """Format a list of region codes to use in a SQL string
+        format_region_codes_for_sql(['US_ND']) --> "'US_ND'"
+        format_region_codes_for_sql(['US_ND', 'US_PA']) --> "'US_ND', 'US_PA'"
+    """
+    return ','.join([f"\'{region_code.upper()}\'" for region_code in region_codes])
+
+
 def state_code_in_clause(state_codes: List[str]) -> str:
     """Converts a list of state codes into a well-formatted SQL clause, e.g.
     state_code_in_clause(['US_MO', 'US_PA']) -> "state_code in ('US_MO', 'US_PA')"
-    state_code_in_clause(['US_ID']) --> "state_code = 'US_ID'"
+    state_code_in_clause(['US_ID']) --> "state_code in ('US_ID')"
     """
-    if len(state_codes) == 1:
-        return f'state_code = \'{state_codes[0].upper()}\''
-
-    listed = ','.join([f"'{code.upper()}'" for code in state_codes])
-    return f'state_code in ({listed})'
+    formatted_region_codes = format_region_codes_for_sql(state_codes)
+    return f'state_code in ({formatted_region_codes})'
 
 
 def state_table_export_query_str(table: bigquery.table.TableListItem, state_codes: List[str]) -> Optional[str]:
@@ -99,27 +109,6 @@ def state_table_export_query_str(table: bigquery.table.TableListItem, state_code
 
     select_query = f'SELECT * FROM {project_id}.{source_dataset}.{source_table}'
 
-    if source_table == 'state_person':
-        filter_clause = \
-            f'WHERE person_id IN (SELECT person_id FROM {project_id}.{source_dataset}.' \
-            f'state_person_external_id WHERE {state_code_clause})'
-    elif source_table.endswith('_association'):
-        foreign_key_constraints = [constraint for constraint in sqlalchemy_table.constraints
-                                   if isinstance(constraint, sqlalchemy.ForeignKeyConstraint)]
-
-        filter_clauses = []
-        for c in foreign_key_constraints:
-            constraint: sqlalchemy.ForeignKeyConstraint = c
-            foreign_key_table = constraint.referred_table
-            foreign_key_col = constraint.column_keys[0]
-
-            filter_clauses.append(
-                f'{foreign_key_col} IN (SELECT {foreign_key_col} FROM '
-                f'{project_id}.{source_dataset}.{foreign_key_table} WHERE {state_code_clause})')
-
-        filter_clause = 'WHERE ' + ' OR '.join(filter_clauses)
-
-    else:
-        filter_clause = f'WHERE {state_code_clause}'
+    filter_clause = f'WHERE {state_code_clause}'
 
     return f'{select_query} {filter_clause};'

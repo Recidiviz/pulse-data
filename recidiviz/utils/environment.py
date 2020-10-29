@@ -68,6 +68,9 @@ def in_gae() -> bool:
 def get_gae_environment() -> Optional[str]:
     """Get the environment we are running in
 
+    GAE environment must always refer to the actual environment. RECIDIVIZ_ENV variable should never be
+    set locally, and if you need to specify an environment to run in locally, use the project_id (i.e. GCP_PROJECTS).
+
     Args:
         N/A
 
