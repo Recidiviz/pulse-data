@@ -25,7 +25,6 @@ from typing import List
 import sqlalchemy
 from google.cloud import bigquery
 
-from recidiviz.persistence.database.export import cloud_sql_to_bq_export_config
 from recidiviz.persistence.database.export.cloud_sql_to_bq_export_config import CloudSqlToBQConfig
 from recidiviz.persistence.database.export.schema_table_region_filtered_query_builder import \
     SchemaTableRegionFilteredQueryBuilder
@@ -42,10 +41,6 @@ class CloudSqlToBQConfigTest(unittest.TestCase):
         self.mock_region_codes_to_exclude = {
             self.mock_project_id: ['US_ND']
         }
-        self.region_codes_patcher = mock.patch(
-            'recidiviz.persistence.database.export.cloud_sql_to_bq_export_config.REGION_CODES_TO_EXCLUDE',
-            self.mock_region_codes_to_exclude
-        )
         self.environment_patcher = mock.patch(
             'recidiviz.persistence.database.export.cloud_sql_to_bq_export_config.environment')
         self.metadata_patcher = mock.patch(
@@ -54,12 +49,10 @@ class CloudSqlToBQConfigTest(unittest.TestCase):
         self.mock_metadata.project_id.return_value = self.mock_project_id
         self.mock_environment = self.environment_patcher.start()
         self.mock_environment.GCP_PROJECT_STAGING = self.mock_project_id
-        self.mock_region_codes = self.region_codes_patcher.start()
 
     def tearDown(self) -> None:
         self.metadata_patcher.stop()
         self.environment_patcher.stop()
-        self.region_codes_patcher.stop()
 
     def test_for_schema_type_raises_error(self) -> None:
         with self.assertRaises(ValueError):
@@ -217,9 +210,8 @@ class CloudSqlToBQConfigTest(unittest.TestCase):
             config = CloudSqlToBQConfig.for_schema_type(SchemaType.STATE)
             self.assertEqual(config.region_codes_to_exclude, [])
 
-    def test_COUNTY_COLUMNS_TO_EXCLUDE_typos(self) -> None:
-        """Make sure COUNTY_COLUMNS_TO_EXCLUDE are defined correctly in case of
-        typos.
+    def test_column_to_exclude(self) -> None:
+        """Make sure columns_to_exclude are defined correctly in case of typos.
 
         1) Check that all tables are defined in tables to export.
 
@@ -229,7 +221,7 @@ class CloudSqlToBQConfigTest(unittest.TestCase):
         tables = config.get_tables_to_export()
         table_names = list(map(lambda t: t.name, tables))
 
-        for table, _ in cloud_sql_to_bq_export_config.COUNTY_COLUMNS_TO_EXCLUDE.items():
+        for table, _ in config.columns_to_exclude.items():
             self.assertTrue(
                 table in table_names,
                 msg='Table "{}" in `cloud_sql_to_bq_export_config.COUNTY_COLUMNS_TO_EXCLUDE`'
