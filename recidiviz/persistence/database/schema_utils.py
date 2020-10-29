@@ -23,7 +23,8 @@ from types import ModuleType
 from typing import Iterator, Optional, Type, List, Any
 
 from functools import lru_cache
-from sqlalchemy import Table
+import sqlalchemy
+from sqlalchemy import Table, ForeignKeyConstraint
 from sqlalchemy.ext.declarative import DeclarativeMeta
 
 from recidiviz.common.ingest_metadata import SystemLevel
@@ -41,10 +42,55 @@ from recidiviz.persistence.database.schema.operations import schema as operation
 _SCHEMA_MODULES: List[ModuleType] = \
     [aggregate_schema, county_schema, state_schema, operations_schema]
 
+BQ_TYPES = {
+    sqlalchemy.Boolean: 'BOOL',
+    sqlalchemy.Date: 'DATE',
+    sqlalchemy.DateTime: 'DATETIME',
+    sqlalchemy.Enum: 'STRING',
+    sqlalchemy.Integer: 'INT64',
+    sqlalchemy.String: 'STRING',
+    sqlalchemy.Text: 'STRING',
+    sqlalchemy.ARRAY: 'ARRAY',
+}
 
 def get_all_table_classes() -> Iterator[Table]:
     for module in _SCHEMA_MODULES:
         yield from get_all_table_classes_in_module(module)
+
+
+def get_foreign_key_constraints(table: Table) -> List[ForeignKeyConstraint]:
+    return [constraint for constraint in table.constraints
+            if isinstance(constraint, ForeignKeyConstraint)]
+
+
+def get_table_class_by_name(table_name: str, tables: List[Table]) -> Table:
+    """Return a Table class object by its table_name"""
+    for table in tables:
+        if table.name == table_name:
+            return table
+    raise ValueError(f'{table_name}: Table name not found in list of tables.')
+
+
+def get_region_code_col(metadata_base: DeclarativeMeta, table: Table) -> str:
+    if metadata_base == StateBase:
+        if hasattr(table.c, 'state_code') or is_association_table(table.name):
+            return 'state_code'
+    if metadata_base == OperationsBase:
+        if hasattr(table.c, 'region_code'):
+            return 'region_code'
+    raise ValueError(f'Unexpected table is missing a region code field: [{table.name}]')
+
+
+def include_region_code_col_via_join_table(metadata_base: DeclarativeMeta, table_name: str) -> bool:
+    return schema_has_region_code_query_support(metadata_base) and is_association_table(table_name)
+
+
+def schema_has_region_code_query_support(metadata_base: DeclarativeMeta) -> bool:
+    return metadata_base in (StateBase, OperationsBase)
+
+
+def is_association_table(table_name: str) -> bool:
+    return table_name.endswith('_association')
 
 
 def get_all_table_classes_in_module(
