@@ -51,7 +51,11 @@ class ExportMetricDatasetConfig:
     def matches_filter(self, export_job_filter: Optional[str] = None) -> bool:
         if export_job_filter is None:
             return True
-        return export_job_filter in (self.export_name, self.state_code_filter)
+        if self.export_name and self.export_name.upper() == export_job_filter.upper():
+            return True
+        if self.state_code_filter and self.state_code_filter.upper() == export_job_filter.upper():
+            return True
+        return False
 
     def export_configs_for_views_to_export(self, project_id: str) -> Sequence[ExportMetricBigQueryViewConfig]:
         """Builds a list of ExportMetricBigQueryViewConfigs that define how all metric views in
