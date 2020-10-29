@@ -27,8 +27,10 @@ Add columns to *_COLUMNS_TO_EXCLUDE to exclude them from the export.
 
 gcs_export_uri defines the export URI location in Google Cloud Storage.
 """
+import os
 from typing import Dict, List, Optional
 
+import yaml
 import sqlalchemy
 from sqlalchemy import Table
 from sqlalchemy.ext.declarative import DeclarativeMeta
@@ -64,7 +66,7 @@ class CloudSqlToBQConfig:
     """Configuration class for exporting tables from Cloud SQL to BigQuery
         Args:
             metadata_base: The base schema for the config
-            dataset_ref: String reference to the BigQuery dataset
+            dataset_id: String reference to the BigQuery dataset
             columns_to_exclude: An optional dictionary of table names and the columns
                 to exclude from the export.
             history_tables_to_include: An optional List of history tables to include
@@ -188,25 +190,33 @@ class CloudSqlToBQConfig:
         project_id = metadata.project_id()
         if project_id not in {environment.GCP_PROJECT_STAGING, environment.GCP_PROJECT_PRODUCTION}:
             raise ValueError(
-                'Unexpected project_id [{project_id}]. If you are running a manual export, '
+                f'Unexpected project_id [{project_id}]. If you are running a manual export, '
                 'you must set the GOOGLE_CLOUD_PROJECT environment variable to specify '
                 'which project bucket to export into.')
         return project_id
 
     @classmethod
-    def _get_excluded_region_codes_by_project_id(cls) -> List[str]:
+    def _get_region_codes_to_exclude_by_project(cls, config: Dict[str, Dict[str, List[str]]]) -> List[str]:
         project_id = cls._get_project_id()
-        return REGION_CODES_TO_EXCLUDE[project_id]
+        if project_id == environment.GCP_PROJECT_PRODUCTION:
+            region_codes_to_exclude_by_project = config.get('production', {})
+        else:
+            region_codes_to_exclude_by_project = config.get('staging', {})
+        return region_codes_to_exclude_by_project.get('region_codes_to_exclude', [])
 
     @classmethod
     def for_schema_type(cls, schema_type: SchemaType) -> 'CloudSqlToBQConfig':
         """Logic for instantiating a config object for a schema type."""
+        yaml_config_file_path = os.path.join(os.path.dirname(__file__), 'cloud_sql_to_bq_config.yaml')
+        with open(yaml_config_file_path, 'r') as yaml_config_file:
+            yaml_config = yaml.full_load(yaml_config_file)
+
         if schema_type == SchemaType.JAILS:
             return CloudSqlToBQConfig(
                 metadata_base=base_schema.JailsBase,
                 schema_type=SchemaType.JAILS,
                 dataset_id=county_dataset_config.COUNTY_BASE_DATASET,
-                columns_to_exclude=COUNTY_COLUMNS_TO_EXCLUDE)
+                columns_to_exclude=yaml_config.get('county_columns_to_exclude', {}))
         if schema_type == SchemaType.JUSTICE_COUNTS:
             return CloudSqlToBQConfig(
                 metadata_base=base_schema.JusticeCountsBase,
@@ -216,32 +226,14 @@ class CloudSqlToBQConfig:
             return CloudSqlToBQConfig(
                 metadata_base=base_schema.OperationsBase,
                 schema_type=SchemaType.OPERATIONS,
-                region_codes_to_exclude=cls._get_excluded_region_codes_by_project_id(),
+                region_codes_to_exclude=cls._get_region_codes_to_exclude_by_project(yaml_config),
                 dataset_id=operations_dataset_config.OPERATIONS_BASE_DATASET)
         if schema_type == SchemaType.STATE:
             return CloudSqlToBQConfig(
                 metadata_base=base_schema.StateBase,
                 schema_type=SchemaType.STATE,
                 dataset_id=state_dataset_config.STATE_BASE_DATASET,
-                region_codes_to_exclude=cls._get_excluded_region_codes_by_project_id(),
-                history_tables_to_include=STATE_HISTORY_TABLES_TO_INCLUDE_IN_EXPORT)
+                region_codes_to_exclude=cls._get_region_codes_to_exclude_by_project(yaml_config),
+                history_tables_to_include=yaml_config.get('state_history_tables_to_include', []))
 
         raise ValueError(f'Unexpected schema type value [{schema_type}]')
-
-
-# List of region codes to exclude from export to BQ
-# For now we expect to use this only for State and Operations schemas
-REGION_CODES_TO_EXCLUDE: Dict[str, List[str]] = {
-    environment.GCP_PROJECT_STAGING: [],
-    environment.GCP_PROJECT_PRODUCTION: []
-}
-
-# Mapping from table name to a list of columns to be excluded for that table.
-COUNTY_COLUMNS_TO_EXCLUDE: Dict[str, List[str]] = {
-    'person': ['full_name', 'birthdate_inferred_from_age']
-}
-
-# History tables that should be included in the export
-STATE_HISTORY_TABLES_TO_INCLUDE_IN_EXPORT: List[str] = [
-    'state_person_history'
-]
