@@ -22,6 +22,7 @@ from unittest import mock
 
 from google.cloud import bigquery
 
+from recidiviz.big_query.export.big_query_view_exporter import ViewExportValidationError
 from recidiviz.metrics.export.metric_export_config import ExportMetricBigQueryViewConfig, ExportMetricDatasetConfig
 from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath
 from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
@@ -154,6 +155,62 @@ class MetricViewExportManagerTest(unittest.TestCase):
             output_directory=GcsfsDirectoryPath.from_absolute_path(
                 "gs://{project_id}-bucket-without-state-codes".format(
                     project_id=self.mock_project_id,
+                )
+            )
+        )]
+
+        mock_view_update_manager.assert_called()
+        mock_view_exporter.export_and_validate.assert_called_with(view_export_configs)
+
+
+    @mock.patch('recidiviz.big_query.view_update_manager.create_dataset_and_update_views_for_view_builders')
+    @mock.patch('recidiviz.big_query.export.big_query_view_exporter.BigQueryViewExporter')
+    def test_export_dashboard_data_to_cloud_storage_value_error(self, mock_view_exporter, mock_view_update_manager):
+        """Tests the table is created from the view and then extracted."""
+
+        mock_view_exporter.export_and_validate.side_effect = ValueError
+        with self.assertRaises(ValueError):
+            metric_view_export_manager.export_view_data_to_cloud_storage(mock_state_code, mock_view_exporter)
+
+        view = self.mock_view_builder.build()
+
+        view_export_configs = [ExportMetricBigQueryViewConfig(
+            view=view,
+            view_filter_clause=" WHERE state_code = 'US_XX'",
+            intermediate_table_name=f"{view.view_id}_table_US_XX",
+            output_directory=GcsfsDirectoryPath.from_absolute_path(
+                "gs://{project_id}-dataset-location/subdirectory/{state_code}".format(
+                    project_id=self.mock_project_id,
+                    state_code='US_XX',
+                )
+            )
+        )]
+
+        mock_view_update_manager.assert_called()
+        mock_view_exporter.export_and_validate.assert_called_with(view_export_configs)
+
+    @mock.patch('recidiviz.big_query.view_update_manager.create_dataset_and_update_views_for_view_builders')
+    @mock.patch('recidiviz.big_query.export.big_query_view_exporter.BigQueryViewExporter')
+    def test_export_dashboard_data_to_cloud_storage_validation_error(self,
+                                                                     mock_view_exporter,
+                                                                     mock_view_update_manager):
+        """Tests the table is created from the view and then extracted."""
+
+        mock_view_exporter.export_and_validate.side_effect = ViewExportValidationError
+
+        # Should not throw
+        metric_view_export_manager.export_view_data_to_cloud_storage(mock_state_code, mock_view_exporter)
+
+        view = self.mock_view_builder.build()
+
+        view_export_configs = [ExportMetricBigQueryViewConfig(
+            view=view,
+            view_filter_clause=" WHERE state_code = 'US_XX'",
+            intermediate_table_name=f"{view.view_id}_table_US_XX",
+            output_directory=GcsfsDirectoryPath.from_absolute_path(
+                "gs://{project_id}-dataset-location/subdirectory/{state_code}".format(
+                    project_id=self.mock_project_id,
+                    state_code='US_XX',
                 )
             )
         )]
