@@ -111,6 +111,15 @@ class MetricViewExportManagerTest(unittest.TestCase):
         mock_view_update_manager.assert_called()
         mock_view_exporter.export_and_validate.assert_called_with(view_export_configs)
 
+    @mock.patch('recidiviz.big_query.view_update_manager.create_dataset_and_update_views_for_view_builders')
+    @mock.patch('recidiviz.big_query.export.big_query_view_exporter.BigQueryViewExporter')
+    def test_raise_exception_no_export_matched(self, mock_view_exporter, mock_view_update_manager):
+        # pylint: disable=unused-argument
+        """Tests the table is created from the view and then extracted."""
+        with self.assertRaises(ValueError) as e:
+            metric_view_export_manager.export_view_data_to_cloud_storage('US_YY', mock_view_exporter)
+            self.assertEqual(str(e.exception),  'Export filter did not match any export configs:', ' US_YY')
+
     @mock.patch('recidiviz.metrics.export.metric_view_export_manager.view_config')
     @mock.patch('recidiviz.big_query.view_update_manager.create_dataset_and_update_views_for_view_builders')
     @mock.patch('recidiviz.big_query.export.big_query_view_exporter.BigQueryViewExporter')
