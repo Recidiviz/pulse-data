@@ -28,6 +28,10 @@ from recidiviz.big_query.export.export_query_config import ExportBigQueryViewCon
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 
 
+class ViewExportValidationError(Exception):
+    """Error thrown when exported view files fail a validation."""
+
+
 class BigQueryViewExporter:
     """Interface for implementations which export BigQuery view results to specific locations in specific formats."""
 
@@ -64,7 +68,7 @@ class BigQueryViewExporter:
 
         for output_path in exported_paths:
             if not self.validator.validate(output_path):
-                raise ValueError(
+                raise ViewExportValidationError(
                     f'Validation on path {output_path.abs_path()} failed the metric file export. '
                     f'Stopping execution here.')
 
