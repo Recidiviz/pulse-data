@@ -19,7 +19,7 @@
 This can be run on-demand whenever a set of views needs to be updated. Run locally with the following command:
     python -m recidiviz.big_query.view_update_manager
         --project_id [PROJECT_ID]
-        --views_to_update [state, county, validation]
+        --views_to_update [state, county, validation, all]
         --materialized_views_only [True, False]
 """
 import argparse
@@ -136,7 +136,7 @@ def parse_arguments(argv: List[str]) -> Tuple[argparse.Namespace, List[str]]:
     parser.add_argument('--views_to_update',
                         dest='views_to_update',
                         type=str,
-                        choices=[namespace.value for namespace in VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE],
+                        choices=(['all'] + [namespace.value for namespace in VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE]),
                         required=True)
 
     parser.add_argument('--materialized_views_only',
@@ -151,16 +151,17 @@ if __name__ == '__main__':
     logging.getLogger().setLevel(logging.INFO)
     known_args, _ = parse_arguments(sys.argv)
 
-    view_namespace_ = BigQueryViewNamespace(known_args.views_to_update)
-    view_builders = VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE.get(BigQueryViewNamespace(known_args.views_to_update))
-
-    if not view_builders:
-        raise ValueError("Unsupported views_to_update parameter. Fix the parser to only allow supported values.")
-
     if known_args.materialized_views_only:
         logging.info("Limiting update to materialized views only.")
 
     with local_project_id_override(known_args.project_id):
-        create_dataset_and_update_views_for_view_builders(view_namespace=view_namespace_,
-                                                          view_builders_to_update=view_builders,
-                                                          materialized_views_only=known_args.materialized_views_only)
+        if known_args.views_to_update == 'all':
+            create_dataset_and_update_all_views(materialized_views_only=known_args.materialized_views_only)
+        else:
+            view_namespace_ = BigQueryViewNamespace(known_args.views_to_update)
+            view_builders = VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE[BigQueryViewNamespace(known_args.views_to_update)]
+
+            create_dataset_and_update_views_for_view_builders(
+                view_namespace=view_namespace_,
+                view_builders_to_update=view_builders,
+                materialized_views_only=known_args.materialized_views_only)
