@@ -53,15 +53,42 @@ REVOCATIONS_BY_OFFICER_BY_MONTH_QUERY_TEMPLATE = \
         COUNT(DISTINCT IF(most_severe_violation_type = 'TECHNICAL', person_id, NULL)) AS technical_revocations
       FROM revocations
       GROUP BY state_code, year, month, officer_external_id
+    ),
+    avg_revocations_by_district_state AS (
+      -- Get the average monthly crime and technical revocations by district and state
+      SELECT 
+        state_code, year, month,
+        district,
+        AVG(IFNULL(crime_revocations, 0)) AS avg_crime_revocations,
+        AVG(IFNULL(technical_revocations, 0)) AS avg_technical_revocations
+      FROM `{project_id}.{po_report_dataset}.officer_supervision_district_association_materialized`
+      LEFT JOIN revocations_per_officer
+        USING (state_code, year, month, officer_external_id),
+      {district_dimension}
+      GROUP BY state_code, year, month, district
     )
     SELECT
       state_code, year, month,
       officer_external_id, district,
       IFNULL(revocations_per_officer.crime_revocations, 0) AS crime_revocations,
-      IFNULL(revocations_per_officer.technical_revocations, 0) AS technical_revocations
+      district_avg.avg_crime_revocations AS crime_revocations_district_average, 
+      state_avg.avg_crime_revocations AS crime_revocations_state_average, 
+      IFNULL(revocations_per_officer.technical_revocations, 0) AS technical_revocations,
+      district_avg.avg_technical_revocations AS technical_revocations_district_average, 
+      state_avg.avg_technical_revocations AS technical_revocations_state_average, 
     FROM `{project_id}.{po_report_dataset}.officer_supervision_district_association_materialized`
     LEFT JOIN revocations_per_officer
       USING (state_code, year, month, officer_external_id)
+    LEFT JOIN (
+      SELECT * FROM avg_revocations_by_district_state
+      WHERE district != 'ALL'
+    ) district_avg
+      USING (state_code, year, month, district)
+    LEFT JOIN (
+      SELECT * EXCEPT (district) FROM avg_revocations_by_district_state
+      WHERE district = 'ALL'
+    ) state_avg
+      USING (state_code, year, month)
     ORDER BY state_code, year, month, district, officer_external_id
     """
 
@@ -73,6 +100,7 @@ REVOCATIONS_BY_OFFICER_BY_MONTH_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     description=REVOCATIONS_BY_OFFICER_BY_MONTH_DESCRIPTION,
     metrics_dataset=dataset_config.DATAFLOW_METRICS_DATASET,
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
+    district_dimension=bq_utils.unnest_district(district_column='district'),
     po_report_dataset=dataset_config.PO_REPORT_DATASET,
     filter_to_most_recent_job_id_for_metric=bq_utils.filter_to_most_recent_job_id_for_metric(
         reference_dataset=dataset_config.REFERENCE_VIEWS_DATASET)
