@@ -1382,6 +1382,8 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
 
         self.run_parse_file_test(
             expected, 'tak034_tak026_tak039_apfx90_apfx91_supervision_enhancements_supervision_periods')
+        self.run_parse_file_test(
+            expected, 'tak034_tak026_tak039_apfx90_apfx91_supervision_enhancements_supervision_periods_v2')
 
     def test_populate_data_tak028_tak042_tak076_tak024_violation_reports(self):
         sss_110035_20040712_1 = StateSupervisionSentence(
@@ -3492,6 +3494,24 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
         )
 
         sg_910324_19890825.supervision_sentences.append(placeholder_sss_910324_19890825)
+
+        # SQL Preprocessing View
+        # Act
+        self._run_ingest_job_for_filename(
+            'tak034_tak026_tak039_apfx90_apfx91_supervision_enhancements_supervision_periods_v2.csv')
+
+        # Assert
+        self.assert_expected_db_people(expected_people)
+
+        # TODO(#4266): Clean up backwards compatibility code
+        # Legacy
+        placeholder_sss_710448_20010414_2 = entities.StateSupervisionSentence.new_with_defaults(
+            state_code=_STATE_CODE_UPPER,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+            sentence_group=sg_710448_20010414,
+            person=person_710448
+        )
+        sg_710448_20010414.supervision_sentences.append(placeholder_sss_710448_20010414_2)
 
         # Act
         self._run_ingest_job_for_filename(
