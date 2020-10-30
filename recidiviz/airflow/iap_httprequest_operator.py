@@ -22,7 +22,10 @@ import os
 
 from airflow.operators.python_operator import PythonOperator
 from airflow.utils.decorators import apply_defaults
-from cloud_function_utils import make_iap_request, IAP_CLIENT_ID
+try:
+    from cloud_function_utils import make_iap_request, IAP_CLIENT_ID
+except ImportError:
+    from recidiviz.cloud_functions.cloud_function_utils import make_iap_request, IAP_CLIENT_ID
 
 
 def make_iap_export_request(url: str) -> None:
