@@ -131,6 +131,7 @@ class UsMoController(CsvGcsfsDirectIngestController):
         'tak022_tak024_tak025_tak026_offender_sentence_supervision_v2',
         'tak158_tak023_tak026_incarceration_period_from_incarceration_sentence_v2',
         'tak158_tak024_tak026_incarceration_period_from_supervision_sentence_v2',
+        'tak034_tak026_tak039_apfx90_apfx91_supervision_enhancements_supervision_periods_v2',
         'tak028_tak042_tak076_tak024_violation_reports_v2',
         'tak291_tak292_tak024_citations_v2',
     ]
@@ -154,6 +155,7 @@ class UsMoController(CsvGcsfsDirectIngestController):
         'tak022_tak024_tak025_tak026_offender_sentence_supervision_v2': 'BS',
         'tak158_tak023_tak026_incarceration_period_from_incarceration_sentence_v2': 'BT',
         'tak158_tak024_tak026_incarceration_period_from_supervision_sentence_v2': 'BU',
+        'tak034_tak026_tak039_apfx90_apfx91_supervision_enhancements_supervision_periods_v2': '',
         'tak028_tak042_tak076_tak024_violation_reports_v2': 'BY',
         'tak291_tak292_tak024_citations_v2': 'JT',
     }
@@ -514,6 +516,16 @@ class UsMoController(CsvGcsfsDirectIngestController):
             self._set_finally_formed_date_on_response,
             self._set_decision_agent,
         ]
+        tak034_tak026_tak039_apfx90_apfx91_supervision_enhancements_supervision_periods_row_processors:\
+            List[Callable] = [
+                self._gen_clear_magical_date_value(
+                    'termination_date',
+                    self.PERIOD_MAGICAL_DATES,
+                    StateSupervisionPeriod),
+                self._set_supervising_officer_on_period,
+                self._parse_case_types,
+                self._set_empty_admisssion_releases_as_transfers
+            ]
 
         self.row_post_processors_by_file: Dict[str, List[Callable]] = {
             # Legacy
@@ -529,15 +541,8 @@ class UsMoController(CsvGcsfsDirectIngestController):
                 incarceration_period_row_posthooks,
             'tak158_tak024_tak026_incarceration_period_from_supervision_sentence':
                 incarceration_period_row_posthooks,
-            'tak034_tak026_tak039_apfx90_apfx91_supervision_enhancements_supervision_periods': [
-                self._gen_clear_magical_date_value(
-                    'termination_date',
-                    self.PERIOD_MAGICAL_DATES,
-                    StateSupervisionPeriod),
-                self._set_supervising_officer_on_period,
-                self._parse_case_types,
-                self._set_empty_admisssion_releases_as_transfers
-            ],
+            'tak034_tak026_tak039_apfx90_apfx91_supervision_enhancements_supervision_periods':
+                tak034_tak026_tak039_apfx90_apfx91_supervision_enhancements_supervision_periods_row_processors,
             'tak028_tak042_tak076_tak024_violation_reports':
                 tak028_tak042_tak076_tak024_violation_reports_row_processors,
             'tak291_tak292_tak024_citations': tak291_tak292_tak024_citations_row_processors,
@@ -555,6 +560,8 @@ class UsMoController(CsvGcsfsDirectIngestController):
                 incarceration_period_row_posthooks,
             'tak158_tak024_tak026_incarceration_period_from_supervision_sentence_v2':
                 incarceration_period_row_posthooks,
+            'tak034_tak026_tak039_apfx90_apfx91_supervision_enhancements_supervision_periods_v2':
+                tak034_tak026_tak039_apfx90_apfx91_supervision_enhancements_supervision_periods_row_processors,
             'tak028_tak042_tak076_tak024_violation_reports_v2':
                 tak028_tak042_tak076_tak024_violation_reports_row_processors,
             'tak291_tak292_tak024_citations_v2': tak291_tak292_tak024_citations_row_processors,
@@ -590,6 +597,8 @@ class UsMoController(CsvGcsfsDirectIngestController):
                 self._generate_incarceration_period_id_coords,
             'tak158_tak024_tak026_incarceration_period_from_supervision_sentence_v2':
                 self._generate_incarceration_period_id_coords,
+            'tak034_tak026_tak039_apfx90_apfx91_supervision_enhancements_supervision_periods_v2':
+                self._generate_supervision_period_id_coords,
             'tak028_tak042_tak076_tak024_violation_reports_v2':
                 self._generate_supervision_violation_id_coords_for_reports,
             'tak291_tak292_tak024_citations_v2':
@@ -622,6 +631,8 @@ class UsMoController(CsvGcsfsDirectIngestController):
                 self._incarceration_sentence_ancestor_chain_override,
             'tak158_tak024_tak026_incarceration_period_from_supervision_sentence_v2':
                 self._supervision_sentence_ancestor_chain_override,
+            'tak034_tak026_tak039_apfx90_apfx91_supervision_enhancements_supervision_periods_v2':
+                self._sentence_group_ancestor_chain_override,
             'tak028_tak042_tak076_tak024_violation_reports_v2':
                 self._supervision_violation_report_ancestor_chain_override,
             'tak291_tak292_tak024_citations_v2':
@@ -683,6 +694,7 @@ class UsMoController(CsvGcsfsDirectIngestController):
                 'tak022_tak024_tak025_tak026_offender_sentence_supervision_v2',
                 'tak158_tak023_tak026_incarceration_period_from_incarceration_sentence_v2',
                 'tak158_tak024_tak026_incarceration_period_from_supervision_sentence_v2',
+                'tak034_tak026_tak039_apfx90_apfx91_supervision_enhancements_supervision_periods_v2',
                 'tak028_tak042_tak076_tak024_violation_reports_v2',
                 'tak291_tak292_tak024_citations_v2',
 
