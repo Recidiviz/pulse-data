@@ -26,15 +26,18 @@ import collections
 import yaml
 
 from airflow import models
-from recidiviz_dataflow_operator import RecidivizDataflowTemplateOperator  # type: ignore
-from iap_httprequest_operator import IAPHTTPRequestOperator  # type: ignore
+try:
+    from recidiviz_dataflow_operator import RecidivizDataflowTemplateOperator  # type: ignore
+    from iap_httprequest_operator import IAPHTTPRequestOperator  # type: ignore
+except ImportError:
+    from recidiviz.airflow.recidiviz_dataflow_operator import RecidivizDataflowTemplateOperator
+    from recidiviz.airflow.iap_httprequest_operator import IAPHTTPRequestOperator  # type: ignore
 
 # Need a disable pointless statement because Python views the chaining operator ('>>') as a "pointless" statement
 # pylint: disable=W0104 pointless-statement
 
-# This is the path to the directory where Composer can access the configuration file
-config_file = "/home/airflow/gcs/dags/production_calculation_pipeline_templates.yaml"
 project_id = os.environ.get('GCP_PROJECT_ID')
+config_file = os.environ.get('CONFIG_FILE')
 _VIEW_DATA_EXPORT_CLOUD_FUNCTION_URL = 'http://{}.appspot.com/cloud_function/view_data_export?export_job_filter={}'
 
 default_args = {
@@ -54,6 +57,9 @@ def pipelines_by_state(pipelines) -> Dict[str, List[str]]:  # type: ignore
 with models.DAG(dag_id="calculation_pipeline_dag",
                 default_args=default_args,
                 schedule_interval=None) as dag:
+    if config_file is None:
+        raise Exception('Configuration file not specified')
+
     with open(config_file) as f:
         pipeline_yaml_dicts = yaml.full_load(f)
         if pipeline_yaml_dicts:
