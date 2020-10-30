@@ -1,4 +1,3 @@
-# TODO(#4266): Clean up backwards compatibility code
 key_mappings:
   SUPV_PERIOD_BEG_DT: state_supervision_period.start_date
   SUPV_PERIOD_END_DT: state_supervision_period.termination_date
