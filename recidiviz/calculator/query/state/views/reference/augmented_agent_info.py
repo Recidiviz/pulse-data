@@ -59,13 +59,13 @@ AUGMENTED_AGENT_INFO_QUERY_TEMPLATE = \
           CASE 
             WHEN state_code = 'US_ND' THEN COALESCE(given_names, FNAME)
             -- TODO(#4159) Remove this state-specific logic once we have given and surnames set in ingest --
-            WHEN state_code IN ('US_ID', 'US_PA') THEN TRIM(SPLIT(full_name, ',')[SAFE_OFFSET(1)])
+            WHEN state_code = 'US_PA' THEN TRIM(SPLIT(full_name, ',')[SAFE_OFFSET(1)])
             ELSE given_names
           END AS given_names,
           CASE 
             WHEN state_code = 'US_ND' THEN COALESCE(surname, LNAME)
             -- TODO(#4159) Remove this state-specific logic once we have given and surnames set in ingest --
-            WHEN state_code IN ('US_ID', 'US_PA') THEN TRIM(SPLIT(full_name, ',')[SAFE_OFFSET(0)])
+            WHEN state_code = 'US_PA' THEN TRIM(SPLIT(full_name, ',')[SAFE_OFFSET(0)])
             ELSE surname
           END AS surname, 
           CASE 
