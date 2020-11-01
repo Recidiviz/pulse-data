@@ -18,16 +18,20 @@
 
 from recidiviz.ingest.direct.controllers.direct_ingest_big_query_view_types import \
     DirectIngestPreProcessedIngestViewBuilder
+from recidiviz.ingest.direct.regions.us_pa.ingest_views.templates_person_external_ids import MASTER_STATE_IDS_FRAGMENT
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 
-VIEW_QUERY_TEMPLATE = """
-WITH movements_base AS (
-  SELECT 
-      -- In 3 cases from the 80s, we see an inmate number with no corresponding row match in dbo_tblSearchInmateInfo -
+VIEW_QUERY_TEMPLATE = f"""
+WITH 
+{MASTER_STATE_IDS_FRAGMENT},
+movements_base AS (
+  SELECT
+      -- In a few old cases, we see a control number with no corresponding row match in recidiviz_master_person_ids -
       -- in this case, we fall back on the control number in dbo_Movrec
-      COALESCE(ids.control_number, m.mov_cnt_num) AS control_number,
+      COALESCE(recidiviz_master_person_id, m.mov_cnt_num) AS recidiviz_master_person_id,
+      COALESCE(control_number, m.mov_cnt_num) AS control_number,
       m.mov_cur_inmt_num AS inmate_number,
       m.mov_move_date AS move_date,
       m.mov_sent_stat_cd AS sentence_status_code,
@@ -35,7 +39,7 @@ WITH movements_base AS (
       m.mov_move_code AS movement_code,
       -- Sort by date, only using PA sequence numbers when the date is the same. Sort death statuses after all other 
       -- entries no matter what. No bringing people back to life.
-      ROW_NUMBER() OVER (PARTITION BY control_number 
+      ROW_NUMBER() OVER (PARTITION BY recidiviz_master_person_id 
                          ORDER BY 
                             m.mov_move_date, 
                             IF(m.mov_sent_stat_cd IN ('DA', 'DN', 'DS', 'DX', 'DZ'), 99999, CAST(mov_seq_num AS INT64))
@@ -62,14 +66,14 @@ WITH movements_base AS (
       AS move_location,
       m.mov_move_code IN ('D', 'DA', 'DIT') AS is_delete_movement,
       m.parole_stat_cd IN ('TPV', 'CPV', 'TCV') AS is_confirmed_parole_violator_parole_status,
-  FROM {dbo_Movrec} m
-  LEFT OUTER JOIN
-  -- In 40-ish cases, the control_number in dbo_Movrec does not correspond to the control_number we see for that 
-  -- inmate number in dbo_tblSearchInmateInfo (doesn't show up in dbo_tblSearchInmateInfo at all). We generally
-  -- want to rely on dbo_tblSearchInmateInfo, since that's the file we use to ingest person id links.
-  (SELECT DISTINCT control_number, inmate_number FROM {dbo_tblSearchInmateInfo}) ids
-  ON m.mov_cur_inmt_num = ids.inmate_number
-  WHERE 
+  FROM {{dbo_Movrec}} m
+  LEFT OUTER JOIN (
+    SELECT DISTINCT recidiviz_master_person_id, control_number 
+    FROM recidiviz_master_person_ids 
+    WHERE control_number IS NOT NULL
+  ) ids
+  ON m.mov_cnt_num = ids.control_number
+  WHERE
     -- This is the 'Bogus record' flag, if 'Y', indicates if a record should be ignored, 'N' otherwise.
     m.mov_rec_del_flag = 'N'
 ),
@@ -77,11 +81,11 @@ movements AS (
   SELECT 
     *,
     LAST_VALUE(move_location IGNORE NULLS) OVER (
-        PARTITION BY control_number
+        PARTITION BY recidiviz_master_person_id
         ORDER BY sequence_number ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
     ) AS location,
     LAG(is_confirmed_parole_violator_parole_status) OVER (
-        PARTITION BY control_number 
+        PARTITION BY recidiviz_master_person_id 
         ORDER BY sequence_number
     ) AS previous_is_confirmed_parole_violator_parole_status
   FROM movements_base
@@ -95,16 +99,17 @@ movements_with_inflection_indicators AS (
     FROM (
       SELECT 
         *,
-        LAG(sequence_number) OVER (PARTITION BY control_number, location 
+        LAG(sequence_number) OVER (PARTITION BY recidiviz_master_person_id, location 
                                    ORDER BY sequence_number) AS previous_sequence_number_within_location,
-        LAG(is_delete_movement) OVER (PARTITION BY control_number ORDER BY sequence_number) AS prev_is_delete_movement,
+        LAG(is_delete_movement) OVER (PARTITION BY recidiviz_master_person_id
+                                      ORDER BY sequence_number) AS prev_is_delete_movement,
       FROM movements 
     )
 ),
 critical_movements AS (
   SELECT
     *,
-    LAG(sequence_number) OVER (PARTITION BY control_number
+    LAG(sequence_number) OVER (PARTITION BY recidiviz_master_person_id
                                ORDER BY sequence_number) AS prev_critical_movement_sequence_number
   FROM movements_with_inflection_indicators
   WHERE
@@ -123,14 +128,15 @@ sentence_types AS (
     curr_inmate_num AS inmate_number,
     -- It seems there is only ever one sentence per inmate number, so this is just a precaution
     MAX(type_of_sent) AS sentence_type
-  FROM {dbo_Senrec}
+  FROM {{dbo_Senrec}}
   GROUP BY curr_inmate_num
 ),
 periods AS (
   SELECT
     start_movement.control_number,
     start_movement.inmate_number,
-    start_movement.sequence_number,
+    ROW_NUMBER() OVER (PARTITION BY start_movement.recidiviz_master_person_id
+                       ORDER BY start_movement.sequence_number) AS sequence_number,
     start_movement.move_date AS start_movement_date,
     end_movement.move_date AS end_movement_date,
     start_movement.location,
@@ -146,7 +152,7 @@ periods AS (
     critical_movements start_movement
   LEFT OUTER JOIN
     critical_movements end_movement
-  ON start_movement.control_number = end_movement.control_number 
+  ON start_movement.recidiviz_master_person_id = end_movement.recidiviz_master_person_id 
     AND end_movement.prev_critical_movement_sequence_number = start_movement.sequence_number
   LEFT OUTER JOIN
     sentence_types
@@ -162,6 +168,7 @@ VIEW_BUILDER = DirectIngestPreProcessedIngestViewBuilder(
     ingest_view_name='incarceration_period',
     view_query_template=VIEW_QUERY_TEMPLATE,
     order_by_cols='control_number, sequence_number',
+    materialize_raw_data_table_views=True
 )
 
 if __name__ == '__main__':
