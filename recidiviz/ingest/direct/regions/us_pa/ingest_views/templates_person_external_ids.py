@@ -78,27 +78,13 @@ def explore_graph_by_column_query(
 
 MASTER_STATE_IDS_FRAGMENT = f"""recidiviz_master_person_ids AS (
     WITH
-    distinct_control_to_sid AS (
-        SELECT
-          DISTINCT
-          -- Sometimes parole numbers (which contain letters) are transposed into the state id column in 
-          -- this table - clear these out
-          IF(REGEXP_CONTAINS(state_id_num, r"[A-Z]") OR state_id_num = '', NULL, state_id_num) AS state_id,
-          control_number
-        FROM {{dbo_tblSearchInmateInfo}}
-    ),
     control_number_to_state_id_edges AS (
-      SELECT * 
-      FROM distinct_control_to_sid
-      WHERE 
-      -- Due to inconsistencies in dbo_tblSearchInmateInfo, distinct_control_to_sid sometimes will have two rows like 
-      -- (control_num_A, <null>) and (control_num_A, control_num_B). We want to throw out all rows that have one null
-      -- in the pair, unless that is the only place that singluar ID is referenced.
-      (state_id IS NOT NULL 
-        OR control_number NOT IN (SELECT control_number FROM distinct_control_to_sid WHERE state_id IS NOT NULL))
-      AND 
-      (control_number IS NOT NULL 
-        OR state_id NOT IN (SELECT state_id FROM distinct_control_to_sid WHERE control_number IS NOT NULL))
+      SELECT
+        -- Sometimes parole numbers (which contain letters) are transposed into the state id column in 
+        -- this table - clear these out
+        IF(REGEXP_CONTAINS(state_id_num, r"[A-Z]") OR state_id_num = '', NULL, state_id_num) AS state_id,
+        control_number
+      FROM {{dbo_tblSearchInmateInfo}}
     ),
     state_id_to_parole_number_edges AS (
       SELECT 
