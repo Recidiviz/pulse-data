@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Initialize our database schema for in-memory testing via sqlite3."""
+import logging
 import os
 import pwd
 import sqlite3
@@ -144,6 +145,16 @@ def _run_command(command: str, assert_success: bool = True, as_user: Optional[pw
 def start_on_disk_postgresql_database() -> None:
     """Starts and initializes a local postgres database for use in tests. Should be called in the setUpClass function so
     this only runs once per test class."""
+
+    try:
+        _run_command('pg_ctl -D /usr/local/var/postgres status', assert_success=True)
+        logging.warning('Postgres is already running, skipping start_on_disk_postgresql_database. Note, the database '
+                        'may be polluted causing nondeterministic failures.')
+        return
+    except RuntimeError:
+        # Database is not yet running, continue.
+        pass
+
     # Create the directory to use for the postgres database, if it does not already exist.
     os.makedirs('/usr/local/var/postgres', exist_ok=True)
 
