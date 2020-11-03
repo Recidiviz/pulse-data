@@ -17,7 +17,7 @@
 
 """Tests for justice counts schema"""
 
-from datetime import datetime
+import datetime
 from unittest.case import TestCase
 
 from recidiviz.persistence.database.base_schema import JusticeCountsBase
@@ -54,26 +54,25 @@ class TestSchema(TestCase):
         report = schema.Report(source=source,
                                type='Monthly Prison Report',
                                instance='September 2020',
-                               publish_date=datetime(2020, 10, 1),
+                               publish_date=datetime.date(2020, 10, 1),
                                acquisition_method=schema.AcquisitionMethod.SCRAPED)
         act_session.add(report)
 
-        table_definition = schema.ReportTableDefinition(metric=schema.Metric.POPULATION,
+        table_definition = schema.ReportTableDefinition(metric_type=schema.MetricType.POPULATION,
                                                         measurement_type=schema.MeasurementType.INSTANT,
                                                         filtered_dimensions=['global/state', 'global/population_type'],
                                                         filtered_dimension_values=['US_XX', 'prison'],
                                                         aggregated_dimensions=['global/gender'])
         act_session.add(table_definition)
 
-        table_instance = schema.ReportTableInstance(source=source,
-                                                    report=report,
-                                                    table_definition=table_definition,
-                                                    time_window_start=datetime(2020, 9, 30),
-                                                    time_window_end=datetime(2020, 9, 30),
+        table_instance = schema.ReportTableInstance(report=report,
+                                                    report_table_definition=table_definition,
+                                                    time_window_start=datetime.date(2020, 9, 30),
+                                                    time_window_end=datetime.date(2020, 9, 30),
                                                     methodology='Some methodological description')
         act_session.add(table_instance)
 
-        cell = schema.Cell(table_instance=table_instance,
+        cell = schema.Cell(report_table_instance=table_instance,
                            aggregated_dimension_values=['female'],
                            value=123)
         act_session.add(cell)
@@ -86,13 +85,13 @@ class TestSchema(TestCase):
 
         [cell] = assert_session.query(schema.Cell).all()
         self.assertEqual(123, cell.value)
-        table_instance = cell.table_instance
-        self.assertEqual(datetime(2020, 9, 30), table_instance.time_window_start)
-        table_definition = table_instance.table_definition
-        self.assertEqual(schema.Metric.POPULATION, table_definition.metric)
+        table_instance = cell.report_table_instance
+        self.assertEqual(datetime.date(2020, 9, 30), table_instance.time_window_start)
+        table_definition = table_instance.report_table_definition
+        self.assertEqual(schema.MetricType.POPULATION, table_definition.metric_type)
         report = table_instance.report
         self.assertEqual('Monthly Prison Report', report.type)
-        source = table_instance.source
+        source = report.source
         self.assertEqual('Test Source', source.name)
 
         assert_session.close()
