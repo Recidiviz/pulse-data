@@ -29,10 +29,11 @@ or adding `source.id` to the primary key of all objects and partitioning along t
 """
 
 import enum
+from typing import TypeVar
 
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql.schema import Column, ForeignKeyConstraint, PrimaryKeyConstraint, UniqueConstraint
-from sqlalchemy.sql.sqltypes import ARRAY, DateTime, Enum, Integer, Numeric, String
+from sqlalchemy.sql.sqltypes import ARRAY, Date, Enum, Integer, Numeric, String
 
 from recidiviz.persistence.database.base_schema import JusticeCountsBase
 
@@ -43,7 +44,7 @@ class AcquisitionMethod(enum.Enum):
     MANUALLY_ENTERED = 'MANUALLY_ENTERED'
 
 
-class Metric(enum.Enum):
+class MetricType(enum.Enum):
     """Various aspects of the criminal justice system that are measured, as defined by the Justice Counts Framework."""
     ADMISSIONS = 'ADMISSIONS'
     ARRESTS = 'ARRESTS'
@@ -113,9 +114,10 @@ class Report(JusticeCountsBase):
     instance = Column(String(255), nullable=False)
 
     # The date the report was published.
-    publish_date = Column(DateTime, nullable=False)
+    publish_date = Column(Date, nullable=False)
     # The method used to acquire the data (e.g. scraped).
     acquisition_method = Column(Enum(AcquisitionMethod), nullable=False)
+    # TODO(#4485): Add a list of projects (e.g. Justice Counts, Spark) for which this data was ingested.
 
     __table_args__ = tuple([
         PrimaryKeyConstraint(id),
@@ -133,12 +135,12 @@ class ReportTableDefinition(JusticeCountsBase):
     id = Column(Integer, autoincrement=True)
 
     system = Column(Enum(System))
-    metric = Column(Enum(Metric))
+    metric_type = Column(Enum(MetricType))
     measurement_type = Column(Enum(MeasurementType))
 
-    # Values in the report table only account for a subset matching the given filters. In the given example the table
-    # includes the population of persons in prison but not those on parole or probation. Dimensions are sorted
-    # deterministically within the array.
+    # Any dimensions where the data in the table only accounts for a subset of values for that dimension. For instance,
+    # a table for the population metric may only cover data for the prison population, not those on parole or
+    # probation. In that case filters would include a filter on population type.
     filtered_dimensions = Column(ARRAY(String(255)))
     # The value for each dimension from the above array.
     filtered_dimension_values = Column(ARRAY(String(255)))
@@ -148,7 +150,7 @@ class ReportTableDefinition(JusticeCountsBase):
 
     __table_args__ = tuple([
         PrimaryKeyConstraint(id),
-        UniqueConstraint(metric, measurement_type, filtered_dimensions,
+        UniqueConstraint(metric_type, measurement_type, filtered_dimensions,
                          filtered_dimension_values, aggregated_dimensions)])
 
 
@@ -162,14 +164,14 @@ class ReportTableInstance(JusticeCountsBase):
 
     id = Column(Integer, autoincrement=True)
 
-    source_id = Column(Integer, nullable=False)
     report_id = Column(Integer, nullable=False)
     report_table_definition_id = Column(Integer, nullable=False)
 
-    # The window of time that values in this table cover, represented by a start and an end point. The data could
-    # represent an instant measurement, where the start and end are equal, or a range, e.g. ADP over the last month.
-    time_window_start = Column(DateTime, nullable=False)
-    time_window_end = Column(DateTime, nullable=False)
+    # The window of time that values in this table cover, represented by a start date (inclusive) and an end date
+    # (exclusive). The data could represent an instant measurement, where the start and end are equal, or a window, e.g.
+    # ADP over the last month.
+    time_window_start = Column(Date, nullable=False)
+    time_window_end = Column(Date, nullable=False)
 
     # This field can be used to store any text that the source provides describing the methodology used to calculate
     # the data. This is stored on instances so that if it changes from report to report, we don't overwrite methodology
@@ -178,18 +180,16 @@ class ReportTableInstance(JusticeCountsBase):
 
     __table_args__ = tuple([
         PrimaryKeyConstraint(id),
-        # TODO(#4128): We need to include time window as part of the unique constraint in case there is data for the
+        # TODO(#4476): We need to include time window as part of the unique constraint in case there is data for the
         # same table definition that represents multiple time windows within a single report. To make this work with
         # updates, I think we will re-ingest all table instances for a particular report table definition in an updated
         # report.
-        UniqueConstraint(source_id, report_id, report_table_definition_id, time_window_start, time_window_end),
-        ForeignKeyConstraint([source_id], [Source.id]),
+        UniqueConstraint(report_id, report_table_definition_id, time_window_start, time_window_end),
         ForeignKeyConstraint([report_id], [Report.id]),
         ForeignKeyConstraint([report_table_definition_id], [ReportTableDefinition.id])])
 
-    source = relationship(Source)
     report = relationship(Report)
-    table_definition = relationship(ReportTableDefinition)
+    report_table_definition = relationship(ReportTableDefinition)
 
 
 class Cell(JusticeCountsBase):
@@ -209,4 +209,8 @@ class Cell(JusticeCountsBase):
         UniqueConstraint(report_table_instance_id, aggregated_dimension_values),
         ForeignKeyConstraint([report_table_instance_id], [ReportTableInstance.id])])
 
-    table_instance = relationship(ReportTableInstance)
+    report_table_instance = relationship(ReportTableInstance)
+
+# As this is a TypeVar, it should be used when all variables within the scope of this type should have the same
+# concrete class.
+JusticeCountsDatabaseEntity = TypeVar('JusticeCountsDatabaseEntity', bound=JusticeCountsBase)

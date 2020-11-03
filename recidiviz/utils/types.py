@@ -16,6 +16,12 @@
 # =============================================================================
 """General use mypy types."""
 
-from typing import TypeVar
+from typing import Dict, TypeVar, Union
 
 ClsType = TypeVar('ClsType', bound=object)
+
+# Represents a dictionary parsed from YAML, where values in the dictionary can only contain strings, numbers, or nested
+# dictionaries, but not lists.
+#
+# Mypy's new type engine does not support recursive types yet, so for now this does not actually provide type safety.
+SimpleYAMLDict = Dict[str, Union[str, float, 'SimpleYAMLDict']]  # type: ignore
