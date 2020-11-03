@@ -369,7 +369,7 @@ WITH field_assignments_ce AS (
                 DOC_ID,
                 CYCLE_NO,
                 REGEXP_REPLACE(ACTUAL_START_DT, r'-', '') AS CASE_TYPE_START_DATE,
-                REGEXP_REPLACE(ACTUAL_START_DT, r'-', '') AS CASE_TYPE_STOP_DATE,
+                REGEXP_REPLACE(ACTUAL_STOP_DT, r'-', '') AS CASE_TYPE_STOP_DATE,
                 SUPERVSN_ENH_TYPE_CD
             FROM
                 {{OFNDR_PDB_FOC_SUPERVISION_ENHANCEMENTS_VW}}
