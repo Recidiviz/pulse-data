@@ -23,13 +23,12 @@ callee = "*"
 numpy = "*"
 tabula-py = "==1.3.1"
 us = "*"
-dateparser = "*"
+dateparser = "===0.7.6"
 # TODO(#2394): The gcsfs library is unsupported by Google - replace all usages with google-cloud-storage
 gcsfs = "*"
 pandas = "*"
 more-itertools = "*"
 lxml = "*"
-cattrs = "*"
 opencensus = ">=0.7.0"
 opencensus-context = "*"
 opencensus-correlation = "*"
@@ -82,10 +81,21 @@ google-cloud-secret-manager = "<2.0.0"
 pandas-gbq = "*"
 google-cloud-bigquery-storage = "<2.0.0"
 guppy3 = "*"
-zope.event = "*"
+sendgrid = "*"
+zope = {event = "*"}
 psutil = "*"
 psycogreen = "*"
-apache-airflow = {extras = ["gcp"],version = "*"}
+# Pinned to the latest version supported by GCP.
+apache-airflow = {extras = ["gcp"],version = "==1.10.10"}
+# TODO(#4287): Revisit this when we update apache-airflow.
+# This is pulled in from apache-airflow -> flask-appbuilder. marshmallow-sqlalchemy==0.24.0 drops support for
+# marshmallow~=2, but flask-appbuilder does not yet support marshmallow~=3, so we pin marshmallow-sqlalchemy back
+# instead.
+marshmallow-sqlalchemy = "<0.24.0"
+# TODO(#4287): Revisit this when we update apache-airflow.
+# apache-airflow requires attrs~=19.3, but cattrs~=1 no longer supports that version, so pin back cattrs.
+cattrs = "~=0.9"
+dill = "==0.3.2"
 
 [requires]
 python_version = "3.7"

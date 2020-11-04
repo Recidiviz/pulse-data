@@ -26,16 +26,10 @@ import copy
 import json
 from typing import List
 
-# Mypy errors "Cannot find implementation or library stub for module named 'xxxx'" ignored here because cloud functions
-# require that imports are declared relative to the cloud functions package itself. In general, we should avoid shipping
-# complex code in cloud functions. The function itself should call an API endpoint that can live in an external package
-# with proper import resolution.
-from context_utils import (  # type: ignore[import]
-    singular_or_plural, month_number_to_name, round_float_value_to_int,
-    round_float_value_to_number_of_digits
-)
-import email_reporting_utils as utils  # type: ignore[import]
-from report_context import ReportContext  # type: ignore[import]
+from recidiviz.reporting.context.context_utils import singular_or_plural, month_number_to_name, \
+    round_float_value_to_int, round_float_value_to_number_of_digits
+import recidiviz.reporting.email_reporting_utils as utils
+from recidiviz.reporting.context.report_context import ReportContext
 
 AVERAGE_VALUES_SIGNIFICANT_DIGITS = 3
 
@@ -48,9 +42,6 @@ class PoMonthlyReportContext(ReportContext):
 
     def get_report_type(self) -> str:
         return "po_monthly_report"
-
-    def has_chart(self) -> bool:
-        return False
 
     def prepare_for_generation(self) -> dict:
         """Executes PO Monthly Report data preparation."""
@@ -97,7 +88,7 @@ class PoMonthlyReportContext(ReportContext):
 
         return self.prepared_data
 
-    def _singular_or_plural_labels(self):
+    def _singular_or_plural_labels(self) -> None:
         """Ensures that each of the given labels will be made singular or plural, based on the value it is labelling."""
         singular_or_plural(self.prepared_data, "pos_discharges", "pos_discharges_label",
                            "Successful&nbsp;Case Completion", "Successful&nbsp;Case Completions")
@@ -116,24 +107,24 @@ class PoMonthlyReportContext(ReportContext):
         singular_or_plural(self.prepared_data, "assessments", "assessments_label",
                            "Risk Assessment", "Risk Assessments")
 
-    def _convert_month_to_name(self, month_key: str):
+    def _convert_month_to_name(self, month_key: str) -> None:
         """Converts the number at the given key, representing a calendar month, into the name of that month."""
         month_number = self.recipient_data[month_key]
         month_name = month_number_to_name(month_number)
         self.prepared_data[month_key] = month_name
 
-    def _round_float_values_to_ints(self, float_keys: List[str]):
+    def _round_float_values_to_ints(self, float_keys: List[str]) -> None:
         """Rounds all of the values with the given keys to their nearest integer values for display."""
         for float_key in float_keys:
             self.prepared_data[float_key] = round_float_value_to_int(self.recipient_data[float_key])
 
-    def _round_float_values_to_number_of_digits(self, float_keys: List[str], number_of_digits: int):
+    def _round_float_values_to_number_of_digits(self, float_keys: List[str], number_of_digits: int) -> None:
         """Rounds all of the values with the given keys to the given number of digits."""
         for float_key in float_keys:
             self.prepared_data[float_key] = round_float_value_to_number_of_digits(
                 self.recipient_data[float_key], number_of_digits)
 
-    def _choose_pos_discharges_description(self):
+    def _choose_pos_discharges_description(self) -> None:
         """Determines which text to use for the Successful Case Completions sentence """
         you = float(self.recipient_data["pos_discharges"])
         district = float(self.recipient_data["pos_discharges_district_average"])
@@ -155,7 +146,7 @@ class PoMonthlyReportContext(ReportContext):
     def _choose_comparison_icon(self,
                                 icon_to_choose: str,
                                 you_key: str, district_key: str, state_key: str,
-                                great_icon: str, good_icon: str, low_icon: str):
+                                great_icon: str, good_icon: str, low_icon: str) -> None:
         """Decides which icon to show in the one of the report sections that compares an officer to district and
         state averages, for positive values where higher numbers are preferred, e.g. early discharges.
 
@@ -175,7 +166,7 @@ class PoMonthlyReportContext(ReportContext):
         else:
             self.prepared_data[icon_to_choose] = self.properties[low_icon]
 
-    def _choose_early_discharges_icon(self):
+    def _choose_early_discharges_icon(self) -> None:
         change = int(self.recipient_data["earned_discharges_change"])
 
         if change >= 0:
@@ -183,7 +174,7 @@ class PoMonthlyReportContext(ReportContext):
         else:
             self.prepared_data["earned_discharges_icon"] = self.properties["earned_discharges_icon_low"]
 
-    def _earned_discharges_tip(self):
+    def _earned_discharges_tip(self) -> None:
         """Sets the title and text of the earned discharges tip."""
         earned_discharges = int(self.recipient_data["earned_discharges"])
 
@@ -205,7 +196,7 @@ class PoMonthlyReportContext(ReportContext):
                            color_key: str,
                            increase_text: str,
                            decrease_text: str,
-                           blue_on_increase: bool):
+                           blue_on_increase: bool) -> None:
         """Sets text and color properties for the given keys based on the value of the base key and whether we want
         the coloring to apply on increase or on decrease. Also ensures that all displayed values are rounded to the
         nearest integer."""
