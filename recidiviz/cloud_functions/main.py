@@ -25,10 +25,10 @@ import traceback
 # complex code in cloud functions. The function itself should call an API endpoint that can live in an external package
 # with proper import resolution.
 from cloud_function_utils import (  # type: ignore[import]
-    IAP_CLIENT_ID, make_iap_request,
+    IAP_CLIENT_ID, GCP_PROJECT_ID_KEY, make_iap_request,
     get_state_region_code_from_direct_ingest_bucket,
     get_dataflow_template_bucket,
-    trigger_dataflow_job_from_template
+    trigger_dataflow_job_from_template,
 )
 from covid import covid_ingest  # type: ignore[import]
 
@@ -46,6 +46,13 @@ _DATAFLOW_MONITOR_URL = (
     'http://{}.appspot.com/cloud_function/dataflow_monitor?job_id={}'
     '&location={}&topic={}'
 )
+_APP_ENGINE_PO_MONTHLY_REPORT_GENERATE_EMAILS_URL = (
+    'https://{}.appspot.com/reporting/start_new_batch?state_code={}&report_type={}'
+)
+_APP_ENGINE_PO_MONTHLY_REPORT_DELIVER_EMAILS_URL = (
+    'https://{}.appspot.com/reporting/deliver_emails_for_batch?batch_id={}'
+    '&test_address={}'
+)
 
 
 def parse_state_aggregate(data, _):
@@ -59,7 +66,7 @@ def parse_state_aggregate(data, _):
     """
     bucket = data['bucket']
     state, filename = data['name'].split('/')
-    project_id = os.environ.get('GCP_PROJECT')
+    project_id = os.environ.get(GCP_PROJECT_ID_KEY)
     logging.info(
         "Running cloud function for bucket %s, state %s, filename %s",
         bucket, state, filename)
@@ -103,7 +110,7 @@ def _handle_state_direct_ingest_file(data,
                                      start_ingest: bool):
     """Calls direct ingest cloud function when a new file is dropped into a
     bucket."""
-    project_id = os.environ.get('GCP_PROJECT')
+    project_id = os.environ.get(GCP_PROJECT_ID_KEY)
     if not project_id:
         logging.error('No project id set for call to direct ingest cloud '
                       'function, returning.')
@@ -132,7 +139,7 @@ def export_view_data(_event, _context):
     """This function is triggered by a Pub/Sub event to begin the export of data contained in BigQuery views to files
     in cloud storage buckets.
     """
-    project_id = os.environ.get('GCP_PROJECT')
+    project_id = os.environ.get(GCP_PROJECT_ID_KEY)
     if not project_id:
         logging.error('No project id set for call to export view data, returning.')
         return
@@ -150,7 +157,7 @@ def trigger_calculation_pipeline_dag(data, _context):
     """This function is triggered by a Pub/Sub event, triggers an Airflow DAG where all
     the calculation pipelines run simultaneously.
     """
-    project_id = os.environ.get('GCP_PROJECT') + '-airflow'
+    project_id = os.environ.get(GCP_PROJECT_ID_KEY) + '-airflow'
     if not project_id:
         logging.error('No project id set for call to run the calculation pipelines, returning.')
         return
@@ -174,7 +181,7 @@ def run_calculation_pipelines(_event, _context):
     On successful triggering of the job, this function makes a call to the app
     to begin monitoring the progress of the job.
     """
-    project_id = os.environ.get('GCP_PROJECT')
+    project_id = os.environ.get(GCP_PROJECT_ID_KEY)
     if not project_id:
         logging.error('No project id set for call to run a calculation'
                       ' pipeline, returning.')
@@ -250,3 +257,70 @@ def _ingest_and_aggregate_covid_data():
         logging.info('COVID ingest cloud function completed')
     except Exception as e:
         raise RuntimeError('Stack trace: {}'.format(traceback.format_exc())) from e
+
+
+def handle_start_new_batch_email_reporting(request):
+    """Start a new batch of email generation for the indicated state.
+        This function is the entry point for generating a new batch. It hits the App Engine endpoint `/start_new_batch`.
+        The caller should provide valid JSON with a "state_code" and "report_type" keys.
+        Args:
+            request: The HTTP request.  Must contain JSON with "state_code" and
+            "report_type" keys
+        Returns:
+            Nothing.
+        Raises:
+            Nothing. All exception raising is handled within the App Engine logic.
+        """
+    project_id = os.environ.get(GCP_PROJECT_ID_KEY)
+    if not project_id:
+        logging.error("No project id set, returning")
+        return
+
+    request_params = request.get_json()
+    if not request_params:
+        logging.error("No request params, returning")
+        return
+
+    state_code = request_params.get('state_code')
+    report_type = request_params.get('report_type')
+
+    url = _APP_ENGINE_PO_MONTHLY_REPORT_GENERATE_EMAILS_URL.format(project_id, state_code, report_type)
+
+    logging.info("Calling URL: %s", url)
+
+    # Hit the App Engine endpoint `reporting/start_new_batch`.
+    response = make_iap_request(url, IAP_CLIENT_ID[project_id])
+    logging.info("The response status is %s", response.status_code)
+
+
+def handle_deliver_emails_for_batch_email_reporting(request):
+    """Cloud function to deliver a batch of generated emails.
+    It hits the App Engine endpoint `reporting/deliver_emails_for_batch`. It requires a JSON input containing the
+    following keys:
+        batch_id: (required) Identifier for this batch
+        test_address: (optional) An email address to which all emails should
+        be sent instead of to their actual recipients.
+    Args:
+        request: HTTP request payload containing JSON with keys as described above
+    Returns:
+        Nothing.
+    Raises:
+        Nothing. All exception raising is handled within the App Engine logic.
+    """
+    project_id = os.environ.get(GCP_PROJECT_ID_KEY)
+    if not project_id:
+        logging.error("No project id set, returning")
+        return
+
+    request_params = request.get_json()
+    if not request_params:
+        logging.error("No request params, returning")
+        return
+
+    batch_id = request_params.get("batch_id", '')
+    test_address = request_params.get("test_address", '')
+    url = _APP_ENGINE_PO_MONTHLY_REPORT_DELIVER_EMAILS_URL.format(project_id, batch_id, test_address)
+
+    logging.info("Calling URL: %s", url)
+    response = make_iap_request(url, IAP_CLIENT_ID[project_id])
+    logging.info("The response status is %s", response.status_code)

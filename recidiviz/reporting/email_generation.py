@@ -27,12 +27,8 @@ from string import Template
 
 from google.cloud import pubsub_v1
 
-# Mypy errors "Cannot find implementation or library stub for module named 'xxxx'" ignored here because cloud functions
-# require that imports are declared relative to the cloud functions package itself. In general, we should avoid shipping
-# complex code in cloud functions. The function itself should call an API endpoint that can live in an external package
-# with proper import resolution.
-import email_reporting_utils as utils  # type: ignore[import]
-from report_context import ReportContext  # type: ignore[import]
+import recidiviz.reporting.email_reporting_utils as utils
+from recidiviz.reporting.context.report_context import ReportContext
 
 
 def generate(report_context: ReportContext) -> None:
@@ -45,9 +41,6 @@ def generate(report_context: ReportContext) -> None:
     """
     prepared_data = report_context.get_prepared_data()
     check_for_required_keys(prepared_data)
-
-    if report_context.has_chart():
-        start_chart_generation(report_context)
 
     data_bucket = utils.get_data_storage_bucket_name()
     template_filename = ''

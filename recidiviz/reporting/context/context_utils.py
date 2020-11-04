@@ -19,7 +19,7 @@
 import calendar
 
 
-def singular_or_plural(prepared_data: dict, value_key: str, text_key: str, singular: str, plural: str):
+def singular_or_plural(prepared_data: dict, value_key: str, text_key: str, singular: str, plural: str) -> None:
     """Sets the text at the given text key in the prepared_data dictionary to either the singular or plural
     copy, based on the value at the provided value key."""
     value = int(prepared_data[value_key])

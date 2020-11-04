@@ -35,14 +35,9 @@ class ReportContext(ABC):
     def get_report_type(self) -> str:
         """Returns the report type for this report."""
 
-    @abstractmethod
-    def has_chart(self) -> bool:
-        """Returns whether or not this report uses charts."""
-
     def get_prepared_data(self) -> dict:
         """Execute report-specific rules that process the recipient data before templating, returning the prepared,
         report-ready template values.
-
         This is guaranteed to return the prepared data at any point in the instance's lifecycle. If the data has never
         been prepared before, self.prepare_for_generation will be called and its value set on this instance. If it has
         been called before, its value will be returned straight-away.
@@ -56,9 +51,7 @@ class ReportContext(ABC):
     def prepare_for_generation(self) -> dict:
         """Execute report-specific rules that process the recipient data before templating, returning the prepared,
         report-ready template values.
-
         This will set self.prepared_data on the instance upon completion. It can be called at any time to reset and
         rebuild this instance's prepared data, i.e. it executes regardless of whether it has been invoked previously.
-
         NOTE: Implementors of this function must set self.prepared_data to the final results of invocation.
         """

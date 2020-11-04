@@ -26,13 +26,9 @@ import json
 import logging
 from typing import List
 
-# Mypy errors "Cannot find implementation or library stub for module named 'xxxx'" ignored here because cloud functions
-# require that imports are declared relative to the cloud functions package itself. In general, we should avoid shipping
-# complex code in cloud functions. The function itself should call an API endpoint that can live in an external package
-# with proper import resolution.
-import email_generation   # type: ignore[import]
-import email_reporting_utils as utils  # type: ignore[import]
-from available_context import get_report_context   # type: ignore[import]
+import recidiviz.reporting.email_generation as email_generation
+import recidiviz.reporting.email_reporting_utils as utils
+from recidiviz.reporting.context.available_context import get_report_context
 
 
 def start(state_code: str, report_type: str) -> str:
@@ -84,7 +80,7 @@ def retrieve_data(state_code: str, report_type: str, batch_id: str) -> List:
         data_filename = utils.get_data_filename(state_code, report_type)
         file_contents_string = utils.load_string_from_storage(data_bucket, data_filename)
     except:
-        logging.error("Unable to load data file %s/%s", data_bucket, data_filename)
+        logging.info("Unable to load data file %s/%s", data_bucket, data_filename)
         raise
 
     archive_bucket = utils.get_data_archive_bucket_name()

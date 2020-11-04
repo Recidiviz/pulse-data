@@ -17,11 +17,18 @@
 
 """ Utilities and constants shared across python modules in this package
 """
-from datetime import datetime
 import logging
 import os
 
+from datetime import datetime
+
 from google.cloud import storage
+
+from recidiviz.utils import metadata
+from recidiviz.utils import secrets
+
+
+_PO_REPORT_CDN_STATIC_IP_KEY = 'po_report_cdn_static_IP'
 
 
 def get_env_var(key: str) -> str:
@@ -50,7 +57,7 @@ KEY_STATE_CODE = "state_code"
 
 
 def get_project_id() -> str:
-    return get_env_var('GCP_PROJECT')
+    return metadata.project_id()
 
 
 def get_data_storage_bucket_name() -> str:
@@ -70,7 +77,12 @@ def get_images_bucket_name() -> str:
 
 
 def get_cdn_static_ip() -> str:
-    return get_env_var('CDN_STATIC_IP')
+    cdn_ip = secrets.get_secret(_PO_REPORT_CDN_STATIC_IP_KEY)
+    if not cdn_ip:
+        raise ValueError(f'Could not get secret value for `CDN static IP`. Provided with '
+                         f'key={_PO_REPORT_CDN_STATIC_IP_KEY}')
+
+    return cdn_ip
 
 
 # TODO(#3265): Convert from HTTP to HTTPS when a certificate has been set up
@@ -118,13 +130,14 @@ def load_string_from_storage(bucket_name: str, filename: str) -> str:
     """
     storage_client = storage.Client()
 
-    logging.debug("Downloading %s/%s...", bucket_name, filename)
+    logging.info("Downloading %s/%s...", bucket_name, filename)
 
     bucket = storage_client.get_bucket(bucket_name)
     blob = bucket.blob(filename)
     contents = blob.download_as_string().decode("utf-8")
 
     logging.debug("Downloaded %s/%s.", bucket_name, filename)
+
     return contents
 
 
@@ -144,13 +157,13 @@ def upload_string_to_storage(bucket_name: str, filename: str, contents: str, con
     """
     storage_client = storage.Client()
 
-    logging.debug("Uploading %s/%s...", bucket_name, filename)
+    logging.info("Uploading %s/%s...", bucket_name, filename)
 
     bucket = storage_client.bucket(bucket_name)
     blob = bucket.blob(filename)
     blob.upload_from_string(contents, content_type=content_type)
 
-    logging.debug("Uploaded %s/%s.", bucket_name, filename)
+    logging.info("Uploaded %s/%s.", bucket_name, filename)
 
 
 def generate_batch_id() -> str:
