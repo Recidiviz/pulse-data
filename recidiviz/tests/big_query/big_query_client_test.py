@@ -221,8 +221,7 @@ class BigQueryClientImplTest(unittest.TestCase):
                                                               allow_field_additions=True)
             expected_query = "SELECT *, CAST(NULL AS STRING) AS state_code, CAST(NULL AS INTEGER) AS new_column_name " \
                              f"FROM `fake-recidiviz-project.{self.mock_dataset_id}.{self.mock_table_id}`"
-            self.mock_client.query.assert_called_with(expected_query, job_config=mock_job_config())    \
-
+            self.mock_client.query.assert_called_with(expected_query, job_config=mock_job_config())
 
     def test_insert_into_table_from_table_invalid_destination(self) -> None:
         """Tests that the insert_into_table_from_table_async function does not run the query if the destination
