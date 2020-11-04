@@ -14,5 +14,3 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-
-"""Contains the functionality for our email reporting pipeline, including data retrieval, generation, and delivery."""

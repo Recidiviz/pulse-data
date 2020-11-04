@@ -28,14 +28,16 @@ and conform to the following:
 
 import logging
 from typing import Dict, Tuple
-
 from google.cloud import storage
+
 from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Mail, Email
 
-import email_reporting_utils as utils  # type: ignore[import]
+from recidiviz.utils import secrets
+import recidiviz.reporting.email_reporting_utils as utils
 
 EMAIL_SUBJECT = "Your monthly Recidiviz report"
+_SENDGRID_API_KEY = 'sendgrid_api_key'
 
 
 def deliver(batch_id: str, test_address: str = None) -> Tuple[int, int]:
@@ -61,7 +63,10 @@ def deliver(batch_id: str, test_address: str = None) -> Tuple[int, int]:
         logging.info("Delivering emails for batch %s", batch_id)
 
     try:
-        sendgrid_api_key = utils.get_env_var('SENDGRID_API_KEY')
+        sendgrid_api_value = secrets.get_secret(_SENDGRID_API_KEY)
+        if not sendgrid_api_value:
+            raise ValueError(f"Could not get secret value for `Sendgrid API Key`. Provided with "
+                             f"key={_SENDGRID_API_KEY}")
         from_email_address = utils.get_env_var('FROM_EMAIL_ADDRESS')
         from_email_name = utils.get_env_var('FROM_EMAIL_NAME')
     except KeyError:
@@ -81,7 +86,8 @@ def deliver(batch_id: str, test_address: str = None) -> Tuple[int, int]:
             to_address = email_address
 
         try:
-            send_email(to_address, subject, files[email_address], sendgrid_api_key, from_email_address, from_email_name)
+            send_email(to_address, subject, files[email_address], sendgrid_api_value, from_email_address,
+                       from_email_name)
         except Exception as e:
             logging.error("Error sending the file created for %s to %s", email_address, to_address)
             logging.error(e)

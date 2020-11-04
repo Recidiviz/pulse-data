@@ -19,3 +19,5 @@ beta_settings:
   cloud_sql_instances: recidiviz-123:us-east4:prod-data, recidiviz-123:us-east1:prod-state-data, recidiviz-123:us-east1:usmamiddlesex-redundant, recidiviz-123:us-east1:prod-operations-data
 env_variables:
   RECIDIVIZ_ENV: production
+  FROM_EMAIL_ADDRESS: reports@recidiviz.org
+  FROM_EMAIL_NAME: Recidiviz Reports

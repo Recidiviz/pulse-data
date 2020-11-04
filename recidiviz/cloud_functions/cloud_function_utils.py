@@ -46,6 +46,8 @@ IAP_CLIENT_ID = {
     'recidiviz-123-airflow': '236713977790-80cjalk1vgpk7niv38eb23r3gs0ls8mn.apps.googleusercontent.com'
 }
 
+GCP_PROJECT_ID_KEY = 'GCP_PROJECT'
+
 _IAM_SCOPE = 'https://www.googleapis.com/auth/iam'
 _OAUTH_TOKEN_URI = 'https://www.googleapis.com/oauth2/v4/token'
 _STATE_DIRECT_INGEST_BUCKET_REGEX = re.compile(
