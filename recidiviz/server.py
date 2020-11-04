@@ -45,6 +45,7 @@ from recidiviz.persistence.actions import actions
 from recidiviz.persistence.batch_persistence import batch_blueprint
 from recidiviz.persistence.database.export.cloud_sql_to_bq_export_manager import export_manager_blueprint
 from recidiviz.persistence.database.sqlalchemy_engine_manager import SQLAlchemyEngineManager
+from recidiviz.reporting.reporting_endpoint import reporting_endpoint_blueprint
 from recidiviz.utils import (environment, metadata, monitoring, structured_logging)
 from recidiviz.validation.validation_manager import validation_manager_blueprint
 
@@ -69,6 +70,7 @@ app.register_blueprint(backup_manager_blueprint, url_prefix='/backup_manager')
 app.register_blueprint(dataflow_monitor_blueprint, url_prefix='/dataflow_monitor')
 app.register_blueprint(validation_manager_blueprint, url_prefix='/validation_manager')
 app.register_blueprint(calculation_data_storage_manager_blueprint, url_prefix='/calculation_data_storage_manager')
+app.register_blueprint(reporting_endpoint_blueprint, url_prefix='/reporting')
 
 if environment.in_gae():
     SQLAlchemyEngineManager.init_engines_for_server_postgres_instances()
