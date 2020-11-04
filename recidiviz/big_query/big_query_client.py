@@ -137,9 +137,8 @@ class BigQueryClient:
                                     allow_field_additions: bool = False) -> bigquery.QueryJob:
         """Loads data from a source table and writes to a destination table.
 
-        This starts the job, but does not wait until it completes.
-
-        Tables are created if they do not exist, and overwritten if they do exist.
+        This starts the job, but does not wait until it completes. It will raise an error if the destination table
+        does not exist.
 
         Because we are using bigquery.WriteDisposition.WRITE_TRUNCATE, the destination table's
         data will be completely wiped and overwritten with the contents of the source table.
@@ -752,8 +751,7 @@ class BigQueryClientImpl(BigQueryClient):
         )
 
         if source_data_filter_clause:
-            if not source_data_filter_clause.startswith('WHERE'):
-                raise ValueError("Cannot filter a SELECT without a valid filter clause starting with WHERE.")
+            self.validate_source_data_filter_clause(source_data_filter_clause)
 
             select_query = f"{select_query} {source_data_filter_clause}"
 
@@ -768,6 +766,11 @@ class BigQueryClientImpl(BigQueryClient):
                      destination_dataset_id, destination_table_id)
 
         return self.client.query(select_query, job_config=job_config)
+
+    @staticmethod
+    def validate_source_data_filter_clause(filter_clause: str) -> None:
+        if not filter_clause.startswith('WHERE'):
+            raise ValueError(f'Found filter clause [{filter_clause}] that does not begin with WHERE')
 
     def insert_into_table_from_table_async(self,
                                            source_dataset_id: str,

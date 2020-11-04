@@ -86,6 +86,10 @@ def include_region_code_col_via_join_table(metadata_base: DeclarativeMeta, table
 
 
 def schema_has_region_code_query_support(metadata_base: DeclarativeMeta) -> bool:
+    """NOTE: The CloudSQL -> BQ export must run once without any filtered region codes for each newly added SchemaType.
+        This ensures the region_code column is added to tables that are missing it before a query tries to
+        filter for that column.
+    """
     return metadata_base in (StateBase, OperationsBase)
 
 
