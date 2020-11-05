@@ -59,13 +59,13 @@ AUGMENTED_AGENT_INFO_QUERY_TEMPLATE = \
           CASE 
             WHEN state_code = 'US_ND' THEN COALESCE(given_names, FNAME)
             -- TODO(#4159) Remove this state-specific logic once we have given and surnames set in ingest --
-            WHEN state_code = 'US_PA' THEN TRIM(SPLIT(full_name, ',')[SAFE_OFFSET(1)])
+            WHEN state_code IN ('US_ID', 'US_PA') THEN TRIM(SPLIT(full_name, ',')[SAFE_OFFSET(1)])
             ELSE given_names
           END AS given_names,
           CASE 
             WHEN state_code = 'US_ND' THEN COALESCE(surname, LNAME)
             -- TODO(#4159) Remove this state-specific logic once we have given and surnames set in ingest --
-            WHEN state_code = 'US_PA' THEN TRIM(SPLIT(full_name, ',')[SAFE_OFFSET(0)])
+            WHEN state_code IN ('US_ID', 'US_PA') THEN TRIM(SPLIT(full_name, ',')[SAFE_OFFSET(0)])
             ELSE surname
           END AS surname, 
           CASE 
@@ -76,10 +76,12 @@ AUGMENTED_AGENT_INFO_QUERY_TEMPLATE = \
         LEFT JOIN `{project_id}.{static_reference_dataset}.nd_officers_temp` off
         ON agents_base.state_code = 'US_ND' AND agents_base.external_id = CAST(off.OFFICER as STRING)
     )
-    SELECT 
-      *, 
-      CASE WHEN agents.external_id IS NOT NULL AND COALESCE(agents.given_names, agents.surname) IS NOT NULL
-           THEN CONCAT(agents.external_id, ': ', agents.given_names, ' ', agents.surname)
+    SELECT
+      *,
+      -- TODO(#4490): Remove the state-specific logic for generating agent_external_id after it's set in calculate
+      CASE WHEN agents.external_id IS NOT NULL AND agents.state_code IN ('US_ID') THEN agents.external_id
+           WHEN agents.external_id IS NOT NULL AND COALESCE(agents.given_names, agents.surname) IS NOT NULL
+           THEN CONCAT(agents.external_id, ': ', COALESCE(agents.given_names, ''), ' ', COALESCE(agents.surname, ''))
            WHEN agents.external_id IS NOT NULL THEN agents.external_id
            ELSE ARRAY_TO_STRING((SELECT ARRAY_AGG(col ORDER BY col DESC) 
                 FROM UNNEST([agents.given_names, agents.surname]) AS col 
