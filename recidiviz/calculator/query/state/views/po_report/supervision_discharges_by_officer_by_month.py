@@ -40,6 +40,7 @@ SUPERVISION_DISCHARGES_BY_OFFICER_BY_MONTH_QUERY_TEMPLATE = \
         start_date, termination_date, termination_reason,
         EXTRACT(YEAR FROM termination_date) AS year,
         EXTRACT(MONTH FROM termination_date) AS month,
+        -- TODO(#4491): Consider using `external_id` instead of `agent_external_id`
         COALESCE(agent.agent_external_id, 'UNKNOWN') AS officer_external_id,
       FROM `{project_id}.{state_dataset}.state_supervision_period`
       LEFT JOIN `{project_id}.{reference_views_dataset}.supervision_period_to_agent_association` agent
