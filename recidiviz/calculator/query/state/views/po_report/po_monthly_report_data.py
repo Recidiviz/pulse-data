@@ -31,6 +31,7 @@ PO_MONTHLY_REPORT_DATA_DESCRIPTION = """
  """
 
 # TODO(#3514): handle officers with caseloads across multiple districts
+# TODO(#4503): Remove unused fields from report after PR #4457 is merged
 PO_MONTHLY_REPORT_DATA_QUERY_TEMPLATE = \
     """
     /*{description}*/
@@ -45,8 +46,14 @@ PO_MONTHLY_REPORT_DATA_QUERY_TEMPLATE = \
         earned_discharges_district_average,
         earned_discharges_state_average,
         technical_revocations,
+        technical_revocations_district_average,
+        technical_revocations_state_average,
         absconsions,
+        absconsions_district_average,
+        absconsions_state_average,
         crime_revocations,
+        crime_revocations_district_average,
+        crime_revocations_state_average,
         assessments,
         assessment_percent,
         facetoface,
@@ -60,33 +67,65 @@ PO_MONTHLY_REPORT_DATA_QUERY_TEMPLATE = \
         USING (state_code, year, month, district, officer_external_id)
       FULL OUTER JOIN `{project_id}.{po_report_dataset}.supervision_early_discharge_requests_by_officer_by_month_materialized`
         USING (state_code, year, month, district, officer_external_id)
+    ),
+    agents AS (
+      SELECT 
+        state_code,
+        external_id AS officer_external_id,
+        TRIM(SPLIT(given_names, ' ')[SAFE_OFFSET(0)]) AS officer_given_name
+      FROM `{project_id}.{reference_views_dataset}.augmented_agent_info`
+      GROUP BY state_code, external_id, officer_given_name
     )
     SELECT
       state_code, officer_external_id, district,
       email_address,
+      agents.officer_given_name,
       month as review_month,
       report_month.pos_discharges,
+      IFNULL(last_month.pos_discharges, 0) AS pos_discharges_last_month,
       report_month.pos_discharges_district_average,
+      IFNULL(last_month.pos_discharges_district_average, 0) AS pos_discharges_district_average_last_month,
       report_month.pos_discharges_state_average,
+      IFNULL(last_month.pos_discharges_state_average, 0) AS pos_discharges_state_average_last_month,
       report_month.earned_discharges,
-      report_month.earned_discharges - IFNULL(last_month.earned_discharges, 0) as earned_discharges_change,
+      IFNULL(report_month.earned_discharges, 0) - IFNULL(last_month.earned_discharges, 0) AS earned_discharges_change,
+      IFNULL(last_month.earned_discharges, 0) AS earned_discharges_last_month,
       report_month.earned_discharges_district_average,
+      IFNULL(last_month.earned_discharges_district_average, 0) AS earned_discharges_district_average_last_month,
       report_month.earned_discharges_state_average,
+      IFNULL(last_month.earned_discharges_state_average, 0) AS earned_discharges_state_average_last_month,
       report_month.technical_revocations,
-      report_month.technical_revocations - IFNULL(last_month.technical_revocations, 0) as technical_revocations_change,
+      IFNULL(report_month.technical_revocations, 0) - IFNULL(last_month.technical_revocations, 0) AS technical_revocations_change,
+      IFNULL(last_month.technical_revocations, 0) AS technical_revocations_last_month,
+      report_month.technical_revocations_district_average,
+      IFNULL(last_month.technical_revocations_district_average, 0) AS technical_revocations_district_average_last_month,
+      report_month.technical_revocations_state_average,
+      IFNULL(last_month.technical_revocations_state_average, 0) AS technical_revocations_state_average_last_month,
       report_month.absconsions,
-      report_month.absconsions - IFNULL(last_month.absconsions, 0) as absconsions_change,
+      IFNULL(report_month.absconsions, 0) - IFNULL(last_month.absconsions, 0) AS absconsions_change,
+      IFNULL(last_month.absconsions, 0) AS absconsions_last_month,
+      report_month.absconsions_district_average,
+      IFNULL(last_month.absconsions_district_average, 0) AS absconsions_district_average_last_month,
+      report_month.absconsions_state_average,
+      IFNULL(last_month.absconsions_state_average, 0) AS absconsions_state_average_last_month,
       report_month.crime_revocations,
-      report_month.crime_revocations - IFNULL(last_month.crime_revocations, 0) as crime_revocations_change,
+      IFNULL(report_month.crime_revocations, 0) - IFNULL(last_month.crime_revocations, 0) AS crime_revocations_change,
+      IFNULL(last_month.crime_revocations, 0) AS crime_revocations_last_month,
+      report_month.crime_revocations_district_average,
+      IFNULL(last_month.crime_revocations_district_average, 0) AS crime_revocations_district_average_last_month,
+      report_month.crime_revocations_state_average,
+      IFNULL(last_month.crime_revocations_state_average, 0) AS crime_revocations_state_average_last_month,
       report_month.assessments,
       report_month.assessment_percent,
-      IFNULL(last_month.assessment_percent, 0) as assessment_percent_last_month,
+      IFNULL(last_month.assessment_percent, 0) AS assessment_percent_last_month,
       report_month.facetoface,
       report_month.facetoface_percent,
-      IFNULL(last_month.facetoface_percent, 0) as facetoface_percent_last_month
+      IFNULL(last_month.facetoface_percent, 0) AS facetoface_percent_last_month
     FROM `{project_id}.{po_report_dataset}.po_report_recipients`
     LEFT JOIN report_data report_month
       USING (state_code, officer_external_id, district)
+    LEFT JOIN agents
+      USING (state_code, officer_external_id)
     LEFT JOIN (
       SELECT
         * EXCEPT (year, month),
@@ -108,7 +147,8 @@ PO_MONTHLY_REPORT_DATA_VIEW_BUILDER = MetricBigQueryViewBuilder(
     view_query_template=PO_MONTHLY_REPORT_DATA_QUERY_TEMPLATE,
     dimensions=['state_code', 'review_month', 'officer_external_id', 'district'],
     description=PO_MONTHLY_REPORT_DATA_DESCRIPTION,
-    po_report_dataset=PO_REPORT_DATASET
+    po_report_dataset=PO_REPORT_DATASET,
+    reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET
 )
 
 if __name__ == '__main__':
