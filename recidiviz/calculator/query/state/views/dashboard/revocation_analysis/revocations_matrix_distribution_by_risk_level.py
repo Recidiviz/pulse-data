@@ -113,7 +113,8 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_RISK_LEVEL_VIEW_BUILDER = MetricBigQueryViewB
     view_id=REVOCATIONS_MATRIX_DISTRIBUTION_BY_RISK_LEVEL_VIEW_NAME,
     view_query_template=REVOCATIONS_MATRIX_DISTRIBUTION_BY_RISK_LEVEL_QUERY_TEMPLATE,
     dimensions=['state_code', 'metric_period_months', 'district', 'supervision_type',
-                'violation_type', 'reported_violations', 'charge_category', 'risk_level'],
+                'violation_type', 'reported_violations', 'charge_category', 'risk_level',
+                'supervision_level'],
     description=REVOCATIONS_MATRIX_DISTRIBUTION_BY_RISK_LEVEL_DESCRIPTION,
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET
 )
