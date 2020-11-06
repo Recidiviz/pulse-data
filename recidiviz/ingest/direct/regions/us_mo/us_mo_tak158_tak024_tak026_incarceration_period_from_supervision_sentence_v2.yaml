@@ -32,8 +32,6 @@ keys_to_ignore:
   - F1_WW   # Unused - Subcycle end date - SUB_SUBCYCLE_END_DT used instead
   - F1_CTP  # Unused - Subcycle Reason for Closing - END_STATUS_CODE used instead
   - F1_MSO  # Unused - Most Serious Offense
-  - F1_DCR  # Unused - Date Created
-  - F1_TCR  # Unused - Time Created
   - DOC     # Unused - Duplicate of BT_DOC
   - CYC     # Unused - Duplicate of BT_CYC
   - SQN     # Unused - Duplicate of BT_SQN

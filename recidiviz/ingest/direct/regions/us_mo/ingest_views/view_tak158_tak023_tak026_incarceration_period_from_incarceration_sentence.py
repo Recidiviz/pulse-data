@@ -32,7 +32,7 @@ VIEW_QUERY_TEMPLATE = f"""
             sentence_inst_ids.BT_DOC,
             sentence_inst_ids.BT_CYC,
             sentence_inst_ids.BT_SEO,
-            body_status_f1.*
+            body_status_f1.* EXCEPT(F1_TCR, F1_DCR)
         FROM (
             SELECT BT_DOC, BT_CYC, BT_SEO
             FROM {{LBAKRDTA_TAK023}} sentence_inst_bt

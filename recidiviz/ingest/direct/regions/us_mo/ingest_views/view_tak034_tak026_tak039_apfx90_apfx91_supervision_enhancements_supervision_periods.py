@@ -392,7 +392,7 @@ WITH field_assignments_ce AS (
             LNAME,
             FNAME,
             MINTL,
-            STRING_AGG(SUPERVSN_ENH_TYPE_CD, ',') AS CASE_TYPE_LIST
+            STRING_AGG(DISTINCT SUPERVSN_ENH_TYPE_CD, ',' ORDER BY SUPERVSN_ENH_TYPE_CD) AS CASE_TYPE_LIST
         FROM
             periods_with_officer_info
         LEFT OUTER JOIN
@@ -490,7 +490,7 @@ WITH field_assignments_ce AS (
             BW_DOC AS DOC,
             BW_CYC AS CYC,
             BW_SY AS STATUSES_DATE,
-            STRING_AGG(BW_SCD, ',') AS STATUS_CODE_LIST
+            STRING_AGG(DISTINCT BW_SCD, ',' ORDER BY BW_SCD) AS STATUS_CODE_LIST
         FROM
             status_bw
         GROUP BY BW_DOC, BW_CYC, BW_SY
