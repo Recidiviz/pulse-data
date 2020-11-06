@@ -62,7 +62,7 @@ VIEW_QUERY_TEMPLATE = f"""
             citations_jt.JT_DOC,
             citations_jt.JT_CYC,
             citations_jt.JT_CSQ,
-            STRING_AGG(citations_jt.JT_VCV, ',') AS VIOLATED_CONDITIONS,
+            STRING_AGG(DISTINCT citations_jt.JT_VCV, ',' ORDER BY citations_jt.JT_VCV) AS VIOLATED_CONDITIONS,
             MAX(COALESCE(citations_jt.JT_VG, '0')) AS MAX_DATE
         FROM
             {{LBAKRDTA_TAK292}} citations_jt

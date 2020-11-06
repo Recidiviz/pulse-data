@@ -22,7 +22,8 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 VIEW_QUERY_TEMPLATE = """
-    SELECT *
+    SELECT 
+        EK_DOC,EK_CYC,EK_ALN,EK_AFN,EK_AMI,EK_AGS,EK_SID,EK_FBI,EK_OLN,EK_RAC,EK_ETH,EK_SEX,DOC_ID_DOB,DOB
     FROM
         {LBAKRDTA_TAK001} offender_identification_ek
     LEFT OUTER JOIN

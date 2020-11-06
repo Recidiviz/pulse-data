@@ -8,8 +8,6 @@ ancestor_keys:
   E04: state_person.state_person_id
 
 keys_to_ignore:
-  - E01     # Unused - Date of download from UCCI
-  - E03     # Unused - Date of download from UCCI
   - E06     # Unused - Duplicate of E10
   - E08     # Unused - First name
   - E09     # Unused - Last name

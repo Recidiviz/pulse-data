@@ -23,7 +23,7 @@ from recidiviz.utils.metadata import local_project_id_override
 
 VIEW_QUERY_TEMPLATE = """
     SELECT
-        *
+        * EXCEPT(E01, E03) -- Omitting download dates to create query result stability
     FROM
         {FOCTEST_ORAS_ASSESSMENTS_WEEKLY}
     WHERE
