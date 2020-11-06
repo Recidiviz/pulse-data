@@ -617,37 +617,38 @@ class UsMoController(CsvGcsfsDirectIngestController):
 
     @classmethod
     def get_file_tag_rank_list(cls) -> List[str]:
-        file_tags = [
-            # Legacy
-            'tak001_offender_identification',
-            'oras_assessments_weekly',
-            'tak040_offender_cycles',
-            'tak022_tak023_tak025_tak026_offender_sentence_institution',
-            'tak022_tak024_tak025_tak026_offender_sentence_supervision',
-            'tak158_tak023_tak026_incarceration_period_from_incarceration_sentence',
-            'tak158_tak024_tak026_incarceration_period_from_supervision_sentence',
-            'tak034_tak026_tak039_apfx90_apfx91_supervision_enhancements_supervision_periods',
-            'tak028_tak042_tak076_tak024_violation_reports',
-            'tak291_tak292_tak024_citations',
-
+        file_tags = []
+        if environment.in_gae_production():
+            file_tags += [
+                # Legacy
+                'tak001_offender_identification',
+                'oras_assessments_weekly',
+                'tak040_offender_cycles',
+                'tak022_tak023_tak025_tak026_offender_sentence_institution',
+                'tak022_tak024_tak025_tak026_offender_sentence_supervision',
+                'tak158_tak023_tak026_incarceration_period_from_incarceration_sentence',
+                'tak158_tak024_tak026_incarceration_period_from_supervision_sentence',
+                'tak034_tak026_tak039_apfx90_apfx91_supervision_enhancements_supervision_periods',
+                'tak028_tak042_tak076_tak024_violation_reports',
+                'tak291_tak292_tak024_citations',
+            ]
+        file_tags += [
             # SQL Preprocessing View
             'tak001_offender_identification_v2',
             'oras_assessments_weekly_v2',
             'tak040_offender_cycles_v2',
             'tak022_tak023_tak025_tak026_offender_sentence_institution_v2',
             'tak022_tak024_tak025_tak026_offender_sentence_supervision_v2',
+            'tak158_tak023_tak026_incarceration_period_from_incarceration_sentence_v2',
+            'tak158_tak024_tak026_incarceration_period_from_supervision_sentence_v2',
         ]
-
         if not environment.in_gae_production() and not environment.in_gae_staging():
             file_tags += [
                 # SQL Preprocessing View
-                'tak158_tak023_tak026_incarceration_period_from_incarceration_sentence_v2',
-                'tak158_tak024_tak026_incarceration_period_from_supervision_sentence_v2',
                 'tak034_tak026_tak039_apfx90_apfx91_supervision_enhancements_supervision_periods_v2',
                 'tak028_tak042_tak076_tak024_violation_reports_v2',
                 'tak291_tak292_tak024_citations_v2',
             ]
-
         return file_tags
 
     def _get_row_pre_processors_for_file(self,
