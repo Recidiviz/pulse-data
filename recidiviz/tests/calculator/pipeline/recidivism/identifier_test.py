@@ -121,7 +121,6 @@ class TestClassifyReleaseEvents(unittest.TestCase):
         """Tests the find_release_events_by_cohort_year function where a temporary custody incarceration period
         is followed by a revocation period. In this test case the person did recidivate.
         """
-
         initial_incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
             external_id='1',
@@ -340,6 +339,112 @@ class TestClassifyReleaseEvents(unittest.TestCase):
                 original_admission_date=closed_incarceration_period.admission_date,
                 release_date=closed_incarceration_period.release_date,
                 release_facility=None)]
+
+    def test_find_release_events_by_cohort_year_overlapping_periods(self):
+        """Tests the find_release_events_by_cohort_year function where the person has two overlapping periods, caused by
+        data entry errors. We don't want to create a ReleaseEvent for a release that overlaps with another period of
+        incarceration, so we only produce a ReleaseEvent for the period with the later release."""
+        incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=1111,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code='US_XX',
+            admission_date=date(2008, 11, 20),
+            admission_reason=AdmissionReason.NEW_ADMISSION,
+            release_date=date(2009, 4, 21),
+            release_reason=ReleaseReason.SENTENCE_SERVED
+        )
+
+        incarceration_period_2 = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=2222,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code='US_XX',
+            admission_date=date(2008, 11, 20),
+            admission_reason=AdmissionReason.NEW_ADMISSION,
+            release_date=date(2009, 4, 16),
+            release_reason=ReleaseReason.SENTENCE_SERVED
+        )
+
+        release_events_by_cohort = \
+            identifier.find_release_events_by_cohort_year(
+                [incarceration_period_1, incarceration_period_2], _COUNTY_OF_RESIDENCE)
+
+        self.assertCountEqual([
+            NonRecidivismReleaseEvent(
+                state_code='US_XX',
+                county_of_residence=_COUNTY_OF_RESIDENCE,
+                original_admission_date=incarceration_period_1.admission_date,
+                release_date=incarceration_period_1.release_date,
+                release_facility=None)
+        ], release_events_by_cohort[2009])
+
+    def test_find_release_events_by_cohort_year_release_same_day(self):
+        """Tests the find_release_events_by_cohort_year function where the person has two periods with release dates on
+        the same day. Only one should count as a release."""
+        incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=1111,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code='US_XX',
+            admission_date=date(2008, 11, 20),
+            admission_reason=AdmissionReason.NEW_ADMISSION,
+            release_date=date(2009, 4, 21),
+            release_reason=ReleaseReason.SENTENCE_SERVED
+        )
+
+        incarceration_period_2 = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=2222,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code='US_XX',
+            admission_date=date(2008, 12, 21),
+            admission_reason=AdmissionReason.NEW_ADMISSION,
+            release_date=date(2009, 4, 21),
+            release_reason=ReleaseReason.SENTENCE_SERVED
+        )
+
+        release_events_by_cohort = \
+            identifier.find_release_events_by_cohort_year(
+                [incarceration_period_1, incarceration_period_2], _COUNTY_OF_RESIDENCE)
+
+        self.assertCountEqual([
+            NonRecidivismReleaseEvent(
+                state_code='US_XX',
+                county_of_residence=_COUNTY_OF_RESIDENCE,
+                original_admission_date=incarceration_period_2.admission_date,
+                release_date=incarceration_period_2.release_date,
+                release_facility=None)
+        ], release_events_by_cohort[2009])
+
+    def test_find_release_events_by_cohort_year_two_open_periods(self):
+        """Tests the find_release_events_by_cohort_year function where the person has two open periods, caused by
+        data entry errors. We don't want to create any release events in this situation."""
+        incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
+            external_id='1111',
+            incarceration_period_id=1111,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.IN_CUSTODY,
+            state_code='US_XX',
+            admission_date=date(2008, 11, 20),
+            admission_reason=AdmissionReason.NEW_ADMISSION,
+        )
+
+        incarceration_period_2 = StateIncarcerationPeriod.new_with_defaults(
+            external_id='2222',
+            incarceration_period_id=2222,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.IN_CUSTODY,
+            state_code='US_XX',
+            admission_date=date(2008, 11, 20),
+            admission_reason=AdmissionReason.NEW_ADMISSION,
+        )
+
+        release_events_by_cohort = \
+            identifier.find_release_events_by_cohort_year(
+                [incarceration_period_1, incarceration_period_2], _COUNTY_OF_RESIDENCE)
+
+        self.assertEqual({}, release_events_by_cohort)
 
     def test_find_release_events_by_cohort_year_no_recid_cond_release(self):
         """Tests the find_release_events_by_cohort_year function when the person
@@ -706,7 +811,6 @@ class TestClassifyReleaseEvents(unittest.TestCase):
 
 _RETURN_TYPES_BY_STANDARD_ADMISSION: Dict[
     AdmissionReason, ReincarcerationReturnType] = {
-        AdmissionReason.ADMITTED_IN_ERROR: ReincarcerationReturnType.NEW_ADMISSION,
         AdmissionReason.EXTERNAL_UNKNOWN: ReincarcerationReturnType.NEW_ADMISSION,
         AdmissionReason.INTERNAL_UNKNOWN: ReincarcerationReturnType.NEW_ADMISSION,
         AdmissionReason.NEW_ADMISSION: ReincarcerationReturnType.NEW_ADMISSION,
@@ -715,38 +819,41 @@ _RETURN_TYPES_BY_STANDARD_ADMISSION: Dict[
         AdmissionReason.PROBATION_REVOCATION: ReincarcerationReturnType.REVOCATION,
         AdmissionReason.DUAL_REVOCATION: ReincarcerationReturnType.REVOCATION,
         AdmissionReason.TRANSFER: ReincarcerationReturnType.NEW_ADMISSION,
-        AdmissionReason.TRANSFERRED_FROM_OUT_OF_STATE: ReincarcerationReturnType.NEW_ADMISSION
     }
 
 
 _SHOULD_BE_FILTERED_OUT_IN_VALIDATION_ADMISSION: List[AdmissionReason] = \
-    [AdmissionReason.TEMPORARY_CUSTODY]
+    [
+        AdmissionReason.ADMITTED_IN_ERROR,
+        AdmissionReason.RETURN_FROM_ESCAPE,
+        AdmissionReason.RETURN_FROM_ERRONEOUS_RELEASE,
+        AdmissionReason.TEMPORARY_CUSTODY,
+        AdmissionReason.TRANSFERRED_FROM_OUT_OF_STATE
+    ]
 
 _SHOULD_BE_FILTERED_OUT_IN_VALIDATION_RELEASE: List[ReleaseReason] = \
     [ReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY]
 
-
-# Stores the return types for the combinations of release reason and
-# admission reason that should be included in a release cohort
-SHOULD_INCLUDE_WITH_RETURN_TYPE: \
-    Dict[ReleaseReason, Dict[AdmissionReason, ReincarcerationReturnType]] = \
-    {ReleaseReason.COMMUTED: _RETURN_TYPES_BY_STANDARD_ADMISSION,
-     ReleaseReason.COMPASSIONATE: _RETURN_TYPES_BY_STANDARD_ADMISSION,
-     ReleaseReason.CONDITIONAL_RELEASE: _RETURN_TYPES_BY_STANDARD_ADMISSION,
-     ReleaseReason.COURT_ORDER: {},
-     ReleaseReason.DEATH: {},
-     ReleaseReason.ESCAPE: {},
-     ReleaseReason.EXECUTION: {},
-     ReleaseReason.EXTERNAL_UNKNOWN: _RETURN_TYPES_BY_STANDARD_ADMISSION,
-     ReleaseReason.INTERNAL_UNKNOWN: _RETURN_TYPES_BY_STANDARD_ADMISSION,
-     ReleaseReason.PARDONED: _RETURN_TYPES_BY_STANDARD_ADMISSION,
-     ReleaseReason.RELEASED_FROM_ERRONEOUS_ADMISSION: _RETURN_TYPES_BY_STANDARD_ADMISSION,
-     ReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY: {},
-     ReleaseReason.RELEASED_IN_ERROR: {},
-     ReleaseReason.SENTENCE_SERVED: _RETURN_TYPES_BY_STANDARD_ADMISSION,
-     ReleaseReason.TRANSFER: {},
-     ReleaseReason.TRANSFERRED_OUT_OF_STATE: {},
-     ReleaseReason.VACATED: _RETURN_TYPES_BY_STANDARD_ADMISSION}
+# Stores whether each release type should be included in a release cohort
+RELEASE_REASON_INCLUSION: Dict[ReleaseReason, bool] = {
+    ReleaseReason.COMMUTED: True,
+    ReleaseReason.COMPASSIONATE: True,
+    ReleaseReason.CONDITIONAL_RELEASE: True,
+    ReleaseReason.COURT_ORDER: False,
+    ReleaseReason.DEATH: False,
+    ReleaseReason.ESCAPE: False,
+    ReleaseReason.EXECUTION: False,
+    ReleaseReason.EXTERNAL_UNKNOWN: False,
+    ReleaseReason.INTERNAL_UNKNOWN: False,
+    ReleaseReason.PARDONED: True,
+    ReleaseReason.RELEASED_FROM_ERRONEOUS_ADMISSION: True,
+    ReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY: False,
+    ReleaseReason.RELEASED_IN_ERROR: False,
+    ReleaseReason.SENTENCE_SERVED: True,
+    ReleaseReason.TRANSFER: False,
+    ReleaseReason.TRANSFERRED_OUT_OF_STATE: False,
+    ReleaseReason.VACATED: True
+}
 
 
 class TestShouldIncludeInReleaseCohort(unittest.TestCase):
@@ -755,29 +862,52 @@ class TestShouldIncludeInReleaseCohort(unittest.TestCase):
     def test_should_include_in_release_cohort(self):
         """Tests the should_include_in_release_cohort_function for all
         possible combinations of release reason and admission reason."""
+        release_date = date(2000, 1, 1)
+        status = StateIncarcerationPeriodStatus.NOT_IN_CUSTODY
+
         for release_reason in ReleaseReason:
-            for admission_reason in AdmissionReason:
-                if release_reason in _SHOULD_BE_FILTERED_OUT_IN_VALIDATION_RELEASE:
-                    with pytest.raises(ValueError) as e:
-                        _ = identifier.should_include_in_release_cohort(release_reason, admission_reason)
-                        assert str(e) == ("validate_sort_and_collapse_incarceration_periods is not effectively "
-                                          "filtering. Found unexpected release_reason of: {release_reason}")
+            if release_reason in _SHOULD_BE_FILTERED_OUT_IN_VALIDATION_RELEASE:
+                with pytest.raises(ValueError):
+                    _ = identifier.should_include_in_release_cohort(status, release_date, release_reason, None)
+            else:
+                should_include = identifier.should_include_in_release_cohort(status, release_date, release_reason, None)
+                self.assertEqual(RELEASE_REASON_INCLUSION.get(release_reason), should_include)
 
-                elif admission_reason in _SHOULD_BE_FILTERED_OUT_IN_VALIDATION_ADMISSION \
-                        and SHOULD_INCLUDE_WITH_RETURN_TYPE[release_reason].keys():
-                    with pytest.raises(ValueError) as e:
-                        _ = identifier.should_include_in_release_cohort(release_reason, admission_reason)
-                        assert str(e) == ("validate_sort_and_collapse_incarceration_periods is not effectively "
-                                          "filtering. Found unexpected admission_reason of: {admission_reason}")
-                else:
-                    should_include = identifier.should_include_in_release_cohort(release_reason, admission_reason)
-                    if admission_reason in SHOULD_INCLUDE_WITH_RETURN_TYPE[release_reason].keys():
-                        assert should_include
-                    else:
-                        assert not should_include
+    def test_should_include_in_release_cohort_in_custody(self):
+        status = StateIncarcerationPeriodStatus.IN_CUSTODY
+        should_include = identifier.should_include_in_release_cohort(status, None, None, None)
+        self.assertFalse(should_include)
 
-    def test_coverage_of_should_include_map(self):
-        release_reason_keys = SHOULD_INCLUDE_WITH_RETURN_TYPE.keys()
+    def test_should_include_in_release_cohort_no_release_reason(self):
+        status = StateIncarcerationPeriodStatus.IN_CUSTODY
+        release_date = date(2000, 1, 1)
+        should_include = identifier.should_include_in_release_cohort(
+            status, release_date, release_reason=None, next_incarceration_period=None)
+        self.assertFalse(should_include)
+
+    def test_should_include_in_release_cohort_release_while_incarcerated(self):
+        status = StateIncarcerationPeriodStatus.NOT_IN_CUSTODY
+        release_date = date(2000, 1, 31)
+        next_incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=1111,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code='US_XX',
+            admission_date=date(1999, 12, 10),
+            admission_reason=AdmissionReason.TRANSFER,
+            release_date=date(2002, 4, 21),
+            release_reason=ReleaseReason.SENTENCE_SERVED
+        )
+
+        should_include = identifier.should_include_in_release_cohort(
+            status,
+            release_date=release_date,
+            release_reason=ReleaseReason.SENTENCE_SERVED,
+            next_incarceration_period=next_incarceration_period)
+        self.assertFalse(should_include)
+
+    def test_coverage_of_inclusion_map(self):
+        release_reason_keys = RELEASE_REASON_INCLUSION.keys()
 
         for release_reason in ReleaseReason:
             self.assertTrue(release_reason in release_reason_keys,
@@ -785,20 +915,15 @@ class TestShouldIncludeInReleaseCohort(unittest.TestCase):
                             "handled in SHOULD_INCLUDE_WITH_RETURN_TYPE.")
 
     def test_should_include_in_release_cohort_coverage(self):
-        for admission_reason in AdmissionReason:
-            if admission_reason in \
-                    _SHOULD_BE_FILTERED_OUT_IN_VALIDATION_ADMISSION:
+        status = StateIncarcerationPeriodStatus.NOT_IN_CUSTODY
+        release_date = date(1978, 11, 1)
+
+        for release_reason in ReleaseReason:
+            if release_reason in _SHOULD_BE_FILTERED_OUT_IN_VALIDATION_RELEASE:
                 continue
 
-            for release_reason in ReleaseReason:
-                if release_reason in \
-                        _SHOULD_BE_FILTERED_OUT_IN_VALIDATION_RELEASE:
-                    continue
-
-                # Assert that no error is raised
-                identifier.should_include_in_release_cohort(
-                    release_reason,
-                    admission_reason)
+            # Assert that no error is raised
+            identifier.should_include_in_release_cohort(status, release_date, release_reason, None)
 
 
 class TestGetReturnType(unittest.TestCase):
@@ -849,78 +974,19 @@ class TestGetReturnType(unittest.TestCase):
                     self.fail()
 
     def test_get_return_type_valid_combinations(self):
-        """Tests the get_return_type function for all valid combinations of
-        release reason and admission reason."""
-        for release_reason in ReleaseReason:
-            for valid_admission_reason in \
-                    SHOULD_INCLUDE_WITH_RETURN_TYPE[release_reason]:
-                return_type = \
-                    identifier.get_return_type(valid_admission_reason)
-
-                assert return_type == \
-                    SHOULD_INCLUDE_WITH_RETURN_TYPE[release_reason][
-                        valid_admission_reason]
+        """Tests the get_return_type function for all possible admission reasons."""
+        for admission_reason in AdmissionReason:
+            if admission_reason in _SHOULD_BE_FILTERED_OUT_IN_VALIDATION_ADMISSION:
+                with pytest.raises(ValueError):
+                    _ = identifier.get_return_type(admission_reason)
+            else:
+                return_type = identifier.get_return_type(admission_reason)
+                self.assertEqual(_RETURN_TYPES_BY_STANDARD_ADMISSION.get(admission_reason), return_type)
 
     def test_get_return_type_invalid(self):
         """Tests the get_return_type function with an invalid admission reason."""
         with pytest.raises(ValueError):
             _ = identifier.get_return_type('INVALID')
-
-
-class TestForLastIncarcerationPeriod(unittest.TestCase):
-    """Tests the for_last_incarceration_period function."""
-
-    def test_for_last_incarceration_period(self):
-        state_code = 'CA'
-        admission_date = date(2000, 12, 1)
-        status = StateIncarcerationPeriodStatus.NOT_IN_CUSTODY
-        release_date = date(2005, 3, 8)
-        release_facility = 'Facility'
-
-        for release_reason in ReleaseReason:
-            if release_reason in _SHOULD_BE_FILTERED_OUT_IN_VALIDATION_RELEASE:
-                with pytest.raises(ValueError) as e:
-                    _ = identifier.for_last_incarceration_period(
-                        state_code,
-                        admission_date,
-                        status,
-                        release_date,
-                        release_reason,
-                        release_facility,
-                        _COUNTY_OF_RESIDENCE)
-                    assert str(e) == ("validate_sort_and_collapse_"
-                                      "incarceration_periods is "
-                                      "not effectively filtering."
-                                      " Found unexpected release_reason"
-                                      f" of: {release_reason}")
-            else:
-                # Will raise ValueError if enum case isn't handled
-                event = identifier.for_last_incarceration_period(
-                    state_code,
-                    admission_date,
-                    status,
-                    release_date,
-                    release_reason,
-                    release_facility,
-                    _COUNTY_OF_RESIDENCE)
-
-                if release_reason in [ReleaseReason.COMMUTED,
-                                      ReleaseReason.COMPASSIONATE,
-                                      ReleaseReason.CONDITIONAL_RELEASE,
-                                      ReleaseReason.INTERNAL_UNKNOWN,
-                                      ReleaseReason.EXTERNAL_UNKNOWN,
-                                      ReleaseReason.PARDONED,
-                                      ReleaseReason.RELEASED_FROM_ERRONEOUS_ADMISSION,
-                                      ReleaseReason.SENTENCE_SERVED,
-                                      ReleaseReason.VACATED]:
-                    assert event == NonRecidivismReleaseEvent(
-                        state_code,
-                        admission_date,
-                        release_date,
-                        release_facility,
-                        _COUNTY_OF_RESIDENCE)
-                else:
-                    assert not event
 
 
 class TestGetFromSupervisionType(unittest.TestCase):
@@ -930,42 +996,21 @@ class TestGetFromSupervisionType(unittest.TestCase):
         """Tests the get_from_supervision_type function for all possible
         admission reasons."""
         for admission_reason in AdmissionReason:
-            if admission_reason in \
-                    [AdmissionReason.RETURN_FROM_ESCAPE,
-                     AdmissionReason.RETURN_FROM_ERRONEOUS_RELEASE]:
-                with pytest.raises(ValueError) as e:
+            if admission_reason in _SHOULD_BE_FILTERED_OUT_IN_VALIDATION_ADMISSION:
+                with pytest.raises(ValueError):
                     _ = identifier.get_from_supervision_type(admission_reason)
-                    assert str(e) == (f"should_include_in_release_cohort is not"
-                                      f" effectively filtering. "
-                                      f"Found unexpected admission_reason of:"
-                                      f" {admission_reason}")
-            elif admission_reason in \
-                    _SHOULD_BE_FILTERED_OUT_IN_VALIDATION_ADMISSION:
-                with pytest.raises(ValueError) as e:
-                    _ = identifier.get_from_supervision_type(admission_reason)
-                    assert str(e) == ("validate_sort_and_collapse_"
-                                      "incarceration_periods is "
-                                      "not effectively filtering."
-                                      " Found unexpected admission_reason"
-                                      f" of: {admission_reason}")
             else:
-                from_supervision_type = \
-                    identifier.get_from_supervision_type(admission_reason)
-                if admission_reason in [AdmissionReason.ADMITTED_IN_ERROR,
-                                        AdmissionReason.EXTERNAL_UNKNOWN,
+                from_supervision_type = identifier.get_from_supervision_type(admission_reason)
+                if admission_reason in [AdmissionReason.EXTERNAL_UNKNOWN,
                                         AdmissionReason.INTERNAL_UNKNOWN,
                                         AdmissionReason.NEW_ADMISSION,
-                                        AdmissionReason.TRANSFER,
-                                        AdmissionReason.TRANSFERRED_FROM_OUT_OF_STATE]:
+                                        AdmissionReason.TRANSFER]:
                     assert not from_supervision_type
                 elif admission_reason in [AdmissionReason.RETURN_FROM_SUPERVISION,
                                           AdmissionReason.PAROLE_REVOCATION,
                                           AdmissionReason.PROBATION_REVOCATION,
                                           AdmissionReason.DUAL_REVOCATION]:
                     assert from_supervision_type
-                else:
-                    assert str(e.value) == (
-                        "Enum case not handled for StateIncarcerationPeriodAdmissionReason of type: INVALID.")
 
     def test_get_from_supervision_type_invalid(self):
         """Tests the get_from_supervision_type function for an invalid
@@ -975,3 +1020,137 @@ class TestGetFromSupervisionType(unittest.TestCase):
             _ = identifier.get_from_supervision_type('INVALID')
 
         assert str(e.value) == ("Enum case not handled for StateIncarcerationPeriodAdmissionReason of type: INVALID.")
+
+
+class TestFindValidReincarcerationPeriod(unittest.TestCase):
+    """Tests the find_valid_reincarceration_period function."""
+
+    def test_find_valid_reincarceration_period(self):
+        incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=1111,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code='US_XX',
+            admission_date=date(2008, 11, 20),
+            admission_reason=AdmissionReason.NEW_ADMISSION,
+            release_date=date(2009, 4, 21),
+            release_reason=ReleaseReason.SENTENCE_SERVED
+        )
+
+        incarceration_period_2 = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=2222,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code='US_XX',
+            admission_date=date(2010, 3, 2),
+            admission_reason=AdmissionReason.NEW_ADMISSION,
+            release_date=date(2012, 12, 1),
+            release_reason=ReleaseReason.SENTENCE_SERVED
+        )
+
+        incarceration_periods = [incarceration_period_1, incarceration_period_2]
+
+        reincarceration = identifier.find_valid_reincarceration_period(
+            incarceration_periods,
+            index=0,
+            release_date=incarceration_periods[0].release_date)
+
+        self.assertEqual(incarceration_period_2, reincarceration)
+
+    def test_find_valid_reincarceration_period_overlapping_periods(self):
+        incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=1111,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code='US_XX',
+            admission_date=date(2008, 11, 20),
+            admission_reason=AdmissionReason.NEW_ADMISSION,
+            release_date=date(2009, 4, 21),
+            release_reason=ReleaseReason.SENTENCE_SERVED
+        )
+
+        incarceration_period_2 = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=2222,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code='US_XX',
+            admission_date=date(2008, 11, 20),
+            admission_reason=AdmissionReason.NEW_ADMISSION,
+            release_date=date(2009, 4, 16),
+            release_reason=ReleaseReason.SENTENCE_SERVED
+        )
+
+        incarceration_periods = [incarceration_period_1, incarceration_period_2]
+
+        # The release on incarceration_period_1 overlaps with incarceration_period_2, and should be excluded from the
+        # release cohort
+        with pytest.raises(ValueError):
+            _ = identifier.find_valid_reincarceration_period(
+                incarceration_periods,
+                index=0,
+                release_date=incarceration_periods[0].release_date)
+
+    def test_find_valid_reincarceration_period_invalid_admission_reason(self):
+        incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=1111,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code='US_XX',
+            admission_date=date(2008, 11, 20),
+            admission_reason=AdmissionReason.NEW_ADMISSION,
+            release_date=date(2009, 4, 21),
+            release_reason=ReleaseReason.SENTENCE_SERVED
+        )
+
+        for admission_reason in _SHOULD_BE_FILTERED_OUT_IN_VALIDATION_ADMISSION:
+            incarceration_period_2 = StateIncarcerationPeriod.new_with_defaults(
+                incarceration_period_id=2222,
+                incarceration_type=StateIncarcerationType.STATE_PRISON,
+                status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+                state_code='US_XX',
+                admission_date=date(2010, 3, 2),
+                admission_reason=admission_reason,
+                release_date=date(2012, 12, 1),
+                release_reason=ReleaseReason.SENTENCE_SERVED
+            )
+
+            incarceration_periods = [incarceration_period_1, incarceration_period_2]
+
+            reincarceration = identifier.find_valid_reincarceration_period(
+                incarceration_periods,
+                index=0,
+                release_date=incarceration_periods[0].release_date)
+
+            self.assertIsNone(reincarceration)
+
+    def test_find_valid_reincarceration_period_admission_reason_coverage(self):
+        incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=1111,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code='US_XX',
+            admission_date=date(2008, 11, 20),
+            admission_reason=AdmissionReason.NEW_ADMISSION,
+            release_date=date(2009, 4, 21),
+            release_reason=ReleaseReason.SENTENCE_SERVED
+        )
+
+        for admission_reason in AdmissionReason:
+            incarceration_period_2 = StateIncarcerationPeriod.new_with_defaults(
+                incarceration_period_id=2222,
+                incarceration_type=StateIncarcerationType.STATE_PRISON,
+                status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+                state_code='US_XX',
+                admission_date=date(2010, 3, 2),
+                admission_reason=admission_reason,
+                release_date=date(2012, 12, 1),
+                release_reason=ReleaseReason.SENTENCE_SERVED
+            )
+
+            incarceration_periods = [incarceration_period_1, incarceration_period_2]
+
+            # Assert that this does not fail for all admission_reasons
+            _ = identifier.find_valid_reincarceration_period(
+                incarceration_periods,
+                index=0,
+                release_date=incarceration_periods[0].release_date)
