@@ -33,7 +33,7 @@ VIEW_QUERY_TEMPLATE = f"""
             probation_sentence_ids.BU_DOC,
             probation_sentence_ids.BU_CYC,
             probation_sentence_ids.BU_SEO,
-            body_status_f1.*
+            body_status_f1.* EXCEPT(F1_TCR, F1_DCR)
         FROM (
             -- We intentionally do NOT filter out INV sentences here, otherwise an incarceration subcycle that is
             -- erroneously attributed to an INV sentence in TAK158 would get dropped entirely.

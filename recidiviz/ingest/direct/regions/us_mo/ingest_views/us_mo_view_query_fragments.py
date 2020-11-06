@@ -184,7 +184,7 @@ STATUSES_BY_DATE_FRAGMENT = \
             BW_DOC,
             BW_CYC,
             BW_SY AS STATUS_DATE,
-            STRING_AGG(BW_SCD, ',') AS STATUS_CODES
+            STRING_AGG(DISTINCT BW_SCD, ',' ORDER BY BW_SCD) AS STATUS_CODES
         FROM
             status_bw
         GROUP BY BW_DOC, BW_CYC, BW_SY

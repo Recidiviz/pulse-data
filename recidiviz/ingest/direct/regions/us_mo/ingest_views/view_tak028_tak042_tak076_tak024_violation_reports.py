@@ -67,7 +67,7 @@ VIEW_QUERY_TEMPLATE = f"""
             conditions_cf.CF_DOC,
             conditions_cf.CF_CYC,
             conditions_cf.CF_VSN,
-            STRING_AGG(conditions_cf.CF_VCV, ',') AS VIOLATED_CONDITIONS,
+            STRING_AGG(DISTINCT conditions_cf.CF_VCV, ',' ORDER BY conditions_cf.CF_VCV) AS VIOLATED_CONDITIONS,
             MAX(COALESCE(conditions_cf.CF_DCR, '0')) as CREATE_DT,
             MAX(COALESCE(conditions_cf.CF_DLU, '0')) as UPDATE_DT
         FROM
