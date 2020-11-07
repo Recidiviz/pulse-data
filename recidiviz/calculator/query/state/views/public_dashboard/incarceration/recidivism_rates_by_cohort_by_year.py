@@ -36,8 +36,8 @@ RECIDIVISM_RATES_BY_COHORT_BY_YEAR_VIEW_QUERY_TEMPLATE = \
         state_code,
         release_cohort,
         follow_up_period as followup_years,
-        gender,
-        age_bucket,
+        IFNULL(gender, 'EXTERNAL_UNKNOWN') as gender,
+        IFNULL(age_bucket, 'EXTERNAL_UNKNOWN') as age_bucket,
         {state_specific_race_or_ethnicity_groupings},
         SUM(recidivated_releases) as recidivated_releases,
         SUM(total_releases) as releases
