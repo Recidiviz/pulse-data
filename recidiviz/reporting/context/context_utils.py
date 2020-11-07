@@ -16,7 +16,14 @@
 # =============================================================================
 
 """Utilities for working with report-specific context and data preparation."""
+from typing import Optional
 import calendar
+
+
+def format_greeting(name: Optional[str]) -> str:
+    if not name:
+        return "Hey there!"
+    return f"Hey there, {name.title()}!"
 
 
 def singular_or_plural(prepared_data: dict, value_key: str, text_key: str, singular: str, plural: str) -> None:
