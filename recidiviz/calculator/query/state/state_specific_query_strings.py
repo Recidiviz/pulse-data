@@ -33,8 +33,8 @@ def state_specific_judicial_district_groupings(judicial_district_column: str) ->
 
 
 def state_specific_race_or_ethnicity_groupings(race_or_ethnicity_column: str = 'race_or_ethnicity') -> str:
-    return f"""CASE WHEN state_code = 'US_ND' AND {race_or_ethnicity_column} IN
-              ('EXTERNAL_UNKNOWN', 'ASIAN', 'NATIVE_HAWAIIAN_PACIFIC_ISLANDER') THEN 'OTHER'
+    return f"""CASE WHEN state_code = 'US_ND' AND ({race_or_ethnicity_column} IS NULL OR {race_or_ethnicity_column} IN
+              ('EXTERNAL_UNKNOWN', 'ASIAN', 'NATIVE_HAWAIIAN_PACIFIC_ISLANDER')) THEN 'OTHER'
               ELSE {race_or_ethnicity_column} END AS race_or_ethnicity"""
 
 
