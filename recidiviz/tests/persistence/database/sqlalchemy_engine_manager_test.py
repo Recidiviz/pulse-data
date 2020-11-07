@@ -51,6 +51,9 @@ class SQLAlchemyEngineManagerTest(TestCase):
                  '?host=/cloudsql/state_cloudsql_instance_id_value', isolation_level='SERIALIZABLE', pool_recycle=600),
             call('postgresql://operations_db_user_value:operations_db_password_value@/operations_db_name_value'
                  '?host=/cloudsql/operations_cloudsql_instance_id_value', isolation_level=None, pool_recycle=600),
+            call('postgresql://justice_counts_db_user_value:justice_counts_db_password_value@/'
+                 'justice_counts_db_name_value?host=/cloudsql/justice_counts_cloudsql_instance_id_value',
+                 isolation_level='SERIALIZABLE', pool_recycle=600),
         ]
 
     @patch('sqlalchemy.create_engine')
@@ -76,15 +79,18 @@ class SQLAlchemyEngineManagerTest(TestCase):
                  '?host=/cloudsql/state_cloudsql_instance_id_value', isolation_level='SERIALIZABLE', pool_recycle=600),
             call('postgresql://operations_db_user_value:operations_db_password_value@/operations_db_name_value'
                  '?host=/cloudsql/operations_cloudsql_instance_id_value', isolation_level=None, pool_recycle=600),
+            call('postgresql://justice_counts_db_user_value:justice_counts_db_password_value@/'
+                 'justice_counts_db_name_value?host=/cloudsql/justice_counts_cloudsql_instance_id_value',
+                 isolation_level='SERIALIZABLE', pool_recycle=600),
         ]
 
     @patch('recidiviz.utils.secrets.get_secret')
     def testGetAllStrippedCloudSqlInstanceIds_returnsOnlyConfiguredIds(self, mock_secrets):
         # Arrange
-        mock_secrets.side_effect = ['project:zone:123', 'project:zone:456', 'project:zone:789']
+        mock_secrets.side_effect = ['project:zone:111', 'project:zone:222', 'project:zone:333', 'project:zone:444']
 
         # Act
         ids = SQLAlchemyEngineManager.get_all_stripped_cloudsql_instance_ids()
 
         # Assert
-        assert ids == ['123', '456', '789']
+        assert ids == ['111', '222', '333', '444']
