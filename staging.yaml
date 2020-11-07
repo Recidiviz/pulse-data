@@ -15,7 +15,7 @@ readiness_check:
   app_start_timeout_sec: 60
 
 beta_settings:
-  cloud_sql_instances: recidiviz-staging:us-east4:dev-data, recidiviz-123:us-east1:usmamiddlesex-redundant, recidiviz-staging:us-east1:dev-state-data, recidiviz-staging:us-east1:dev-operations-data
+  cloud_sql_instances: recidiviz-staging:us-east4:dev-data, recidiviz-123:us-east1:usmamiddlesex-redundant, recidiviz-staging:us-east1:dev-state-data, recidiviz-staging:us-east1:dev-operations-data, recidiviz-staging:us-east1:dev-justice-counts-data
 env_variables:
   RECIDIVIZ_ENV: staging
   FROM_EMAIL_ADDRESS: reports@recidiviz.org

@@ -46,7 +46,7 @@ class SQLAlchemyEngineManager:
         SchemaType.JAILS: 'cloudsql_instance_id',
         SchemaType.STATE: 'state_cloudsql_instance_id',
         SchemaType.OPERATIONS: 'operations_cloudsql_instance_id',
-        SchemaType.JUSTICE_COUNTS: None,
+        SchemaType.JUSTICE_COUNTS: 'justice_counts_cloudsql_instance_id',
     }
 
     _SCHEMA_TO_DB_NAME_KEY: Dict[SchemaType, str] = {
@@ -137,7 +137,10 @@ class SQLAlchemyEngineManager:
             db_url=cls._get_operations_server_postgres_instance_url(),
             schema_base=OperationsBase)
 
-        # TODO(#4175): Add Justice Counts database instance
+        # Initialize Justice Counts database instance
+        cls.init_engine_for_postgres_instance(
+            db_url=cls._get_justice_counts_server_postgres_instance_url(),
+            schema_base=JusticeCountsBase)
 
     @classmethod
     def get_engine_for_schema_base(
@@ -213,6 +216,13 @@ class SQLAlchemyEngineManager:
             db_user_key='operations_db_user',
             db_password_key='operations_db_password',
             schema_type=SchemaType.OPERATIONS)
+
+    @classmethod
+    def _get_justice_counts_server_postgres_instance_url(cls) -> str:
+        return cls._get_server_postgres_instance_url(
+            db_user_key='justice_counts_db_user',
+            db_password_key='justice_counts_db_password',
+            schema_type=SchemaType.JUSTICE_COUNTS)
 
     @classmethod
     def _get_server_postgres_instance_url(cls,
