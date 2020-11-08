@@ -34,22 +34,30 @@ SUPERVISION_ABSCONSION_TERMINATIONS_BY_OFFICER_BY_MONTH_DESCRIPTION = """
 SUPERVISION_ABSCONSION_TERMINATIONS_BY_OFFICER_BY_MONTH_QUERY_TEMPLATE = \
     """
     /*{description}*/
-    WITH absconsions_per_officer AS (
-      SELECT
-        state_code,
-        EXTRACT(YEAR FROM termination_date) AS year,
-        EXTRACT(MONTH FROM termination_date) AS month,
-        -- TODO(#4491): Consider using `external_id` instead of `agent_external_id`
+
+    WITH absconsions AS (
+      SELECT violation.state_code, violation.person_id, response_type, response_date, violation_type, 
         agent.agent_external_id AS officer_external_id,
-        COUNT(DISTINCT person_id) AS absconsion_count
-      FROM `{project_id}.{state_dataset}.state_supervision_period` supervision_period
+        EXTRACT(YEAR FROM response_date) AS year, EXTRACT(MONTH FROM response_date) AS month
+      -- TODO(#4491): Consider using `external_id` instead of `agent_external_id`
+      FROM `{project_id}.{state_dataset}.state_supervision_violation_response` violation
+      LEFT JOIN `{project_id}.{state_dataset}.state_supervision_violation_type_entry` type
+        USING (supervision_violation_id, person_id, state_code)
+      LEFT JOIN `{project_id}.{state_dataset}.state_supervision_period` period
+      ON period.person_id = violation.person_id 
+        AND period.state_code = violation.state_code
+        AND response_date >= period.start_date
+        AND response_date <= COALESCE(period.termination_date, '9999-12-31')
       LEFT JOIN `{project_id}.{reference_views_dataset}.supervision_period_to_agent_association` agent
-        USING (state_code, supervision_period_id)
-      WHERE termination_date IS NOT NULL
-        AND supervision_period.termination_reason = 'ABSCONSION'
-        AND EXTRACT(YEAR FROM termination_date) >= EXTRACT(YEAR FROM DATE_SUB(CURRENT_DATE(), INTERVAL 3 YEAR))
-        -- Only the following supervision types should be included in the PO report
+        ON period.supervision_period_id = agent.supervision_period_id
+          AND period.state_code = agent.state_code
+      WHERE violation_type = 'ABSCONDED'
         AND supervision_period_supervision_type IN ('DUAL', 'PROBATION', 'PAROLE', 'INTERNAL_UNKNOWN')
+    ), absconsions_per_officer AS (
+      SELECT
+        state_code, year, month, officer_external_id,
+        COUNT(DISTINCT person_id) AS absconsion_count
+      FROM absconsions
       GROUP BY state_code, year, month, officer_external_id
     ),
     avg_absconsions_by_district_state AS (
