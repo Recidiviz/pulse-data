@@ -87,7 +87,8 @@ SUPERVISION_TERMINATIONS_BY_TYPE_BY_WEEK_QUERY_TEMPLATE = \
         FROM supervision_terminations
         LEFT JOIN overlapping_open_period USING (supervision_period_id)
           -- Do not count any discharges that are overlapping with another open supervision period
-          WHERE overlapping_open_period.supervision_period_id IS NULL
+          -- Count any overlapping periods that ended due to ABSCONSION
+          WHERE (overlapping_open_period.supervision_period_id IS NULL OR termination_reason = 'ABSCONSION')
             AND termination_reason NOT IN ('TRANSFER_WITHIN_STATE', 'TRANSFER_OUT_OF_STATE', 'RETURN_FROM_ABSCONSION')
       ) terminations
       ON report.state_code = terminations.state_code AND termination_date BETWEEN start_date AND end_date
