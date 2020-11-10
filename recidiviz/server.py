@@ -43,7 +43,7 @@ from recidiviz.ingest.scrape.scraper_status import scraper_status
 from recidiviz.ingest.scrape.worker import worker
 from recidiviz.persistence.actions import actions
 from recidiviz.persistence.batch_persistence import batch_blueprint
-from recidiviz.persistence.database.export.cloud_sql_to_bq_export_manager import export_manager_blueprint
+from recidiviz.persistence.database.bq_refresh.cloud_sql_to_bq_refresh_manager import export_manager_blueprint
 from recidiviz.persistence.database.sqlalchemy_engine_manager import SQLAlchemyEngineManager
 from recidiviz.reporting.reporting_endpoint import reporting_endpoint_blueprint
 from recidiviz.utils import (environment, metadata, monitoring, structured_logging)

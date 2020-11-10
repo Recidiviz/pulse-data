@@ -19,7 +19,7 @@
 
 Example usage (run from `pipenv shell`):
 
-python -m recidiviz.persistence.database.export.state_table_export_to_csv --project-id recidiviz-staging \
+python -m recidiviz.export.state.state_bq_table_export_to_csv --project-id recidiviz-staging \
 --dry-run True --target-bucket recidiviz-staging-jessex-test --state-code US_PA
 """
 
@@ -27,21 +27,32 @@ python -m recidiviz.persistence.database.export.state_table_export_to_csv --proj
 import argparse
 import datetime
 import logging
+from typing import cast
 
 from google.cloud import bigquery
 
 from recidiviz.big_query.big_query_client import BigQueryClientImpl, ExportQueryConfig
 from recidiviz.calculator.query.state.dataset_config import STATE_BASE_DATASET
-from recidiviz.persistence.database.export.export_utils import state_table_export_query_str, gcs_export_directory
-from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
+from recidiviz.export.state.state_bq_table_export_utils import state_table_export_query_str
+from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath, GcsfsDirectoryPath
 
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.utils.params import str_to_bool
 
 
+def gcs_export_directory(bucket_name: str, today: datetime.date, state_code: str) -> GcsfsDirectoryPath:
+    """Returns a GCS directory to export files into, of the format:
+    gs://{bucket_name}/ingested_state_data/{state_code}/{YYYY}/{MM}/{DD}
+    """
+    path = GcsfsDirectoryPath.from_bucket_and_blob_name(
+        bucket_name=bucket_name,
+        blob_name=f'ingested_state_data/{state_code}/{today.year:04}/{today.month:02}/{today.day:02}/')
+    return cast(GcsfsDirectoryPath, path)
+
+
 def run_export(dry_run: bool,
                state_code: str,
-               target_bucket: str):
+               target_bucket: str) -> None:
     """Performs the export operation, exporting rows for the given state codes from the tables from the state dataset
     in the given project to CSV files with the same names as the tables to the given GCS bucket."""
     today = datetime.date.today()

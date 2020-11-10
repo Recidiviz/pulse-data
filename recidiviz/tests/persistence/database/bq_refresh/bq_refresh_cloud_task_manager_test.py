@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Tests for BQExportCloudTaskManager"""
+"""Tests for BQRefreshCloudTaskManager"""
 
 import datetime
 import json
@@ -26,9 +26,9 @@ from google.protobuf import timestamp_pb2
 import mock
 from mock import patch
 
-from recidiviz.calculator.query import bq_export_cloud_task_manager
-from recidiviz.calculator.query.bq_export_cloud_task_manager import \
-    BQExportCloudTaskManager
+from recidiviz.persistence.database.bq_refresh import bq_refresh_cloud_task_manager
+from recidiviz.persistence.database.bq_refresh.bq_refresh_cloud_task_manager import \
+    BQRefreshCloudTaskManager
 from recidiviz.common.google_cloud.google_cloud_tasks_client_wrapper import (
     QUEUES_REGION
 )
@@ -36,11 +36,11 @@ from recidiviz.common.google_cloud.google_cloud_tasks_shared_queues import \
     JOB_MONITOR_QUEUE_V2, BIGQUERY_QUEUE_V2
 from recidiviz.persistence.database.sqlalchemy_engine_manager import SchemaType
 
-CLOUD_TASK_MANAGER_PACKAGE_NAME = bq_export_cloud_task_manager.__name__
+CLOUD_TASK_MANAGER_PACKAGE_NAME = bq_refresh_cloud_task_manager.__name__
 
 
-class TestBQExportCloudTaskManager(unittest.TestCase):
-    """Tests for BQExportCloudTaskManager"""
+class TestBQRefreshCloudTaskManager(unittest.TestCase):
+    """Tests for BQRefreshCloudTaskManager"""
 
     @patch(f'{CLOUD_TASK_MANAGER_PACKAGE_NAME}.uuid')
     @patch('google.cloud.tasks_v2.CloudTasksClient')
@@ -76,7 +76,7 @@ class TestBQExportCloudTaskManager(unittest.TestCase):
         mock_client.return_value.queue_path.return_value = queue_path
 
         # Act
-        BQExportCloudTaskManager(project_id=project_id). \
+        BQRefreshCloudTaskManager(project_id=project_id). \
             create_bq_task(table_name=table_name, schema_type=SchemaType.JAILS)
 
         # Assert
@@ -131,7 +131,7 @@ class TestBQExportCloudTaskManager(unittest.TestCase):
         mock_client.return_value.queue_path.return_value = queue_path
 
         # Act
-        BQExportCloudTaskManager(project_id=project_id). \
+        BQRefreshCloudTaskManager(project_id=project_id). \
             create_bq_monitor_task(topic=topic, message=message)
 
         # Assert

@@ -22,7 +22,7 @@ import time
 
 import googleapiclient.errors
 
-from recidiviz.persistence.database.export.cloud_sql_to_bq_export_config import CloudSqlToBQConfig
+from recidiviz.persistence.database.bq_refresh.cloud_sql_to_bq_refresh_config import CloudSqlToBQConfig
 from recidiviz.persistence.database.sqladmin_client import sqladmin_client
 from recidiviz.persistence.database.sqlalchemy_engine_manager import \
     SQLAlchemyEngineManager, SchemaType

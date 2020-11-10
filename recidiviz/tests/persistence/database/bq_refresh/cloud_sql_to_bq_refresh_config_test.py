@@ -25,9 +25,9 @@ from typing import List
 import sqlalchemy
 from google.cloud import bigquery
 
-from recidiviz.persistence.database.export.cloud_sql_to_bq_export_config import CloudSqlToBQConfig
-from recidiviz.persistence.database.export.schema_table_region_filtered_query_builder import \
-    SchemaTableRegionFilteredQueryBuilder
+from recidiviz.persistence.database.bq_refresh.cloud_sql_to_bq_refresh_config import CloudSqlToBQConfig
+from recidiviz.persistence.database.schema_table_region_filtered_query_builder import \
+    BigQuerySchemaTableRegionFilteredQueryBuilder
 from recidiviz.persistence.database.schema_utils import is_association_table
 from recidiviz.persistence.database.sqlalchemy_engine_manager import SchemaType
 
@@ -36,15 +36,15 @@ class CloudSqlToBQConfigTest(unittest.TestCase):
     """Tests for cloud_sql_to_bq_export_config.py."""
 
     def setUp(self) -> None:
-        self.schema_types = list(SchemaType)
+        self.schema_types: List[SchemaType] = list(SchemaType)
         self.mock_project_id = 'fake-recidiviz-project'
         self.mock_region_codes_to_exclude = {
             self.mock_project_id: ['US_ND']
         }
         self.environment_patcher = mock.patch(
-            'recidiviz.persistence.database.export.cloud_sql_to_bq_export_config.environment')
+            'recidiviz.persistence.database.bq_refresh.cloud_sql_to_bq_refresh_config.environment')
         self.metadata_patcher = mock.patch(
-            'recidiviz.persistence.database.export.cloud_sql_to_bq_export_config.metadata')
+            'recidiviz.persistence.database.bq_refresh.cloud_sql_to_bq_refresh_config.metadata')
         self.mock_metadata = self.metadata_patcher.start()
         self.mock_metadata.project_id.return_value = self.mock_project_id
         self.mock_environment = self.environment_patcher.start()
@@ -173,12 +173,12 @@ class CloudSqlToBQConfigTest(unittest.TestCase):
         config.region_codes_to_exclude = ['US_VA', 'us_id', 'US_hi']
         for table in config.get_tables_to_export():
             if is_association_table(table.name):
-                # This is tested in the SchemaTableRegionFilteredQueryBuilder class
+                # This is tested in the CloudSqlSchemaTableRegionFilteredQueryBuilder class
                 continue
             filter_clause = "WHERE state_code IN ('US_VA','US_ID','US_HI')"
             query_builder = config.get_stale_bq_rows_for_excluded_regions_query_builder(table.name)
 
-            self.assertIsInstance(query_builder, SchemaTableRegionFilteredQueryBuilder)
+            self.assertIsInstance(query_builder, BigQuerySchemaTableRegionFilteredQueryBuilder)
             self.assertIn(filter_clause, query_builder.full_query())
 
     def test_get_stale_bq_rows_for_excluded_regions_query_builder_no_excluded_regions(self) -> None:
@@ -190,7 +190,7 @@ class CloudSqlToBQConfigTest(unittest.TestCase):
         for table in config.get_tables_to_export():
             query_builder = config.get_stale_bq_rows_for_excluded_regions_query_builder(table.name)
 
-            self.assertIsInstance(query_builder, SchemaTableRegionFilteredQueryBuilder)
+            self.assertIsInstance(query_builder, BigQuerySchemaTableRegionFilteredQueryBuilder)
             self.assertEqual(filter_clause, query_builder.filter_clause())
 
     def test_get_stale_bq_rows_for_excluded_regions_query_builder_jails_schema(self) -> None:
@@ -200,10 +200,10 @@ class CloudSqlToBQConfigTest(unittest.TestCase):
         config = CloudSqlToBQConfig.for_schema_type(SchemaType.JAILS)
         for table in config.get_tables_to_export():
             query_builder = config.get_stale_bq_rows_for_excluded_regions_query_builder(table.name)
-            self.assertIsInstance(query_builder, SchemaTableRegionFilteredQueryBuilder)
+            self.assertIsInstance(query_builder, BigQuerySchemaTableRegionFilteredQueryBuilder)
             self.assertEqual(filter_clause, query_builder.filter_clause())
 
-    @mock.patch('recidiviz.persistence.database.export.cloud_sql_to_bq_export_config.metadata.project_id',
+    @mock.patch('recidiviz.persistence.database.bq_refresh.cloud_sql_to_bq_refresh_config.metadata.project_id',
                 mock.Mock(return_value='a-new-fake-id'))
     def test_incorrect_environment(self) -> None:
         with self.assertRaises(ValueError):

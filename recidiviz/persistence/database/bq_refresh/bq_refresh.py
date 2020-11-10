@@ -24,7 +24,7 @@ from google.cloud import bigquery
 from google.cloud import exceptions
 
 from recidiviz.big_query.big_query_client import BigQueryClient
-from recidiviz.persistence.database.export.cloud_sql_to_bq_export_config import CloudSqlToBQConfig
+from recidiviz.persistence.database.bq_refresh.cloud_sql_to_bq_refresh_config import CloudSqlToBQConfig
 from recidiviz.utils import metadata
 
 _BQ_LOAD_WAIT_TIMEOUT_SECONDS = 300

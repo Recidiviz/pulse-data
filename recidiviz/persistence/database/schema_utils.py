@@ -81,10 +81,6 @@ def get_region_code_col(metadata_base: DeclarativeMeta, table: Table) -> str:
     raise ValueError(f'Unexpected table is missing a region code field: [{table.name}]')
 
 
-def include_region_code_col_via_join_table(metadata_base: DeclarativeMeta, table_name: str) -> bool:
-    return schema_has_region_code_query_support(metadata_base) and is_association_table(table_name)
-
-
 def schema_has_region_code_query_support(metadata_base: DeclarativeMeta) -> bool:
     """NOTE: The CloudSQL -> BQ export must run once without any filtered region codes for each newly added SchemaType.
         This ensures the region_code column is added to tables that are missing it before a query tries to

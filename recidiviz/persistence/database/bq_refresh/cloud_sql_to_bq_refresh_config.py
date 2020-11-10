@@ -16,16 +16,8 @@
 # =============================================================================
 """Export configuration.
 
-By default, lists all tables in the various schema.py files to be exported by
-cloud_sql_to_bq_export_manager.py for both COUNTY and STATE modules.
-
-To exclude tables from export, add them to *_TABLES_TO_EXCLUDE_FROM_EXPORT.
-
-Add columns to *_COLUMNS_TO_EXCLUDE to exclude them from the export.
-
-*_BASE_TABLES_BQ_DATASET is the BigQuery dataset to export the tables to.
-
-gcs_export_uri defines the export URI location in Google Cloud Storage.
+By default, exports all non-history tables from a given schema. To update this configuration, edit
+cloud_sql_to_bq_config.yaml.
 """
 import os
 from typing import Dict, List, Optional
@@ -57,9 +49,9 @@ from recidiviz.calculator.query.state import dataset_config as state_dataset_con
 from recidiviz.calculator.query.operations import dataset_config as operations_dataset_config
 from recidiviz.calculator.query.justice_counts import dataset_config as justice_counts_dataset_config
 from recidiviz.persistence.database.schema_utils import get_table_class_by_name, BQ_TYPES, get_region_code_col, \
-    include_region_code_col_via_join_table
-from recidiviz.persistence.database.export.schema_table_region_filtered_query_builder \
-    import SchemaTableRegionFilteredQueryBuilder
+    schema_has_region_code_query_support
+from recidiviz.persistence.database.schema_table_region_filtered_query_builder \
+    import CloudSqlSchemaTableRegionFilteredQueryBuilder, BigQuerySchemaTableRegionFilteredQueryBuilder
 
 
 class CloudSqlToBQConfig:
@@ -129,10 +121,16 @@ class CloudSqlToBQConfig:
             if column.name in self._get_table_columns_to_export(table)
         ]
 
-        if not include_region_code_col_via_join_table(self.metadata_base, table_name):
+        if not schema_has_region_code_query_support(self.metadata_base):
+            # We shouldn't add a region code column for this schema
             return columns
 
+        column_names = {column.name for column in table.columns}
         region_code_col = get_region_code_col(self.metadata_base, table)
+        if region_code_col in column_names:
+            # We already have the region column we need in the table
+            return columns
+
         columns.append(bigquery.SchemaField(region_code_col, BQ_TYPES[sqlalchemy.String], 'NULLABLE'))
 
         return columns
@@ -159,8 +157,9 @@ class CloudSqlToBQConfig:
         """
         table = get_table_class_by_name(table_name, self.sorted_tables)
         columns = self._get_table_columns_to_export(table)
-        query_builder = SchemaTableRegionFilteredQueryBuilder(self.metadata_base, table, columns,
-                                                              region_codes_to_exclude=self.region_codes_to_exclude)
+        query_builder = \
+            CloudSqlSchemaTableRegionFilteredQueryBuilder(self.metadata_base, table, columns,
+                                                          region_codes_to_exclude=self.region_codes_to_exclude)
         return query_builder.full_query()
 
     def get_tables_to_export(self) -> List[Table]:
@@ -176,14 +175,18 @@ class CloudSqlToBQConfig:
         return big_query_client.dataset_ref_for_id(self.dataset_id)
 
     def get_stale_bq_rows_for_excluded_regions_query_builder(self, table_name: str) -> \
-            SchemaTableRegionFilteredQueryBuilder:
+            BigQuerySchemaTableRegionFilteredQueryBuilder:
         table = get_table_class_by_name(table_name, self.sorted_tables)
         columns = self._get_table_columns_to_export(table)
         # Include region codes in query that were excluded from the export to GCS
         # If no region codes are excluded, an empty list will generate a query for zero rows.
         region_codes_to_include = self.region_codes_to_exclude if self.region_codes_to_exclude else []
-        return SchemaTableRegionFilteredQueryBuilder(self.metadata_base, table, columns,
-                                                     region_codes_to_include=region_codes_to_include)
+        return BigQuerySchemaTableRegionFilteredQueryBuilder(project_id=self._get_project_id(),
+                                                             dataset_id=self.dataset_id,
+                                                             metadata_base=self.metadata_base,
+                                                             table=table,
+                                                             columns_to_include=columns,
+                                                             region_codes_to_include=region_codes_to_include)
 
     @staticmethod
     def _get_project_id() -> str:
