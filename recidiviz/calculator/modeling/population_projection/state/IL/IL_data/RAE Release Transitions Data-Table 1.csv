@@ -1,0 +1,4 @@
+compartment,outflow_to,tis_percentage,compartment_duration,total_population
+release,release,50%,960,1
+release,release,85%,960,1
+release,release,100%,960,1

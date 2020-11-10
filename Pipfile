@@ -96,6 +96,13 @@ marshmallow-sqlalchemy = "<0.24.0"
 # apache-airflow requires attrs~=19.3, but cattrs~=1 no longer supports that version, so pin back cattrs.
 cattrs = "~=0.9"
 dill = "==0.3.2"
+matplotlib = "*"
+pandas_gbq = "*"
+scipy = "*"
+seaborn = "*"
+sklearn = "*"
+# TODO(#4517): Revisit when we update ARIMA/statsmodels
+statsmodels = "==0.11.1"
 
 [requires]
 python_version = "3.7"

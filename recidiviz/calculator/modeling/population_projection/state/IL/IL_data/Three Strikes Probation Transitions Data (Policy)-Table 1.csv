@@ -1,0 +1,7 @@
+compartment,outflow_to,race,compartment_duration,total_population
+probation,release,white,24,0.639
+probation,release,non-white,24,0.639
+probation,prison,white,12,0.244
+probation,prison,non-white,12,0.244
+probation,prison,white,24,0.117
+probation,prison,non-white,24,0.117

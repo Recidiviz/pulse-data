@@ -1,0 +1,27 @@
+---
+user_inputs:
+  policy_year: 2021
+  start_year: 2016
+  projection_years: 10
+
+model_architecture:
+    prison: incarcerated
+    jail: incarcerated
+    pretrial: null
+    release: released
+
+reference_date: 0
+
+time_step: 1
+
+disaggregation_axes:
+  - offense_code
+
+state_data: ../state/VA/preprocessed_data_VA_prison.csv
+
+per_ts_costs:
+  prison: 32146
+  jail: 31755
+  release: 0
+
+micro_simulation: false
