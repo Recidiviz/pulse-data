@@ -45,7 +45,8 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_supervision_typ
     us_mo_get_post_incarceration_supervision_type
 from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_violation_utils import us_mo_filter_violation_responses
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
-from recidiviz.common.constants.state.state_incarceration_period import is_revocation_admission
+from recidiviz.common.constants.state.state_incarceration_period import is_revocation_admission, \
+    StateIncarcerationPeriodAdmissionReason
 from recidiviz.common.constants.state.state_supervision import StateSupervisionType
 from recidiviz.common.constants.state.state_supervision_period import StateSupervisionPeriodSupervisionType
 from recidiviz.common.constants.state.state_supervision_violation import StateSupervisionViolationType
@@ -541,3 +542,19 @@ def state_specific_violation_response_pre_processing_function(state_code: str) -
         return us_mo_violation_utils.us_mo_prepare_violation_responses_for_calculations
 
     return None
+
+
+def state_specific_admission_reason_override(state_code: str, admission_reason: StateIncarcerationPeriodAdmissionReason,
+                                             supervision_type_at_admission:
+                                             Optional[StateSupervisionPeriodSupervisionType])\
+        -> StateIncarcerationPeriodAdmissionReason:
+    """ Returns a (potentially) updated admission reason to be used in calculations, given the provided |state_code|,
+    |admission_reason|, and |supervision_type_at_admission|.
+    """
+    if state_code == 'US_ID':
+        # If a person was on an investigative supervision period prior to incarceration, their admission reason
+        # should be considered a new admission.
+        if supervision_type_at_admission and \
+                supervision_type_at_admission == StateSupervisionPeriodSupervisionType.INVESTIGATION:
+            return StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION
+    return admission_reason
