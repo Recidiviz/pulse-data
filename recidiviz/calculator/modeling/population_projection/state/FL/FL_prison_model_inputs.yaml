@@ -1,0 +1,26 @@
+---
+user_inputs:
+    policy_year: 2021
+    start_year: 2018
+    projection_years: 10
+    speed_run: true
+
+model_architecture:
+    pretrial: null
+    prison: incarcerated
+    release: released
+
+reference_date: 2018
+time_step: 1
+
+disaggregation_axes:
+  - age
+  - offense
+
+state_data: ../state/FL/preprocessed_data_FL_prison.csv
+
+per_ts_costs:
+  prison: 3166.67
+  release: 0
+
+micro_simulation: false

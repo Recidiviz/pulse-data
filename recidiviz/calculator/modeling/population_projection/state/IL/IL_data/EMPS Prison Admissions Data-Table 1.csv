@@ -1,0 +1,55 @@
+compartment,outflow_to,crime_type,race,time_step,total_population
+pretrial,prison,residential burglary,white,0,260
+pretrial,prison,residential burglary,non-white,0,501
+pretrial,prison,second offense,white,0,557
+pretrial,prison,second offense,non-white,0,1483
+pretrial,prison,drugs,white,0,1073
+pretrial,prison,drugs,non-white,0,2910
+pretrial,prison,residential burglary,white,1,286
+pretrial,prison,residential burglary,non-white,1,533
+pretrial,prison,second offense,white,1,625
+pretrial,prison,second offense,non-white,1,1597
+pretrial,prison,drugs,white,1,1116
+pretrial,prison,drugs,non-white,1,3073
+pretrial,prison,residential burglary,white,2,263
+pretrial,prison,residential burglary,non-white,2,456
+pretrial,prison,second offense,white,2,562
+pretrial,prison,second offense,non-white,2,1622
+pretrial,prison,drugs,white,2,1110
+pretrial,prison,drugs,non-white,2,2979
+pretrial,prison,residential burglary,white,3,237
+pretrial,prison,residential burglary,non-white,3,360
+pretrial,prison,second offense,white,3,564
+pretrial,prison,second offense,non-white,3,1435
+pretrial,prison,drugs,white,3,1102
+pretrial,prison,drugs,non-white,3,2911
+pretrial,prison,residential burglary,white,4,205
+pretrial,prison,residential burglary,non-white,4,278
+pretrial,prison,second offense,white,4,531
+pretrial,prison,second offense,non-white,4,1173
+pretrial,prison,drugs,white,4,1049
+pretrial,prison,drugs,non-white,4,2235
+pretrial,prison,residential burglary,white,5,173
+pretrial,prison,residential burglary,non-white,5,220
+pretrial,prison,second offense,white,5,530
+pretrial,prison,second offense,non-white,5,1086
+pretrial,prison,drugs,white,5,1136
+pretrial,prison,drugs,non-white,5,1939
+pretrial,prison,residential burglary,white,6,168
+pretrial,prison,residential burglary,non-white,6,231
+pretrial,prison,second offense,white,6,514
+pretrial,prison,second offense,non-white,6,1101
+pretrial,prison,drugs,white,6,1100
+pretrial,prison,drugs,non-white,6,1652
+pretrial,prison,residential burglary,white,7,164
+pretrial,prison,residential burglary,non-white,7,172
+pretrial,prison,second offense,white,7,501
+pretrial,prison,second offense,non-white,7,1012
+pretrial,prison,drugs,white,7,1219
+pretrial,prison,drugs,non-white,7,1370
+pretrial,prison,residential burglary,white,8,134
+pretrial,prison,residential burglary,non-white,8,155
+pretrial,prison,second offense,white,8,536
+pretrial,prison,second offense,non-white,8,1051
+pretrial,prison,drugs,white,8,1223
+pretrial,prison,drugs,non-white,8,1200

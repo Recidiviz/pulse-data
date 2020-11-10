@@ -1,0 +1,19 @@
+compartment,outflow_to,crime_type,race,compartment_duration,total_population
+probation,release,residential burglary,white,24,0.693
+probation,release,residential burglary,non-white,24,0.693
+probation,release,second offense,white,24,0.693
+probation,release,second offense,non-white,24,0.693
+probation,release,drugs,white,24,0.693
+probation,release,drugs,non-white,24,0.693
+probation,prison,residential burglary,white,12,0.244
+probation,prison,residential burglary,non-white,12,0.244
+probation,prison,second offense,white,12,0.244
+probation,prison,second offense,non-white,12,0.244
+probation,prison,drugs,white,12,0.244
+probation,prison,drugs,non-white,12,0.244
+probation,prison,residential burglary,white,24,0.117
+probation,prison,residential burglary,non-white,24,0.117
+probation,prison,second offense,white,24,0.117
+probation,prison,second offense,non-white,24,0.117
+probation,prison,drugs,white,24,0.117
+probation,prison,drugs,non-white,24,0.117
