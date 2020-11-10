@@ -20,7 +20,7 @@
 
 Example usage (run from `pipenv shell`):
 
-python -m recidiviz.export.state_table_export_to_dataset --project-id recidiviz-staging \
+python -m recidiviz.export.state.state_bq_table_export_to_dataset --project-id recidiviz-staging \
 --dry-run True --target-dataset my-test --state-codes US_ND US_MO
 """
 
@@ -29,18 +29,27 @@ import argparse
 import logging
 from typing import List
 
-from recidiviz.big_query.big_query_client import BigQueryClientImpl
+from recidiviz.big_query.big_query_client import BigQueryClientImpl, BigQueryClient
 from recidiviz.calculator.query.state.dataset_config import STATE_BASE_DATASET
-from recidiviz.persistence.database.export.export_utils import state_table_export_query_str, copy_table_to_dataset
+from recidiviz.export.state.state_bq_table_export_utils import state_table_export_query_str
 
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.utils.params import str_to_bool
 
 
+def copy_table_to_dataset(target_dataset: str,
+                          target_table: str,
+                          export_query: str,
+                          bq_client: BigQueryClient) -> None:
+    """Copies the results of the given query to the target table and dataset, overwriting what lives there if the
+    table already exists."""
+    bq_client.create_table_from_query_async(target_dataset, target_table, export_query, [], True)
+
+
 def run_export(project_id: str,
                dry_run: bool,
                state_codes: List[str],
-               target_dataset: str):
+               target_dataset: str) -> None:
     """Performs the export operation, exporting rows for the given state codes from the tables from the state dataset
     in the given project to tables with the same names in the target dataset."""
     big_query_client = BigQueryClientImpl()
