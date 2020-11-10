@@ -24,13 +24,13 @@ import dateutil.parser
 import numpy
 import numpy as np
 import pandas as pd
+import tabula
 import us
 from sqlalchemy.ext.declarative import DeclarativeMeta
 
 from recidiviz.common.constants.aggregate import (
     enum_canonical_strings as enum_strings
 )
-from recidiviz.common.read_pdf import read_pdf
 from recidiviz.ingest.aggregate import aggregate_ingest_utils
 from recidiviz.common import fips
 from recidiviz.persistence.database.schema.aggregate.schema import \
@@ -54,10 +54,9 @@ def parse(location: str, filename: str) -> Dict[DeclarativeMeta, pd.DataFrame]:
     }
 
 
-def _parse_table(location: str, filename: str) -> pd.DataFrame:
+def _parse_table(_: str, filename: str) -> pd.DataFrame:
     """Parses all tables in the GA PDF."""
-    all_dfs = read_pdf(
-        location,
+    all_dfs = tabula.read_pdf(
         filename,
         pages='all',
         multiple_tables=True,
