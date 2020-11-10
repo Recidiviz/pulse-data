@@ -39,8 +39,8 @@ _STATE_AGGREGATE_CLOUD_FUNCTION_URL = (
 _DIRECT_INGEST_CLOUD_FUNCTION_URL = (
     'http://{}.appspot.com/direct/handle_direct_ingest_file?region={}'
     '&bucket={}&relative_file_path={}&start_ingest={}')
-_VIEW_DATA_EXPORT_CLOUD_FUNCTION_URL = (
-    'http://{}.appspot.com/cloud_function/view_data_export'
+_METRIC_VIEW_EXPORT_CLOUD_FUNCTION_URL = (
+    'http://{}.appspot.com/export/metric_view_export'
 )
 _DATAFLOW_MONITOR_URL = (
     'http://{}.appspot.com/cloud_function/dataflow_monitor?job_id={}'
@@ -135,15 +135,15 @@ def _handle_state_direct_ingest_file(data,
     logging.info("The response status is %s", response.status_code)
 
 
-def export_view_data(_event, _context):
-    """This function is triggered by a Pub/Sub event to begin the export of data contained in BigQuery views to files
-    in cloud storage buckets.
+def export_metric_view_data(_event, _context):
+    """This function is triggered by a Pub/Sub event to begin the export of data contained in BigQuery metric views to
+    files in cloud storage buckets.
     """
     project_id = os.environ.get(GCP_PROJECT_ID_KEY)
     if not project_id:
         logging.error('No project id set for call to export view data, returning.')
         return
-    url = _VIEW_DATA_EXPORT_CLOUD_FUNCTION_URL.format(project_id)
+    url = _METRIC_VIEW_EXPORT_CLOUD_FUNCTION_URL.format(project_id)
 
     logging.info("project_id: %s", project_id)
     logging.info("Calling URL: %s", url)

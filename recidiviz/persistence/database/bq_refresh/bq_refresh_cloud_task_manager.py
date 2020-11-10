@@ -53,7 +53,7 @@ class BQRefreshCloudTaskManager:
     def get_bq_queue_info(self) -> CloudTaskQueueInfo:
         return self._get_queue_info(BIGQUERY_QUEUE_V2)
 
-    def create_bq_task(self, table_name: str, schema_type: SchemaType) -> None:
+    def create_refresh_bq_table_task(self, table_name: str, schema_type: SchemaType) -> None:
         """Create a BigQuery table export path.
 
         Args:
@@ -72,13 +72,11 @@ class BQRefreshCloudTaskManager:
         self.cloud_task_client.create_task(
             task_id=task_id,
             queue_name=BIGQUERY_QUEUE_V2,
-            relative_uri='/export_manager/export',
+            relative_uri='/cloud_sql_to_bq/refresh_bq_table',
             body=body,
         )
 
-    def create_bq_monitor_task(self,
-                               topic: str,
-                               message: str) -> None:
+    def create_bq_refresh_monitor_task(self, topic: str, message: str) -> None:
         """Create a task to monitor the progress of an export to BQ.
 
         Args:
@@ -95,7 +93,7 @@ class BQRefreshCloudTaskManager:
         self.cloud_task_client.create_task(
             task_id=task_id,
             queue_name=JOB_MONITOR_QUEUE_V2,
-            relative_uri='/export_manager/bq_monitor',
+            relative_uri='/cloud_sql_to_bq/monitor_refresh_bq_tasks',
             body=body,
             schedule_delay_seconds=60,  # 1-minute delay
         )
