@@ -38,7 +38,7 @@ except ImportError:
 
 project_id = os.environ.get('GCP_PROJECT_ID')
 config_file = os.environ.get('CONFIG_FILE')
-_VIEW_DATA_EXPORT_CLOUD_FUNCTION_URL = 'http://{}.appspot.com/cloud_function/view_data_export?export_job_filter={}'
+_METRIC_VIEW_DATA_EXPORT_URL = 'http://{}.appspot.com/export/metric_view_data?export_job_filter={}'
 
 default_args = {
     'start_date': datetime.date.today().strftime('%Y-%m-%d'),
@@ -66,7 +66,7 @@ with models.DAG(dag_id="calculation_pipeline_dag",
             pipeline_dict = pipelines_by_state(pipeline_yaml_dicts['daily_pipelines'])
             covid_export = IAPHTTPRequestOperator(
                 task_id='COVID_bq_metric_export',
-                url=_VIEW_DATA_EXPORT_CLOUD_FUNCTION_URL.format(project_id, "COVID_DASHBOARD")
+                url=_METRIC_VIEW_DATA_EXPORT_URL.format(project_id, "COVID_DASHBOARD")
             )
             dataflow_default_args = {
                 'project': project_id,
@@ -77,7 +77,7 @@ with models.DAG(dag_id="calculation_pipeline_dag",
             for state_code, state_pipelines in pipeline_dict.items():
                 state_export = IAPHTTPRequestOperator(
                     task_id='{}_bq_metric_export'.format(state_code),
-                    url=_VIEW_DATA_EXPORT_CLOUD_FUNCTION_URL.format(project_id, state_code)
+                    url=_METRIC_VIEW_DATA_EXPORT_URL.format(project_id, state_code)
                 )
                 for pipeline_to_run in state_pipelines:
                     calculation_pipeline = RecidivizDataflowTemplateOperator(
