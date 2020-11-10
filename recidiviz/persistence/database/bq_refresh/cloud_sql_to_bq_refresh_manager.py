@@ -18,7 +18,7 @@
 """Export data from Cloud SQL and load it into BigQuery.
 
 Run this export locally with the following command:
-    python -m recidiviz.persistence.database.export.cloud_sql_to_bq_export_manager
+    python -m recidiviz.persistence.database.bq_refresh.cloud_sql_to_bq_refresh_manager
         --project_id [PROJECT_ID]
         --schema_type [STATE, JAILS, OPERATIONS]
 
@@ -32,11 +32,11 @@ import flask
 from flask import request
 
 from recidiviz.big_query.big_query_client import BigQueryClientImpl, BigQueryClient
-from recidiviz.calculator.query import cloudsql_export, bq_load
-from recidiviz.persistence.database.export.cloud_sql_to_bq_export_config import CloudSqlToBQConfig
+from recidiviz.persistence.database.bq_refresh import bq_refresh, cloud_sql_to_gcs_export
+from recidiviz.persistence.database.bq_refresh.cloud_sql_to_bq_refresh_config import CloudSqlToBQConfig
 
-from recidiviz.calculator.query.bq_export_cloud_task_manager import \
-    BQExportCloudTaskManager
+from recidiviz.persistence.database.bq_refresh.bq_refresh_cloud_task_manager import \
+    BQRefreshCloudTaskManager
 from recidiviz.persistence.database.sqlalchemy_engine_manager import SchemaType
 from recidiviz.utils.auth import authenticate_request
 from recidiviz.utils import pubsub_helper
@@ -61,12 +61,12 @@ def export_table_then_load_table(
     Returns:
         True if load succeeds, else False.
     """
-    export_success = cloudsql_export.export_table(table, cloud_sql_to_bq_config)
+    export_success = cloud_sql_to_gcs_export.export_table(table, cloud_sql_to_bq_config)
 
     if not export_success:
         raise ValueError(f"Failure to export CloudSQL table to GCS, skipping BigQuery load of table [{table}].")
 
-    bq_load.refresh_bq_table_from_gcs_export_synchronous(big_query_client, table, cloud_sql_to_bq_config)
+    bq_refresh.refresh_bq_table_from_gcs_export_synchronous(big_query_client, table, cloud_sql_to_bq_config)
 
 
 export_manager_blueprint = flask.Blueprint('export_manager', __name__)
@@ -113,7 +113,7 @@ def handle_bq_monitor_task() -> Tuple[str, int]:
     topic = data['topic']
     message = data['message']
 
-    task_manager = BQExportCloudTaskManager()
+    task_manager = BQRefreshCloudTaskManager()
 
     bq_tasks_in_queue = task_manager.get_bq_queue_info().size() > 0
 
@@ -141,7 +141,7 @@ def create_all_bq_export_tasks() -> Tuple[str, int]:
     """
     logging.info("Beginning BQ export for jails schema tables.")
 
-    task_manager = BQExportCloudTaskManager()
+    task_manager = BQRefreshCloudTaskManager()
 
     cloud_sql_to_bq_config = CloudSqlToBQConfig.for_schema_type(SchemaType.JAILS)
     for table in cloud_sql_to_bq_config.get_tables_to_export():
@@ -160,7 +160,7 @@ def create_all_state_bq_export_tasks() -> Tuple[str, int]:
     """
     logging.info("Beginning BQ export for state schema tables.")
 
-    task_manager = BQExportCloudTaskManager()
+    task_manager = BQRefreshCloudTaskManager()
 
     cloud_sql_to_bq_config = CloudSqlToBQConfig.for_schema_type(SchemaType.STATE)
     for table in cloud_sql_to_bq_config.get_tables_to_export():
@@ -183,7 +183,7 @@ def create_all_operations_bq_export_tasks() -> Tuple[str, int]:
     """
     logging.info("Beginning BQ export for operations schema tables.")
 
-    task_manager = BQExportCloudTaskManager()
+    task_manager = BQRefreshCloudTaskManager()
 
     cloud_sql_to_bq_config = CloudSqlToBQConfig.for_schema_type(SchemaType.OPERATIONS)
     for table in cloud_sql_to_bq_config.get_tables_to_export():

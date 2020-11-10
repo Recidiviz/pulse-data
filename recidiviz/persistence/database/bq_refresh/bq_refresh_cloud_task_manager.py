@@ -31,7 +31,7 @@ from recidiviz.ingest.direct.direct_ingest_cloud_task_manager import \
 from recidiviz.persistence.database.sqlalchemy_engine_manager import SchemaType
 
 
-class BQExportCloudTaskManager:
+class BQRefreshCloudTaskManager:
     """Class for interacting with cloud tasks and queues related to BigQuery
     exports.
     """
