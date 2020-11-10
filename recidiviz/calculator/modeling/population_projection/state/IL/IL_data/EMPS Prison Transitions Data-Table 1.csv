@@ -1,0 +1,183 @@
+compartment,outflow_to,crime_type,race,compartment_duration,total_population
+prison,probation,residential burglary,white,12,0.19402985
+prison,probation,residential burglary,white,24,0.41044776
+prison,probation,residential burglary,white,36,0.1641791
+prison,probation,residential burglary,white,48,0.1119403
+prison,probation,residential burglary,white,60,0.05970149
+prison,probation,residential burglary,white,72,0.02238806
+prison,probation,residential burglary,white,84,0
+prison,probation,residential burglary,white,96,0.00746269
+prison,probation,residential burglary,white,108,0
+prison,probation,residential burglary,white,120,0.00746269
+prison,probation,residential burglary,white,132,0.00746269
+prison,probation,residential burglary,white,144,0.00746269
+prison,probation,residential burglary,white,156,0
+prison,probation,residential burglary,white,168,0
+prison,probation,residential burglary,white,180,0.00746269
+prison,probation,residential burglary,white,192,0
+prison,probation,residential burglary,white,204,0
+prison,probation,residential burglary,white,216,0
+prison,probation,residential burglary,white,228,0
+prison,probation,residential burglary,white,240,0
+prison,probation,residential burglary,white,252,0
+prison,probation,residential burglary,white,264,0
+prison,probation,residential burglary,white,276,0
+prison,probation,residential burglary,white,288,0
+prison,probation,residential burglary,white,300,0
+prison,probation,residential burglary,white,312,0
+prison,probation,residential burglary,white,324,0
+prison,probation,residential burglary,white,336,0
+prison,probation,residential burglary,white,348,0
+prison,probation,residential burglary,white,360,0
+prison,probation,residential burglary,non-white,12,0.25806452
+prison,probation,residential burglary,non-white,24,0.3483871
+prison,probation,residential burglary,non-white,36,0.22580645
+prison,probation,residential burglary,non-white,48,0.10322581
+prison,probation,residential burglary,non-white,60,0.02580645
+prison,probation,residential burglary,non-white,72,0.00645161
+prison,probation,residential burglary,non-white,84,0.02580645
+prison,probation,residential burglary,non-white,96,0.00645161
+prison,probation,residential burglary,non-white,108,0
+prison,probation,residential burglary,non-white,120,0
+prison,probation,residential burglary,non-white,132,0
+prison,probation,residential burglary,non-white,144,0
+prison,probation,residential burglary,non-white,156,0
+prison,probation,residential burglary,non-white,168,0
+prison,probation,residential burglary,non-white,180,0
+prison,probation,residential burglary,non-white,192,0
+prison,probation,residential burglary,non-white,204,0
+prison,probation,residential burglary,non-white,216,0
+prison,probation,residential burglary,non-white,228,0
+prison,probation,residential burglary,non-white,240,0
+prison,probation,residential burglary,non-white,252,0
+prison,probation,residential burglary,non-white,264,0
+prison,probation,residential burglary,non-white,276,0
+prison,probation,residential burglary,non-white,288,0
+prison,probation,residential burglary,non-white,300,0
+prison,probation,residential burglary,non-white,312,0
+prison,probation,residential burglary,non-white,324,0
+prison,probation,residential burglary,non-white,336,0
+prison,probation,residential burglary,non-white,348,0
+prison,probation,residential burglary,non-white,360,0
+prison,probation,second offense,white,12,0.31529851
+prison,probation,second offense,white,24,0.34701493
+prison,probation,second offense,white,36,0.17910448
+prison,probation,second offense,white,48,0.08955224
+prison,probation,second offense,white,60,0.03358209
+prison,probation,second offense,white,72,0.01679104
+prison,probation,second offense,white,84,0.00746269
+prison,probation,second offense,white,96,0.00373134
+prison,probation,second offense,white,108,0.00373134
+prison,probation,second offense,white,120,0.00186567
+prison,probation,second offense,white,132,0
+prison,probation,second offense,white,144,0
+prison,probation,second offense,white,156,0
+prison,probation,second offense,white,168,0
+prison,probation,second offense,white,180,0.00186567
+prison,probation,second offense,white,192,0
+prison,probation,second offense,white,204,0
+prison,probation,second offense,white,216,0
+prison,probation,second offense,white,228,0
+prison,probation,second offense,white,240,0
+prison,probation,second offense,white,252,0
+prison,probation,second offense,white,264,0
+prison,probation,second offense,white,276,0
+prison,probation,second offense,white,288,0
+prison,probation,second offense,white,300,0
+prison,probation,second offense,white,312,0
+prison,probation,second offense,white,324,0
+prison,probation,second offense,white,336,0
+prison,probation,second offense,white,348,0
+prison,probation,second offense,white,360,0
+prison,probation,second offense,non-white,12,0.37583254
+prison,probation,second offense,non-white,24,0.32350143
+prison,probation,second offense,non-white,36,0.17697431
+prison,probation,second offense,non-white,48,0.06850618
+prison,probation,second offense,non-white,60,0.02283539
+prison,probation,second offense,non-white,72,0.00666032
+prison,probation,second offense,non-white,84,0.00951475
+prison,probation,second offense,non-white,96,0.00285442
+prison,probation,second offense,non-white,108,0.00666032
+prison,probation,second offense,non-white,120,0.00285442
+prison,probation,second offense,non-white,132,0
+prison,probation,second offense,non-white,144,0.00095147
+prison,probation,second offense,non-white,156,0
+prison,probation,second offense,non-white,168,0.00285442
+prison,probation,second offense,non-white,180,0
+prison,probation,second offense,non-white,192,0
+prison,probation,second offense,non-white,204,0
+prison,probation,second offense,non-white,216,0
+prison,probation,second offense,non-white,228,0
+prison,probation,second offense,non-white,240,0
+prison,probation,second offense,non-white,252,0
+prison,probation,second offense,non-white,264,0
+prison,probation,second offense,non-white,276,0
+prison,probation,second offense,non-white,288,0
+prison,probation,second offense,non-white,300,0
+prison,probation,second offense,non-white,312,0
+prison,probation,second offense,non-white,324,0
+prison,probation,second offense,non-white,336,0
+prison,probation,second offense,non-white,348,0
+prison,probation,second offense,non-white,360,0
+prison,probation,drugs,white,0,0.00081766
+prison,probation,drugs,white,12,0.51921504
+prison,probation,drugs,white,24,0.29762878
+prison,probation,drugs,white,36,0.11692559
+prison,probation,drugs,white,48,0.0425184
+prison,probation,drugs,white,60,0.01390025
+prison,probation,drugs,white,72,0.00245298
+prison,probation,drugs,white,84,0.00327065
+prison,probation,drugs,white,96,0.00081766
+prison,probation,drugs,white,108,0.00081766
+prison,probation,drugs,white,120,0.00163532
+prison,probation,drugs,white,132,0
+prison,probation,drugs,white,144,0
+prison,probation,drugs,white,156,0
+prison,probation,drugs,white,168,0
+prison,probation,drugs,white,180,0
+prison,probation,drugs,white,192,0
+prison,probation,drugs,white,204,0
+prison,probation,drugs,white,216,0
+prison,probation,drugs,white,228,0
+prison,probation,drugs,white,240,0
+prison,probation,drugs,white,252,0
+prison,probation,drugs,white,264,0
+prison,probation,drugs,white,276,0
+prison,probation,drugs,white,288,0
+prison,probation,drugs,white,300,0
+prison,probation,drugs,white,312,0
+prison,probation,drugs,white,324,0
+prison,probation,drugs,white,336,0
+prison,probation,drugs,white,348,0
+prison,probation,drugs,white,360,0
+prison,probation,drugs,non-white,0,0.00166667
+prison,probation,drugs,non-white,12,0.51833333
+prison,probation,drugs,non-white,24,0.28166667
+prison,probation,drugs,non-white,36,0.11833333
+prison,probation,drugs,non-white,48,0.04666667
+prison,probation,drugs,non-white,60,0.01916667
+prison,probation,drugs,non-white,72,0.0075
+prison,probation,drugs,non-white,84,0.0025
+prison,probation,drugs,non-white,96,0.00166667
+prison,probation,drugs,non-white,108,0
+prison,probation,drugs,non-white,120,0
+prison,probation,drugs,non-white,132,0
+prison,probation,drugs,non-white,144,0.00083333
+prison,probation,drugs,non-white,156,0
+prison,probation,drugs,non-white,168,0.00166667
+prison,probation,drugs,non-white,180,0
+prison,probation,drugs,non-white,192,0
+prison,probation,drugs,non-white,204,0
+prison,probation,drugs,non-white,216,0
+prison,probation,drugs,non-white,228,0
+prison,probation,drugs,non-white,240,0
+prison,probation,drugs,non-white,252,0
+prison,probation,drugs,non-white,264,0
+prison,probation,drugs,non-white,276,0
+prison,probation,drugs,non-white,288,0
+prison,probation,drugs,non-white,300,0
+prison,probation,drugs,non-white,312,0
+prison,probation,drugs,non-white,324,0
+prison,probation,drugs,non-white,336,0
+prison,probation,drugs,non-white,348,0
+prison,probation,drugs,non-white,360,0

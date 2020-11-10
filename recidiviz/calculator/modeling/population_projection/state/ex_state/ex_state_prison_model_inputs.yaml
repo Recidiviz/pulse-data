@@ -1,0 +1,25 @@
+---
+user_inputs:
+  policy_year: 2020
+  start_year: 2016
+  projection_years: 10
+
+model_architecture:
+    pre-trial: null
+    prison: incarcerated
+    release: released
+
+reference_date: 2015
+
+time_step: 1
+
+disaggregation_axes:
+  - crime_type
+
+state_data: ../state/ex_state/preprocessed_data_ex_state_prison.csv
+
+per_ts_costs:
+  prison: 100
+  release: 0
+
+micro_simulation: false

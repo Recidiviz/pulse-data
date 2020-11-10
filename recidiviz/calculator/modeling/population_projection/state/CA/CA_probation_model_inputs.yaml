@@ -1,0 +1,27 @@
+---
+user_inputs:
+  policy_year: 2020
+  start_year: 2016
+  projection_years: 10
+
+model_architecture:
+    prison_shell: null
+    prison: incarcerated
+    probation: incarcerated
+    release: released
+
+reference_date: 2016.0
+
+time_step: 1
+
+disaggregation_axes:
+  - crime_type
+
+state_data: ../state/CA/preprocessed_data_CA_probation.csv
+
+per_ts_costs:
+  prison: 81203
+  probation: 4438
+  release: 0
+
+micro_simulation: false
