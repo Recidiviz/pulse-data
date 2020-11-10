@@ -827,16 +827,18 @@ def rank_incarceration_period_admission_reason_status_str(status_str: str) -> Op
         # These are TEMPORARY_CUSTODY statuses
         return 4
 
-    if (status_str in RETURN_FROM_ESCAPE_STATUS_CODES
-            or status_str in ADMITTED_IN_ERROR_STATUS_CODES
-            or status_str in RETURN_FROM_ERRONEOUS_RELEASE_STATUS_CODES
-            or status_str in INSTITUTIONAL_TRANSFER_FROM_OUT_OF_STATE_STATUS_CODES):
-        # These are other statuses that don't / shouldn't show up together, should be considered after revocation and
-        # new admission statuses.
+    if status_str in INSTITUTIONAL_TRANSFER_FROM_OUT_OF_STATE_STATUS_CODES:
         return 5
 
-    if status_str in REDUCTION_OF_SENTENCE_REENTRY_STATUS_CODES:
+    if (status_str in RETURN_FROM_ESCAPE_STATUS_CODES
+            or status_str in ADMITTED_IN_ERROR_STATUS_CODES
+            or status_str in RETURN_FROM_ERRONEOUS_RELEASE_STATUS_CODES):
+        # These are other statuses that don't / shouldn't show up together, should be considered after revocation,
+        # transfer, and new admission statuses.
         return 6
+
+    if status_str in REDUCTION_OF_SENTENCE_REENTRY_STATUS_CODES:
+        return 7
 
     # This status code does not give us good info about the admission reason
     return None
