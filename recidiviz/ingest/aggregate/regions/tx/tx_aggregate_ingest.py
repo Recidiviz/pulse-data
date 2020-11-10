@@ -20,6 +20,7 @@ from collections import OrderedDict
 from typing import Dict
 
 import pandas as pd
+import tabula
 import us
 from sqlalchemy.ext.declarative import DeclarativeMeta
 
@@ -28,7 +29,6 @@ from recidiviz.common.constants.aggregate import (
 )
 from recidiviz.common import str_field_utils
 from recidiviz.common import fips
-from recidiviz.common.read_pdf import read_pdf
 from recidiviz.ingest.aggregate import aggregate_ingest_utils
 from recidiviz.ingest.aggregate.errors import AggregateDateParsingError
 from recidiviz.persistence.database.schema.aggregate.schema import \
@@ -75,7 +75,7 @@ def _parse_date(filename: str) -> datetime.date:
         raise AggregateDateParsingError("Could not extract date") from e
 
 
-def _parse_table(location: str, filename: str,
+def _parse_table(_: str, filename: str,
                  report_date: datetime.date) -> pd.DataFrame:
     """Parses the TX County Table in the PDF."""
     num_pages = 9
@@ -89,8 +89,7 @@ def _parse_table(location: str, filename: str,
         # just get all of the tables and consider only the one with numbers on
         # it.  That lets us clean it up by dropping nonsense columns and rows,
         # and then assigning our own columns names to them.
-        df = read_pdf(
-            location,
+        df = tabula.read_pdf(
             filename,
             multiple_tables=True,
             pages=page_num,

@@ -21,6 +21,7 @@ from typing import Dict, Iterable, List
 
 import more_itertools
 import pandas as pd
+import tabula
 from sqlalchemy.ext.declarative import DeclarativeMeta
 
 from recidiviz.common.constants.aggregate import (
@@ -28,7 +29,6 @@ from recidiviz.common.constants.aggregate import (
 )
 from recidiviz.common import str_field_utils
 from recidiviz.common.errors import FipsMergingError
-from recidiviz.common.read_pdf import read_pdf
 from recidiviz.ingest.aggregate.errors import (AggregateDateParsingError,
                                                AggregateIngestError)
 from recidiviz.persistence.database.schema.aggregate.schema import \
@@ -120,10 +120,9 @@ def parse_date(filename: str) -> datetime.date:
     raise AggregateDateParsingError("Could not extract date")
 
 
-def _parse_table(location: str, filename: str) -> pd.DataFrame:
+def _parse_table(_: str, filename: str) -> pd.DataFrame:
     """Parse the Head Count Endings and Contracted Facilities Tables."""
-    all_dfs = read_pdf(
-        location,
+    all_dfs = tabula.read_pdf(
         filename,
         multiple_tables=True,
         lattice=True,
