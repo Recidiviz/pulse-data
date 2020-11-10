@@ -20,11 +20,11 @@ import logging
 import os
 import tempfile
 from http import HTTPStatus
+from typing import Tuple
 
 from flask import Blueprint, request, jsonify
 import gcsfs
 
-from recidiviz.metrics.export import metric_view_export_manager
 from recidiviz.calculator.pipeline.utils.calculate_cloud_task_manager import \
     CalculateCloudTaskManager
 from recidiviz.cloud_functions.cloud_function_utils import GCSFS_NO_CACHING
@@ -55,7 +55,7 @@ HISTORICAL_BUCKET = '{}-processed-state-aggregates'
 
 @cloud_functions_blueprint.route('/state_aggregate')
 @authenticate_request
-def state_aggregate():
+def state_aggregate() -> Tuple[str, HTTPStatus]:
     """Calls state aggregates"""
 
     # Please add new states in alphabetical order
@@ -113,36 +113,12 @@ def state_aggregate():
         fs.mv(path, historical_path)
         return '', HTTPStatus.OK
     except Exception as e:
-        return jsonify(e), 500
-
-
-@cloud_functions_blueprint.route('/view_data_export')
-@authenticate_request
-def view_data_export():
-    """Calls the view export manager. Option to add state code to URL.
-
-    Example:
-        cloud_functions/view_data_export?export_job_filter=US_ID
-    URL parameters:
-        export_job_filter: (string) Kind of jobs to initiate export for. Can either be an export_name (e.g. LANTERN)
-                                    or a state_code (e.g. US_ND)
-    Args:
-        N/A
-    Returns:
-        N/A
-    """
-    logging.info("Attempting to export view data to cloud storage")
-
-    export_job_filter = get_str_param_value("export_job_filter", request.args)
-
-    metric_view_export_manager.export_view_data_to_cloud_storage(export_job_filter)
-
-    return '', HTTPStatus.OK
+        return jsonify(e), HTTPStatus.INTERNAL_SERVER_ERROR
 
 
 @cloud_functions_blueprint.route('/dataflow_monitor')
 @authenticate_request
-def dataflow_monitor():
+def dataflow_monitor() -> Tuple[str, HTTPStatus]:
     """Calls the dataflow monitor manager to begin monitoring a Dataflow job.
 
     Endpoint path parameters:
@@ -154,6 +130,13 @@ def dataflow_monitor():
     job_id = get_str_param_value('job_id', request.args)
     location = get_str_param_value('location', request.args)
     topic = get_str_param_value('topic', request.args)
+
+    if not job_id:
+        raise ValueError('Unexpected empty job_id.')
+    if not location:
+        raise ValueError('Unexpected empty location.')
+    if not topic:
+        raise ValueError('Unexpected empty topic.')
 
     logging.info("Attempting to monitor the job with id: %s. Will "
                  "publish to %s on success.", job_id, topic)

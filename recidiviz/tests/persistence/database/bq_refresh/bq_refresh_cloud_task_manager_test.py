@@ -45,7 +45,7 @@ class TestBQRefreshCloudTaskManager(unittest.TestCase):
     @patch(f'{CLOUD_TASK_MANAGER_PACKAGE_NAME}.uuid')
     @patch('google.cloud.tasks_v2.CloudTasksClient')
     @freeze_time('2019-04-12')
-    def test_create_bq_task(
+    def test_create_refresh_bq_table_task(
             self, mock_client: mock.MagicMock, mock_uuid: mock.MagicMock) -> None:
         # Arrange
         uuid = 'random-uuid'
@@ -67,7 +67,7 @@ class TestBQRefreshCloudTaskManager(unittest.TestCase):
             name=task_path,
             app_engine_http_request={
                 'http_method': 'POST',
-                'relative_uri': '/export_manager/export',
+                'relative_uri': '/cloud_sql_to_bq/refresh_bq_table',
                 'body': json.dumps(body).encode()
             }
         )
@@ -77,7 +77,7 @@ class TestBQRefreshCloudTaskManager(unittest.TestCase):
 
         # Act
         BQRefreshCloudTaskManager(project_id=project_id). \
-            create_bq_task(table_name=table_name, schema_type=SchemaType.JAILS)
+            create_refresh_bq_table_task(table_name=table_name, schema_type=SchemaType.JAILS)
 
         # Assert
         mock_client.return_value.queue_path.assert_called_with(
@@ -95,7 +95,7 @@ class TestBQRefreshCloudTaskManager(unittest.TestCase):
     @patch(f'{CLOUD_TASK_MANAGER_PACKAGE_NAME}.uuid')
     @patch('google.cloud.tasks_v2.CloudTasksClient')
     @freeze_time('2019-04-13')
-    def test_create_bq_monitor_task(
+    def test_create_bq_refresh_monitor_task(
             self, mock_client: mock.MagicMock, mock_uuid: mock.MagicMock) -> None:
         # Arrange
         delay_sec = 60
@@ -122,7 +122,7 @@ class TestBQRefreshCloudTaskManager(unittest.TestCase):
                 seconds=(now_utc_timestamp + delay_sec)),
             app_engine_http_request={
                 'http_method': 'POST',
-                'relative_uri': '/export_manager/bq_monitor',
+                'relative_uri': '/cloud_sql_to_bq/monitor_refresh_bq_tasks',
                 'body': json.dumps(body).encode()
             }
         )
@@ -132,7 +132,7 @@ class TestBQRefreshCloudTaskManager(unittest.TestCase):
 
         # Act
         BQRefreshCloudTaskManager(project_id=project_id). \
-            create_bq_monitor_task(topic=topic, message=message)
+            create_bq_refresh_monitor_task(topic=topic, message=message)
 
         # Assert
         mock_client.return_value.queue_path.assert_called_with(

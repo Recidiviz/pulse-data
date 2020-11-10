@@ -22,8 +22,10 @@ Run this export locally with the following command:
 import argparse
 import logging
 import sys
+from http import HTTPStatus
 from typing import Tuple, List, Optional
 
+from flask import Blueprint, request
 from opencensus.stats import measure, view as opencensus_view, aggregation
 
 from recidiviz.big_query import view_update_manager
@@ -40,8 +42,10 @@ from recidiviz.metrics.export.optimized_metric_big_query_view_exporter import Op
 from recidiviz.metrics.export.optimized_metric_big_query_view_export_validator import \
     OptimizedMetricBigQueryViewExportValidator
 from recidiviz.utils import metadata, monitoring
+from recidiviz.utils.auth import authenticate_request
 from recidiviz.utils.environment import GCP_PROJECT_STAGING, GCP_PROJECT_PRODUCTION
 from recidiviz.utils.metadata import local_project_id_override
+from recidiviz.utils.params import get_str_param_value
 
 m_failed_metric_export_validation = measure.MeasureInt(
     "bigquery/metric_view_export_manager/metric_view_export_validation_failure",
@@ -66,6 +70,33 @@ failed_metric_export_view = opencensus_view.View(
     aggregation.SumAggregation())
 
 monitoring.register_views([failed_metric_export_validation_view, failed_metric_export_view])
+
+
+export_blueprint = Blueprint('export', __name__)
+
+
+@export_blueprint.route('/metric_view_data')
+@authenticate_request
+def metric_view_data_export() -> Tuple[str, HTTPStatus]:
+    """Exports data in BigQuery metric views to cloud storage buckets.
+
+    Example:
+        export/metric_view_data?export_job_filter=US_ID
+    URL parameters:
+        export_job_filter: (string) Kind of jobs to initiate export for. Can either be an export_name (e.g. LANTERN)
+                                    or a state_code (e.g. US_ND)
+    Args:
+        N/A
+    Returns:
+        N/A
+    """
+    logging.info("Attempting to export view data to cloud storage")
+
+    export_job_filter = get_str_param_value("export_job_filter", request.args)
+
+    export_view_data_to_cloud_storage(export_job_filter)
+
+    return '', HTTPStatus.OK
 
 
 def export_view_data_to_cloud_storage(export_job_filter: Optional[str] = None,

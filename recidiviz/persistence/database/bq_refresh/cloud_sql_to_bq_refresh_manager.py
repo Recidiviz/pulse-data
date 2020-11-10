@@ -69,12 +69,12 @@ def export_table_then_load_table(
     bq_refresh.refresh_bq_table_from_gcs_export_synchronous(big_query_client, table, cloud_sql_to_bq_config)
 
 
-export_manager_blueprint = flask.Blueprint('export_manager', __name__)
+cloud_sql_to_bq_blueprint = flask.Blueprint('export_manager', __name__)
 
 
-@export_manager_blueprint.route('/export', methods=['POST'])
+@cloud_sql_to_bq_blueprint.route('/refresh_bq_table', methods=['POST'])
 @authenticate_request
-def handle_bq_export_task() -> Tuple[str, int]:
+def refresh_bq_table() -> Tuple[str, int]:
     """Worker function to handle BQ export task requests.
 
     Form data must be a bytes-encoded JSON object with parameters listed below.
@@ -102,9 +102,9 @@ def handle_bq_export_task() -> Tuple[str, int]:
     return ('', HTTPStatus.OK)
 
 
-@export_manager_blueprint.route('/bq_monitor', methods=['POST'])
+@cloud_sql_to_bq_blueprint.route('/monitor_refresh_bq_tasks', methods=['POST'])
 @authenticate_request
-def handle_bq_monitor_task() -> Tuple[str, int]:
+def monitor_refresh_bq_tasks() -> Tuple[str, int]:
     """Worker function to publish a message to a Pub/Sub topic once all tasks in
     the BIGQUERY_QUEUE queue have completed.
     """
@@ -121,7 +121,7 @@ def handle_bq_monitor_task() -> Tuple[str, int]:
     if bq_tasks_in_queue:
         logging.info("Tasks still in bigquery queue. Re-queuing bq monitor"
                      " task.")
-        task_manager.create_bq_monitor_task(topic, message)
+        task_manager.create_bq_refresh_monitor_task(topic, message)
         return ('', HTTPStatus.OK)
 
     # Publish a message to the Pub/Sub topic once all BQ exports are complete
@@ -130,9 +130,9 @@ def handle_bq_monitor_task() -> Tuple[str, int]:
     return ('', HTTPStatus.OK)
 
 
-@export_manager_blueprint.route('/create_export_tasks')
+@cloud_sql_to_bq_blueprint.route('/create_jails_refresh_bq_tasks')
 @authenticate_request
-def create_all_bq_export_tasks() -> Tuple[str, int]:
+def create_all_jails_bq_refresh_tasks() -> Tuple[str, int]:
     """Creates an export task for each table to be exported.
 
     A task is created for each table defined in the JailsBase schema.
@@ -145,13 +145,13 @@ def create_all_bq_export_tasks() -> Tuple[str, int]:
 
     cloud_sql_to_bq_config = CloudSqlToBQConfig.for_schema_type(SchemaType.JAILS)
     for table in cloud_sql_to_bq_config.get_tables_to_export():
-        task_manager.create_bq_task(table.name, SchemaType.JAILS)
+        task_manager.create_refresh_bq_table_task(table.name, SchemaType.JAILS)
     return ('', HTTPStatus.OK)
 
 
-@export_manager_blueprint.route('/create_state_export_tasks')
+@cloud_sql_to_bq_blueprint.route('/create_state_refresh_bq_tasks')
 @authenticate_request
-def create_all_state_bq_export_tasks() -> Tuple[str, int]:
+def create_all_state_bq_refresh_tasks() -> Tuple[str, int]:
     """Creates an export task for each table to be exported.
 
     A task is created for each table defined in the StateBase schema.
@@ -164,17 +164,17 @@ def create_all_state_bq_export_tasks() -> Tuple[str, int]:
 
     cloud_sql_to_bq_config = CloudSqlToBQConfig.for_schema_type(SchemaType.STATE)
     for table in cloud_sql_to_bq_config.get_tables_to_export():
-        task_manager.create_bq_task(table.name, SchemaType.STATE)
+        task_manager.create_refresh_bq_table_task(table.name, SchemaType.STATE)
 
     pub_sub_topic = 'v1.calculator.recidivism'
     pub_sub_message = 'State export to BQ complete'
-    task_manager.create_bq_monitor_task(pub_sub_topic, pub_sub_message)
+    task_manager.create_bq_refresh_monitor_task(pub_sub_topic, pub_sub_message)
     return ('', HTTPStatus.OK)
 
 
-@export_manager_blueprint.route('/create_operations_export_tasks')
+@cloud_sql_to_bq_blueprint.route('/create_operations_refresh_bq_tasks')
 @authenticate_request
-def create_all_operations_bq_export_tasks() -> Tuple[str, int]:
+def create_all_operations_bq_refresh_tasks() -> Tuple[str, int]:
     """Creates an export task for each table to be exported.
 
     A task is created for each table defined in the OperationsBase schema.
@@ -187,5 +187,5 @@ def create_all_operations_bq_export_tasks() -> Tuple[str, int]:
 
     cloud_sql_to_bq_config = CloudSqlToBQConfig.for_schema_type(SchemaType.OPERATIONS)
     for table in cloud_sql_to_bq_config.get_tables_to_export():
-        task_manager.create_bq_task(table.name, SchemaType.OPERATIONS)
+        task_manager.create_refresh_bq_table_task(table.name, SchemaType.OPERATIONS)
     return ('', HTTPStatus.OK)
