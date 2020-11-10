@@ -1,0 +1,25 @@
+---
+user_inputs:
+  policy_year: 2020
+  start_year: 2016
+  projection_years: 10
+
+model_architecture:
+    prison: incarcerated
+    pretrial: null
+    release: released
+
+reference_date: 2016.0
+
+time_step: 1
+
+disaggregation_axes:
+  - offense_group
+
+state_data: ../state/NJ/preprocessed_data_NJ_prison.csv
+
+per_ts_costs:
+  prison: 6181  # this is the parole cost because prison cost not listed
+  release: 0
+
+micro_simulation: false

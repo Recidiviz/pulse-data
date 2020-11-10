@@ -1,0 +1,30 @@
+---
+user_inputs:
+    policy_year: 2021
+    start_year: 2018
+    projection_years: 10
+    speed_run: true
+
+model_architecture:
+    pretrial: null
+    prison: incarcerated
+    probation: incarcerated
+    release: released
+# probation represents mandatory supervised release in this case
+
+reference_date: 2011
+# january
+time_step: 0.083333333
+# one month
+
+disaggregation_axes:
+  - race
+
+state_data: ../../state/IL/preprocessed_data_IL_prison_three_strikes.csv
+
+per_ts_costs:
+  prison: 3166.67
+  probation: 208.33
+  release: 0
+
+micro_simulation: false

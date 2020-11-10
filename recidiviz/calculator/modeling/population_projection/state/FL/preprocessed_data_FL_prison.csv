@@ -1,0 +1,2521 @@
+,compartment,outflow_to,offense,age,compartment_duration,rate_by_age,rate_by_offense,total_population,time_step
+0,prison,release,Burglary,55,14.0,,,,
+1,prison,release,Burglary,56,14.0,,,,
+2,prison,release,Burglary,57,14.0,,,,
+3,prison,release,Burglary,58,14.0,,,,
+4,prison,release,Burglary,59,14.0,,,,
+5,prison,release,Burglary,60,14.0,,,,
+6,prison,release,Burglary,61,14.0,,,,
+7,prison,release,Burglary,62,14.0,,,,
+8,prison,release,Burglary,63,14.0,,,,
+9,prison,release,Burglary,64,14.0,,,,
+10,prison,release,Burglary,65,14.0,,,,
+11,prison,release,Burglary,66,14.0,,,,
+12,prison,release,Burglary,67,14.0,,,,
+13,prison,release,Burglary,68,14.0,,,,
+14,prison,release,Burglary,69,14.0,,,,
+15,prison,release,Burglary,70,14.0,,,,
+16,prison,release,Burglary,71,14.0,,,,
+17,prison,release,Burglary,72,14.0,,,,
+18,prison,release,Burglary,73,14.0,,,,
+19,prison,release,Burglary,74,14.0,,,,
+20,prison,release,Burglary,75,14.0,,,,
+21,prison,release,Burglary,76,14.0,,,,
+22,prison,release,Burglary,77,14.0,,,,
+23,prison,release,Burglary,78,14.0,,,,
+24,prison,release,Burglary,79,14.0,,,,
+25,prison,release,Burglary,80,14.0,,,,
+26,prison,release,Burglary,81,14.0,,,,
+27,prison,release,Burglary,82,14.0,,,,
+28,prison,release,Burglary,83,14.0,,,,
+29,prison,release,Burglary,84,14.0,,,,
+30,prison,release,Burglary,85,14.0,,,,
+31,prison,release,Burglary,86,14.0,,,,
+32,prison,release,Burglary,87,14.0,,,,
+33,prison,release,Burglary,88,14.0,,,,
+34,prison,release,Burglary,89,14.0,,,,
+35,prison,release,Burglary,90,14.0,,,,
+36,prison,release,Burglary,91,14.0,,,,
+37,prison,release,Burglary,92,14.0,,,,
+38,prison,release,Burglary,93,14.0,,,,
+39,prison,release,Burglary,94,14.0,,,,
+40,prison,release,Drug offenses,55,7.7,,,,
+41,prison,release,Drug offenses,56,7.7,,,,
+42,prison,release,Drug offenses,57,7.7,,,,
+43,prison,release,Drug offenses,58,7.7,,,,
+44,prison,release,Drug offenses,59,7.7,,,,
+45,prison,release,Drug offenses,60,7.7,,,,
+46,prison,release,Drug offenses,61,7.7,,,,
+47,prison,release,Drug offenses,62,7.7,,,,
+48,prison,release,Drug offenses,63,7.7,,,,
+49,prison,release,Drug offenses,64,7.7,,,,
+50,prison,release,Drug offenses,65,7.7,,,,
+51,prison,release,Drug offenses,66,7.7,,,,
+52,prison,release,Drug offenses,67,7.7,,,,
+53,prison,release,Drug offenses,68,7.7,,,,
+54,prison,release,Drug offenses,69,7.7,,,,
+55,prison,release,Drug offenses,70,7.7,,,,
+56,prison,release,Drug offenses,71,7.7,,,,
+57,prison,release,Drug offenses,72,7.7,,,,
+58,prison,release,Drug offenses,73,7.7,,,,
+59,prison,release,Drug offenses,74,7.7,,,,
+60,prison,release,Drug offenses,75,7.7,,,,
+61,prison,release,Drug offenses,76,7.7,,,,
+62,prison,release,Drug offenses,77,7.7,,,,
+63,prison,release,Drug offenses,78,7.7,,,,
+64,prison,release,Drug offenses,79,7.7,,,,
+65,prison,release,Drug offenses,80,7.7,,,,
+66,prison,release,Drug offenses,81,7.7,,,,
+67,prison,release,Drug offenses,82,7.7,,,,
+68,prison,release,Drug offenses,83,7.7,,,,
+69,prison,release,Drug offenses,84,7.7,,,,
+70,prison,release,Drug offenses,85,7.7,,,,
+71,prison,release,Drug offenses,86,7.7,,,,
+72,prison,release,Drug offenses,87,7.7,,,,
+73,prison,release,Drug offenses,88,7.7,,,,
+74,prison,release,Drug offenses,89,7.7,,,,
+75,prison,release,Drug offenses,90,7.7,,,,
+76,prison,release,Drug offenses,91,7.7,,,,
+77,prison,release,Drug offenses,92,7.7,,,,
+78,prison,release,Drug offenses,93,7.7,,,,
+79,prison,release,Drug offenses,94,7.7,,,,
+80,prison,release,murder/manslaughter,55,36.5,,,,
+81,prison,release,murder/manslaughter,56,36.5,,,,
+82,prison,release,murder/manslaughter,57,36.5,,,,
+83,prison,release,murder/manslaughter,58,36.5,,,,
+84,prison,release,murder/manslaughter,59,36.5,,,,
+85,prison,release,murder/manslaughter,60,36.5,,,,
+86,prison,release,murder/manslaughter,61,36.5,,,,
+87,prison,release,murder/manslaughter,62,36.5,,,,
+88,prison,release,murder/manslaughter,63,36.5,,,,
+89,prison,release,murder/manslaughter,64,36.5,,,,
+90,prison,release,murder/manslaughter,65,36.5,,,,
+91,prison,release,murder/manslaughter,66,36.5,,,,
+92,prison,release,murder/manslaughter,67,36.5,,,,
+93,prison,release,murder/manslaughter,68,36.5,,,,
+94,prison,release,murder/manslaughter,69,36.5,,,,
+95,prison,release,murder/manslaughter,70,36.5,,,,
+96,prison,release,murder/manslaughter,71,36.5,,,,
+97,prison,release,murder/manslaughter,72,36.5,,,,
+98,prison,release,murder/manslaughter,73,36.5,,,,
+99,prison,release,murder/manslaughter,74,36.5,,,,
+100,prison,release,murder/manslaughter,75,36.5,,,,
+101,prison,release,murder/manslaughter,76,36.5,,,,
+102,prison,release,murder/manslaughter,77,36.5,,,,
+103,prison,release,murder/manslaughter,78,36.5,,,,
+104,prison,release,murder/manslaughter,79,36.5,,,,
+105,prison,release,murder/manslaughter,80,36.5,,,,
+106,prison,release,murder/manslaughter,81,36.5,,,,
+107,prison,release,murder/manslaughter,82,36.5,,,,
+108,prison,release,murder/manslaughter,83,36.5,,,,
+109,prison,release,murder/manslaughter,84,36.5,,,,
+110,prison,release,murder/manslaughter,85,36.5,,,,
+111,prison,release,murder/manslaughter,86,36.5,,,,
+112,prison,release,murder/manslaughter,87,36.5,,,,
+113,prison,release,murder/manslaughter,88,36.5,,,,
+114,prison,release,murder/manslaughter,89,36.5,,,,
+115,prison,release,murder/manslaughter,90,36.5,,,,
+116,prison,release,murder/manslaughter,91,36.5,,,,
+117,prison,release,murder/manslaughter,92,36.5,,,,
+118,prison,release,murder/manslaughter,93,36.5,,,,
+119,prison,release,murder/manslaughter,94,36.5,,,,
+120,prison,release,Other,55,6.8,,,,
+121,prison,release,Other,56,6.8,,,,
+122,prison,release,Other,57,6.8,,,,
+123,prison,release,Other,58,6.8,,,,
+124,prison,release,Other,59,6.8,,,,
+125,prison,release,Other,60,6.8,,,,
+126,prison,release,Other,61,6.8,,,,
+127,prison,release,Other,62,6.8,,,,
+128,prison,release,Other,63,6.8,,,,
+129,prison,release,Other,64,6.8,,,,
+130,prison,release,Other,65,6.8,,,,
+131,prison,release,Other,66,6.8,,,,
+132,prison,release,Other,67,6.8,,,,
+133,prison,release,Other,68,6.8,,,,
+134,prison,release,Other,69,6.8,,,,
+135,prison,release,Other,70,6.8,,,,
+136,prison,release,Other,71,6.8,,,,
+137,prison,release,Other,72,6.8,,,,
+138,prison,release,Other,73,6.8,,,,
+139,prison,release,Other,74,6.8,,,,
+140,prison,release,Other,75,6.8,,,,
+141,prison,release,Other,76,6.8,,,,
+142,prison,release,Other,77,6.8,,,,
+143,prison,release,Other,78,6.8,,,,
+144,prison,release,Other,79,6.8,,,,
+145,prison,release,Other,80,6.8,,,,
+146,prison,release,Other,81,6.8,,,,
+147,prison,release,Other,82,6.8,,,,
+148,prison,release,Other,83,6.8,,,,
+149,prison,release,Other,84,6.8,,,,
+150,prison,release,Other,85,6.8,,,,
+151,prison,release,Other,86,6.8,,,,
+152,prison,release,Other,87,6.8,,,,
+153,prison,release,Other,88,6.8,,,,
+154,prison,release,Other,89,6.8,,,,
+155,prison,release,Other,90,6.8,,,,
+156,prison,release,Other,91,6.8,,,,
+157,prison,release,Other,92,6.8,,,,
+158,prison,release,Other,93,6.8,,,,
+159,prison,release,Other,94,6.8,,,,
+160,prison,release,Robbery,55,21.5,,,,
+161,prison,release,Robbery,56,21.5,,,,
+162,prison,release,Robbery,57,21.5,,,,
+163,prison,release,Robbery,58,21.5,,,,
+164,prison,release,Robbery,59,21.5,,,,
+165,prison,release,Robbery,60,21.5,,,,
+166,prison,release,Robbery,61,21.5,,,,
+167,prison,release,Robbery,62,21.5,,,,
+168,prison,release,Robbery,63,21.5,,,,
+169,prison,release,Robbery,64,21.5,,,,
+170,prison,release,Robbery,65,21.5,,,,
+171,prison,release,Robbery,66,21.5,,,,
+172,prison,release,Robbery,67,21.5,,,,
+173,prison,release,Robbery,68,21.5,,,,
+174,prison,release,Robbery,69,21.5,,,,
+175,prison,release,Robbery,70,21.5,,,,
+176,prison,release,Robbery,71,21.5,,,,
+177,prison,release,Robbery,72,21.5,,,,
+178,prison,release,Robbery,73,21.5,,,,
+179,prison,release,Robbery,74,21.5,,,,
+180,prison,release,Robbery,75,21.5,,,,
+181,prison,release,Robbery,76,21.5,,,,
+182,prison,release,Robbery,77,21.5,,,,
+183,prison,release,Robbery,78,21.5,,,,
+184,prison,release,Robbery,79,21.5,,,,
+185,prison,release,Robbery,80,21.5,,,,
+186,prison,release,Robbery,81,21.5,,,,
+187,prison,release,Robbery,82,21.5,,,,
+188,prison,release,Robbery,83,21.5,,,,
+189,prison,release,Robbery,84,21.5,,,,
+190,prison,release,Robbery,85,21.5,,,,
+191,prison,release,Robbery,86,21.5,,,,
+192,prison,release,Robbery,87,21.5,,,,
+193,prison,release,Robbery,88,21.5,,,,
+194,prison,release,Robbery,89,21.5,,,,
+195,prison,release,Robbery,90,21.5,,,,
+196,prison,release,Robbery,91,21.5,,,,
+197,prison,release,Robbery,92,21.5,,,,
+198,prison,release,Robbery,93,21.5,,,,
+199,prison,release,Robbery,94,21.5,,,,
+200,prison,release,Sexual offenses,55,24.9,,,,
+201,prison,release,Sexual offenses,56,24.9,,,,
+202,prison,release,Sexual offenses,57,24.9,,,,
+203,prison,release,Sexual offenses,58,24.9,,,,
+204,prison,release,Sexual offenses,59,24.9,,,,
+205,prison,release,Sexual offenses,60,24.9,,,,
+206,prison,release,Sexual offenses,61,24.9,,,,
+207,prison,release,Sexual offenses,62,24.9,,,,
+208,prison,release,Sexual offenses,63,24.9,,,,
+209,prison,release,Sexual offenses,64,24.9,,,,
+210,prison,release,Sexual offenses,65,24.9,,,,
+211,prison,release,Sexual offenses,66,24.9,,,,
+212,prison,release,Sexual offenses,67,24.9,,,,
+213,prison,release,Sexual offenses,68,24.9,,,,
+214,prison,release,Sexual offenses,69,24.9,,,,
+215,prison,release,Sexual offenses,70,24.9,,,,
+216,prison,release,Sexual offenses,71,24.9,,,,
+217,prison,release,Sexual offenses,72,24.9,,,,
+218,prison,release,Sexual offenses,73,24.9,,,,
+219,prison,release,Sexual offenses,74,24.9,,,,
+220,prison,release,Sexual offenses,75,24.9,,,,
+221,prison,release,Sexual offenses,76,24.9,,,,
+222,prison,release,Sexual offenses,77,24.9,,,,
+223,prison,release,Sexual offenses,78,24.9,,,,
+224,prison,release,Sexual offenses,79,24.9,,,,
+225,prison,release,Sexual offenses,80,24.9,,,,
+226,prison,release,Sexual offenses,81,24.9,,,,
+227,prison,release,Sexual offenses,82,24.9,,,,
+228,prison,release,Sexual offenses,83,24.9,,,,
+229,prison,release,Sexual offenses,84,24.9,,,,
+230,prison,release,Sexual offenses,85,24.9,,,,
+231,prison,release,Sexual offenses,86,24.9,,,,
+232,prison,release,Sexual offenses,87,24.9,,,,
+233,prison,release,Sexual offenses,88,24.9,,,,
+234,prison,release,Sexual offenses,89,24.9,,,,
+235,prison,release,Sexual offenses,90,24.9,,,,
+236,prison,release,Sexual offenses,91,24.9,,,,
+237,prison,release,Sexual offenses,92,24.9,,,,
+238,prison,release,Sexual offenses,93,24.9,,,,
+239,prison,release,Sexual offenses,94,24.9,,,,
+240,prison,release,Theft/forgery/fraud,55,5.4,,,,
+241,prison,release,Theft/forgery/fraud,56,5.4,,,,
+242,prison,release,Theft/forgery/fraud,57,5.4,,,,
+243,prison,release,Theft/forgery/fraud,58,5.4,,,,
+244,prison,release,Theft/forgery/fraud,59,5.4,,,,
+245,prison,release,Theft/forgery/fraud,60,5.4,,,,
+246,prison,release,Theft/forgery/fraud,61,5.4,,,,
+247,prison,release,Theft/forgery/fraud,62,5.4,,,,
+248,prison,release,Theft/forgery/fraud,63,5.4,,,,
+249,prison,release,Theft/forgery/fraud,64,5.4,,,,
+250,prison,release,Theft/forgery/fraud,65,5.4,,,,
+251,prison,release,Theft/forgery/fraud,66,5.4,,,,
+252,prison,release,Theft/forgery/fraud,67,5.4,,,,
+253,prison,release,Theft/forgery/fraud,68,5.4,,,,
+254,prison,release,Theft/forgery/fraud,69,5.4,,,,
+255,prison,release,Theft/forgery/fraud,70,5.4,,,,
+256,prison,release,Theft/forgery/fraud,71,5.4,,,,
+257,prison,release,Theft/forgery/fraud,72,5.4,,,,
+258,prison,release,Theft/forgery/fraud,73,5.4,,,,
+259,prison,release,Theft/forgery/fraud,74,5.4,,,,
+260,prison,release,Theft/forgery/fraud,75,5.4,,,,
+261,prison,release,Theft/forgery/fraud,76,5.4,,,,
+262,prison,release,Theft/forgery/fraud,77,5.4,,,,
+263,prison,release,Theft/forgery/fraud,78,5.4,,,,
+264,prison,release,Theft/forgery/fraud,79,5.4,,,,
+265,prison,release,Theft/forgery/fraud,80,5.4,,,,
+266,prison,release,Theft/forgery/fraud,81,5.4,,,,
+267,prison,release,Theft/forgery/fraud,82,5.4,,,,
+268,prison,release,Theft/forgery/fraud,83,5.4,,,,
+269,prison,release,Theft/forgery/fraud,84,5.4,,,,
+270,prison,release,Theft/forgery/fraud,85,5.4,,,,
+271,prison,release,Theft/forgery/fraud,86,5.4,,,,
+272,prison,release,Theft/forgery/fraud,87,5.4,,,,
+273,prison,release,Theft/forgery/fraud,88,5.4,,,,
+274,prison,release,Theft/forgery/fraud,89,5.4,,,,
+275,prison,release,Theft/forgery/fraud,90,5.4,,,,
+276,prison,release,Theft/forgery/fraud,91,5.4,,,,
+277,prison,release,Theft/forgery/fraud,92,5.4,,,,
+278,prison,release,Theft/forgery/fraud,93,5.4,,,,
+279,prison,release,Theft/forgery/fraud,94,5.4,,,,
+280,prison,release,Violent personal,55,13.4,,,,
+281,prison,release,Violent personal,56,13.4,,,,
+282,prison,release,Violent personal,57,13.4,,,,
+283,prison,release,Violent personal,58,13.4,,,,
+284,prison,release,Violent personal,59,13.4,,,,
+285,prison,release,Violent personal,60,13.4,,,,
+286,prison,release,Violent personal,61,13.4,,,,
+287,prison,release,Violent personal,62,13.4,,,,
+288,prison,release,Violent personal,63,13.4,,,,
+289,prison,release,Violent personal,64,13.4,,,,
+290,prison,release,Violent personal,65,13.4,,,,
+291,prison,release,Violent personal,66,13.4,,,,
+292,prison,release,Violent personal,67,13.4,,,,
+293,prison,release,Violent personal,68,13.4,,,,
+294,prison,release,Violent personal,69,13.4,,,,
+295,prison,release,Violent personal,70,13.4,,,,
+296,prison,release,Violent personal,71,13.4,,,,
+297,prison,release,Violent personal,72,13.4,,,,
+298,prison,release,Violent personal,73,13.4,,,,
+299,prison,release,Violent personal,74,13.4,,,,
+300,prison,release,Violent personal,75,13.4,,,,
+301,prison,release,Violent personal,76,13.4,,,,
+302,prison,release,Violent personal,77,13.4,,,,
+303,prison,release,Violent personal,78,13.4,,,,
+304,prison,release,Violent personal,79,13.4,,,,
+305,prison,release,Violent personal,80,13.4,,,,
+306,prison,release,Violent personal,81,13.4,,,,
+307,prison,release,Violent personal,82,13.4,,,,
+308,prison,release,Violent personal,83,13.4,,,,
+309,prison,release,Violent personal,84,13.4,,,,
+310,prison,release,Violent personal,85,13.4,,,,
+311,prison,release,Violent personal,86,13.4,,,,
+312,prison,release,Violent personal,87,13.4,,,,
+313,prison,release,Violent personal,88,13.4,,,,
+314,prison,release,Violent personal,89,13.4,,,,
+315,prison,release,Violent personal,90,13.4,,,,
+316,prison,release,Violent personal,91,13.4,,,,
+317,prison,release,Violent personal,92,13.4,,,,
+318,prison,release,Violent personal,93,13.4,,,,
+319,prison,release,Violent personal,94,13.4,,,,
+320,prison,release,Weapons,55,7.2,,,,
+321,prison,release,Weapons,56,7.2,,,,
+322,prison,release,Weapons,57,7.2,,,,
+323,prison,release,Weapons,58,7.2,,,,
+324,prison,release,Weapons,59,7.2,,,,
+325,prison,release,Weapons,60,7.2,,,,
+326,prison,release,Weapons,61,7.2,,,,
+327,prison,release,Weapons,62,7.2,,,,
+328,prison,release,Weapons,63,7.2,,,,
+329,prison,release,Weapons,64,7.2,,,,
+330,prison,release,Weapons,65,7.2,,,,
+331,prison,release,Weapons,66,7.2,,,,
+332,prison,release,Weapons,67,7.2,,,,
+333,prison,release,Weapons,68,7.2,,,,
+334,prison,release,Weapons,69,7.2,,,,
+335,prison,release,Weapons,70,7.2,,,,
+336,prison,release,Weapons,71,7.2,,,,
+337,prison,release,Weapons,72,7.2,,,,
+338,prison,release,Weapons,73,7.2,,,,
+339,prison,release,Weapons,74,7.2,,,,
+340,prison,release,Weapons,75,7.2,,,,
+341,prison,release,Weapons,76,7.2,,,,
+342,prison,release,Weapons,77,7.2,,,,
+343,prison,release,Weapons,78,7.2,,,,
+344,prison,release,Weapons,79,7.2,,,,
+345,prison,release,Weapons,80,7.2,,,,
+346,prison,release,Weapons,81,7.2,,,,
+347,prison,release,Weapons,82,7.2,,,,
+348,prison,release,Weapons,83,7.2,,,,
+349,prison,release,Weapons,84,7.2,,,,
+350,prison,release,Weapons,85,7.2,,,,
+351,prison,release,Weapons,86,7.2,,,,
+352,prison,release,Weapons,87,7.2,,,,
+353,prison,release,Weapons,88,7.2,,,,
+354,prison,release,Weapons,89,7.2,,,,
+355,prison,release,Weapons,90,7.2,,,,
+356,prison,release,Weapons,91,7.2,,,,
+357,prison,release,Weapons,92,7.2,,,,
+358,prison,release,Weapons,93,7.2,,,,
+359,prison,release,Weapons,94,7.2,,,,
+0,release,prison,Burglary,55,1.0,0.1,0.1,0.1,
+1,release,prison,Burglary,55,2.0,0.07,0.11,0.09,
+2,release,prison,Burglary,55,3.0,0.06,0.08,0.07,
+3,release,release_permanently,Burglary,55,3.0,,,0.74,
+4,release,prison,Drug offenses,55,1.0,0.1,0.05,0.075,
+5,release,prison,Drug offenses,55,2.0,0.07,0.07,0.07,
+6,release,prison,Drug offenses,55,3.0,0.06,0.07,0.065,
+7,release,release_permanently,Drug offenses,55,3.0,,,0.79,
+8,release,prison,murder/manslaughter,55,1.0,0.1,0.07,0.085,
+9,release,prison,murder/manslaughter,55,2.0,0.07,0.06,0.065,
+10,release,prison,murder/manslaughter,55,3.0,0.06,0.05,0.055,
+11,release,release_permanently,murder/manslaughter,55,3.0,,,0.795,
+12,release,prison,Other,55,1.0,0.1,0.08,0.09,
+13,release,prison,Other,55,2.0,0.07,0.11,0.09,
+14,release,prison,Other,55,3.0,0.06,0.09,0.075,
+15,release,release_permanently,Other,55,3.0,,,0.745,
+16,release,prison,Robbery,55,1.0,0.1,0.1,0.1,
+17,release,prison,Robbery,55,2.0,0.07,0.1,0.085,
+18,release,prison,Robbery,55,3.0,0.06,0.08,0.07,
+19,release,release_permanently,Robbery,55,3.0,,,0.745,
+20,release,prison,Sexual offenses,55,1.0,0.1,0.13,0.115,
+21,release,prison,Sexual offenses,55,2.0,0.07,0.09,0.08,
+22,release,prison,Sexual offenses,55,3.0,0.06,0.06,0.06,
+23,release,release_permanently,Sexual offenses,55,3.0,,,0.745,
+24,release,prison,Theft/forgery/fraud,55,1.0,0.1,0.08,0.09,
+25,release,prison,Theft/forgery/fraud,55,2.0,0.07,0.11,0.09,
+26,release,prison,Theft/forgery/fraud,55,3.0,0.06,0.08,0.07,
+27,release,release_permanently,Theft/forgery/fraud,55,3.0,,,0.75,
+28,release,prison,Violent personal,55,1.0,0.1,0.11,0.105,
+29,release,prison,Violent personal,55,2.0,0.07,0.08,0.075,
+30,release,prison,Violent personal,55,3.0,0.06,0.07,0.065,
+31,release,release_permanently,Violent personal,55,3.0,,,0.755,
+32,release,prison,Weapons,55,1.0,0.1,0.08,0.09,
+33,release,prison,Weapons,55,2.0,0.07,0.11,0.09,
+34,release,prison,Weapons,55,3.0,0.06,0.09,0.075,
+35,release,release_permanently,Weapons,55,3.0,,,0.745,
+36,release,prison,Burglary,56,1.0,0.1,0.1,0.1,
+37,release,prison,Burglary,56,2.0,0.07,0.11,0.09,
+38,release,prison,Burglary,56,3.0,0.06,0.08,0.07,
+39,release,release_permanently,Burglary,56,3.0,,,0.74,
+40,release,prison,Drug offenses,56,1.0,0.1,0.05,0.075,
+41,release,prison,Drug offenses,56,2.0,0.07,0.07,0.07,
+42,release,prison,Drug offenses,56,3.0,0.06,0.07,0.065,
+43,release,release_permanently,Drug offenses,56,3.0,,,0.79,
+44,release,prison,murder/manslaughter,56,1.0,0.1,0.07,0.085,
+45,release,prison,murder/manslaughter,56,2.0,0.07,0.06,0.065,
+46,release,prison,murder/manslaughter,56,3.0,0.06,0.05,0.055,
+47,release,release_permanently,murder/manslaughter,56,3.0,,,0.795,
+48,release,prison,Other,56,1.0,0.1,0.08,0.09,
+49,release,prison,Other,56,2.0,0.07,0.11,0.09,
+50,release,prison,Other,56,3.0,0.06,0.09,0.075,
+51,release,release_permanently,Other,56,3.0,,,0.745,
+52,release,prison,Robbery,56,1.0,0.1,0.1,0.1,
+53,release,prison,Robbery,56,2.0,0.07,0.1,0.085,
+54,release,prison,Robbery,56,3.0,0.06,0.08,0.07,
+55,release,release_permanently,Robbery,56,3.0,,,0.745,
+56,release,prison,Sexual offenses,56,1.0,0.1,0.13,0.115,
+57,release,prison,Sexual offenses,56,2.0,0.07,0.09,0.08,
+58,release,prison,Sexual offenses,56,3.0,0.06,0.06,0.06,
+59,release,release_permanently,Sexual offenses,56,3.0,,,0.745,
+60,release,prison,Theft/forgery/fraud,56,1.0,0.1,0.08,0.09,
+61,release,prison,Theft/forgery/fraud,56,2.0,0.07,0.11,0.09,
+62,release,prison,Theft/forgery/fraud,56,3.0,0.06,0.08,0.07,
+63,release,release_permanently,Theft/forgery/fraud,56,3.0,,,0.75,
+64,release,prison,Violent personal,56,1.0,0.1,0.11,0.105,
+65,release,prison,Violent personal,56,2.0,0.07,0.08,0.075,
+66,release,prison,Violent personal,56,3.0,0.06,0.07,0.065,
+67,release,release_permanently,Violent personal,56,3.0,,,0.755,
+68,release,prison,Weapons,56,1.0,0.1,0.08,0.09,
+69,release,prison,Weapons,56,2.0,0.07,0.11,0.09,
+70,release,prison,Weapons,56,3.0,0.06,0.09,0.075,
+71,release,release_permanently,Weapons,56,3.0,,,0.745,
+72,release,prison,Burglary,57,1.0,0.1,0.1,0.1,
+73,release,prison,Burglary,57,2.0,0.07,0.11,0.09,
+74,release,prison,Burglary,57,3.0,0.06,0.08,0.07,
+75,release,release_permanently,Burglary,57,3.0,,,0.74,
+76,release,prison,Drug offenses,57,1.0,0.1,0.05,0.075,
+77,release,prison,Drug offenses,57,2.0,0.07,0.07,0.07,
+78,release,prison,Drug offenses,57,3.0,0.06,0.07,0.065,
+79,release,release_permanently,Drug offenses,57,3.0,,,0.79,
+80,release,prison,murder/manslaughter,57,1.0,0.1,0.07,0.085,
+81,release,prison,murder/manslaughter,57,2.0,0.07,0.06,0.065,
+82,release,prison,murder/manslaughter,57,3.0,0.06,0.05,0.055,
+83,release,release_permanently,murder/manslaughter,57,3.0,,,0.795,
+84,release,prison,Other,57,1.0,0.1,0.08,0.09,
+85,release,prison,Other,57,2.0,0.07,0.11,0.09,
+86,release,prison,Other,57,3.0,0.06,0.09,0.075,
+87,release,release_permanently,Other,57,3.0,,,0.745,
+88,release,prison,Robbery,57,1.0,0.1,0.1,0.1,
+89,release,prison,Robbery,57,2.0,0.07,0.1,0.085,
+90,release,prison,Robbery,57,3.0,0.06,0.08,0.07,
+91,release,release_permanently,Robbery,57,3.0,,,0.745,
+92,release,prison,Sexual offenses,57,1.0,0.1,0.13,0.115,
+93,release,prison,Sexual offenses,57,2.0,0.07,0.09,0.08,
+94,release,prison,Sexual offenses,57,3.0,0.06,0.06,0.06,
+95,release,release_permanently,Sexual offenses,57,3.0,,,0.745,
+96,release,prison,Theft/forgery/fraud,57,1.0,0.1,0.08,0.09,
+97,release,prison,Theft/forgery/fraud,57,2.0,0.07,0.11,0.09,
+98,release,prison,Theft/forgery/fraud,57,3.0,0.06,0.08,0.07,
+99,release,release_permanently,Theft/forgery/fraud,57,3.0,,,0.75,
+100,release,prison,Violent personal,57,1.0,0.1,0.11,0.105,
+101,release,prison,Violent personal,57,2.0,0.07,0.08,0.075,
+102,release,prison,Violent personal,57,3.0,0.06,0.07,0.065,
+103,release,release_permanently,Violent personal,57,3.0,,,0.755,
+104,release,prison,Weapons,57,1.0,0.1,0.08,0.09,
+105,release,prison,Weapons,57,2.0,0.07,0.11,0.09,
+106,release,prison,Weapons,57,3.0,0.06,0.09,0.075,
+107,release,release_permanently,Weapons,57,3.0,,,0.745,
+108,release,prison,Burglary,58,1.0,0.1,0.1,0.1,
+109,release,prison,Burglary,58,2.0,0.07,0.11,0.09,
+110,release,prison,Burglary,58,3.0,0.06,0.08,0.07,
+111,release,release_permanently,Burglary,58,3.0,,,0.74,
+112,release,prison,Drug offenses,58,1.0,0.1,0.05,0.075,
+113,release,prison,Drug offenses,58,2.0,0.07,0.07,0.07,
+114,release,prison,Drug offenses,58,3.0,0.06,0.07,0.065,
+115,release,release_permanently,Drug offenses,58,3.0,,,0.79,
+116,release,prison,murder/manslaughter,58,1.0,0.1,0.07,0.085,
+117,release,prison,murder/manslaughter,58,2.0,0.07,0.06,0.065,
+118,release,prison,murder/manslaughter,58,3.0,0.06,0.05,0.055,
+119,release,release_permanently,murder/manslaughter,58,3.0,,,0.795,
+120,release,prison,Other,58,1.0,0.1,0.08,0.09,
+121,release,prison,Other,58,2.0,0.07,0.11,0.09,
+122,release,prison,Other,58,3.0,0.06,0.09,0.075,
+123,release,release_permanently,Other,58,3.0,,,0.745,
+124,release,prison,Robbery,58,1.0,0.1,0.1,0.1,
+125,release,prison,Robbery,58,2.0,0.07,0.1,0.085,
+126,release,prison,Robbery,58,3.0,0.06,0.08,0.07,
+127,release,release_permanently,Robbery,58,3.0,,,0.745,
+128,release,prison,Sexual offenses,58,1.0,0.1,0.13,0.115,
+129,release,prison,Sexual offenses,58,2.0,0.07,0.09,0.08,
+130,release,prison,Sexual offenses,58,3.0,0.06,0.06,0.06,
+131,release,release_permanently,Sexual offenses,58,3.0,,,0.745,
+132,release,prison,Theft/forgery/fraud,58,1.0,0.1,0.08,0.09,
+133,release,prison,Theft/forgery/fraud,58,2.0,0.07,0.11,0.09,
+134,release,prison,Theft/forgery/fraud,58,3.0,0.06,0.08,0.07,
+135,release,release_permanently,Theft/forgery/fraud,58,3.0,,,0.75,
+136,release,prison,Violent personal,58,1.0,0.1,0.11,0.105,
+137,release,prison,Violent personal,58,2.0,0.07,0.08,0.075,
+138,release,prison,Violent personal,58,3.0,0.06,0.07,0.065,
+139,release,release_permanently,Violent personal,58,3.0,,,0.755,
+140,release,prison,Weapons,58,1.0,0.1,0.08,0.09,
+141,release,prison,Weapons,58,2.0,0.07,0.11,0.09,
+142,release,prison,Weapons,58,3.0,0.06,0.09,0.075,
+143,release,release_permanently,Weapons,58,3.0,,,0.745,
+144,release,prison,Burglary,59,1.0,0.1,0.1,0.1,
+145,release,prison,Burglary,59,2.0,0.07,0.11,0.09,
+146,release,prison,Burglary,59,3.0,0.06,0.08,0.07,
+147,release,release_permanently,Burglary,59,3.0,,,0.74,
+148,release,prison,Drug offenses,59,1.0,0.1,0.05,0.075,
+149,release,prison,Drug offenses,59,2.0,0.07,0.07,0.07,
+150,release,prison,Drug offenses,59,3.0,0.06,0.07,0.065,
+151,release,release_permanently,Drug offenses,59,3.0,,,0.79,
+152,release,prison,murder/manslaughter,59,1.0,0.1,0.07,0.085,
+153,release,prison,murder/manslaughter,59,2.0,0.07,0.06,0.065,
+154,release,prison,murder/manslaughter,59,3.0,0.06,0.05,0.055,
+155,release,release_permanently,murder/manslaughter,59,3.0,,,0.795,
+156,release,prison,Other,59,1.0,0.1,0.08,0.09,
+157,release,prison,Other,59,2.0,0.07,0.11,0.09,
+158,release,prison,Other,59,3.0,0.06,0.09,0.075,
+159,release,release_permanently,Other,59,3.0,,,0.745,
+160,release,prison,Robbery,59,1.0,0.1,0.1,0.1,
+161,release,prison,Robbery,59,2.0,0.07,0.1,0.085,
+162,release,prison,Robbery,59,3.0,0.06,0.08,0.07,
+163,release,release_permanently,Robbery,59,3.0,,,0.745,
+164,release,prison,Sexual offenses,59,1.0,0.1,0.13,0.115,
+165,release,prison,Sexual offenses,59,2.0,0.07,0.09,0.08,
+166,release,prison,Sexual offenses,59,3.0,0.06,0.06,0.06,
+167,release,release_permanently,Sexual offenses,59,3.0,,,0.745,
+168,release,prison,Theft/forgery/fraud,59,1.0,0.1,0.08,0.09,
+169,release,prison,Theft/forgery/fraud,59,2.0,0.07,0.11,0.09,
+170,release,prison,Theft/forgery/fraud,59,3.0,0.06,0.08,0.07,
+171,release,release_permanently,Theft/forgery/fraud,59,3.0,,,0.75,
+172,release,prison,Violent personal,59,1.0,0.1,0.11,0.105,
+173,release,prison,Violent personal,59,2.0,0.07,0.08,0.075,
+174,release,prison,Violent personal,59,3.0,0.06,0.07,0.065,
+175,release,release_permanently,Violent personal,59,3.0,,,0.755,
+176,release,prison,Weapons,59,1.0,0.1,0.08,0.09,
+177,release,prison,Weapons,59,2.0,0.07,0.11,0.09,
+178,release,prison,Weapons,59,3.0,0.06,0.09,0.075,
+179,release,release_permanently,Weapons,59,3.0,,,0.745,
+180,release,prison,Burglary,60,1.0,0.08,0.1,0.09,
+181,release,prison,Burglary,60,2.0,0.04,0.11,0.075,
+182,release,prison,Burglary,60,3.0,0.04,0.08,0.06,
+183,release,release_permanently,Burglary,60,3.0,,,0.775,
+184,release,prison,Drug offenses,60,1.0,0.08,0.05,0.065,
+185,release,prison,Drug offenses,60,2.0,0.04,0.07,0.055,
+186,release,prison,Drug offenses,60,3.0,0.04,0.07,0.055,
+187,release,release_permanently,Drug offenses,60,3.0,,,0.825,
+188,release,prison,murder/manslaughter,60,1.0,0.08,0.07,0.075,
+189,release,prison,murder/manslaughter,60,2.0,0.04,0.06,0.05,
+190,release,prison,murder/manslaughter,60,3.0,0.04,0.05,0.045,
+191,release,release_permanently,murder/manslaughter,60,3.0,,,0.83,
+192,release,prison,Other,60,1.0,0.08,0.08,0.08,
+193,release,prison,Other,60,2.0,0.04,0.11,0.075,
+194,release,prison,Other,60,3.0,0.04,0.09,0.065,
+195,release,release_permanently,Other,60,3.0,,,0.78,
+196,release,prison,Robbery,60,1.0,0.08,0.1,0.09,
+197,release,prison,Robbery,60,2.0,0.04,0.1,0.07,
+198,release,prison,Robbery,60,3.0,0.04,0.08,0.06,
+199,release,release_permanently,Robbery,60,3.0,,,0.78,
+200,release,prison,Sexual offenses,60,1.0,0.08,0.13,0.105,
+201,release,prison,Sexual offenses,60,2.0,0.04,0.09,0.065,
+202,release,prison,Sexual offenses,60,3.0,0.04,0.06,0.05,
+203,release,release_permanently,Sexual offenses,60,3.0,,,0.78,
+204,release,prison,Theft/forgery/fraud,60,1.0,0.08,0.08,0.08,
+205,release,prison,Theft/forgery/fraud,60,2.0,0.04,0.11,0.075,
+206,release,prison,Theft/forgery/fraud,60,3.0,0.04,0.08,0.06,
+207,release,release_permanently,Theft/forgery/fraud,60,3.0,,,0.785,
+208,release,prison,Violent personal,60,1.0,0.08,0.11,0.095,
+209,release,prison,Violent personal,60,2.0,0.04,0.08,0.06,
+210,release,prison,Violent personal,60,3.0,0.04,0.07,0.055,
+211,release,release_permanently,Violent personal,60,3.0,,,0.79,
+212,release,prison,Weapons,60,1.0,0.08,0.08,0.08,
+213,release,prison,Weapons,60,2.0,0.04,0.11,0.075,
+214,release,prison,Weapons,60,3.0,0.04,0.09,0.065,
+215,release,release_permanently,Weapons,60,3.0,,,0.78,
+216,release,prison,Burglary,61,1.0,0.08,0.1,0.09,
+217,release,prison,Burglary,61,2.0,0.04,0.11,0.075,
+218,release,prison,Burglary,61,3.0,0.04,0.08,0.06,
+219,release,release_permanently,Burglary,61,3.0,,,0.775,
+220,release,prison,Drug offenses,61,1.0,0.08,0.05,0.065,
+221,release,prison,Drug offenses,61,2.0,0.04,0.07,0.055,
+222,release,prison,Drug offenses,61,3.0,0.04,0.07,0.055,
+223,release,release_permanently,Drug offenses,61,3.0,,,0.825,
+224,release,prison,murder/manslaughter,61,1.0,0.08,0.07,0.075,
+225,release,prison,murder/manslaughter,61,2.0,0.04,0.06,0.05,
+226,release,prison,murder/manslaughter,61,3.0,0.04,0.05,0.045,
+227,release,release_permanently,murder/manslaughter,61,3.0,,,0.83,
+228,release,prison,Other,61,1.0,0.08,0.08,0.08,
+229,release,prison,Other,61,2.0,0.04,0.11,0.075,
+230,release,prison,Other,61,3.0,0.04,0.09,0.065,
+231,release,release_permanently,Other,61,3.0,,,0.78,
+232,release,prison,Robbery,61,1.0,0.08,0.1,0.09,
+233,release,prison,Robbery,61,2.0,0.04,0.1,0.07,
+234,release,prison,Robbery,61,3.0,0.04,0.08,0.06,
+235,release,release_permanently,Robbery,61,3.0,,,0.78,
+236,release,prison,Sexual offenses,61,1.0,0.08,0.13,0.105,
+237,release,prison,Sexual offenses,61,2.0,0.04,0.09,0.065,
+238,release,prison,Sexual offenses,61,3.0,0.04,0.06,0.05,
+239,release,release_permanently,Sexual offenses,61,3.0,,,0.78,
+240,release,prison,Theft/forgery/fraud,61,1.0,0.08,0.08,0.08,
+241,release,prison,Theft/forgery/fraud,61,2.0,0.04,0.11,0.075,
+242,release,prison,Theft/forgery/fraud,61,3.0,0.04,0.08,0.06,
+243,release,release_permanently,Theft/forgery/fraud,61,3.0,,,0.785,
+244,release,prison,Violent personal,61,1.0,0.08,0.11,0.095,
+245,release,prison,Violent personal,61,2.0,0.04,0.08,0.06,
+246,release,prison,Violent personal,61,3.0,0.04,0.07,0.055,
+247,release,release_permanently,Violent personal,61,3.0,,,0.79,
+248,release,prison,Weapons,61,1.0,0.08,0.08,0.08,
+249,release,prison,Weapons,61,2.0,0.04,0.11,0.075,
+250,release,prison,Weapons,61,3.0,0.04,0.09,0.065,
+251,release,release_permanently,Weapons,61,3.0,,,0.78,
+252,release,prison,Burglary,62,1.0,0.08,0.1,0.09,
+253,release,prison,Burglary,62,2.0,0.04,0.11,0.075,
+254,release,prison,Burglary,62,3.0,0.04,0.08,0.06,
+255,release,release_permanently,Burglary,62,3.0,,,0.775,
+256,release,prison,Drug offenses,62,1.0,0.08,0.05,0.065,
+257,release,prison,Drug offenses,62,2.0,0.04,0.07,0.055,
+258,release,prison,Drug offenses,62,3.0,0.04,0.07,0.055,
+259,release,release_permanently,Drug offenses,62,3.0,,,0.825,
+260,release,prison,murder/manslaughter,62,1.0,0.08,0.07,0.075,
+261,release,prison,murder/manslaughter,62,2.0,0.04,0.06,0.05,
+262,release,prison,murder/manslaughter,62,3.0,0.04,0.05,0.045,
+263,release,release_permanently,murder/manslaughter,62,3.0,,,0.83,
+264,release,prison,Other,62,1.0,0.08,0.08,0.08,
+265,release,prison,Other,62,2.0,0.04,0.11,0.075,
+266,release,prison,Other,62,3.0,0.04,0.09,0.065,
+267,release,release_permanently,Other,62,3.0,,,0.78,
+268,release,prison,Robbery,62,1.0,0.08,0.1,0.09,
+269,release,prison,Robbery,62,2.0,0.04,0.1,0.07,
+270,release,prison,Robbery,62,3.0,0.04,0.08,0.06,
+271,release,release_permanently,Robbery,62,3.0,,,0.78,
+272,release,prison,Sexual offenses,62,1.0,0.08,0.13,0.105,
+273,release,prison,Sexual offenses,62,2.0,0.04,0.09,0.065,
+274,release,prison,Sexual offenses,62,3.0,0.04,0.06,0.05,
+275,release,release_permanently,Sexual offenses,62,3.0,,,0.78,
+276,release,prison,Theft/forgery/fraud,62,1.0,0.08,0.08,0.08,
+277,release,prison,Theft/forgery/fraud,62,2.0,0.04,0.11,0.075,
+278,release,prison,Theft/forgery/fraud,62,3.0,0.04,0.08,0.06,
+279,release,release_permanently,Theft/forgery/fraud,62,3.0,,,0.785,
+280,release,prison,Violent personal,62,1.0,0.08,0.11,0.095,
+281,release,prison,Violent personal,62,2.0,0.04,0.08,0.06,
+282,release,prison,Violent personal,62,3.0,0.04,0.07,0.055,
+283,release,release_permanently,Violent personal,62,3.0,,,0.79,
+284,release,prison,Weapons,62,1.0,0.08,0.08,0.08,
+285,release,prison,Weapons,62,2.0,0.04,0.11,0.075,
+286,release,prison,Weapons,62,3.0,0.04,0.09,0.065,
+287,release,release_permanently,Weapons,62,3.0,,,0.78,
+288,release,prison,Burglary,63,1.0,0.08,0.1,0.09,
+289,release,prison,Burglary,63,2.0,0.04,0.11,0.075,
+290,release,prison,Burglary,63,3.0,0.04,0.08,0.06,
+291,release,release_permanently,Burglary,63,3.0,,,0.775,
+292,release,prison,Drug offenses,63,1.0,0.08,0.05,0.065,
+293,release,prison,Drug offenses,63,2.0,0.04,0.07,0.055,
+294,release,prison,Drug offenses,63,3.0,0.04,0.07,0.055,
+295,release,release_permanently,Drug offenses,63,3.0,,,0.825,
+296,release,prison,murder/manslaughter,63,1.0,0.08,0.07,0.075,
+297,release,prison,murder/manslaughter,63,2.0,0.04,0.06,0.05,
+298,release,prison,murder/manslaughter,63,3.0,0.04,0.05,0.045,
+299,release,release_permanently,murder/manslaughter,63,3.0,,,0.83,
+300,release,prison,Other,63,1.0,0.08,0.08,0.08,
+301,release,prison,Other,63,2.0,0.04,0.11,0.075,
+302,release,prison,Other,63,3.0,0.04,0.09,0.065,
+303,release,release_permanently,Other,63,3.0,,,0.78,
+304,release,prison,Robbery,63,1.0,0.08,0.1,0.09,
+305,release,prison,Robbery,63,2.0,0.04,0.1,0.07,
+306,release,prison,Robbery,63,3.0,0.04,0.08,0.06,
+307,release,release_permanently,Robbery,63,3.0,,,0.78,
+308,release,prison,Sexual offenses,63,1.0,0.08,0.13,0.105,
+309,release,prison,Sexual offenses,63,2.0,0.04,0.09,0.065,
+310,release,prison,Sexual offenses,63,3.0,0.04,0.06,0.05,
+311,release,release_permanently,Sexual offenses,63,3.0,,,0.78,
+312,release,prison,Theft/forgery/fraud,63,1.0,0.08,0.08,0.08,
+313,release,prison,Theft/forgery/fraud,63,2.0,0.04,0.11,0.075,
+314,release,prison,Theft/forgery/fraud,63,3.0,0.04,0.08,0.06,
+315,release,release_permanently,Theft/forgery/fraud,63,3.0,,,0.785,
+316,release,prison,Violent personal,63,1.0,0.08,0.11,0.095,
+317,release,prison,Violent personal,63,2.0,0.04,0.08,0.06,
+318,release,prison,Violent personal,63,3.0,0.04,0.07,0.055,
+319,release,release_permanently,Violent personal,63,3.0,,,0.79,
+320,release,prison,Weapons,63,1.0,0.08,0.08,0.08,
+321,release,prison,Weapons,63,2.0,0.04,0.11,0.075,
+322,release,prison,Weapons,63,3.0,0.04,0.09,0.065,
+323,release,release_permanently,Weapons,63,3.0,,,0.78,
+324,release,prison,Burglary,64,1.0,0.08,0.1,0.09,
+325,release,prison,Burglary,64,2.0,0.04,0.11,0.075,
+326,release,prison,Burglary,64,3.0,0.04,0.08,0.06,
+327,release,release_permanently,Burglary,64,3.0,,,0.775,
+328,release,prison,Drug offenses,64,1.0,0.08,0.05,0.065,
+329,release,prison,Drug offenses,64,2.0,0.04,0.07,0.055,
+330,release,prison,Drug offenses,64,3.0,0.04,0.07,0.055,
+331,release,release_permanently,Drug offenses,64,3.0,,,0.825,
+332,release,prison,murder/manslaughter,64,1.0,0.08,0.07,0.075,
+333,release,prison,murder/manslaughter,64,2.0,0.04,0.06,0.05,
+334,release,prison,murder/manslaughter,64,3.0,0.04,0.05,0.045,
+335,release,release_permanently,murder/manslaughter,64,3.0,,,0.83,
+336,release,prison,Other,64,1.0,0.08,0.08,0.08,
+337,release,prison,Other,64,2.0,0.04,0.11,0.075,
+338,release,prison,Other,64,3.0,0.04,0.09,0.065,
+339,release,release_permanently,Other,64,3.0,,,0.78,
+340,release,prison,Robbery,64,1.0,0.08,0.1,0.09,
+341,release,prison,Robbery,64,2.0,0.04,0.1,0.07,
+342,release,prison,Robbery,64,3.0,0.04,0.08,0.06,
+343,release,release_permanently,Robbery,64,3.0,,,0.78,
+344,release,prison,Sexual offenses,64,1.0,0.08,0.13,0.105,
+345,release,prison,Sexual offenses,64,2.0,0.04,0.09,0.065,
+346,release,prison,Sexual offenses,64,3.0,0.04,0.06,0.05,
+347,release,release_permanently,Sexual offenses,64,3.0,,,0.78,
+348,release,prison,Theft/forgery/fraud,64,1.0,0.08,0.08,0.08,
+349,release,prison,Theft/forgery/fraud,64,2.0,0.04,0.11,0.075,
+350,release,prison,Theft/forgery/fraud,64,3.0,0.04,0.08,0.06,
+351,release,release_permanently,Theft/forgery/fraud,64,3.0,,,0.785,
+352,release,prison,Violent personal,64,1.0,0.08,0.11,0.095,
+353,release,prison,Violent personal,64,2.0,0.04,0.08,0.06,
+354,release,prison,Violent personal,64,3.0,0.04,0.07,0.055,
+355,release,release_permanently,Violent personal,64,3.0,,,0.79,
+356,release,prison,Weapons,64,1.0,0.08,0.08,0.08,
+357,release,prison,Weapons,64,2.0,0.04,0.11,0.075,
+358,release,prison,Weapons,64,3.0,0.04,0.09,0.065,
+359,release,release_permanently,Weapons,64,3.0,,,0.78,
+360,release,prison,Burglary,65,1.0,0.08,0.1,0.09,
+361,release,prison,Burglary,65,2.0,0.04,0.11,0.075,
+362,release,prison,Burglary,65,3.0,0.04,0.08,0.06,
+363,release,release_permanently,Burglary,65,3.0,,,0.775,
+364,release,prison,Drug offenses,65,1.0,0.08,0.05,0.065,
+365,release,prison,Drug offenses,65,2.0,0.04,0.07,0.055,
+366,release,prison,Drug offenses,65,3.0,0.04,0.07,0.055,
+367,release,release_permanently,Drug offenses,65,3.0,,,0.825,
+368,release,prison,murder/manslaughter,65,1.0,0.08,0.07,0.075,
+369,release,prison,murder/manslaughter,65,2.0,0.04,0.06,0.05,
+370,release,prison,murder/manslaughter,65,3.0,0.04,0.05,0.045,
+371,release,release_permanently,murder/manslaughter,65,3.0,,,0.83,
+372,release,prison,Other,65,1.0,0.08,0.08,0.08,
+373,release,prison,Other,65,2.0,0.04,0.11,0.075,
+374,release,prison,Other,65,3.0,0.04,0.09,0.065,
+375,release,release_permanently,Other,65,3.0,,,0.78,
+376,release,prison,Robbery,65,1.0,0.08,0.1,0.09,
+377,release,prison,Robbery,65,2.0,0.04,0.1,0.07,
+378,release,prison,Robbery,65,3.0,0.04,0.08,0.06,
+379,release,release_permanently,Robbery,65,3.0,,,0.78,
+380,release,prison,Sexual offenses,65,1.0,0.08,0.13,0.105,
+381,release,prison,Sexual offenses,65,2.0,0.04,0.09,0.065,
+382,release,prison,Sexual offenses,65,3.0,0.04,0.06,0.05,
+383,release,release_permanently,Sexual offenses,65,3.0,,,0.78,
+384,release,prison,Theft/forgery/fraud,65,1.0,0.08,0.08,0.08,
+385,release,prison,Theft/forgery/fraud,65,2.0,0.04,0.11,0.075,
+386,release,prison,Theft/forgery/fraud,65,3.0,0.04,0.08,0.06,
+387,release,release_permanently,Theft/forgery/fraud,65,3.0,,,0.785,
+388,release,prison,Violent personal,65,1.0,0.08,0.11,0.095,
+389,release,prison,Violent personal,65,2.0,0.04,0.08,0.06,
+390,release,prison,Violent personal,65,3.0,0.04,0.07,0.055,
+391,release,release_permanently,Violent personal,65,3.0,,,0.79,
+392,release,prison,Weapons,65,1.0,0.08,0.08,0.08,
+393,release,prison,Weapons,65,2.0,0.04,0.11,0.075,
+394,release,prison,Weapons,65,3.0,0.04,0.09,0.065,
+395,release,release_permanently,Weapons,65,3.0,,,0.78,
+396,release,prison,Burglary,66,1.0,0.08,0.1,0.09,
+397,release,prison,Burglary,66,2.0,0.04,0.11,0.075,
+398,release,prison,Burglary,66,3.0,0.04,0.08,0.06,
+399,release,release_permanently,Burglary,66,3.0,,,0.775,
+400,release,prison,Drug offenses,66,1.0,0.08,0.05,0.065,
+401,release,prison,Drug offenses,66,2.0,0.04,0.07,0.055,
+402,release,prison,Drug offenses,66,3.0,0.04,0.07,0.055,
+403,release,release_permanently,Drug offenses,66,3.0,,,0.825,
+404,release,prison,murder/manslaughter,66,1.0,0.08,0.07,0.075,
+405,release,prison,murder/manslaughter,66,2.0,0.04,0.06,0.05,
+406,release,prison,murder/manslaughter,66,3.0,0.04,0.05,0.045,
+407,release,release_permanently,murder/manslaughter,66,3.0,,,0.83,
+408,release,prison,Other,66,1.0,0.08,0.08,0.08,
+409,release,prison,Other,66,2.0,0.04,0.11,0.075,
+410,release,prison,Other,66,3.0,0.04,0.09,0.065,
+411,release,release_permanently,Other,66,3.0,,,0.78,
+412,release,prison,Robbery,66,1.0,0.08,0.1,0.09,
+413,release,prison,Robbery,66,2.0,0.04,0.1,0.07,
+414,release,prison,Robbery,66,3.0,0.04,0.08,0.06,
+415,release,release_permanently,Robbery,66,3.0,,,0.78,
+416,release,prison,Sexual offenses,66,1.0,0.08,0.13,0.105,
+417,release,prison,Sexual offenses,66,2.0,0.04,0.09,0.065,
+418,release,prison,Sexual offenses,66,3.0,0.04,0.06,0.05,
+419,release,release_permanently,Sexual offenses,66,3.0,,,0.78,
+420,release,prison,Theft/forgery/fraud,66,1.0,0.08,0.08,0.08,
+421,release,prison,Theft/forgery/fraud,66,2.0,0.04,0.11,0.075,
+422,release,prison,Theft/forgery/fraud,66,3.0,0.04,0.08,0.06,
+423,release,release_permanently,Theft/forgery/fraud,66,3.0,,,0.785,
+424,release,prison,Violent personal,66,1.0,0.08,0.11,0.095,
+425,release,prison,Violent personal,66,2.0,0.04,0.08,0.06,
+426,release,prison,Violent personal,66,3.0,0.04,0.07,0.055,
+427,release,release_permanently,Violent personal,66,3.0,,,0.79,
+428,release,prison,Weapons,66,1.0,0.08,0.08,0.08,
+429,release,prison,Weapons,66,2.0,0.04,0.11,0.075,
+430,release,prison,Weapons,66,3.0,0.04,0.09,0.065,
+431,release,release_permanently,Weapons,66,3.0,,,0.78,
+432,release,prison,Burglary,67,1.0,0.08,0.1,0.09,
+433,release,prison,Burglary,67,2.0,0.04,0.11,0.075,
+434,release,prison,Burglary,67,3.0,0.04,0.08,0.06,
+435,release,release_permanently,Burglary,67,3.0,,,0.775,
+436,release,prison,Drug offenses,67,1.0,0.08,0.05,0.065,
+437,release,prison,Drug offenses,67,2.0,0.04,0.07,0.055,
+438,release,prison,Drug offenses,67,3.0,0.04,0.07,0.055,
+439,release,release_permanently,Drug offenses,67,3.0,,,0.825,
+440,release,prison,murder/manslaughter,67,1.0,0.08,0.07,0.075,
+441,release,prison,murder/manslaughter,67,2.0,0.04,0.06,0.05,
+442,release,prison,murder/manslaughter,67,3.0,0.04,0.05,0.045,
+443,release,release_permanently,murder/manslaughter,67,3.0,,,0.83,
+444,release,prison,Other,67,1.0,0.08,0.08,0.08,
+445,release,prison,Other,67,2.0,0.04,0.11,0.075,
+446,release,prison,Other,67,3.0,0.04,0.09,0.065,
+447,release,release_permanently,Other,67,3.0,,,0.78,
+448,release,prison,Robbery,67,1.0,0.08,0.1,0.09,
+449,release,prison,Robbery,67,2.0,0.04,0.1,0.07,
+450,release,prison,Robbery,67,3.0,0.04,0.08,0.06,
+451,release,release_permanently,Robbery,67,3.0,,,0.78,
+452,release,prison,Sexual offenses,67,1.0,0.08,0.13,0.105,
+453,release,prison,Sexual offenses,67,2.0,0.04,0.09,0.065,
+454,release,prison,Sexual offenses,67,3.0,0.04,0.06,0.05,
+455,release,release_permanently,Sexual offenses,67,3.0,,,0.78,
+456,release,prison,Theft/forgery/fraud,67,1.0,0.08,0.08,0.08,
+457,release,prison,Theft/forgery/fraud,67,2.0,0.04,0.11,0.075,
+458,release,prison,Theft/forgery/fraud,67,3.0,0.04,0.08,0.06,
+459,release,release_permanently,Theft/forgery/fraud,67,3.0,,,0.785,
+460,release,prison,Violent personal,67,1.0,0.08,0.11,0.095,
+461,release,prison,Violent personal,67,2.0,0.04,0.08,0.06,
+462,release,prison,Violent personal,67,3.0,0.04,0.07,0.055,
+463,release,release_permanently,Violent personal,67,3.0,,,0.79,
+464,release,prison,Weapons,67,1.0,0.08,0.08,0.08,
+465,release,prison,Weapons,67,2.0,0.04,0.11,0.075,
+466,release,prison,Weapons,67,3.0,0.04,0.09,0.065,
+467,release,release_permanently,Weapons,67,3.0,,,0.78,
+468,release,prison,Burglary,68,1.0,0.08,0.1,0.09,
+469,release,prison,Burglary,68,2.0,0.04,0.11,0.075,
+470,release,prison,Burglary,68,3.0,0.04,0.08,0.06,
+471,release,release_permanently,Burglary,68,3.0,,,0.775,
+472,release,prison,Drug offenses,68,1.0,0.08,0.05,0.065,
+473,release,prison,Drug offenses,68,2.0,0.04,0.07,0.055,
+474,release,prison,Drug offenses,68,3.0,0.04,0.07,0.055,
+475,release,release_permanently,Drug offenses,68,3.0,,,0.825,
+476,release,prison,murder/manslaughter,68,1.0,0.08,0.07,0.075,
+477,release,prison,murder/manslaughter,68,2.0,0.04,0.06,0.05,
+478,release,prison,murder/manslaughter,68,3.0,0.04,0.05,0.045,
+479,release,release_permanently,murder/manslaughter,68,3.0,,,0.83,
+480,release,prison,Other,68,1.0,0.08,0.08,0.08,
+481,release,prison,Other,68,2.0,0.04,0.11,0.075,
+482,release,prison,Other,68,3.0,0.04,0.09,0.065,
+483,release,release_permanently,Other,68,3.0,,,0.78,
+484,release,prison,Robbery,68,1.0,0.08,0.1,0.09,
+485,release,prison,Robbery,68,2.0,0.04,0.1,0.07,
+486,release,prison,Robbery,68,3.0,0.04,0.08,0.06,
+487,release,release_permanently,Robbery,68,3.0,,,0.78,
+488,release,prison,Sexual offenses,68,1.0,0.08,0.13,0.105,
+489,release,prison,Sexual offenses,68,2.0,0.04,0.09,0.065,
+490,release,prison,Sexual offenses,68,3.0,0.04,0.06,0.05,
+491,release,release_permanently,Sexual offenses,68,3.0,,,0.78,
+492,release,prison,Theft/forgery/fraud,68,1.0,0.08,0.08,0.08,
+493,release,prison,Theft/forgery/fraud,68,2.0,0.04,0.11,0.075,
+494,release,prison,Theft/forgery/fraud,68,3.0,0.04,0.08,0.06,
+495,release,release_permanently,Theft/forgery/fraud,68,3.0,,,0.785,
+496,release,prison,Violent personal,68,1.0,0.08,0.11,0.095,
+497,release,prison,Violent personal,68,2.0,0.04,0.08,0.06,
+498,release,prison,Violent personal,68,3.0,0.04,0.07,0.055,
+499,release,release_permanently,Violent personal,68,3.0,,,0.79,
+500,release,prison,Weapons,68,1.0,0.08,0.08,0.08,
+501,release,prison,Weapons,68,2.0,0.04,0.11,0.075,
+502,release,prison,Weapons,68,3.0,0.04,0.09,0.065,
+503,release,release_permanently,Weapons,68,3.0,,,0.78,
+504,release,prison,Burglary,69,1.0,0.08,0.1,0.09,
+505,release,prison,Burglary,69,2.0,0.04,0.11,0.075,
+506,release,prison,Burglary,69,3.0,0.04,0.08,0.06,
+507,release,release_permanently,Burglary,69,3.0,,,0.775,
+508,release,prison,Drug offenses,69,1.0,0.08,0.05,0.065,
+509,release,prison,Drug offenses,69,2.0,0.04,0.07,0.055,
+510,release,prison,Drug offenses,69,3.0,0.04,0.07,0.055,
+511,release,release_permanently,Drug offenses,69,3.0,,,0.825,
+512,release,prison,murder/manslaughter,69,1.0,0.08,0.07,0.075,
+513,release,prison,murder/manslaughter,69,2.0,0.04,0.06,0.05,
+514,release,prison,murder/manslaughter,69,3.0,0.04,0.05,0.045,
+515,release,release_permanently,murder/manslaughter,69,3.0,,,0.83,
+516,release,prison,Other,69,1.0,0.08,0.08,0.08,
+517,release,prison,Other,69,2.0,0.04,0.11,0.075,
+518,release,prison,Other,69,3.0,0.04,0.09,0.065,
+519,release,release_permanently,Other,69,3.0,,,0.78,
+520,release,prison,Robbery,69,1.0,0.08,0.1,0.09,
+521,release,prison,Robbery,69,2.0,0.04,0.1,0.07,
+522,release,prison,Robbery,69,3.0,0.04,0.08,0.06,
+523,release,release_permanently,Robbery,69,3.0,,,0.78,
+524,release,prison,Sexual offenses,69,1.0,0.08,0.13,0.105,
+525,release,prison,Sexual offenses,69,2.0,0.04,0.09,0.065,
+526,release,prison,Sexual offenses,69,3.0,0.04,0.06,0.05,
+527,release,release_permanently,Sexual offenses,69,3.0,,,0.78,
+528,release,prison,Theft/forgery/fraud,69,1.0,0.08,0.08,0.08,
+529,release,prison,Theft/forgery/fraud,69,2.0,0.04,0.11,0.075,
+530,release,prison,Theft/forgery/fraud,69,3.0,0.04,0.08,0.06,
+531,release,release_permanently,Theft/forgery/fraud,69,3.0,,,0.785,
+532,release,prison,Violent personal,69,1.0,0.08,0.11,0.095,
+533,release,prison,Violent personal,69,2.0,0.04,0.08,0.06,
+534,release,prison,Violent personal,69,3.0,0.04,0.07,0.055,
+535,release,release_permanently,Violent personal,69,3.0,,,0.79,
+536,release,prison,Weapons,69,1.0,0.08,0.08,0.08,
+537,release,prison,Weapons,69,2.0,0.04,0.11,0.075,
+538,release,prison,Weapons,69,3.0,0.04,0.09,0.065,
+539,release,release_permanently,Weapons,69,3.0,,,0.78,
+540,release,prison,Burglary,70,1.0,0.08,0.1,0.09,
+541,release,prison,Burglary,70,2.0,0.04,0.11,0.075,
+542,release,prison,Burglary,70,3.0,0.04,0.08,0.06,
+543,release,release_permanently,Burglary,70,3.0,,,0.775,
+544,release,prison,Drug offenses,70,1.0,0.08,0.05,0.065,
+545,release,prison,Drug offenses,70,2.0,0.04,0.07,0.055,
+546,release,prison,Drug offenses,70,3.0,0.04,0.07,0.055,
+547,release,release_permanently,Drug offenses,70,3.0,,,0.825,
+548,release,prison,murder/manslaughter,70,1.0,0.08,0.07,0.075,
+549,release,prison,murder/manslaughter,70,2.0,0.04,0.06,0.05,
+550,release,prison,murder/manslaughter,70,3.0,0.04,0.05,0.045,
+551,release,release_permanently,murder/manslaughter,70,3.0,,,0.83,
+552,release,prison,Other,70,1.0,0.08,0.08,0.08,
+553,release,prison,Other,70,2.0,0.04,0.11,0.075,
+554,release,prison,Other,70,3.0,0.04,0.09,0.065,
+555,release,release_permanently,Other,70,3.0,,,0.78,
+556,release,prison,Robbery,70,1.0,0.08,0.1,0.09,
+557,release,prison,Robbery,70,2.0,0.04,0.1,0.07,
+558,release,prison,Robbery,70,3.0,0.04,0.08,0.06,
+559,release,release_permanently,Robbery,70,3.0,,,0.78,
+560,release,prison,Sexual offenses,70,1.0,0.08,0.13,0.105,
+561,release,prison,Sexual offenses,70,2.0,0.04,0.09,0.065,
+562,release,prison,Sexual offenses,70,3.0,0.04,0.06,0.05,
+563,release,release_permanently,Sexual offenses,70,3.0,,,0.78,
+564,release,prison,Theft/forgery/fraud,70,1.0,0.08,0.08,0.08,
+565,release,prison,Theft/forgery/fraud,70,2.0,0.04,0.11,0.075,
+566,release,prison,Theft/forgery/fraud,70,3.0,0.04,0.08,0.06,
+567,release,release_permanently,Theft/forgery/fraud,70,3.0,,,0.785,
+568,release,prison,Violent personal,70,1.0,0.08,0.11,0.095,
+569,release,prison,Violent personal,70,2.0,0.04,0.08,0.06,
+570,release,prison,Violent personal,70,3.0,0.04,0.07,0.055,
+571,release,release_permanently,Violent personal,70,3.0,,,0.79,
+572,release,prison,Weapons,70,1.0,0.08,0.08,0.08,
+573,release,prison,Weapons,70,2.0,0.04,0.11,0.075,
+574,release,prison,Weapons,70,3.0,0.04,0.09,0.065,
+575,release,release_permanently,Weapons,70,3.0,,,0.78,
+576,release,prison,Burglary,71,1.0,0.08,0.1,0.09,
+577,release,prison,Burglary,71,2.0,0.04,0.11,0.075,
+578,release,prison,Burglary,71,3.0,0.04,0.08,0.06,
+579,release,release_permanently,Burglary,71,3.0,,,0.775,
+580,release,prison,Drug offenses,71,1.0,0.08,0.05,0.065,
+581,release,prison,Drug offenses,71,2.0,0.04,0.07,0.055,
+582,release,prison,Drug offenses,71,3.0,0.04,0.07,0.055,
+583,release,release_permanently,Drug offenses,71,3.0,,,0.825,
+584,release,prison,murder/manslaughter,71,1.0,0.08,0.07,0.075,
+585,release,prison,murder/manslaughter,71,2.0,0.04,0.06,0.05,
+586,release,prison,murder/manslaughter,71,3.0,0.04,0.05,0.045,
+587,release,release_permanently,murder/manslaughter,71,3.0,,,0.83,
+588,release,prison,Other,71,1.0,0.08,0.08,0.08,
+589,release,prison,Other,71,2.0,0.04,0.11,0.075,
+590,release,prison,Other,71,3.0,0.04,0.09,0.065,
+591,release,release_permanently,Other,71,3.0,,,0.78,
+592,release,prison,Robbery,71,1.0,0.08,0.1,0.09,
+593,release,prison,Robbery,71,2.0,0.04,0.1,0.07,
+594,release,prison,Robbery,71,3.0,0.04,0.08,0.06,
+595,release,release_permanently,Robbery,71,3.0,,,0.78,
+596,release,prison,Sexual offenses,71,1.0,0.08,0.13,0.105,
+597,release,prison,Sexual offenses,71,2.0,0.04,0.09,0.065,
+598,release,prison,Sexual offenses,71,3.0,0.04,0.06,0.05,
+599,release,release_permanently,Sexual offenses,71,3.0,,,0.78,
+600,release,prison,Theft/forgery/fraud,71,1.0,0.08,0.08,0.08,
+601,release,prison,Theft/forgery/fraud,71,2.0,0.04,0.11,0.075,
+602,release,prison,Theft/forgery/fraud,71,3.0,0.04,0.08,0.06,
+603,release,release_permanently,Theft/forgery/fraud,71,3.0,,,0.785,
+604,release,prison,Violent personal,71,1.0,0.08,0.11,0.095,
+605,release,prison,Violent personal,71,2.0,0.04,0.08,0.06,
+606,release,prison,Violent personal,71,3.0,0.04,0.07,0.055,
+607,release,release_permanently,Violent personal,71,3.0,,,0.79,
+608,release,prison,Weapons,71,1.0,0.08,0.08,0.08,
+609,release,prison,Weapons,71,2.0,0.04,0.11,0.075,
+610,release,prison,Weapons,71,3.0,0.04,0.09,0.065,
+611,release,release_permanently,Weapons,71,3.0,,,0.78,
+612,release,prison,Burglary,72,1.0,0.08,0.1,0.09,
+613,release,prison,Burglary,72,2.0,0.04,0.11,0.075,
+614,release,prison,Burglary,72,3.0,0.04,0.08,0.06,
+615,release,release_permanently,Burglary,72,3.0,,,0.775,
+616,release,prison,Drug offenses,72,1.0,0.08,0.05,0.065,
+617,release,prison,Drug offenses,72,2.0,0.04,0.07,0.055,
+618,release,prison,Drug offenses,72,3.0,0.04,0.07,0.055,
+619,release,release_permanently,Drug offenses,72,3.0,,,0.825,
+620,release,prison,murder/manslaughter,72,1.0,0.08,0.07,0.075,
+621,release,prison,murder/manslaughter,72,2.0,0.04,0.06,0.05,
+622,release,prison,murder/manslaughter,72,3.0,0.04,0.05,0.045,
+623,release,release_permanently,murder/manslaughter,72,3.0,,,0.83,
+624,release,prison,Other,72,1.0,0.08,0.08,0.08,
+625,release,prison,Other,72,2.0,0.04,0.11,0.075,
+626,release,prison,Other,72,3.0,0.04,0.09,0.065,
+627,release,release_permanently,Other,72,3.0,,,0.78,
+628,release,prison,Robbery,72,1.0,0.08,0.1,0.09,
+629,release,prison,Robbery,72,2.0,0.04,0.1,0.07,
+630,release,prison,Robbery,72,3.0,0.04,0.08,0.06,
+631,release,release_permanently,Robbery,72,3.0,,,0.78,
+632,release,prison,Sexual offenses,72,1.0,0.08,0.13,0.105,
+633,release,prison,Sexual offenses,72,2.0,0.04,0.09,0.065,
+634,release,prison,Sexual offenses,72,3.0,0.04,0.06,0.05,
+635,release,release_permanently,Sexual offenses,72,3.0,,,0.78,
+636,release,prison,Theft/forgery/fraud,72,1.0,0.08,0.08,0.08,
+637,release,prison,Theft/forgery/fraud,72,2.0,0.04,0.11,0.075,
+638,release,prison,Theft/forgery/fraud,72,3.0,0.04,0.08,0.06,
+639,release,release_permanently,Theft/forgery/fraud,72,3.0,,,0.785,
+640,release,prison,Violent personal,72,1.0,0.08,0.11,0.095,
+641,release,prison,Violent personal,72,2.0,0.04,0.08,0.06,
+642,release,prison,Violent personal,72,3.0,0.04,0.07,0.055,
+643,release,release_permanently,Violent personal,72,3.0,,,0.79,
+644,release,prison,Weapons,72,1.0,0.08,0.08,0.08,
+645,release,prison,Weapons,72,2.0,0.04,0.11,0.075,
+646,release,prison,Weapons,72,3.0,0.04,0.09,0.065,
+647,release,release_permanently,Weapons,72,3.0,,,0.78,
+648,release,prison,Burglary,73,1.0,0.08,0.1,0.09,
+649,release,prison,Burglary,73,2.0,0.04,0.11,0.075,
+650,release,prison,Burglary,73,3.0,0.04,0.08,0.06,
+651,release,release_permanently,Burglary,73,3.0,,,0.775,
+652,release,prison,Drug offenses,73,1.0,0.08,0.05,0.065,
+653,release,prison,Drug offenses,73,2.0,0.04,0.07,0.055,
+654,release,prison,Drug offenses,73,3.0,0.04,0.07,0.055,
+655,release,release_permanently,Drug offenses,73,3.0,,,0.825,
+656,release,prison,murder/manslaughter,73,1.0,0.08,0.07,0.075,
+657,release,prison,murder/manslaughter,73,2.0,0.04,0.06,0.05,
+658,release,prison,murder/manslaughter,73,3.0,0.04,0.05,0.045,
+659,release,release_permanently,murder/manslaughter,73,3.0,,,0.83,
+660,release,prison,Other,73,1.0,0.08,0.08,0.08,
+661,release,prison,Other,73,2.0,0.04,0.11,0.075,
+662,release,prison,Other,73,3.0,0.04,0.09,0.065,
+663,release,release_permanently,Other,73,3.0,,,0.78,
+664,release,prison,Robbery,73,1.0,0.08,0.1,0.09,
+665,release,prison,Robbery,73,2.0,0.04,0.1,0.07,
+666,release,prison,Robbery,73,3.0,0.04,0.08,0.06,
+667,release,release_permanently,Robbery,73,3.0,,,0.78,
+668,release,prison,Sexual offenses,73,1.0,0.08,0.13,0.105,
+669,release,prison,Sexual offenses,73,2.0,0.04,0.09,0.065,
+670,release,prison,Sexual offenses,73,3.0,0.04,0.06,0.05,
+671,release,release_permanently,Sexual offenses,73,3.0,,,0.78,
+672,release,prison,Theft/forgery/fraud,73,1.0,0.08,0.08,0.08,
+673,release,prison,Theft/forgery/fraud,73,2.0,0.04,0.11,0.075,
+674,release,prison,Theft/forgery/fraud,73,3.0,0.04,0.08,0.06,
+675,release,release_permanently,Theft/forgery/fraud,73,3.0,,,0.785,
+676,release,prison,Violent personal,73,1.0,0.08,0.11,0.095,
+677,release,prison,Violent personal,73,2.0,0.04,0.08,0.06,
+678,release,prison,Violent personal,73,3.0,0.04,0.07,0.055,
+679,release,release_permanently,Violent personal,73,3.0,,,0.79,
+680,release,prison,Weapons,73,1.0,0.08,0.08,0.08,
+681,release,prison,Weapons,73,2.0,0.04,0.11,0.075,
+682,release,prison,Weapons,73,3.0,0.04,0.09,0.065,
+683,release,release_permanently,Weapons,73,3.0,,,0.78,
+684,release,prison,Burglary,74,1.0,0.08,0.1,0.09,
+685,release,prison,Burglary,74,2.0,0.04,0.11,0.075,
+686,release,prison,Burglary,74,3.0,0.04,0.08,0.06,
+687,release,release_permanently,Burglary,74,3.0,,,0.775,
+688,release,prison,Drug offenses,74,1.0,0.08,0.05,0.065,
+689,release,prison,Drug offenses,74,2.0,0.04,0.07,0.055,
+690,release,prison,Drug offenses,74,3.0,0.04,0.07,0.055,
+691,release,release_permanently,Drug offenses,74,3.0,,,0.825,
+692,release,prison,murder/manslaughter,74,1.0,0.08,0.07,0.075,
+693,release,prison,murder/manslaughter,74,2.0,0.04,0.06,0.05,
+694,release,prison,murder/manslaughter,74,3.0,0.04,0.05,0.045,
+695,release,release_permanently,murder/manslaughter,74,3.0,,,0.83,
+696,release,prison,Other,74,1.0,0.08,0.08,0.08,
+697,release,prison,Other,74,2.0,0.04,0.11,0.075,
+698,release,prison,Other,74,3.0,0.04,0.09,0.065,
+699,release,release_permanently,Other,74,3.0,,,0.78,
+700,release,prison,Robbery,74,1.0,0.08,0.1,0.09,
+701,release,prison,Robbery,74,2.0,0.04,0.1,0.07,
+702,release,prison,Robbery,74,3.0,0.04,0.08,0.06,
+703,release,release_permanently,Robbery,74,3.0,,,0.78,
+704,release,prison,Sexual offenses,74,1.0,0.08,0.13,0.105,
+705,release,prison,Sexual offenses,74,2.0,0.04,0.09,0.065,
+706,release,prison,Sexual offenses,74,3.0,0.04,0.06,0.05,
+707,release,release_permanently,Sexual offenses,74,3.0,,,0.78,
+708,release,prison,Theft/forgery/fraud,74,1.0,0.08,0.08,0.08,
+709,release,prison,Theft/forgery/fraud,74,2.0,0.04,0.11,0.075,
+710,release,prison,Theft/forgery/fraud,74,3.0,0.04,0.08,0.06,
+711,release,release_permanently,Theft/forgery/fraud,74,3.0,,,0.785,
+712,release,prison,Violent personal,74,1.0,0.08,0.11,0.095,
+713,release,prison,Violent personal,74,2.0,0.04,0.08,0.06,
+714,release,prison,Violent personal,74,3.0,0.04,0.07,0.055,
+715,release,release_permanently,Violent personal,74,3.0,,,0.79,
+716,release,prison,Weapons,74,1.0,0.08,0.08,0.08,
+717,release,prison,Weapons,74,2.0,0.04,0.11,0.075,
+718,release,prison,Weapons,74,3.0,0.04,0.09,0.065,
+719,release,release_permanently,Weapons,74,3.0,,,0.78,
+720,release,prison,Burglary,75,1.0,0.08,0.1,0.09,
+721,release,prison,Burglary,75,2.0,0.04,0.11,0.075,
+722,release,prison,Burglary,75,3.0,0.04,0.08,0.06,
+723,release,release_permanently,Burglary,75,3.0,,,0.775,
+724,release,prison,Drug offenses,75,1.0,0.08,0.05,0.065,
+725,release,prison,Drug offenses,75,2.0,0.04,0.07,0.055,
+726,release,prison,Drug offenses,75,3.0,0.04,0.07,0.055,
+727,release,release_permanently,Drug offenses,75,3.0,,,0.825,
+728,release,prison,murder/manslaughter,75,1.0,0.08,0.07,0.075,
+729,release,prison,murder/manslaughter,75,2.0,0.04,0.06,0.05,
+730,release,prison,murder/manslaughter,75,3.0,0.04,0.05,0.045,
+731,release,release_permanently,murder/manslaughter,75,3.0,,,0.83,
+732,release,prison,Other,75,1.0,0.08,0.08,0.08,
+733,release,prison,Other,75,2.0,0.04,0.11,0.075,
+734,release,prison,Other,75,3.0,0.04,0.09,0.065,
+735,release,release_permanently,Other,75,3.0,,,0.78,
+736,release,prison,Robbery,75,1.0,0.08,0.1,0.09,
+737,release,prison,Robbery,75,2.0,0.04,0.1,0.07,
+738,release,prison,Robbery,75,3.0,0.04,0.08,0.06,
+739,release,release_permanently,Robbery,75,3.0,,,0.78,
+740,release,prison,Sexual offenses,75,1.0,0.08,0.13,0.105,
+741,release,prison,Sexual offenses,75,2.0,0.04,0.09,0.065,
+742,release,prison,Sexual offenses,75,3.0,0.04,0.06,0.05,
+743,release,release_permanently,Sexual offenses,75,3.0,,,0.78,
+744,release,prison,Theft/forgery/fraud,75,1.0,0.08,0.08,0.08,
+745,release,prison,Theft/forgery/fraud,75,2.0,0.04,0.11,0.075,
+746,release,prison,Theft/forgery/fraud,75,3.0,0.04,0.08,0.06,
+747,release,release_permanently,Theft/forgery/fraud,75,3.0,,,0.785,
+748,release,prison,Violent personal,75,1.0,0.08,0.11,0.095,
+749,release,prison,Violent personal,75,2.0,0.04,0.08,0.06,
+750,release,prison,Violent personal,75,3.0,0.04,0.07,0.055,
+751,release,release_permanently,Violent personal,75,3.0,,,0.79,
+752,release,prison,Weapons,75,1.0,0.08,0.08,0.08,
+753,release,prison,Weapons,75,2.0,0.04,0.11,0.075,
+754,release,prison,Weapons,75,3.0,0.04,0.09,0.065,
+755,release,release_permanently,Weapons,75,3.0,,,0.78,
+756,release,prison,Burglary,76,1.0,0.08,0.1,0.09,
+757,release,prison,Burglary,76,2.0,0.04,0.11,0.075,
+758,release,prison,Burglary,76,3.0,0.04,0.08,0.06,
+759,release,release_permanently,Burglary,76,3.0,,,0.775,
+760,release,prison,Drug offenses,76,1.0,0.08,0.05,0.065,
+761,release,prison,Drug offenses,76,2.0,0.04,0.07,0.055,
+762,release,prison,Drug offenses,76,3.0,0.04,0.07,0.055,
+763,release,release_permanently,Drug offenses,76,3.0,,,0.825,
+764,release,prison,murder/manslaughter,76,1.0,0.08,0.07,0.075,
+765,release,prison,murder/manslaughter,76,2.0,0.04,0.06,0.05,
+766,release,prison,murder/manslaughter,76,3.0,0.04,0.05,0.045,
+767,release,release_permanently,murder/manslaughter,76,3.0,,,0.83,
+768,release,prison,Other,76,1.0,0.08,0.08,0.08,
+769,release,prison,Other,76,2.0,0.04,0.11,0.075,
+770,release,prison,Other,76,3.0,0.04,0.09,0.065,
+771,release,release_permanently,Other,76,3.0,,,0.78,
+772,release,prison,Robbery,76,1.0,0.08,0.1,0.09,
+773,release,prison,Robbery,76,2.0,0.04,0.1,0.07,
+774,release,prison,Robbery,76,3.0,0.04,0.08,0.06,
+775,release,release_permanently,Robbery,76,3.0,,,0.78,
+776,release,prison,Sexual offenses,76,1.0,0.08,0.13,0.105,
+777,release,prison,Sexual offenses,76,2.0,0.04,0.09,0.065,
+778,release,prison,Sexual offenses,76,3.0,0.04,0.06,0.05,
+779,release,release_permanently,Sexual offenses,76,3.0,,,0.78,
+780,release,prison,Theft/forgery/fraud,76,1.0,0.08,0.08,0.08,
+781,release,prison,Theft/forgery/fraud,76,2.0,0.04,0.11,0.075,
+782,release,prison,Theft/forgery/fraud,76,3.0,0.04,0.08,0.06,
+783,release,release_permanently,Theft/forgery/fraud,76,3.0,,,0.785,
+784,release,prison,Violent personal,76,1.0,0.08,0.11,0.095,
+785,release,prison,Violent personal,76,2.0,0.04,0.08,0.06,
+786,release,prison,Violent personal,76,3.0,0.04,0.07,0.055,
+787,release,release_permanently,Violent personal,76,3.0,,,0.79,
+788,release,prison,Weapons,76,1.0,0.08,0.08,0.08,
+789,release,prison,Weapons,76,2.0,0.04,0.11,0.075,
+790,release,prison,Weapons,76,3.0,0.04,0.09,0.065,
+791,release,release_permanently,Weapons,76,3.0,,,0.78,
+792,release,prison,Burglary,77,1.0,0.08,0.1,0.09,
+793,release,prison,Burglary,77,2.0,0.04,0.11,0.075,
+794,release,prison,Burglary,77,3.0,0.04,0.08,0.06,
+795,release,release_permanently,Burglary,77,3.0,,,0.775,
+796,release,prison,Drug offenses,77,1.0,0.08,0.05,0.065,
+797,release,prison,Drug offenses,77,2.0,0.04,0.07,0.055,
+798,release,prison,Drug offenses,77,3.0,0.04,0.07,0.055,
+799,release,release_permanently,Drug offenses,77,3.0,,,0.825,
+800,release,prison,murder/manslaughter,77,1.0,0.08,0.07,0.075,
+801,release,prison,murder/manslaughter,77,2.0,0.04,0.06,0.05,
+802,release,prison,murder/manslaughter,77,3.0,0.04,0.05,0.045,
+803,release,release_permanently,murder/manslaughter,77,3.0,,,0.83,
+804,release,prison,Other,77,1.0,0.08,0.08,0.08,
+805,release,prison,Other,77,2.0,0.04,0.11,0.075,
+806,release,prison,Other,77,3.0,0.04,0.09,0.065,
+807,release,release_permanently,Other,77,3.0,,,0.78,
+808,release,prison,Robbery,77,1.0,0.08,0.1,0.09,
+809,release,prison,Robbery,77,2.0,0.04,0.1,0.07,
+810,release,prison,Robbery,77,3.0,0.04,0.08,0.06,
+811,release,release_permanently,Robbery,77,3.0,,,0.78,
+812,release,prison,Sexual offenses,77,1.0,0.08,0.13,0.105,
+813,release,prison,Sexual offenses,77,2.0,0.04,0.09,0.065,
+814,release,prison,Sexual offenses,77,3.0,0.04,0.06,0.05,
+815,release,release_permanently,Sexual offenses,77,3.0,,,0.78,
+816,release,prison,Theft/forgery/fraud,77,1.0,0.08,0.08,0.08,
+817,release,prison,Theft/forgery/fraud,77,2.0,0.04,0.11,0.075,
+818,release,prison,Theft/forgery/fraud,77,3.0,0.04,0.08,0.06,
+819,release,release_permanently,Theft/forgery/fraud,77,3.0,,,0.785,
+820,release,prison,Violent personal,77,1.0,0.08,0.11,0.095,
+821,release,prison,Violent personal,77,2.0,0.04,0.08,0.06,
+822,release,prison,Violent personal,77,3.0,0.04,0.07,0.055,
+823,release,release_permanently,Violent personal,77,3.0,,,0.79,
+824,release,prison,Weapons,77,1.0,0.08,0.08,0.08,
+825,release,prison,Weapons,77,2.0,0.04,0.11,0.075,
+826,release,prison,Weapons,77,3.0,0.04,0.09,0.065,
+827,release,release_permanently,Weapons,77,3.0,,,0.78,
+828,release,prison,Burglary,78,1.0,0.08,0.1,0.09,
+829,release,prison,Burglary,78,2.0,0.04,0.11,0.075,
+830,release,prison,Burglary,78,3.0,0.04,0.08,0.06,
+831,release,release_permanently,Burglary,78,3.0,,,0.775,
+832,release,prison,Drug offenses,78,1.0,0.08,0.05,0.065,
+833,release,prison,Drug offenses,78,2.0,0.04,0.07,0.055,
+834,release,prison,Drug offenses,78,3.0,0.04,0.07,0.055,
+835,release,release_permanently,Drug offenses,78,3.0,,,0.825,
+836,release,prison,murder/manslaughter,78,1.0,0.08,0.07,0.075,
+837,release,prison,murder/manslaughter,78,2.0,0.04,0.06,0.05,
+838,release,prison,murder/manslaughter,78,3.0,0.04,0.05,0.045,
+839,release,release_permanently,murder/manslaughter,78,3.0,,,0.83,
+840,release,prison,Other,78,1.0,0.08,0.08,0.08,
+841,release,prison,Other,78,2.0,0.04,0.11,0.075,
+842,release,prison,Other,78,3.0,0.04,0.09,0.065,
+843,release,release_permanently,Other,78,3.0,,,0.78,
+844,release,prison,Robbery,78,1.0,0.08,0.1,0.09,
+845,release,prison,Robbery,78,2.0,0.04,0.1,0.07,
+846,release,prison,Robbery,78,3.0,0.04,0.08,0.06,
+847,release,release_permanently,Robbery,78,3.0,,,0.78,
+848,release,prison,Sexual offenses,78,1.0,0.08,0.13,0.105,
+849,release,prison,Sexual offenses,78,2.0,0.04,0.09,0.065,
+850,release,prison,Sexual offenses,78,3.0,0.04,0.06,0.05,
+851,release,release_permanently,Sexual offenses,78,3.0,,,0.78,
+852,release,prison,Theft/forgery/fraud,78,1.0,0.08,0.08,0.08,
+853,release,prison,Theft/forgery/fraud,78,2.0,0.04,0.11,0.075,
+854,release,prison,Theft/forgery/fraud,78,3.0,0.04,0.08,0.06,
+855,release,release_permanently,Theft/forgery/fraud,78,3.0,,,0.785,
+856,release,prison,Violent personal,78,1.0,0.08,0.11,0.095,
+857,release,prison,Violent personal,78,2.0,0.04,0.08,0.06,
+858,release,prison,Violent personal,78,3.0,0.04,0.07,0.055,
+859,release,release_permanently,Violent personal,78,3.0,,,0.79,
+860,release,prison,Weapons,78,1.0,0.08,0.08,0.08,
+861,release,prison,Weapons,78,2.0,0.04,0.11,0.075,
+862,release,prison,Weapons,78,3.0,0.04,0.09,0.065,
+863,release,release_permanently,Weapons,78,3.0,,,0.78,
+864,release,prison,Burglary,79,1.0,0.08,0.1,0.09,
+865,release,prison,Burglary,79,2.0,0.04,0.11,0.075,
+866,release,prison,Burglary,79,3.0,0.04,0.08,0.06,
+867,release,release_permanently,Burglary,79,3.0,,,0.775,
+868,release,prison,Drug offenses,79,1.0,0.08,0.05,0.065,
+869,release,prison,Drug offenses,79,2.0,0.04,0.07,0.055,
+870,release,prison,Drug offenses,79,3.0,0.04,0.07,0.055,
+871,release,release_permanently,Drug offenses,79,3.0,,,0.825,
+872,release,prison,murder/manslaughter,79,1.0,0.08,0.07,0.075,
+873,release,prison,murder/manslaughter,79,2.0,0.04,0.06,0.05,
+874,release,prison,murder/manslaughter,79,3.0,0.04,0.05,0.045,
+875,release,release_permanently,murder/manslaughter,79,3.0,,,0.83,
+876,release,prison,Other,79,1.0,0.08,0.08,0.08,
+877,release,prison,Other,79,2.0,0.04,0.11,0.075,
+878,release,prison,Other,79,3.0,0.04,0.09,0.065,
+879,release,release_permanently,Other,79,3.0,,,0.78,
+880,release,prison,Robbery,79,1.0,0.08,0.1,0.09,
+881,release,prison,Robbery,79,2.0,0.04,0.1,0.07,
+882,release,prison,Robbery,79,3.0,0.04,0.08,0.06,
+883,release,release_permanently,Robbery,79,3.0,,,0.78,
+884,release,prison,Sexual offenses,79,1.0,0.08,0.13,0.105,
+885,release,prison,Sexual offenses,79,2.0,0.04,0.09,0.065,
+886,release,prison,Sexual offenses,79,3.0,0.04,0.06,0.05,
+887,release,release_permanently,Sexual offenses,79,3.0,,,0.78,
+888,release,prison,Theft/forgery/fraud,79,1.0,0.08,0.08,0.08,
+889,release,prison,Theft/forgery/fraud,79,2.0,0.04,0.11,0.075,
+890,release,prison,Theft/forgery/fraud,79,3.0,0.04,0.08,0.06,
+891,release,release_permanently,Theft/forgery/fraud,79,3.0,,,0.785,
+892,release,prison,Violent personal,79,1.0,0.08,0.11,0.095,
+893,release,prison,Violent personal,79,2.0,0.04,0.08,0.06,
+894,release,prison,Violent personal,79,3.0,0.04,0.07,0.055,
+895,release,release_permanently,Violent personal,79,3.0,,,0.79,
+896,release,prison,Weapons,79,1.0,0.08,0.08,0.08,
+897,release,prison,Weapons,79,2.0,0.04,0.11,0.075,
+898,release,prison,Weapons,79,3.0,0.04,0.09,0.065,
+899,release,release_permanently,Weapons,79,3.0,,,0.78,
+900,release,prison,Burglary,80,1.0,0.08,0.1,0.09,
+901,release,prison,Burglary,80,2.0,0.04,0.11,0.075,
+902,release,prison,Burglary,80,3.0,0.04,0.08,0.06,
+903,release,release_permanently,Burglary,80,3.0,,,0.775,
+904,release,prison,Drug offenses,80,1.0,0.08,0.05,0.065,
+905,release,prison,Drug offenses,80,2.0,0.04,0.07,0.055,
+906,release,prison,Drug offenses,80,3.0,0.04,0.07,0.055,
+907,release,release_permanently,Drug offenses,80,3.0,,,0.825,
+908,release,prison,murder/manslaughter,80,1.0,0.08,0.07,0.075,
+909,release,prison,murder/manslaughter,80,2.0,0.04,0.06,0.05,
+910,release,prison,murder/manslaughter,80,3.0,0.04,0.05,0.045,
+911,release,release_permanently,murder/manslaughter,80,3.0,,,0.83,
+912,release,prison,Other,80,1.0,0.08,0.08,0.08,
+913,release,prison,Other,80,2.0,0.04,0.11,0.075,
+914,release,prison,Other,80,3.0,0.04,0.09,0.065,
+915,release,release_permanently,Other,80,3.0,,,0.78,
+916,release,prison,Robbery,80,1.0,0.08,0.1,0.09,
+917,release,prison,Robbery,80,2.0,0.04,0.1,0.07,
+918,release,prison,Robbery,80,3.0,0.04,0.08,0.06,
+919,release,release_permanently,Robbery,80,3.0,,,0.78,
+920,release,prison,Sexual offenses,80,1.0,0.08,0.13,0.105,
+921,release,prison,Sexual offenses,80,2.0,0.04,0.09,0.065,
+922,release,prison,Sexual offenses,80,3.0,0.04,0.06,0.05,
+923,release,release_permanently,Sexual offenses,80,3.0,,,0.78,
+924,release,prison,Theft/forgery/fraud,80,1.0,0.08,0.08,0.08,
+925,release,prison,Theft/forgery/fraud,80,2.0,0.04,0.11,0.075,
+926,release,prison,Theft/forgery/fraud,80,3.0,0.04,0.08,0.06,
+927,release,release_permanently,Theft/forgery/fraud,80,3.0,,,0.785,
+928,release,prison,Violent personal,80,1.0,0.08,0.11,0.095,
+929,release,prison,Violent personal,80,2.0,0.04,0.08,0.06,
+930,release,prison,Violent personal,80,3.0,0.04,0.07,0.055,
+931,release,release_permanently,Violent personal,80,3.0,,,0.79,
+932,release,prison,Weapons,80,1.0,0.08,0.08,0.08,
+933,release,prison,Weapons,80,2.0,0.04,0.11,0.075,
+934,release,prison,Weapons,80,3.0,0.04,0.09,0.065,
+935,release,release_permanently,Weapons,80,3.0,,,0.78,
+936,release,prison,Burglary,81,1.0,0.08,0.1,0.09,
+937,release,prison,Burglary,81,2.0,0.04,0.11,0.075,
+938,release,prison,Burglary,81,3.0,0.04,0.08,0.06,
+939,release,release_permanently,Burglary,81,3.0,,,0.775,
+940,release,prison,Drug offenses,81,1.0,0.08,0.05,0.065,
+941,release,prison,Drug offenses,81,2.0,0.04,0.07,0.055,
+942,release,prison,Drug offenses,81,3.0,0.04,0.07,0.055,
+943,release,release_permanently,Drug offenses,81,3.0,,,0.825,
+944,release,prison,murder/manslaughter,81,1.0,0.08,0.07,0.075,
+945,release,prison,murder/manslaughter,81,2.0,0.04,0.06,0.05,
+946,release,prison,murder/manslaughter,81,3.0,0.04,0.05,0.045,
+947,release,release_permanently,murder/manslaughter,81,3.0,,,0.83,
+948,release,prison,Other,81,1.0,0.08,0.08,0.08,
+949,release,prison,Other,81,2.0,0.04,0.11,0.075,
+950,release,prison,Other,81,3.0,0.04,0.09,0.065,
+951,release,release_permanently,Other,81,3.0,,,0.78,
+952,release,prison,Robbery,81,1.0,0.08,0.1,0.09,
+953,release,prison,Robbery,81,2.0,0.04,0.1,0.07,
+954,release,prison,Robbery,81,3.0,0.04,0.08,0.06,
+955,release,release_permanently,Robbery,81,3.0,,,0.78,
+956,release,prison,Sexual offenses,81,1.0,0.08,0.13,0.105,
+957,release,prison,Sexual offenses,81,2.0,0.04,0.09,0.065,
+958,release,prison,Sexual offenses,81,3.0,0.04,0.06,0.05,
+959,release,release_permanently,Sexual offenses,81,3.0,,,0.78,
+960,release,prison,Theft/forgery/fraud,81,1.0,0.08,0.08,0.08,
+961,release,prison,Theft/forgery/fraud,81,2.0,0.04,0.11,0.075,
+962,release,prison,Theft/forgery/fraud,81,3.0,0.04,0.08,0.06,
+963,release,release_permanently,Theft/forgery/fraud,81,3.0,,,0.785,
+964,release,prison,Violent personal,81,1.0,0.08,0.11,0.095,
+965,release,prison,Violent personal,81,2.0,0.04,0.08,0.06,
+966,release,prison,Violent personal,81,3.0,0.04,0.07,0.055,
+967,release,release_permanently,Violent personal,81,3.0,,,0.79,
+968,release,prison,Weapons,81,1.0,0.08,0.08,0.08,
+969,release,prison,Weapons,81,2.0,0.04,0.11,0.075,
+970,release,prison,Weapons,81,3.0,0.04,0.09,0.065,
+971,release,release_permanently,Weapons,81,3.0,,,0.78,
+972,release,prison,Burglary,82,1.0,0.08,0.1,0.09,
+973,release,prison,Burglary,82,2.0,0.04,0.11,0.075,
+974,release,prison,Burglary,82,3.0,0.04,0.08,0.06,
+975,release,release_permanently,Burglary,82,3.0,,,0.775,
+976,release,prison,Drug offenses,82,1.0,0.08,0.05,0.065,
+977,release,prison,Drug offenses,82,2.0,0.04,0.07,0.055,
+978,release,prison,Drug offenses,82,3.0,0.04,0.07,0.055,
+979,release,release_permanently,Drug offenses,82,3.0,,,0.825,
+980,release,prison,murder/manslaughter,82,1.0,0.08,0.07,0.075,
+981,release,prison,murder/manslaughter,82,2.0,0.04,0.06,0.05,
+982,release,prison,murder/manslaughter,82,3.0,0.04,0.05,0.045,
+983,release,release_permanently,murder/manslaughter,82,3.0,,,0.83,
+984,release,prison,Other,82,1.0,0.08,0.08,0.08,
+985,release,prison,Other,82,2.0,0.04,0.11,0.075,
+986,release,prison,Other,82,3.0,0.04,0.09,0.065,
+987,release,release_permanently,Other,82,3.0,,,0.78,
+988,release,prison,Robbery,82,1.0,0.08,0.1,0.09,
+989,release,prison,Robbery,82,2.0,0.04,0.1,0.07,
+990,release,prison,Robbery,82,3.0,0.04,0.08,0.06,
+991,release,release_permanently,Robbery,82,3.0,,,0.78,
+992,release,prison,Sexual offenses,82,1.0,0.08,0.13,0.105,
+993,release,prison,Sexual offenses,82,2.0,0.04,0.09,0.065,
+994,release,prison,Sexual offenses,82,3.0,0.04,0.06,0.05,
+995,release,release_permanently,Sexual offenses,82,3.0,,,0.78,
+996,release,prison,Theft/forgery/fraud,82,1.0,0.08,0.08,0.08,
+997,release,prison,Theft/forgery/fraud,82,2.0,0.04,0.11,0.075,
+998,release,prison,Theft/forgery/fraud,82,3.0,0.04,0.08,0.06,
+999,release,release_permanently,Theft/forgery/fraud,82,3.0,,,0.785,
+1000,release,prison,Violent personal,82,1.0,0.08,0.11,0.095,
+1001,release,prison,Violent personal,82,2.0,0.04,0.08,0.06,
+1002,release,prison,Violent personal,82,3.0,0.04,0.07,0.055,
+1003,release,release_permanently,Violent personal,82,3.0,,,0.79,
+1004,release,prison,Weapons,82,1.0,0.08,0.08,0.08,
+1005,release,prison,Weapons,82,2.0,0.04,0.11,0.075,
+1006,release,prison,Weapons,82,3.0,0.04,0.09,0.065,
+1007,release,release_permanently,Weapons,82,3.0,,,0.78,
+1008,release,prison,Burglary,83,1.0,0.08,0.1,0.09,
+1009,release,prison,Burglary,83,2.0,0.04,0.11,0.075,
+1010,release,prison,Burglary,83,3.0,0.04,0.08,0.06,
+1011,release,release_permanently,Burglary,83,3.0,,,0.775,
+1012,release,prison,Drug offenses,83,1.0,0.08,0.05,0.065,
+1013,release,prison,Drug offenses,83,2.0,0.04,0.07,0.055,
+1014,release,prison,Drug offenses,83,3.0,0.04,0.07,0.055,
+1015,release,release_permanently,Drug offenses,83,3.0,,,0.825,
+1016,release,prison,murder/manslaughter,83,1.0,0.08,0.07,0.075,
+1017,release,prison,murder/manslaughter,83,2.0,0.04,0.06,0.05,
+1018,release,prison,murder/manslaughter,83,3.0,0.04,0.05,0.045,
+1019,release,release_permanently,murder/manslaughter,83,3.0,,,0.83,
+1020,release,prison,Other,83,1.0,0.08,0.08,0.08,
+1021,release,prison,Other,83,2.0,0.04,0.11,0.075,
+1022,release,prison,Other,83,3.0,0.04,0.09,0.065,
+1023,release,release_permanently,Other,83,3.0,,,0.78,
+1024,release,prison,Robbery,83,1.0,0.08,0.1,0.09,
+1025,release,prison,Robbery,83,2.0,0.04,0.1,0.07,
+1026,release,prison,Robbery,83,3.0,0.04,0.08,0.06,
+1027,release,release_permanently,Robbery,83,3.0,,,0.78,
+1028,release,prison,Sexual offenses,83,1.0,0.08,0.13,0.105,
+1029,release,prison,Sexual offenses,83,2.0,0.04,0.09,0.065,
+1030,release,prison,Sexual offenses,83,3.0,0.04,0.06,0.05,
+1031,release,release_permanently,Sexual offenses,83,3.0,,,0.78,
+1032,release,prison,Theft/forgery/fraud,83,1.0,0.08,0.08,0.08,
+1033,release,prison,Theft/forgery/fraud,83,2.0,0.04,0.11,0.075,
+1034,release,prison,Theft/forgery/fraud,83,3.0,0.04,0.08,0.06,
+1035,release,release_permanently,Theft/forgery/fraud,83,3.0,,,0.785,
+1036,release,prison,Violent personal,83,1.0,0.08,0.11,0.095,
+1037,release,prison,Violent personal,83,2.0,0.04,0.08,0.06,
+1038,release,prison,Violent personal,83,3.0,0.04,0.07,0.055,
+1039,release,release_permanently,Violent personal,83,3.0,,,0.79,
+1040,release,prison,Weapons,83,1.0,0.08,0.08,0.08,
+1041,release,prison,Weapons,83,2.0,0.04,0.11,0.075,
+1042,release,prison,Weapons,83,3.0,0.04,0.09,0.065,
+1043,release,release_permanently,Weapons,83,3.0,,,0.78,
+1044,release,prison,Burglary,84,1.0,0.08,0.1,0.09,
+1045,release,prison,Burglary,84,2.0,0.04,0.11,0.075,
+1046,release,prison,Burglary,84,3.0,0.04,0.08,0.06,
+1047,release,release_permanently,Burglary,84,3.0,,,0.775,
+1048,release,prison,Drug offenses,84,1.0,0.08,0.05,0.065,
+1049,release,prison,Drug offenses,84,2.0,0.04,0.07,0.055,
+1050,release,prison,Drug offenses,84,3.0,0.04,0.07,0.055,
+1051,release,release_permanently,Drug offenses,84,3.0,,,0.825,
+1052,release,prison,murder/manslaughter,84,1.0,0.08,0.07,0.075,
+1053,release,prison,murder/manslaughter,84,2.0,0.04,0.06,0.05,
+1054,release,prison,murder/manslaughter,84,3.0,0.04,0.05,0.045,
+1055,release,release_permanently,murder/manslaughter,84,3.0,,,0.83,
+1056,release,prison,Other,84,1.0,0.08,0.08,0.08,
+1057,release,prison,Other,84,2.0,0.04,0.11,0.075,
+1058,release,prison,Other,84,3.0,0.04,0.09,0.065,
+1059,release,release_permanently,Other,84,3.0,,,0.78,
+1060,release,prison,Robbery,84,1.0,0.08,0.1,0.09,
+1061,release,prison,Robbery,84,2.0,0.04,0.1,0.07,
+1062,release,prison,Robbery,84,3.0,0.04,0.08,0.06,
+1063,release,release_permanently,Robbery,84,3.0,,,0.78,
+1064,release,prison,Sexual offenses,84,1.0,0.08,0.13,0.105,
+1065,release,prison,Sexual offenses,84,2.0,0.04,0.09,0.065,
+1066,release,prison,Sexual offenses,84,3.0,0.04,0.06,0.05,
+1067,release,release_permanently,Sexual offenses,84,3.0,,,0.78,
+1068,release,prison,Theft/forgery/fraud,84,1.0,0.08,0.08,0.08,
+1069,release,prison,Theft/forgery/fraud,84,2.0,0.04,0.11,0.075,
+1070,release,prison,Theft/forgery/fraud,84,3.0,0.04,0.08,0.06,
+1071,release,release_permanently,Theft/forgery/fraud,84,3.0,,,0.785,
+1072,release,prison,Violent personal,84,1.0,0.08,0.11,0.095,
+1073,release,prison,Violent personal,84,2.0,0.04,0.08,0.06,
+1074,release,prison,Violent personal,84,3.0,0.04,0.07,0.055,
+1075,release,release_permanently,Violent personal,84,3.0,,,0.79,
+1076,release,prison,Weapons,84,1.0,0.08,0.08,0.08,
+1077,release,prison,Weapons,84,2.0,0.04,0.11,0.075,
+1078,release,prison,Weapons,84,3.0,0.04,0.09,0.065,
+1079,release,release_permanently,Weapons,84,3.0,,,0.78,
+1080,release,prison,Burglary,85,1.0,0.08,0.1,0.09,
+1081,release,prison,Burglary,85,2.0,0.04,0.11,0.075,
+1082,release,prison,Burglary,85,3.0,0.04,0.08,0.06,
+1083,release,release_permanently,Burglary,85,3.0,,,0.775,
+1084,release,prison,Drug offenses,85,1.0,0.08,0.05,0.065,
+1085,release,prison,Drug offenses,85,2.0,0.04,0.07,0.055,
+1086,release,prison,Drug offenses,85,3.0,0.04,0.07,0.055,
+1087,release,release_permanently,Drug offenses,85,3.0,,,0.825,
+1088,release,prison,murder/manslaughter,85,1.0,0.08,0.07,0.075,
+1089,release,prison,murder/manslaughter,85,2.0,0.04,0.06,0.05,
+1090,release,prison,murder/manslaughter,85,3.0,0.04,0.05,0.045,
+1091,release,release_permanently,murder/manslaughter,85,3.0,,,0.83,
+1092,release,prison,Other,85,1.0,0.08,0.08,0.08,
+1093,release,prison,Other,85,2.0,0.04,0.11,0.075,
+1094,release,prison,Other,85,3.0,0.04,0.09,0.065,
+1095,release,release_permanently,Other,85,3.0,,,0.78,
+1096,release,prison,Robbery,85,1.0,0.08,0.1,0.09,
+1097,release,prison,Robbery,85,2.0,0.04,0.1,0.07,
+1098,release,prison,Robbery,85,3.0,0.04,0.08,0.06,
+1099,release,release_permanently,Robbery,85,3.0,,,0.78,
+1100,release,prison,Sexual offenses,85,1.0,0.08,0.13,0.105,
+1101,release,prison,Sexual offenses,85,2.0,0.04,0.09,0.065,
+1102,release,prison,Sexual offenses,85,3.0,0.04,0.06,0.05,
+1103,release,release_permanently,Sexual offenses,85,3.0,,,0.78,
+1104,release,prison,Theft/forgery/fraud,85,1.0,0.08,0.08,0.08,
+1105,release,prison,Theft/forgery/fraud,85,2.0,0.04,0.11,0.075,
+1106,release,prison,Theft/forgery/fraud,85,3.0,0.04,0.08,0.06,
+1107,release,release_permanently,Theft/forgery/fraud,85,3.0,,,0.785,
+1108,release,prison,Violent personal,85,1.0,0.08,0.11,0.095,
+1109,release,prison,Violent personal,85,2.0,0.04,0.08,0.06,
+1110,release,prison,Violent personal,85,3.0,0.04,0.07,0.055,
+1111,release,release_permanently,Violent personal,85,3.0,,,0.79,
+1112,release,prison,Weapons,85,1.0,0.08,0.08,0.08,
+1113,release,prison,Weapons,85,2.0,0.04,0.11,0.075,
+1114,release,prison,Weapons,85,3.0,0.04,0.09,0.065,
+1115,release,release_permanently,Weapons,85,3.0,,,0.78,
+1116,release,prison,Burglary,86,1.0,0.08,0.1,0.09,
+1117,release,prison,Burglary,86,2.0,0.04,0.11,0.075,
+1118,release,prison,Burglary,86,3.0,0.04,0.08,0.06,
+1119,release,release_permanently,Burglary,86,3.0,,,0.775,
+1120,release,prison,Drug offenses,86,1.0,0.08,0.05,0.065,
+1121,release,prison,Drug offenses,86,2.0,0.04,0.07,0.055,
+1122,release,prison,Drug offenses,86,3.0,0.04,0.07,0.055,
+1123,release,release_permanently,Drug offenses,86,3.0,,,0.825,
+1124,release,prison,murder/manslaughter,86,1.0,0.08,0.07,0.075,
+1125,release,prison,murder/manslaughter,86,2.0,0.04,0.06,0.05,
+1126,release,prison,murder/manslaughter,86,3.0,0.04,0.05,0.045,
+1127,release,release_permanently,murder/manslaughter,86,3.0,,,0.83,
+1128,release,prison,Other,86,1.0,0.08,0.08,0.08,
+1129,release,prison,Other,86,2.0,0.04,0.11,0.075,
+1130,release,prison,Other,86,3.0,0.04,0.09,0.065,
+1131,release,release_permanently,Other,86,3.0,,,0.78,
+1132,release,prison,Robbery,86,1.0,0.08,0.1,0.09,
+1133,release,prison,Robbery,86,2.0,0.04,0.1,0.07,
+1134,release,prison,Robbery,86,3.0,0.04,0.08,0.06,
+1135,release,release_permanently,Robbery,86,3.0,,,0.78,
+1136,release,prison,Sexual offenses,86,1.0,0.08,0.13,0.105,
+1137,release,prison,Sexual offenses,86,2.0,0.04,0.09,0.065,
+1138,release,prison,Sexual offenses,86,3.0,0.04,0.06,0.05,
+1139,release,release_permanently,Sexual offenses,86,3.0,,,0.78,
+1140,release,prison,Theft/forgery/fraud,86,1.0,0.08,0.08,0.08,
+1141,release,prison,Theft/forgery/fraud,86,2.0,0.04,0.11,0.075,
+1142,release,prison,Theft/forgery/fraud,86,3.0,0.04,0.08,0.06,
+1143,release,release_permanently,Theft/forgery/fraud,86,3.0,,,0.785,
+1144,release,prison,Violent personal,86,1.0,0.08,0.11,0.095,
+1145,release,prison,Violent personal,86,2.0,0.04,0.08,0.06,
+1146,release,prison,Violent personal,86,3.0,0.04,0.07,0.055,
+1147,release,release_permanently,Violent personal,86,3.0,,,0.79,
+1148,release,prison,Weapons,86,1.0,0.08,0.08,0.08,
+1149,release,prison,Weapons,86,2.0,0.04,0.11,0.075,
+1150,release,prison,Weapons,86,3.0,0.04,0.09,0.065,
+1151,release,release_permanently,Weapons,86,3.0,,,0.78,
+1152,release,prison,Burglary,87,1.0,0.08,0.1,0.09,
+1153,release,prison,Burglary,87,2.0,0.04,0.11,0.075,
+1154,release,prison,Burglary,87,3.0,0.04,0.08,0.06,
+1155,release,release_permanently,Burglary,87,3.0,,,0.775,
+1156,release,prison,Drug offenses,87,1.0,0.08,0.05,0.065,
+1157,release,prison,Drug offenses,87,2.0,0.04,0.07,0.055,
+1158,release,prison,Drug offenses,87,3.0,0.04,0.07,0.055,
+1159,release,release_permanently,Drug offenses,87,3.0,,,0.825,
+1160,release,prison,murder/manslaughter,87,1.0,0.08,0.07,0.075,
+1161,release,prison,murder/manslaughter,87,2.0,0.04,0.06,0.05,
+1162,release,prison,murder/manslaughter,87,3.0,0.04,0.05,0.045,
+1163,release,release_permanently,murder/manslaughter,87,3.0,,,0.83,
+1164,release,prison,Other,87,1.0,0.08,0.08,0.08,
+1165,release,prison,Other,87,2.0,0.04,0.11,0.075,
+1166,release,prison,Other,87,3.0,0.04,0.09,0.065,
+1167,release,release_permanently,Other,87,3.0,,,0.78,
+1168,release,prison,Robbery,87,1.0,0.08,0.1,0.09,
+1169,release,prison,Robbery,87,2.0,0.04,0.1,0.07,
+1170,release,prison,Robbery,87,3.0,0.04,0.08,0.06,
+1171,release,release_permanently,Robbery,87,3.0,,,0.78,
+1172,release,prison,Sexual offenses,87,1.0,0.08,0.13,0.105,
+1173,release,prison,Sexual offenses,87,2.0,0.04,0.09,0.065,
+1174,release,prison,Sexual offenses,87,3.0,0.04,0.06,0.05,
+1175,release,release_permanently,Sexual offenses,87,3.0,,,0.78,
+1176,release,prison,Theft/forgery/fraud,87,1.0,0.08,0.08,0.08,
+1177,release,prison,Theft/forgery/fraud,87,2.0,0.04,0.11,0.075,
+1178,release,prison,Theft/forgery/fraud,87,3.0,0.04,0.08,0.06,
+1179,release,release_permanently,Theft/forgery/fraud,87,3.0,,,0.785,
+1180,release,prison,Violent personal,87,1.0,0.08,0.11,0.095,
+1181,release,prison,Violent personal,87,2.0,0.04,0.08,0.06,
+1182,release,prison,Violent personal,87,3.0,0.04,0.07,0.055,
+1183,release,release_permanently,Violent personal,87,3.0,,,0.79,
+1184,release,prison,Weapons,87,1.0,0.08,0.08,0.08,
+1185,release,prison,Weapons,87,2.0,0.04,0.11,0.075,
+1186,release,prison,Weapons,87,3.0,0.04,0.09,0.065,
+1187,release,release_permanently,Weapons,87,3.0,,,0.78,
+1188,release,prison,Burglary,88,1.0,0.08,0.1,0.09,
+1189,release,prison,Burglary,88,2.0,0.04,0.11,0.075,
+1190,release,prison,Burglary,88,3.0,0.04,0.08,0.06,
+1191,release,release_permanently,Burglary,88,3.0,,,0.775,
+1192,release,prison,Drug offenses,88,1.0,0.08,0.05,0.065,
+1193,release,prison,Drug offenses,88,2.0,0.04,0.07,0.055,
+1194,release,prison,Drug offenses,88,3.0,0.04,0.07,0.055,
+1195,release,release_permanently,Drug offenses,88,3.0,,,0.825,
+1196,release,prison,murder/manslaughter,88,1.0,0.08,0.07,0.075,
+1197,release,prison,murder/manslaughter,88,2.0,0.04,0.06,0.05,
+1198,release,prison,murder/manslaughter,88,3.0,0.04,0.05,0.045,
+1199,release,release_permanently,murder/manslaughter,88,3.0,,,0.83,
+1200,release,prison,Other,88,1.0,0.08,0.08,0.08,
+1201,release,prison,Other,88,2.0,0.04,0.11,0.075,
+1202,release,prison,Other,88,3.0,0.04,0.09,0.065,
+1203,release,release_permanently,Other,88,3.0,,,0.78,
+1204,release,prison,Robbery,88,1.0,0.08,0.1,0.09,
+1205,release,prison,Robbery,88,2.0,0.04,0.1,0.07,
+1206,release,prison,Robbery,88,3.0,0.04,0.08,0.06,
+1207,release,release_permanently,Robbery,88,3.0,,,0.78,
+1208,release,prison,Sexual offenses,88,1.0,0.08,0.13,0.105,
+1209,release,prison,Sexual offenses,88,2.0,0.04,0.09,0.065,
+1210,release,prison,Sexual offenses,88,3.0,0.04,0.06,0.05,
+1211,release,release_permanently,Sexual offenses,88,3.0,,,0.78,
+1212,release,prison,Theft/forgery/fraud,88,1.0,0.08,0.08,0.08,
+1213,release,prison,Theft/forgery/fraud,88,2.0,0.04,0.11,0.075,
+1214,release,prison,Theft/forgery/fraud,88,3.0,0.04,0.08,0.06,
+1215,release,release_permanently,Theft/forgery/fraud,88,3.0,,,0.785,
+1216,release,prison,Violent personal,88,1.0,0.08,0.11,0.095,
+1217,release,prison,Violent personal,88,2.0,0.04,0.08,0.06,
+1218,release,prison,Violent personal,88,3.0,0.04,0.07,0.055,
+1219,release,release_permanently,Violent personal,88,3.0,,,0.79,
+1220,release,prison,Weapons,88,1.0,0.08,0.08,0.08,
+1221,release,prison,Weapons,88,2.0,0.04,0.11,0.075,
+1222,release,prison,Weapons,88,3.0,0.04,0.09,0.065,
+1223,release,release_permanently,Weapons,88,3.0,,,0.78,
+1224,release,prison,Burglary,89,1.0,0.08,0.1,0.09,
+1225,release,prison,Burglary,89,2.0,0.04,0.11,0.075,
+1226,release,prison,Burglary,89,3.0,0.04,0.08,0.06,
+1227,release,release_permanently,Burglary,89,3.0,,,0.775,
+1228,release,prison,Drug offenses,89,1.0,0.08,0.05,0.065,
+1229,release,prison,Drug offenses,89,2.0,0.04,0.07,0.055,
+1230,release,prison,Drug offenses,89,3.0,0.04,0.07,0.055,
+1231,release,release_permanently,Drug offenses,89,3.0,,,0.825,
+1232,release,prison,murder/manslaughter,89,1.0,0.08,0.07,0.075,
+1233,release,prison,murder/manslaughter,89,2.0,0.04,0.06,0.05,
+1234,release,prison,murder/manslaughter,89,3.0,0.04,0.05,0.045,
+1235,release,release_permanently,murder/manslaughter,89,3.0,,,0.83,
+1236,release,prison,Other,89,1.0,0.08,0.08,0.08,
+1237,release,prison,Other,89,2.0,0.04,0.11,0.075,
+1238,release,prison,Other,89,3.0,0.04,0.09,0.065,
+1239,release,release_permanently,Other,89,3.0,,,0.78,
+1240,release,prison,Robbery,89,1.0,0.08,0.1,0.09,
+1241,release,prison,Robbery,89,2.0,0.04,0.1,0.07,
+1242,release,prison,Robbery,89,3.0,0.04,0.08,0.06,
+1243,release,release_permanently,Robbery,89,3.0,,,0.78,
+1244,release,prison,Sexual offenses,89,1.0,0.08,0.13,0.105,
+1245,release,prison,Sexual offenses,89,2.0,0.04,0.09,0.065,
+1246,release,prison,Sexual offenses,89,3.0,0.04,0.06,0.05,
+1247,release,release_permanently,Sexual offenses,89,3.0,,,0.78,
+1248,release,prison,Theft/forgery/fraud,89,1.0,0.08,0.08,0.08,
+1249,release,prison,Theft/forgery/fraud,89,2.0,0.04,0.11,0.075,
+1250,release,prison,Theft/forgery/fraud,89,3.0,0.04,0.08,0.06,
+1251,release,release_permanently,Theft/forgery/fraud,89,3.0,,,0.785,
+1252,release,prison,Violent personal,89,1.0,0.08,0.11,0.095,
+1253,release,prison,Violent personal,89,2.0,0.04,0.08,0.06,
+1254,release,prison,Violent personal,89,3.0,0.04,0.07,0.055,
+1255,release,release_permanently,Violent personal,89,3.0,,,0.79,
+1256,release,prison,Weapons,89,1.0,0.08,0.08,0.08,
+1257,release,prison,Weapons,89,2.0,0.04,0.11,0.075,
+1258,release,prison,Weapons,89,3.0,0.04,0.09,0.065,
+1259,release,release_permanently,Weapons,89,3.0,,,0.78,
+1260,release,prison,Burglary,90,1.0,0.08,0.1,0.09,
+1261,release,prison,Burglary,90,2.0,0.04,0.11,0.075,
+1262,release,prison,Burglary,90,3.0,0.04,0.08,0.06,
+1263,release,release_permanently,Burglary,90,3.0,,,0.775,
+1264,release,prison,Drug offenses,90,1.0,0.08,0.05,0.065,
+1265,release,prison,Drug offenses,90,2.0,0.04,0.07,0.055,
+1266,release,prison,Drug offenses,90,3.0,0.04,0.07,0.055,
+1267,release,release_permanently,Drug offenses,90,3.0,,,0.825,
+1268,release,prison,murder/manslaughter,90,1.0,0.08,0.07,0.075,
+1269,release,prison,murder/manslaughter,90,2.0,0.04,0.06,0.05,
+1270,release,prison,murder/manslaughter,90,3.0,0.04,0.05,0.045,
+1271,release,release_permanently,murder/manslaughter,90,3.0,,,0.83,
+1272,release,prison,Other,90,1.0,0.08,0.08,0.08,
+1273,release,prison,Other,90,2.0,0.04,0.11,0.075,
+1274,release,prison,Other,90,3.0,0.04,0.09,0.065,
+1275,release,release_permanently,Other,90,3.0,,,0.78,
+1276,release,prison,Robbery,90,1.0,0.08,0.1,0.09,
+1277,release,prison,Robbery,90,2.0,0.04,0.1,0.07,
+1278,release,prison,Robbery,90,3.0,0.04,0.08,0.06,
+1279,release,release_permanently,Robbery,90,3.0,,,0.78,
+1280,release,prison,Sexual offenses,90,1.0,0.08,0.13,0.105,
+1281,release,prison,Sexual offenses,90,2.0,0.04,0.09,0.065,
+1282,release,prison,Sexual offenses,90,3.0,0.04,0.06,0.05,
+1283,release,release_permanently,Sexual offenses,90,3.0,,,0.78,
+1284,release,prison,Theft/forgery/fraud,90,1.0,0.08,0.08,0.08,
+1285,release,prison,Theft/forgery/fraud,90,2.0,0.04,0.11,0.075,
+1286,release,prison,Theft/forgery/fraud,90,3.0,0.04,0.08,0.06,
+1287,release,release_permanently,Theft/forgery/fraud,90,3.0,,,0.785,
+1288,release,prison,Violent personal,90,1.0,0.08,0.11,0.095,
+1289,release,prison,Violent personal,90,2.0,0.04,0.08,0.06,
+1290,release,prison,Violent personal,90,3.0,0.04,0.07,0.055,
+1291,release,release_permanently,Violent personal,90,3.0,,,0.79,
+1292,release,prison,Weapons,90,1.0,0.08,0.08,0.08,
+1293,release,prison,Weapons,90,2.0,0.04,0.11,0.075,
+1294,release,prison,Weapons,90,3.0,0.04,0.09,0.065,
+1295,release,release_permanently,Weapons,90,3.0,,,0.78,
+1296,release,prison,Burglary,91,1.0,0.08,0.1,0.09,
+1297,release,prison,Burglary,91,2.0,0.04,0.11,0.075,
+1298,release,prison,Burglary,91,3.0,0.04,0.08,0.06,
+1299,release,release_permanently,Burglary,91,3.0,,,0.775,
+1300,release,prison,Drug offenses,91,1.0,0.08,0.05,0.065,
+1301,release,prison,Drug offenses,91,2.0,0.04,0.07,0.055,
+1302,release,prison,Drug offenses,91,3.0,0.04,0.07,0.055,
+1303,release,release_permanently,Drug offenses,91,3.0,,,0.825,
+1304,release,prison,murder/manslaughter,91,1.0,0.08,0.07,0.075,
+1305,release,prison,murder/manslaughter,91,2.0,0.04,0.06,0.05,
+1306,release,prison,murder/manslaughter,91,3.0,0.04,0.05,0.045,
+1307,release,release_permanently,murder/manslaughter,91,3.0,,,0.83,
+1308,release,prison,Other,91,1.0,0.08,0.08,0.08,
+1309,release,prison,Other,91,2.0,0.04,0.11,0.075,
+1310,release,prison,Other,91,3.0,0.04,0.09,0.065,
+1311,release,release_permanently,Other,91,3.0,,,0.78,
+1312,release,prison,Robbery,91,1.0,0.08,0.1,0.09,
+1313,release,prison,Robbery,91,2.0,0.04,0.1,0.07,
+1314,release,prison,Robbery,91,3.0,0.04,0.08,0.06,
+1315,release,release_permanently,Robbery,91,3.0,,,0.78,
+1316,release,prison,Sexual offenses,91,1.0,0.08,0.13,0.105,
+1317,release,prison,Sexual offenses,91,2.0,0.04,0.09,0.065,
+1318,release,prison,Sexual offenses,91,3.0,0.04,0.06,0.05,
+1319,release,release_permanently,Sexual offenses,91,3.0,,,0.78,
+1320,release,prison,Theft/forgery/fraud,91,1.0,0.08,0.08,0.08,
+1321,release,prison,Theft/forgery/fraud,91,2.0,0.04,0.11,0.075,
+1322,release,prison,Theft/forgery/fraud,91,3.0,0.04,0.08,0.06,
+1323,release,release_permanently,Theft/forgery/fraud,91,3.0,,,0.785,
+1324,release,prison,Violent personal,91,1.0,0.08,0.11,0.095,
+1325,release,prison,Violent personal,91,2.0,0.04,0.08,0.06,
+1326,release,prison,Violent personal,91,3.0,0.04,0.07,0.055,
+1327,release,release_permanently,Violent personal,91,3.0,,,0.79,
+1328,release,prison,Weapons,91,1.0,0.08,0.08,0.08,
+1329,release,prison,Weapons,91,2.0,0.04,0.11,0.075,
+1330,release,prison,Weapons,91,3.0,0.04,0.09,0.065,
+1331,release,release_permanently,Weapons,91,3.0,,,0.78,
+1332,release,prison,Burglary,92,1.0,0.08,0.1,0.09,
+1333,release,prison,Burglary,92,2.0,0.04,0.11,0.075,
+1334,release,prison,Burglary,92,3.0,0.04,0.08,0.06,
+1335,release,release_permanently,Burglary,92,3.0,,,0.775,
+1336,release,prison,Drug offenses,92,1.0,0.08,0.05,0.065,
+1337,release,prison,Drug offenses,92,2.0,0.04,0.07,0.055,
+1338,release,prison,Drug offenses,92,3.0,0.04,0.07,0.055,
+1339,release,release_permanently,Drug offenses,92,3.0,,,0.825,
+1340,release,prison,murder/manslaughter,92,1.0,0.08,0.07,0.075,
+1341,release,prison,murder/manslaughter,92,2.0,0.04,0.06,0.05,
+1342,release,prison,murder/manslaughter,92,3.0,0.04,0.05,0.045,
+1343,release,release_permanently,murder/manslaughter,92,3.0,,,0.83,
+1344,release,prison,Other,92,1.0,0.08,0.08,0.08,
+1345,release,prison,Other,92,2.0,0.04,0.11,0.075,
+1346,release,prison,Other,92,3.0,0.04,0.09,0.065,
+1347,release,release_permanently,Other,92,3.0,,,0.78,
+1348,release,prison,Robbery,92,1.0,0.08,0.1,0.09,
+1349,release,prison,Robbery,92,2.0,0.04,0.1,0.07,
+1350,release,prison,Robbery,92,3.0,0.04,0.08,0.06,
+1351,release,release_permanently,Robbery,92,3.0,,,0.78,
+1352,release,prison,Sexual offenses,92,1.0,0.08,0.13,0.105,
+1353,release,prison,Sexual offenses,92,2.0,0.04,0.09,0.065,
+1354,release,prison,Sexual offenses,92,3.0,0.04,0.06,0.05,
+1355,release,release_permanently,Sexual offenses,92,3.0,,,0.78,
+1356,release,prison,Theft/forgery/fraud,92,1.0,0.08,0.08,0.08,
+1357,release,prison,Theft/forgery/fraud,92,2.0,0.04,0.11,0.075,
+1358,release,prison,Theft/forgery/fraud,92,3.0,0.04,0.08,0.06,
+1359,release,release_permanently,Theft/forgery/fraud,92,3.0,,,0.785,
+1360,release,prison,Violent personal,92,1.0,0.08,0.11,0.095,
+1361,release,prison,Violent personal,92,2.0,0.04,0.08,0.06,
+1362,release,prison,Violent personal,92,3.0,0.04,0.07,0.055,
+1363,release,release_permanently,Violent personal,92,3.0,,,0.79,
+1364,release,prison,Weapons,92,1.0,0.08,0.08,0.08,
+1365,release,prison,Weapons,92,2.0,0.04,0.11,0.075,
+1366,release,prison,Weapons,92,3.0,0.04,0.09,0.065,
+1367,release,release_permanently,Weapons,92,3.0,,,0.78,
+1368,release,prison,Burglary,93,1.0,0.08,0.1,0.09,
+1369,release,prison,Burglary,93,2.0,0.04,0.11,0.075,
+1370,release,prison,Burglary,93,3.0,0.04,0.08,0.06,
+1371,release,release_permanently,Burglary,93,3.0,,,0.775,
+1372,release,prison,Drug offenses,93,1.0,0.08,0.05,0.065,
+1373,release,prison,Drug offenses,93,2.0,0.04,0.07,0.055,
+1374,release,prison,Drug offenses,93,3.0,0.04,0.07,0.055,
+1375,release,release_permanently,Drug offenses,93,3.0,,,0.825,
+1376,release,prison,murder/manslaughter,93,1.0,0.08,0.07,0.075,
+1377,release,prison,murder/manslaughter,93,2.0,0.04,0.06,0.05,
+1378,release,prison,murder/manslaughter,93,3.0,0.04,0.05,0.045,
+1379,release,release_permanently,murder/manslaughter,93,3.0,,,0.83,
+1380,release,prison,Other,93,1.0,0.08,0.08,0.08,
+1381,release,prison,Other,93,2.0,0.04,0.11,0.075,
+1382,release,prison,Other,93,3.0,0.04,0.09,0.065,
+1383,release,release_permanently,Other,93,3.0,,,0.78,
+1384,release,prison,Robbery,93,1.0,0.08,0.1,0.09,
+1385,release,prison,Robbery,93,2.0,0.04,0.1,0.07,
+1386,release,prison,Robbery,93,3.0,0.04,0.08,0.06,
+1387,release,release_permanently,Robbery,93,3.0,,,0.78,
+1388,release,prison,Sexual offenses,93,1.0,0.08,0.13,0.105,
+1389,release,prison,Sexual offenses,93,2.0,0.04,0.09,0.065,
+1390,release,prison,Sexual offenses,93,3.0,0.04,0.06,0.05,
+1391,release,release_permanently,Sexual offenses,93,3.0,,,0.78,
+1392,release,prison,Theft/forgery/fraud,93,1.0,0.08,0.08,0.08,
+1393,release,prison,Theft/forgery/fraud,93,2.0,0.04,0.11,0.075,
+1394,release,prison,Theft/forgery/fraud,93,3.0,0.04,0.08,0.06,
+1395,release,release_permanently,Theft/forgery/fraud,93,3.0,,,0.785,
+1396,release,prison,Violent personal,93,1.0,0.08,0.11,0.095,
+1397,release,prison,Violent personal,93,2.0,0.04,0.08,0.06,
+1398,release,prison,Violent personal,93,3.0,0.04,0.07,0.055,
+1399,release,release_permanently,Violent personal,93,3.0,,,0.79,
+1400,release,prison,Weapons,93,1.0,0.08,0.08,0.08,
+1401,release,prison,Weapons,93,2.0,0.04,0.11,0.075,
+1402,release,prison,Weapons,93,3.0,0.04,0.09,0.065,
+1403,release,release_permanently,Weapons,93,3.0,,,0.78,
+1404,release,prison,Burglary,94,1.0,0.08,0.1,0.09,
+1405,release,prison,Burglary,94,2.0,0.04,0.11,0.075,
+1406,release,prison,Burglary,94,3.0,0.04,0.08,0.06,
+1407,release,release_permanently,Burglary,94,3.0,,,0.775,
+1408,release,prison,Drug offenses,94,1.0,0.08,0.05,0.065,
+1409,release,prison,Drug offenses,94,2.0,0.04,0.07,0.055,
+1410,release,prison,Drug offenses,94,3.0,0.04,0.07,0.055,
+1411,release,release_permanently,Drug offenses,94,3.0,,,0.825,
+1412,release,prison,murder/manslaughter,94,1.0,0.08,0.07,0.075,
+1413,release,prison,murder/manslaughter,94,2.0,0.04,0.06,0.05,
+1414,release,prison,murder/manslaughter,94,3.0,0.04,0.05,0.045,
+1415,release,release_permanently,murder/manslaughter,94,3.0,,,0.83,
+1416,release,prison,Other,94,1.0,0.08,0.08,0.08,
+1417,release,prison,Other,94,2.0,0.04,0.11,0.075,
+1418,release,prison,Other,94,3.0,0.04,0.09,0.065,
+1419,release,release_permanently,Other,94,3.0,,,0.78,
+1420,release,prison,Robbery,94,1.0,0.08,0.1,0.09,
+1421,release,prison,Robbery,94,2.0,0.04,0.1,0.07,
+1422,release,prison,Robbery,94,3.0,0.04,0.08,0.06,
+1423,release,release_permanently,Robbery,94,3.0,,,0.78,
+1424,release,prison,Sexual offenses,94,1.0,0.08,0.13,0.105,
+1425,release,prison,Sexual offenses,94,2.0,0.04,0.09,0.065,
+1426,release,prison,Sexual offenses,94,3.0,0.04,0.06,0.05,
+1427,release,release_permanently,Sexual offenses,94,3.0,,,0.78,
+1428,release,prison,Theft/forgery/fraud,94,1.0,0.08,0.08,0.08,
+1429,release,prison,Theft/forgery/fraud,94,2.0,0.04,0.11,0.075,
+1430,release,prison,Theft/forgery/fraud,94,3.0,0.04,0.08,0.06,
+1431,release,release_permanently,Theft/forgery/fraud,94,3.0,,,0.785,
+1432,release,prison,Violent personal,94,1.0,0.08,0.11,0.095,
+1433,release,prison,Violent personal,94,2.0,0.04,0.08,0.06,
+1434,release,prison,Violent personal,94,3.0,0.04,0.07,0.055,
+1435,release,release_permanently,Violent personal,94,3.0,,,0.79,
+1436,release,prison,Weapons,94,1.0,0.08,0.08,0.08,
+1437,release,prison,Weapons,94,2.0,0.04,0.11,0.075,
+1438,release,prison,Weapons,94,3.0,0.04,0.09,0.065,
+1439,release,release_permanently,Weapons,94,3.0,,,0.78,
+0,pretrial,prison,Burglary,55,,,,70.18,1.0
+1,pretrial,prison,Burglary,56,,,,70.18,1.0
+2,pretrial,prison,Burglary,57,,,,70.18,1.0
+3,pretrial,prison,Burglary,58,,,,70.18,1.0
+4,pretrial,prison,Burglary,59,,,,70.18,1.0
+5,pretrial,prison,Burglary,60,,,,35.9612,1.0
+6,pretrial,prison,Burglary,61,,,,35.9612,1.0
+7,pretrial,prison,Burglary,62,,,,35.9612,1.0
+8,pretrial,prison,Burglary,63,,,,35.9612,1.0
+9,pretrial,prison,Burglary,64,,,,35.9612,1.0
+10,pretrial,prison,Burglary,65,,,,13.1648,1.0
+11,pretrial,prison,Burglary,66,,,,13.1648,1.0
+12,pretrial,prison,Burglary,67,,,,13.1648,1.0
+13,pretrial,prison,Burglary,68,,,,13.1648,1.0
+14,pretrial,prison,Burglary,69,,,,13.1648,1.0
+15,pretrial,prison,Burglary,70,,,,4.6948,1.0
+16,pretrial,prison,Burglary,71,,,,4.6948,1.0
+17,pretrial,prison,Burglary,72,,,,4.6948,1.0
+18,pretrial,prison,Burglary,73,,,,4.6948,1.0
+19,pretrial,prison,Burglary,74,,,,4.6948,1.0
+20,pretrial,prison,Burglary,75,,,,1.4036,1.0
+21,pretrial,prison,Burglary,76,,,,1.4036,1.0
+22,pretrial,prison,Burglary,77,,,,1.4036,1.0
+23,pretrial,prison,Burglary,78,,,,1.4036,1.0
+24,pretrial,prison,Burglary,79,,,,1.4036,1.0
+25,pretrial,prison,Burglary,80,,,,0.4356,1.0
+26,pretrial,prison,Burglary,81,,,,0.4356,1.0
+27,pretrial,prison,Burglary,82,,,,0.4356,1.0
+28,pretrial,prison,Burglary,83,,,,0.4356,1.0
+29,pretrial,prison,Burglary,84,,,,0.4356,1.0
+30,pretrial,prison,Burglary,85,,,,0.0726,1.0
+31,pretrial,prison,Burglary,86,,,,0.0726,1.0
+32,pretrial,prison,Burglary,87,,,,0.0726,1.0
+33,pretrial,prison,Burglary,88,,,,0.0726,1.0
+34,pretrial,prison,Burglary,89,,,,0.0726,1.0
+35,pretrial,prison,Burglary,90,,,,0.0,1.0
+36,pretrial,prison,Burglary,91,,,,0.0,1.0
+37,pretrial,prison,Burglary,92,,,,0.0,1.0
+38,pretrial,prison,Burglary,93,,,,0.0,1.0
+39,pretrial,prison,Burglary,94,,,,0.0,1.0
+40,pretrial,prison,Drug offenses,55,,,,64.96,1.0
+41,pretrial,prison,Drug offenses,56,,,,64.96,1.0
+42,pretrial,prison,Drug offenses,57,,,,64.96,1.0
+43,pretrial,prison,Drug offenses,58,,,,64.96,1.0
+44,pretrial,prison,Drug offenses,59,,,,64.96,1.0
+45,pretrial,prison,Drug offenses,60,,,,33.2864,1.0
+46,pretrial,prison,Drug offenses,61,,,,33.2864,1.0
+47,pretrial,prison,Drug offenses,62,,,,33.2864,1.0
+48,pretrial,prison,Drug offenses,63,,,,33.2864,1.0
+49,pretrial,prison,Drug offenses,64,,,,33.2864,1.0
+50,pretrial,prison,Drug offenses,65,,,,12.1856,1.0
+51,pretrial,prison,Drug offenses,66,,,,12.1856,1.0
+52,pretrial,prison,Drug offenses,67,,,,12.1856,1.0
+53,pretrial,prison,Drug offenses,68,,,,12.1856,1.0
+54,pretrial,prison,Drug offenses,69,,,,12.1856,1.0
+55,pretrial,prison,Drug offenses,70,,,,4.3456,1.0
+56,pretrial,prison,Drug offenses,71,,,,4.3456,1.0
+57,pretrial,prison,Drug offenses,72,,,,4.3456,1.0
+58,pretrial,prison,Drug offenses,73,,,,4.3456,1.0
+59,pretrial,prison,Drug offenses,74,,,,4.3456,1.0
+60,pretrial,prison,Drug offenses,75,,,,1.2992,1.0
+61,pretrial,prison,Drug offenses,76,,,,1.2992,1.0
+62,pretrial,prison,Drug offenses,77,,,,1.2992,1.0
+63,pretrial,prison,Drug offenses,78,,,,1.2992,1.0
+64,pretrial,prison,Drug offenses,79,,,,1.2992,1.0
+65,pretrial,prison,Drug offenses,80,,,,0.4032,1.0
+66,pretrial,prison,Drug offenses,81,,,,0.4032,1.0
+67,pretrial,prison,Drug offenses,82,,,,0.4032,1.0
+68,pretrial,prison,Drug offenses,83,,,,0.4032,1.0
+69,pretrial,prison,Drug offenses,84,,,,0.4032,1.0
+70,pretrial,prison,Drug offenses,85,,,,0.0672,1.0
+71,pretrial,prison,Drug offenses,86,,,,0.0672,1.0
+72,pretrial,prison,Drug offenses,87,,,,0.0672,1.0
+73,pretrial,prison,Drug offenses,88,,,,0.0672,1.0
+74,pretrial,prison,Drug offenses,89,,,,0.0672,1.0
+75,pretrial,prison,Drug offenses,90,,,,0.0,1.0
+76,pretrial,prison,Drug offenses,91,,,,0.0,1.0
+77,pretrial,prison,Drug offenses,92,,,,0.0,1.0
+78,pretrial,prison,Drug offenses,93,,,,0.0,1.0
+79,pretrial,prison,Drug offenses,94,,,,0.0,1.0
+80,pretrial,prison,murder/manslaughter,55,,,,126.44,1.0
+81,pretrial,prison,murder/manslaughter,56,,,,126.44,1.0
+82,pretrial,prison,murder/manslaughter,57,,,,126.44,1.0
+83,pretrial,prison,murder/manslaughter,58,,,,126.44,1.0
+84,pretrial,prison,murder/manslaughter,59,,,,126.44,1.0
+85,pretrial,prison,murder/manslaughter,60,,,,64.7896,1.0
+86,pretrial,prison,murder/manslaughter,61,,,,64.7896,1.0
+87,pretrial,prison,murder/manslaughter,62,,,,64.7896,1.0
+88,pretrial,prison,murder/manslaughter,63,,,,64.7896,1.0
+89,pretrial,prison,murder/manslaughter,64,,,,64.7896,1.0
+90,pretrial,prison,murder/manslaughter,65,,,,23.7184,1.0
+91,pretrial,prison,murder/manslaughter,66,,,,23.7184,1.0
+92,pretrial,prison,murder/manslaughter,67,,,,23.7184,1.0
+93,pretrial,prison,murder/manslaughter,68,,,,23.7184,1.0
+94,pretrial,prison,murder/manslaughter,69,,,,23.7184,1.0
+95,pretrial,prison,murder/manslaughter,70,,,,8.4584,1.0
+96,pretrial,prison,murder/manslaughter,71,,,,8.4584,1.0
+97,pretrial,prison,murder/manslaughter,72,,,,8.4584,1.0
+98,pretrial,prison,murder/manslaughter,73,,,,8.4584,1.0
+99,pretrial,prison,murder/manslaughter,74,,,,8.4584,1.0
+100,pretrial,prison,murder/manslaughter,75,,,,2.5288,1.0
+101,pretrial,prison,murder/manslaughter,76,,,,2.5288,1.0
+102,pretrial,prison,murder/manslaughter,77,,,,2.5288,1.0
+103,pretrial,prison,murder/manslaughter,78,,,,2.5288,1.0
+104,pretrial,prison,murder/manslaughter,79,,,,2.5288,1.0
+105,pretrial,prison,murder/manslaughter,80,,,,0.7848,1.0
+106,pretrial,prison,murder/manslaughter,81,,,,0.7848,1.0
+107,pretrial,prison,murder/manslaughter,82,,,,0.7848,1.0
+108,pretrial,prison,murder/manslaughter,83,,,,0.7848,1.0
+109,pretrial,prison,murder/manslaughter,84,,,,0.7848,1.0
+110,pretrial,prison,murder/manslaughter,85,,,,0.1308,1.0
+111,pretrial,prison,murder/manslaughter,86,,,,0.1308,1.0
+112,pretrial,prison,murder/manslaughter,87,,,,0.1308,1.0
+113,pretrial,prison,murder/manslaughter,88,,,,0.1308,1.0
+114,pretrial,prison,murder/manslaughter,89,,,,0.1308,1.0
+115,pretrial,prison,murder/manslaughter,90,,,,0.0,1.0
+116,pretrial,prison,murder/manslaughter,91,,,,0.0,1.0
+117,pretrial,prison,murder/manslaughter,92,,,,0.0,1.0
+118,pretrial,prison,murder/manslaughter,93,,,,0.0,1.0
+119,pretrial,prison,murder/manslaughter,94,,,,0.0,1.0
+120,pretrial,prison,Other,55,,,,24.94,1.0
+121,pretrial,prison,Other,56,,,,24.94,1.0
+122,pretrial,prison,Other,57,,,,24.94,1.0
+123,pretrial,prison,Other,58,,,,24.94,1.0
+124,pretrial,prison,Other,59,,,,24.94,1.0
+125,pretrial,prison,Other,60,,,,12.7796,1.0
+126,pretrial,prison,Other,61,,,,12.7796,1.0
+127,pretrial,prison,Other,62,,,,12.7796,1.0
+128,pretrial,prison,Other,63,,,,12.7796,1.0
+129,pretrial,prison,Other,64,,,,12.7796,1.0
+130,pretrial,prison,Other,65,,,,4.6784,1.0
+131,pretrial,prison,Other,66,,,,4.6784,1.0
+132,pretrial,prison,Other,67,,,,4.6784,1.0
+133,pretrial,prison,Other,68,,,,4.6784,1.0
+134,pretrial,prison,Other,69,,,,4.6784,1.0
+135,pretrial,prison,Other,70,,,,1.6684,1.0
+136,pretrial,prison,Other,71,,,,1.6684,1.0
+137,pretrial,prison,Other,72,,,,1.6684,1.0
+138,pretrial,prison,Other,73,,,,1.6684,1.0
+139,pretrial,prison,Other,74,,,,1.6684,1.0
+140,pretrial,prison,Other,75,,,,0.4988,1.0
+141,pretrial,prison,Other,76,,,,0.4988,1.0
+142,pretrial,prison,Other,77,,,,0.4988,1.0
+143,pretrial,prison,Other,78,,,,0.4988,1.0
+144,pretrial,prison,Other,79,,,,0.4988,1.0
+145,pretrial,prison,Other,80,,,,0.1548,1.0
+146,pretrial,prison,Other,81,,,,0.1548,1.0
+147,pretrial,prison,Other,82,,,,0.1548,1.0
+148,pretrial,prison,Other,83,,,,0.1548,1.0
+149,pretrial,prison,Other,84,,,,0.1548,1.0
+150,pretrial,prison,Other,85,,,,0.0258,1.0
+151,pretrial,prison,Other,86,,,,0.0258,1.0
+152,pretrial,prison,Other,87,,,,0.0258,1.0
+153,pretrial,prison,Other,88,,,,0.0258,1.0
+154,pretrial,prison,Other,89,,,,0.0258,1.0
+155,pretrial,prison,Other,90,,,,0.0,1.0
+156,pretrial,prison,Other,91,,,,0.0,1.0
+157,pretrial,prison,Other,92,,,,0.0,1.0
+158,pretrial,prison,Other,93,,,,0.0,1.0
+159,pretrial,prison,Other,94,,,,0.0,1.0
+160,pretrial,prison,Robbery,55,,,,55.1,1.0
+161,pretrial,prison,Robbery,56,,,,55.1,1.0
+162,pretrial,prison,Robbery,57,,,,55.1,1.0
+163,pretrial,prison,Robbery,58,,,,55.1,1.0
+164,pretrial,prison,Robbery,59,,,,55.1,1.0
+165,pretrial,prison,Robbery,60,,,,28.234,1.0
+166,pretrial,prison,Robbery,61,,,,28.234,1.0
+167,pretrial,prison,Robbery,62,,,,28.234,1.0
+168,pretrial,prison,Robbery,63,,,,28.234,1.0
+169,pretrial,prison,Robbery,64,,,,28.234,1.0
+170,pretrial,prison,Robbery,65,,,,10.335999999999999,1.0
+171,pretrial,prison,Robbery,66,,,,10.335999999999999,1.0
+172,pretrial,prison,Robbery,67,,,,10.335999999999999,1.0
+173,pretrial,prison,Robbery,68,,,,10.335999999999999,1.0
+174,pretrial,prison,Robbery,69,,,,10.335999999999999,1.0
+175,pretrial,prison,Robbery,70,,,,3.6860000000000004,1.0
+176,pretrial,prison,Robbery,71,,,,3.6860000000000004,1.0
+177,pretrial,prison,Robbery,72,,,,3.6860000000000004,1.0
+178,pretrial,prison,Robbery,73,,,,3.6860000000000004,1.0
+179,pretrial,prison,Robbery,74,,,,3.6860000000000004,1.0
+180,pretrial,prison,Robbery,75,,,,1.102,1.0
+181,pretrial,prison,Robbery,76,,,,1.102,1.0
+182,pretrial,prison,Robbery,77,,,,1.102,1.0
+183,pretrial,prison,Robbery,78,,,,1.102,1.0
+184,pretrial,prison,Robbery,79,,,,1.102,1.0
+185,pretrial,prison,Robbery,80,,,,0.342,1.0
+186,pretrial,prison,Robbery,81,,,,0.342,1.0
+187,pretrial,prison,Robbery,82,,,,0.342,1.0
+188,pretrial,prison,Robbery,83,,,,0.342,1.0
+189,pretrial,prison,Robbery,84,,,,0.342,1.0
+190,pretrial,prison,Robbery,85,,,,0.057,1.0
+191,pretrial,prison,Robbery,86,,,,0.057,1.0
+192,pretrial,prison,Robbery,87,,,,0.057,1.0
+193,pretrial,prison,Robbery,88,,,,0.057,1.0
+194,pretrial,prison,Robbery,89,,,,0.057,1.0
+195,pretrial,prison,Robbery,90,,,,0.0,1.0
+196,pretrial,prison,Robbery,91,,,,0.0,1.0
+197,pretrial,prison,Robbery,92,,,,0.0,1.0
+198,pretrial,prison,Robbery,93,,,,0.0,1.0
+199,pretrial,prison,Robbery,94,,,,0.0,1.0
+200,pretrial,prison,Sexual offenses,55,,,,128.76,1.0
+201,pretrial,prison,Sexual offenses,56,,,,128.76,1.0
+202,pretrial,prison,Sexual offenses,57,,,,128.76,1.0
+203,pretrial,prison,Sexual offenses,58,,,,128.76,1.0
+204,pretrial,prison,Sexual offenses,59,,,,128.76,1.0
+205,pretrial,prison,Sexual offenses,60,,,,65.9784,1.0
+206,pretrial,prison,Sexual offenses,61,,,,65.9784,1.0
+207,pretrial,prison,Sexual offenses,62,,,,65.9784,1.0
+208,pretrial,prison,Sexual offenses,63,,,,65.9784,1.0
+209,pretrial,prison,Sexual offenses,64,,,,65.9784,1.0
+210,pretrial,prison,Sexual offenses,65,,,,24.1536,1.0
+211,pretrial,prison,Sexual offenses,66,,,,24.1536,1.0
+212,pretrial,prison,Sexual offenses,67,,,,24.1536,1.0
+213,pretrial,prison,Sexual offenses,68,,,,24.1536,1.0
+214,pretrial,prison,Sexual offenses,69,,,,24.1536,1.0
+215,pretrial,prison,Sexual offenses,70,,,,8.6136,1.0
+216,pretrial,prison,Sexual offenses,71,,,,8.6136,1.0
+217,pretrial,prison,Sexual offenses,72,,,,8.6136,1.0
+218,pretrial,prison,Sexual offenses,73,,,,8.6136,1.0
+219,pretrial,prison,Sexual offenses,74,,,,8.6136,1.0
+220,pretrial,prison,Sexual offenses,75,,,,2.5752,1.0
+221,pretrial,prison,Sexual offenses,76,,,,2.5752,1.0
+222,pretrial,prison,Sexual offenses,77,,,,2.5752,1.0
+223,pretrial,prison,Sexual offenses,78,,,,2.5752,1.0
+224,pretrial,prison,Sexual offenses,79,,,,2.5752,1.0
+225,pretrial,prison,Sexual offenses,80,,,,0.7992,1.0
+226,pretrial,prison,Sexual offenses,81,,,,0.7992,1.0
+227,pretrial,prison,Sexual offenses,82,,,,0.7992,1.0
+228,pretrial,prison,Sexual offenses,83,,,,0.7992,1.0
+229,pretrial,prison,Sexual offenses,84,,,,0.7992,1.0
+230,pretrial,prison,Sexual offenses,85,,,,0.1332,1.0
+231,pretrial,prison,Sexual offenses,86,,,,0.1332,1.0
+232,pretrial,prison,Sexual offenses,87,,,,0.1332,1.0
+233,pretrial,prison,Sexual offenses,88,,,,0.1332,1.0
+234,pretrial,prison,Sexual offenses,89,,,,0.1332,1.0
+235,pretrial,prison,Sexual offenses,90,,,,0.0,1.0
+236,pretrial,prison,Sexual offenses,91,,,,0.0,1.0
+237,pretrial,prison,Sexual offenses,92,,,,0.0,1.0
+238,pretrial,prison,Sexual offenses,93,,,,0.0,1.0
+239,pretrial,prison,Sexual offenses,94,,,,0.0,1.0
+240,pretrial,prison,Theft/forgery/fraud,55,,,,37.7,1.0
+241,pretrial,prison,Theft/forgery/fraud,56,,,,37.7,1.0
+242,pretrial,prison,Theft/forgery/fraud,57,,,,37.7,1.0
+243,pretrial,prison,Theft/forgery/fraud,58,,,,37.7,1.0
+244,pretrial,prison,Theft/forgery/fraud,59,,,,37.7,1.0
+245,pretrial,prison,Theft/forgery/fraud,60,,,,19.317999999999998,1.0
+246,pretrial,prison,Theft/forgery/fraud,61,,,,19.317999999999998,1.0
+247,pretrial,prison,Theft/forgery/fraud,62,,,,19.317999999999998,1.0
+248,pretrial,prison,Theft/forgery/fraud,63,,,,19.317999999999998,1.0
+249,pretrial,prison,Theft/forgery/fraud,64,,,,19.317999999999998,1.0
+250,pretrial,prison,Theft/forgery/fraud,65,,,,7.072,1.0
+251,pretrial,prison,Theft/forgery/fraud,66,,,,7.072,1.0
+252,pretrial,prison,Theft/forgery/fraud,67,,,,7.072,1.0
+253,pretrial,prison,Theft/forgery/fraud,68,,,,7.072,1.0
+254,pretrial,prison,Theft/forgery/fraud,69,,,,7.072,1.0
+255,pretrial,prison,Theft/forgery/fraud,70,,,,2.522,1.0
+256,pretrial,prison,Theft/forgery/fraud,71,,,,2.522,1.0
+257,pretrial,prison,Theft/forgery/fraud,72,,,,2.522,1.0
+258,pretrial,prison,Theft/forgery/fraud,73,,,,2.522,1.0
+259,pretrial,prison,Theft/forgery/fraud,74,,,,2.522,1.0
+260,pretrial,prison,Theft/forgery/fraud,75,,,,0.754,1.0
+261,pretrial,prison,Theft/forgery/fraud,76,,,,0.754,1.0
+262,pretrial,prison,Theft/forgery/fraud,77,,,,0.754,1.0
+263,pretrial,prison,Theft/forgery/fraud,78,,,,0.754,1.0
+264,pretrial,prison,Theft/forgery/fraud,79,,,,0.754,1.0
+265,pretrial,prison,Theft/forgery/fraud,80,,,,0.23399999999999999,1.0
+266,pretrial,prison,Theft/forgery/fraud,81,,,,0.23399999999999999,1.0
+267,pretrial,prison,Theft/forgery/fraud,82,,,,0.23399999999999999,1.0
+268,pretrial,prison,Theft/forgery/fraud,83,,,,0.23399999999999999,1.0
+269,pretrial,prison,Theft/forgery/fraud,84,,,,0.23399999999999999,1.0
+270,pretrial,prison,Theft/forgery/fraud,85,,,,0.039,1.0
+271,pretrial,prison,Theft/forgery/fraud,86,,,,0.039,1.0
+272,pretrial,prison,Theft/forgery/fraud,87,,,,0.039,1.0
+273,pretrial,prison,Theft/forgery/fraud,88,,,,0.039,1.0
+274,pretrial,prison,Theft/forgery/fraud,89,,,,0.039,1.0
+275,pretrial,prison,Theft/forgery/fraud,90,,,,0.0,1.0
+276,pretrial,prison,Theft/forgery/fraud,91,,,,0.0,1.0
+277,pretrial,prison,Theft/forgery/fraud,92,,,,0.0,1.0
+278,pretrial,prison,Theft/forgery/fraud,93,,,,0.0,1.0
+279,pretrial,prison,Theft/forgery/fraud,94,,,,0.0,1.0
+280,pretrial,prison,Violent personal,55,,,,58.58,1.0
+281,pretrial,prison,Violent personal,56,,,,58.58,1.0
+282,pretrial,prison,Violent personal,57,,,,58.58,1.0
+283,pretrial,prison,Violent personal,58,,,,58.58,1.0
+284,pretrial,prison,Violent personal,59,,,,58.58,1.0
+285,pretrial,prison,Violent personal,60,,,,30.0172,1.0
+286,pretrial,prison,Violent personal,61,,,,30.0172,1.0
+287,pretrial,prison,Violent personal,62,,,,30.0172,1.0
+288,pretrial,prison,Violent personal,63,,,,30.0172,1.0
+289,pretrial,prison,Violent personal,64,,,,30.0172,1.0
+290,pretrial,prison,Violent personal,65,,,,10.9888,1.0
+291,pretrial,prison,Violent personal,66,,,,10.9888,1.0
+292,pretrial,prison,Violent personal,67,,,,10.9888,1.0
+293,pretrial,prison,Violent personal,68,,,,10.9888,1.0
+294,pretrial,prison,Violent personal,69,,,,10.9888,1.0
+295,pretrial,prison,Violent personal,70,,,,3.9188,1.0
+296,pretrial,prison,Violent personal,71,,,,3.9188,1.0
+297,pretrial,prison,Violent personal,72,,,,3.9188,1.0
+298,pretrial,prison,Violent personal,73,,,,3.9188,1.0
+299,pretrial,prison,Violent personal,74,,,,3.9188,1.0
+300,pretrial,prison,Violent personal,75,,,,1.1716,1.0
+301,pretrial,prison,Violent personal,76,,,,1.1716,1.0
+302,pretrial,prison,Violent personal,77,,,,1.1716,1.0
+303,pretrial,prison,Violent personal,78,,,,1.1716,1.0
+304,pretrial,prison,Violent personal,79,,,,1.1716,1.0
+305,pretrial,prison,Violent personal,80,,,,0.3636,1.0
+306,pretrial,prison,Violent personal,81,,,,0.3636,1.0
+307,pretrial,prison,Violent personal,82,,,,0.3636,1.0
+308,pretrial,prison,Violent personal,83,,,,0.3636,1.0
+309,pretrial,prison,Violent personal,84,,,,0.3636,1.0
+310,pretrial,prison,Violent personal,85,,,,0.0606,1.0
+311,pretrial,prison,Violent personal,86,,,,0.0606,1.0
+312,pretrial,prison,Violent personal,87,,,,0.0606,1.0
+313,pretrial,prison,Violent personal,88,,,,0.0606,1.0
+314,pretrial,prison,Violent personal,89,,,,0.0606,1.0
+315,pretrial,prison,Violent personal,90,,,,0.0,1.0
+316,pretrial,prison,Violent personal,91,,,,0.0,1.0
+317,pretrial,prison,Violent personal,92,,,,0.0,1.0
+318,pretrial,prison,Violent personal,93,,,,0.0,1.0
+319,pretrial,prison,Violent personal,94,,,,0.0,1.0
+320,pretrial,prison,Weapons,55,,,,13.34,1.0
+321,pretrial,prison,Weapons,56,,,,13.34,1.0
+322,pretrial,prison,Weapons,57,,,,13.34,1.0
+323,pretrial,prison,Weapons,58,,,,13.34,1.0
+324,pretrial,prison,Weapons,59,,,,13.34,1.0
+325,pretrial,prison,Weapons,60,,,,6.8356,1.0
+326,pretrial,prison,Weapons,61,,,,6.8356,1.0
+327,pretrial,prison,Weapons,62,,,,6.8356,1.0
+328,pretrial,prison,Weapons,63,,,,6.8356,1.0
+329,pretrial,prison,Weapons,64,,,,6.8356,1.0
+330,pretrial,prison,Weapons,65,,,,2.5024,1.0
+331,pretrial,prison,Weapons,66,,,,2.5024,1.0
+332,pretrial,prison,Weapons,67,,,,2.5024,1.0
+333,pretrial,prison,Weapons,68,,,,2.5024,1.0
+334,pretrial,prison,Weapons,69,,,,2.5024,1.0
+335,pretrial,prison,Weapons,70,,,,0.8924,1.0
+336,pretrial,prison,Weapons,71,,,,0.8924,1.0
+337,pretrial,prison,Weapons,72,,,,0.8924,1.0
+338,pretrial,prison,Weapons,73,,,,0.8924,1.0
+339,pretrial,prison,Weapons,74,,,,0.8924,1.0
+340,pretrial,prison,Weapons,75,,,,0.2668,1.0
+341,pretrial,prison,Weapons,76,,,,0.2668,1.0
+342,pretrial,prison,Weapons,77,,,,0.2668,1.0
+343,pretrial,prison,Weapons,78,,,,0.2668,1.0
+344,pretrial,prison,Weapons,79,,,,0.2668,1.0
+345,pretrial,prison,Weapons,80,,,,0.0828,1.0
+346,pretrial,prison,Weapons,81,,,,0.0828,1.0
+347,pretrial,prison,Weapons,82,,,,0.0828,1.0
+348,pretrial,prison,Weapons,83,,,,0.0828,1.0
+349,pretrial,prison,Weapons,84,,,,0.0828,1.0
+350,pretrial,prison,Weapons,85,,,,0.0138,1.0
+351,pretrial,prison,Weapons,86,,,,0.0138,1.0
+352,pretrial,prison,Weapons,87,,,,0.0138,1.0
+353,pretrial,prison,Weapons,88,,,,0.0138,1.0
+354,pretrial,prison,Weapons,89,,,,0.0138,1.0
+355,pretrial,prison,Weapons,90,,,,0.0,1.0
+356,pretrial,prison,Weapons,91,,,,0.0,1.0
+357,pretrial,prison,Weapons,92,,,,0.0,1.0
+358,pretrial,prison,Weapons,93,,,,0.0,1.0
+359,pretrial,prison,Weapons,94,,,,0.0,1.0
+0,pretrial,prison,Burglary,55,,,,87.14399999999999,0.0
+1,pretrial,prison,Burglary,56,,,,87.14399999999999,0.0
+2,pretrial,prison,Burglary,57,,,,87.14399999999999,0.0
+3,pretrial,prison,Burglary,58,,,,87.14399999999999,0.0
+4,pretrial,prison,Burglary,59,,,,87.14399999999999,0.0
+5,pretrial,prison,Burglary,60,,,,43.32,0.0
+6,pretrial,prison,Burglary,61,,,,43.32,0.0
+7,pretrial,prison,Burglary,62,,,,43.32,0.0
+8,pretrial,prison,Burglary,63,,,,43.32,0.0
+9,pretrial,prison,Burglary,64,,,,43.32,0.0
+10,pretrial,prison,Burglary,65,,,,14.616,0.0
+11,pretrial,prison,Burglary,66,,,,14.616,0.0
+12,pretrial,prison,Burglary,67,,,,14.616,0.0
+13,pretrial,prison,Burglary,68,,,,14.616,0.0
+14,pretrial,prison,Burglary,69,,,,14.616,0.0
+15,pretrial,prison,Burglary,70,,,,4.104,0.0
+16,pretrial,prison,Burglary,71,,,,4.104,0.0
+17,pretrial,prison,Burglary,72,,,,4.104,0.0
+18,pretrial,prison,Burglary,73,,,,4.104,0.0
+19,pretrial,prison,Burglary,74,,,,4.104,0.0
+20,pretrial,prison,Burglary,75,,,,2.208,0.0
+21,pretrial,prison,Burglary,76,,,,2.208,0.0
+22,pretrial,prison,Burglary,77,,,,2.208,0.0
+23,pretrial,prison,Burglary,78,,,,2.208,0.0
+24,pretrial,prison,Burglary,79,,,,2.208,0.0
+25,pretrial,prison,Burglary,80,,,,0.504,0.0
+26,pretrial,prison,Burglary,81,,,,0.504,0.0
+27,pretrial,prison,Burglary,82,,,,0.504,0.0
+28,pretrial,prison,Burglary,83,,,,0.504,0.0
+29,pretrial,prison,Burglary,84,,,,0.504,0.0
+30,pretrial,prison,Burglary,85,,,,0.096,0.0
+31,pretrial,prison,Burglary,86,,,,0.096,0.0
+32,pretrial,prison,Burglary,87,,,,0.096,0.0
+33,pretrial,prison,Burglary,88,,,,0.096,0.0
+34,pretrial,prison,Burglary,89,,,,0.096,0.0
+35,pretrial,prison,Burglary,90,,,,0.024,0.0
+36,pretrial,prison,Burglary,91,,,,0.024,0.0
+37,pretrial,prison,Burglary,92,,,,0.024,0.0
+38,pretrial,prison,Burglary,93,,,,0.024,0.0
+39,pretrial,prison,Burglary,94,,,,0.024,0.0
+40,pretrial,prison,Drug offenses,55,,,,83.51299999999999,0.0
+41,pretrial,prison,Drug offenses,56,,,,83.51299999999999,0.0
+42,pretrial,prison,Drug offenses,57,,,,83.51299999999999,0.0
+43,pretrial,prison,Drug offenses,58,,,,83.51299999999999,0.0
+44,pretrial,prison,Drug offenses,59,,,,83.51299999999999,0.0
+45,pretrial,prison,Drug offenses,60,,,,41.515,0.0
+46,pretrial,prison,Drug offenses,61,,,,41.515,0.0
+47,pretrial,prison,Drug offenses,62,,,,41.515,0.0
+48,pretrial,prison,Drug offenses,63,,,,41.515,0.0
+49,pretrial,prison,Drug offenses,64,,,,41.515,0.0
+50,pretrial,prison,Drug offenses,65,,,,14.007,0.0
+51,pretrial,prison,Drug offenses,66,,,,14.007,0.0
+52,pretrial,prison,Drug offenses,67,,,,14.007,0.0
+53,pretrial,prison,Drug offenses,68,,,,14.007,0.0
+54,pretrial,prison,Drug offenses,69,,,,14.007,0.0
+55,pretrial,prison,Drug offenses,70,,,,3.9330000000000003,0.0
+56,pretrial,prison,Drug offenses,71,,,,3.9330000000000003,0.0
+57,pretrial,prison,Drug offenses,72,,,,3.9330000000000003,0.0
+58,pretrial,prison,Drug offenses,73,,,,3.9330000000000003,0.0
+59,pretrial,prison,Drug offenses,74,,,,3.9330000000000003,0.0
+60,pretrial,prison,Drug offenses,75,,,,2.116,0.0
+61,pretrial,prison,Drug offenses,76,,,,2.116,0.0
+62,pretrial,prison,Drug offenses,77,,,,2.116,0.0
+63,pretrial,prison,Drug offenses,78,,,,2.116,0.0
+64,pretrial,prison,Drug offenses,79,,,,2.116,0.0
+65,pretrial,prison,Drug offenses,80,,,,0.483,0.0
+66,pretrial,prison,Drug offenses,81,,,,0.483,0.0
+67,pretrial,prison,Drug offenses,82,,,,0.483,0.0
+68,pretrial,prison,Drug offenses,83,,,,0.483,0.0
+69,pretrial,prison,Drug offenses,84,,,,0.483,0.0
+70,pretrial,prison,Drug offenses,85,,,,0.092,0.0
+71,pretrial,prison,Drug offenses,86,,,,0.092,0.0
+72,pretrial,prison,Drug offenses,87,,,,0.092,0.0
+73,pretrial,prison,Drug offenses,88,,,,0.092,0.0
+74,pretrial,prison,Drug offenses,89,,,,0.092,0.0
+75,pretrial,prison,Drug offenses,90,,,,0.023,0.0
+76,pretrial,prison,Drug offenses,91,,,,0.023,0.0
+77,pretrial,prison,Drug offenses,92,,,,0.023,0.0
+78,pretrial,prison,Drug offenses,93,,,,0.023,0.0
+79,pretrial,prison,Drug offenses,94,,,,0.023,0.0
+80,pretrial,prison,murder/manslaughter,55,,,,157.5854,0.0
+81,pretrial,prison,murder/manslaughter,56,,,,157.5854,0.0
+82,pretrial,prison,murder/manslaughter,57,,,,157.5854,0.0
+83,pretrial,prison,murder/manslaughter,58,,,,157.5854,0.0
+84,pretrial,prison,murder/manslaughter,59,,,,157.5854,0.0
+85,pretrial,prison,murder/manslaughter,60,,,,78.337,0.0
+86,pretrial,prison,murder/manslaughter,61,,,,78.337,0.0
+87,pretrial,prison,murder/manslaughter,62,,,,78.337,0.0
+88,pretrial,prison,murder/manslaughter,63,,,,78.337,0.0
+89,pretrial,prison,murder/manslaughter,64,,,,78.337,0.0
+90,pretrial,prison,murder/manslaughter,65,,,,26.4306,0.0
+91,pretrial,prison,murder/manslaughter,66,,,,26.4306,0.0
+92,pretrial,prison,murder/manslaughter,67,,,,26.4306,0.0
+93,pretrial,prison,murder/manslaughter,68,,,,26.4306,0.0
+94,pretrial,prison,murder/manslaughter,69,,,,26.4306,0.0
+95,pretrial,prison,murder/manslaughter,70,,,,7.4214,0.0
+96,pretrial,prison,murder/manslaughter,71,,,,7.4214,0.0
+97,pretrial,prison,murder/manslaughter,72,,,,7.4214,0.0
+98,pretrial,prison,murder/manslaughter,73,,,,7.4214,0.0
+99,pretrial,prison,murder/manslaughter,74,,,,7.4214,0.0
+100,pretrial,prison,murder/manslaughter,75,,,,3.9928,0.0
+101,pretrial,prison,murder/manslaughter,76,,,,3.9928,0.0
+102,pretrial,prison,murder/manslaughter,77,,,,3.9928,0.0
+103,pretrial,prison,murder/manslaughter,78,,,,3.9928,0.0
+104,pretrial,prison,murder/manslaughter,79,,,,3.9928,0.0
+105,pretrial,prison,murder/manslaughter,80,,,,0.9114,0.0
+106,pretrial,prison,murder/manslaughter,81,,,,0.9114,0.0
+107,pretrial,prison,murder/manslaughter,82,,,,0.9114,0.0
+108,pretrial,prison,murder/manslaughter,83,,,,0.9114,0.0
+109,pretrial,prison,murder/manslaughter,84,,,,0.9114,0.0
+110,pretrial,prison,murder/manslaughter,85,,,,0.1736,0.0
+111,pretrial,prison,murder/manslaughter,86,,,,0.1736,0.0
+112,pretrial,prison,murder/manslaughter,87,,,,0.1736,0.0
+113,pretrial,prison,murder/manslaughter,88,,,,0.1736,0.0
+114,pretrial,prison,murder/manslaughter,89,,,,0.1736,0.0
+115,pretrial,prison,murder/manslaughter,90,,,,0.0434,0.0
+116,pretrial,prison,murder/manslaughter,91,,,,0.0434,0.0
+117,pretrial,prison,murder/manslaughter,92,,,,0.0434,0.0
+118,pretrial,prison,murder/manslaughter,93,,,,0.0434,0.0
+119,pretrial,prison,murder/manslaughter,94,,,,0.0434,0.0
+120,pretrial,prison,Other,55,,,,30.5004,0.0
+121,pretrial,prison,Other,56,,,,30.5004,0.0
+122,pretrial,prison,Other,57,,,,30.5004,0.0
+123,pretrial,prison,Other,58,,,,30.5004,0.0
+124,pretrial,prison,Other,59,,,,30.5004,0.0
+125,pretrial,prison,Other,60,,,,15.162,0.0
+126,pretrial,prison,Other,61,,,,15.162,0.0
+127,pretrial,prison,Other,62,,,,15.162,0.0
+128,pretrial,prison,Other,63,,,,15.162,0.0
+129,pretrial,prison,Other,64,,,,15.162,0.0
+130,pretrial,prison,Other,65,,,,5.1156,0.0
+131,pretrial,prison,Other,66,,,,5.1156,0.0
+132,pretrial,prison,Other,67,,,,5.1156,0.0
+133,pretrial,prison,Other,68,,,,5.1156,0.0
+134,pretrial,prison,Other,69,,,,5.1156,0.0
+135,pretrial,prison,Other,70,,,,1.4364,0.0
+136,pretrial,prison,Other,71,,,,1.4364,0.0
+137,pretrial,prison,Other,72,,,,1.4364,0.0
+138,pretrial,prison,Other,73,,,,1.4364,0.0
+139,pretrial,prison,Other,74,,,,1.4364,0.0
+140,pretrial,prison,Other,75,,,,0.7728,0.0
+141,pretrial,prison,Other,76,,,,0.7728,0.0
+142,pretrial,prison,Other,77,,,,0.7728,0.0
+143,pretrial,prison,Other,78,,,,0.7728,0.0
+144,pretrial,prison,Other,79,,,,0.7728,0.0
+145,pretrial,prison,Other,80,,,,0.1764,0.0
+146,pretrial,prison,Other,81,,,,0.1764,0.0
+147,pretrial,prison,Other,82,,,,0.1764,0.0
+148,pretrial,prison,Other,83,,,,0.1764,0.0
+149,pretrial,prison,Other,84,,,,0.1764,0.0
+150,pretrial,prison,Other,85,,,,0.0336,0.0
+151,pretrial,prison,Other,86,,,,0.0336,0.0
+152,pretrial,prison,Other,87,,,,0.0336,0.0
+153,pretrial,prison,Other,88,,,,0.0336,0.0
+154,pretrial,prison,Other,89,,,,0.0336,0.0
+155,pretrial,prison,Other,90,,,,0.0084,0.0
+156,pretrial,prison,Other,91,,,,0.0084,0.0
+157,pretrial,prison,Other,92,,,,0.0084,0.0
+158,pretrial,prison,Other,93,,,,0.0084,0.0
+159,pretrial,prison,Other,94,,,,0.0084,0.0
+160,pretrial,prison,Robbery,55,,,,68.98899999999999,0.0
+161,pretrial,prison,Robbery,56,,,,68.98899999999999,0.0
+162,pretrial,prison,Robbery,57,,,,68.98899999999999,0.0
+163,pretrial,prison,Robbery,58,,,,68.98899999999999,0.0
+164,pretrial,prison,Robbery,59,,,,68.98899999999999,0.0
+165,pretrial,prison,Robbery,60,,,,34.295,0.0
+166,pretrial,prison,Robbery,61,,,,34.295,0.0
+167,pretrial,prison,Robbery,62,,,,34.295,0.0
+168,pretrial,prison,Robbery,63,,,,34.295,0.0
+169,pretrial,prison,Robbery,64,,,,34.295,0.0
+170,pretrial,prison,Robbery,65,,,,11.571,0.0
+171,pretrial,prison,Robbery,66,,,,11.571,0.0
+172,pretrial,prison,Robbery,67,,,,11.571,0.0
+173,pretrial,prison,Robbery,68,,,,11.571,0.0
+174,pretrial,prison,Robbery,69,,,,11.571,0.0
+175,pretrial,prison,Robbery,70,,,,3.2489999999999997,0.0
+176,pretrial,prison,Robbery,71,,,,3.2489999999999997,0.0
+177,pretrial,prison,Robbery,72,,,,3.2489999999999997,0.0
+178,pretrial,prison,Robbery,73,,,,3.2489999999999997,0.0
+179,pretrial,prison,Robbery,74,,,,3.2489999999999997,0.0
+180,pretrial,prison,Robbery,75,,,,1.7480000000000002,0.0
+181,pretrial,prison,Robbery,76,,,,1.7480000000000002,0.0
+182,pretrial,prison,Robbery,77,,,,1.7480000000000002,0.0
+183,pretrial,prison,Robbery,78,,,,1.7480000000000002,0.0
+184,pretrial,prison,Robbery,79,,,,1.7480000000000002,0.0
+185,pretrial,prison,Robbery,80,,,,0.39899999999999997,0.0
+186,pretrial,prison,Robbery,81,,,,0.39899999999999997,0.0
+187,pretrial,prison,Robbery,82,,,,0.39899999999999997,0.0
+188,pretrial,prison,Robbery,83,,,,0.39899999999999997,0.0
+189,pretrial,prison,Robbery,84,,,,0.39899999999999997,0.0
+190,pretrial,prison,Robbery,85,,,,0.076,0.0
+191,pretrial,prison,Robbery,86,,,,0.076,0.0
+192,pretrial,prison,Robbery,87,,,,0.076,0.0
+193,pretrial,prison,Robbery,88,,,,0.076,0.0
+194,pretrial,prison,Robbery,89,,,,0.076,0.0
+195,pretrial,prison,Robbery,90,,,,0.019,0.0
+196,pretrial,prison,Robbery,91,,,,0.019,0.0
+197,pretrial,prison,Robbery,92,,,,0.019,0.0
+198,pretrial,prison,Robbery,93,,,,0.019,0.0
+199,pretrial,prison,Robbery,94,,,,0.019,0.0
+200,pretrial,prison,Sexual offenses,55,,,,160.4902,0.0
+201,pretrial,prison,Sexual offenses,56,,,,160.4902,0.0
+202,pretrial,prison,Sexual offenses,57,,,,160.4902,0.0
+203,pretrial,prison,Sexual offenses,58,,,,160.4902,0.0
+204,pretrial,prison,Sexual offenses,59,,,,160.4902,0.0
+205,pretrial,prison,Sexual offenses,60,,,,79.781,0.0
+206,pretrial,prison,Sexual offenses,61,,,,79.781,0.0
+207,pretrial,prison,Sexual offenses,62,,,,79.781,0.0
+208,pretrial,prison,Sexual offenses,63,,,,79.781,0.0
+209,pretrial,prison,Sexual offenses,64,,,,79.781,0.0
+210,pretrial,prison,Sexual offenses,65,,,,26.9178,0.0
+211,pretrial,prison,Sexual offenses,66,,,,26.9178,0.0
+212,pretrial,prison,Sexual offenses,67,,,,26.9178,0.0
+213,pretrial,prison,Sexual offenses,68,,,,26.9178,0.0
+214,pretrial,prison,Sexual offenses,69,,,,26.9178,0.0
+215,pretrial,prison,Sexual offenses,70,,,,7.5582,0.0
+216,pretrial,prison,Sexual offenses,71,,,,7.5582,0.0
+217,pretrial,prison,Sexual offenses,72,,,,7.5582,0.0
+218,pretrial,prison,Sexual offenses,73,,,,7.5582,0.0
+219,pretrial,prison,Sexual offenses,74,,,,7.5582,0.0
+220,pretrial,prison,Sexual offenses,75,,,,4.0664,0.0
+221,pretrial,prison,Sexual offenses,76,,,,4.0664,0.0
+222,pretrial,prison,Sexual offenses,77,,,,4.0664,0.0
+223,pretrial,prison,Sexual offenses,78,,,,4.0664,0.0
+224,pretrial,prison,Sexual offenses,79,,,,4.0664,0.0
+225,pretrial,prison,Sexual offenses,80,,,,0.9282,0.0
+226,pretrial,prison,Sexual offenses,81,,,,0.9282,0.0
+227,pretrial,prison,Sexual offenses,82,,,,0.9282,0.0
+228,pretrial,prison,Sexual offenses,83,,,,0.9282,0.0
+229,pretrial,prison,Sexual offenses,84,,,,0.9282,0.0
+230,pretrial,prison,Sexual offenses,85,,,,0.1768,0.0
+231,pretrial,prison,Sexual offenses,86,,,,0.1768,0.0
+232,pretrial,prison,Sexual offenses,87,,,,0.1768,0.0
+233,pretrial,prison,Sexual offenses,88,,,,0.1768,0.0
+234,pretrial,prison,Sexual offenses,89,,,,0.1768,0.0
+235,pretrial,prison,Sexual offenses,90,,,,0.0442,0.0
+236,pretrial,prison,Sexual offenses,91,,,,0.0442,0.0
+237,pretrial,prison,Sexual offenses,92,,,,0.0442,0.0
+238,pretrial,prison,Sexual offenses,93,,,,0.0442,0.0
+239,pretrial,prison,Sexual offenses,94,,,,0.0442,0.0
+240,pretrial,prison,Theft/forgery/fraud,55,,,,48.6554,0.0
+241,pretrial,prison,Theft/forgery/fraud,56,,,,48.6554,0.0
+242,pretrial,prison,Theft/forgery/fraud,57,,,,48.6554,0.0
+243,pretrial,prison,Theft/forgery/fraud,58,,,,48.6554,0.0
+244,pretrial,prison,Theft/forgery/fraud,59,,,,48.6554,0.0
+245,pretrial,prison,Theft/forgery/fraud,60,,,,24.186999999999998,0.0
+246,pretrial,prison,Theft/forgery/fraud,61,,,,24.186999999999998,0.0
+247,pretrial,prison,Theft/forgery/fraud,62,,,,24.186999999999998,0.0
+248,pretrial,prison,Theft/forgery/fraud,63,,,,24.186999999999998,0.0
+249,pretrial,prison,Theft/forgery/fraud,64,,,,24.186999999999998,0.0
+250,pretrial,prison,Theft/forgery/fraud,65,,,,8.1606,0.0
+251,pretrial,prison,Theft/forgery/fraud,66,,,,8.1606,0.0
+252,pretrial,prison,Theft/forgery/fraud,67,,,,8.1606,0.0
+253,pretrial,prison,Theft/forgery/fraud,68,,,,8.1606,0.0
+254,pretrial,prison,Theft/forgery/fraud,69,,,,8.1606,0.0
+255,pretrial,prison,Theft/forgery/fraud,70,,,,2.2914,0.0
+256,pretrial,prison,Theft/forgery/fraud,71,,,,2.2914,0.0
+257,pretrial,prison,Theft/forgery/fraud,72,,,,2.2914,0.0
+258,pretrial,prison,Theft/forgery/fraud,73,,,,2.2914,0.0
+259,pretrial,prison,Theft/forgery/fraud,74,,,,2.2914,0.0
+260,pretrial,prison,Theft/forgery/fraud,75,,,,1.2328,0.0
+261,pretrial,prison,Theft/forgery/fraud,76,,,,1.2328,0.0
+262,pretrial,prison,Theft/forgery/fraud,77,,,,1.2328,0.0
+263,pretrial,prison,Theft/forgery/fraud,78,,,,1.2328,0.0
+264,pretrial,prison,Theft/forgery/fraud,79,,,,1.2328,0.0
+265,pretrial,prison,Theft/forgery/fraud,80,,,,0.2814,0.0
+266,pretrial,prison,Theft/forgery/fraud,81,,,,0.2814,0.0
+267,pretrial,prison,Theft/forgery/fraud,82,,,,0.2814,0.0
+268,pretrial,prison,Theft/forgery/fraud,83,,,,0.2814,0.0
+269,pretrial,prison,Theft/forgery/fraud,84,,,,0.2814,0.0
+270,pretrial,prison,Theft/forgery/fraud,85,,,,0.0536,0.0
+271,pretrial,prison,Theft/forgery/fraud,86,,,,0.0536,0.0
+272,pretrial,prison,Theft/forgery/fraud,87,,,,0.0536,0.0
+273,pretrial,prison,Theft/forgery/fraud,88,,,,0.0536,0.0
+274,pretrial,prison,Theft/forgery/fraud,89,,,,0.0536,0.0
+275,pretrial,prison,Theft/forgery/fraud,90,,,,0.0134,0.0
+276,pretrial,prison,Theft/forgery/fraud,91,,,,0.0134,0.0
+277,pretrial,prison,Theft/forgery/fraud,92,,,,0.0134,0.0
+278,pretrial,prison,Theft/forgery/fraud,93,,,,0.0134,0.0
+279,pretrial,prison,Theft/forgery/fraud,94,,,,0.0134,0.0
+280,pretrial,prison,Violent personal,55,,,,73.3462,0.0
+281,pretrial,prison,Violent personal,56,,,,73.3462,0.0
+282,pretrial,prison,Violent personal,57,,,,73.3462,0.0
+283,pretrial,prison,Violent personal,58,,,,73.3462,0.0
+284,pretrial,prison,Violent personal,59,,,,73.3462,0.0
+285,pretrial,prison,Violent personal,60,,,,36.461,0.0
+286,pretrial,prison,Violent personal,61,,,,36.461,0.0
+287,pretrial,prison,Violent personal,62,,,,36.461,0.0
+288,pretrial,prison,Violent personal,63,,,,36.461,0.0
+289,pretrial,prison,Violent personal,64,,,,36.461,0.0
+290,pretrial,prison,Violent personal,65,,,,12.3018,0.0
+291,pretrial,prison,Violent personal,66,,,,12.3018,0.0
+292,pretrial,prison,Violent personal,67,,,,12.3018,0.0
+293,pretrial,prison,Violent personal,68,,,,12.3018,0.0
+294,pretrial,prison,Violent personal,69,,,,12.3018,0.0
+295,pretrial,prison,Violent personal,70,,,,3.4542,0.0
+296,pretrial,prison,Violent personal,71,,,,3.4542,0.0
+297,pretrial,prison,Violent personal,72,,,,3.4542,0.0
+298,pretrial,prison,Violent personal,73,,,,3.4542,0.0
+299,pretrial,prison,Violent personal,74,,,,3.4542,0.0
+300,pretrial,prison,Violent personal,75,,,,1.8584,0.0
+301,pretrial,prison,Violent personal,76,,,,1.8584,0.0
+302,pretrial,prison,Violent personal,77,,,,1.8584,0.0
+303,pretrial,prison,Violent personal,78,,,,1.8584,0.0
+304,pretrial,prison,Violent personal,79,,,,1.8584,0.0
+305,pretrial,prison,Violent personal,80,,,,0.4242,0.0
+306,pretrial,prison,Violent personal,81,,,,0.4242,0.0
+307,pretrial,prison,Violent personal,82,,,,0.4242,0.0
+308,pretrial,prison,Violent personal,83,,,,0.4242,0.0
+309,pretrial,prison,Violent personal,84,,,,0.4242,0.0
+310,pretrial,prison,Violent personal,85,,,,0.0808,0.0
+311,pretrial,prison,Violent personal,86,,,,0.0808,0.0
+312,pretrial,prison,Violent personal,87,,,,0.0808,0.0
+313,pretrial,prison,Violent personal,88,,,,0.0808,0.0
+314,pretrial,prison,Violent personal,89,,,,0.0808,0.0
+315,pretrial,prison,Violent personal,90,,,,0.0202,0.0
+316,pretrial,prison,Violent personal,91,,,,0.0202,0.0
+317,pretrial,prison,Violent personal,92,,,,0.0202,0.0
+318,pretrial,prison,Violent personal,93,,,,0.0202,0.0
+319,pretrial,prison,Violent personal,94,,,,0.0202,0.0
+320,pretrial,prison,Weapons,55,,,,15.9764,0.0
+321,pretrial,prison,Weapons,56,,,,15.9764,0.0
+322,pretrial,prison,Weapons,57,,,,15.9764,0.0
+323,pretrial,prison,Weapons,58,,,,15.9764,0.0
+324,pretrial,prison,Weapons,59,,,,15.9764,0.0
+325,pretrial,prison,Weapons,60,,,,7.942,0.0
+326,pretrial,prison,Weapons,61,,,,7.942,0.0
+327,pretrial,prison,Weapons,62,,,,7.942,0.0
+328,pretrial,prison,Weapons,63,,,,7.942,0.0
+329,pretrial,prison,Weapons,64,,,,7.942,0.0
+330,pretrial,prison,Weapons,65,,,,2.6796,0.0
+331,pretrial,prison,Weapons,66,,,,2.6796,0.0
+332,pretrial,prison,Weapons,67,,,,2.6796,0.0
+333,pretrial,prison,Weapons,68,,,,2.6796,0.0
+334,pretrial,prison,Weapons,69,,,,2.6796,0.0
+335,pretrial,prison,Weapons,70,,,,0.7524,0.0
+336,pretrial,prison,Weapons,71,,,,0.7524,0.0
+337,pretrial,prison,Weapons,72,,,,0.7524,0.0
+338,pretrial,prison,Weapons,73,,,,0.7524,0.0
+339,pretrial,prison,Weapons,74,,,,0.7524,0.0
+340,pretrial,prison,Weapons,75,,,,0.4048,0.0
+341,pretrial,prison,Weapons,76,,,,0.4048,0.0
+342,pretrial,prison,Weapons,77,,,,0.4048,0.0
+343,pretrial,prison,Weapons,78,,,,0.4048,0.0
+344,pretrial,prison,Weapons,79,,,,0.4048,0.0
+345,pretrial,prison,Weapons,80,,,,0.0924,0.0
+346,pretrial,prison,Weapons,81,,,,0.0924,0.0
+347,pretrial,prison,Weapons,82,,,,0.0924,0.0
+348,pretrial,prison,Weapons,83,,,,0.0924,0.0
+349,pretrial,prison,Weapons,84,,,,0.0924,0.0
+350,pretrial,prison,Weapons,85,,,,0.0176,0.0
+351,pretrial,prison,Weapons,86,,,,0.0176,0.0
+352,pretrial,prison,Weapons,87,,,,0.0176,0.0
+353,pretrial,prison,Weapons,88,,,,0.0176,0.0
+354,pretrial,prison,Weapons,89,,,,0.0176,0.0
+355,pretrial,prison,Weapons,90,,,,0.0044,0.0
+356,pretrial,prison,Weapons,91,,,,0.0044,0.0
+357,pretrial,prison,Weapons,92,,,,0.0044,0.0
+358,pretrial,prison,Weapons,93,,,,0.0044,0.0
+359,pretrial,prison,Weapons,94,,,,0.0044,0.0
