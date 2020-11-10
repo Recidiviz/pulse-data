@@ -41,9 +41,10 @@ from recidiviz.ingest.scrape.infer_release import infer_release_blueprint
 from recidiviz.ingest.scrape.scraper_control import scraper_control
 from recidiviz.ingest.scrape.scraper_status import scraper_status
 from recidiviz.ingest.scrape.worker import worker
+from recidiviz.metrics.export.metric_view_export_manager import export_blueprint
 from recidiviz.persistence.actions import actions
 from recidiviz.persistence.batch_persistence import batch_blueprint
-from recidiviz.persistence.database.bq_refresh.cloud_sql_to_bq_refresh_manager import export_manager_blueprint
+from recidiviz.persistence.database.bq_refresh.cloud_sql_to_bq_refresh_manager import cloud_sql_to_bq_blueprint
 from recidiviz.persistence.database.sqlalchemy_engine_manager import SQLAlchemyEngineManager
 from recidiviz.reporting.reporting_endpoint import reporting_endpoint_blueprint
 from recidiviz.utils import (environment, metadata, monitoring, structured_logging)
@@ -65,12 +66,13 @@ app.register_blueprint(batch_blueprint, url_prefix='/batch')
 app.register_blueprint(
     scrape_aggregate_reports_blueprint, url_prefix='/scrape_aggregate_reports')
 app.register_blueprint(store_single_count_blueprint, url_prefix='/single_count')
-app.register_blueprint(export_manager_blueprint, url_prefix='/export_manager')
+app.register_blueprint(cloud_sql_to_bq_blueprint, url_prefix='/cloud_sql_to_bq')
 app.register_blueprint(backup_manager_blueprint, url_prefix='/backup_manager')
 app.register_blueprint(dataflow_monitor_blueprint, url_prefix='/dataflow_monitor')
 app.register_blueprint(validation_manager_blueprint, url_prefix='/validation_manager')
 app.register_blueprint(calculation_data_storage_manager_blueprint, url_prefix='/calculation_data_storage_manager')
 app.register_blueprint(reporting_endpoint_blueprint, url_prefix='/reporting')
+app.register_blueprint(export_blueprint, url_prefix='/export')
 
 if environment.in_gae():
     SQLAlchemyEngineManager.init_engines_for_server_postgres_instances()

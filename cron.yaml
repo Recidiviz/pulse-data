@@ -187,7 +187,7 @@ cron:
       job_age_limit: 9h
 
   - description: Start Cloud SQL to BigQuery export tasks for county tables
-    url: /export_manager/create_export_tasks
+    url: /cloud_sql_to_bq/create_jails_refresh_bq_tasks
     schedule: every day 12:05
     timezone: America/New_York
     retry_parameters:
@@ -196,7 +196,7 @@ cron:
       job_age_limit: 9h
 
   - description: Start Cloud SQL to BigQuery export tasks for state tables
-    url: /export_manager/create_state_export_tasks
+    url: /cloud_sql_to_bq/create_state_refresh_bq_tasks
     schedule: every day 6:00
     timezone: America/Los_Angeles
     retry_parameters:
@@ -205,7 +205,7 @@ cron:
       job_age_limit: 9h
 
   - description: Start Cloud SQL to BigQuery export tasks for operations tables
-    url: /export_manager/create_operations_export_tasks
+    url: /cloud_sql_to_bq/create_operations_refresh_bq_tasks
     schedule: every day 6:00
     timezone: America/Los_Angeles
     retry_parameters:

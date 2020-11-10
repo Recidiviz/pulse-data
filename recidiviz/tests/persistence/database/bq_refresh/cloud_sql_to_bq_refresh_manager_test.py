@@ -56,7 +56,7 @@ class CloudSqlToBQExportManagerTest(unittest.TestCase):
         self.mock_app = flask.Flask(__name__)
         self.mock_app.config['TESTING'] = True
         self.mock_app.register_blueprint(
-            cloud_sql_to_bq_refresh_manager.export_manager_blueprint)
+            cloud_sql_to_bq_refresh_manager.cloud_sql_to_bq_blueprint)
         self.mock_flask_client = self.mock_app.test_client()
 
     def tearDown(self) -> None:
@@ -94,16 +94,16 @@ class CloudSqlToBQExportManagerTest(unittest.TestCase):
     @mock.patch('recidiviz.utils.metadata.project_id', Mock(return_value='test-project'))
     @mock.patch('recidiviz.utils.metadata.project_number', Mock(return_value='123456789'))
     @mock.patch(f'{CLOUD_SQL_BQ_EXPORT_MANAGER_PACKAGE_NAME}.export_table_then_load_table')
-    def test_handle_bq_export_task(self, mock_export: mock.MagicMock) -> None:
+    def test_refresh_bq_table(self, mock_export: mock.MagicMock) -> None:
         """Tests that the export is called for a given table and module when
-        the /export_manager/export endpoint is hit."""
+        the /cloud_sql_to_bq/refresh_bq_table endpoint is hit."""
         mock_export.return_value = True
 
         self.mock_bq_refresh_config.for_schema_type.return_value = self.mock_bq_refresh_config
 
         table = 'fake_table'
         module = SchemaType.JAILS.value
-        route = '/export'
+        route = '/refresh_bq_table'
         data = {"table_name": table, "schema_type": module}
 
         response = self.mock_flask_client.post(
@@ -119,13 +119,13 @@ class CloudSqlToBQExportManagerTest(unittest.TestCase):
     @mock.patch('recidiviz.utils.metadata.project_id', Mock(return_value='test-project'))
     @mock.patch('recidiviz.utils.metadata.project_number', Mock(return_value='123456789'))
     @mock.patch(f'{CLOUD_SQL_BQ_EXPORT_MANAGER_PACKAGE_NAME}.export_table_then_load_table')
-    def test_handle_bq_export_task_invalid_module(self, mock_export: mock.MagicMock) -> None:
-        """Tests that there is an error when the /export_manager/export
+    def test_refresh_bq_table_invalid_module(self, mock_export: mock.MagicMock) -> None:
+        """Tests that there is an error when the /cloud_sql_to_bq/refresh_bq_table
         endpoint is hit with an invalid module."""
         mock_export.return_value = True
         table = 'fake_table'
         module = 'INVALID'
-        route = '/export'
+        route = '/refresh_bq_table'
         data = {"table_name": table, "schema_type": module}
 
         response = self.mock_flask_client.post(
@@ -140,7 +140,7 @@ class CloudSqlToBQExportManagerTest(unittest.TestCase):
     @mock.patch('recidiviz.utils.metadata.project_number', Mock(return_value='123456789'))
     @mock.patch(f'{CLOUD_SQL_BQ_EXPORT_MANAGER_PACKAGE_NAME}.pubsub_helper')
     @mock.patch(f'{CLOUD_SQL_BQ_EXPORT_MANAGER_PACKAGE_NAME}.BQRefreshCloudTaskManager')
-    def test_handle_bq_monitor_task_requeue(self,
+    def test_monitor_refresh_bq_tasks_requeue(self,
                                             mock_task_manager: mock.MagicMock,
                                             mock_pubsub_helper: mock.MagicMock) -> None:
         """Test that a new bq monitor task is added to the queue when there are
@@ -157,7 +157,7 @@ class CloudSqlToBQExportManagerTest(unittest.TestCase):
 
         topic = 'fake_topic'
         message = 'fake_message'
-        route = '/bq_monitor'
+        route = '/monitor_refresh_bq_tasks'
         data = {"topic": topic, "message": message}
 
         response = self.mock_flask_client.post(
@@ -167,14 +167,14 @@ class CloudSqlToBQExportManagerTest(unittest.TestCase):
             headers={'X-Appengine-Inbound-Appid': 'test-project'})
         assert response.status_code == HTTPStatus.OK
         mock_task_manager.return_value.\
-            create_bq_monitor_task.assert_called_with(topic, message)
+            create_bq_refresh_monitor_task.assert_called_with(topic, message)
         mock_pubsub_helper.publish_message_to_topic.assert_not_called()
 
     @mock.patch('recidiviz.utils.metadata.project_id', Mock(return_value='test-project'))
     @mock.patch('recidiviz.utils.metadata.project_number', Mock(return_value='123456789'))
     @mock.patch(f'{CLOUD_SQL_BQ_EXPORT_MANAGER_PACKAGE_NAME}.pubsub_helper')
     @mock.patch(f'{CLOUD_SQL_BQ_EXPORT_MANAGER_PACKAGE_NAME}.BQRefreshCloudTaskManager')
-    def test_handle_bq_monitor_task_publish(self,
+    def test_monitor_refresh_bq_tasks_publish(self,
                                             mock_task_manager: mock.MagicMock,
                                             mock_pubsub_helper: mock.MagicMock) -> None:
         """Tests that a message is published to the Pub/Sub topic when there
@@ -184,7 +184,7 @@ class CloudSqlToBQExportManagerTest(unittest.TestCase):
 
         topic = 'fake_topic'
         message = 'fake_message'
-        route = '/bq_monitor'
+        route = '/monitor_refresh_bq_tasks'
         data = {"topic": topic, "message": message}
 
         response = self.mock_flask_client.post(
@@ -194,7 +194,7 @@ class CloudSqlToBQExportManagerTest(unittest.TestCase):
             headers={
                 'X-Appengine-Inbound-Appid': 'test-project'})
         assert response.status_code == HTTPStatus.OK
-        mock_task_manager.return_value.create_bq_monitor_task.\
+        mock_task_manager.return_value.create_bq_refresh_monitor_task.\
             assert_not_called()
         mock_pubsub_helper.publish_message_to_topic.assert_called_with(
             message=message, topic=topic)
