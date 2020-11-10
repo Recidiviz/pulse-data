@@ -21,6 +21,7 @@ from typing import Dict
 
 import numpy as np
 import pandas as pd
+import tabula
 import us
 from sqlalchemy.ext.declarative import DeclarativeMeta
 
@@ -28,7 +29,6 @@ from recidiviz.common import fips, str_field_utils
 from recidiviz.common.constants.aggregate import (
     enum_canonical_strings as enum_strings
 )
-from recidiviz.common.read_pdf import read_pdf
 from recidiviz.ingest.aggregate import aggregate_ingest_utils
 from recidiviz.persistence.database.schema.aggregate.schema import \
     TnFacilityAggregate, TnFacilityFemaleAggregate
@@ -106,13 +106,13 @@ def parse(location: str, filename: str) -> Dict[DeclarativeMeta, pd.DataFrame]:
     }
 
 
-def _parse_table(location: str, filename: str, is_female: bool,
+def _parse_table(_: str, filename: str, is_female: bool,
                  report_date: datetime.date) -> pd.DataFrame:
     # Most but not all PDFs have data on pages 2-4.
     pages = ([1, 2] if 2000 <= report_date.year <= 2005
              else [3, 4, 5] if report_date.year in (2006, 2009)
              else [2, 3, 4])
-    table = read_pdf(location, filename, pages=pages, multiple_tables=True)
+    table = tabula.read_pdf(filename, pages=pages, multiple_tables=True)
 
     if is_female and report_date.year == 2020 and report_date.month in (4, 5, 6):
         table = [table[0],

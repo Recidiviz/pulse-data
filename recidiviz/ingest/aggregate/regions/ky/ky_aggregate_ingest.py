@@ -20,6 +20,7 @@ from typing import Dict, List
 
 import numpy as np
 import pandas as pd
+import tabula
 import us
 from sqlalchemy.ext.declarative import DeclarativeMeta
 
@@ -28,7 +29,6 @@ from recidiviz.common.constants.aggregate import (
 )
 from recidiviz.common import str_field_utils
 from recidiviz.common import fips
-from recidiviz.common.read_pdf import read_pdf
 from recidiviz.ingest.aggregate import aggregate_ingest_utils
 from recidiviz.ingest.aggregate.errors import AggregateDateParsingError
 from recidiviz.persistence.database.schema.aggregate.schema import \
@@ -51,10 +51,9 @@ def parse(location: str, filename: str) -> Dict[DeclarativeMeta, pd.DataFrame]:
     }
 
 
-def _parse_table(location, filename: str) -> pd.DataFrame:
+def _parse_table(_, filename: str) -> pd.DataFrame:
     """Parses the table in the KY PDF."""
-    whole_df = read_pdf(
-        location,
+    whole_df = tabula.read_pdf(
         filename,
         pages='all',
         lattice=True

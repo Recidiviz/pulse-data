@@ -19,16 +19,15 @@ import datetime
 from typing import Dict, List
 
 import pandas as pd
+import tabula
 import us
 from PyPDF2 import PdfFileReader
 from sqlalchemy.ext.declarative import DeclarativeMeta
 
+from recidiviz.common import fips, str_field_utils
 from recidiviz.common.constants.aggregate import (
     enum_canonical_strings as enum_strings
 )
-from recidiviz.common import str_field_utils
-from recidiviz.common import fips
-from recidiviz.common.read_pdf import read_pdf
 from recidiviz.ingest.aggregate import aggregate_ingest_utils
 from recidiviz.ingest.aggregate.errors import AggregateDateParsingError
 from recidiviz.persistence.database.schema.aggregate.schema import \
@@ -71,7 +70,7 @@ def _parse_date(filename: str) -> datetime.date:
         raise AggregateDateParsingError("Could not extract date")
 
 
-def _parse_table(location: str, filename: str) -> pd.DataFrame:
+def _parse_table(_: str, filename: str) -> pd.DataFrame:
     """Parses the last table in the GA PDF."""
 
     # Set column names since the pdf makes them hard to parse directly
@@ -98,8 +97,7 @@ def _parse_table(location: str, filename: str) -> pd.DataFrame:
     # the right half of the page
     use_lattice = True
 
-    result = read_pdf(
-        location,
+    result = tabula.read_pdf(
         filename,
         pages=pages,
         lattice=use_lattice,

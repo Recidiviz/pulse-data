@@ -1,5 +1,0 @@
-runtime: python
-env: flex
-service: read-pdf
-env_variables:
-  RECIDIVIZ_ENV: staging
