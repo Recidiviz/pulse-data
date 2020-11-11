@@ -25,8 +25,8 @@ from recidiviz.persistence.database.base_schema import JailsBase
 # Import anything from the two jails schema.py files to ensure the table class
 # declarations are run within the Alembic environment
 from recidiviz.persistence.database.schema.aggregate.schema import \
-    CaFacilityAggregate
-from recidiviz.persistence.database.schema.county.schema import Person
+    CaFacilityAggregate  # pylint:disable=unused-import
+from recidiviz.persistence.database.schema.county.schema import Person  # pylint:disable=unused-import
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -74,11 +74,11 @@ def run_migrations_offline():
     context.configure(
         url=url,
         target_metadata=target_metadata,
+        transaction_per_migration=True,
         literal_binds=True,
         compare_type=True)
 
-    with context.begin_transaction():
-        context.run_migrations()
+    context.run_migrations()
 
 
 def run_migrations_online():
@@ -94,10 +94,10 @@ def run_migrations_online():
         context.configure(
             connection=connection,
             target_metadata=target_metadata,
+            transaction_per_migration=True,
             compare_type=True)
 
-        with context.begin_transaction():
-            context.run_migrations()
+        context.run_migrations()
 
 
 def _get_sqlalchemy_url_without_ssl():
