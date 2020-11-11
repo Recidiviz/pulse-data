@@ -66,47 +66,15 @@ INCARCERATION_SENTENCES_QUERY = """
 # Get all sentences, either probation or incarceration
 SENTENCE_QUERY_TEMPLATE = """WITH
 relevant_sentences AS ({sentence_query}),
-# Only non-amended sentences
+# Only non-amended sentences. Amended sentences are just snapshots of what a sentence looked like at the time of
+# amendment. Our schema only keeps track of the most up-to-date version of all entities, and therefore we do not want to
+# ingest these historical records.
 non_amended_sentences AS (
     SELECT
         * 
       FROM
       relevant_sentences
     WHERE sent_disp != 'A'
-),
-# Only amended sentences with an added amendment_number.
-amended_sentences AS (
-    SELECT
-        *,
-        ROW_NUMBER() 
-          OVER (PARTITION BY mitt_srl, am_sent_no ORDER BY sent_no DESC) AS amendment_number    
-      FROM
-      relevant_sentences
-    WHERE sent_disp = 'A'
-),
-# Keep only the most recent amended sentence. We assume this has the most up to date information.
-most_recent_amended_sentences AS (
-    SELECT
-        *
-    EXCEPT 
-        (amendment_number)
-    FROM 
-      amended_sentences
-    WHERE 
-        amendment_number = 1
-),
-# Join the amended sentences with the non-amended sentences. Only keep sentence number and status information from the 
-# non-amended sentence.
-up_to_date_sentences AS (
-    SELECT 
-        {sentence_args}
-        (a.mitt_srl IS NOT NULL) AS was_amended
-    FROM 
-        non_amended_sentences s 
-    LEFT JOIN 
-        most_recent_amended_sentences a
-    ON 
-        (s.mitt_srl = a.mitt_srl AND s.sent_no = a.am_sent_no)
 )
 # Join sentence level information with that from mittimus, county, judge, and offense to get descriptive details.
 SELECT
@@ -128,7 +96,7 @@ LEFT JOIN
 USING
     (judge_cd)
 JOIN
-    up_to_date_sentences
+    non_amended_sentences
 USING
     (mitt_srl)
 LEFT JOIN
