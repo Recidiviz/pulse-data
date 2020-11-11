@@ -193,10 +193,12 @@ def stop_and_clear_on_disk_postgresql_database() -> None:
     _clear_on_disk_postgresql_database()
     _stop_on_disk_postgresql_database()
 
+
 def _stop_on_disk_postgresql_database():
     # If the current user is root then the database is owned by a separate OS test user. Run as them to stop the server.
     password_record = pwd.getpwnam(LINUX_TEST_DB_OWNER_NAME) if _is_root_user() else None
-    _run_command('pg_ctl -D /usr/local/var/postgres -l /tmp/poostgres stop', as_user=password_record)
+    _run_command('pg_ctl -D /usr/local/var/postgres -l /tmp/postgres stop', as_user=password_record)
+
 
 def _clear_on_disk_postgresql_database():
     # Ensure all sessions are closed, otherwise `drop_all` below may hang.
