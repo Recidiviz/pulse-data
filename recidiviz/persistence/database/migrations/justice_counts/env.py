@@ -73,11 +73,11 @@ def run_migrations_offline():
     context.configure(
         url=url,
         target_metadata=target_metadata,
+        transaction_per_migration=True,
         literal_binds=True,
         compare_type=True)
 
-    with context.begin_transaction():
-        context.run_migrations()
+    context.run_migrations()
 
 
 def run_migrations_online():
@@ -93,10 +93,10 @@ def run_migrations_online():
         context.configure(
             connection=connection,
             target_metadata=target_metadata,
+            transaction_per_migration=True,
             compare_type=True)
 
-        with context.begin_transaction():
-            context.run_migrations()
+        context.run_migrations()
 
 
 def _get_sqlalchemy_url_without_ssl():
