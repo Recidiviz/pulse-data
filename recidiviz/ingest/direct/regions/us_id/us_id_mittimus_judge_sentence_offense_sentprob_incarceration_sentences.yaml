@@ -98,5 +98,3 @@ keys_to_ignore:
   - string_no           # Unused - TODO(#3506): Get more info from ID
   - vio_doc             # Unused - TODO(#3506): Get more info from ID on this.
   - vio_1311            # Unused - TODO(#3506): Get more info from ID on this
-  - was_amended         # Unused - Whether or not this sentence was amended. If True, this means that this row contains
-                        #          information from the original and amended sentence. This is recidiviz-generated.
