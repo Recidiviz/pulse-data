@@ -30,8 +30,8 @@ try:
     from recidiviz_dataflow_operator import RecidivizDataflowTemplateOperator  # type: ignore
     from iap_httprequest_operator import IAPHTTPRequestOperator  # type: ignore
 except ImportError:
-    from recidiviz.airflow.recidiviz_dataflow_operator import RecidivizDataflowTemplateOperator
-    from recidiviz.airflow.iap_httprequest_operator import IAPHTTPRequestOperator  # type: ignore
+    from recidiviz.airflow.dag.recidiviz_dataflow_operator import RecidivizDataflowTemplateOperator
+    from recidiviz.airflow.dag.iap_httprequest_operator import IAPHTTPRequestOperator  # type: ignore
 
 # Need a disable pointless statement because Python views the chaining operator ('>>') as a "pointless" statement
 # pylint: disable=W0104 pointless-statement
