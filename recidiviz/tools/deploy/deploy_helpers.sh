@@ -226,6 +226,9 @@ function verify_can_deploy {
 
     echo "Checking for too many currently serving versions"
     run_cmd check_for_too_many_serving_versions ${PROJECT_ID}
+
+    echo "Checking pipenv is synced"
+    ${BASH_SOURCE_DIR}/../diff_pipenv.sh || exit_on_fail
 }
 
 function post_deploy_triggers {
