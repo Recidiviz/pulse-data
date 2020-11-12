@@ -20,7 +20,7 @@ expected=$(pipenv lock -r --dev | cut -d';' -f1 | sed 's/\[.*\]//' | sed '/^[-#]
 # The installed command gets all installed packages in a requirements format, with the following transformations
 # - Make everything lower case
 # - Sort, in case the above affected the sort order
-installed=$(pip freeze | tr A-Z a-z | sort) || exit_on_fail
+installed=$(pipenv run pip freeze | tr A-Z a-z | sort) || exit_on_fail
 
 # Diff returns 1 if there are differences and >1 if an error occurred. We only want to fail here if there was an actual
 # error.
