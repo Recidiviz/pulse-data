@@ -19,6 +19,7 @@
 """
 import logging
 import os
+import re
 
 from datetime import datetime
 
@@ -54,6 +55,31 @@ KEY_BATCH_ID = "batch_id"
 KEY_REPORT_TYPE = "report_type"
 KEY_EMAIL_ADDRESS = "email_address"
 KEY_STATE_CODE = "state_code"
+
+
+def format_test_address(test_address: str, recipient_email_address: str) -> str:
+    """Format a test_address to create a unique email address with the recipient_email_address's username.
+
+    Example: tester+recipient_username@testers-domain.ext
+
+    If either email address is invalid, it will raise a ValueError.
+    """
+    validate_email_address(recipient_email_address)
+    validate_email_address(test_address)
+
+    [recipient_name, _domain] = recipient_email_address.split("@")
+    [test_name, domain] = test_address.split("@")
+    return f"{test_name}+{recipient_name}@{domain}"
+
+
+def validate_email_address(email_address: str) -> None:
+    """Basic sanity check that the email address is formatted correctly.
+
+    Example of a valid email address pattern: any_number_of_letters.123+-@123.multiple.domain-names.com
+    """
+    valid_email_pattern = r'(^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$)'
+    if not re.match(valid_email_pattern, email_address):
+        raise ValueError(f"Invalid email address format: [{email_address}]")
 
 
 def get_project_id() -> str:

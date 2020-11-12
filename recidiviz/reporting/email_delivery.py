@@ -27,7 +27,7 @@ and conform to the following:
 """
 
 import logging
-from typing import Dict, Tuple
+from typing import Dict, Tuple, Optional
 from google.cloud import storage
 
 from sendgrid import SendGridAPIClient
@@ -40,15 +40,17 @@ EMAIL_SUBJECT = "Your monthly Recidiviz report"
 _SENDGRID_API_KEY = 'sendgrid_api_key'
 
 
-def deliver(batch_id: str, test_address: str = None) -> Tuple[int, int]:
+def deliver(batch_id: str, redirect_address: Optional[str] = None) -> Tuple[int, int]:
     """Delivers emails for the given batch.
 
-    Delivers emails to either the desired recipients for the batch or to a test address. Emails delivered to the test
-    address are identical to a production send except that the customer email address is appended to the subject.
+    Delivers emails to the email address specified in the generated email filename.
+
+    If a redirect_address is provided, emails are sent to the redirect_address and the original recipient's email
+    address's name (without the domain) is appended to the name (i.e. dev+recipient_name@recidiviz.org).
 
     Args:
         batch_id: The identifier for the batch
-        test_address: If provided, all emails will be sent to this email address
+        redirect_address: (optional) An email address to which all emails will be sent
 
     Returns:
         A tuple with counts of successful deliveries and failures (successes, failures)
@@ -57,8 +59,8 @@ def deliver(batch_id: str, test_address: str = None) -> Tuple[int, int]:
         Raises errors related to external services like Google Storage but continues attempting to send subsequent
         emails if it receives an exception while attempting to send.  In that case the error is logged.
     """
-    if test_address:
-        logging.info("Delivering test emails for batch %s to %s", batch_id, test_address)
+    if redirect_address:
+        logging.info("Redirecting all emails for batch %s to be sent to %s", batch_id, redirect_address)
     else:
         logging.info("Delivering emails for batch %s", batch_id)
 
@@ -77,23 +79,24 @@ def deliver(batch_id: str, test_address: str = None) -> Tuple[int, int]:
     success_count = 0
     fail_count = 0
 
-    for email_address in files:
-        if test_address:
-            subject = f"[{email_address}] {EMAIL_SUBJECT}"
-            to_address = test_address
+    for recipient_email_address in files:
+        if redirect_address:
+            utils.validate_email_address(redirect_address)
+            subject = f"[{recipient_email_address}] {EMAIL_SUBJECT}"
+            to_address = redirect_address
         else:
             subject = EMAIL_SUBJECT
-            to_address = email_address
+            to_address = recipient_email_address
 
         try:
-            send_email(to_address, subject, files[email_address], sendgrid_api_value, from_email_address,
+            send_email(to_address, subject, files[recipient_email_address], sendgrid_api_value, from_email_address,
                        from_email_name)
         except Exception as e:
-            logging.error("Error sending the file created for %s to %s", email_address, to_address)
+            logging.error("Error sending the file created for %s to %s", recipient_email_address, to_address)
             logging.error(e)
             fail_count = fail_count + 1
         else:
-            logging.info("Email for %s sent to %s", email_address, to_address)
+            logging.info("Email for %s sent to %s", recipient_email_address, to_address)
             success_count = success_count + 1
 
     logging.info("Sent %s emails. %s emails failed to send", success_count, fail_count)

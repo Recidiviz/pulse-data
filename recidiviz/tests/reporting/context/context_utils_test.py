@@ -36,7 +36,7 @@ PLURAL_TEXT = 'Monsteras Deliciosa'
 class ContextUtilsTest(TestCase):
     """Tests for context_utils.py."""
 
-    def test_singular_or_plural_singular(self):
+    def test_singular_or_plural_singular(self) -> None:
         expected = SINGULAR_TEXT
         prepared_data = copy(_PREPARED_DATA)
 
@@ -44,7 +44,7 @@ class ContextUtilsTest(TestCase):
         actual = prepared_data['final_text']
         self.assertEqual(expected, actual)
 
-    def test_singular_or_plural_plural(self):
+    def test_singular_or_plural_plural(self) -> None:
         expected = PLURAL_TEXT
         prepared_data = copy(_PREPARED_DATA)
 
@@ -52,7 +52,7 @@ class ContextUtilsTest(TestCase):
         actual = prepared_data['final_text']
         self.assertEqual(expected, actual)
 
-    def test_singular_or_plural_zero(self):
+    def test_singular_or_plural_zero(self) -> None:
         expected = PLURAL_TEXT
         prepared_data = copy(_PREPARED_DATA)
 
