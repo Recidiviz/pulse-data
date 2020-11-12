@@ -18,27 +18,30 @@
 """The logic to retrieve and process data for generated reports.
 
 This module contains all the functions and logic needed to retrieve data from the calculation pipelines and modify it
-for use in the emails. When data retrieval is complete this process initiates chart generation for each recipient using
-Pub/Sub.
+for use in the emails.
 """
 
 import json
 import logging
-from typing import List
+from typing import List, Optional
 
 import recidiviz.reporting.email_generation as email_generation
 import recidiviz.reporting.email_reporting_utils as utils
 from recidiviz.reporting.context.available_context import get_report_context
 
 
-def start(state_code: str, report_type: str) -> str:
-    """Begins data retrieval a new batch of email reports.
+def start(state_code: str, report_type: str, test_address: Optional[str] = None) -> str:
+    """Begins data retrieval for a new batch of email reports.
 
-    Start with collection of data from the calculation pipelines. Send messages to start chart generation.
+    Start with collection of data from the calculation pipelines.
+
+    If a test_address is provided, it overrides the recipient's email_address with a formatted test_address
+    and uses the formatted test_address to save the generated emails.
 
     Args:
         state_code: The state for which to generate reports
         report_type: The type of report to send
+        test_address: Optional email address for which to generate all emails
 
     Returns: The batch id for the newly started batch
     """
@@ -48,6 +51,14 @@ def start(state_code: str, report_type: str) -> str:
     recipient_data = retrieve_data(state_code, report_type, batch_id)
 
     for recipient in recipient_data:
+        if test_address:
+            recipient_email_address = recipient[utils.KEY_EMAIL_ADDRESS]
+            formatted_test_address = utils.format_test_address(test_address, recipient_email_address)
+            # Override the recipient's address with the test address
+            recipient[utils.KEY_EMAIL_ADDRESS] = formatted_test_address
+            logging.info("Generating email for [%s] with test address: %s", recipient_email_address,
+                         formatted_test_address)
+
         recipient[utils.KEY_BATCH_ID] = batch_id
         report_context = get_report_context(state_code, report_type, recipient)
         email_generation.generate(report_context)

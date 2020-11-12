@@ -18,9 +18,8 @@
 """Tests for email_reporting_utils.py."""
 
 #pylint: disable=import-outside-toplevel
-
 from unittest import TestCase
-from unittest.mock import patch, Mock
+from unittest.mock import patch, Mock, MagicMock
 import recidiviz.reporting.email_reporting_utils as utils
 
 _MOCK_PROJECT_ID = 'RECIDIVIZ_TEST'
@@ -29,12 +28,11 @@ _MOCK_PROJECT_ID = 'RECIDIVIZ_TEST'
 class EmailReportingUtilsTests(TestCase):
     """Tests for email_reporting_utils.py."""
 
-    @classmethod
-    def setUpClass(cls):
-        cls.eru = utils
+    def setUp(self) -> None:
+        self.eru = utils
 
     @patch('os.environ.get')
-    def test_get_env_var_happy_path(self, mock_environ_get):
+    def test_get_env_var_happy_path(self, mock_environ_get: MagicMock) -> None:
         expected = 'ANALYSIS'
         mock_environ_get.return_value = expected
 
@@ -42,19 +40,19 @@ class EmailReportingUtilsTests(TestCase):
         self.assertEqual(expected, actual)
 
     @patch('os.environ.get')
-    def test_get_env_var_not_found(self, mock_environ_get):
+    def test_get_env_var_not_found(self, mock_environ_get: MagicMock) -> None:
         mock_environ_get.return_value = None
 
         with self.assertRaises(KeyError):
             self.eru.get_env_var('SIXTYTEN')
 
     @patch('recidiviz.utils.metadata.project_id', Mock(return_value=_MOCK_PROJECT_ID))
-    def test_get_project_id(self):
+    def test_get_project_id(self) -> None:
         actual = self.eru.get_project_id()
         self.assertEqual(_MOCK_PROJECT_ID, actual)
 
     @patch('recidiviz.utils.secrets.get_secret')
-    def test_get_cdn_static_ip(self, mock_secret):
+    def test_get_cdn_static_ip(self, mock_secret: MagicMock) -> None:
         expected = '123.456.7.8'
         test_secrets = {
             'po_report_cdn_static_IP': expected
@@ -65,25 +63,25 @@ class EmailReportingUtilsTests(TestCase):
         self.assertEqual(expected, actual)
 
     @patch('recidiviz.utils.metadata.project_id', Mock(return_value=_MOCK_PROJECT_ID))
-    def test_get_data_storage_bucket_name(self):
+    def test_get_data_storage_bucket_name(self) -> None:
         expected = f'{_MOCK_PROJECT_ID}-report-data'
         actual = self.eru.get_data_storage_bucket_name()
         self.assertEqual(expected, actual)
 
     @patch('recidiviz.utils.metadata.project_id', Mock(return_value=_MOCK_PROJECT_ID))
-    def test_get_data_archive_bucket_name(self):
+    def test_get_data_archive_bucket_name(self) -> None:
         expected = f'{_MOCK_PROJECT_ID}-report-data-archive'
         actual = self.eru.get_data_archive_bucket_name()
         self.assertEqual(expected, actual)
 
     @patch('recidiviz.utils.metadata.project_id', Mock(return_value=_MOCK_PROJECT_ID))
-    def test_get_html_bucket_name(self):
+    def test_get_html_bucket_name(self) -> None:
         expected = f'{_MOCK_PROJECT_ID}-report-html'
         actual = self.eru.get_html_bucket_name()
         self.assertEqual(expected, actual)
 
     @patch('recidiviz.utils.secrets.get_secret')
-    def test_get_static_image_path(self, mock_secret):
+    def test_get_static_image_path(self, mock_secret: MagicMock) -> None:
         expected = '123.456.7.8'
         test_secrets = {
             'po_report_cdn_static_IP': expected
@@ -94,27 +92,54 @@ class EmailReportingUtilsTests(TestCase):
         actual = self.eru.get_static_image_path('us_va', 'anything')
         self.assertEqual(expected, actual)
 
-    def test_get_data_filename(self):
+    def test_get_data_filename(self) -> None:
         expected = 'anything/us_va/anything_data.json'
         actual = self.eru.get_data_filename('us_va', 'anything')
         self.assertEqual(expected, actual)
 
-    def test_get_data_archive_filename(self):
+    def test_get_data_archive_filename(self) -> None:
         expected = 'batch-1.json'
         actual = self.eru.get_data_archive_filename('batch-1')
         self.assertEqual(expected, actual)
 
-    def test_get_properties_filename(self):
+    def test_get_properties_filename(self) -> None:
         expected = 'anything/us_va/properties.json'
         actual = self.eru.get_properties_filename('us_va', 'anything')
         self.assertEqual(expected, actual)
 
-    def test_get_html_filename(self):
+    def test_get_html_filename(self) -> None:
         expected = 'batch-1/boards@canada.ca.html'
         actual = self.eru.get_html_filename('batch-1', 'boards@canada.ca')
         self.assertEqual(expected, actual)
 
-    def test_get_template_filename(self):
+    def test_get_template_filename(self) -> None:
         expected = 'anything/us_va/template.html'
         actual = self.eru.get_template_filename('us_va', 'anything')
         self.assertEqual(expected, actual)
+
+    def test_format_test_address_valid(self) -> None:
+        """Given a valid test_address and recipient_address, it returns the test address with the recipient
+        email address name appended."""
+        expected = "test+recipient@domain.com"
+        actual = utils.format_test_address("test@domain.com","recipient@id.us.gov")
+        self.assertEqual(expected, actual)
+
+    def test_format_test_address_invalid(self) -> None:
+        """Given an invalid test address, it raises a ValueError."""
+        with self.assertRaises(ValueError):
+            utils.format_test_address("random string", "recipient@domain.com")
+
+    def test_format_test_address_invalid_recipient(self) -> None:
+        """Given an invalid recipient address, it raises a ValueError."""
+        with self.assertRaises(ValueError):
+            utils.format_test_address("test@domain.com", "invalid recipient address")
+
+    def test_validate_email_address_valid(self) -> None:
+        """Given a valid email address, it does not raise a ValueError."""
+        utils.validate_email_address("dev@recidiviz.subdomain.org")
+        utils.validate_email_address("testing-1234+@recidiviz.subdomain.org")
+
+    def test_validate_email_address_invalid(self) -> None:
+        """Given an invalid email address, it does raise a ValueError."""
+        with self.assertRaises(ValueError):
+            utils.validate_email_address("some random string @ fake domain")
