@@ -22,7 +22,7 @@ import unittest
 from airflow.models import DagBag
 from mock import patch
 
-dag_folder = "recidiviz/airflow/"
+dag_folder = "recidiviz/airflow/dag"
 
 
 @patch('os.environ', {'GCP_PROJECT_ID': 'recidiviz-testing',
