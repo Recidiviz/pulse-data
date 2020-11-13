@@ -19,6 +19,8 @@
 
 import logging
 import time
+from typing import Dict, Any
+from http import HTTPStatus
 
 import googleapiclient.errors
 
@@ -69,6 +71,10 @@ def wait_until_operation_finished(operation_id: str) -> bool:
     We must wait until completion because only one Cloud SQL operation can run
     at a time.
 
+    It's possible to get an HTTPError 404 from the `operations.get()` endpoint if the operation has been created, but
+    not started yet. To mitigate this possible timing issue, we retry getting the operation instance up to 3 times
+    before raising the error.
+
     Args:
         operation_id: Cloud SQL Operation ID.
     Returns:
@@ -81,12 +87,11 @@ def wait_until_operation_finished(operation_id: str) -> bool:
     operation_success = False
 
     while operation_in_progress:
-        get_operation = sqladmin_client().operations().get(
-            project=metadata.project_id(), operation=operation_id)
-        operation = get_operation.execute()
+        operation = get_operation_with_retries(operation_id)
         operation_status = operation['status']
 
-        if operation_status in {'PENDING', 'RUNNING', 'UNKNOWN'}:
+        # See: https://cloud.google.com/sql/docs/postgres/admin-api/rest/v1beta4/operations#SqlOperationStatus
+        if operation_status in {'PENDING', 'RUNNING', 'UNKNOWN', 'SQL_OPERATION_STATUS_UNSPECIFIED'}:
             time.sleep(SECONDS_BETWEEN_OPERATION_STATUS_CHECKS)
         elif operation_status == 'DONE':
             operation_in_progress = False
@@ -94,20 +99,41 @@ def wait_until_operation_finished(operation_id: str) -> bool:
         logging.debug("Operation [%s] status: [%s]",
                       operation_id, operation_status)
 
-    if 'error' in operation:
-        errors = operation['error'].get('errors', [])
-        for error in errors:
-            logging.error(
-                "Operation %s finished with error: %s, %s\n%s",
-                operation_id,
-                error.get('kind'),
-                error.get('code'),
-                error.get('message'))
-    else:
-        logging.info("Operation [%s] succeeded.", operation_id)
-        operation_success = True
+        # An operation object may also include an error property.
+        if 'error' in operation:
+            errors = operation['error'].get('errors', [])
+            for error in errors:
+                logging.error(
+                    "Operation %s finished with error: %s, %s\n%s",
+                    operation_id,
+                    error.get('kind'),
+                    error.get('code'),
+                    error.get('message'))
+        else:
+            logging.info("Operation [%s] succeeded.", operation_id)
+            operation_success = True
 
     return operation_success
+
+
+def get_operation_with_retries(operation_id: str) -> Dict[str, Any]:
+    num_retries = 3
+    while num_retries > 0:
+        # We need to guard here for possible 404 HttpErrors if the operation hasn't started yet
+        try:
+            get_operation = sqladmin_client().operations().get(
+                project=metadata.project_id(), operation=operation_id)
+            return get_operation.execute()
+        except googleapiclient.errors.HttpError as error:
+            # If we get a 404 HttpError, wait a few seconds and then retry getting the operation instance.
+            if error.resp.status == HTTPStatus.NOT_FOUND and num_retries > 0:
+                logging.debug("HttpError when requesting operation_id [%s]. Retrying request: %s",
+                              operation_id, num_retries)
+                time.sleep(SECONDS_BETWEEN_OPERATION_STATUS_CHECKS)
+                num_retries -= 1
+            else:
+                raise
+    raise ValueError("Operation not set, request for the operation failed.")
 
 
 def export_table(table_name: str, cloud_sql_to_bq_config: CloudSqlToBQConfig) -> bool:
