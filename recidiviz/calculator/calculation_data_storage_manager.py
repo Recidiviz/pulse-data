@@ -30,6 +30,7 @@ from http import HTTPStatus
 from typing import Tuple, List
 
 import flask
+from google.cloud.bigquery import WriteDisposition
 
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.calculator.calculation_data_storage_config import DATAFLOW_METRICS_COLD_STORAGE_DATASET, \
@@ -64,53 +65,76 @@ def move_old_dataflow_metrics_to_cold_storage() -> None:
     for table_ref in dataflow_metrics_tables:
         table_id = table_ref.table_id
 
-        filter_clause = """WHERE created_on NOT IN
-                              (SELECT DISTINCT created_on FROM `{project_id}.{dataflow_metrics_dataset}.{table_id}` 
-                              ORDER BY created_on DESC
-                              LIMIT {day_count_limit})
-                           AND job_id NOT IN (
-                              SELECT DISTINCT job_id FROM
-                              `{project_id}.{reference_views_dataset}.most_recent_job_id_by_metric_and_state_code_materialized` 
-                           )
+        source_data_join_clause = """LEFT JOIN
+                          (SELECT DISTINCT job_id AS keep_job_id FROM
+                          `{project_id}.{reference_views_dataset}.most_recent_job_id_by_metric_and_state_code_materialized`)
+                        ON job_id = keep_job_id
+                        LEFT JOIN 
+                          (SELECT DISTINCT created_on AS keep_created_date FROM
+                          `{project_id}.{dataflow_metrics_dataset}.{table_id}`
+                          ORDER BY created_on DESC
+                          LIMIT {day_count_limit})
+                        ON created_on = keep_created_date
                         """.format(
                             project_id=table_ref.project,
                             dataflow_metrics_dataset=table_ref.dataset_id,
                             reference_views_dataset=REFERENCE_VIEWS_DATASET,
-                            table_id=table_ref.table_id,
+                            table_id=table_id,
                             day_count_limit=MAX_DAYS_IN_DATAFLOW_METRICS_TABLE
                         )
 
-        cold_storage_dataset_ref = bq_client.dataset_ref_for_id(cold_storage_dataset)
+        # Exclude these columns leftover from the exclusion join from being added to the metric tables in cold storage
+        columns_to_exclude_from_transfer = ['keep_job_id', 'keep_created_date']
 
-        if bq_client.table_exists(cold_storage_dataset_ref, table_id):
-            # Move data from the Dataflow metrics dataset into the cold storage dataset
-            insert_job = bq_client.insert_into_table_from_table_async(source_dataset_id=dataflow_metrics_dataset,
-                                                                      source_table_id=table_id,
-                                                                      destination_dataset_id=cold_storage_dataset,
-                                                                      destination_table_id=table_id,
-                                                                      source_data_filter_clause=filter_clause,
-                                                                      allow_field_additions=True)
+        # This filter will return the rows that should be moved to cold storage
+        insert_filter_clause = "WHERE keep_job_id IS NULL AND keep_created_date IS NULL"
 
-            # Wait for the insert job to complete before running the delete job
-            insert_job.result()
-        else:
-            # This table doesn't yet exist in cold storage. Create it.
-            table_query = f"SELECT * FROM `{bq_client.project_id}.{dataflow_metrics_dataset}.{table_id}` " \
-                          f"{filter_clause}"
+        # Query for rows to be moved to the cold storage table
+        insert_query = """
+            SELECT * EXCEPT({columns_to_exclude}) FROM
+            `{project_id}.{dataflow_metrics_dataset}.{table_id}`
+            {source_data_join_clause}
+            {insert_filter_clause}
+        """.format(
+            columns_to_exclude=', '.join(columns_to_exclude_from_transfer),
+            project_id=table_ref.project,
+            dataflow_metrics_dataset=table_ref.dataset_id,
+            table_id=table_id,
+            source_data_join_clause=source_data_join_clause,
+            insert_filter_clause=insert_filter_clause
+        )
 
-            create_job = bq_client.create_table_from_query_async(cold_storage_dataset,
-                                                                 table_id,
-                                                                 table_query,
-                                                                 query_parameters=[])
+        # Move data from the Dataflow metrics dataset into the cold storage table, creating the table if necessary
+        insert_job = bq_client.insert_into_table_from_query(
+            destination_dataset_id=cold_storage_dataset,
+            destination_table_id=table_id,
+            query=insert_query,
+            allow_field_additions=True,
+            write_disposition=WriteDisposition.WRITE_APPEND)
 
-            # Wait for the create job to complete before running the delete job
-            create_job.result()
+        # Wait for the insert job to complete before running the replace job
+        insert_job.result()
 
-        # Delete that data from the Dataflow dataset
-        delete_job = bq_client.delete_from_table_async(dataflow_metrics_dataset, table_ref.table_id, filter_clause)
+        # This will return the rows that were not moved to cold storage and should remain in the table
+        replace_query = """
+            SELECT * EXCEPT({columns_to_exclude}) FROM
+            `{project_id}.{dataflow_metrics_dataset}.{table_id}`
+            {source_data_join_clause}
+            WHERE keep_job_id IS NOT NULL OR keep_created_date IS NOT NULL
+        """.format(
+            columns_to_exclude=', '.join(columns_to_exclude_from_transfer),
+            project_id=table_ref.project,
+            dataflow_metrics_dataset=table_ref.dataset_id,
+            table_id=table_id,
+            source_data_join_clause=source_data_join_clause,
+        )
 
-        # Wait for the delete job to complete before moving on
-        delete_job.result()
+        # Replace the Dataflow table with only the rows that should remain
+        replace_job = bq_client.create_table_from_query_async(
+            dataflow_metrics_dataset, table_ref.table_id, query=replace_query, overwrite=True)
+
+        # Wait for the replace job to complete before moving on
+        replace_job.result()
 
 
 def update_dataflow_metric_tables_schemas() -> None:
