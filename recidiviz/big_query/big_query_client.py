@@ -288,7 +288,7 @@ class BigQueryClient:
                                       dataset_id: str,
                                       table_id: str,
                                       query: str,
-                                      query_parameters: List[bigquery.ScalarQueryParameter],
+                                      query_parameters: Optional[List[bigquery.ScalarQueryParameter]] = None,
                                       overwrite: Optional[bool] = False) -> bigquery.QueryJob:
         """Creates a table at the given location with the output from the given query. If overwrite is False, a
         'duplicate' error is returned in the job result if the table already exists and contains data. If overwrite is
@@ -298,7 +298,7 @@ class BigQueryClient:
             dataset_id: The name of the dataset where the table should be created.
             table_id: The name of the table to be created.
             query: The query to run. The result will be loaded into the new table.
-            query_parameters: Parameters for the query
+            query_parameters: Optional parameters for the query
             overwrite: Whether or not to overwrite an existing table.
 
         Returns:
@@ -315,8 +315,7 @@ class BigQueryClient:
                                            hydrate_missing_columns_with_null: bool = False,
                                            allow_field_additions: bool = False) -> bigquery.QueryJob:
         """Inserts rows from the source table into the destination table. May include an optional filter clause
-        to only insert a subset of rows into the destination table and an optional join clause to assist with
-        filtering the source data.
+        to only insert a subset of rows into the destination table.
 
         Args:
             source_dataset_id: The name of the source dataset.
@@ -361,6 +360,35 @@ class BigQueryClient:
                 file.
         Returns:
             The LoadJob object containing job details.
+        """
+
+    @abc.abstractmethod
+    def insert_into_table_from_query(
+            self,
+            *,
+            destination_dataset_id: str,
+            destination_table_id: str,
+            query: str,
+            query_parameters: Optional[List[bigquery.ScalarQueryParameter]] = None,
+            allow_field_additions: bool = False,
+            write_disposition: bigquery.WriteDisposition = bigquery.WriteDisposition.WRITE_APPEND) \
+            -> bigquery.QueryJob:
+        """Inserts the results of the given query into the table at the given location. Creates a table if one does not
+        yet exist. If |allow_field_additions| is set to False and the table exists, the schema of the query result must
+        match the schema of the destination table.
+
+        Args:
+            destination_dataset_id: The name of the dataset where the result should be inserted.
+            destination_table_id: The name of the table where the result should be inserted.
+            query: The query to run. The result will be loaded into the table.
+            query_parameters: Optional parameters for the query.
+            allow_field_additions: Whether or not to allow new columns to be created in the destination table if the
+                schema in the query result does not exactly match the destination table. Defaults to False.
+            write_disposition: What to do if the destination table already exists. Defaults to WRITE_APPEND, which will
+                append rows to an existing table.
+
+        Returns:
+            A QueryJob which will contain the results once the query is complete.
         """
 
     @abc.abstractmethod
@@ -675,27 +703,21 @@ class BigQueryClientImpl(BigQueryClient):
                                       dataset_id: str,
                                       table_id: str,
                                       query: str,
-                                      query_parameters: List[bigquery.ScalarQueryParameter],
+                                      query_parameters: Optional[List[bigquery.ScalarQueryParameter]] = None,
                                       overwrite: Optional[bool] = False) -> bigquery.QueryJob:
-        dataset_ref = self.dataset_ref_for_id(dataset_id)
-
-        self.create_dataset_if_necessary(dataset_ref)
-
-        job_config = bigquery.QueryJobConfig()
-        job_config.destination = dataset_ref.table(table_id)
-
         # If overwrite is False, errors if the table already exists and contains data. Else, overwrites the table if
         # it already exists.
-        job_config.write_disposition = (bigquery.job.WriteDisposition.WRITE_TRUNCATE if overwrite
-                                        else bigquery.job.WriteDisposition.WRITE_EMPTY)
-        job_config.query_parameters = query_parameters
+        write_disposition = (bigquery.job.WriteDisposition.WRITE_TRUNCATE if overwrite
+                             else bigquery.job.WriteDisposition.WRITE_EMPTY)
 
         logging.info("Creating table: %s with query: %s", table_id, query)
 
-        return self.client.query(
+        return self.insert_into_table_from_query(
+            destination_dataset_id=dataset_id,
+            destination_table_id=table_id,
             query=query,
-            location=self.LOCATION,
-            job_config=job_config,
+            query_parameters=query_parameters,
+            write_disposition=write_disposition
         )
 
     def load_table_from_table_async(self,
@@ -741,9 +763,9 @@ class BigQueryClientImpl(BigQueryClient):
             if len(schema_fields_missing_from_source) > 0:
                 missing_columns = [f'CAST(NULL AS {missing_column.field_type}) AS {missing_column.name}'
                                    for missing_column in schema_fields_missing_from_source]
-                select_columns = "*, {null_columns}".format(null_columns=', '.join(missing_columns))
+                select_columns += ", {null_columns}".format(null_columns=', '.join(missing_columns))
 
-        select_query = "SELECT {columns} FROM `{project_id}.{source_dataset_id}.{source_table_id}`".format(
+        query = "SELECT {columns} FROM `{project_id}.{source_dataset_id}.{source_table_id}`".format(
             columns=select_columns,
             project_id=self.project_id,
             source_dataset_id=source_dataset_id,
@@ -752,25 +774,54 @@ class BigQueryClientImpl(BigQueryClient):
 
         if source_data_filter_clause:
             self.validate_source_data_filter_clause(source_data_filter_clause)
-
-            select_query = f"{select_query} {source_data_filter_clause}"
-
-        job_config = bigquery.job.QueryJobConfig()
-        job_config.destination = dataset_ref.table(destination_table_id)
-        job_config.write_disposition = write_disposition
-
-        if allow_field_additions:
-            job_config.schema_update_options = [bigquery.SchemaUpdateOption.ALLOW_FIELD_ADDITION]
+            query = f"{query} {source_data_filter_clause}"
 
         logging.info("Copying data from: %s.%s to: %s.%s", source_dataset_id, source_table_id,
                      destination_dataset_id, destination_table_id)
 
-        return self.client.query(select_query, job_config=job_config)
+        return self.insert_into_table_from_query(
+            destination_dataset_id=destination_dataset_id,
+            destination_table_id=destination_table_id,
+            query=query,
+            allow_field_additions=allow_field_additions,
+            write_disposition=write_disposition
+        )
 
     @staticmethod
     def validate_source_data_filter_clause(filter_clause: str) -> None:
         if not filter_clause.startswith('WHERE'):
             raise ValueError(f'Found filter clause [{filter_clause}] that does not begin with WHERE')
+
+    def insert_into_table_from_query(
+            self,
+            *,
+            destination_dataset_id: str,
+            destination_table_id: str,
+            query: str,
+            query_parameters: Optional[List[bigquery.ScalarQueryParameter]] = None,
+            allow_field_additions: bool = False,
+            write_disposition: bigquery.WriteDisposition = bigquery.WriteDisposition.WRITE_APPEND
+    ) -> bigquery.QueryJob:
+        destination_dataset_ref = self.dataset_ref_for_id(destination_dataset_id)
+
+        self.create_dataset_if_necessary(destination_dataset_ref)
+
+        job_config = bigquery.job.QueryJobConfig()
+        job_config.destination = destination_dataset_ref.table(destination_table_id)
+
+        job_config.write_disposition = write_disposition
+        job_config.query_parameters = query_parameters or []
+
+        if allow_field_additions:
+            job_config.schema_update_options = [bigquery.SchemaUpdateOption.ALLOW_FIELD_ADDITION]
+
+        logging.info("Inserting into table [%s] result of query: %s", destination_table_id, query)
+
+        return self.client.query(
+            query=query,
+            location=self.LOCATION,
+            job_config=job_config,
+        )
 
     def insert_into_table_from_table_async(self,
                                            source_dataset_id: str,
@@ -820,7 +871,7 @@ class BigQueryClientImpl(BigQueryClient):
                      view.view_id, view.materialized_view_table_id)
 
         create_job = self.create_table_from_query_async(
-            view.dataset_id, view.materialized_view_table_id, view.select_query, query_parameters=[], overwrite=True)
+            view.dataset_id, view.materialized_view_table_id, view.select_query, overwrite=True)
         create_job.result()
 
     def create_table_with_schema(self, dataset_id: str, table_id: str, schema_fields: List[bigquery.SchemaField]) -> \
