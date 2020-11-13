@@ -42,18 +42,10 @@ def generate(report_context: ReportContext) -> None:
     prepared_data = report_context.get_prepared_data()
     check_for_required_keys(prepared_data)
 
-    data_bucket = utils.get_data_storage_bucket_name()
-    template_filename = ''
     try:
-        template_filename = utils.get_template_filename(report_context.state_code, report_context.get_report_type())
-        html_template = utils.load_string_from_storage(data_bucket, template_filename)
-    except Exception:
-        logging.error("Unable to load email template at %s/%s", data_bucket, template_filename)
-        raise
-
-    try:
-        template = Template(html_template)
-        final_email = template.substitute(prepared_data)
+        with open(report_context.get_html_template_filepath()) as html_template:
+            template = Template(html_template.read())
+            final_email = template.substitute(prepared_data)
     except KeyError as err:
         logging.error("Attribute required for HTML template missing from recipient data: "
                       "batch id = %s, email address = %s, attribute = %s",

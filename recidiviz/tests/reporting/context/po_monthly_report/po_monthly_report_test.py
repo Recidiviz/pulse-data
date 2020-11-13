@@ -45,17 +45,13 @@ class PoMonthlyReportContextTests(TestCase):
             'po_report_cdn_static_IP': cdn_static_ip
         }
 
-        self.load_string_from_storage_patcher = patch(
-            'recidiviz.reporting.email_reporting_utils.load_string_from_storage')
         self.get_secret_patcher = patch('recidiviz.utils.secrets.get_secret')
         self.project_id_patcher = patch('recidiviz.utils.metadata.project_id')
 
-        self.load_string_from_storage_patcher.start().return_value = _PROPERTIES
         self.get_secret_patcher.start().side_effect = test_secrets.get
         self.project_id_patcher.start().return_value = project_id
 
     def tearDown(self) -> None:
-        self.load_string_from_storage_patcher.stop()
         self.get_secret_patcher.stop()
         self.project_id_patcher.stop()
 

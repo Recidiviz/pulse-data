@@ -35,6 +35,14 @@ class ReportContext(ABC):
     def get_report_type(self) -> str:
         """Returns the report type for this report."""
 
+    @abstractmethod
+    def get_properties_filepath(self) -> str:
+        """Returns the filepath to the context's properties.json file"""
+
+    @abstractmethod
+    def get_html_template_filepath(self) -> str:
+        """Returns the filepath to the context's html template"""
+
     def get_prepared_data(self) -> dict:
         """Execute report-specific rules that process the recipient data before templating, returning the prepared,
         report-ready template values.
