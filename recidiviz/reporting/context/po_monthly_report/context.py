@@ -22,6 +22,7 @@ improve individual outcomes. It aims to promote and increase the usage of measur
 decrease the usage of measures such as revocations.
 """
 
+import os
 import copy
 import json
 from typing import List
@@ -88,8 +89,11 @@ class PoMonthlyReportContext(ReportContext):
     def __init__(self, state_code: str, recipient_data: dict):
         self._validate_recipient_data_has_expected_fields(recipient_data)
         super().__init__(state_code, recipient_data)
+        with open(self.get_properties_filepath()) as properties_file:
+            self.properties = json.loads(properties_file.read())
 
-    def _validate_recipient_data_has_expected_fields(self, recipient_data: dict) -> None:
+    @staticmethod
+    def _validate_recipient_data_has_expected_fields(recipient_data: dict) -> None:
         for expected_key in _ALL_REQUIRED_RECIPIENT_DATA_FIELDS:
             if expected_key not in recipient_data.keys():
                 raise KeyError(f"Expected key [{expected_key}] not found in recipient_data.")
@@ -97,13 +101,16 @@ class PoMonthlyReportContext(ReportContext):
     def get_report_type(self) -> str:
         return "po_monthly_report"
 
+    def get_properties_filepath(self) -> str:
+        """Returns path to the properties.json, assumes it is in the same directory as the context."""
+        return os.path.join(os.path.dirname(__file__), 'properties.json')
+
+    def get_html_template_filepath(self) -> str:
+        """Returns path to the template.html file, assumes it is in the same directory as the context."""
+        return os.path.join(os.path.dirname(__file__), 'template.html')
+
     def prepare_for_generation(self) -> dict:
         """Executes PO Monthly Report data preparation."""
-        self.properties = json.loads(utils.load_string_from_storage(
-            utils.get_data_storage_bucket_name(),
-            utils.get_properties_filename(self.state_code, self.get_report_type())
-        ))
-
         self.prepared_data = copy.deepcopy(self.recipient_data)
 
         self.prepared_data["static_image_path"] = utils.get_static_image_path(self.state_code, self.get_report_type())
