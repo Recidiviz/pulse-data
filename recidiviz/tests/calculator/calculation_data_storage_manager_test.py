@@ -76,12 +76,12 @@ class CalculationDataStorageManagerTest(unittest.TestCase):
 
     def test_move_old_dataflow_metrics_to_cold_storage(self):
         """Test that move_old_dataflow_metrics_to_cold_storage gets the list of tables to prune, calls the client to
-        insert into the cold storage table, and calls the client to delete from the dataflow table."""
+        insert into the cold storage table, and calls the client to replace the dataflow table."""
         calculation_data_storage_manager.move_old_dataflow_metrics_to_cold_storage()
 
         self.mock_client.list_tables.assert_called()
-        self.mock_client.insert_into_table_from_table_async.assert_called()
-        self.mock_client.delete_from_table_async.assert_called()
+        self.mock_client.insert_into_table_from_query.assert_called()
+        self.mock_client.create_table_from_query_async.assert_called()
 
     def test_update_dataflow_metric_tables_schemas(self):
         """Test that update_dataflow_metric_tables_schemas calls the client to update the schemas of the metric
