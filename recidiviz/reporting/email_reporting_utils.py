@@ -124,16 +124,8 @@ def get_data_archive_filename(batch_id: str) -> str:
     return f'{batch_id}.json'
 
 
-def get_properties_filename(state_code: str, report_type: str) -> str:
-    return f'{report_type}/{state_code}/properties.json'
-
-
 def get_html_filename(batch_id: str, email_address: str) -> str:
     return f'{batch_id}/{email_address}.html'
-
-
-def get_template_filename(state_code: str, report_type: str) -> str:
-    return f'{report_type}/{state_code}/template.html'
 
 
 # TODO(#3260): Make this general-purpose to work for any report type's chart
