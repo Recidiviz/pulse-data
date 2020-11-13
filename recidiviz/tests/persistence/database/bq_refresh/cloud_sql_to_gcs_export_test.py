@@ -60,8 +60,13 @@ class CloudSqlToGcsExportTest(unittest.TestCase):
         self.mock_secrets.get_secret.side_effect = secrets_values.get
 
         Table = collections.namedtuple('Table', ['name'])
-        self.tables_to_export = [Table('first_table'), Table('second_table')]
+        self.tables_to_export = [Table('first_table'),
+                                 Table('second_table')]
 
+        HttpErrorResponse = collections.namedtuple('Response', ['status', 'reason'])
+        self.http_error_response = HttpErrorResponse(404, 'CloudSQL operation instance does not exist.')
+
+        self.mock_get_operation = self.mock_client.operations.return_value.get.return_value
         self.mock_bq_refresh_config = mock.Mock()
         self.mock_bq_refresh_config.schema_type = self.schema_type
         self.mock_bq_refresh_config.get_tables_to_export.return_value = self.tables_to_export
@@ -96,6 +101,43 @@ class CloudSqlToGcsExportTest(unittest.TestCase):
         self.assertEqual(result, sample_export_context)
 
     @mock.patch(f'{CLOUD_SQL_TO_GCS_EXPORT_PACKAGE_NAME}.time.sleep')
+    def test_wait_until_operation_finishes_api_fails_with_retries(self, mock_time: mock.MagicMock) -> None:
+        """Test that wait_until_operation_finished retries if the export API request fails."""
+        mock_time.side_effect = None
+        mock_get_operation_calls = [
+            {'status': 'PENDING'},
+            {'status': 'RUNNING'},
+            {'status': 'RUNNING'},
+            {'status': 'DONE'}
+        ]
+
+        self.mock_get_operation.execute.side_effect = [
+            googleapiclient.errors.HttpError(self.http_error_response, content=b''),
+            *mock_get_operation_calls
+        ]
+
+        # Sleeps 1 time for the HttpError + 3 times for the get_operation status calls
+        sleep_calls = [mock.call(cloud_sql_to_gcs_export.SECONDS_BETWEEN_OPERATION_STATUS_CHECKS)] * 4
+
+        cloud_sql_to_gcs_export.wait_until_operation_finished('fake-op')
+
+        mock_time.assert_has_calls(sleep_calls)
+        self.assertEqual(len(self.mock_get_operation.mock_calls), 5)
+
+    @mock.patch(f'{CLOUD_SQL_TO_GCS_EXPORT_PACKAGE_NAME}.time.sleep')
+    def test_wait_until_operation_finishes_api_fails_raises(self, mock_time: mock.MagicMock) -> None:
+        """Test that wait_until_operation_finished retries only 3 times until it raises an error."""
+        mock_time.side_effect = None
+        self.mock_get_operation.execute.side_effect = \
+            googleapiclient.errors.HttpError(self.http_error_response, content=b'')
+        sleep_calls = [mock.call(cloud_sql_to_gcs_export.SECONDS_BETWEEN_OPERATION_STATUS_CHECKS)] * 3
+
+        with self.assertRaises(ValueError), self.assertLogs(level='DEBUG'):
+            cloud_sql_to_gcs_export.wait_until_operation_finished('fake-op')
+
+        mock_time.assert_has_calls(sleep_calls)
+
+    @mock.patch(f'{CLOUD_SQL_TO_GCS_EXPORT_PACKAGE_NAME}.time.sleep')
     def test_wait_until_operation_finished_waits(self, mock_time: mock.MagicMock) -> None:
         """Test that wait_until_operation_finished waits until op. is done."""
         mock_time.side_effect = None
@@ -105,9 +147,8 @@ class CloudSqlToGcsExportTest(unittest.TestCase):
             {'status': 'RUNNING'},
             {'status': 'DONE'}
         ]
-        mock_get_op = self.mock_client.operations.return_value.get.return_value
 
-        mock_get_op.execute.side_effect = mock_get_operation_calls
+        self.mock_get_operation.execute.side_effect = mock_get_operation_calls
         cloud_sql_to_gcs_export.wait_until_operation_finished('fake-op')
 
         sleep_calls = [
@@ -134,9 +175,8 @@ class CloudSqlToGcsExportTest(unittest.TestCase):
                 }
             }
         ]
-        mock_get_op = self.mock_client.operations.return_value.get.return_value
 
-        mock_get_op.execute.side_effect = mock_get_operation_calls
+        self.mock_get_operation.execute.side_effect = mock_get_operation_calls
 
         with self.assertLogs(level='ERROR'):
             cloud_sql_to_gcs_export.wait_until_operation_finished('fake-op')
@@ -154,8 +194,7 @@ class CloudSqlToGcsExportTest(unittest.TestCase):
             instance=self.mock_instance_id,
             body=mock.ANY
         )
-        mock_wait.assert_called()    \
-
+        mock_wait.assert_called()
 
     @mock.patch(f'{CLOUD_SQL_TO_GCS_EXPORT_PACKAGE_NAME}.wait_until_operation_finished')
     def test_export_table_create_export_context(self, mock_wait: mock.MagicMock) -> None:
