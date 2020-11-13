@@ -43,7 +43,7 @@ def copy_table_to_dataset(target_dataset: str,
                           bq_client: BigQueryClient) -> None:
     """Copies the results of the given query to the target table and dataset, overwriting what lives there if the
     table already exists."""
-    bq_client.create_table_from_query_async(target_dataset, target_table, export_query, [], True)
+    bq_client.create_table_from_query_async(target_dataset, target_table, export_query, overwrite=True)
 
 
 def run_export(project_id: str,

@@ -34,6 +34,7 @@ class BigQueryClientImplTest(unittest.TestCase):
     """Tests for BigQueryClientImpl"""
 
     def setUp(self) -> None:
+        self.location = 'US'
         self.mock_project_id = 'fake-recidiviz-project'
         self.mock_dataset_id = 'fake-dataset'
         self.mock_table_id = 'test_table'
@@ -203,7 +204,8 @@ class BigQueryClientImplTest(unittest.TestCase):
                                                           destination_table_id='fake_table_temp')
         expected_query = f"SELECT * FROM `fake-recidiviz-project.{self.mock_dataset_id}.{self.mock_table_id}`"
         self.mock_client.get_table.assert_called()
-        self.mock_client.query.assert_called_with(expected_query, job_config=mock_job_config())
+        self.mock_client.query.assert_called_with(
+            query=expected_query, location=self.location, job_config=mock_job_config())
 
     @mock.patch('google.cloud.bigquery.job.QueryJobConfig')
     def test_insert_into_table_from_table_async_hydrate_missing_columns(self, mock_job_config: mock.MagicMock) -> None:
@@ -221,7 +223,8 @@ class BigQueryClientImplTest(unittest.TestCase):
                                                               allow_field_additions=True)
             expected_query = "SELECT *, CAST(NULL AS STRING) AS state_code, CAST(NULL AS INTEGER) AS new_column_name " \
                              f"FROM `fake-recidiviz-project.{self.mock_dataset_id}.{self.mock_table_id}`"
-            self.mock_client.query.assert_called_with(expected_query, job_config=mock_job_config())
+            self.mock_client.query.assert_called_with(
+                query=expected_query, location=self.location, job_config=mock_job_config())
 
     def test_insert_into_table_from_table_invalid_destination(self) -> None:
         """Tests that the insert_into_table_from_table_async function does not run the query if the destination
@@ -253,7 +256,7 @@ class BigQueryClientImplTest(unittest.TestCase):
                                                           source_data_filter_clause=filter_clause)
         expected_query = "SELECT * FROM `fake-recidiviz-project.fake-dataset.test_table` " \
                          "WHERE state_code IN ('US_ND')"
-        self.mock_client.query.assert_called_with(expected_query, job_config=job_config)
+        self.mock_client.query.assert_called_with(query=expected_query, location=self.location, job_config=job_config)
 
     def test_insert_into_table_from_cloud_storage_async(self) -> None:
         self.mock_client.get_dataset.side_effect = exceptions.NotFound('!')

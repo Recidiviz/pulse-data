@@ -117,7 +117,7 @@ class FakeDirectIngestBigQueryClient(BigQueryClient):
         raise ValueError('Must be implemented for use in tests.')
 
     def create_table_from_query_async(self, dataset_id: str, table_id: str, query: str,
-                                      query_parameters: List[bigquery.ScalarQueryParameter],
+                                      query_parameters: Optional[List[bigquery.ScalarQueryParameter]] = None,
                                       overwrite: Optional[bool] = False) -> bigquery.QueryJob:
         return FakeQueryJob()
 
@@ -135,6 +135,17 @@ class FakeDirectIngestBigQueryClient(BigQueryClient):
             self, source_uri: str,
             destination_dataset_ref: bigquery.DatasetReference,
             destination_table_id: str, destination_table_schema: List[bigquery.SchemaField]) -> bigquery.job.LoadJob:
+        raise ValueError('Must be implemented for use in tests.')
+
+    def insert_into_table_from_query(
+            self,
+            *,
+            destination_dataset_id: str,
+            destination_table_id: str,
+            query: str,
+            query_parameters: Optional[List[bigquery.ScalarQueryParameter]] = None,
+            allow_field_additions: bool = False,
+            write_disposition: bigquery.WriteDisposition = bigquery.WriteDisposition.WRITE_APPEND) -> bigquery.QueryJob:
         raise ValueError('Must be implemented for use in tests.')
 
     def delete_from_table_async(self, dataset_id: str, table_id: str, filter_clause: str) -> bigquery.QueryJob:
