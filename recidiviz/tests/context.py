@@ -18,3 +18,4 @@ sys.path.insert(0, os.path.abspath(
 from recidiviz import calculator
 from recidiviz import ingest
 from recidiviz import utils
+from recidiviz import reporting
