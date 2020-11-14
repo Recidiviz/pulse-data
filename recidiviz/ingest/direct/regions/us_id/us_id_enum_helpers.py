@@ -129,5 +129,5 @@ def supervision_period_supervision_type_mapper(label: str) -> Optional[StateSupe
     return None
 
 
-def is_jail_facility(facility: str):
+def is_jail_facility(facility: str) -> bool:
     return facility in JAIL_FACILITY_CODES or 'SHERIFF' in facility

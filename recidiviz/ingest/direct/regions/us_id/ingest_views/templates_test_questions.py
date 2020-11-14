@@ -17,7 +17,7 @@
 """Helper templates for the US_ID queries related to test questions."""
 
 
-def question_numbers_with_descriptive_answers_view_fragment(test_id: str):
+def question_numbers_with_descriptive_answers_view_fragment(test_id: str) -> str:
     return """
         qstn_nums_with_descriptive_answers AS (
           SELECT
