@@ -23,11 +23,13 @@ from recidiviz.common.constants.state.state_supervision_period import StateSuper
     StateSupervisionPeriodTerminationReason, StateSupervisionPeriodSupervisionType
 from recidiviz.common.str_field_utils import sorted_list_from_str
 from recidiviz.ingest.direct.regions.us_id.us_id_constants import JAIL_FACILITY_CODES, DEPORTED_LOCATION_NAME, \
-    INTERSTATE_FACILITY_CODE
+    INTERSTATE_FACILITY_CODE, COMMUTED_LOCATION_NAMES, EARLY_DISCHARGE_LOCATION_NAME, DECEASED_LOCATION_NAMES, \
+    DISMISSED_LOCATION_NAME, PARDONED_LOCATION_NAMES, HISTORY_FACILITY_TYPE
 
 
+# TODO(#4588): Move all repeated enums into constant file
 def supervision_admission_reason_mapper(label: str) -> Optional[StateSupervisionPeriodAdmissionReason]:
-    if label == 'H':    # Coming from history (person had completed sentences in past)
+    if label == HISTORY_FACILITY_TYPE:    # Coming from history (person had completed sentences in past)
         return StateSupervisionPeriodAdmissionReason.COURT_SENTENCE
     if label == 'P':    # Coming from probation/parole within the state
         return StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE
@@ -41,8 +43,9 @@ def supervision_admission_reason_mapper(label: str) -> Optional[StateSupervision
 
 
 def supervision_termination_reason_mapper(label: str) -> Optional[StateSupervisionPeriodTerminationReason]:
-    if label == 'H':    # Going to history (completed all sentences)
-        return StateSupervisionPeriodTerminationReason.DISCHARGE
+    # TODO(#2865): Update enum normalization so that we separate by -s instead of spaces
+    if label.startswith(f'{HISTORY_FACILITY_TYPE} '):    # Going to history (completed all sentences)
+        return _supervision_history_termination_reason_mapper(label)
     if label == 'P':    # Going to probation/parole within the state
         return StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE
     if label in ('I', 'O'):     # Going to incarceration. TODO(#3506): Clarify when 'O' is used.
@@ -55,8 +58,27 @@ def supervision_termination_reason_mapper(label: str) -> Optional[StateSupervisi
     return None
 
 
+def _supervision_history_termination_reason_mapper(label: str) -> Optional[StateSupervisionPeriodTerminationReason]:
+    # TODO(#2865): Update enum normalization so that we separate by -s instead of spaces
+    _history_facility_typ, location_name = label.split(' ', 1)
+    if location_name in COMMUTED_LOCATION_NAMES:
+        return StateSupervisionPeriodTerminationReason.COMMUTED
+    if location_name == EARLY_DISCHARGE_LOCATION_NAME:
+        return StateSupervisionPeriodTerminationReason.DISCHARGE
+    if location_name in DECEASED_LOCATION_NAMES:
+        return StateSupervisionPeriodTerminationReason.DEATH
+    if location_name == DISMISSED_LOCATION_NAME:
+        return StateSupervisionPeriodTerminationReason.DISMISSED
+    if location_name in PARDONED_LOCATION_NAMES:
+        return StateSupervisionPeriodTerminationReason.PARDONED
+
+    # TODO(#4587): Consider breaking this out further.
+    # Default to expiration if we cannot further identify why the person was released from IDOC custody.
+    return StateSupervisionPeriodTerminationReason.EXPIRATION
+
+
 def incarceration_admission_reason_mapper(label: str) -> Optional[StateIncarcerationPeriodAdmissionReason]:
-    if label == 'H':    # Coming from history (person had completed sentences in past)
+    if label == HISTORY_FACILITY_TYPE:    # Coming from history (person had completed sentences in past)
         return StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION
     if label == 'P':    # Coming from probation/parole within the state
         return StateIncarcerationPeriodAdmissionReason.RETURN_FROM_SUPERVISION
@@ -68,8 +90,9 @@ def incarceration_admission_reason_mapper(label: str) -> Optional[StateIncarcera
 
 
 def incarceration_release_reason_mapper(label: str) -> Optional[StateIncarcerationPeriodReleaseReason]:
-    if label == 'H':    # Going to history (completed all sentences)
-        return StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED
+    # TODO(#2865): Update enum normalization so that we separate by -s instead of spaces
+    if label.startswith(f'{HISTORY_FACILITY_TYPE} '):    # Going to history (completed all sentences)
+        return _incarceration_history_release_reason_mapper(label)
     if label == 'P':    # Going to probation/parole within the state
         return StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE
     if label in ('I', 'O'):     # Going to incarceration. TODO(#3506): Clarify when 'O' is used.
@@ -77,6 +100,18 @@ def incarceration_release_reason_mapper(label: str) -> Optional[StateIncarcerati
     if label == 'F':    # Going to absconsion.
         return StateIncarcerationPeriodReleaseReason.ESCAPE
     return None
+
+
+def _incarceration_history_release_reason_mapper(label: str) -> Optional[StateIncarcerationPeriodReleaseReason]:
+    # TODO(#2865): Update enum normalization so that we separate by -s instead of spaces
+    _history_facility_typ, location_name = label.split(' ', 1)
+    if location_name in COMMUTED_LOCATION_NAMES:
+        return StateIncarcerationPeriodReleaseReason.COMMUTED
+    if location_name in DECEASED_LOCATION_NAMES:
+        return StateIncarcerationPeriodReleaseReason.DEATH
+
+    # Default to sentence served if we cannot further identify why the person was released from IDOC custody.
+    return StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED
 
 
 def purpose_for_incarceration_mapper(label: str) -> Optional[StateSpecializedPurposeForIncarceration]:
