@@ -110,13 +110,21 @@ class StateSupervisionPeriodTerminationReason(EntityEnum, metaclass=EntityEnumMe
     """Termination reasons for StateSupervisionPeriod"""
     EXTERNAL_UNKNOWN = enum_strings.external_unknown
     ABSCONSION = state_enum_strings.state_supervision_period_termination_reason_absconsion
+    # Used to denote supervision ends due to a reduction in the sentence.
+    COMMUTED = state_enum_strings.state_supervision_period_termination_reason_commuted
     DEATH = state_enum_strings.state_supervision_period_termination_reason_death
+    # Used to denote supervision ended earlier than the sentence's end dates.
     DISCHARGE = state_enum_strings.state_supervision_period_termination_reason_discharge
+    # Used to denote supervision ending because the underlying conviction was overturned.
+    DISMISSED = state_enum_strings.state_supervision_period_termination_reason_dismissed
+    # Used to denote supervision ended due to sentences being completed as sentenced.
     EXPIRATION = state_enum_strings.state_supervision_period_termination_reason_expiration
     INTERNAL_UNKNOWN = enum_strings.internal_unknown
     # TODO(#3276): Remove this enum once we've completely transitioned to using
     #  StateSupervisionPeriod.supervision_period_supervision_type for Investigation
     INVESTIGATION = state_enum_strings.state_supervision_period_termination_reason_investigation
+    # Used to denote supervision ended due to the sentence being officially pardoned (usually by governor).
+    PARDONED = state_enum_strings.state_supervision_period_termination_reason_pardoned
     TRANSFER_OUT_OF_STATE = state_enum_strings.state_supervision_period_termination_reason_transfer_out_of_state
     TRANSFER_WITHIN_STATE = state_enum_strings.state_supervision_period_termination_reason_transfer_within_state
     RETURN_FROM_ABSCONSION = state_enum_strings.state_supervision_period_termination_reason_return_from_absconsion
@@ -191,15 +199,18 @@ _STATE_SUPERVISION_PERIOD_TERMINATION_REASON_MAP = {
     'ABSCOND': StateSupervisionPeriodTerminationReason.ABSCONSION,
     'ABSCONDED': StateSupervisionPeriodTerminationReason.ABSCONSION,
     'ABSCONSION': StateSupervisionPeriodTerminationReason.ABSCONSION,
+    'COMMUTED': StateSupervisionPeriodTerminationReason.COMMUTED,
     'DEATH': StateSupervisionPeriodTerminationReason.DEATH,
     'DECEASED': StateSupervisionPeriodTerminationReason.DEATH,
     'DISCHARGE': StateSupervisionPeriodTerminationReason.DISCHARGE,
     'DISCHARGED': StateSupervisionPeriodTerminationReason.DISCHARGE,
+    'DISMISSED': StateSupervisionPeriodTerminationReason.DISMISSED,
     'EXPIRATION': StateSupervisionPeriodTerminationReason.EXPIRATION,
     'EXTERNAL UNKNOWN': StateSupervisionPeriodTerminationReason.EXTERNAL_UNKNOWN,
     'EXPIRED': StateSupervisionPeriodTerminationReason.EXPIRATION,
     'INTERNAL UNKNOWN': StateSupervisionPeriodTerminationReason.INTERNAL_UNKNOWN,
     'INVESTIGATION': StateSupervisionPeriodTerminationReason.INVESTIGATION,
+    'PARDONED': StateSupervisionPeriodTerminationReason.PARDONED,
     'TRANSFER WITHIN STATE': StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE,
     'TRANSFER OUT OF STATE': StateSupervisionPeriodTerminationReason.TRANSFER_OUT_OF_STATE,
     'RETURN FROM ABSCONSION': StateSupervisionPeriodTerminationReason.RETURN_FROM_ABSCONSION,

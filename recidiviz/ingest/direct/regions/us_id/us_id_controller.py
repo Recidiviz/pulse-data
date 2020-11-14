@@ -51,7 +51,7 @@ from recidiviz.ingest.direct.regions.us_id.us_id_constants import INTERSTATE_FAC
     CURRENT_LOCATION_NAME, CURRENT_LIVING_UNIT_CODE, CURRENT_LIVING_UNIT_NAME, CURRENT_LOCATION_CODE, \
     CONTACT_TYPES_TO_BECOME_LOCATIONS, CONTACT_RESULT_ARREST, UNKNOWN_EMPLOYEE_SDESC, FEDERAL_CUSTODY_LOCATION_NAME, \
     DEPORTED_LOCATION_NAME, NEXT_LOCATION_NAME, PREVIOUS_LOCATION_NAME, FEDERAL_CUSTODIAL_AUTHORITY, \
-    OTHER_COUNTRY_CUSTODIAL_AUTHORITY
+    OTHER_COUNTRY_CUSTODIAL_AUTHORITY, HISTORY_FACILITY_TYPE, NEXT_FACILITY_TYPE
 from recidiviz.ingest.direct.regions.us_id.us_id_enum_helpers import incarceration_admission_reason_mapper, \
     incarceration_release_reason_mapper, supervision_admission_reason_mapper, supervision_termination_reason_mapper, \
     is_jail_facility, purpose_for_incarceration_mapper, supervision_period_supervision_type_mapper
@@ -123,6 +123,7 @@ class UsIdController(CsvGcsfsDirectIngestController):
                 self._clear_max_dates,
                 self._add_incarceration_type,
                 self._add_default_admission_reason,
+                self._add_details_when_transferred_to_history,
             ],
             'movement_facility_location_offstat_supervision_periods': [
                 gen_label_single_external_id_hook(US_ID_DOC),
@@ -135,6 +136,7 @@ class UsIdController(CsvGcsfsDirectIngestController):
                 self._add_supervising_officer,
                 self._set_custodial_authority,
                 self._override_supervision_type,
+                self._add_details_when_transferred_to_history,
             ],
             'ofndr_tst_tst_qstn_rspns_violation_reports': [
                 gen_label_single_external_id_hook(US_ID_DOC),
@@ -853,6 +855,29 @@ class UsIdController(CsvGcsfsDirectIngestController):
             if isinstance(obj, StateSupervisionPeriod):
                 if obj.admission_reason is None:
                     obj.admission_reason = StateSupervisionPeriodAdmissionReason.COURT_SENTENCE.value
+
+    @staticmethod
+    def _add_details_when_transferred_to_history(
+            _file_tag: str,
+            row: Dict[str, str],
+            extracted_objects: List[IngestObject],
+            _cache: IngestObjectCache) -> None:
+        """When someone is transferred to history (removed from IDOC custody), we can get some detailed information as
+        to why this person was released. This method adds those details to the out edges of Incarceration/Supervision
+        periods when they exist.
+        """
+        next_fac_typ = row.get(NEXT_FACILITY_TYPE, '')
+        next_loc_name = row.get(NEXT_LOCATION_NAME, '')
+
+        if next_fac_typ != HISTORY_FACILITY_TYPE:
+            return
+
+        for obj in extracted_objects:
+            period_end_reason = f'{next_fac_typ}-{next_loc_name}'
+            if isinstance(obj, StateIncarcerationPeriod):
+                obj.release_reason = period_end_reason
+            if isinstance(obj, StateSupervisionPeriod):
+                obj.termination_reason = period_end_reason
 
     @staticmethod
     def _add_incarceration_type(

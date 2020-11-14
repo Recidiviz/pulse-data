@@ -22,6 +22,8 @@ enforced_ancestor_types:
 
 keys_to_ignore:
   - loc_ldesc               # Location name, used sometimes in place of fac_ldesc - handled manually in controller.
+  - next_loc_ldesc          # Next location name, used sometimes to augment next_fac_typ - handled manually in
+                            #   controller.
 
   - fac_cd                  # Unused - facility code - analogous to fac_ldesc used above.
   - fac_typ                 # Unused - always 'I' for incarcerated

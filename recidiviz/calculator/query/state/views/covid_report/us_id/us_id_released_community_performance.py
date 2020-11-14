@@ -47,7 +47,7 @@ US_ID_RELEASED_COMMUNITY_PERFORMANCE_QUERY_TEMPLATE = \
     covid_release_cohorts AS (
       SELECT
         -- Separate the cohorts by release & incarceration reasons
-        CASE WHEN m.purpose_for_incarceration = 'GENERAL' AND m.release_reason = 'SENTENCE_SERVED' THEN 'TERMERS'
+        CASE WHEN m.purpose_for_incarceration = 'GENERAL' AND m.release_reason IN ('SENTENCE_SERVED', 'COMMUTED') THEN 'TERMERS'
              WHEN m.purpose_for_incarceration = 'TREATMENT_IN_PRISON' THEN 'RIDERS'
              WHEN m.purpose_for_incarceration = 'GENERAL' AND m.release_reason = 'CONDITIONAL_RELEASE' AND m.supervision_type_at_release = 'PAROLE' THEN 'PAROLE_RELEASED'
              ELSE 'other'
