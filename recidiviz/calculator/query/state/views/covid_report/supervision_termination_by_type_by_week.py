@@ -63,6 +63,9 @@ SUPERVISION_TERMINATIONS_BY_TYPE_BY_WEEK_QUERY_TEMPLATE = \
       IFNULL(termination_count - LAG(termination_count) OVER (PARTITION BY state_code ORDER BY week_num), 0) as termination_count_diff,
       discharge_count,
       IFNULL(discharge_count - LAG(discharge_count) OVER (PARTITION BY state_code ORDER BY week_num), 0) as discharge_count_diff,
+      positive_termination_count,
+      IFNULL(positive_termination_count - LAG(positive_termination_count) OVER (PARTITION BY state_code ORDER BY week_num), 0)
+        as positive_termination_count_diff,
       negative_termination_count,
       IFNULL(negative_termination_count - LAG(negative_termination_count) OVER (PARTITION BY state_code ORDER BY week_num), 0)
         as negative_termination_count_diff,
@@ -74,6 +77,8 @@ SUPERVISION_TERMINATIONS_BY_TYPE_BY_WEEK_QUERY_TEMPLATE = \
         end_date,
         COUNT(DISTINCT(person_id)) as termination_count,
         COUNT(DISTINCT IF(termination_reason = 'DISCHARGE', person_id, NULL)) as discharge_count,
+        COUNT(DISTINCT IF(termination_reason IN ('COMMUTED', 'DISCHARGE', 'DISMISSED', 'EXPIRATION', 'PARDONED'), 
+                          person_id, NULL)) as positive_termination_count,
         COUNT(DISTINCT IF(termination_reason IN ('REVOCATION', 'ABSCONSION', 'RETURN_TO_INCARCERATION'),
                           person_id, NULL)) as negative_termination_count,
       FROM

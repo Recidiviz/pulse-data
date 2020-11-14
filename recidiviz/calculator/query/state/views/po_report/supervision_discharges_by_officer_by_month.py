@@ -30,6 +30,7 @@ SUPERVISION_DISCHARGES_BY_OFFICER_BY_MONTH_DESCRIPTION = """
  average discharges per district, and average discharges per state.
  """
 
+# TODO(#4586): Update all references to "discharges" in the PO report dataset to instead be "successful completions"
 # TODO(#4155): Use the supervision_termination_metrics instead of the raw state_supervision_period table
 SUPERVISION_DISCHARGES_BY_OFFICER_BY_MONTH_QUERY_TEMPLATE = \
     """
@@ -54,7 +55,7 @@ SUPERVISION_DISCHARGES_BY_OFFICER_BY_MONTH_QUERY_TEMPLATE = \
         *
       FROM supervision_periods
       WHERE termination_date IS NOT NULL
-         AND termination_reason IN ('DISCHARGE', 'EXPIRATION')
+         AND termination_reason IN ('COMMUTED', 'DISMISSED', 'DISCHARGE', 'EXPIRATION', 'PARDONED')
          AND EXTRACT(YEAR FROM termination_date) >= EXTRACT(YEAR FROM DATE_SUB(CURRENT_DATE(), INTERVAL 3 YEAR))
     ),
     overlapping_open_period AS (
