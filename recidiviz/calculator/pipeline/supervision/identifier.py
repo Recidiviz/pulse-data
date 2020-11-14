@@ -1071,8 +1071,11 @@ def _include_termination_in_success_metric(termination_reason: Optional[StateSup
 
     if termination_reason in (
             # Successful terminations
+            StateSupervisionPeriodTerminationReason.COMMUTED,
             StateSupervisionPeriodTerminationReason.DISCHARGE,
+            StateSupervisionPeriodTerminationReason.DISMISSED,
             StateSupervisionPeriodTerminationReason.EXPIRATION,
+            StateSupervisionPeriodTerminationReason.PARDONED,
             # Unsuccessful terminations
             StateSupervisionPeriodTerminationReason.ABSCONSION,
             StateSupervisionPeriodTerminationReason.REVOCATION,
