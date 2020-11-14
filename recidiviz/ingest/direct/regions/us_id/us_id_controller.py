@@ -203,8 +203,12 @@ class UsIdController(CsvGcsfsDirectIngestController):
         StateSentenceStatus.COMMUTED: [
             'M',  # Commuted
         ],
+        StateSentenceStatus.VACATED: [
+            'V',  # Vacated Sentence
+            'Q',  # Vacated conviction
+        ],
         # TODO(#3517): Consider breaking out these sentence status enums in our schema (
-        #  vacated, sealed, early discharge, expired, etc)
+        #  sealed, early_discharge, expired, etc)
         StateSentenceStatus.COMPLETED: [
             'C',  # Completed
             'D',  # Discharged
@@ -213,9 +217,7 @@ class UsIdController(CsvGcsfsDirectIngestController):
             'G',  # Dismissed
             'H',  # Post conviction relief.
             'L',  # Sealed
-            'Q',  # Vacated conviction
             'S',  # Satisfied
-            'V',  # Vacated Sentence
             'X',  # Rule 35 - Reduction of illegal or overly harsh sentence.
             'Z',  # Reduced to misdemeanor - person should not be in prison and no longer tracked by IDOC.
         ],
@@ -579,7 +581,7 @@ class UsIdController(CsvGcsfsDirectIngestController):
             _file_tag: str,
             _row: Dict[str, str],
             extracted_objects: List[IngestObject],
-            _cache: IngestObjectCache):
+            _cache: IngestObjectCache) -> None:
         for obj in extracted_objects:
             if isinstance(obj, StateAssessment):
                 obj.assessment_type = StateAssessmentType.LSIR.value
@@ -589,7 +591,7 @@ class UsIdController(CsvGcsfsDirectIngestController):
             _file_tag: str,
             row: Dict[str, str],
             extracted_objects: List[IngestObject],
-            _cache: IngestObjectCache):
+            _cache: IngestObjectCache) -> None:
         statute_title = row.get('off_stat_title', '')
         statute_section = row.get('off_stat_sect', '')
 
@@ -606,7 +608,7 @@ class UsIdController(CsvGcsfsDirectIngestController):
             _file_tag: str,
             row: Dict[str, str],
             extracted_objects: List[IngestObject],
-            _cache: IngestObjectCache):
+            _cache: IngestObjectCache) -> None:
         judge_id = row.get('judge_cd', '')
         judge_name = row.get('judge_name', '')
 
@@ -627,7 +629,7 @@ class UsIdController(CsvGcsfsDirectIngestController):
             _file_tag: str,
             row: Dict[str, str],
             extracted_objects: List[IngestObject],
-            _cache: IngestObjectCache):
+            _cache: IngestObjectCache) -> None:
         is_life = bool(row.get('lifer'))
         max_years = row.get('sent_max_yr')
         max_months = row.get('sent_max_mo')
@@ -658,7 +660,7 @@ class UsIdController(CsvGcsfsDirectIngestController):
             _file_tag: str,
             row: Dict[str, str],
             extracted_objects: List[IngestObject],
-            _cache: IngestObjectCache):
+            _cache: IngestObjectCache) -> None:
         """Overrides the recorded facility for the person if IDOC data indicates that the person is at another
         location.
         """
@@ -673,7 +675,10 @@ class UsIdController(CsvGcsfsDirectIngestController):
 
     @staticmethod
     def _set_custodial_authority(
-            _file_tag: str, row: Dict[str, str], extracted_objects: List[IngestObject], _cache: IngestObjectCache):
+            _file_tag: str,
+            row: Dict[str, str],
+            extracted_objects: List[IngestObject],
+            _cache: IngestObjectCache) -> None:
         """Sets custodial authority on the StateSupervisionPeriod entities."""
         custodial_authority = IDOC_CUSTODIAL_AUTHORITY
 
@@ -696,7 +701,7 @@ class UsIdController(CsvGcsfsDirectIngestController):
             _file_tag: str,
             row: Dict[str, str],
             extracted_objects: List[IngestObject],
-            _cache: IngestObjectCache):
+            _cache: IngestObjectCache) -> None:
         """If necessary, overrides supervision level for supervision periods based on supervision level data that
         appears in the non-standard wrkld_cat location.
         """
@@ -717,7 +722,7 @@ class UsIdController(CsvGcsfsDirectIngestController):
             _file_tag: str,
             row: Dict[str, str],
             extracted_objects: List[IngestObject],
-            _cache: IngestObjectCache):
+            _cache: IngestObjectCache) -> None:
         """Sets supervision_site based on granular location info."""
         facility_cd = row.get(CURRENT_FACILITY_CODE, '')
         facility_name = row.get(CURRENT_FACILITY_NAME, '')
@@ -760,7 +765,7 @@ class UsIdController(CsvGcsfsDirectIngestController):
             _file_tag: str,
             _row: Dict[str, str],
             extracted_objects: List[IngestObject],
-            _cache: IngestObjectCache):
+            _cache: IngestObjectCache) -> None:
         for obj in extracted_objects:
             if isinstance(obj, StateEarlyDischarge):
                 obj.decision_status = StateEarlyDischargeDecisionStatus.INVALID.value
@@ -770,7 +775,7 @@ class UsIdController(CsvGcsfsDirectIngestController):
             _file_tag: str,
             _row: Dict[str, str],
             extracted_objects: List[IngestObject],
-            _cache: IngestObjectCache):
+            _cache: IngestObjectCache) -> None:
         for obj in extracted_objects:
             if isinstance(obj, StateEarlyDischarge):
                 if obj.decision is not None:
@@ -783,7 +788,7 @@ class UsIdController(CsvGcsfsDirectIngestController):
             _file_tag: str,
             row: Dict[str, str],
             extracted_objects: List[IngestObject],
-            _cache: IngestObjectCache):
+            _cache: IngestObjectCache) -> None:
         """Sets all recidiviz-created ids on ingested objects. These are combinations of existing fields so that each
         external id is unique among all entities in US_ID.
         """
@@ -839,7 +844,7 @@ class UsIdController(CsvGcsfsDirectIngestController):
             _file_tag: str,
             _row: Dict[str, str],
             extracted_objects: List[IngestObject],
-            _cache: IngestObjectCache):
+            _cache: IngestObjectCache) -> None:
         """Adds a default admission reason to supervision/incarceration periods."""
         for obj in extracted_objects:
             if isinstance(obj, StateIncarcerationPeriod):
@@ -854,7 +859,7 @@ class UsIdController(CsvGcsfsDirectIngestController):
             _file_tag: str,
             _row: Dict[str, str],
             extracted_objects: List[IngestObject],
-            _cache: IngestObjectCache):
+            _cache: IngestObjectCache) -> None:
         """Sets incarceration type on incarceration periods based on facility."""
         for obj in extracted_objects:
             if isinstance(obj, StateIncarcerationPeriod):
@@ -868,7 +873,7 @@ class UsIdController(CsvGcsfsDirectIngestController):
             _file_tag: str,
             _row: Dict[str, str],
             extracted_objects: List[IngestObject],
-            _cache: IngestObjectCache):
+            _cache: IngestObjectCache) -> None:
         """Clears recidiviz-generated (from queries) maximum date fields which really signify that a period is
         currently unended.
         """
@@ -885,7 +890,7 @@ class UsIdController(CsvGcsfsDirectIngestController):
             _file_tag: str,
             _row: Dict[str, str],
             extracted_objects: List[IngestObject],
-            _cache: IngestObjectCache):
+            _cache: IngestObjectCache) -> None:
         """Sets supervision period case type from the supervision level if necessary."""
         for obj in extracted_objects:
             if isinstance(obj, StateSupervisionPeriod):
@@ -900,7 +905,7 @@ class UsIdController(CsvGcsfsDirectIngestController):
             _file_tag: str,
             row: Dict[str, str],
             extracted_objects: List[IngestObject],
-            _cache: IngestObjectCache):
+            _cache: IngestObjectCache) -> None:
         """Update in and out edges of supervision periods if the normal mappings are insufficient."""
         prev_fac_cd = row.get(PREVIOUS_FACILITY_CODE, '')
         next_fac_cd = row.get(NEXT_FACILITY_CODE, '')
@@ -950,7 +955,7 @@ class UsIdController(CsvGcsfsDirectIngestController):
             _file_tag: str,
             row: Dict[str, str],
             extracted_objects: List[IngestObject],
-            _cache: IngestObjectCache):
+            _cache: IngestObjectCache) -> None:
         """Adds fields/children to the SupervisionViolationResponses as necessary. This assumes all
         SupervisionViolationResponses are of violation reports.
         """
@@ -974,7 +979,7 @@ class UsIdController(CsvGcsfsDirectIngestController):
             _file_tag: str,
             row: Dict[str, str],
             extracted_objects: List[IngestObject],
-            _cache: IngestObjectCache):
+            _cache: IngestObjectCache) -> None:
         """Adds ViolationTypeEntries onto the already generated SupervisionViolations."""
         violation_types = sorted_list_from_str(row.get('violation_types', ''))
 
@@ -992,7 +997,7 @@ class UsIdController(CsvGcsfsDirectIngestController):
             _file_tag: str,
             row: Dict[str, str],
             extracted_objects: List[IngestObject],
-            _cache: IngestObjectCache):
+            _cache: IngestObjectCache) -> None:
         """Sets the fields `is_violent` and `is_sex_offense` onto StateSupervisionViolations based on fields passed in
         through the |row|.
         """
@@ -1011,7 +1016,10 @@ class UsIdController(CsvGcsfsDirectIngestController):
 
     @staticmethod
     def _add_supervising_officer(
-            _file_tag: str, row: Dict[str, str], extracted_objects: List[IngestObject], _cache: IngestObjectCache):
+            _file_tag: str,
+            row: Dict[str, str],
+            extracted_objects: List[IngestObject],
+            _cache: IngestObjectCache) -> None:
         agent_id = row.get('empl_sdesc', '')
         agent_name = row.get('empl_ldesc', '')
         if not agent_id or not agent_name or agent_id == UNKNOWN_EMPLOYEE_SDESC:
@@ -1027,7 +1035,10 @@ class UsIdController(CsvGcsfsDirectIngestController):
 
     @staticmethod
     def _add_supervision_contact_fields(
-            _file_tag: str, row: Dict[str, str], extracted_objects: List[IngestObject], _cache: IngestObjectCache):
+            _file_tag: str,
+            row: Dict[str, str],
+            extracted_objects: List[IngestObject],
+            _cache: IngestObjectCache) -> None:
         """Adds all extra fields needed on SupervisionContact entities that cannot be automatically mapped via YAMLs."""
         agent_id = row.get('usr_id', '')
         agent_name = row.get('name', '')
@@ -1048,7 +1059,7 @@ class UsIdController(CsvGcsfsDirectIngestController):
                     obj.location = None
 
 
-def _get_bool_from_row(arg: str, row: Dict[str, str]):
+def _get_bool_from_row(arg: str, row: Dict[str, str]) -> bool:
     val = row.get(arg)
     if not val:
         return False

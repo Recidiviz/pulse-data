@@ -30,7 +30,8 @@ from recidiviz.persistence.entity_matching.state.state_matching_utils import get
 
 
 def move_periods_onto_sentences_by_date(
-        matched_persons: List[schema.StatePerson], period_filter: Optional[Type[schema.SchemaPeriodType]] = None):
+        matched_persons: List[schema.StatePerson],
+        period_filter: Optional[Type[schema.SchemaPeriodType]] = None) -> None:
     """Given a list of |matched_persons|, for each SentenceGroup associates all periods (incarceration or supervision)
     in that sentence group with the corresponding Sentence (incarceration or supervision) based on date. If
     |period_filter| is not None, this method will only move periods whose type matches |period_filter|.
@@ -60,7 +61,7 @@ def _get_period_end_date(period: schema.SchemaPeriodType, default=datetime.date.
     return end_date if end_date else default
 
 
-def _add_period_to_sentence(period: schema.SchemaPeriodType, sentence: schema.SchemaSentenceType):
+def _add_period_to_sentence(period: schema.SchemaPeriodType, sentence: schema.SchemaSentenceType) -> None:
     if isinstance(period, schema.StateSupervisionPeriod):
         sentence.supervision_periods.append(period)
     else:
@@ -68,7 +69,7 @@ def _add_period_to_sentence(period: schema.SchemaPeriodType, sentence: schema.Sc
 
 
 def _only_keep_placeholder_periods_on_sentence(
-        sentence: schema.SchemaSentenceType, period_type: Type[schema.SchemaPeriodType]):
+        sentence: schema.SchemaSentenceType, period_type: Type[schema.SchemaPeriodType]) -> None:
     """Removes all non placeholder periods of type |period_type| from the provided |sentence|."""
     sentence_periods = sentence.supervision_periods \
         if period_type == schema.StateSupervisionPeriod \
@@ -82,7 +83,7 @@ def _only_keep_placeholder_periods_on_sentence(
         sentence.incarceration_periods = placeholder_periods
 
 
-def _is_sentence_ended_by_status(sentence: schema.SchemaSentenceType):
+def _is_sentence_ended_by_status(sentence: schema.SchemaSentenceType) -> bool:
     """Returns True if the provided |sentence| has a status that indicates the sentence has been ended."""
     if sentence.status is None or sentence.status in (StateSentenceStatus.EXTERNAL_UNKNOWN.value,
                                                       StateSentenceStatus.PRESENT_WITHOUT_INFO.value,
@@ -117,7 +118,7 @@ def _get_date_matchable_sentences(sentences: List[schema.SchemaSentenceType]) ->
 
 
 def _move_periods_onto_sentences_for_sentence_group(
-        sentence_group: schema.StateSentenceGroup, period_type: Type[schema.SchemaPeriodType]):
+        sentence_group: schema.StateSentenceGroup, period_type: Type[schema.SchemaPeriodType]) -> None:
     """Looks at all SupervisionPeriods in the provided |sentence_group|, and attempts to match them to any
     corresponding sentences, based on date.
     """
@@ -171,7 +172,7 @@ def _move_periods_onto_sentences_for_sentence_group(
             _add_period_to_sentence(unmatched_period, placeholder_sentence)
 
 
-def move_violations_onto_supervision_periods_for_sentence(matched_persons: List[schema.StatePerson]):
+def move_violations_onto_supervision_periods_for_sentence(matched_persons: List[schema.StatePerson]) -> None:
     """Given a list of |matched_persons|, for each sentence (either Incarceration or Supervision) associates all
     violations in that sentence with the corresponding SupervisionPeriod(s) based on date.
     """
@@ -193,7 +194,7 @@ def _move_events_onto_supervision_periods_for_person(
         matched_persons: List[schema.StatePerson],
         event_cls: Type[DatabaseEntity],
         event_field_name: str,
-        state_code: str):
+        state_code: str) -> None:
     """For each person in |matched_persons|, moves all events of type |event_cls| onto the |event_field_name| field of
     a matching supervision period, based on date. If there is no matching supervision period, ensures that the events
     hang off of a placeholder chain.
@@ -219,12 +220,14 @@ def _move_events_onto_supervision_periods_for_person(
         placeholder_sp.set_field_from_list(event_field_name, unmatched_events)
 
 
-def move_violations_onto_supervision_periods_for_person(matched_persons: List[schema.StatePerson], state_code: str):
+def move_violations_onto_supervision_periods_for_person(
+        matched_persons: List[schema.StatePerson], state_code: str) -> None:
     return _move_events_onto_supervision_periods_for_person(
         matched_persons, schema.StateSupervisionViolation, 'supervision_violation_entries', state_code)
 
 
-def move_contacts_onto_supervision_periods_for_person(matched_persons: List[schema.StatePerson], state_code: str):
+def move_contacts_onto_supervision_periods_for_person(
+        matched_persons: List[schema.StatePerson], state_code: str) -> None:
     return _move_events_onto_supervision_periods_for_person(
         matched_persons, schema.StateSupervisionContact, 'supervision_contacts', state_code)
 
