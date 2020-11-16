@@ -235,7 +235,7 @@ state_supervision_case_type_family_court = 'FAMILY_COURT'
 state_supervision_case_type_general = 'GENERAL'
 state_supervision_case_type_mental_health_court = 'MENTAL_HEALTH_COURT'
 state_supervision_case_type_serious_mental_illness = 'SERIOUS_MENTAL_ILLNESS'
-state_supervision_case_type_sex_offender = 'SEX_OFFENDER'
+state_supervision_case_type_sex_offense = 'SEX_OFFENSE'
 state_supervision_case_type_veterans_court = 'VETERANS_COURT'
 
 # state_supervision_violation.py

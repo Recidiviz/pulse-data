@@ -89,8 +89,7 @@ REVOCATION_TYPE_SEVERITY_ORDER = [
 ]
 
 CASE_TYPE_SEVERITY_ORDER = [
-    # TODO(#3938): rename to SEX_OFFENSE.
-    StateSupervisionCaseType.SEX_OFFENDER,
+    StateSupervisionCaseType.SEX_OFFENSE,
     StateSupervisionCaseType.DOMESTIC_VIOLENCE,
     StateSupervisionCaseType.SERIOUS_MENTAL_ILLNESS,
     # Diversionary courts

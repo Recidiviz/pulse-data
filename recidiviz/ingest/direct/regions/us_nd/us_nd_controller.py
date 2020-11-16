@@ -826,7 +826,7 @@ class UsNdController(CsvGcsfsDirectIngestController):
             StateProgramAssignmentParticipationStatus.PENDING: ['Submitted', 'Pending Coordinator'],
 
             StateSupervisionCaseType.GENERAL: ['0'],
-            StateSupervisionCaseType.SEX_OFFENDER: ['-1'],
+            StateSupervisionCaseType.SEX_OFFENSE: ['-1'],
 
             StateAssessmentLevel.EXTERNAL_UNKNOWN: ['NOT APPLICABLE', 'UNDETERMINED']
         }
