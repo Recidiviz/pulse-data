@@ -86,9 +86,22 @@ WITH field_assignments_ce AS (
         FROM
             {{LBAKRDTA_TAK034}}
     ),
+    field_assignments_with_unique_date_spans as (
+        -- Where there are multiple rows for the same period, pick the one with the most recent update date.
+        -- Also filter out 0-day periods.
+        SELECT * EXCEPT(rn)
+        FROM (
+          SELECT 
+            *,
+            ROW_NUMBER() OVER (PARTITION BY DOC,CYC,FLD_ASSN_BEG_DT,FLD_ASSN_END_DT 
+                               ORDER BY CAST(CE_DCR AS INT64) DESC, CAST(CE_TCR AS INT64) DESC) AS rn 
+          FROM field_assignments_ce
+        ) 
+        WHERE rn = 1 AND FLD_ASSN_BEG_DT != FLD_ASSN_END_DT
+    ),
     augmented_field_assignments AS (
         SELECT
-            field_assignments_ce.*,
+            field_assignments_with_unique_date_spans.*,
             CASE
                 WHEN (LOC_ACRO_TWO_LETTER IN ('EC', 'EP', '07', '08') OR LOC_ACRO = 'ERA') THEN 'EASTERN'
                 WHEN LOC_ACRO_TWO_LETTER IN ('03', '11', '16', '17', '18', '26', '38') THEN 'NORTHEAST'
@@ -107,9 +120,9 @@ WITH field_assignments_ce AS (
                 ORDER BY
                     FLD_ASSN_BEG_DT,
                     FLD_ASSN_END_DT,
-                    CE_OR0 ASC
+                    CAST(CE_OR0 AS INT64) ASC
             ) AS FIELD_ASSIGNMENT_SEQ_NUM
-        FROM field_assignments_ce
+        FROM field_assignments_with_unique_date_spans
     ),
     field_assignments_with_valid_region AS (
         SELECT *
@@ -132,7 +145,8 @@ WITH field_assignments_ce AS (
             BW_SY,
             BW_SSO,
             BW_SCD,
-            ROW_NUMBER() OVER (PARTITION BY BW_DOC, BW_CYC ORDER BY BW_SY, BW_SCD) AS START_STATUS_RANK
+            ROW_NUMBER() OVER (PARTITION BY BW_DOC, BW_CYC ORDER BY BW_SY, BW_SCD, CAST(BW_SSO AS INT64)) 
+                AS START_STATUS_RANK
         FROM status_bw
         WHERE (
             (
@@ -209,7 +223,7 @@ WITH field_assignments_ce AS (
                     CHANGE_DATE,
                     /* Within partition statuses that happen on the same day,
                        order by the status SSO number */
-                    STATUS_SEQ_NUM ASC
+                    CAST(STATUS_SEQ_NUM AS INT64) ASC
             ) AS SUB_PERIOD_SEQ
         FROM (
             -- Field assignment open dates
