@@ -3038,7 +3038,7 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
         )
         p4_sp_1_1_case_type_1 = entities.StateSupervisionCaseTypeEntry.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
-            case_type=StateSupervisionCaseType.SEX_OFFENDER,
+            case_type=StateSupervisionCaseType.SEX_OFFENSE,
             case_type_raw_text='PA_SEXUAL',
             supervision_period=p4_sp_1_1,
             person=p4_sp_1_1.person,
