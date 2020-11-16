@@ -641,14 +641,10 @@ class UsMoController(CsvGcsfsDirectIngestController):
             'tak022_tak024_tak025_tak026_offender_sentence_supervision_v2',
             'tak158_tak023_tak026_incarceration_period_from_incarceration_sentence_v2',
             'tak158_tak024_tak026_incarceration_period_from_supervision_sentence_v2',
+            'tak034_tak026_tak039_apfx90_apfx91_supervision_enhancements_supervision_periods_v2',
+            'tak028_tak042_tak076_tak024_violation_reports_v2',
+            'tak291_tak292_tak024_citations_v2',
         ]
-        if not environment.in_gae_production() and not environment.in_gae_staging():
-            file_tags += [
-                # SQL Preprocessing View
-                'tak034_tak026_tak039_apfx90_apfx91_supervision_enhancements_supervision_periods_v2',
-                'tak028_tak042_tak076_tak024_violation_reports_v2',
-                'tak291_tak292_tak024_citations_v2',
-            ]
         return file_tags
 
     def _get_row_pre_processors_for_file(self,
