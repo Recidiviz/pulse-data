@@ -18,8 +18,10 @@
 import logging
 import os
 import pwd
+import shutil
 import sqlite3
 import subprocess
+import tempfile
 import threading
 from typing import Callable, Optional, Set
 
@@ -37,6 +39,7 @@ DECLARATIVE_BASES = [OperationsBase, StateBase, JailsBase, JusticeCountsBase, Te
 LINUX_TEST_DB_OWNER_NAME = 'recidiviz_test_db_owner'
 TEST_POSTGRES_DB_NAME = 'recidiviz_test_db'
 TEST_POSTGRES_USER_NAME = 'recidiviz_test_usr'
+DEFAULT_POSTGRES_DATA_DIRECTORY = '/usr/local/var/postgres'
 
 _in_memory_sqlite_connection_thread_ids: Set[int] = set()
 
@@ -142,21 +145,27 @@ def _run_command(command: str, assert_success: bool = True, as_user: Optional[pw
 
 
 @environment.test_only
-def start_on_disk_postgresql_database() -> None:
+def start_on_disk_postgresql_database(create_temporary_db: bool = False) -> str:
     """Starts and initializes a local postgres database for use in tests. Should be called in the setUpClass function so
-    this only runs once per test class."""
+    this only runs once per test class.
 
-    try:
-        _run_command('pg_ctl -D /usr/local/var/postgres status', assert_success=True)
-        logging.warning('Postgres is already running, skipping start_on_disk_postgresql_database. Note, the database '
-                        'may be polluted causing nondeterministic failures.')
-        return
-    except RuntimeError:
-        # Database is not yet running, continue.
-        pass
+    Returns the directory where the database data lives.
+    """
+
+    temp_db_data_dir = DEFAULT_POSTGRES_DATA_DIRECTORY if not create_temporary_db else tempfile.mkdtemp(
+        prefix='postgres')
+    if not create_temporary_db:
+        try:
+            _run_command(f'pg_ctl -D {temp_db_data_dir} status', assert_success=True)
+            logging.warning('Postgres is already running, skipping start_on_disk_postgresql_database. Note, '
+                            'the database may be polluted causing nondeterministic failures.')
+            return temp_db_data_dir
+        except RuntimeError:
+            # Database is not yet running, continue.
+            pass
 
     # Create the directory to use for the postgres database, if it does not already exist.
-    os.makedirs('/usr/local/var/postgres', exist_ok=True)
+    os.makedirs(temp_db_data_dir, exist_ok=True)
 
     # The database can't be owned by root so create a separate OS user to own the database if we are currently root.
     password_record = None
@@ -168,36 +177,48 @@ def start_on_disk_postgresql_database() -> None:
         password_record = pwd.getpwnam(LINUX_TEST_DB_OWNER_NAME)
 
         # Ensure the necessary directories are owned by the postgres user.
-        os.chown('/usr/local/var/postgres', uid=password_record.pw_uid, gid=password_record.pw_gid)
+        os.chown(temp_db_data_dir, uid=password_record.pw_uid, gid=password_record.pw_gid)
         os.chown('/var/run/postgresql', uid=password_record.pw_uid, gid=password_record.pw_gid)
 
     # Start the local postgres server.
-    # initdb will fail if the database system already exists, ignore that failure and continue.
+    # initdb will fail if the database system already exists. If create_temporary_db is set to True, we expect that
+    # the database system should not exist and so require success. If it's set to False, we can safely
+    # ignore any errors and continue.
     # Write logs to file so that pg_ctl closes its stdout file descriptor when it moves to the background, otherwise
     # the subprocess will hang.
-    _run_command('pg_ctl -D /usr/local/var/postgres -l /tmp/postgres initdb', as_user=password_record,
-                 assert_success=False)
-    _run_command('pg_ctl -D /usr/local/var/postgres -l /tmp/postgres start', as_user=password_record)
+    _run_command(f'pg_ctl -D {temp_db_data_dir} -l /tmp/postgres initdb', as_user=password_record,
+                 assert_success=create_temporary_db)
+    _run_command(f'pg_ctl -D {temp_db_data_dir} -l /tmp/postgres start', as_user=password_record)
 
     # Create a user and database within postgres.
     # These will fail if they already exist, ignore that failure and continue.
     _run_command(f'createuser {TEST_POSTGRES_USER_NAME}', as_user=password_record, assert_success=False)
     _run_command(f'createdb -O {TEST_POSTGRES_USER_NAME} {TEST_POSTGRES_DB_NAME}', as_user=password_record,
                  assert_success=False)
+    return temp_db_data_dir
 
 
 @environment.test_only
-def stop_and_clear_on_disk_postgresql_database() -> None:
+def stop_and_clear_on_disk_postgresql_database(temp_db_data_dir: Optional[str] = None) -> None:
     """Drops all tables in the local postgres database and stops the postgres server. Should be called in the
-    tearDownClass function so this only runs once per test class."""
-    _clear_on_disk_postgresql_database()
-    _stop_on_disk_postgresql_database()
+    tearDownClass function so this only runs once per test class.
+
+    If the data directory is passed in, it will also rm -rf the PG data directory.
+    """
+    if temp_db_data_dir is None:
+        _clear_on_disk_postgresql_database()
+    _stop_on_disk_postgresql_database(temp_db_data_dir=temp_db_data_dir)
+    if temp_db_data_dir is not None:
+        shutil.rmtree(temp_db_data_dir)
 
 
-def _stop_on_disk_postgresql_database():
+def _stop_on_disk_postgresql_database(temp_db_data_dir: Optional[str] = None):
     # If the current user is root then the database is owned by a separate OS test user. Run as them to stop the server.
     password_record = pwd.getpwnam(LINUX_TEST_DB_OWNER_NAME) if _is_root_user() else None
-    _run_command('pg_ctl -D /usr/local/var/postgres -l /tmp/postgres stop', as_user=password_record)
+
+    if temp_db_data_dir is None:
+        temp_db_data_dir = DEFAULT_POSTGRES_DATA_DIRECTORY
+    _run_command(f'pg_ctl -D {temp_db_data_dir} -l /tmp/postgres stop', as_user=password_record)
 
 
 def _clear_on_disk_postgresql_database():
