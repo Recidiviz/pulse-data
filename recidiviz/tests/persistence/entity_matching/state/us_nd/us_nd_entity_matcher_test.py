@@ -1281,7 +1281,7 @@ class TestNdEntityMatching(BaseStateEntityMatcherTest):
         person = StatePerson.new_with_defaults(external_ids=[external_id], state_code=_US_ND)
         new_case_type = StateSupervisionCaseTypeEntry.new_with_defaults(
             state_code=_US_ND,
-            case_type=StateSupervisionCaseType.SEX_OFFENDER,
+            case_type=StateSupervisionCaseType.SEX_OFFENSE,
             external_id=_EXTERNAL_ID
         )
         supervision_period = attr.evolve(self.to_entity(db_supervision_period),

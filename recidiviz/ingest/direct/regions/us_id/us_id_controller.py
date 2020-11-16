@@ -491,7 +491,7 @@ class UsIdController(CsvGcsfsDirectIngestController):
             'INTERSTATE',
         ],
 
-        StateSupervisionCaseType.SEX_OFFENDER: [
+        StateSupervisionCaseType.SEX_OFFENSE: [
             'SO LOW',
             'SO MODERATE',
             'SO HIGH',

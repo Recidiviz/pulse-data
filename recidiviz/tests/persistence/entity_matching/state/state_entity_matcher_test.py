@@ -1501,7 +1501,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
             supervision_case_type_entry_id=None)
         case_type_so = StateSupervisionCaseTypeEntry.new_with_defaults(
             state_code=_STATE_CODE,
-            case_type=StateSupervisionCaseType.SEX_OFFENDER,
+            case_type=StateSupervisionCaseType.SEX_OFFENSE,
             case_type_raw_text='SO')
         supervision_period = attr.evolve(
             self.to_entity(db_supervision_period),

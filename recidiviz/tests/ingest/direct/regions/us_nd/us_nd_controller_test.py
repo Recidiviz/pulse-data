@@ -2562,7 +2562,7 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
         )
         person_6_case_type = entities.StateSupervisionCaseTypeEntry.new_with_defaults(
             state_code=_STATE_CODE,
-            case_type=StateSupervisionCaseType.SEX_OFFENDER,
+            case_type=StateSupervisionCaseType.SEX_OFFENSE,
             case_type_raw_text='-1',
             supervision_period=person_6_supervision_period_placeholder,
             person=person_6,

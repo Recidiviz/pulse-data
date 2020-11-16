@@ -3203,7 +3203,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
             supervision_sentences=[sss_910324_19890825_1]
             )
         ct_910324_19890825_2_0_dso = entities.StateSupervisionCaseTypeEntry(
-            case_type=StateSupervisionCaseType.SEX_OFFENDER,
+            case_type=StateSupervisionCaseType.SEX_OFFENSE,
             case_type_raw_text='DSO',
             state_code=_STATE_CODE_UPPER,
             supervision_period=sp_910324_19890825_2_0,
@@ -3309,7 +3309,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
             supervision_sentences=[sss_110035_20040712_1, sss_110035_20040712_3]
             )
         ct_110035_20040712_1_0_dso = entities.StateSupervisionCaseTypeEntry(
-            case_type=StateSupervisionCaseType.SEX_OFFENDER,
+            case_type=StateSupervisionCaseType.SEX_OFFENSE,
             case_type_raw_text='DSO',
             state_code=_STATE_CODE_UPPER,
             supervision_period=sp_110035_20040712_1_0,
@@ -3342,7 +3342,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
             supervision_sentences=[sss_110035_20040712_1, sss_110035_20040712_3]
             )
         ct_110035_20040712_1_8_dso = entities.StateSupervisionCaseTypeEntry(
-            case_type=StateSupervisionCaseType.SEX_OFFENDER,
+            case_type=StateSupervisionCaseType.SEX_OFFENSE,
             case_type_raw_text='DSO',
             state_code=_STATE_CODE_UPPER,
             supervision_period=sp_110035_20040712_1_8,
@@ -3375,7 +3375,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
             supervision_sentences=[sss_110035_20040712_1, sss_110035_20040712_3]
             )
         ct_110035_20040712_1_9_dso = entities.StateSupervisionCaseTypeEntry(
-            case_type=StateSupervisionCaseType.SEX_OFFENDER,
+            case_type=StateSupervisionCaseType.SEX_OFFENSE,
             case_type_raw_text='DSO',
             state_code=_STATE_CODE_UPPER,
             supervision_period=sp_110035_20040712_1_9,

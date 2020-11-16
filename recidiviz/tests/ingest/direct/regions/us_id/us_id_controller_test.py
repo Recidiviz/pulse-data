@@ -2104,7 +2104,7 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
         )
         sc_2222_2_so = entities.StateSupervisionCaseTypeEntry.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
-            case_type=StateSupervisionCaseType.SEX_OFFENDER,
+            case_type=StateSupervisionCaseType.SEX_OFFENSE,
             case_type_raw_text='SEX OFFENSE',
             supervision_period=sp_2222_2,
             person=sp_2222_2.person,
@@ -2131,7 +2131,7 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
         )
         sc_2222_3_so = entities.StateSupervisionCaseTypeEntry.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
-            case_type=StateSupervisionCaseType.SEX_OFFENDER,
+            case_type=StateSupervisionCaseType.SEX_OFFENSE,
             case_type_raw_text='SO MODERATE',
             supervision_period=sp_2222_3,
             person=sp_2222_3.person,

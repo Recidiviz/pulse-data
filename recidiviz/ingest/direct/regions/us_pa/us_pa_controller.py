@@ -504,7 +504,7 @@ class UsPaController(CsvGcsfsDirectIngestController):
         StateSupervisionCaseType.SERIOUS_MENTAL_ILLNESS: [
             'PA_Psychiatric',
         ],
-        StateSupervisionCaseType.SEX_OFFENDER: [
+        StateSupervisionCaseType.SEX_OFFENSE: [
             'PA_Sexual',
         ],
         StateSupervisionCaseType.DOMESTIC_VIOLENCE: [

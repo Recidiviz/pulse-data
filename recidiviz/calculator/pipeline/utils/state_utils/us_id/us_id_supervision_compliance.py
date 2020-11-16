@@ -35,13 +35,12 @@ from recidiviz.common.constants.state.state_supervision_period import StateSuper
 from recidiviz.persistence.entity.state.entities import StateSupervisionPeriod, StateAssessment, StateSupervisionContact
 
 
-# TODO(#3938): rename to SEX_OFFENSE.
-SEX_OFFENDER_NEW_SUPERVISION_ASSESSMENT_DEADLINE_DAYS_PROBATION = 45
-SEX_OFFENDER_NEW_SUPERVISION_ASSESSMENT_DEADLINE_DAYS_PAROLE = 90
-SEX_OFFENDER_LSIR_MINIMUM_SCORE = 16
-MINIMUM_SUPERVISION_CONTACT_FREQUENCY_DAYS_SEX_OFFENDER_CASE = 90
-MEDIUM_SUPERVISION_CONTACT_FREQUENCY_DAYS_SEX_OFFENDER_CASE = 30
-HIGH_SUPERVISION_CONTACT_FREQUENCY_DAYS_SEX_OFFENDER_CASE = 30
+SEX_OFFENSE_NEW_SUPERVISION_ASSESSMENT_DEADLINE_DAYS_PROBATION = 45
+SEX_OFFENSE_NEW_SUPERVISION_ASSESSMENT_DEADLINE_DAYS_PAROLE = 90
+SEX_OFFENSE_LSIR_MINIMUM_SCORE = 16
+MINIMUM_SUPERVISION_CONTACT_FREQUENCY_DAYS_SEX_OFFENSE_CASE = 90
+MEDIUM_SUPERVISION_CONTACT_FREQUENCY_DAYS_SEX_OFFENSE_CASE = 30
+HIGH_SUPERVISION_CONTACT_FREQUENCY_DAYS_SEX_OFFENSE_CASE = 30
 
 NEW_SUPERVISION_ASSESSMENT_DEADLINE_DAYS = 45
 REASSESSMENT_DEADLINE_DAYS = 365
@@ -70,8 +69,7 @@ def us_id_case_compliance_on_date(supervision_period: StateSupervisionPeriod,
     on US_ID compliance standards. Measures compliance values for the following types of supervision events:
         - Assessments
         - Face-to-Face Contacts
-    TODO(#3938): rename to SEX_OFFENSE here and below
-    We currently measure compliance for `GENERAL` and `SEX_OFFENDER` case types. Below are the expected requirements:
+    We currently measure compliance for `GENERAL` and `SEX_OFFENSE` case types. Below are the expected requirements:
         - For `GENERAL` cases, there are two level systems:
             1. Deprecated system mapping (`StateSupervisionLevel`: raw string) and expected frequencies:
                 - Initial compliance standards (same for all levels):
@@ -105,7 +103,7 @@ def us_id_case_compliance_on_date(supervision_period: StateSupervisionPeriod,
                 - `HIGH`: `HIGH`
                     - Face to face contacts: 2x every 30 days
                     - LSI-R Assessment: 1x every 365 days
-        - For `SEX_OFFENDER` cases, there is one level system with the following mapping and expected frequencies:
+        - For `SEX_OFFENSE` cases, there is one level system with the following mapping and expected frequencies:
             - Initial compliance standards (same for all levels):
                 - LSI-R Assessment: within 45 days if on probation, or within 90 days if on parole
                 - Face to face: within 3 days of start of supervision
@@ -223,12 +221,12 @@ def _get_applicable_face_to_face_contacts_between_dates(supervision_contacts: Li
 def _guidelines_applicable_for_case(supervision_period: StateSupervisionPeriod,
                                     case_type: StateSupervisionCaseType) -> bool:
     """Returns whether the standard state guidelines are applicable for the given supervision case. The standard
-    guidelines are only applicable for supervision cases of type GENERAL and SEX_OFFENDER, each with corresponding
+    guidelines are only applicable for supervision cases of type GENERAL and SEX_OFFENSE, each with corresponding
     expected supervision levels and supervision types."""
     supervision_type = supervision_period.supervision_period_supervision_type
 
     # Check case type
-    if case_type not in (StateSupervisionCaseType.GENERAL, StateSupervisionCaseType.SEX_OFFENDER):
+    if case_type not in (StateSupervisionCaseType.GENERAL, StateSupervisionCaseType.SEX_OFFENSE):
         return False
 
     # Check supervision level
@@ -296,12 +294,12 @@ def _get_initial_assessment_number_of_days(case_type: StateSupervisionCaseType,
     `supervision_type`."""
     if case_type == StateSupervisionCaseType.GENERAL:
         return NEW_SUPERVISION_ASSESSMENT_DEADLINE_DAYS
-    if case_type == StateSupervisionCaseType.SEX_OFFENDER:
+    if case_type == StateSupervisionCaseType.SEX_OFFENSE:
         if supervision_type == StateSupervisionPeriodSupervisionType.PROBATION:
-            return SEX_OFFENDER_NEW_SUPERVISION_ASSESSMENT_DEADLINE_DAYS_PROBATION
+            return SEX_OFFENSE_NEW_SUPERVISION_ASSESSMENT_DEADLINE_DAYS_PROBATION
         if supervision_type in (StateSupervisionPeriodSupervisionType.PAROLE,
                                 StateSupervisionPeriodSupervisionType.DUAL):
-            return SEX_OFFENDER_NEW_SUPERVISION_ASSESSMENT_DEADLINE_DAYS_PAROLE
+            return SEX_OFFENSE_NEW_SUPERVISION_ASSESSMENT_DEADLINE_DAYS_PAROLE
         raise ValueError(f"Found unexpected supervision_type: [{supervision_type}]")
 
     raise ValueError(f"Found unexpected case_type: [{case_type}]")
@@ -316,10 +314,10 @@ def _reassessment_requirements_are_met(case_type: StateSupervisionCaseType,
             return True
         return _compliance_evaluation_date_before_reassessment_deadline(most_recent_assessment.assessment_date,
                                                                         compliance_evaluation_date)
-    if case_type == StateSupervisionCaseType.SEX_OFFENDER:
+    if case_type == StateSupervisionCaseType.SEX_OFFENSE:
         if not most_recent_assessment.assessment_score:
             return False
-        if most_recent_assessment.assessment_score > SEX_OFFENDER_LSIR_MINIMUM_SCORE:
+        if most_recent_assessment.assessment_score > SEX_OFFENSE_LSIR_MINIMUM_SCORE:
             return _compliance_evaluation_date_before_reassessment_deadline(most_recent_assessment.assessment_date,
                                                                             compliance_evaluation_date)
     return True
@@ -416,13 +414,13 @@ def _get_required_face_to_face_contacts_and_period_days_for_level(case_type: Sta
                 return 1, DEPRECATED_HIGH_SUPERVISION_CONTACT_FREQUENCY_DAYS_GENERAL_CASE
             if supervision_level == StateSupervisionLevel.MAXIMUM:
                 return 2, DEPRECATED_MAXIMUM_SUPERVISION_CONTACT_FREQUENCY_DAYS_GENERAL_CASE
-    elif case_type == StateSupervisionCaseType.SEX_OFFENDER:
+    elif case_type == StateSupervisionCaseType.SEX_OFFENSE:
         if supervision_level == StateSupervisionLevel.MINIMUM:
-            return 1, MINIMUM_SUPERVISION_CONTACT_FREQUENCY_DAYS_SEX_OFFENDER_CASE
+            return 1, MINIMUM_SUPERVISION_CONTACT_FREQUENCY_DAYS_SEX_OFFENSE_CASE
         if supervision_level == StateSupervisionLevel.MEDIUM:
-            return 1, MEDIUM_SUPERVISION_CONTACT_FREQUENCY_DAYS_SEX_OFFENDER_CASE
+            return 1, MEDIUM_SUPERVISION_CONTACT_FREQUENCY_DAYS_SEX_OFFENSE_CASE
         if supervision_level == StateSupervisionLevel.HIGH:
-            return 2, HIGH_SUPERVISION_CONTACT_FREQUENCY_DAYS_SEX_OFFENDER_CASE
+            return 2, HIGH_SUPERVISION_CONTACT_FREQUENCY_DAYS_SEX_OFFENSE_CASE
 
     raise ValueError("Standard supervision compliance guidelines not applicable for cases with a supervision level"
                      f"of {supervision_level}. Should not be calculating compliance for this supervision case.")
