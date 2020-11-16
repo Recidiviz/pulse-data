@@ -16,6 +16,7 @@ apache-beam = {extras = ["gcp", "test"],version = "*"}
 freezegun = "*"
 ipdb = "*"
 nose = "*"
+pytest-alembic = "*"
 
 [packages]
 callee = "*"
