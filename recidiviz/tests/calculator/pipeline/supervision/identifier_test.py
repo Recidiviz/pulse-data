@@ -8202,7 +8202,7 @@ class TestIdentifyMostSevereCaseType(unittest.TestCase):
                     case_type=StateSupervisionCaseType.DOMESTIC_VIOLENCE
                 ),
                 StateSupervisionCaseTypeEntry.new_with_defaults(
-                    case_type=StateSupervisionCaseType.SEX_OFFENDER
+                    case_type=StateSupervisionCaseType.SEX_OFFENSE
                 )
             ]
         )
@@ -8211,7 +8211,7 @@ class TestIdentifyMostSevereCaseType(unittest.TestCase):
             supervision_period)
 
         self.assertEqual(most_severe_case_type,
-                         StateSupervisionCaseType.SEX_OFFENDER)
+                         StateSupervisionCaseType.SEX_OFFENSE)
 
     def test_identify_most_severe_case_type_test_all_types(self):
         for case_type in StateSupervisionCaseType:

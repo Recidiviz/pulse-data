@@ -333,7 +333,7 @@ class UsMoController(CsvGcsfsDirectIngestController):
         StateSupervisionCaseType.SERIOUS_MENTAL_ILLNESS: [
             'SMI',  # Seriously Mentally Ill Caseload
         ],
-        StateSupervisionCaseType.SEX_OFFENDER: [
+        StateSupervisionCaseType.SEX_OFFENSE: [
             'DSO',  # Designated Sex Offenders
             'ISO',  # Interstate Sex Offenders
         ],
