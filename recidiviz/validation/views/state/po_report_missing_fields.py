@@ -30,11 +30,16 @@ PO_REPORT_MISSING_FIELDS_DESCRIPTION = """
   All PO report rows with missing data for required columns
   """
 
-PO_REPORT_REQUIRED_FIELDS = ['pos_discharges', 'pos_discharges_district_average',
-                             'pos_discharges_state_average', 'earned_discharges', 'earned_discharges_change',
-                             'earned_discharges_district_average', 'earned_discharges_state_average',
-                             'technical_revocations', 'technical_revocations_change', 'absconsions',
-                             'absconsions_change', 'crime_revocations', 'crime_revocations_change']
+PO_REPORT_REQUIRED_FIELDS = ['officer_given_name', 'email_address', 'pos_discharges', 'pos_discharges_last_month',
+                             'pos_discharges_district_average', 'pos_discharges_state_average', 'earned_discharges',
+                             'earned_discharges_last_month', 'earned_discharges_district_average',
+                             'earned_discharges_state_average', 'technical_revocations',
+                             'technical_revocations_last_month', 'technical_revocations_district_average',
+                             'technical_revocations_state_average', 'absconsions', 'absconsions_last_month',
+                             'absconsions_district_average', 'absconsions_state_average', 'crime_revocations',
+                             'crime_revocations_last_month', 'crime_revocations_district_average',
+                             'crime_revocations_state_average', 'assessments', 'assessment_percent', 'facetoface',
+                             'facetoface_percent']
 PO_REPORT_COMPARISON_COLUMNS = PO_REPORT_REQUIRED_FIELDS + ['total_rows']
 
 PO_REPORT_MISSING_FIELDS_QUERY_TEMPLATE = """
