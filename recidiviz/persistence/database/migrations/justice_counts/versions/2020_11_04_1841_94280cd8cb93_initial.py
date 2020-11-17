@@ -78,4 +78,9 @@ def downgrade():
     op.drop_table('report')
     op.drop_table('source')
     op.drop_table('report_table_definition')
+
+    op.execute('DROP TYPE acquisitionmethod;')
+    op.execute('DROP TYPE measurementtype;')
+    op.execute('DROP TYPE metrictype;')
+    op.execute('DROP TYPE system;')
     # ### end Alembic commands ###
