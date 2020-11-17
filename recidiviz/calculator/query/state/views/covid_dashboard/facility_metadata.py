@@ -32,15 +32,15 @@ FACILITY_METADATA_VIEW_QUERY_TEMPLATE = \
     WITH
     -- This ensures we are using the primary name from the alias table
     primary_alias AS (
-      SELECT * FROM `{project_id}.{covid_dashboard_dataset}.facility_alias`
+      SELECT * FROM `{project_id}.{covid_dashboard_reference_dataset}.facility_alias`
       WHERE primary_name IS TRUE
     ),
     -- This table has the least sparse county data
     locations AS (
       SELECT
         facility_id, l.*
-      FROM `{project_id}.{covid_dashboard_dataset}.facility_locations` l
-      INNER JOIN `{project_id}.{covid_dashboard_dataset}.facility_alias` 
+      FROM `{project_id}.{covid_dashboard_reference_dataset}.facility_locations` l
+      INNER JOIN `{project_id}.{covid_dashboard_reference_dataset}.facility_alias` 
         USING (state, facility_name)
     ),
     -- This has most of the other metadata
@@ -53,8 +53,8 @@ FACILITY_METADATA_VIEW_QUERY_TEMPLATE = \
         FIRST_VALUE(capacity IGNORE NULLS) OVER facility_window as capacity,
         FIRST_VALUE(population_year_updated IGNORE NULLS) OVER facility_window as population_year_updated,
         FIRST_VALUE(population IGNORE NULLS) OVER facility_window as population
-      FROM `{project_id}.{covid_dashboard_dataset}.facility_attributes` a
-      INNER JOIN `{project_id}.{covid_dashboard_dataset}.facility_alias` 
+      FROM `{project_id}.{covid_dashboard_reference_dataset}.facility_attributes` a
+      INNER JOIN `{project_id}.{covid_dashboard_reference_dataset}.facility_alias` 
         USING (state, facility_name)
       WINDOW facility_window AS (PARTITION BY facility_id ORDER BY population_year_updated DESC)
     )
@@ -90,7 +90,8 @@ FACILITY_METADATA_VIEW_BUILDER = MetricBigQueryViewBuilder(
     view_query_template=FACILITY_METADATA_VIEW_QUERY_TEMPLATE,
     description=FACILITY_METADATA_VIEW_DESCRIPTION,
     dimensions=['facility_id'],
-    covid_dashboard_dataset=dataset_config.COVID_DASHBOARD_DATASET
+    covid_dashboard_dataset=dataset_config.COVID_DASHBOARD_DATASET,
+    covid_dashboard_reference_dataset=dataset_config.COVID_DASHBOARD_REFERENCE_DATASET
 )
 
 if __name__ == '__main__':

@@ -38,7 +38,7 @@ INCIDENTS_BY_FACILITY_BY_WEEK_QUERY_TEMPLATE = \
           RESULT_OIC_OFFENCE_CATEGORY as category,
           AGY_LOC_ID as facility
         FROM
-          `{project_id}.{covid_report_dataset}.us_nd_offense_in_custody_and_pos_report_data`
+          `{project_id}.{static_reference_dataset}.us_nd_offense_in_custody_and_pos_report_data`
         WHERE INCIDENT_TYPE NOT IN ('POSREPORT', 'PROP')
         AND (RESULT_OIC_OFFENCE_CATEGORY IS NULL OR RESULT_OIC_OFFENCE_CATEGORY NOT IN ('PBR', 'DELETE'))
         AND AGY_LOC_ID IN ({us_nd_report_facilities})
@@ -132,7 +132,8 @@ INCIDENTS_BY_FACILITY_BY_WEEK_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     description=INCIDENTS_BY_FACILITY_BY_WEEK_DESCRIPTION,
     covid_report_dataset=COVID_REPORT_DATASET,
     date_regex=DATE_REGEX_MATCHER,
-    us_nd_report_facilities=US_ND_REPORT_FACILITIES
+    us_nd_report_facilities=US_ND_REPORT_FACILITIES,
+    static_reference_dataset=dataset_config.STATIC_REFERENCE_TABLES_DATASET
 )
 
 if __name__ == '__main__':

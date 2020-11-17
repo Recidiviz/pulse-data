@@ -18,7 +18,7 @@
 """Defines subclasses of BigQueryView used in the direct ingest flow."""
 import re
 import string
-from typing import List, Optional
+from typing import List, Optional, Dict
 
 from recidiviz.big_query.big_query_view import BigQueryView, BigQueryViewBuilder
 from recidiviz.ingest.direct.controllers.direct_ingest_raw_file_import_manager import DirectIngestRawFileConfig, \
@@ -541,7 +541,8 @@ class DirectIngestPreProcessedIngestViewBuilder(BigQueryViewBuilder[DirectIngest
         self.primary_key_tables_for_entity_deletion = primary_key_tables_for_entity_deletion or []
         self.materialize_raw_data_table_views = materialize_raw_data_table_views
 
-    def build(self) -> DirectIngestPreProcessedIngestView:
+    # pylint: disable=unused-argument
+    def build(self, *, dataset_overrides: Optional[Dict[str, str]] = None) -> DirectIngestPreProcessedIngestView:
         """Builds an instance of a DirectIngestPreProcessedIngestView with the provided args."""
         return DirectIngestPreProcessedIngestView(
             ingest_view_name=self.ingest_view_name,
