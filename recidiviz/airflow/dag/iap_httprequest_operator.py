@@ -19,6 +19,7 @@
 A subclass of PythonOperator to call the IAP request while managing the return response
 """
 import os
+from typing import Any, Dict
 
 from airflow.operators.python_operator import PythonOperator
 from airflow.utils.decorators import apply_defaults
@@ -28,10 +29,17 @@ except ImportError:
     from recidiviz.cloud_functions.cloud_function_utils import make_iap_request, IAP_CLIENT_ID
 
 
-def make_iap_export_request(url: str) -> None:
+def make_iap_export_request(url: str) -> Dict[str, Any]:
     client_id = IAP_CLIENT_ID[os.environ.get('GCP_PROJECT_ID')]
     # make_iap_request raises an exception if the returned status code is not 200
-    make_iap_request(url, client_id)
+    response = make_iap_request(url, client_id)
+
+    # When operators return a value in airflow, the result is put into xcom for other operators to access it.
+    # However, the result must be a built in Python data type otherwise the operator will not return successfully.
+    return {
+        'status_code': response.status_code,
+        'text': response.text
+    }
 
 
 class IAPHTTPRequestOperator(PythonOperator):

@@ -16,6 +16,7 @@
 # =============================================================================
 
 """This file contains all of the relevant cloud functions"""
+from base64 import b64decode
 import logging
 import os
 import traceback
@@ -32,7 +33,6 @@ from cloud_function_utils import (  # type: ignore[import]
 )
 from covid import covid_ingest  # type: ignore[import]
 
-
 _STATE_AGGREGATE_CLOUD_FUNCTION_URL = (
     'http://{}.appspot.com/cloud_function/state_aggregate?bucket={}&state={}'
     '&filename={}')
@@ -40,7 +40,7 @@ _DIRECT_INGEST_CLOUD_FUNCTION_URL = (
     'http://{}.appspot.com/direct/handle_direct_ingest_file?region={}'
     '&bucket={}&relative_file_path={}&start_ingest={}')
 _METRIC_VIEW_EXPORT_CLOUD_FUNCTION_URL = (
-    'http://{}.appspot.com/export/metric_view_export'
+    'http://{}.appspot.com/export/metric_view_data'
 )
 _DATAFLOW_MONITOR_URL = (
     'http://{}.appspot.com/cloud_function/dataflow_monitor?job_id={}'
@@ -135,7 +135,7 @@ def _handle_state_direct_ingest_file(data,
     logging.info("The response status is %s", response.status_code)
 
 
-def export_metric_view_data(_event, _context):
+def export_metric_view_data(event, _context):
     """This function is triggered by a Pub/Sub event to begin the export of data contained in BigQuery metric views to
     files in cloud storage buckets.
     """
@@ -143,7 +143,13 @@ def export_metric_view_data(_event, _context):
     if not project_id:
         logging.error('No project id set for call to export view data, returning.')
         return
-    url = _METRIC_VIEW_EXPORT_CLOUD_FUNCTION_URL.format(project_id)
+
+    if 'data' in event:
+        logging.info("data found")
+        url = _METRIC_VIEW_EXPORT_CLOUD_FUNCTION_URL.format(project_id) + '?export_job_filter=' + \
+                b64decode(event['data']).decode('utf-8')
+    else:
+        url = _METRIC_VIEW_EXPORT_CLOUD_FUNCTION_URL.format(project_id)
 
     logging.info("project_id: %s", project_id)
     logging.info("Calling URL: %s", url)
