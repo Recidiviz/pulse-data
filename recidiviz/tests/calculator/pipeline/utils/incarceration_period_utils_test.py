@@ -23,12 +23,13 @@ from datetime import date
 from itertools import permutations
 
 import attr
+import pytest
 
 from recidiviz.calculator.pipeline.utils.incarceration_period_utils import \
     drop_placeholder_periods, \
     prepare_incarceration_periods_for_calculations, \
     collapse_temporary_custody_and_revocation_periods, drop_periods_not_under_state_custodial_authority, \
-    _infer_missing_dates_and_statuses
+    _infer_missing_dates_and_statuses, _ip_is_nested_in_previous_period
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_period import \
     StateIncarcerationPeriodStatus, StateIncarcerationFacilitySecurityLevel, StateSpecializedPurposeForIncarceration
@@ -1039,7 +1040,7 @@ class TestPrepareIncarcerationPeriodsForCalculations(unittest.TestCase):
                 state_code=state_code,
                 admission_date=date(2012, 2, 4),
                 admission_reason=AdmissionReason.NEW_ADMISSION,
-                release_date=date(2014, 4, 14),
+                release_date=date(2016, 4, 14),
                 release_reason=ReleaseReason.SENTENCE_SERVED)
 
         input_incarceration_periods = [
@@ -1189,7 +1190,7 @@ class TestPrepareIncarcerationPeriodsForCalculations(unittest.TestCase):
                 state_code=state_code,
                 admission_date=date(2012, 2, 4),
                 admission_reason=AdmissionReason.NEW_ADMISSION,
-                release_date=date(2014, 4, 14),
+                release_date=date(2016, 4, 14),
                 release_reason=ReleaseReason.SENTENCE_SERVED)
 
         input_incarceration_periods = [
@@ -1912,7 +1913,7 @@ class TestInferMissingDatesAndStatuses(unittest.TestCase):
             self.assertEqual(ordered_periods, updated_incarceration_periods)
 
     def test_infer_missing_dates_and_statuses_all_valid_shared_release(self):
-        valid_incarceration_period_1 = StateIncarcerationPeriod.new_with_defaults(
+        valid_incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             external_id='3',
@@ -1922,7 +1923,7 @@ class TestInferMissingDatesAndStatuses(unittest.TestCase):
             release_date=date(2012, 12, 4),
             release_reason=ReleaseReason.TRANSFER)
 
-        valid_incarceration_period_2 = StateIncarcerationPeriod.new_with_defaults(
+        nested_incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1112,
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             external_id='4',
@@ -1932,11 +1933,10 @@ class TestInferMissingDatesAndStatuses(unittest.TestCase):
             release_date=date(2012, 12, 4),
             release_reason=ReleaseReason.TRANSFER)
 
-        incarceration_periods = [valid_incarceration_period_1,
-                                 valid_incarceration_period_2]
+        incarceration_periods = [valid_incarceration_period,
+                                 nested_incarceration_period]
 
-        ordered_periods = [valid_incarceration_period_1,
-                           valid_incarceration_period_2]
+        ordered_periods = [valid_incarceration_period]
 
         for ip_order_combo in permutations(incarceration_periods):
             ips_for_test = [
@@ -2040,6 +2040,25 @@ class TestInferMissingDatesAndStatuses(unittest.TestCase):
         updated_incarceration_periods = _infer_missing_dates_and_statuses(incarceration_periods)
 
         self.assertEqual(incarceration_periods, updated_incarceration_periods)
+
+    def test_infer_missing_dates_and_statuses_invalid_dates(self):
+        # We drop any periods with a release_date that precedes the admission_date
+        valid_open_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=1110,
+            status=StateIncarcerationPeriodStatus.IN_CUSTODY,
+            external_id='5',
+            state_code='US_ND',
+            admission_date=date(2015, 11, 20),
+            admission_reason=AdmissionReason.NEW_ADMISSION,
+            release_date=date(2015, 1, 1),
+            release_reason=ReleaseReason.TRANSFER
+        )
+
+        incarceration_periods = [valid_open_period]
+
+        updated_incarceration_periods = _infer_missing_dates_and_statuses(incarceration_periods)
+
+        self.assertEqual([], updated_incarceration_periods)
 
     def test_infer_missing_dates_and_statuses_open_with_release_reason(self):
         valid_open_period = StateIncarcerationPeriod.new_with_defaults(
@@ -2558,7 +2577,7 @@ class TestInferMissingDatesAndStatuses(unittest.TestCase):
             self.assertEqual(expected_output, updated_incarceration_periods)
 
     def test_infer_missing_dates_and_statuses_same_dates_sort_by_external_id(self):
-        first_incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+        incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             external_id='1',
             incarceration_period_id=1111,
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
@@ -2568,7 +2587,7 @@ class TestInferMissingDatesAndStatuses(unittest.TestCase):
             release_date=date(2008, 4, 14),
             release_reason=ReleaseReason.TRANSFER)
 
-        second_incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+        incarceration_period_copy = StateIncarcerationPeriod.new_with_defaults(
             external_id='2',
             incarceration_period_id=2222,
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
@@ -2578,10 +2597,9 @@ class TestInferMissingDatesAndStatuses(unittest.TestCase):
             release_date=date(2008, 4, 14),
             release_reason=ReleaseReason.TRANSFER)
 
-        incarceration_periods = [second_incarceration_period,
-                                 first_incarceration_period]
+        incarceration_periods = [incarceration_period, incarceration_period_copy]
 
-        updated_order = [first_incarceration_period, second_incarceration_period]
+        updated_order = [incarceration_period]
 
         for ip_order_combo in permutations(incarceration_periods):
             ips_for_test = [
@@ -2727,3 +2745,314 @@ class TestInferMissingDatesAndStatuses(unittest.TestCase):
             updated_incarceration_periods = _infer_missing_dates_and_statuses(ips_for_test)
 
             self.assertEqual(expected_output, updated_incarceration_periods)
+
+    def test_infer_missing_dates_and_statuses_nested_period(self):
+        outer_ip = StateIncarcerationPeriod.new_with_defaults(
+            external_id='1',
+            incarceration_period_id=1111,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code='US_ND',
+            admission_date=date(2002, 2, 5),
+            admission_reason=AdmissionReason.NEW_ADMISSION,
+            release_date=date(2002, 9, 11),
+            release_reason=ReleaseReason.SENTENCE_SERVED)
+
+        nested_ip = StateIncarcerationPeriod.new_with_defaults(
+            external_id='2',
+            incarceration_period_id=2222,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code='US_ND',
+            admission_date=date(2002, 3, 13),
+            admission_reason=AdmissionReason.TRANSFER,
+            release_date=date(2002, 3, 13),
+            release_reason=ReleaseReason.TRANSFER)
+
+        incarceration_periods = [outer_ip,
+                                 nested_ip]
+
+        expected_output = [outer_ip]
+
+        for ip_order_combo in permutations(incarceration_periods):
+            ips_for_test = [
+                attr.evolve(ip) for ip in ip_order_combo
+            ]
+
+            updated_incarceration_periods = _infer_missing_dates_and_statuses(ips_for_test)
+
+            self.assertEqual(expected_output, updated_incarceration_periods)
+
+    def test_infer_missing_dates_and_statuses_multiple_nested_periods(self):
+        outer_ip = StateIncarcerationPeriod.new_with_defaults(
+            external_id='1',
+            incarceration_period_id=1111,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code='US_ND',
+            admission_date=date(2002, 2, 5),
+            admission_reason=AdmissionReason.NEW_ADMISSION,
+            release_date=date(2002, 9, 11),
+            release_reason=ReleaseReason.SENTENCE_SERVED)
+
+        nested_ip_1 = StateIncarcerationPeriod.new_with_defaults(
+            external_id='2',
+            incarceration_period_id=2222,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code='US_ND',
+            admission_date=date(2002, 2, 13),
+            admission_reason=AdmissionReason.TRANSFER,
+            release_date=date(2002, 2, 18),
+            release_reason=ReleaseReason.TRANSFER)
+
+        nested_ip_2 = StateIncarcerationPeriod.new_with_defaults(
+            external_id='3',
+            incarceration_period_id=3333,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code='US_ND',
+            admission_date=date(2002, 2, 18),
+            admission_reason=AdmissionReason.TRANSFER,
+            release_date=date(2002, 6, 20),
+            release_reason=ReleaseReason.TRANSFER)
+
+        nested_ip_3 = StateIncarcerationPeriod.new_with_defaults(
+            external_id='4',
+            incarceration_period_id=4444,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code='US_ND',
+            admission_date=date(2002, 6, 20),
+            admission_reason=AdmissionReason.TRANSFER,
+            release_date=date(2002, 6, 29),
+            release_reason=ReleaseReason.TRANSFER)
+
+        nested_ip_4 = StateIncarcerationPeriod.new_with_defaults(
+            external_id='5',
+            incarceration_period_id=5555,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code='US_ND',
+            admission_date=date(2002, 6, 29),
+            admission_reason=AdmissionReason.TRANSFER,
+            release_date=date(2002, 9, 11),
+            release_reason=ReleaseReason.TRANSFER)
+
+        incarceration_periods = [outer_ip, nested_ip_1, nested_ip_2, nested_ip_3, nested_ip_4]
+
+        expected_output = [outer_ip]
+
+        for ip_order_combo in permutations(incarceration_periods):
+            ips_for_test = [
+                attr.evolve(ip) for ip in ip_order_combo
+            ]
+
+            updated_incarceration_periods = _infer_missing_dates_and_statuses(ips_for_test)
+
+            self.assertEqual(expected_output, updated_incarceration_periods)
+
+    def test_infer_missing_dates_and_statuses_partial_overlap_period(self):
+        ip_1 = StateIncarcerationPeriod.new_with_defaults(
+            external_id='1',
+            incarceration_period_id=1111,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code='US_ND',
+            admission_date=date(2002, 2, 5),
+            admission_reason=AdmissionReason.NEW_ADMISSION,
+            release_date=date(2002, 9, 11),
+            release_reason=ReleaseReason.SENTENCE_SERVED)
+
+        ip_2 = StateIncarcerationPeriod.new_with_defaults(
+            external_id='2',
+            incarceration_period_id=2222,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code='US_ND',
+            admission_date=date(2002, 3, 13),
+            admission_reason=AdmissionReason.TRANSFER,
+            release_date=date(2002, 10, 22),
+            release_reason=ReleaseReason.TRANSFER)
+
+        incarceration_periods = [ip_1, ip_2]
+
+        expected_output = [ip_1, ip_2]
+
+        for ip_order_combo in permutations(incarceration_periods):
+            ips_for_test = [
+                attr.evolve(ip) for ip in ip_order_combo
+            ]
+
+            updated_incarceration_periods = _infer_missing_dates_and_statuses(ips_for_test)
+
+            self.assertEqual(expected_output, updated_incarceration_periods)
+
+
+class TestIpIsNestedInPreviousPeriod(unittest.TestCase):
+    """Tests the _ip_is_nested_in_previous_period function."""
+    def test_ip_is_nested_in_previous_period(self):
+        previous_ip = StateIncarcerationPeriod.new_with_defaults(
+            external_id='1',
+            incarceration_period_id=1111,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code='US_ND',
+            admission_date=date(2002, 2, 5),
+            admission_reason=AdmissionReason.NEW_ADMISSION,
+            release_date=date(2002, 9, 11),
+            release_reason=ReleaseReason.SENTENCE_SERVED)
+
+        ip = StateIncarcerationPeriod.new_with_defaults(
+            external_id='2',
+            incarceration_period_id=2222,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code='US_ND',
+            admission_date=date(2002, 3, 13),
+            admission_reason=AdmissionReason.TRANSFER,
+            release_date=date(2002, 5, 22),
+            release_reason=ReleaseReason.TRANSFER)
+
+        is_nested = _ip_is_nested_in_previous_period(ip, previous_ip)
+
+        self.assertTrue(is_nested)
+
+    def test_ip_is_nested_in_previous_period_not_nested(self):
+        previous_ip = StateIncarcerationPeriod.new_with_defaults(
+            external_id='1',
+            incarceration_period_id=1111,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code='US_ND',
+            admission_date=date(2002, 2, 5),
+            admission_reason=AdmissionReason.NEW_ADMISSION,
+            release_date=date(2002, 9, 11),
+            release_reason=ReleaseReason.SENTENCE_SERVED)
+
+        ip = StateIncarcerationPeriod.new_with_defaults(
+            external_id='2',
+            incarceration_period_id=2222,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code='US_ND',
+            admission_date=date(2002, 10, 13),
+            admission_reason=AdmissionReason.TRANSFER,
+            release_date=date(2002, 12, 22),
+            release_reason=ReleaseReason.TRANSFER)
+
+        is_nested = _ip_is_nested_in_previous_period(ip, previous_ip)
+
+        self.assertFalse(is_nested)
+
+    def test_ip_is_nested_in_previous_period_share_release(self):
+        previous_ip = StateIncarcerationPeriod.new_with_defaults(
+            external_id='1',
+            incarceration_period_id=1111,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code='US_ND',
+            admission_date=date(2002, 2, 5),
+            admission_reason=AdmissionReason.NEW_ADMISSION,
+            release_date=date(2002, 9, 11),
+            release_reason=ReleaseReason.SENTENCE_SERVED)
+
+        ip = StateIncarcerationPeriod.new_with_defaults(
+            external_id='2',
+            incarceration_period_id=2222,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code='US_ND',
+            admission_date=date(2002, 3, 13),
+            admission_reason=AdmissionReason.TRANSFER,
+            release_date=date(2002, 9, 11),
+            release_reason=ReleaseReason.TRANSFER)
+
+        is_nested = _ip_is_nested_in_previous_period(ip, previous_ip)
+
+        self.assertTrue(is_nested)
+
+    def test_ip_is_nested_in_previous_period_single_day_period(self):
+        previous_ip = StateIncarcerationPeriod.new_with_defaults(
+            external_id='1',
+            incarceration_period_id=1111,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code='US_ND',
+            admission_date=date(2002, 2, 5),
+            admission_reason=AdmissionReason.NEW_ADMISSION,
+            release_date=date(2002, 9, 11),
+            release_reason=ReleaseReason.SENTENCE_SERVED)
+
+        ip = StateIncarcerationPeriod.new_with_defaults(
+            external_id='2',
+            incarceration_period_id=2222,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code='US_ND',
+            admission_date=date(2002, 3, 13),
+            admission_reason=AdmissionReason.TRANSFER,
+            release_date=date(2002, 3, 13),
+            release_reason=ReleaseReason.TRANSFER)
+
+        is_nested = _ip_is_nested_in_previous_period(ip, previous_ip)
+
+        self.assertTrue(is_nested)
+
+    def test_ip_is_nested_in_previous_period_two_single_day_periods(self):
+        previous_ip = StateIncarcerationPeriod.new_with_defaults(
+            external_id='1',
+            incarceration_period_id=1111,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code='US_ND',
+            admission_date=date(2002, 3, 13),
+            admission_reason=AdmissionReason.TRANSFER,
+            release_date=date(2002, 3, 13),
+            release_reason=ReleaseReason.TRANSFER)
+
+        ip = StateIncarcerationPeriod.new_with_defaults(
+            external_id='2',
+            incarceration_period_id=2222,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code='US_ND',
+            admission_date=date(2002, 3, 13),
+            admission_reason=AdmissionReason.TRANSFER,
+            release_date=date(2002, 3, 13),
+            release_reason=ReleaseReason.TRANSFER)
+
+        is_nested = _ip_is_nested_in_previous_period(ip, previous_ip)
+
+        self.assertFalse(is_nested)
+
+    def test_ip_is_nested_in_previous_period_single_day_period_on_release(self):
+        previous_ip = StateIncarcerationPeriod.new_with_defaults(
+            external_id='1',
+            incarceration_period_id=1111,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code='US_ND',
+            admission_date=date(2002, 1, 13),
+            admission_reason=AdmissionReason.TRANSFER,
+            release_date=date(2002, 3, 13),
+            release_reason=ReleaseReason.TRANSFER)
+
+        ip = StateIncarcerationPeriod.new_with_defaults(
+            external_id='2',
+            incarceration_period_id=2222,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code='US_ND',
+            admission_date=date(2002, 3, 13),
+            admission_reason=AdmissionReason.TRANSFER,
+            release_date=date(2002, 3, 13),
+            release_reason=ReleaseReason.TRANSFER)
+
+        is_nested = _ip_is_nested_in_previous_period(ip, previous_ip)
+
+        self.assertFalse(is_nested)
+
+    def test_ip_is_nested_in_previous_period_bad_sort(self):
+        # This period should not have been sorted before ip
+        previous_ip = StateIncarcerationPeriod.new_with_defaults(
+            external_id='1',
+            incarceration_period_id=1111,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code='US_ND',
+            admission_date=date(2002, 2, 5),
+            admission_reason=AdmissionReason.NEW_ADMISSION,
+            release_date=date(2002, 9, 11),
+            release_reason=ReleaseReason.SENTENCE_SERVED)
+
+        ip = StateIncarcerationPeriod.new_with_defaults(
+            external_id='2',
+            incarceration_period_id=2222,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            state_code='US_ND',
+            admission_date=date(2002, 1, 1),
+            admission_reason=AdmissionReason.TRANSFER,
+            release_date=date(2002, 5, 22),
+            release_reason=ReleaseReason.TRANSFER)
+
+        with pytest.raises(ValueError):
+            _ip_is_nested_in_previous_period(ip, previous_ip)
