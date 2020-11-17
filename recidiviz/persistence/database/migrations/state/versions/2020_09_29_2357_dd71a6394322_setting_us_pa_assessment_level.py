@@ -86,7 +86,7 @@ DOWNGRADE_UNKNOWN_UNSET_SCORES_QUERY = "SELECT assessment_id FROM state_assessme
 DOWNGRADE_UPDATE_LEVEL_EXTRACT_SCORE_QUERY = \
     "UPDATE state_assessment " \
     "SET assessment_level = NULL, assessment_level_raw_text = NULL, " \
-    "assessment_score = CAST(SUBSTRING(assessment_level_raw_text, 'UNKNOWN \((\d+)') AS INTEGER) " \
+    "assessment_score = CAST(SUBSTRING(assessment_level_raw_text, 'UNKNOWN \\((\\d+)') AS INTEGER) " \
     "WHERE assessment_id IN ({ids_query});"
 
 

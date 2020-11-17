@@ -69,15 +69,20 @@ class MigrationsTestBase:
             self.assertEqual(len(r.heads), 1)
 
     def test_up_down(self):
-        """Enforce that migrations can be run all the way up and back."""
+        """Enforce that migrations can be run all the way up, back, and up again."""
         with runner(self.default_config()) as r:
-            revisions = reversed(r.history.revisions)
+            revisions = r.history.revisions
             r.migrate_up_to('head')
-            for rev in revisions:
+            for rev in reversed(revisions):
                 try:
                     r.migrate_down_to(rev)
                 except Exception:
                     self.fail(f'Migrate down failed at revision: {rev}')
+            for rev in revisions:
+                try:
+                    r.migrate_up_to(rev)
+                except Exception:
+                    self.fail(f'Migrate back up failed at revision: {rev}')
 
     def test_migrate_matches_defs(self):
         """Enforces that after all migrations, database state matches known models
@@ -109,3 +114,9 @@ class TestOperationsMigrations(MigrationsTestBase, TestCase):
     @property
     def alembic_path_prefix(self) -> str:
         return './recidiviz/persistence/database/migrations/operations'
+
+
+class TestStateMigrations(MigrationsTestBase, TestCase):
+    @property
+    def alembic_path_prefix(self) -> str:
+        return './recidiviz/persistence/database/migrations/state'

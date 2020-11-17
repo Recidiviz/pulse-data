@@ -1,3 +1,4 @@
+# pylint: skip-file
 """add_early_discharge_entities
 
 Revision ID: fbb8c36dd4b9
@@ -93,4 +94,7 @@ def downgrade():
     op.drop_index(op.f('ix_state_early_discharge_incarceration_sentence_id'), table_name='state_early_discharge')
     op.drop_index(op.f('ix_state_early_discharge_external_id'), table_name='state_early_discharge')
     op.drop_table('state_early_discharge')
+
+    op.execute('DROP TYPE state_acting_body_type;')
+    op.execute('DROP TYPE state_early_discharge_decision;')
     # ### end Alembic commands ###

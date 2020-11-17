@@ -1,3 +1,4 @@
+# pylint: skip-file
 """add_alias_type
 
 Revision ID: 7ab233533ebe
@@ -34,3 +35,5 @@ def downgrade():
     op.drop_column('state_person_alias_history', 'alias_type')
     op.drop_column('state_person_alias', 'alias_type_raw_text')
     op.drop_column('state_person_alias', 'alias_type')
+
+    op.execute('DROP TYPE state_person_alias_type;')

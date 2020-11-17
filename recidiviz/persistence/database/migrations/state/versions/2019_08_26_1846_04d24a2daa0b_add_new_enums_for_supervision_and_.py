@@ -1,3 +1,4 @@
+# pylint: skip-file
 """add_new_enums_for_supervision_and_incidents
 
 Revision ID: 04d24a2daa0b
@@ -109,7 +110,7 @@ def downgrade():
                     type_=sa.Enum(*old_incident_type_values,
                                   name='state_incarceration_incident_type'),
                     postgresql_using='incident_type::text::state_incarceration_incident_type')
-    op.execute('DROP TYPE state_incarceration_incident_type;')
+    op.execute('DROP TYPE state_incarceration_incident_type_old;')
 
     # Back to old state supervision period termination reasons
     op.execute('ALTER TYPE state_supervision_period_termination_reason RENAME TO state_supervision_period_termination_reason_old;')

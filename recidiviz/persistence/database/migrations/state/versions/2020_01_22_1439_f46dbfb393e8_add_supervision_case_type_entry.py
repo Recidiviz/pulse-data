@@ -1,3 +1,4 @@
+# pylint: skip-file
 """add_supervision_case_type_entry
 
 Revision ID: f46dbfb393e8
@@ -65,4 +66,6 @@ def downgrade():
     op.drop_index(op.f('ix_state_supervision_case_type_entry_state_code'), table_name='state_supervision_case_type_entry')
     op.drop_index(op.f('ix_state_supervision_case_type_entry_person_id'), table_name='state_supervision_case_type_entry')
     op.drop_table('state_supervision_case_type_entry')
+
+    op.execute('DROP TYPE state_supervision_case_type;')
     # ### end Alembic commands ###
