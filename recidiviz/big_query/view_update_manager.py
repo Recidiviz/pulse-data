@@ -26,7 +26,7 @@ import argparse
 import logging
 import sys
 from enum import Enum
-from typing import Dict, List, Sequence, Tuple
+from typing import Dict, List, Sequence, Tuple, Optional
 
 from opencensus.stats import measure, view as opencensus_view, aggregation
 
@@ -66,41 +66,52 @@ VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE: Dict[BigQueryViewNamespace, Dict[str, Sequenc
 }
 
 
-def create_dataset_and_update_all_views(materialized_views_only: bool = False) -> None:
+# When creating temporary datasets with prefixed names, set the default table expiration to 24 hours
+TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS = 24 * 60 * 60 * 1000
+
+
+def create_dataset_and_update_all_views(dataset_overrides: Optional[Dict[str, str]] = None,
+                                        materialized_views_only: bool = False) -> None:
     """Creates or updates all registered BigQuery views."""
     for namespace, builders in VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE.items():
-        create_dataset_and_update_views_for_view_builders(namespace, builders, materialized_views_only)
+        create_dataset_and_update_views_for_view_builders(namespace,
+                                                          builders,
+                                                          dataset_overrides=dataset_overrides,
+                                                          materialized_views_only=materialized_views_only)
 
 
 def create_dataset_and_update_views_for_view_builders(
-        view_namespace: BigQueryViewNamespace,
+        bq_view_namespace: BigQueryViewNamespace,
         view_builders_to_update: Dict[str, Sequence[BigQueryViewBuilder]],
+        dataset_overrides: Optional[Dict[str, str]] = None,
         materialized_views_only: bool = False) -> None:
     """Converts the map of dataset_ids to BigQueryViewBuilders lists into a map of dataset_ids to BigQueryViews by
     building each of the views. Then, calls create_dataset_and_update_views with those views and their parent
-    datasets. If materialized_views_only is True, will only update views that have a set materialized_view_table_id
-    field."""
+    datasets. Will override the default dataset_ids for any dataset_id specified in dataset_overrides. If
+    materialized_views_only is True, will only update views that have a set materialized_view_table_id field."""
+    set_default_table_expiration_for_new_datasets = bool(dataset_overrides)
+    if set_default_table_expiration_for_new_datasets:
+        logging.info("Found non-empty dataset overrides. New datasets created in this process will have a "
+                     "default table expiration of 24 hours.")
     try:
-        # Convert the map of dataset_ids to BigQueryViewBuilders into a map of dataset_ids to BigQueryViews by building
-        # each of the views.
-        views_to_update: Dict[str, List[BigQueryView]] = {
-            dataset: [
-                view_builder.build() for view_builder in view_builders
-                if not materialized_views_only or view_builder.build().materialized_view_table_id is not None
-            ]
-            for dataset, view_builders in view_builders_to_update.items()
-        }
+        views_to_update = []
+        for view_builders in view_builders_to_update.values():
+            for view_builder in view_builders:
+                view = view_builder.build(dataset_overrides=dataset_overrides)
+                if not materialized_views_only or view.materialized_view_table_id is not None:
+                    views_to_update.append(view)
 
-        _create_dataset_and_update_views(views_to_update)
+        _create_dataset_and_update_views(views_to_update, set_default_table_expiration_for_new_datasets)
     except Exception as e:
         with monitoring.measurements({
-                monitoring.TagKey.CREATE_UPDATE_VIEWS_NAMESPACE: view_namespace.value
+                monitoring.TagKey.CREATE_UPDATE_VIEWS_NAMESPACE: bq_view_namespace.value
         }) as measurements:
             measurements.measure_int_put(m_failed_view_update, 1)
         raise e
 
 
-def _create_dataset_and_update_views(views_to_update: Dict[str, List[BigQueryView]]) -> None:
+def _create_dataset_and_update_views(views_to_update: List[BigQueryView],
+                                     set_temp_dataset_table_expiration: bool = False) -> None:
     """Create and update the given views and their parent datasets.
 
     For each dataset key in the given dictionary, creates the dataset if it does not exist, and creates or updates the
@@ -109,18 +120,23 @@ def _create_dataset_and_update_views(views_to_update: Dict[str, List[BigQueryVie
     If a view has a set materialized_view_table_id field, materializes the view into a table.
 
     Args:
-        views_to_update: Dict of BigQuery dataset name to list of view objects to be created or updated.
+        views_to_update: A list of view objects to be created or updated.
     """
+    new_dataset_table_expiration_ms = (TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS
+                                       if set_temp_dataset_table_expiration else None)
+
     bq_client = BigQueryClientImpl()
-    for dataset_name, view_list in views_to_update.items():
-        views_dataset_ref = bq_client.dataset_ref_for_id(dataset_name)
-        bq_client.create_dataset_if_necessary(views_dataset_ref)
+    dataset_ids = set()
+    for view in views_to_update:
+        views_dataset_ref = bq_client.dataset_ref_for_id(view.dataset_id)
+        if view.dataset_id not in dataset_ids:
+            bq_client.create_dataset_if_necessary(views_dataset_ref, new_dataset_table_expiration_ms)
+            dataset_ids.add(view.dataset_id)
 
-        for view in view_list:
-            bq_client.create_or_update_view(views_dataset_ref, view)
+        bq_client.create_or_update_view(views_dataset_ref, view)
 
-            if view.materialized_view_table_id:
-                bq_client.materialize_view_to_table(view)
+        if view.materialized_view_table_id:
+            bq_client.materialize_view_to_table(view)
 
 
 def parse_arguments(argv: List[str]) -> Tuple[argparse.Namespace, List[str]]:
@@ -159,9 +175,9 @@ if __name__ == '__main__':
             create_dataset_and_update_all_views(materialized_views_only=known_args.materialized_views_only)
         else:
             view_namespace_ = BigQueryViewNamespace(known_args.views_to_update)
-            view_builders = VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE[BigQueryViewNamespace(known_args.views_to_update)]
-
+            view_builders_ = VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE[view_namespace_]
             create_dataset_and_update_views_for_view_builders(
-                view_namespace=view_namespace_,
-                view_builders_to_update=view_builders,
-                materialized_views_only=known_args.materialized_views_only)
+                bq_view_namespace=view_namespace_,
+                view_builders_to_update=view_builders_,
+                materialized_views_only=known_args.materialized_views_only,
+            )

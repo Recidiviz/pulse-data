@@ -34,6 +34,9 @@ STATE_BASE_DATASET: str = 'state'
 # Where the views for the COVID dashboard live
 COVID_DASHBOARD_DATASET: str = 'covid_public_data'
 
+# Where the tables used to populate the COVID dashboard views live
+COVID_DASHBOARD_REFERENCE_DATASET: str = 'covid_public_data_reference_tables'
+
 # Where the views for the COVID report live
 COVID_REPORT_DATASET: str = 'covid_report_views'
 

@@ -105,7 +105,7 @@ PO_MONTHLY_REPORT_DATA_QUERY_TEMPLATE = \
       report_month.assessment_percent,
       report_month.facetoface,
       report_month.facetoface_percent
-    FROM `{project_id}.{po_report_dataset}.po_report_recipients`
+    FROM `{project_id}.{static_reference_dataset}.po_report_recipients`
     LEFT JOIN report_data report_month
       USING (state_code, officer_external_id, district)
     LEFT JOIN agents
@@ -132,7 +132,8 @@ PO_MONTHLY_REPORT_DATA_VIEW_BUILDER = MetricBigQueryViewBuilder(
     dimensions=['state_code', 'review_month', 'officer_external_id', 'district'],
     description=PO_MONTHLY_REPORT_DATA_DESCRIPTION,
     po_report_dataset=PO_REPORT_DATASET,
-    reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET
+    reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
+    static_reference_dataset=dataset_config.STATIC_REFERENCE_TABLES_DATASET
 )
 
 if __name__ == '__main__':

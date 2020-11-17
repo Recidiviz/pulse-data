@@ -210,9 +210,15 @@ class TestHandleRequest(TestCase):
 
         self.maxDiff = None
         expected_update_calls = [
-            call(BigQueryViewNamespace.COUNTY, county_view_config.VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE, False),
-            call(BigQueryViewNamespace.STATE, state_view_config.VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE, False),
-            call(BigQueryViewNamespace.VALIDATION, validation_view_config.VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE, False)
+            call(BigQueryViewNamespace.COUNTY, county_view_config.VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE,
+                 dataset_overrides=None,
+                 materialized_views_only=False),
+            call(BigQueryViewNamespace.STATE, state_view_config.VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE,
+                 dataset_overrides=None,
+                 materialized_views_only=False),
+            call(BigQueryViewNamespace.VALIDATION, validation_view_config.VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE,
+                 dataset_overrides=None,
+                 materialized_views_only=False)
         ]
         self.assertCountEqual(mock_update_views.call_args_list, expected_update_calls)
 

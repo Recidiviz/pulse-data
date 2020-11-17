@@ -17,7 +17,7 @@
 
 """An extension of BigQueryView with extra functionality related to metric views specifically."""
 
-from typing import List
+from typing import List, Dict, Optional
 
 from recidiviz.big_query.big_query_view import BigQueryView, BigQueryViewBuilder
 
@@ -34,11 +34,13 @@ class MetricBigQueryView(BigQueryView):
                  view_query_template: str,
                  dimensions: List[str],
                  should_materialize: bool,
+                 dataset_overrides: Optional[Dict[str, str]],
                  **query_format_kwargs: str):
         super().__init__(dataset_id=dataset_id,
                          view_id=view_id,
                          view_query_template=view_query_template,
                          should_materialize=should_materialize,
+                         dataset_overrides=dataset_overrides,
                          **query_format_kwargs)
         self.dimensions = dimensions
 
@@ -70,13 +72,14 @@ class MetricBigQueryViewBuilder(BigQueryViewBuilder[MetricBigQueryView]):
         self.should_materialize = should_materialize
         self.query_format_kwargs = query_format_kwargs
 
-    def build(self) -> MetricBigQueryView:
+    def build(self, *, dataset_overrides: Optional[Dict[str, str]] = None) -> MetricBigQueryView:
         return MetricBigQueryView(
             dataset_id=self.dataset_id,
             view_id=self.view_id,
             view_query_template=self.view_query_template,
             dimensions=self.dimensions,
             should_materialize=self.should_materialize,
+            dataset_overrides=dataset_overrides,
             **self.query_format_kwargs)
 
     def build_and_print(self) -> None:

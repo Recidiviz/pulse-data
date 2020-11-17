@@ -31,8 +31,8 @@ FACILITY_CASE_DATA_VIEW_QUERY_TEMPLATE = \
     WITH cases AS (
     SELECT
         facility_id, c.*
-      FROM `{project_id}.{covid_dashboard_dataset}.covid_cases_by_facility` c
-      INNER JOIN `{project_id}.{covid_dashboard_dataset}.facility_alias` f
+      FROM `{project_id}.{covid_dashboard_reference_dataset}.covid_cases_by_facility` c
+      INNER JOIN `{project_id}.{covid_dashboard_reference_dataset}.facility_alias` f
         ON c.state = f.state AND c.canonical_facility_name = f.facility_name
     )
     
@@ -57,7 +57,7 @@ FACILITY_CASE_DATA_VIEW_BUILDER = MetricBigQueryViewBuilder(
     view_query_template=FACILITY_CASE_DATA_VIEW_QUERY_TEMPLATE,
     description=FACILITY_CASE_DATA_VIEW_DESCRIPTION,
     dimensions=['facility_id', 'date'],
-    covid_dashboard_dataset=dataset_config.COVID_DASHBOARD_DATASET
+    covid_dashboard_reference_dataset=dataset_config.COVID_DASHBOARD_REFERENCE_DATASET
 )
 
 if __name__ == '__main__':
