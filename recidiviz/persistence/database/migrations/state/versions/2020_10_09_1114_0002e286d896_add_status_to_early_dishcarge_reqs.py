@@ -85,4 +85,6 @@ def downgrade():
     op.drop_column('state_early_discharge_history', 'decision_status')
     op.drop_column('state_early_discharge', 'decision_status_raw_text')
     op.drop_column('state_early_discharge', 'decision_status')
+
+    op.execute('DROP TYPE state_early_discharge_decision_status;')
     # ### end Alembic commands ###

@@ -101,4 +101,9 @@ def downgrade():
     op.drop_index(op.f('ix_state_supervision_contact_external_id'), table_name='state_supervision_contact')
     op.drop_index(op.f('ix_state_supervision_contact_contacted_agent_id'), table_name='state_supervision_contact')
     op.drop_table('state_supervision_contact')
+
+    op.execute('DROP TYPE state_supervision_contact_status;')
+    op.execute('DROP TYPE state_supervision_contact_location;')
+    op.execute('DROP TYPE state_supervision_contact_type;')
+    op.execute('DROP TYPE state_supervision_contact_reason;')
     # ### end Alembic commands ###
