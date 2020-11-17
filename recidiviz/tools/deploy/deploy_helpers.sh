@@ -125,11 +125,16 @@ function pre_deploy_configure_infrastructure {
     echo "Initializing task queues"
     run_cmd pipenv run python -m recidiviz.tools.initialize_google_cloud_task_queues --project_id ${PROJECT} --google_auth_token $(gcloud auth print-access-token)
 
-    echo "Updating the BigQuery Dataflow metric table schemas to match the metric classes"
-    run_cmd pipenv run python -m recidiviz.calculator.calculation_data_storage_manager --project_id ${PROJECT} --function_to_execute update_schemas
+    if [[ -z ${DEBUG_BUILD_NAME} ]]; then
+        # If it's not a debug build (i.e. local to staging), we update the Dataflow metric table schemas and update all BigQuery views.
+        echo "Updating the BigQuery Dataflow metric table schemas to match the metric classes"
+        run_cmd pipenv run python -m recidiviz.calculator.calculation_data_storage_manager --project_id ${PROJECT} --function_to_execute update_schemas
 
-    echo "Updating all BigQuery views"
-    run_cmd pipenv run python -m recidiviz.big_query.view_update_manager --project_id ${PROJECT} --views_to_update all --materialized_views_only False
+        echo "Updating all BigQuery views"
+        run_cmd pipenv run python -m recidiviz.big_query.view_update_manager --project_id ${PROJECT} --views_to_update all --materialized_views_only False
+    else
+        echo "Skipping BigQuery table and view updates for debug build."
+    fi
 
     if [[ -z ${DEBUG_BUILD_NAME} ]]; then
         # If it's not a debug build (i.e. local to staging), we deploy pipeline templates.
