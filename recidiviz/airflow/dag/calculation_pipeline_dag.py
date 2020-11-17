@@ -20,25 +20,25 @@ This file is uploaded to GCS on deploy.
 """
 import datetime
 import os
+from base64 import b64encode
 from typing import List, Dict
 import collections
 
 import yaml
 
 from airflow import models
+from airflow.contrib.operators.pubsub_operator import PubSubPublishOperator
+
 try:
     from recidiviz_dataflow_operator import RecidivizDataflowTemplateOperator  # type: ignore
-    from iap_httprequest_operator import IAPHTTPRequestOperator  # type: ignore
 except ImportError:
     from recidiviz.airflow.dag.recidiviz_dataflow_operator import RecidivizDataflowTemplateOperator
-    from recidiviz.airflow.dag.iap_httprequest_operator import IAPHTTPRequestOperator  # type: ignore
 
 # Need a disable pointless statement because Python views the chaining operator ('>>') as a "pointless" statement
 # pylint: disable=W0104 pointless-statement
 
 project_id = os.environ.get('GCP_PROJECT_ID')
 config_file = os.environ.get('CONFIG_FILE')
-_METRIC_VIEW_DATA_EXPORT_URL = 'http://{}.appspot.com/export/metric_view_data?export_job_filter={}'
 
 default_args = {
     'start_date': datetime.date.today().strftime('%Y-%m-%d'),
@@ -64,9 +64,14 @@ with models.DAG(dag_id="calculation_pipeline_dag",
         pipeline_yaml_dicts = yaml.full_load(f)
         if pipeline_yaml_dicts:
             pipeline_dict = pipelines_by_state(pipeline_yaml_dicts['daily_pipelines'])
-            covid_export = IAPHTTPRequestOperator(
-                task_id='COVID_bq_metric_export',
-                url=_METRIC_VIEW_DATA_EXPORT_URL.format(project_id, "COVID_DASHBOARD")
+            # TODO(#4593) Migrate to IAPHTTPOperator
+            covid_export = PubSubPublishOperator(
+                task_id='trigger_COVID_bq_metric_export',
+                project=project_id,
+                topic='v1.export.view.data',
+                messages=[
+                    {'data': b64encode(b'COVID_DASHBOARD').decode()}
+                ],
             )
             dataflow_default_args = {
                 'project': project_id,
@@ -75,9 +80,14 @@ with models.DAG(dag_id="calculation_pipeline_dag",
                 'tempLocation': 'gs://{}-dataflow-templates/staging/'.format(project_id)
             }
             for state_code, state_pipelines in pipeline_dict.items():
-                state_export = IAPHTTPRequestOperator(
-                    task_id='{}_bq_metric_export'.format(state_code),
-                    url=_METRIC_VIEW_DATA_EXPORT_URL.format(project_id, state_code)
+                # TODO(#4593) Migrate to IAPHTTPOperator
+                state_export = PubSubPublishOperator(
+                    task_id='trigger_{}_bq_metric_export'.format(state_code),
+                    project=project_id,
+                    topic='v1.export.view.data',
+                    messages=[
+                        {'data': b64encode(bytes(state_code, 'utf-8')).decode()}
+                    ],
                 )
                 for pipeline_to_run in state_pipelines:
                     calculation_pipeline = RecidivizDataflowTemplateOperator(
