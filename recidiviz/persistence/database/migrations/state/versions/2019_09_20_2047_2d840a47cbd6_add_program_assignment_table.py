@@ -1,3 +1,4 @@
+# pylint: skip-file
 """add_program_assignment_table
 
 Revision ID: 2d840a47cbd6
@@ -91,4 +92,7 @@ def downgrade():
     op.drop_index(op.f('ix_state_program_assignment_state_code'), table_name='state_program_assignment')
     op.drop_index(op.f('ix_state_program_assignment_external_id'), table_name='state_program_assignment')
     op.drop_table('state_program_assignment')
+
+    op.execute('DROP TYPE state_program_assignment_discharge_reason;')
+    op.execute('DROP TYPE state_program_assignment_participation_status;')
     # ### end Alembic commands ###

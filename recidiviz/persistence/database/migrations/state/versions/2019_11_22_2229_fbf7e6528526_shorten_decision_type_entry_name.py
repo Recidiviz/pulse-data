@@ -1,3 +1,4 @@
+# pylint: skip-file
 """shorten_decision_type_entry_name
 
 Revision ID: fbf7e6528526
@@ -65,7 +66,7 @@ def downgrade():
     sa.Column('state_code', sa.VARCHAR(length=255), autoincrement=False, nullable=False),
     sa.Column('decision', postgresql.ENUM('CONTINUANCE', 'DELAYED_ACTION', 'EXTENSION', 'REVOCATION', 'SERVICE_TERMINATION', 'SUSPENSION', name='state_supervision_violation_response_decision', create_type=False), autoincrement=False, nullable=True),
     sa.Column('decision_raw_text', sa.VARCHAR(length=255), autoincrement=False, nullable=True),
-    sa.Column('revocation_type', postgresql.ENUM('REINCARCERATION', 'RETURN_TO_SUPERVISION', 'SHOCK_INCARCERATION', 'TREATMENT_IN_PRISON', name='state_supervision_violation_response_revocation_type'), autoincrement=False, nullable=True),
+    sa.Column('revocation_type', postgresql.ENUM('REINCARCERATION', 'RETURN_TO_SUPERVISION', 'SHOCK_INCARCERATION', 'TREATMENT_IN_PRISON', name='state_supervision_violation_response_revocation_type', create_type=False), autoincrement=False, nullable=True),
     sa.Column('revocation_type_raw_text', sa.VARCHAR(length=255), autoincrement=False, nullable=True),
     sa.Column('supervision_violation_response_decision_type_entry_id', sa.INTEGER(), server_default=sa.text("nextval('state_supervision_violation_r_supervision_violation_respon_seq2'::regclass)"), autoincrement=True, nullable=False),
     sa.Column('supervision_violation_response_id', sa.INTEGER(), autoincrement=False, nullable=True),
@@ -82,7 +83,7 @@ def downgrade():
     sa.Column('state_code', sa.VARCHAR(length=255), autoincrement=False, nullable=False),
     sa.Column('decision', postgresql.ENUM('CONTINUANCE', 'DELAYED_ACTION', 'EXTENSION', 'REVOCATION', 'SERVICE_TERMINATION', 'SUSPENSION', name='state_supervision_violation_response_decision', create_type=False), autoincrement=False, nullable=True),
     sa.Column('decision_raw_text', sa.VARCHAR(length=255), autoincrement=False, nullable=True),
-    sa.Column('revocation_type', postgresql.ENUM('REINCARCERATION', 'RETURN_TO_SUPERVISION', 'SHOCK_INCARCERATION', 'TREATMENT_IN_PRISON', name='state_supervision_violation_response_revocation_type'), autoincrement=False, nullable=True),
+    sa.Column('revocation_type', postgresql.ENUM('REINCARCERATION', 'RETURN_TO_SUPERVISION', 'SHOCK_INCARCERATION', 'TREATMENT_IN_PRISON', name='state_supervision_violation_response_revocation_type', create_type=False), autoincrement=False, nullable=True),
     sa.Column('revocation_type_raw_text', sa.VARCHAR(length=255), autoincrement=False, nullable=True),
     sa.Column('supervision_violation_response_decision_type_entry_history_id', sa.INTEGER(), autoincrement=True, nullable=False),
     sa.Column('supervision_violation_response_decision_type_entry_id', sa.INTEGER(), autoincrement=False, nullable=False),
