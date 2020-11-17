@@ -26,6 +26,7 @@ from typing import List
 
 from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_manager import \
     temporary_custody_periods_under_state_authority, non_prison_periods_under_state_authority
+from recidiviz.calculator.pipeline.utils.time_range_utils import TimeRange, TimeRangeDiff
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
 from recidiviz.common.constants.state.state_incarceration_period import \
@@ -374,9 +375,25 @@ def _infer_missing_dates_and_statuses(
     """
     _sort_ips_by_set_dates_and_statuses(incarceration_periods)
 
+    updated_periods: List[StateIncarcerationPeriod] = []
+
     for index, ip in enumerate(incarceration_periods):
+        previous_ip = incarceration_periods[index - 1] if index > 0 else None
+        next_ip = incarceration_periods[index + 1] if index < len(incarceration_periods) - 1 else None
+
         if ip.release_date is None:
-            if index == len(incarceration_periods) - 1:
+            if next_ip:
+                # This is not the last incarceration period in the list. Set the release date to the next admission or
+                # release date.
+                ip.release_date = next_ip.admission_date if next_ip.admission_date else next_ip.release_date
+
+                if ip.release_reason is None:
+                    if next_ip.admission_reason == AdmissionReason.TRANSFER:
+                        # If they were transferred into the next period, infer that this release was a transfer
+                        ip.release_reason = ReleaseReason.TRANSFER
+
+                ip.status = StateIncarcerationPeriodStatus.NOT_IN_CUSTODY
+            else:
                 # This is the last incarceration period in the list.
                 if ip.status != StateIncarcerationPeriodStatus.IN_CUSTODY:
                     # If the person is no longer in custody on this period, set the release date to the admission date.
@@ -395,36 +412,22 @@ def _infer_missing_dates_and_statuses(
                                     ip.incarceration_period_id,
                                     ip.release_reason,
                                     ip.release_reason_raw_text)
-            else:
-                # This is not the last incarceration period in the list. Set the release date to the next admission or
-                # release date.
-                next_ip = incarceration_periods[index + 1]
-
-                ip.release_date = next_ip.admission_date if next_ip.admission_date else next_ip.release_date
-
-                if ip.release_reason is None:
-                    if next_ip.admission_reason == AdmissionReason.TRANSFER:
-                        # If they were transferred into the next period, infer that this release was a transfer
-                        ip.release_reason = ReleaseReason.TRANSFER
-
-                ip.status = StateIncarcerationPeriodStatus.NOT_IN_CUSTODY
 
         if ip.admission_date is None:
-            if index == 0:
-                # If the admission date is not set, and this is the first incarceration period, then set the
-                # admission_date to be the same as the release_date
-                ip.admission_date = ip.release_date
-                ip.admission_reason = AdmissionReason.INTERNAL_UNKNOWN
-            else:
+            if previous_ip:
                 # If the admission date is not set, and this is not the first incarceration period, then set the
                 # admission_date to be the same as the release_date or admission_date of the preceding period
-                previous_ip = incarceration_periods[index - 1]
-                ip.admission_date = previous_ip.release_date if previous_ip.release_date else ip.admission_date
+                ip.admission_date = previous_ip.release_date if previous_ip.release_date else previous_ip.admission_date
 
                 if ip.admission_reason is None:
                     if previous_ip.release_reason == ReleaseReason.TRANSFER:
                         # If they were transferred out of the previous period, infer that this admission was a transfer
                         ip.admission_reason = AdmissionReason.TRANSFER
+            else:
+                # If the admission date is not set, and this is the first incarceration period, then set the
+                # admission_date to be the same as the release_date
+                ip.admission_date = ip.release_date
+                ip.admission_reason = AdmissionReason.INTERNAL_UNKNOWN
 
         if ip.admission_reason is None:
             # We have no idea what this admission reason was. Set as INTERNAL_UNKNOWN.
@@ -433,7 +436,50 @@ def _infer_missing_dates_and_statuses(
             # We have no idea what this release reason was. Set as INTERNAL_UNKNOWN.
             ip.release_reason = ReleaseReason.INTERNAL_UNKNOWN
 
-    return incarceration_periods
+        if ip.admission_date and ip.release_date:
+            if ip.release_date < ip.admission_date:
+                logging.info("Dropping incarceration period with release before admission: [%s]", ip)
+                continue
+
+            if updated_periods:
+                most_recent_valid_period = updated_periods[-1]
+
+                if _ip_is_nested_in_previous_period(ip, most_recent_valid_period):
+                    # This period is entirely nested within the period before it. Do not include in the list of periods.
+                    logging.info("Dropping incarceration period [%s] that is nested in period [%s]",
+                                 ip, most_recent_valid_period)
+                    continue
+
+        updated_periods.append(ip)
+
+    return updated_periods
+
+
+def _ip_is_nested_in_previous_period(ip: StateIncarcerationPeriod, previous_ip: StateIncarcerationPeriod):
+    """Returns whether the StateIncarcerationPeriod |ip| is entirely nested within the |previous_ip|. Both periods
+    must have set admission and release dates.
+
+    A nested period is defined as an incarceration period that overlaps with the previous_ip and has no parts that are
+    non-overlapping with the previous_ip. Single-day periods (admission_date = release_date) by definition do not have
+    overlapping ranges with another period because the ranges are end date exclusive. If a single-day period falls
+    within the admission and release of the previous_ip, then it is nested within that period. If a single-day period
+    falls on the previous_ip.release_date, then it is not nested within that period.
+    """
+    ip_range_diff = TimeRangeDiff(TimeRange.for_incarceration_period(ip),
+                                  TimeRange.for_incarceration_period(previous_ip))
+
+    if not ip.admission_date or not ip.release_date:
+        raise ValueError(f"ip cannot have unset dates: {ip}")
+
+    if not previous_ip.admission_date or not previous_ip.release_date:
+        raise ValueError(f"previous_ip cannot have unset dates: {previous_ip}")
+
+    if ip.admission_date < previous_ip.admission_date:
+        raise ValueError("previous_ip should be sorted after ip. Error in _sort_ips_by_set_dates_and_statuses. "
+                         f"ip: {ip}, previous_ip: {previous_ip}")
+
+    return ((ip_range_diff.overlapping_range and not ip_range_diff.range_1_non_overlapping_parts)
+            or (ip.admission_date == ip.release_date and ip.release_date < previous_ip.release_date))
 
 
 def drop_periods_not_under_state_custodial_authority(
