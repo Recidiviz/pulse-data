@@ -46,7 +46,8 @@ class TestSetupFilePinnedDependencies(unittest.TestCase):
                             continue
 
                         self.assertEqual(pipfile_dependency, dependency_with_version,
-                                         "Try running pipenv sync --dev before running this test again.")
+                                         "Try verifying the package's version in setup.py or running pipenv sync --dev "
+                                         "before running this test again.")
 
     def test_setup_file_non_pinned_dependency(self) -> None:
         dependency = 'cattrs'
