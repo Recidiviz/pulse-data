@@ -53,8 +53,9 @@ class BigQueryClient:
 
     @abc.abstractmethod
     def create_dataset_if_necessary(self,
-                                    dataset_ref: bigquery.DatasetReference) -> None:
-        """Create a BigQuery dataset if it does not exist."""
+                                    dataset_ref: bigquery.DatasetReference,
+                                    default_table_expiration_ms: Optional[int] = None) -> None:
+        """Create a BigQuery dataset if it does not exist, with the optional dataset table expiration if provided."""
 
     @abc.abstractmethod
     def dataset_exists(self, dataset_ref: bigquery.DatasetReference) -> bool:
@@ -478,12 +479,19 @@ class BigQueryClientImpl(BigQueryClient):
     def dataset_ref_for_id(self, dataset_id: str) -> bigquery.DatasetReference:
         return bigquery.DatasetReference.from_string(dataset_id, default_project=self._project_id)
 
-    def create_dataset_if_necessary(self, dataset_ref: bigquery.DatasetReference) -> bigquery.Dataset:
+    def create_dataset_if_necessary(self,
+                                    dataset_ref: bigquery.DatasetReference,
+                                    default_table_expiration_ms: Optional[int] = None) -> bigquery.Dataset:
         try:
             dataset = self.client.get_dataset(dataset_ref)
         except exceptions.NotFound:
             logging.info("Dataset [%s] does not exist. Creating...", str(dataset_ref))
             dataset = bigquery.Dataset(dataset_ref)
+
+            if default_table_expiration_ms:
+                logging.info("Setting default table expiration to %d milliseconds for dataset [%s].",
+                             default_table_expiration_ms, str(dataset_ref))
+                dataset.default_table_expiration_ms = default_table_expiration_ms
             return self.client.create_dataset(dataset)
 
         return dataset

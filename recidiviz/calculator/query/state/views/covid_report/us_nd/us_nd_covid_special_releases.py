@@ -37,7 +37,7 @@ US_ND_COVID_SPECIAL_RELEASES_QUERY_TEMPLATE = \
       state_code,
       person_id
     -- TODO(#3954): pull this data from the US ND raw dataset instead
-    FROM `{project_id}.{covid_report_dataset}.us_nd_covid_release_person_external_id`
+    FROM `{project_id}.{static_reference_dataset}.us_nd_covid_release_person_external_id`
     JOIN `{project_id}.{state_dataset}.state_person_external_id`
       USING (state_code, external_id)
     WHERE id_type = 'US_ND_SID'
@@ -52,6 +52,7 @@ US_ND_COVID_SPECIAL_RELEASES_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_query_template=US_ND_COVID_SPECIAL_RELEASES_QUERY_TEMPLATE,
     description=US_ND_COVID_SPECIAL_RELEASES_DESCRIPTION,
     covid_report_dataset=COVID_REPORT_DATASET,
+    static_reference_dataset=dataset_config.STATIC_REFERENCE_TABLES_DATASET
 )
 
 if __name__ == '__main__':

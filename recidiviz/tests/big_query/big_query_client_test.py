@@ -38,9 +38,9 @@ class BigQueryClientImplTest(unittest.TestCase):
         self.mock_project_id = 'fake-recidiviz-project'
         self.mock_dataset_id = 'fake-dataset'
         self.mock_table_id = 'test_table'
-        self.mock_dataset = bigquery.dataset.DatasetReference(
+        self.mock_dataset_ref = bigquery.dataset.DatasetReference(
             self.mock_project_id, self.mock_dataset_id)
-        self.mock_table = self.mock_dataset.table(self.mock_table_id)
+        self.mock_table = self.mock_dataset_ref.table(self.mock_table_id)
 
         self.metadata_patcher = mock.patch('recidiviz.utils.metadata.project_id')
         self.mock_project_id_fn = self.metadata_patcher.start()
@@ -65,40 +65,47 @@ class BigQueryClientImplTest(unittest.TestCase):
     def test_create_dataset_if_necessary(self) -> None:
         """Check that a dataset is created if it does not exist."""
         self.mock_client.get_dataset.side_effect = exceptions.NotFound('!')
-        self.bq_client.create_dataset_if_necessary(self.mock_dataset)
+        self.bq_client.create_dataset_if_necessary(self.mock_dataset_ref)
         self.mock_client.create_dataset.assert_called()
 
     def test_create_dataset_if_necessary_dataset_exists(self) -> None:
         """Check that a dataset is not created if it already exists."""
         self.mock_client.get_dataset.side_effect = None
-        self.bq_client.create_dataset_if_necessary(self.mock_dataset)
+        self.bq_client.create_dataset_if_necessary(self.mock_dataset_ref)
         self.mock_client.create_dataset.assert_not_called()
+
+    def test_create_dataset_if_necessary_table_expiration(self) -> None:
+        """Check that the dataset is created with a set table expiration if the dataset does not exist and the
+        new_dataset_table_expiration_ms is specified."""
+        self.mock_client.get_dataset.side_effect = exceptions.NotFound('!')
+        self.bq_client.create_dataset_if_necessary(self.mock_dataset_ref, default_table_expiration_ms=6000)
+        self.mock_client.create_dataset.assert_called()
 
     def test_table_exists(self) -> None:
         """Check that table_exists returns True if the table exists."""
         self.mock_client.get_table.side_effect = None
         self.assertTrue(
-            self.bq_client.table_exists(self.mock_dataset, self.mock_table_id))
+            self.bq_client.table_exists(self.mock_dataset_ref, self.mock_table_id))
 
     def test_table_exists_does_not_exist(self) -> None:
         """Check that table_exists returns False if the table does not exist."""
         self.mock_client.get_table.side_effect = exceptions.NotFound('!')
         with self.assertLogs(level='WARNING'):
             table_exists = self.bq_client.table_exists(
-                self.mock_dataset, self.mock_table_id)
+                self.mock_dataset_ref, self.mock_table_id)
             self.assertFalse(table_exists)
 
     def test_create_or_update_view_creates_view(self) -> None:
         """create_or_update_view creates a View if it does not exist."""
         self.mock_client.get_table.side_effect = exceptions.NotFound('!')
-        self.bq_client.create_or_update_view(self.mock_dataset, self.mock_view)
+        self.bq_client.create_or_update_view(self.mock_dataset_ref, self.mock_view)
         self.mock_client.create_table.assert_called()
         self.mock_client.update_table.assert_not_called()
 
     def test_create_or_update_view_updates_view(self) -> None:
         """create_or_update_view updates a View if it already exist."""
         self.mock_client.get_table.side_effect = None
-        self.bq_client.create_or_update_view(self.mock_dataset, self.mock_view)
+        self.bq_client.create_or_update_view(self.mock_dataset_ref, self.mock_view)
         self.mock_client.update_table.assert_called()
         self.mock_client.create_table.assert_not_called()
 
@@ -106,7 +113,7 @@ class BigQueryClientImplTest(unittest.TestCase):
         """export_to_cloud_storage extracts the table corresponding to the
         view."""
         self.assertIsNotNone(self.bq_client.export_table_to_cloud_storage_async(
-            source_table_dataset_ref=self.mock_dataset,
+            source_table_dataset_ref=self.mock_dataset_ref,
             source_table_id='source-table',
             destination_uri=f'gs://{self.mock_project_id}-bucket/destination_path.json',
             destination_format=bigquery.DestinationFormat.NEWLINE_DELIMITED_JSON
@@ -119,7 +126,7 @@ class BigQueryClientImplTest(unittest.TestCase):
         self.mock_client.get_table.side_effect = exceptions.NotFound('!')
         with self.assertLogs(level='WARNING'):
             self.assertIsNone(self.bq_client.export_table_to_cloud_storage_async(
-                source_table_dataset_ref=self.mock_dataset,
+                source_table_dataset_ref=self.mock_dataset_ref,
                 source_table_id='source-table',
                 destination_uri=f'gs://{self.mock_project_id}-bucket/destination_path.json',
                 destination_format=bigquery.DestinationFormat.NEWLINE_DELIMITED_JSON))
@@ -131,7 +138,7 @@ class BigQueryClientImplTest(unittest.TestCase):
         self.mock_client.get_dataset.side_effect = exceptions.NotFound('!')
 
         self.bq_client.load_table_from_cloud_storage_async(
-            destination_dataset_ref=self.mock_dataset,
+            destination_dataset_ref=self.mock_dataset_ref,
             destination_table_id=self.mock_table_id,
             destination_table_schema=[SchemaField('my_column', 'STRING', 'NULLABLE', None, ())],
             source_uri='gs://bucket/export-uri')
@@ -144,7 +151,7 @@ class BigQueryClientImplTest(unittest.TestCase):
         """
 
         self.bq_client.load_table_from_cloud_storage_async(
-            destination_dataset_ref=self.mock_dataset,
+            destination_dataset_ref=self.mock_dataset_ref,
             destination_table_id=self.mock_table_id,
             destination_table_schema=[SchemaField('my_column', 'STRING', 'NULLABLE', None, ())],
             source_uri='gs://bucket/export-uri')
@@ -262,7 +269,7 @@ class BigQueryClientImplTest(unittest.TestCase):
         self.mock_client.get_dataset.side_effect = exceptions.NotFound('!')
 
         self.bq_client.insert_into_table_from_cloud_storage_async(
-            destination_dataset_ref=self.mock_dataset,
+            destination_dataset_ref=self.mock_dataset_ref,
             destination_table_id=self.mock_table_id,
             destination_table_schema=[SchemaField('my_column', 'STRING', 'NULLABLE', None, ())],
             source_uri='gs://bucket/export-uri')
@@ -319,7 +326,7 @@ class BigQueryClientImplTest(unittest.TestCase):
 
     def test_add_missing_fields_to_schema(self) -> None:
         """Tests that the add_missing_fields_to_schema function calls the client to update the table."""
-        table_ref = bigquery.TableReference(self.mock_dataset, self.mock_table_id)
+        table_ref = bigquery.TableReference(self.mock_dataset_ref, self.mock_table_id)
         schema_fields = [bigquery.SchemaField('fake_schema_field', 'STRING')]
         table = bigquery.Table(table_ref, schema_fields)
         self.mock_client.get_table.return_value = table
@@ -333,7 +340,7 @@ class BigQueryClientImplTest(unittest.TestCase):
     def test_add_missing_fields_to_schema_no_missing_fields(self) -> None:
         """Tests that the add_missing_fields_to_schema function does not call the client to update the table when all
         of the fields are already present."""
-        table_ref = bigquery.TableReference(self.mock_dataset, self.mock_table_id)
+        table_ref = bigquery.TableReference(self.mock_dataset_ref, self.mock_table_id)
         schema_fields = [bigquery.SchemaField('fake_schema_field', 'STRING')]
         table = bigquery.Table(table_ref, schema_fields)
         self.mock_client.get_table.return_value = table
@@ -358,7 +365,7 @@ class BigQueryClientImplTest(unittest.TestCase):
     def test_add_missing_fields_to_schema_fields_with_same_name_different_type(self) -> None:
         """Tests that the add_missing_fields_to_schema function raises an error when the user is trying to add a field
         with the same name but different field_type as an existing field."""
-        table_ref = bigquery.TableReference(self.mock_dataset, self.mock_table_id)
+        table_ref = bigquery.TableReference(self.mock_dataset_ref, self.mock_table_id)
         schema_fields = [bigquery.SchemaField('fake_schema_field', 'STRING')]
         table = bigquery.Table(table_ref, schema_fields)
         self.mock_client.get_table.return_value = table
@@ -373,7 +380,7 @@ class BigQueryClientImplTest(unittest.TestCase):
     def test_add_missing_fields_to_schema_fields_with_same_name_different_mode(self) -> None:
         """Tests that the add_missing_fields_to_schema function raises an error when the user is trying to add a field
         with the same name but different mode as an existing field."""
-        table_ref = bigquery.TableReference(self.mock_dataset, self.mock_table_id)
+        table_ref = bigquery.TableReference(self.mock_dataset_ref, self.mock_table_id)
         schema_fields = [bigquery.SchemaField('fake_schema_field', 'STRING', mode="NULLABLE")]
         table = bigquery.Table(table_ref, schema_fields)
         self.mock_client.get_table.return_value = table

@@ -64,7 +64,7 @@ class ViewManagerTest(unittest.TestCase):
             BigQueryViewNamespace.VALIDATION, {_DATASET_NAME: mock_view_builders})
 
         self.mock_client.dataset_ref_for_id.assert_called_with(_DATASET_NAME)
-        self.mock_client.create_dataset_if_necessary.assert_called_with(dataset)
+        self.mock_client.create_dataset_if_necessary.assert_called_with(dataset, None)
         self.mock_client.create_or_update_view.assert_has_calls(
             [mock.call(dataset, view_builder.build()) for view_builder in mock_view_builders])
 
@@ -97,9 +97,38 @@ class ViewManagerTest(unittest.TestCase):
         )
 
         self.mock_client.dataset_ref_for_id.assert_called_with(_DATASET_NAME)
-        self.mock_client.create_dataset_if_necessary.assert_called_with(dataset)
+        self.mock_client.create_dataset_if_necessary.assert_called_with(dataset, None)
         self.mock_client.create_or_update_view.assert_has_calls(
             [mock.call(dataset, mock_view_builders[0].build())])
+
+    def test_create_dataset_and_update_views_for_view_builders_dataset_override(self):
+        """Test that create_dataset_and_update_views_for_view_builders creates new datasets with a set table expiration
+        for all datasets specified in dataset_overrides."""
+        temp_dataset_id = 'test_prefix_' + _DATASET_NAME
+        dataset = bigquery.dataset.DatasetReference(_PROJECT_ID, temp_dataset_id)
+
+        dataset_overrides = {
+            _DATASET_NAME: temp_dataset_id
+        }
+
+        sample_views = [
+            {'view_id': 'my_fake_view', 'view_query': 'SELECT NULL LIMIT 0', 'materialized_view_table_id': 'table_id'},
+            {'view_id': 'my_other_fake_view', 'view_query': 'SELECT NULL LIMIT 0'},
+        ]
+        mock_view_builders = [SimpleBigQueryViewBuilder(
+            dataset_id=_DATASET_NAME, view_query_template='a', **view) for view in sample_views]
+
+        self.mock_client.dataset_ref_for_id.return_value = dataset
+
+        view_update_manager.create_dataset_and_update_views_for_view_builders(
+            BigQueryViewNamespace.VALIDATION, {_DATASET_NAME: mock_view_builders}, dataset_overrides)
+
+        self.mock_client.dataset_ref_for_id.assert_called_with(temp_dataset_id)
+        self.mock_client.create_dataset_if_necessary.assert_called_with(
+            dataset, view_update_manager.TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS)
+        self.mock_client.create_or_update_view.assert_has_calls(
+            [mock.call(dataset, view_builder.build(dataset_overrides=dataset_overrides))
+             for view_builder in mock_view_builders])
 
     def test_create_dataset_and_update_views(self):
         """Test that create_dataset_and_update_views creates a dataset if necessary, and updates all views."""
@@ -114,8 +143,8 @@ class ViewManagerTest(unittest.TestCase):
         self.mock_client.dataset_ref_for_id.return_value = dataset
 
         # pylint: disable=protected-access
-        view_update_manager._create_dataset_and_update_views({_DATASET_NAME: mock_views})
+        view_update_manager._create_dataset_and_update_views(mock_views)
 
         self.mock_client.dataset_ref_for_id.assert_called_with(_DATASET_NAME)
-        self.mock_client.create_dataset_if_necessary.assert_called_with(dataset)
+        self.mock_client.create_dataset_if_necessary.assert_called_with(dataset, None)
         self.mock_client.create_or_update_view.assert_has_calls([mock.call(dataset, view) for view in mock_views])

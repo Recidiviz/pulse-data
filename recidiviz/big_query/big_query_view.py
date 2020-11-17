@@ -35,7 +35,21 @@ class BigQueryView(bigquery.TableReference):
                  view_id: str,
                  view_query_template: str,
                  should_materialize: bool = False,
+                 dataset_overrides: Optional[Dict[str, str]] = None,  # 'original_name' -> 'prefix_original_name'
                  **query_format_kwargs: Any):
+        override_kwargs = {}
+        if dataset_overrides:
+            override_kwargs = self._get_dataset_override_kwargs(dataset_overrides=dataset_overrides,
+                                                                **query_format_kwargs)
+
+            if override_kwargs and dataset_id not in dataset_overrides:
+                raise ValueError(
+                    f'Dataset [{dataset_id}] for view [{view_id}] not found in dataset_overrides even though dependent '
+                    f'table datasets are overwritten: [{override_kwargs}]. You cannot write a view with '
+                    f'overwritten kwargs to its standard dataset.')
+
+            if dataset_id in dataset_overrides:
+                dataset_id = dataset_overrides[dataset_id]
 
         if project_id is None:
             project_id = metadata.project_id()
@@ -48,9 +62,27 @@ class BigQueryView(bigquery.TableReference):
         dataset_ref = bigquery.DatasetReference.from_string(dataset_id,
                                                             default_project=project_id)
         super().__init__(dataset_ref, view_id)
+        self.query_format_kwargs = {**query_format_kwargs, **override_kwargs}
         self._view_id = view_id
-        self._view_query = self._format_view_query(view_query_template, inject_project_id=True, **query_format_kwargs)
+        self._view_query = self._format_view_query(view_query_template,
+                                                   inject_project_id=True,
+                                                   **self.query_format_kwargs)
         self._should_materialize = should_materialize
+
+    @classmethod
+    def _get_dataset_override_kwargs(cls, *,
+                                     dataset_overrides: Dict[str, str],
+                                     **query_format_kwargs: Any) -> Dict[str, str]:
+        overrides = {}
+        for key, original_value in query_format_kwargs.items():
+            if original_value in dataset_overrides:
+                if not key.endswith('_dataset') and not key.endswith('_dataset_id'):
+                    raise ValueError(f'Keyword arg key [{key}] with dataset overridden value [{original_value}] '
+                                     f'does not have an expected suffix.')
+                new_value = dataset_overrides[original_value]
+                overrides[key] = new_value
+
+        return overrides
 
     @classmethod
     def _format_view_query_without_project_id(cls, view_query_template: str, **query_format_kwargs: Any) -> str:
@@ -131,7 +163,7 @@ class BigQueryViewBuilder(Generic[BigQueryViewType]):
     """Abstract interface for a class that builds a BigQueryView."""
 
     @abc.abstractmethod
-    def build(self) -> BigQueryViewType:
+    def build(self, *, dataset_overrides: Optional[Dict[str, str]] = None) -> BigQueryViewType:
         pass
 
     @abc.abstractmethod
@@ -158,12 +190,13 @@ class SimpleBigQueryViewBuilder(BigQueryViewBuilder):
         self.should_materialize = should_materialize
         self.query_format_kwargs = query_format_kwargs
 
-    def build(self) -> BigQueryView:
+    def build(self, *, dataset_overrides: Dict[str, str] = None) -> BigQueryView:
         return BigQueryView(
             dataset_id=self.dataset_id,
             view_id=self.view_id,
             view_query_template=self.view_query_template,
             should_materialize=self.should_materialize,
+            dataset_overrides=dataset_overrides,
             **self.query_format_kwargs)
 
     def build_and_print(self) -> None:
