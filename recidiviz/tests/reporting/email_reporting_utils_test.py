@@ -102,7 +102,7 @@ class EmailReportingUtilsTests(TestCase):
         actual = self.eru.get_data_archive_filename('batch-1')
         self.assertEqual(expected, actual)
 
-    def test_get_html_filename(self):
+    def test_get_html_filename(self) -> None:
         expected = 'batch-1/boards@canada.ca.html'
         actual = self.eru.get_html_filename('batch-1', 'boards@canada.ca')
         self.assertEqual(expected, actual)
