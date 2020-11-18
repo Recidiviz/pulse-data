@@ -30,14 +30,10 @@ import logging
 from typing import Dict, Tuple, Optional
 from google.cloud import storage
 
-from sendgrid import SendGridAPIClient
-from sendgrid.helpers.mail import Mail, Email
-
-from recidiviz.utils import secrets
 import recidiviz.reporting.email_reporting_utils as utils
+from recidiviz.reporting.sendgrid_client_wrapper import SendGridClientWrapper
 
 EMAIL_SUBJECT = "Your monthly Recidiviz report"
-_SENDGRID_API_KEY = 'sendgrid_api_key'
 
 
 def deliver(batch_id: str, redirect_address: Optional[str] = None) -> Tuple[int, int]:
@@ -65,73 +61,33 @@ def deliver(batch_id: str, redirect_address: Optional[str] = None) -> Tuple[int,
         logging.info("Delivering emails for batch %s", batch_id)
 
     try:
-        sendgrid_api_value = secrets.get_secret(_SENDGRID_API_KEY)
-        if not sendgrid_api_value:
-            raise ValueError(f"Could not get secret value for `Sendgrid API Key`. Provided with "
-                             f"key={_SENDGRID_API_KEY}")
         from_email_address = utils.get_env_var('FROM_EMAIL_ADDRESS')
         from_email_name = utils.get_env_var('FROM_EMAIL_NAME')
     except KeyError:
-        logging.error("Unable to get a required environment variable. Exiting.")
+        logging.error("Unable to get a required environment variables `FROM_EMAIL_ADDRESS` or `FROM_EMAIL_NAME`. "
+                      "Exiting.")
         raise
 
     files = retrieve_html_files(batch_id)
     success_count = 0
     fail_count = 0
+    sendgrid = SendGridClientWrapper()
 
     for recipient_email_address in files:
-        if redirect_address:
-            utils.validate_email_address(redirect_address)
-            subject = f"[{recipient_email_address}] {EMAIL_SUBJECT}"
-            to_address = redirect_address
-        else:
-            subject = EMAIL_SUBJECT
-            to_address = recipient_email_address
+        sent_successfully = sendgrid.send_message(to_email=recipient_email_address,
+                                                  from_email=from_email_address,
+                                                  from_email_name=from_email_name,
+                                                  subject=EMAIL_SUBJECT,
+                                                  html_content=files[recipient_email_address],
+                                                  redirect_address=redirect_address)
 
-        try:
-            send_email(to_address, subject, files[recipient_email_address], sendgrid_api_value, from_email_address,
-                       from_email_name)
-        except Exception as e:
-            logging.error("Error sending the file created for %s to %s", recipient_email_address, to_address)
-            logging.error(e)
-            fail_count = fail_count + 1
-        else:
-            logging.info("Email for %s sent to %s", recipient_email_address, to_address)
+        if sent_successfully:
             success_count = success_count + 1
+        else:
+            fail_count = fail_count + 1
 
     logging.info("Sent %s emails. %s emails failed to send", success_count, fail_count)
     return success_count, fail_count
-
-
-def send_email(email_address: str,
-               subject: str,
-               body: str,
-               sendgrid_api_key: str,
-               from_email_address: str,
-               from_email_name: str) -> None:
-    """Send an email via SendGrid.
-
-    Args:
-        email_address: The address to deliver to
-        subject: Text for the subject line
-        body: The body of the email
-        sendgrid_api_key: The SendGrid API key needed to send emails
-        from_email_address: The address that the delivered emails should be from
-        from_email_name: The name of the person sending emails
-
-    Raises:
-        All errors so that calling functions can handle appropriately for their use case.
-    """
-    sg = SendGridAPIClient(sendgrid_api_key)
-
-    message = Mail(to_emails=email_address,
-                   from_email=Email(from_email_address, from_email_name),
-                   subject=subject,
-                   html_content=body)
-
-    response = sg.send(message)
-    logging.info("Sent email. Status code = %s", response.status_code)
-    logging.info("Email response body = %s", response.body)
 
 
 def email_from_blob_name(blob_name: str) -> str:
