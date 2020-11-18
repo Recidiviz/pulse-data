@@ -20,3 +20,13 @@ num_allowed_rows_overrides:
     override_reason: TODO(#4187) - These bad periods are created as a result of id instability explained further in the
       task. The actual number of bad periods is 69 as of 10/1 but it will increase over time with new data refreshes
       so I made this number have some wiggle room.
+  - validation_name: overlapping_incarceration_periods
+    num_allowed_rows_override: 7500
+    override_reason: TODO(#4187) - These bad periods are created as a result of id instability explained further in the
+      task. The actual number of bad periods is 69 as of 10/1 but it will increase over time with new data refreshes
+      so I made this number have some wiggle room.
+  - validation_name: overlapping_supervision_periods
+    num_allowed_rows_override: 14000
+    override_reason: TODO(#4616) - We should not have this many overlapping supervision periods in PA. We believe part
+      of this issue is due to unexpected duplicated rows in dbo_Release/dbo_HistRelease. This will require more
+      investigation and a fix to the SQL-preprocessing query.
