@@ -45,3 +45,9 @@ PO_REPORT_DATASET: str = 'po_report_views'
 
 # Where the views for the public dashboard live
 PUBLIC_DASHBOARD_VIEWS_DATASET: str = 'public_dashboard_views'
+
+# Where analyst datasets live
+ANALYST_VIEWS_DATASET: str = 'analyst_data'
+
+# Where the population projection simulation views live
+POPULATION_PROJECTION_DATASET: str = 'population_projection_data'

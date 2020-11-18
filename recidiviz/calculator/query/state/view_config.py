@@ -23,7 +23,7 @@ from recidiviz.calculator.query.state.views.covid_dashboard.covid_dashboard_view
 from recidiviz.metrics.export.metric_export_config import ExportMetricDatasetConfig
 from recidiviz.calculator.query.state.dataset_config import DASHBOARD_VIEWS_DATASET, \
     COVID_REPORT_DATASET, PO_REPORT_DATASET, PUBLIC_DASHBOARD_VIEWS_DATASET, REFERENCE_VIEWS_DATASET, \
-    COVID_DASHBOARD_DATASET
+    COVID_DASHBOARD_DATASET, POPULATION_PROJECTION_DATASET
 from recidiviz.calculator.query.state.views.covid_report.covid_report_views import COVID_REPORT_VIEW_BUILDERS
 from recidiviz.calculator.query.state.views.dashboard.dashboard_views import DASHBOARD_VIEW_BUILDERS, \
     CORE_DASHBOARD_VIEW_BUILDERS, LANTERN_DASHBOARD_VIEW_BUILDERS
@@ -32,6 +32,8 @@ from recidiviz.calculator.query.state.views.public_dashboard.public_dashboard_vi
     PUBLIC_DASHBOARD_VIEW_BUILDERS
 from recidiviz.calculator.query.state.views.reference.reference_views import REFERENCE_VIEW_BUILDERS
 from recidiviz.calculator.query.state.views.po_report.po_monthly_report_data import PO_MONTHLY_REPORT_DATA_VIEW_BUILDER
+from recidiviz.calculator.query.state.views.population_projection.population_projection_views import \
+    POPULATION_PROJECTION_VIEW_BUILDERS
 
 
 VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE: Dict[str, Sequence[BigQueryViewBuilder]] = {
@@ -40,7 +42,8 @@ VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE: Dict[str, Sequence[BigQueryViewBuilder]] = {
     COVID_REPORT_DATASET: COVID_REPORT_VIEW_BUILDERS,
     DASHBOARD_VIEWS_DATASET: DASHBOARD_VIEW_BUILDERS,
     PO_REPORT_DATASET: PO_REPORT_VIEW_BUILDERS,
-    PUBLIC_DASHBOARD_VIEWS_DATASET: PUBLIC_DASHBOARD_VIEW_BUILDERS
+    PUBLIC_DASHBOARD_VIEWS_DATASET: PUBLIC_DASHBOARD_VIEW_BUILDERS,
+    POPULATION_PROJECTION_DATASET: POPULATION_PROJECTION_VIEW_BUILDERS,
 }
 
 # The format for the destination of the files in the export

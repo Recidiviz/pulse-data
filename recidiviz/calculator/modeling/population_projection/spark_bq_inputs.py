@@ -31,8 +31,8 @@ def load_table_from_big_query(project_id: str, dataset: str, table_name: str, st
 
 def add_transition_rows(transition_data):
     """Add rows for the RELEASE compartment transitions"""
-    extra_rows = pd.DataFrame({'compartment': ['RELEASE'] * 2,
-                               'outflow_to': ['RELEASE'] * 2,
+    extra_rows = pd.DataFrame({'compartment': ['RELEASE - FULL'] * 2,
+                               'outflow_to': ['RELEASE - FULL'] * 2,
                                'gender': ['FEMALE', 'MALE'],
                                'total_population': [1] * 2,
                                'compartment_duration': [1] * 2
@@ -43,8 +43,8 @@ def add_transition_rows(transition_data):
 def add_remaining_sentence_rows(remaining_sentence_data):
     """Add rows for the RELEASE compartment sentences and set the remaining_duration column to True"""
     extra_rows = pd.DataFrame({
-        'compartment': ['RELEASE'] * 2,
-        'outflow_to': ['RELEASE'] * 2,
+        'compartment': ['RELEASE - FULL'] * 2,
+        'outflow_to': ['RELEASE - FULL'] * 2,
         'gender': ['FEMALE', 'MALE'],
         'total_population': [1] * 2,
         'compartment_duration': [1] * 2,
