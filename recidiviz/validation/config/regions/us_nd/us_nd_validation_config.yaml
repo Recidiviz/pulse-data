@@ -1,6 +1,14 @@
 # Configuration for which validations to run for region US_ND.
 
 region_code: US_ND
-exclusions: []  # All validations will run for this region
+exclusions:
+  - validation_name: overlapping_supervision_periods
+    exclusion_type: DOES_NOT_APPLY
+    exclusion_reason: ND ingest constructs one supervision period per supervision sentence - we expect supervision
+      periods to overlap
 max_allowed_error_overrides: []  # This region will use only the default max_allowed_error values
-num_allowed_rows_overrides: []  # This region will use only the default num_allowed_rows values
+num_allowed_rows_overrides:
+  - validation_name: overlapping_incarceration_periods
+    num_allowed_rows_override: 500
+    override_reason: TODO(#3641) - These bad periods likely were created due to weirdnesses with how we merge periods
+      in entity matching in ND.

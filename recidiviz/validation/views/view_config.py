@@ -57,6 +57,10 @@ from recidiviz.validation.views.state.incarceration_release_reason_no_release_da
     INCARCERATION_RELEASE_REASON_NO_RELEASE_DATE_VIEW_BUILDER
 from recidiviz.validation.views.state.incarceration_releases_by_type_by_period_internal_consistency import \
     INCARCERATION_RELEASES_BY_TYPE_BY_PERIOD_INTERNAL_CONSISTENCY_VIEW_BUILDER
+from recidiviz.validation.views.state.overlapping_incarceration_periods import \
+    OVERLAPPING_INCARCERATION_PERIODS_VIEW_BUILDER
+from recidiviz.validation.views.state.overlapping_supervision_periods import \
+    OVERLAPPING_SUPERVISION_PERIODS_VIEW_BUILDER
 from recidiviz.validation.views.state.po_report_avgs_per_district_state import \
     PO_REPORT_AVGS_PER_DISTRICT_STATE_VIEW_BUILDER
 from recidiviz.validation.views.state.po_report_distinct_by_officer_month import \
@@ -114,6 +118,8 @@ VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE: Dict[str, Sequence[BigQueryViewBuilder]] = {
         INCARCERATION_RELEASE_REASON_NO_RELEASE_DATE_VIEW_BUILDER,
         INCARCERATION_RELEASES_BY_TYPE_BY_PERIOD_INTERNAL_CONSISTENCY_VIEW_BUILDER,
         PO_REPORT_AVGS_PER_DISTRICT_STATE_VIEW_BUILDER,
+        OVERLAPPING_INCARCERATION_PERIODS_VIEW_BUILDER,
+        OVERLAPPING_SUPERVISION_PERIODS_VIEW_BUILDER,
         PO_REPORT_DISTINCT_BY_OFFICER_MONTH_VIEW_BUILDER,
         PO_REPORT_MISSING_FIELDS_VIEW_BUILDER,
         REVOCATION_MATRIX_COMPARISON_REVOCATION_CELL_VS_CASELOAD_VIEW_BUILDER,
