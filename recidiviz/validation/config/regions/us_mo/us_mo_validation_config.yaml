@@ -12,4 +12,12 @@ exclusions:
     exclusion_type: DOES_NOT_APPLY
     exclusion_reason: The incarceration pipeline run for MO only calculates metrics for 2019-12, which is outside the scope of the COVID report
 max_allowed_error_overrides: []  # This region will use only the default max_allowed_error values
-num_allowed_rows_overrides: []  # This region will use only the default num_allowed_rows values
+num_allowed_rows_overrides:
+  - validation_name: overlapping_incarceration_periods
+    num_allowed_rows_override: 600
+    override_reason: TODO(#4043) - Before we launch SQL preprocessing in MO to production, we should make sure these
+      overlapping periods no longer exist.
+  - validation_name: overlapping_supervision_periods
+    num_allowed_rows_override: 30000
+    override_reason: TODO(#4043) - Before we launch SQL preprocessing in MO to production, we should make sure these
+      overlapping periods no longer exist.
