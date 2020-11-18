@@ -152,7 +152,7 @@ class SubSimulation:
 
         for compartment in self.simulation_architecture:
             transition_type = self.simulation_architecture[compartment]
-            outflows_data = preprocessed_data.loc[compartment].dropna(axis=0).dropna(axis=1, how='all')
+            outflows_data = preprocessed_data.loc[compartment].dropna(axis=0, how='all').dropna(axis=1, how='all')
 
             # if no transition table, initialize as shell compartment
             if transition_type is None:
@@ -175,10 +175,10 @@ class SubSimulation:
                     tag=compartment
                 )
 
-        for compartment in self.simulation_compartments:
-            self.simulation_compartments[compartment].initialize_edges(list(self.simulation_compartments.values()))
-            if self.microsim and isinstance(compartment, FullCompartment):
-                compartment.microsim_initialize()
+        for compartment_obj in self.simulation_compartments.values():
+            compartment_obj.initialize_edges(list(self.simulation_compartments.values()))
+            if self.microsim and isinstance(compartment_obj, FullCompartment):
+                compartment_obj.microsim_initialize()
 
     def scale_total_populations(self):
         """scales populations of compartments in simulation. If a FullCompartment isn't included, it won't be scaled"""

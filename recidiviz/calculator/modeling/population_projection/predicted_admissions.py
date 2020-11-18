@@ -57,8 +57,8 @@ class PredictedAdmissions:
         # A dictionary is created for each admission type with both a forecasting model and a backcasting model
         trained_model_dict = {}
         for outflow_compartment, row in self.historical_data.iterrows():
-            model_forecast = ARIMA(row.values, order=ORDER)
-            model_backcast = ARIMA(row.iloc[::-1].values, order=ORDER)
+            model_forecast = ARIMA(row.fillna(0).values, order=ORDER)
+            model_backcast = ARIMA(row.iloc[::-1].fillna(0).values, order=ORDER)
 
             trained_model_dict[outflow_compartment] = {'forecast': model_forecast.fit(disp=False),
                                      'backcast': model_backcast.fit(disp=False)}
