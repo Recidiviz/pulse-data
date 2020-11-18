@@ -1,10 +1,7 @@
 #!/bin/bash
 
 # This checks to ensure your pipenv is in sync with the lock file.
-# To have this run every time you pull a new version on master or checkout a branch, add the following hooks:
-# - `echo "recidiviz/tools/diff_pipenv.sh" > .git/hooks/post-checkout`
-# - `echo "recidiviz/tools/diff_pipenv.sh" > .git/hooks/post-merge`
-# - `chmod +x .git/hooks/post-merge .git/hooks/post-checkout`
+# 'initial_pipenv_setup_mac' sets this up to run every time you pull a new version on master or checkout a branch.
 
 BASH_SOURCE_DIR=$(dirname "$BASH_SOURCE")
 source ${BASH_SOURCE_DIR}/script_base.sh
