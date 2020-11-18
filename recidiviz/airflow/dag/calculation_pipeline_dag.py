@@ -54,7 +54,7 @@ def pipelines_by_state(pipelines) -> Dict[str, List[str]]:  # type: ignore
     return pipes_by_state
 
 
-with models.DAG(dag_id="calculation_pipeline_dag",
+with models.DAG(dag_id="{}_calculation_pipeline_dag".format(project_id),
                 default_args=default_args,
                 schedule_interval=None) as dag:
     if config_file is None:

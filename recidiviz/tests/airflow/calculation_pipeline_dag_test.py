@@ -49,4 +49,4 @@ class TestDagIntegrity(unittest.TestCase):
         dagbag = DagBag(dag_folder=dag_folder, include_examples=False)
         self.assertEqual(len(dagbag.dag_ids), 1)
         for dag_id in dagbag.dag_ids:
-            self.assertEqual(dag_id, "calculation_pipeline_dag")
+            self.assertEqual(dag_id, "recidiviz-testing_calculation_pipeline_dag")
