@@ -164,4 +164,4 @@ class TestPopulationSimulation(unittest.TestCase):
             microsim_data=self.test_transitions_data
         )
 
-        assert_index_equal(projection.index.unique().sort_values(), pd.Int64Index(range(10)))
+        assert_index_equal(projection.index.unique().sort_values(), pd.Int64Index(range(11)))
