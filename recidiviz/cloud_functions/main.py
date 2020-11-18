@@ -163,7 +163,8 @@ def trigger_calculation_pipeline_dag(data, _context):
     """This function is triggered by a Pub/Sub event, triggers an Airflow DAG where all
     the calculation pipelines run simultaneously.
     """
-    project_id = os.environ.get(GCP_PROJECT_ID_KEY) + '-airflow'
+    gcp_project_id = os.environ.get(GCP_PROJECT_ID_KEY)
+    project_id = gcp_project_id + '-airflow'
     if not project_id:
         logging.error('No project id set for call to run the calculation pipelines, returning.')
         return
@@ -173,7 +174,7 @@ def trigger_calculation_pipeline_dag(data, _context):
         logging.error("The environment variable 'WEBSERVER_ID' is not set")
         return
     # The name of the DAG you wish to trigger
-    dag_name = 'calculation_pipeline_dag'
+    dag_name = '{}_calculation_pipeline_dag'.format(gcp_project_id)
     webserver_url = 'https://{}.appspot.com/api/experimental/dags/{}/dag_runs'.format(webserver_id, dag_name)
 
     monitor_response = make_iap_request(webserver_url, IAP_CLIENT_ID[project_id], method='POST', json={"conf": data})
