@@ -34,6 +34,7 @@ script:
   - if [ $TRAVIS_PULL_REQUEST != "false" ]; then
       docker exec -it recidiviz pipenv run python -m recidiviz.tools.validate_source_modifications --commit-range $TRAVIS_COMMIT_RANGE;
     fi
+  - docker exec -it recidiviz pipenv run python -m recidiviz.tools.is_pipenv_locked
   - docker exec -it recidiviz pipenv run mypy recidiviz
   - docker exec -it recidiviz pipenv run ./recidiviz/tools/travis/run_pylint.sh
 
