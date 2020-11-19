@@ -22,8 +22,7 @@ import re
 
 from recidiviz.common.constants.entity_enum import EntityEnumMeta, EntityEnum
 from recidiviz.common.constants.enum_overrides import EnumOverrides, EnumMapper, EnumIgnorePredicate
-from recidiviz.common.constants.state.external_id_types import US_MO_DOC, \
-    US_MO_SID, US_MO_FBI, US_MO_OLN
+from recidiviz.common.constants.state.external_id_types import US_MO_DOC
 from recidiviz.common.constants.state.state_agent import StateAgentType
 from recidiviz.common.constants.state.state_assessment import \
     StateAssessmentType, StateAssessmentLevel
@@ -63,8 +62,7 @@ from recidiviz.ingest.direct.regions.us_mo.us_mo_constants import \
     INCARCERATION_SENTENCE_LENGTH_DAYS, CHARGE_COUNTY_CODE, \
     SENTENCE_COUNTY_CODE, INCARCERATION_SENTENCE_PAROLE_INELIGIBLE_YEARS, \
     INCARCERATION_SENTENCE_START_DATE, SENTENCE_OFFENSE_DATE, \
-    SENTENCE_COMPLETED_FLAG, MOST_RECENT_SENTENCE_STATUS_CODE, STATE_ID, \
-    FBI_ID, LICENSE_ID, SUPERVISION_SENTENCE_LENGTH_YEARS, \
+    SENTENCE_COMPLETED_FLAG, MOST_RECENT_SENTENCE_STATUS_CODE, SUPERVISION_SENTENCE_LENGTH_YEARS, \
     TAK076_PREFIX, TAK291_PREFIX, VIOLATION_REPORT_ID_PREFIX, \
     VIOLATION_KEY_SEQ, CITATION_ID_PREFIX, CITATION_KEY_SEQ, DOC_ID, CYCLE_ID, \
     SENTENCE_KEY_SEQ, FIELD_KEY_SEQ, \
@@ -85,8 +83,8 @@ from recidiviz.ingest.direct.state_shared_row_posthooks import \
     gen_convert_person_ids_to_external_id_objects, \
     gen_set_field_as_concatenated_values_hook, RowPosthookCallable
 from recidiviz.ingest.extractor.csv_data_extractor import IngestFieldCoordinates
-from recidiviz.ingest.models.ingest_info import IngestObject, StatePerson, \
-    StatePersonExternalId, StateSentenceGroup, StateCharge, \
+from recidiviz.ingest.models.ingest_info import IngestObject,\
+    StateSentenceGroup, StateCharge, \
     StateIncarcerationSentence, StateSupervisionSentence, \
     StateIncarcerationPeriod, StateSupervisionPeriod, \
     StateSupervisionViolation, \
@@ -110,7 +108,6 @@ class UsMoController(CsvGcsfsDirectIngestController):
     """Direct ingest controller implementation for US_MO."""
 
     PERIOD_SEQUENCE_PRIMARY_COL_PREFIX = 'F1'
-
 
     PRIMARY_COL_PREFIXES_BY_FILE_TAG = {
         # Legacy
@@ -464,7 +461,6 @@ class UsMoController(CsvGcsfsDirectIngestController):
                 # When first parsed, the info object just has a single
                 # external id - the DOC id.
                 gen_label_single_external_id_hook(US_MO_DOC),
-                self.tak001_offender_identification_hydrate_alternate_ids,
                 self.normalize_sentence_group_ids,
             ]
         tak040_offender_cycles_row_processors: List[Callable] = [
@@ -706,35 +702,6 @@ class UsMoController(CsvGcsfsDirectIngestController):
             return US_MO_DOC
 
         return None
-
-    # TODO(#1882): If yaml format supported raw values and multiple children of
-    #  the same type, then this would be no-longer necessary.
-    @staticmethod
-    def tak001_offender_identification_hydrate_alternate_ids(
-            _file_tag: str,
-            row: Dict[str, str],
-            extracted_objects: List[IngestObject],
-            _cache: IngestObjectCache) -> None:
-        """Hydrates the alternate, non-DOC external ids for each person."""
-        sid = row.get(get_legacy_or_new_column_name(_file_tag, STATE_ID), '').strip()
-        fbi = row.get(get_legacy_or_new_column_name(_file_tag, FBI_ID), '').strip()
-        oln = row.get(get_legacy_or_new_column_name(_file_tag, LICENSE_ID), '').strip()
-
-        for extracted_object in extracted_objects:
-            if isinstance(extracted_object, StatePerson):
-                external_ids_to_create = []
-                if sid:
-                    external_ids_to_create.append(
-                        StatePersonExternalId(state_person_external_id_id=sid, id_type=US_MO_SID))
-                if fbi:
-                    external_ids_to_create.append(
-                        StatePersonExternalId(state_person_external_id_id=fbi, id_type=US_MO_FBI))
-                if oln:
-                    external_ids_to_create.append(
-                        StatePersonExternalId(state_person_external_id_id=oln, id_type=US_MO_OLN))
-
-                for id_to_create in external_ids_to_create:
-                    create_if_not_exists(id_to_create, extracted_object, 'state_person_external_ids')
 
     @classmethod
     def tak022_tak023_set_parole_eligibility_date(
