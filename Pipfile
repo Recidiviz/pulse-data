@@ -17,6 +17,7 @@ freezegun = "*"
 ipdb = "*"
 nose = "*"
 pytest-alembic = "*"
+pipenv = "*"
 
 [packages]
 jupyter = "*"
