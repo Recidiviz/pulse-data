@@ -18,13 +18,12 @@
 """Basic tests that migrations are working properly."""
 
 import abc
-import os
 from typing import Dict
 from unittest.case import TestCase
 
 from pytest_alembic import runner  # type: ignore
 
-from recidiviz.tests.utils import fakes
+from recidiviz.tools.postgres import local_postgres_helpers
 
 
 class MigrationsTestBase:
@@ -37,15 +36,12 @@ class MigrationsTestBase:
     """
 
     def setUp(self) -> None:
-        self.db_dir = fakes.start_on_disk_postgresql_database(create_temporary_db=True)
-        os.environ['SQLALCHEMY_DB_NAME'] = fakes.TEST_POSTGRES_DB_NAME
-        os.environ['SQLALCHEMY_DB_HOST'] = 'localhost'
-        os.environ['SQLALCHEMY_USE_SSL'] = '0'
-        os.environ['SQLALCHEMY_DB_USER'] = fakes.TEST_POSTGRES_USER_NAME
-        os.environ['SQLALCHEMY_DB_PASSWORD'] = ''
+        self.db_dir = local_postgres_helpers.start_on_disk_postgresql_database(create_temporary_db=True)
+        self.overridden_env_vars = local_postgres_helpers.update_local_sqlalchemy_postgres_env_vars()
 
     def tearDown(self) -> None:
-        fakes.stop_and_clear_on_disk_postgresql_database(self.db_dir)
+        local_postgres_helpers.restore_local_sqlalchemy_postgres_env_vars(self.overridden_env_vars)
+        local_postgres_helpers.stop_and_clear_on_disk_postgresql_database(self.db_dir)
 
     @property
     @abc.abstractmethod

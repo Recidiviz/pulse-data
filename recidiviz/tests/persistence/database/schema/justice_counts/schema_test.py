@@ -23,7 +23,7 @@ from unittest.case import TestCase
 from recidiviz.persistence.database.base_schema import JusticeCountsBase
 from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.persistence.database.session_factory import SessionFactory
-from recidiviz.tests.utils import fakes
+from recidiviz.tools.postgres import local_postgres_helpers
 
 
 class TestSchema(TestCase):
@@ -32,17 +32,17 @@ class TestSchema(TestCase):
     @classmethod
     def setUpClass(cls) -> None:
         # We must use postgres because sqlite does not support array type columns
-        fakes.start_on_disk_postgresql_database()
+        local_postgres_helpers.start_on_disk_postgresql_database()
 
     def setUp(self) -> None:
-        fakes.use_on_disk_postgresql_database(JusticeCountsBase)
+        local_postgres_helpers.use_on_disk_postgresql_database(JusticeCountsBase)
 
     def tearDown(self) -> None:
-        fakes.teardown_on_disk_postgresql_database(JusticeCountsBase)
+        local_postgres_helpers.teardown_on_disk_postgresql_database(JusticeCountsBase)
 
     @classmethod
     def tearDownClass(cls) -> None:
-        fakes.stop_and_clear_on_disk_postgresql_database()
+        local_postgres_helpers.stop_and_clear_on_disk_postgresql_database()
 
     def testSchema_insertRows_returnedInQuery(self):
         # Create an object of each type with proper relationships
