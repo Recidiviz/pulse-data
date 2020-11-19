@@ -104,6 +104,12 @@ class MigrationsTestBase:
             r.generate_revision(message="test_rev", autogenerate=True, process_revision_directives=verify_is_empty)
 
 
+class TestJailsMigrations(MigrationsTestBase, TestCase):
+    @property
+    def alembic_path_prefix(self) -> str:
+        return './recidiviz/persistence/database/migrations/jails'
+
+
 class TestJusticeCountsMigrations(MigrationsTestBase, TestCase):
     @property
     def alembic_path_prefix(self) -> str:
