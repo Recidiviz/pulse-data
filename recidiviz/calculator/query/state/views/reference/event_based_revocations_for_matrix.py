@@ -18,7 +18,7 @@
 # pylint: disable=trailing-whitespace, line-too-long
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query import bq_utils
-from recidiviz.calculator.query.state import dataset_config, state_specific_query_strings
+from recidiviz.calculator.query.state import dataset_config
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -42,11 +42,11 @@ EVENT_BASED_REVOCATIONS_FOR_MATRIX_QUERY_TEMPLATE = \
         person_id,
         person_external_id,
         gender,
-        {state_specific_assessment_bucket},
+        assessment_score_bucket,
         age_bucket,
         prioritized_race_or_ethnicity,
         supervision_type,
-        {state_specific_supervision_level},
+        supervision_level,
         case_type,
         supervising_district_external_id AS district,
         supervising_officer_external_id AS officer
@@ -66,8 +66,6 @@ EVENT_BASED_REVOCATIONS_FOR_MATRIX_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     description=EVENT_BASED_REVOCATIONS_FOR_MATRIX_DESCRIPTION,
     metrics_dataset=dataset_config.DATAFLOW_METRICS_DATASET,
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
-    state_specific_assessment_bucket=state_specific_query_strings.state_specific_assessment_bucket(),
-    state_specific_supervision_level=state_specific_query_strings.state_specific_supervision_level(),
     filter_to_most_recent_job_id_for_metric=bq_utils.filter_to_most_recent_job_id_for_metric(
         reference_dataset=dataset_config.REFERENCE_VIEWS_DATASET)
 )

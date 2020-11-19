@@ -38,14 +38,14 @@ SUPERVISION_MATRIX_BY_PERSON_QUERY_TEMPLATE = \
             state_code, year, month,
             most_severe_violation_type,
             most_severe_violation_type_subtype,
-            IF(response_count > 8, 8, response_count) as reported_violations,
+            response_count,
             person_id, person_external_id,
             gender,
-            {state_specific_assessment_bucket},
+            assessment_score_bucket,
             age_bucket,
             prioritized_race_or_ethnicity,
             supervision_type,
-            {state_specific_supervision_level},
+            supervision_level,
             case_type,
             supervising_district_external_id AS district,
             supervising_officer_external_id AS officer,
@@ -78,15 +78,16 @@ SUPERVISION_MATRIX_BY_PERSON_QUERY_TEMPLATE = \
     )
 
     SELECT
-        state_code, metric_period_months, 
+        state_code,
+        metric_period_months, 
         {most_severe_violation_type_subtype_grouping},
-        reported_violations,
+        IF(response_count > 8, 8, response_count) as reported_violations,
         supervision_type,
-        supervision_level,
+        {state_specific_supervision_level},
         charge_category, district, officer,
         person_id, person_external_id,
         gender, age_bucket,
-        assessment_score_bucket as risk_level,
+        {state_specific_assessment_bucket},
         prioritized_race_or_ethnicity
     FROM person_based_supervision,
     {district_dimension},
@@ -107,7 +108,8 @@ SUPERVISION_MATRIX_BY_PERSON_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
     most_severe_violation_type_subtype_grouping=
     state_specific_query_strings.state_specific_most_severe_violation_type_subtype_grouping(),
-    state_specific_assessment_bucket=state_specific_query_strings.state_specific_assessment_bucket(),
+    state_specific_assessment_bucket=
+    state_specific_query_strings.state_specific_assessment_bucket(output_column_name='risk_level'),
     state_specific_supervision_level=state_specific_query_strings.state_specific_supervision_level(),
     district_dimension=bq_utils.unnest_district('district'),
     supervision_type_dimension=bq_utils.unnest_supervision_type(),

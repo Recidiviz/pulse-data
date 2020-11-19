@@ -38,10 +38,10 @@ def state_specific_race_or_ethnicity_groupings(race_or_ethnicity_column: str = '
               ELSE {race_or_ethnicity_column} END AS race_or_ethnicity"""
 
 
-def state_specific_assessment_bucket() -> str:
-    return """-- TODO(#3135): remove this aggregation once the dashboard supports LOW_MEDIUM
+def state_specific_assessment_bucket(output_column_name: str = 'assessment_score_bucket') -> str:
+    return f"""-- TODO(#3135): remove this aggregation once the dashboard supports LOW_MEDIUM
         CASE WHEN state_code = 'US_MO' AND assessment_score_bucket = 'LOW_MEDIUM' THEN 'LOW'
-        ELSE assessment_score_bucket END as assessment_score_bucket"""
+        ELSE assessment_score_bucket END AS {output_column_name}"""
 
 
 def state_specific_most_severe_violation_type_subtype_grouping() -> str:
@@ -101,7 +101,7 @@ def state_specific_supervision_level() -> str:
                        WHEN supervision_level = 'HIGH' THEN 'ENHANCED'
                        ELSE supervision_level END
                 ELSE supervision_level END),
-           'EXTERNAL_UNKNOWN')  AS supervision_level"""
+           'EXTERNAL_UNKNOWN') AS supervision_level"""
 
 
 def state_specific_facility_exclusion() -> str:
