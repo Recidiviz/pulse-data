@@ -18,6 +18,7 @@ ipdb = "*"
 nose = "*"
 pytest-alembic = "*"
 pipenv = "*"
+typing-extensions = "*"
 
 [packages]
 jupyter = "*"

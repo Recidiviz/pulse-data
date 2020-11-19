@@ -17,6 +17,7 @@
 """A class to manage all SQLAlchemy Engines for our database instances."""
 import enum
 import logging
+import os.path
 from typing import Any, Dict, Optional, List
 
 import sqlalchemy
@@ -25,7 +26,9 @@ from sqlalchemy.ext.declarative import DeclarativeMeta
 
 from recidiviz.persistence.database.base_schema import JailsBase, \
     StateBase, OperationsBase, JusticeCountsBase
+from recidiviz.persistence.database import migrations
 from recidiviz.utils import secrets, environment
+
 
 @enum.unique
 class SchemaType(enum.Enum):
@@ -141,6 +144,10 @@ class SQLAlchemyEngineManager:
         cls.init_engine_for_postgres_instance(
             db_url=cls._get_justice_counts_server_postgres_instance_url(),
             schema_base=JusticeCountsBase)
+
+    @classmethod
+    def get_alembic_file(cls, schema_type: SchemaType) -> str:
+        return os.path.join(os.path.dirname(migrations.__file__), f'{schema_type.value.lower()}_alembic.ini')
 
     @classmethod
     def get_engine_for_schema_base(

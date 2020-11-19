@@ -62,6 +62,7 @@ from recidiviz.persistence.entity_matching.entity_matching_types import MatchedE
 from recidiviz.persistence.ingest_info_converter.base_converter import IngestInfoConversionResult
 from recidiviz.persistence.persistence import OVERALL_THRESHOLD, ENUM_THRESHOLD, ENTITY_MATCHING_THRESHOLD
 from recidiviz.tests.utils import fakes
+from recidiviz.tools.postgres import local_postgres_helpers
 
 ARREST_ID = 'ARREST_ID_1'
 BIRTHDATE_1 = '11/15/1993'
@@ -1062,7 +1063,7 @@ class TestPersistenceMultipleThreadsOverlapping(TestCase, MultipleStateTestMixin
 
     @classmethod
     def setUpClass(cls) -> None:
-        fakes.start_on_disk_postgresql_database()
+        local_postgres_helpers.start_on_disk_postgresql_database()
 
     def setUp(self) -> None:
         self.bq_client_patcher = patch('google.cloud.bigquery.Client')
@@ -1077,10 +1078,10 @@ class TestPersistenceMultipleThreadsOverlapping(TestCase, MultipleStateTestMixin
             # TODO(#3622): Set to 'SERIALIZABLE'
             return_value='REPEATABLE READ')
         self.isolation_level_patcher.start()
-        fakes.use_on_disk_postgresql_database(StateBase)
+        local_postgres_helpers.use_on_disk_postgresql_database(StateBase)
 
     def tearDown(self) -> None:
-        fakes.teardown_on_disk_postgresql_database(StateBase)
+        local_postgres_helpers.teardown_on_disk_postgresql_database(StateBase)
         self.isolation_level_patcher.stop()
 
         self.bq_client_patcher.stop()
@@ -1089,7 +1090,7 @@ class TestPersistenceMultipleThreadsOverlapping(TestCase, MultipleStateTestMixin
 
     @classmethod
     def tearDownClass(cls) -> None:
-        fakes.stop_and_clear_on_disk_postgresql_database()
+        local_postgres_helpers.stop_and_clear_on_disk_postgresql_database()
 
     def run_transactions(self, state_1_ingest_info, state_2_ingest_info):
         return _run_transactions_overlapping(state_1_ingest_info, state_2_ingest_info)
@@ -1188,7 +1189,7 @@ class TestPersistenceMultipleThreadsInterleaved(TestCase, MultipleStateTestMixin
 
     @classmethod
     def setUpClass(cls) -> None:
-        fakes.start_on_disk_postgresql_database()
+        local_postgres_helpers.start_on_disk_postgresql_database()
 
     def setUp(self) -> None:
         self.bq_client_patcher = patch('google.cloud.bigquery.Client')
@@ -1203,10 +1204,10 @@ class TestPersistenceMultipleThreadsInterleaved(TestCase, MultipleStateTestMixin
             # TODO(#3622): Set to 'SERIALIZABLE'
             return_value='REPEATABLE READ')
         self.isolation_level_patcher.start()
-        fakes.use_on_disk_postgresql_database(StateBase)
+        local_postgres_helpers.use_on_disk_postgresql_database(StateBase)
 
     def tearDown(self) -> None:
-        fakes.teardown_on_disk_postgresql_database(StateBase)
+        local_postgres_helpers.teardown_on_disk_postgresql_database(StateBase)
         self.isolation_level_patcher.stop()
 
         self.bq_client_patcher.stop()
@@ -1215,7 +1216,7 @@ class TestPersistenceMultipleThreadsInterleaved(TestCase, MultipleStateTestMixin
 
     @classmethod
     def tearDownClass(cls) -> None:
-        fakes.stop_and_clear_on_disk_postgresql_database()
+        local_postgres_helpers.stop_and_clear_on_disk_postgresql_database()
 
     def run_transactions(self, state_1_ingest_info, state_2_ingest_info):
         return _run_transactions_interleaved(state_1_ingest_info, state_2_ingest_info)

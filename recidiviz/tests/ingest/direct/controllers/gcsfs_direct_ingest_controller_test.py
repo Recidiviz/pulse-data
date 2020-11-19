@@ -27,6 +27,8 @@ from freezegun import freeze_time
 from mock import patch, Mock
 
 from recidiviz.cloud_storage.gcs_file_system import GcsfsFileContentsHandle
+from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath, \
+    GcsfsDirectoryPath
 from recidiviz.common.ingest_metadata import SystemLevel
 from recidiviz.common.serialization import attr_to_json_dict, \
     datetime_to_serializable, serializable_to_datetime, attr_from_json_dict
@@ -36,8 +38,6 @@ from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import \
     SPLIT_FILE_STORAGE_SUBDIR
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_controller import \
     GcsfsDirectIngestController
-from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath, \
-    GcsfsDirectoryPath
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import \
     GcsfsIngestArgs, filename_parts_from_path, GcsfsDirectIngestFileType, GcsfsIngestViewExportArgs
 from recidiviz.ingest.direct.controllers.postgres_direct_ingest_file_metadata_manager import \
@@ -46,18 +46,18 @@ from recidiviz.ingest.direct.errors import DirectIngestError
 from recidiviz.persistence.database.base_schema import OperationsBase
 from recidiviz.persistence.database.schema.operations import schema
 from recidiviz.persistence.database.session_factory import SessionFactory
+from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.tests.ingest.direct.direct_ingest_util import \
     build_gcsfs_controller_for_tests, add_paths_with_tags_and_process, \
     path_for_fixture_file, \
     run_task_queues_to_empty, check_all_paths_processed, FakeDirectIngestRawFileImportManager, add_paths_with_tags
 from recidiviz.tests.ingest.direct.fake_direct_ingest_big_query_client import FakeDirectIngestBigQueryClient
-from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.tests.ingest.direct. \
     fake_synchronous_direct_ingest_cloud_task_manager import \
     FakeSynchronousDirectIngestCloudTaskManager
-from recidiviz.tests.utils import fakes
 from recidiviz.tests.utils.fake_region import TEST_STATE_REGION, \
     TEST_COUNTY_REGION, fake_region
+from recidiviz.tools.postgres import local_postgres_helpers
 
 
 class BaseTestCsvGcsfsDirectIngestController(CsvGcsfsDirectIngestController):
@@ -167,17 +167,17 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls) -> None:
-        fakes.start_on_disk_postgresql_database()
+        local_postgres_helpers.start_on_disk_postgresql_database()
 
     def setUp(self) -> None:
-        fakes.use_on_disk_postgresql_database(OperationsBase)
+        local_postgres_helpers.use_on_disk_postgresql_database(OperationsBase)
 
     def tearDown(self) -> None:
-        fakes.teardown_on_disk_postgresql_database(OperationsBase)
+        local_postgres_helpers.teardown_on_disk_postgresql_database(OperationsBase)
 
     @classmethod
     def tearDownClass(cls) -> None:
-        fakes.stop_and_clear_on_disk_postgresql_database()
+        local_postgres_helpers.stop_and_clear_on_disk_postgresql_database()
 
     def validate_file_metadata(
             self,
