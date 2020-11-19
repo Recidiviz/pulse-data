@@ -16,7 +16,7 @@ primary_key:
   EK_DOC: state_person.state_person_id
 
 keys_to_ignore:
-- EK_SID  # Offender SID Number - Handled manually in the controller
-- EK_FBI  # Offender FBI Number - Handled manually in the controller
-- EK_OLN  # Offender Operator License Number - Handled manually in the controller
+- EK_SID  # Unused - SID Number - See #4632 for more context why we don't ingest this
+- EK_FBI  # Unused - FBI Number - See #4632 for more context why we don't ingest this
+- EK_OLN  # Unused - Operator License Number - See #4632 for more context why we don't ingest this
 - DOC_ID_DOB  # Unused - Duplicate of EK_DOC

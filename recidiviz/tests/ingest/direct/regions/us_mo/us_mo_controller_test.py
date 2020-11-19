@@ -21,7 +21,7 @@ from typing import Type
 from recidiviz import IngestInfo
 from recidiviz.common.constants.charge import ChargeStatus
 from recidiviz.common.constants.person_characteristics import Gender, Race, Ethnicity
-from recidiviz.common.constants.state.external_id_types import US_MO_DOC, US_MO_OLN, US_MO_FBI, US_MO_SID
+from recidiviz.common.constants.state.external_id_types import US_MO_DOC
 from recidiviz.common.constants.state.state_agent import StateAgentType
 from recidiviz.common.constants.state.state_assessment import StateAssessmentType, StateAssessmentLevel
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
@@ -89,16 +89,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                             state_person_external_ids=[
                                 StatePersonExternalId(
                                     state_person_external_id_id='110035',
-                                    id_type=US_MO_DOC),
-                                StatePersonExternalId(
-                                    state_person_external_id_id='SI00110035',
-                                    id_type=US_MO_SID),
-                                StatePersonExternalId(
-                                    state_person_external_id_id='F00110035',
-                                    id_type=US_MO_FBI),
-                                StatePersonExternalId(
-                                    state_person_external_id_id='OLN0000000110035',
-                                    id_type=US_MO_OLN)
+                                    id_type=US_MO_DOC)
                             ],
                             state_person_races=[
                                 StatePersonRace(race='I')
@@ -126,16 +117,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                             state_person_external_ids=[
                                 StatePersonExternalId(
                                     state_person_external_id_id='310261',
-                                    id_type=US_MO_DOC),
-                                StatePersonExternalId(
-                                    state_person_external_id_id='SI00310261',
-                                    id_type=US_MO_SID),
-                                StatePersonExternalId(
-                                    state_person_external_id_id='F00310261',
-                                    id_type=US_MO_FBI),
-                                StatePersonExternalId(
-                                    state_person_external_id_id='OLN0000000310261',
-                                    id_type=US_MO_OLN)
+                                    id_type=US_MO_DOC)
                             ],
                             state_person_races=[
                                 StatePersonRace(race='W')
@@ -161,16 +143,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                             state_person_external_ids=[
                                 StatePersonExternalId(
                                     state_person_external_id_id='710448',
-                                    id_type=US_MO_DOC),
-                                StatePersonExternalId(
-                                    state_person_external_id_id='SI00710448',
-                                    id_type=US_MO_SID),
-                                StatePersonExternalId(
-                                    state_person_external_id_id='F00710448',
-                                    id_type=US_MO_FBI),
-                                StatePersonExternalId(
-                                    state_person_external_id_id='OLN0000000710448',
-                                    id_type=US_MO_OLN)
+                                    id_type=US_MO_DOC)
                             ],
                             state_person_races=[
                                 StatePersonRace(race='B')
@@ -192,16 +165,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                             state_person_external_ids=[
                                 StatePersonExternalId(
                                     state_person_external_id_id='910324',
-                                    id_type=US_MO_DOC),
-                                StatePersonExternalId(
-                                    state_person_external_id_id='SI00910324',
-                                    id_type=US_MO_SID),
-                                StatePersonExternalId(
-                                    state_person_external_id_id='F00910324',
-                                    id_type=US_MO_FBI),
-                                StatePersonExternalId(
-                                    state_person_external_id_id='OLN0000000910324',
-                                    id_type=US_MO_OLN)
+                                    id_type=US_MO_DOC)
                             ],
                             state_person_races=[
                                 StatePersonRace(race='A')
@@ -1762,19 +1726,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 entities.StatePersonExternalId.new_with_defaults(
                     state_code=_STATE_CODE_UPPER,
                     external_id='110035',
-                    id_type=US_MO_DOC),
-                entities.StatePersonExternalId.new_with_defaults(
-                    state_code=_STATE_CODE_UPPER,
-                    external_id='SI00110035',
-                    id_type=US_MO_SID),
-                entities.StatePersonExternalId.new_with_defaults(
-                    state_code=_STATE_CODE_UPPER,
-                    external_id='F00110035',
-                    id_type=US_MO_FBI),
-                entities.StatePersonExternalId.new_with_defaults(
-                    state_code=_STATE_CODE_UPPER,
-                    external_id='OLN0000000110035',
-                    id_type=US_MO_OLN),
+                    id_type=US_MO_DOC)
             ],
             aliases=[
                 entities.StatePersonAlias.new_with_defaults(
@@ -1819,19 +1771,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 entities.StatePersonExternalId.new_with_defaults(
                     state_code=_STATE_CODE_UPPER,
                     external_id='310261',
-                    id_type=US_MO_DOC),
-                entities.StatePersonExternalId.new_with_defaults(
-                    state_code=_STATE_CODE_UPPER,
-                    external_id='SI00310261',
-                    id_type=US_MO_SID),
-                entities.StatePersonExternalId.new_with_defaults(
-                    state_code=_STATE_CODE_UPPER,
-                    external_id='F00310261',
-                    id_type=US_MO_FBI),
-                entities.StatePersonExternalId.new_with_defaults(
-                    state_code=_STATE_CODE_UPPER,
-                    external_id='OLN0000000310261',
-                    id_type=US_MO_OLN),
+                    id_type=US_MO_DOC)
             ],
             aliases=[
                 entities.StatePersonAlias.new_with_defaults(
@@ -1869,19 +1809,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 entities.StatePersonExternalId.new_with_defaults(
                     state_code=_STATE_CODE_UPPER,
                     external_id='710448',
-                    id_type=US_MO_DOC),
-                entities.StatePersonExternalId.new_with_defaults(
-                    state_code=_STATE_CODE_UPPER,
-                    external_id='SI00710448',
-                    id_type=US_MO_SID),
-                entities.StatePersonExternalId.new_with_defaults(
-                    state_code=_STATE_CODE_UPPER,
-                    external_id='F00710448',
-                    id_type=US_MO_FBI),
-                entities.StatePersonExternalId.new_with_defaults(
-                    state_code=_STATE_CODE_UPPER,
-                    external_id='OLN0000000710448',
-                    id_type=US_MO_OLN),
+                    id_type=US_MO_DOC)
             ],
             aliases=[
                 entities.StatePersonAlias.new_with_defaults(
@@ -1923,19 +1851,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                 entities.StatePersonExternalId.new_with_defaults(
                     state_code=_STATE_CODE_UPPER,
                     external_id='910324',
-                    id_type=US_MO_DOC),
-                entities.StatePersonExternalId.new_with_defaults(
-                    state_code=_STATE_CODE_UPPER,
-                    external_id='SI00910324',
-                    id_type=US_MO_SID),
-                entities.StatePersonExternalId.new_with_defaults(
-                    state_code=_STATE_CODE_UPPER,
-                    external_id='F00910324',
-                    id_type=US_MO_FBI),
-                entities.StatePersonExternalId.new_with_defaults(
-                    state_code=_STATE_CODE_UPPER,
-                    external_id='OLN0000000910324',
-                    id_type=US_MO_OLN),
+                    id_type=US_MO_DOC)
             ],
             aliases=[
                 entities.StatePersonAlias.new_with_defaults(
@@ -1968,7 +1884,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
 
         populate_person_backedges(expected_people)
 
-       # SQL Preprocessing View
+        # SQL Preprocessing View
         # Act
         self._run_ingest_job_for_filename('tak001_offender_identification_v2.csv')
         # Assert
