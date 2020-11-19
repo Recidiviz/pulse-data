@@ -39,12 +39,13 @@ REVOCATIONS_MATRIX_BY_PERSON_QUERY_TEMPLATE = \
             state_code,
             metric_period_months,
             revocation_admission_date,
-            {most_severe_violation_type_subtype_grouping},
-            IF(response_count > 8, 8, response_count) as reported_violations,
+            most_severe_violation_type,
+            most_severe_violation_type_subtype,
+            response_count,
             person_id,
             person_external_id,
             gender,
-            assessment_score_bucket AS risk_level,
+            assessment_score_bucket,
             age_bucket,
             prioritized_race_or_ethnicity,
             supervision_type,
@@ -61,10 +62,10 @@ REVOCATIONS_MATRIX_BY_PERSON_QUERY_TEMPLATE = \
         state_code,
         metric_period_months,
         revocation_admission_date,
-        violation_type,
-        reported_violations,
+        {most_severe_violation_type_subtype_grouping},
+        IF(response_count > 8, 8, response_count) as reported_violations,
         supervision_type,
-        supervision_level,
+        {state_specific_supervision_level},
         charge_category,
         district,
         officer,
@@ -72,7 +73,7 @@ REVOCATIONS_MATRIX_BY_PERSON_QUERY_TEMPLATE = \
         person_external_id,
         gender,
         age_bucket,
-        risk_level,
+        {state_specific_assessment_bucket},
         prioritized_race_or_ethnicity,
     FROM revocations,
     {district_dimension},
@@ -98,7 +99,10 @@ REVOCATIONS_MATRIX_BY_PERSON_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     supervision_level_dimension=bq_utils.unnest_column('supervision_level', 'supervision_level'),
     charge_category_dimension=bq_utils.unnest_charge_category(),
     metric_period_dimension=bq_utils.unnest_metric_period_months(),
-    metric_period_condition=bq_utils.metric_period_condition()
+    metric_period_condition=bq_utils.metric_period_condition(),
+    state_specific_assessment_bucket=
+    state_specific_query_strings.state_specific_assessment_bucket(output_column_name='risk_level'),
+    state_specific_supervision_level=state_specific_query_strings.state_specific_supervision_level()
 )
 
 if __name__ == '__main__':
