@@ -40,6 +40,7 @@ from recidiviz.tests.ingest.direct.direct_ingest_util import \
 from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.tests.utils import fakes
 from recidiviz.tests.utils.test_utils import print_visible_header_label
+from recidiviz.tools.postgres import local_postgres_helpers
 
 
 @patch('recidiviz.utils.metadata.project_id',
@@ -67,7 +68,7 @@ class BaseDirectIngestControllerTests(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls) -> None:
-        fakes.start_on_disk_postgresql_database()
+        local_postgres_helpers.start_on_disk_postgresql_database()
 
     def setUp(self) -> None:
         self.maxDiff = 250000
@@ -76,7 +77,7 @@ class BaseDirectIngestControllerTests(unittest.TestCase):
         # as well. Currently, using postgres for StateBase causes a hang when we go t drop the tables in
         # stop_and_clear_on_disk_postgresql_database()
         fakes.use_in_memory_sqlite_database(self.schema_base())
-        fakes.use_on_disk_postgresql_database(OperationsBase)
+        local_postgres_helpers.use_on_disk_postgresql_database(OperationsBase)
 
         self.controller = build_gcsfs_controller_for_tests(
             self.controller_cls(),
@@ -85,12 +86,12 @@ class BaseDirectIngestControllerTests(unittest.TestCase):
             max_delay_sec_between_files=0)
 
     def tearDown(self) -> None:
-        fakes.teardown_on_disk_postgresql_database(OperationsBase)
+        local_postgres_helpers.teardown_on_disk_postgresql_database(OperationsBase)
         fakes.teardown_in_memory_sqlite_databases()
 
     @classmethod
     def tearDownClass(cls) -> None:
-        fakes.stop_and_clear_on_disk_postgresql_database()
+        local_postgres_helpers.stop_and_clear_on_disk_postgresql_database()
 
     @classmethod
     def fixture_path_prefix(cls):

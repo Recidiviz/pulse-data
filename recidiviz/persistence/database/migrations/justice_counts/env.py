@@ -20,6 +20,8 @@ from logging.config import fileConfig
 from sqlalchemy import create_engine
 
 from alembic import context
+from recidiviz.persistence.database import SQLALCHEMY_DB_USER, SQLALCHEMY_DB_PASSWORD, SQLALCHEMY_DB_HOST, \
+    SQLALCHEMY_DB_NAME, SQLALCHEMY_USE_SSL, SQLALCHEMY_SSL_KEY_PATH, SQLALCHEMY_SSL_CERT_PATH
 from recidiviz.persistence.database.base_schema import JusticeCountsBase
 
 # Import anything from the state schema.py files to ensure the table class
@@ -47,7 +49,7 @@ def get_sqlalchemy_url():
 
     # Boolean int (0 or 1) indicating whether to use SSL to connect to the
     # database
-    use_ssl = int(os.getenv('SQLALCHEMY_USE_SSL'))
+    use_ssl = int(os.getenv(SQLALCHEMY_USE_SSL))
 
     if use_ssl == 1:
         return _get_sqlalchemy_url_with_ssl()
@@ -102,10 +104,10 @@ def run_migrations_online():
 def _get_sqlalchemy_url_without_ssl():
     """Returns string used for SQLAlchemy engine, without SSL params"""
 
-    user = os.getenv('SQLALCHEMY_DB_USER')
-    password = os.getenv('SQLALCHEMY_DB_PASSWORD')
-    host = os.getenv('SQLALCHEMY_DB_HOST')
-    db_name = os.getenv('SQLALCHEMY_DB_NAME')
+    user = os.getenv(SQLALCHEMY_DB_USER)
+    password = os.getenv(SQLALCHEMY_DB_PASSWORD)
+    host = os.getenv(SQLALCHEMY_DB_HOST)
+    db_name = os.getenv(SQLALCHEMY_DB_NAME)
 
     return '{db_type}://{user}:{password}@{host}/{db_name}'.format(
         db_type=_DB_TYPE,
@@ -118,8 +120,8 @@ def _get_sqlalchemy_url_without_ssl():
 def _get_sqlalchemy_url_with_ssl():
     """Returns string used for SQLAlchemy engine, with SSL params"""
 
-    ssl_key_path = os.getenv('SQLALCHEMY_SSL_KEY_PATH')
-    ssl_cert_path = os.getenv('SQLALCHEMY_SSL_CERT_PATH')
+    ssl_key_path = os.getenv(SQLALCHEMY_SSL_KEY_PATH)
+    ssl_cert_path = os.getenv(SQLALCHEMY_SSL_CERT_PATH)
 
     ssl_params = '?sslkey={ssl_key_path}&sslcert={ssl_cert_path}'.format(
         ssl_key_path=ssl_key_path,
