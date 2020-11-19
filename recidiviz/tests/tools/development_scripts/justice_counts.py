@@ -29,7 +29,7 @@ import logging
 import recidiviz
 from recidiviz.persistence.database.base_schema import JusticeCountsBase
 from recidiviz.tools.justice_counts import manual_upload
-from recidiviz.tests.utils import fakes
+from recidiviz.tools.postgres import local_postgres_helpers
 
 
 def _create_parser():
@@ -67,8 +67,8 @@ if __name__ == '__main__':
     #   - However, then `Report` becomes an api and can't evolve as easily (which maybe is true no matter what once
     #     manifest files have been created?)
     recidiviz.called_from_test = True
-    fakes.start_on_disk_postgresql_database()
-    fakes.use_on_disk_postgresql_database(JusticeCountsBase)
+    local_postgres_helpers.start_on_disk_postgresql_database()
+    local_postgres_helpers.use_on_disk_postgresql_database(JusticeCountsBase)
 
     manual_upload.ingest(arguments.manifest_file)
 

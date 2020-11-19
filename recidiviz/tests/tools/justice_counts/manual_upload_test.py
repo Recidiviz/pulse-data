@@ -25,27 +25,29 @@ from sqlalchemy import sql
 from recidiviz.persistence.database.base_schema import JusticeCountsBase
 from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.persistence.database.session_factory import SessionFactory
-from recidiviz.tests.utils import fakes
 from recidiviz.tools.justice_counts import manual_upload
+from recidiviz.tools.postgres import local_postgres_helpers
+
 
 def manifest_filepath(report_id: str):
     return os.path.join(os.path.dirname(__file__), 'fixtures', report_id, 'manifest.yaml')
+
 
 class ManualUploadTest(unittest.TestCase):
     """Tests that the manual upload tool works as expected"""
     @classmethod
     def setUpClass(cls) -> None:
-        fakes.start_on_disk_postgresql_database()
+        local_postgres_helpers.start_on_disk_postgresql_database()
 
     def setUp(self) -> None:
-        fakes.use_on_disk_postgresql_database(JusticeCountsBase)
+        local_postgres_helpers.use_on_disk_postgresql_database(JusticeCountsBase)
 
     def tearDown(self) -> None:
-        fakes.teardown_on_disk_postgresql_database(JusticeCountsBase)
+        local_postgres_helpers.teardown_on_disk_postgresql_database(JusticeCountsBase)
 
     @classmethod
     def tearDownClass(cls) -> None:
-        fakes.stop_and_clear_on_disk_postgresql_database()
+        local_postgres_helpers.stop_and_clear_on_disk_postgresql_database()
 
     def test_ingestReport_isPersisted(self):
         # Act
