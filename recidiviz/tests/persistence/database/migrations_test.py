@@ -18,11 +18,14 @@
 """Basic tests that migrations are working properly."""
 
 import abc
-from typing import Dict
+from collections import defaultdict
+from typing import Dict, Set
 from unittest.case import TestCase
 
 from pytest_alembic import runner  # type: ignore
+from sqlalchemy import create_engine
 
+from recidiviz.persistence.database.sqlalchemy_engine_manager import SQLAlchemyEngineManager, SchemaType
 from recidiviz.tools.postgres import local_postgres_helpers
 
 
@@ -43,16 +46,65 @@ class MigrationsTestBase:
         local_postgres_helpers.restore_local_sqlalchemy_postgres_env_vars(self.overridden_env_vars)
         local_postgres_helpers.stop_and_clear_on_disk_postgresql_database(self.db_dir)
 
-    @property
-    @abc.abstractmethod
-    def alembic_path_prefix(self) -> str:
-        raise NotImplementedError
+    def fetch_all_enums(self) -> Dict[str, Set[str]]:
+        engine = create_engine(local_postgres_helpers.on_disk_postgres_db_url())
+
+        conn = engine.connect()
+        rows = conn.execute("""
+        SELECT t.typname as enum_name,
+            e.enumlabel as enum_value
+        FROM pg_type t
+            JOIN pg_enum e ON t.oid = e.enumtypid
+            JOIN pg_catalog.pg_namespace n ON n.oid = t.typnamespace
+        WHERE
+            n.nspname = 'public';
+        """)
+
+        enums = defaultdict(set)
+        for row in rows:
+            enums[row[0]].add(row[1])
+
+        return enums
 
     def default_config(self) -> Dict[str, str]:
         return {
-            'file': f'{self.alembic_path_prefix}_alembic.ini',
-            'script_location': self.alembic_path_prefix,
+            'file': SQLAlchemyEngineManager.get_alembic_file(self.schema_type),
+            'script_location': SQLAlchemyEngineManager.get_migrations_location(self.schema_type),
         }
+
+    @property
+    @abc.abstractmethod
+    def schema_type(self) -> SchemaType:
+        raise NotImplementedError
+
+    def test_enums_match_schema(self):
+        with runner(self.default_config()) as r:
+            r.migrate_up_to('head')
+
+        # Fetch enum values
+        migration_enums = self.fetch_all_enums()
+
+        # Doing teardown/setup to generate a new postgres instance
+        local_postgres_helpers.restore_local_sqlalchemy_postgres_env_vars(self.overridden_env_vars)
+        local_postgres_helpers.stop_and_clear_on_disk_postgresql_database(self.db_dir)
+
+        self.db_dir = local_postgres_helpers.start_on_disk_postgresql_database(create_temporary_db=True)
+        self.overridden_env_vars = local_postgres_helpers.update_local_sqlalchemy_postgres_env_vars()
+
+        local_postgres_helpers.use_on_disk_postgresql_database(
+            SQLAlchemyEngineManager.declarative_method_for_schema(self.schema_type))
+
+        # Check enum values
+        schema_enums = self.fetch_all_enums()
+
+        # Assert that they all match
+        self.assertEqual(len(migration_enums), len(schema_enums))
+        for enum_name, migration_values in migration_enums.items():
+            schema_values = schema_enums[enum_name]
+            self.assertEqual(len(migration_values), len(schema_values), msg=f'{enum_name} lengths differ')
+            self.assertEqual(len(migration_values),
+                             len(migration_values.intersection(schema_values)),
+                             msg=f'{enum_name} values differ')
 
     def test_full_upgrade(self):
         """Enforce that migrations can be run forward to completion."""
@@ -85,8 +137,6 @@ class MigrationsTestBase:
 
         Important note: This test will not detect changes made to enums that have failed to
         be incorporated by existing migrations. It only reliably handles table schema.
-
-        TODO(#4604): Add tests to ensure that enums rendered with migration match our schema.
         """
         def verify_is_empty(_, __, directives):
             script = directives[0]
@@ -102,23 +152,23 @@ class MigrationsTestBase:
 
 class TestJailsMigrations(MigrationsTestBase, TestCase):
     @property
-    def alembic_path_prefix(self) -> str:
-        return './recidiviz/persistence/database/migrations/jails'
+    def schema_type(self) -> SchemaType:
+        return SchemaType.JAILS
 
 
 class TestJusticeCountsMigrations(MigrationsTestBase, TestCase):
     @property
-    def alembic_path_prefix(self) -> str:
-        return './recidiviz/persistence/database/migrations/justice_counts'
+    def schema_type(self) -> SchemaType:
+        return SchemaType.JUSTICE_COUNTS
 
 
 class TestOperationsMigrations(MigrationsTestBase, TestCase):
     @property
-    def alembic_path_prefix(self) -> str:
-        return './recidiviz/persistence/database/migrations/operations'
+    def schema_type(self) -> SchemaType:
+        return SchemaType.OPERATIONS
 
 
 class TestStateMigrations(MigrationsTestBase, TestCase):
     @property
-    def alembic_path_prefix(self) -> str:
-        return './recidiviz/persistence/database/migrations/state'
+    def schema_type(self) -> SchemaType:
+        return SchemaType.STATE
