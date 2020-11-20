@@ -18,6 +18,7 @@
 """Tests for state/dao.py."""
 
 import datetime
+from typing import Optional
 from unittest import TestCase
 
 from recidiviz.common.constants.state import external_id_types
@@ -27,7 +28,7 @@ from recidiviz.persistence.database.base_schema import StateBase
 from recidiviz.persistence.entity.state import entities
 from recidiviz.persistence.database.schema.state import dao
 from recidiviz.persistence.database.schema.state import schema
-from recidiviz.tests.utils import fakes
+from recidiviz.tools.postgres import local_postgres_helpers
 
 _REGION = 'region'
 _FULL_NAME = 'full_name'
@@ -40,13 +41,24 @@ _BIRTHDATE = datetime.date(year=2012, month=1, day=2)
 class TestDao(TestCase):
     """Test that the methods in dao.py correctly read from the SQL database."""
 
+    # Stores the location of the postgres DB for this test run
+    temp_db_dir: Optional[str]
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.temp_db_dir = local_postgres_helpers.start_on_disk_postgresql_database(create_temporary_db=True)
+
     def setUp(self) -> None:
-        fakes.use_in_memory_sqlite_database(StateBase)
+        local_postgres_helpers.use_on_disk_postgresql_database(StateBase)
 
     def tearDown(self) -> None:
-        fakes.teardown_in_memory_sqlite_databases()
+        local_postgres_helpers.teardown_on_disk_postgresql_database(StateBase)
 
-    def test_readPeople_byFullName(self):
+    @classmethod
+    def tearDownClass(cls) -> None:
+        local_postgres_helpers.stop_and_clear_on_disk_postgresql_database(cls.temp_db_dir)
+
+    def test_readPeople_byFullName(self) -> None:
         # Arrange
         person = schema.StatePerson(person_id=8,
                                     full_name=_FULL_NAME,
@@ -67,7 +79,7 @@ class TestDao(TestCase):
         expected_people = [person]
         self.assertCountEqual(people, expected_people)
 
-    def test_readPeople_byBirthdate(self):
+    def test_readPeople_byBirthdate(self) -> None:
         # Arrange
         person = schema.StatePerson(person_id=8,
                                     birthdate=_BIRTHDATE,
@@ -91,7 +103,7 @@ class TestDao(TestCase):
         expected_people = [person]
         self.assertCountEqual(people, expected_people)
 
-    def test_readPeople(self):
+    def test_readPeople(self) -> None:
         # Arrange
         person = schema.StatePerson(person_id=8,
                                     full_name=_FULL_NAME,
@@ -124,7 +136,7 @@ class TestDao(TestCase):
 
         self.assertCountEqual(people, expected_people)
 
-    def test_readPlaceholderPeople(self):
+    def test_readPlaceholderPeople(self) -> None:
         placeholder_person = schema.StatePerson(person_id=1, state_code=_STATE_CODE)
         person = schema.StatePerson(person_id=2, state_code=_STATE_CODE)
         person_external_id = schema.StatePersonExternalId(
@@ -149,7 +161,7 @@ class TestDao(TestCase):
 
         self.assertCountEqual(people, expected_people)
 
-    def test_readPeopleByRootExternalIds(self):
+    def test_readPeopleByRootExternalIds(self) -> None:
         # Arrange
         person_no_match = schema.StatePerson(person_id=1, state_code=_STATE_CODE)
         person_match_external_id = schema.StatePerson(person_id=2, state_code=_STATE_CODE)
@@ -176,7 +188,7 @@ class TestDao(TestCase):
 
         self.assertCountEqual(people, expected_people)
 
-    def test_readPeopleByRootExternalIds_entireTreeReturnedWithOneMatch(self):
+    def test_readPeopleByRootExternalIds_entireTreeReturnedWithOneMatch(self) -> None:
         # Arrange
         person = schema.StatePerson(person_id=1, state_code=_STATE_CODE)
         external_id_match = schema.StatePersonExternalId(
@@ -208,7 +220,7 @@ class TestDao(TestCase):
 
         self.assertCountEqual(people, expected_people)
 
-    def test_readPeopleByRootExternalIds_SentenceGroupExternalId(self):
+    def test_readPeopleByRootExternalIds_SentenceGroupExternalId(self) -> None:
         # Arrange
         person = schema.StatePerson(person_id=1, state_code=_STATE_CODE)
         sentence_group = schema.StateSentenceGroup(
@@ -238,7 +250,7 @@ class TestDao(TestCase):
 
         self.assertCountEqual(people, expected_people)
 
-    def test_readPeopleByExternalId(self):
+    def test_readPeopleByExternalId(self) -> None:
         # Arrange
         person_no_match = schema.StatePerson(person_id=1, state_code=_STATE_CODE)
         person_match_external_id = schema.StatePerson(person_id=2, state_code=_STATE_CODE)
@@ -274,7 +286,7 @@ class TestDao(TestCase):
 
         self.assertCountEqual(people, expected_people)
 
-    def test_readPersonMultipleIdsMatch(self):
+    def test_readPersonMultipleIdsMatch(self) -> None:
         # Arrange
         person = schema.StatePerson(person_id=1, state_code=_STATE_CODE)
         person_external_id = schema.StatePersonExternalId(
@@ -321,7 +333,7 @@ class TestDao(TestCase):
 
         self.assertCountEqual(people, expected_people)
 
-    def test_readPersonIdsMatchMultiplePeople(self):
+    def test_readPersonIdsMatchMultiplePeople(self) -> None:
         # Arrange
         person1 = schema.StatePerson(person_id=1, state_code=_STATE_CODE)
         person1_external_id = schema.StatePersonExternalId(
@@ -371,7 +383,7 @@ class TestDao(TestCase):
 
         self.assertCountEqual(people, expected_people)
 
-    def test_readMultipleIngestedPeople(self):
+    def test_readMultipleIngestedPeople(self) -> None:
         # Arrange
         person1 = schema.StatePerson(person_id=1, state_code=_STATE_CODE)
         person1_external_id = schema.StatePersonExternalId(
@@ -436,7 +448,7 @@ class TestDao(TestCase):
 
         self.assertCountEqual(people, expected_people)
 
-    def test_readMultipleIngestedPeopleMatchSamePerson(self):
+    def test_readMultipleIngestedPeopleMatchSamePerson(self) -> None:
         # Arrange
         person = schema.StatePerson(person_id=1, state_code=_STATE_CODE)
         person_external_id = schema.StatePersonExternalId(
@@ -489,7 +501,7 @@ class TestDao(TestCase):
 
         self.assertCountEqual(people, expected_people)
 
-    def test_readObjsWithExternalIdMatch(self):
+    def test_readObjsWithExternalIdMatch(self) -> None:
         person_1 = schema.StatePerson(person_id=1, state_code=_STATE_CODE)
         sentence_group_1 = schema.StateSentenceGroup(
             sentence_group_id=1,

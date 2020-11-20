@@ -1082,9 +1082,12 @@ class TestPersistenceMultipleThreadsOverlapping(TestCase, MultipleStateTestMixin
     This forces the transactions to commit in the opposite order that they were started to guarantee that they overlap.
     """
 
+    # Stores the location of the postgres DB for this test run
+    temp_db_dir: Optional[str]
+
     @classmethod
     def setUpClass(cls) -> None:
-        local_postgres_helpers.start_on_disk_postgresql_database()
+        cls.temp_db_dir = local_postgres_helpers.start_on_disk_postgresql_database(create_temporary_db=True)
 
     def setUp(self) -> None:
         self.bq_client_patcher = patch('google.cloud.bigquery.Client')
@@ -1111,7 +1114,7 @@ class TestPersistenceMultipleThreadsOverlapping(TestCase, MultipleStateTestMixin
 
     @classmethod
     def tearDownClass(cls) -> None:
-        local_postgres_helpers.stop_and_clear_on_disk_postgresql_database()
+        local_postgres_helpers.stop_and_clear_on_disk_postgresql_database(cls.temp_db_dir)
 
     def run_transactions(self, state_1_ingest_info, state_2_ingest_info):
         return _run_transactions_overlapping(state_1_ingest_info, state_2_ingest_info)
@@ -1208,9 +1211,12 @@ class TestPersistenceMultipleThreadsInterleaved(TestCase, MultipleStateTestMixin
     This offsets the transactions and inserts delay between each operation such that they are fully interleaved.
     """
 
+    # Stores the location of the postgres DB for this test run
+    temp_db_dir: Optional[str]
+
     @classmethod
     def setUpClass(cls) -> None:
-        local_postgres_helpers.start_on_disk_postgresql_database()
+        cls.temp_db_dir = local_postgres_helpers.start_on_disk_postgresql_database(create_temporary_db=True)
 
     def setUp(self) -> None:
         self.bq_client_patcher = patch('google.cloud.bigquery.Client')
@@ -1237,7 +1243,7 @@ class TestPersistenceMultipleThreadsInterleaved(TestCase, MultipleStateTestMixin
 
     @classmethod
     def tearDownClass(cls) -> None:
-        local_postgres_helpers.stop_and_clear_on_disk_postgresql_database()
+        local_postgres_helpers.stop_and_clear_on_disk_postgresql_database(cls.temp_db_dir)
 
     def run_transactions(self, state_1_ingest_info, state_2_ingest_info):
         return _run_transactions_interleaved(state_1_ingest_info, state_2_ingest_info)
