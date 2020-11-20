@@ -39,7 +39,7 @@ class MigrationsTestBase:
     """
 
     def setUp(self) -> None:
-        self.db_dir = local_postgres_helpers.start_on_disk_postgresql_database(create_temporary_db=True)
+        self.db_dir = local_postgres_helpers.start_on_disk_postgresql_database()
         self.overridden_env_vars = local_postgres_helpers.update_local_sqlalchemy_postgres_env_vars()
 
     def tearDown(self) -> None:
@@ -88,7 +88,7 @@ class MigrationsTestBase:
         local_postgres_helpers.restore_local_sqlalchemy_postgres_env_vars(self.overridden_env_vars)
         local_postgres_helpers.stop_and_clear_on_disk_postgresql_database(self.db_dir)
 
-        self.db_dir = local_postgres_helpers.start_on_disk_postgresql_database(create_temporary_db=True)
+        self.db_dir = local_postgres_helpers.start_on_disk_postgresql_database()
         self.overridden_env_vars = local_postgres_helpers.update_local_sqlalchemy_postgres_env_vars()
 
         local_postgres_helpers.use_on_disk_postgresql_database(

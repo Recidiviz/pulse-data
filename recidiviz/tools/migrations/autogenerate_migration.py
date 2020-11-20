@@ -50,7 +50,7 @@ def create_parser() -> argparse.ArgumentParser:
 def main(database: SchemaType, message: str):
     # TODO(#4619): We should eventually move this from a local postgres instance to running
     # postgres from a docker container.
-    tmp_db_dir = local_postgres_helpers.start_on_disk_postgresql_database(create_temporary_db=True)
+    tmp_db_dir = local_postgres_helpers.start_on_disk_postgresql_database()
     overridden_env_vars = local_postgres_helpers.update_local_sqlalchemy_postgres_env_vars()
 
     try:
