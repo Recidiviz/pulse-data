@@ -165,9 +165,12 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
         are_ingest_view_exports_enabled_in_env=True
     )
 
+    # Stores the location of the postgres DB for this test run
+    temp_db_dir: Optional[str]
+
     @classmethod
     def setUpClass(cls) -> None:
-        local_postgres_helpers.start_on_disk_postgresql_database()
+        cls.temp_db_dir = local_postgres_helpers.start_on_disk_postgresql_database(create_temporary_db=True)
 
     def setUp(self) -> None:
         local_postgres_helpers.use_on_disk_postgresql_database(OperationsBase)
@@ -177,7 +180,7 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls) -> None:
-        local_postgres_helpers.stop_and_clear_on_disk_postgresql_database()
+        local_postgres_helpers.stop_and_clear_on_disk_postgresql_database(cls.temp_db_dir)
 
     def validate_file_metadata(
             self,

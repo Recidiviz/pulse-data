@@ -15,8 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Base classes for various state entity matcher test classes."""
-from typing import List
-from unittest import TestCase
+from typing import List, Optional
 from unittest.case import TestCase
 
 from mock import patch, create_autospec
@@ -29,18 +28,25 @@ from recidiviz.persistence.entity.entity_utils import print_entity_trees
 from recidiviz.persistence.entity.state.entities import StatePerson
 from recidiviz.tests.persistence.entity.state.entities_test_utils import \
     clear_db_ids, assert_no_unexpected_entities_in_db
-from recidiviz.tests.utils import fakes
 
 from recidiviz.persistence.database.base_schema import StateBase
 from recidiviz.tests.utils.test_utils import print_visible_header_label
+from recidiviz.tools.postgres import local_postgres_helpers
 from recidiviz.utils.regions import Region
 
 
 class BaseStateEntityMatcherTest(TestCase):
     """Base class for testing state specific entity matching logic."""
 
+    # Stores the location of the postgres DB for this test run
+    temp_db_dir: Optional[str]
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.temp_db_dir = local_postgres_helpers.start_on_disk_postgresql_database()
+
     def setUp(self) -> None:
-        fakes.use_in_memory_sqlite_database(StateBase)
+        local_postgres_helpers.use_on_disk_postgresql_database(StateBase)
         self.get_region_patcher = patch(
             "recidiviz.persistence.entity_matching.state."
             "base_state_matching_delegate.get_region", new=self.get_fake_region)
@@ -48,7 +54,11 @@ class BaseStateEntityMatcherTest(TestCase):
         self.addCleanup(self.get_region_patcher.stop)
 
     def tearDown(self) -> None:
-        fakes.teardown_in_memory_sqlite_databases()
+        local_postgres_helpers.teardown_on_disk_postgresql_database(StateBase)
+
+    @classmethod
+    def tearDownClass(cls) -> None:
+        local_postgres_helpers.stop_and_clear_on_disk_postgresql_database(cls.temp_db_dir)
 
     def get_fake_region(self, **_kwargs):
         return create_autospec(Region)
@@ -101,14 +111,28 @@ class BaseStateEntityMatcherTest(TestCase):
             session.add(person)
         session.commit()
 
+        return session
+
 
 class BaseStateMatchingUtilsTest(TestCase):
     """Base class for testing state matching utils"""
+
+    # Stores the location of the postgres DB for this test run
+    temp_db_dir: Optional[str]
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.temp_db_dir = local_postgres_helpers.start_on_disk_postgresql_database(create_temporary_db=True)
+
     def setUp(self) -> None:
-        fakes.use_in_memory_sqlite_database(StateBase)
+        local_postgres_helpers.use_on_disk_postgresql_database(StateBase)
 
     def tearDown(self) -> None:
-        fakes.teardown_in_memory_sqlite_databases()
+        local_postgres_helpers.teardown_on_disk_postgresql_database(StateBase)
+
+    @classmethod
+    def tearDownClass(cls) -> None:
+        local_postgres_helpers.stop_and_clear_on_disk_postgresql_database(cls.temp_db_dir)
 
     def to_entity(self, schema_obj):
         return converter.convert_schema_object_to_entity(schema_obj, populate_back_edges=False)

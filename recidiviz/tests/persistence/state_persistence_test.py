@@ -17,6 +17,7 @@
 """State tests for persistence.py."""
 
 from datetime import datetime
+from typing import Optional
 from unittest import TestCase
 
 from mock import patch, Mock
@@ -35,7 +36,7 @@ from recidiviz.persistence.database.schema_entity_converter import (
 )
 from recidiviz.persistence.entity.state.entities import StatePerson, \
     StatePersonExternalId, StateSentenceGroup
-from recidiviz.tests.utils import fakes
+from recidiviz.tools.postgres import local_postgres_helpers
 
 EXTERNAL_ID = 'EXTERNAL_ID'
 EXTERNAL_ID_2 = 'EXTERNAL_ID_2'
@@ -72,8 +73,15 @@ class TestStatePersistence(TestCase):
     """Test that the persistence layer correctly writes to the SQL database for
     the state schema specifically."""
 
+    # Stores the location of the postgres DB for this test run
+    temp_db_dir: Optional[str]
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.temp_db_dir = local_postgres_helpers.start_on_disk_postgresql_database(create_temporary_db=True)
+
     def setUp(self) -> None:
-        fakes.use_in_memory_sqlite_database(StateBase)
+        local_postgres_helpers.use_on_disk_postgresql_database(StateBase)
 
         # State persistence ends up having to instantiate the us_nd_controller to
         # get enum overrides, and the controller goes on to create bigquery,
@@ -86,11 +94,15 @@ class TestStatePersistence(TestCase):
         self.task_client_patcher.start()
 
     def tearDown(self) -> None:
-        fakes.teardown_in_memory_sqlite_databases()
+        local_postgres_helpers.teardown_on_disk_postgresql_database(StateBase)
 
         self.bq_client_patcher.stop()
         self.storage_client_patcher.stop()
         self.task_client_patcher.stop()
+
+    @classmethod
+    def tearDownClass(cls) -> None:
+        local_postgres_helpers.stop_and_clear_on_disk_postgresql_database(cls.temp_db_dir)
 
     def to_entity(self, schema_obj):
         return converter.convert_schema_object_to_entity(

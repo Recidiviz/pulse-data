@@ -19,6 +19,7 @@
 import datetime
 import os
 import unittest
+from typing import Optional
 
 from sqlalchemy import sql
 
@@ -35,9 +36,13 @@ def manifest_filepath(report_id: str):
 
 class ManualUploadTest(unittest.TestCase):
     """Tests that the manual upload tool works as expected"""
+
+    # Stores the location of the postgres DB for this test run
+    temp_db_dir: Optional[str]
+
     @classmethod
     def setUpClass(cls) -> None:
-        local_postgres_helpers.start_on_disk_postgresql_database()
+        cls.temp_db_dir = local_postgres_helpers.start_on_disk_postgresql_database(create_temporary_db=True)
 
     def setUp(self) -> None:
         local_postgres_helpers.use_on_disk_postgresql_database(JusticeCountsBase)
@@ -47,7 +52,7 @@ class ManualUploadTest(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls) -> None:
-        local_postgres_helpers.stop_and_clear_on_disk_postgresql_database()
+        local_postgres_helpers.stop_and_clear_on_disk_postgresql_database(cls.temp_db_dir)
 
     def test_ingestReport_isPersisted(self):
         # Act
