@@ -25,7 +25,8 @@ from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.ingest_metadata import IngestMetadata, SystemLevel
 from recidiviz.ingest.models.ingest_info_pb2 import IngestInfo
 from recidiviz.persistence import persistence
-from recidiviz.persistence.persistence import OVERALL_THRESHOLD, ENTITY_MATCHING_THRESHOLD, ENUM_THRESHOLD
+from recidiviz.persistence.persistence import OVERALL_THRESHOLD, ENTITY_MATCHING_THRESHOLD, ENUM_THRESHOLD, \
+    DATABASE_INVARIANT_THRESHOLD
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.base_schema import StateBase
 from recidiviz.persistence.database.schema.state import schema, dao
@@ -59,7 +60,8 @@ STATE_ERROR_THRESHOLDS_WITH_FORTY_PERCENT_RATIOS = {SystemLevel.STATE:
                                             {
                                                 OVERALL_THRESHOLD: 0.4,
                                                 ENUM_THRESHOLD: 0.4,
-                                                ENTITY_MATCHING_THRESHOLD: 0.4
+                                                ENTITY_MATCHING_THRESHOLD: 0.4,
+                                                DATABASE_INVARIANT_THRESHOLD: 0
                                             }
 }
 

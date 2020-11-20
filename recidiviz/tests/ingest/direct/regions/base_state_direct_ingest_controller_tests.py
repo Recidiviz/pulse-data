@@ -39,7 +39,8 @@ from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.entity.entity_utils import person_has_id, \
     print_entity_trees, prune_dangling_placeholders_from_tree
 from recidiviz.persistence.entity.state.entities import StatePerson
-from recidiviz.persistence.persistence import OVERALL_THRESHOLD, ENUM_THRESHOLD, ENTITY_MATCHING_THRESHOLD
+from recidiviz.persistence.persistence import OVERALL_THRESHOLD, ENUM_THRESHOLD, ENTITY_MATCHING_THRESHOLD, \
+    DATABASE_INVARIANT_THRESHOLD
 from recidiviz.tests.ingest.direct.direct_ingest_util import \
     run_task_queues_to_empty, \
     path_for_fixture_file
@@ -82,9 +83,12 @@ class BaseStateDirectIngestControllerTests(BaseDirectIngestControllerTests):
         # the error threshold.
         self.entity_matching_error_threshold_patcher = patch.dict(
             'recidiviz.persistence.persistence.SYSTEM_TYPE_TO_ERROR_THRESHOLD',
-            {SystemLevel.STATE: {OVERALL_THRESHOLD: 0,
-                                 ENUM_THRESHOLD: 0,
-                                 ENTITY_MATCHING_THRESHOLD:0}})
+            {SystemLevel.STATE: {
+                OVERALL_THRESHOLD: 0,
+                ENUM_THRESHOLD: 0,
+                ENTITY_MATCHING_THRESHOLD: 0,
+                DATABASE_INVARIANT_THRESHOLD: 0,
+            }})
 
         self.entity_matching_error_threshold_patcher.start()
 

@@ -60,7 +60,8 @@ from recidiviz.persistence.database.session import Session
 from recidiviz.persistence.entity.county import entities as county_entities
 from recidiviz.persistence.entity_matching.entity_matching_types import MatchedEntities
 from recidiviz.persistence.ingest_info_converter.base_converter import IngestInfoConversionResult
-from recidiviz.persistence.persistence import OVERALL_THRESHOLD, ENUM_THRESHOLD, ENTITY_MATCHING_THRESHOLD
+from recidiviz.persistence.persistence import OVERALL_THRESHOLD, ENUM_THRESHOLD, ENTITY_MATCHING_THRESHOLD, \
+    DATABASE_INVARIANT_THRESHOLD
 from recidiviz.tests.utils import fakes
 from recidiviz.tools.postgres import local_postgres_helpers
 
@@ -114,13 +115,15 @@ ERROR_THRESHOLDS_WITH_FORTY_PERCENT_RATIOS = {
         {
             OVERALL_THRESHOLD: 0.4,
             ENUM_THRESHOLD: 0.4,
-            ENTITY_MATCHING_THRESHOLD: 0.4
+            ENTITY_MATCHING_THRESHOLD: 0.4,
+            DATABASE_INVARIANT_THRESHOLD: 0
         },
     SystemLevel.COUNTY:
         {
             OVERALL_THRESHOLD: 0.4,
             ENUM_THRESHOLD: 0.4,
-            ENTITY_MATCHING_THRESHOLD: 0.4
+            ENTITY_MATCHING_THRESHOLD: 0.4,
+            DATABASE_INVARIANT_THRESHOLD: 0
         }
 }
 
@@ -307,6 +310,24 @@ class TestPersistence(TestCase):
 
         # Assert
         assert not result
+
+    @patch('recidiviz.persistence.persistence.database_invariant_validator')
+    def test_abort_from_database_invariant_error_persistsNone(self, mock_database_invariant_validator):
+        # Arrange
+        ingest_info = IngestInfoProto()
+        ingest_info.people.add(full_name=FULL_NAME_2)
+        ingest_info.people.add(full_name=FULL_NAME_1, person_id=EXTERNAL_PERSON_ID)
+
+        mock_database_invariant_validator.validate_invariants.return_value = 1
+
+        # Act
+        self.assertFalse(persistence.write(ingest_info, DEFAULT_METADATA))
+        result = county_dao.read_people(
+            SessionFactory.for_schema_base(JailsBase))
+
+        # Assert
+        assert not result
+
 
     @patch('recidiviz.persistence.entity_matching.entity_matching.match')
     @patch('recidiviz.persistence.persistence.SYSTEM_TYPE_TO_ERROR_THRESHOLD',
