@@ -5,34 +5,37 @@ publish_date: '2020-10-05'
 tables:
     - file: 'ManualData-Prison_US_CO_DashboardMeasures_Aug20.csv'
       time_window:
-        snapshot:
+        fixed:
+          snapshot:
             date: '2020-08-31'
       system: 'CORRECTIONS'
       metric:
         population:
-            population_type: 'PRISON'
+          population_type: 'PRISON'
       location:
-          state: 'US_CO'
+        state: 'US_CO'
       methodology: 'Unknown'
     - file: 'ManualData-Prison_US_CO_DashboardMeasures_Jul20.csv'
       time_window:
-        snapshot:
+        fixed:
+          snapshot:
             date: '2020-07-31'
       system: 'CORRECTIONS'
       metric:
         population:
-            population_type: 'PRISON'
+          population_type: 'PRISON'
       location:
-          state: 'US_CO'
+        state: 'US_CO'
       methodology: 'Unknown'
     - file: 'ManualData-Prison_US_CO_DashboardMeasures_Jun20.csv'
       time_window:
-        snapshot:
+        fixed:
+          snapshot:
             date: '2020-06-30'
       system: 'CORRECTIONS'
       metric:
         population:
-            population_type: 'PRISON'
+          population_type: 'PRISON'
       location:
-          state: 'US_CO'
+        state: 'US_CO'
       methodology: 'Unknown'
