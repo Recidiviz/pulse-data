@@ -16,6 +16,7 @@
 # =============================================================================
 """Tests for state_database_invariant_validators.py."""
 
+from typing import Optional
 import unittest
 
 from more_itertools import one
@@ -38,9 +39,11 @@ ID_TYPE_2 = 'ID_TYPE_2'
 class TestStateDatabaseInvariantValidators(unittest.TestCase):
     """Tests for state_database_invariant_validators.py."""
 
+    temp_db_dir: Optional[str]
+
     @classmethod
     def setUpClass(cls) -> None:
-        local_postgres_helpers.start_on_disk_postgresql_database()
+        cls.temp_db_dir = local_postgres_helpers.start_on_disk_postgresql_database()
 
     def setUp(self) -> None:
         local_postgres_helpers.use_on_disk_postgresql_database(StateBase)
@@ -53,7 +56,7 @@ class TestStateDatabaseInvariantValidators(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls) -> None:
-        local_postgres_helpers.stop_and_clear_on_disk_postgresql_database()
+        local_postgres_helpers.stop_and_clear_on_disk_postgresql_database(cls.temp_db_dir)
 
     def test_clean_session(self) -> None:
         # Arrange

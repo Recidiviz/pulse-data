@@ -67,10 +67,11 @@ if __name__ == '__main__':
     #   - However, then `Report` becomes an api and can't evolve as easily (which maybe is true no matter what once
     #     manifest files have been created?)
     recidiviz.called_from_test = True
-    local_postgres_helpers.start_on_disk_postgresql_database()
+    tmp_db_dir = local_postgres_helpers.start_on_disk_postgresql_database()
     local_postgres_helpers.use_on_disk_postgresql_database(JusticeCountsBase)
 
     manual_upload.ingest(arguments.manifest_file)
 
     # Don't cleanup the database so that user can query the data afterward.
     logging.info("To query the data, connect to the local database with `psql --dbname=recidiviz_test_db`")
+    logging.info("For future cleanup, the postgres data directory is at %s.", tmp_db_dir)

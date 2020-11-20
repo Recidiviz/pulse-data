@@ -36,7 +36,7 @@ class TestSchema(TestCase):
     @classmethod
     def setUpClass(cls) -> None:
         # We must use postgres because sqlite does not support array type columns
-        cls.temp_db_dir = local_postgres_helpers.start_on_disk_postgresql_database(create_temporary_db=True)
+        cls.temp_db_dir = local_postgres_helpers.start_on_disk_postgresql_database()
 
     def setUp(self) -> None:
         local_postgres_helpers.use_on_disk_postgresql_database(JusticeCountsBase)
