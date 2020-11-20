@@ -32,7 +32,8 @@ from recidiviz.ingest.direct.regions.us_nm_bernalillo.\
 from recidiviz.ingest.models.ingest_info import Arrest, Bond, Booking, Charge, \
     Person, IngestInfo
 from recidiviz.persistence.database.base_schema import JailsBase
-from recidiviz.persistence.persistence import OVERALL_THRESHOLD, ENUM_THRESHOLD, ENTITY_MATCHING_THRESHOLD
+from recidiviz.persistence.persistence import OVERALL_THRESHOLD, ENUM_THRESHOLD, ENTITY_MATCHING_THRESHOLD, \
+    DATABASE_INVARIANT_THRESHOLD
 from recidiviz.tests.ingest.direct.direct_ingest_util import \
     path_for_fixture_file, process_task_queues
 from recidiviz.tests.ingest.direct.regions.base_direct_ingest_controller_tests \
@@ -70,9 +71,12 @@ class UsNmBernalilloControllerTest(IndividualIngestTest,
         # the error threshold.
         self.entity_matching_error_threshold_patcher = patch.dict(
             'recidiviz.persistence.persistence.SYSTEM_TYPE_TO_ERROR_THRESHOLD',
-            {SystemLevel.COUNTY: {OVERALL_THRESHOLD: 0,
-                                  ENUM_THRESHOLD: 0,
-                                  ENTITY_MATCHING_THRESHOLD: 0}})
+            {SystemLevel.COUNTY: {
+                OVERALL_THRESHOLD: 0,
+                ENUM_THRESHOLD: 0,
+                ENTITY_MATCHING_THRESHOLD: 0,
+                DATABASE_INVARIANT_THRESHOLD: 0,
+            }})
         self.entity_matching_error_threshold_patcher.start()
 
     def tearDown(self) -> None:

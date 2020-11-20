@@ -30,9 +30,13 @@ from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.errors import PersistenceError
 
 
-def check_not_dirty(session: Session):
-    if session.dirty:
-        raise PersistenceError(
+class SessionIsDirtyError(PersistenceError):
+    pass
+
+
+def check_not_dirty(session: Session) -> None:
+    if session.dirty or session.new:
+        raise SessionIsDirtyError(
             "Session unexpectedly dirty - flush before querying the database.")
 
 

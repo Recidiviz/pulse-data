@@ -42,6 +42,7 @@ from recidiviz.persistence.database.schema_utils import \
     schema_base_for_system_level
 from recidiviz.persistence.database.session import Session
 from recidiviz.persistence.database.session_factory import SessionFactory
+from recidiviz.persistence.database_invariant_validator import database_invariant_validator
 from recidiviz.persistence.entity.county import entities as county_entities
 from recidiviz.persistence.entity_matching import entity_matching
 from recidiviz.persistence.entity_validator import entity_validator
@@ -85,10 +86,21 @@ monitoring.register_views(
 OVERALL_THRESHOLD = "overall_threshold"
 ENUM_THRESHOLD = "enum_threshold"
 ENTITY_MATCHING_THRESHOLD = "entity_matching_threshold"
+DATABASE_INVARIANT_THRESHOLD = "database_invariant_threshold"
 
 SYSTEM_TYPE_TO_ERROR_THRESHOLD: Dict[SystemLevel, Dict[str, float]] = {
-    SystemLevel.COUNTY: {OVERALL_THRESHOLD: 0.5, ENUM_THRESHOLD: 0.5, ENTITY_MATCHING_THRESHOLD: 0.5},
-    SystemLevel.STATE: {OVERALL_THRESHOLD: 0.5, ENUM_THRESHOLD: 0.5, ENTITY_MATCHING_THRESHOLD: 0.5}
+    SystemLevel.COUNTY: {
+        OVERALL_THRESHOLD: 0.5,
+        ENUM_THRESHOLD: 0.5,
+        ENTITY_MATCHING_THRESHOLD: 0.5,
+        DATABASE_INVARIANT_THRESHOLD: 0,
+    },
+    SystemLevel.STATE: {
+        OVERALL_THRESHOLD: 0.5,
+        ENUM_THRESHOLD: 0.5,
+        ENTITY_MATCHING_THRESHOLD: 0.5,
+        DATABASE_INVARIANT_THRESHOLD: 0,
+    },
 }
 
 
@@ -177,7 +189,8 @@ def _should_abort(
         system_level: SystemLevel,
         conversion_result: IngestInfoConversionResult,
         entity_matching_errors: int = 0,
-        data_validation_errors: int = 0) -> bool:
+        data_validation_errors: int = 0,
+        database_invariant_errors: int = 0) -> bool:
     """
     Returns true if we should abort the current attempt to persist an IngestInfo
     object, given the number of errors we've encountered.
@@ -214,6 +227,10 @@ def _should_abort(
         _log_error(ENTITY_MATCHING_THRESHOLD, error_thresholds, entity_matching_errors / total_root_entities)
         return True
 
+    if database_invariant_errors > error_thresholds[DATABASE_INVARIANT_THRESHOLD]:
+        _log_error(DATABASE_INVARIANT_THRESHOLD, error_thresholds, database_invariant_errors / total_root_entities)
+        return True
+
     return False
 
 
@@ -241,7 +258,7 @@ def _log_error(threshold_type: str, error_thresholds: Dict[str, float], error_ra
     logging.error(
         "Aborting because we exceeded the [%s] threshold of [%s] with an error ratio of [%s]",
         threshold_type,
-        error_thresholds.get(threshold_type),
+        error_thresholds[threshold_type],
         error_ratio)
     with monitoring.measurements({monitoring.TagKey.REASON: threshold_type}) as m:
         m.measure_int_put(m_aborts, 1)
@@ -358,11 +375,22 @@ def write(ingest_info: IngestInfo, metadata: IngestMetadata,
                     total_root_entities=total_root_entities,
                     system_level=metadata.system_level,
                     conversion_result=conversion_result,
-                    entity_matching_errors=entity_matching_output.error_count,
-                    data_validation_errors=data_validation_errors):
+                    entity_matching_errors=entity_matching_output.error_count):
                 #  TODO(#1665): remove once dangling PERSIST session
                 #   investigation is complete.
                 logging.info("_should_abort_ was true after entity matching")
+                return False
+
+            database_invariant_errors = \
+                database_invariant_validator.validate_invariants(
+                    session, metadata.system_level, metadata.region, output_people)
+
+            if _should_abort(
+                    total_root_entities=total_root_entities,
+                    system_level=metadata.system_level,
+                    conversion_result=conversion_result,
+                    database_invariant_errors=database_invariant_errors):
+                logging.info("_should_abort_ was true after database invariant validation")
                 return False
 
             database.write_people(
