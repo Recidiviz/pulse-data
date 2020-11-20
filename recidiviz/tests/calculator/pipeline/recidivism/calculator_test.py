@@ -35,11 +35,12 @@ from recidiviz.calculator.pipeline.utils.metric_utils import \
 from recidiviz.calculator.pipeline.recidivism.release_event import \
     ReincarcerationReturnType
 from recidiviz.calculator.pipeline.utils.person_utils import PersonMetadata
+from recidiviz.common.constants.state.external_id_types import US_ND_ELITE
 from recidiviz.common.constants.state.state_supervision_period import StateSupervisionPeriodSupervisionType
 from recidiviz.common.constants.state.state_supervision_violation import \
     StateSupervisionViolationType
-from recidiviz.persistence.entity.state.entities import StatePerson, Gender,\
-    StatePersonRace, Race, StatePersonEthnicity, Ethnicity
+from recidiviz.persistence.entity.state.entities import StatePerson, Gender, \
+    StatePersonRace, Race, StatePersonEthnicity, Ethnicity, StatePersonExternalId
 from recidiviz.calculator.pipeline.recidivism.metrics import \
     ReincarcerationRecidivismMetricType as MetricType, ReincarcerationRecidivismCountMetric, \
     ReincarcerationRecidivismRateMetric
@@ -1299,13 +1300,13 @@ class TestCharacteristicCombinations(unittest.TestCase):
                                                     birthdate=date(1984, 8, 31),
                                                     gender=Gender.FEMALE)
 
-        race_white = StatePersonRace.new_with_defaults(state_code='US_MO', race=Race.WHITE)
-        race_black = StatePersonRace.new_with_defaults(state_code='US_MO', race=Race.BLACK)
+        race_white = StatePersonRace.new_with_defaults(state_code='US_XX', race=Race.WHITE)
+        race_black = StatePersonRace.new_with_defaults(state_code='US_XX', race=Race.BLACK)
 
         self.person.races = [race_white, race_black]
 
         ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code='US_MO',
+            state_code='US_XX',
             ethnicity=Ethnicity.NOT_HISPANIC)
 
         self.person.ethnicities = [ethnicity]
@@ -1361,6 +1362,45 @@ class TestCharacteristicCombinations(unittest.TestCase):
                            'days_at_liberty': (date(2014, 5, 12) - date(2008, 9, 19)).days,
                            'reincarceration_date': date(2014, 5, 12),
                            'prioritized_race_or_ethnicity': _DEFAULT_PERSON_METADATA.prioritized_race_or_ethnicity
+                           }
+
+        self.assertEqual(expected_output, characteristic_dict)
+
+    def test_characteristic_combinations_US_ND(self):
+        person = StatePerson.new_with_defaults(state_code='US_ND',
+                                               person_id=12345,
+                                               birthdate=date(1984, 8, 31),
+                                               gender=Gender.FEMALE)
+
+        person_external_id = StatePersonExternalId.new_with_defaults(
+            state_code='US_ND',
+            id_type=US_ND_ELITE,
+            external_id='TEST_ID_999'
+        )
+
+        person.external_ids = [person_external_id]
+
+        release_event = RecidivismReleaseEvent(
+            state_code='US_ND', original_admission_date=date(2005, 7, 19), release_date=date(2008, 9, 19),
+            release_facility='Hudson', county_of_residence=_COUNTY_OF_RESIDENCE,
+            reincarceration_date=date(2014, 5, 12), reincarceration_facility='Upstate',
+            return_type=ReincarcerationReturnType.NEW_ADMISSION)
+
+        characteristic_dict = calculator.characteristics_dict(person,
+                                                              release_event,
+                                                              ReincarcerationRecidivismCountMetric,
+                                                              PersonMetadata(prioritized_race_or_ethnicity=None))
+
+        expected_output = {'county_of_residence': 'county',
+                           'release_facility': 'Hudson',
+                           'stay_length_bucket': '36-48',
+                           'age_bucket': '<25',
+                           'gender': Gender.FEMALE,
+                           'person_id': 12345,
+                           'person_external_id': 'TEST_ID_999',
+                           'return_type': ReincarcerationReturnType.NEW_ADMISSION,
+                           'days_at_liberty': (date(2014, 5, 12) - date(2008, 9, 19)).days,
+                           'reincarceration_date': date(2014, 5, 12),
                            }
 
         self.assertEqual(expected_output, characteristic_dict)
