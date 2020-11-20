@@ -56,9 +56,6 @@ _EXTERNAL_ID = 'EXTERNAL_ID-1'
 _EXTERNAL_ID_2 = 'EXTERNAL_ID-2'
 _EXTERNAL_ID_3 = 'EXTERNAL_ID-3'
 _EXTERNAL_ID_4 = 'EXTERNAL_ID-4'
-_ID = 1
-_ID_2 = 2
-_ID_3 = 3
 _ID_TYPE = 'ID_TYPE'
 _FULL_NAME = 'FULL_NAME'
 _COUNTY_CODE = 'Iredell'
@@ -85,17 +82,17 @@ class TestNdEntityMatching(BaseStateEntityMatcherTest):
         fake_region.get_enum_overrides.return_value = overrides_builder.build()
         return fake_region
 
-    def test_runMatch_checkPlaceholdersWhenNoRootEntityMatch(self):
+    def test_runMatch_checkPlaceholdersWhenNoRootEntityMatch(self) -> None:
         """Tests that ingested people are matched with DB placeholder people
         when a root entity match doesn't exist. Specific to US_ND.
         """
-        db_placeholder_person = generate_person(person_id=_ID, state_code=_US_ND)
+        db_placeholder_person = generate_person(state_code=_US_ND)
         db_sg = generate_sentence_group(
-            sentence_group_id=_ID, state_code=_US_ND, external_id=_EXTERNAL_ID)
+            state_code=_US_ND, external_id=_EXTERNAL_ID)
         db_placeholder_person.sentence_groups = [db_sg]
-        db_placeholder_person_other_state = generate_person(person_id=_ID_2, state_code=_US_ND)
+        db_placeholder_person_other_state = generate_person(state_code=_US_ND)
         db_sg_other_state = generate_sentence_group(
-            sentence_group_id=_ID_2, state_code=_OTHER_STATE_CODE,
+            state_code=_OTHER_STATE_CODE,
             external_id=_EXTERNAL_ID)
         db_placeholder_person_other_state.sentence_groups = [db_sg_other_state]
 
@@ -138,14 +135,14 @@ class TestNdEntityMatching(BaseStateEntityMatcherTest):
         self.assertEqual(0, matched_entities.error_count)
         self.assertEqual(1, matched_entities.total_root_entities)
 
-    def test_runMatch_sameEntities_noDuplicates(self):
-        db_placeholder_person = generate_person(person_id=_ID, state_code=_US_ND)
+    def test_runMatch_sameEntities_noDuplicates(self) -> None:
+        db_placeholder_person = generate_person(state_code=_US_ND)
         db_is = generate_incarceration_sentence(
             person=db_placeholder_person,
             state_code=_US_ND,
-            incarceration_sentence_id=_ID, date_imposed=_DATE_1)
+            date_imposed=_DATE_1)
         db_sg = generate_sentence_group(
-            sentence_group_id=_ID, external_id=_EXTERNAL_ID,
+            external_id=_EXTERNAL_ID,
             state_code=_US_ND,
             incarceration_sentences=[db_is])
         db_placeholder_person.sentence_groups = [db_sg]
@@ -181,33 +178,29 @@ class TestNdEntityMatching(BaseStateEntityMatcherTest):
         self.assertEqual(0, matched_entities.error_count)
         self.assertEqual(1, matched_entities.total_root_entities)
 
-    def test_runMatch_associateSvrsToIps(self):
+    def test_runMatch_associateSvrsToIps(self) -> None:
         # Arrange 1 - Match
-        db_placeholder_person = generate_person(person_id=_ID, state_code=_US_ND)
+        db_placeholder_person = generate_person(state_code=_US_ND)
         db_ip_1 = generate_incarceration_period(
             person=db_placeholder_person,
             state_code=_US_ND,
-            incarceration_period_id=_ID,
             admission_date=_DATE_2,
             admission_reason=
             StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION.value)
         db_ip_2 = generate_incarceration_period(
             person=db_placeholder_person,
             state_code=_US_ND,
-            incarceration_period_id=_ID_2,
             admission_date=_DATE_3,
             admission_reason=
             StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION.value)
         db_placeholder_is = generate_incarceration_sentence(
             person=db_placeholder_person,
             state_code=_US_ND,
-            incarceration_sentence_id=_ID,
             incarceration_periods=[db_ip_1, db_ip_2])
 
         db_sg = generate_sentence_group(
             external_id=_EXTERNAL_ID,
             state_code=_US_ND,
-            sentence_group_id=_ID,
             incarceration_sentences=[db_placeholder_is],
         )
 
@@ -268,7 +261,7 @@ class TestNdEntityMatching(BaseStateEntityMatcherTest):
             supervision_sentences=[expected_placeholder_ss],
             incarceration_sentences=[expected_placeholder_is])
         expected_placeholder_person = attr.evolve(
-            placeholder_person, person_id=_ID,
+            placeholder_person, person_id=db_placeholder_person.person_id,
             sentence_groups=[expected_placeholder_sg])
 
         # Act 1 - Match
@@ -282,25 +275,23 @@ class TestNdEntityMatching(BaseStateEntityMatcherTest):
         self.assertEqual(0, matched_entities.error_count)
         self.assertEqual(1, matched_entities.total_root_entities)
 
-    def test_match_mergeIncomingIncarcerationPeriods(self):
+    def test_match_mergeIncomingIncarcerationPeriods(self) -> None:
         # Arrange 1 - Match
-        db_person = schema.StatePerson(person_id=_ID, full_name=_FULL_NAME, state_code=_US_ND)
+        db_person = schema.StatePerson(full_name=_FULL_NAME, state_code=_US_ND)
         db_incarceration_sentence = \
             schema.StateIncarcerationSentence(
                 state_code=_US_ND,
-                incarceration_sentence_id=_ID,
                 status=StateIncarcerationPeriodStatus.EXTERNAL_UNKNOWN.value,
                 external_id=_EXTERNAL_ID,
                 person=db_person)
         db_sentence_group = schema.StateSentenceGroup(
             state_code=_US_ND,
-            sentence_group_id=_ID,
             status=StateSentenceStatus.EXTERNAL_UNKNOWN.value,
             external_id=_EXTERNAL_ID,
             incarceration_sentences=[db_incarceration_sentence],
             person=db_person)
         db_external_id = schema.StatePersonExternalId(
-            person_external_id_id=_ID, state_code=_US_ND,
+            state_code=_US_ND,
             id_type=_ID_TYPE, external_id=_EXTERNAL_ID,
             person=db_person)
         db_person.sentence_groups = [db_sentence_group]
@@ -347,7 +338,7 @@ class TestNdEntityMatching(BaseStateEntityMatcherTest):
             sentence_groups=[sentence_group], state_code=_US_ND)
 
         expected_person = StatePerson.new_with_defaults(
-            person_id=_ID, full_name=_FULL_NAME, state_code=_US_ND)
+            full_name=_FULL_NAME, state_code=_US_ND)
         expected_complete_incarceration_period = \
             StateIncarcerationPeriod.new_with_defaults(
                 external_id=_EXTERNAL_ID + '|' + _EXTERNAL_ID_2,
@@ -364,7 +355,7 @@ class TestNdEntityMatching(BaseStateEntityMatcherTest):
             incarceration_period_3)
         expected_incarceration_sentence = \
             StateIncarcerationSentence.new_with_defaults(
-                incarceration_sentence_id=_ID,
+                incarceration_sentence_id=db_incarceration_sentence.incarceration_sentence_id,
                 status=StateSentenceStatus.EXTERNAL_UNKNOWN,
                 state_code=_US_ND,
                 external_id=_EXTERNAL_ID,
@@ -372,13 +363,12 @@ class TestNdEntityMatching(BaseStateEntityMatcherTest):
                     expected_complete_incarceration_period,
                     expected_incomplete_incarceration_period])
         expected_sentence_group = StateSentenceGroup.new_with_defaults(
-            sentence_group_id=_ID,
             status=StateSentenceStatus.EXTERNAL_UNKNOWN,
             state_code=_US_ND,
             external_id=_EXTERNAL_ID,
             incarceration_sentences=[expected_incarceration_sentence])
         expected_external_id = StatePersonExternalId.new_with_defaults(
-            person_external_id_id=_ID, state_code=_US_ND,
+            person_external_id_id=db_external_id.person_external_id_id, state_code=_US_ND,
             id_type=_ID_TYPE, external_id=_EXTERNAL_ID)
         expected_person.external_ids = [expected_external_id]
         expected_person.sentence_groups = [expected_sentence_group]
@@ -395,16 +385,15 @@ class TestNdEntityMatching(BaseStateEntityMatcherTest):
         self.assertEqual(1, matched_entities.total_root_entities)
 
     def test_matchPersons_mergeIncompleteIncarcerationPeriodOntoComplete(
-            self):
+            self) -> None:
         """Tests correct matching behavior when an incomplete period is ingested
         and a matching complete period is in the db.
         """
         # Arrange 1 - Match
-        db_person = generate_person(person_id=_ID, full_name=_FULL_NAME, state_code=_US_ND)
+        db_person = generate_person(full_name=_FULL_NAME, state_code=_US_ND)
         db_complete_incarceration_period = \
             generate_incarceration_period(
                 person=db_person,
-                incarceration_period_id=_ID_2,
                 state_code=_US_ND,
                 external_id=_EXTERNAL_ID + '|' + _EXTERNAL_ID_2,
                 facility=_FACILITY,
@@ -420,18 +409,15 @@ class TestNdEntityMatching(BaseStateEntityMatcherTest):
             generate_incarceration_sentence(
                 person=db_person,
                 state_code=_US_ND,
-                incarceration_sentence_id=_ID,
                 status=StateSentenceStatus.EXTERNAL_UNKNOWN.value,
                 external_id=_EXTERNAL_ID,
                 incarceration_periods=[db_complete_incarceration_period])
         db_sentence_group = generate_sentence_group(
             state_code=_US_ND,
-            sentence_group_id=_ID,
             status=StateSentenceStatus.EXTERNAL_UNKNOWN.value,
             external_id=_EXTERNAL_ID,
             incarceration_sentences=[db_incarceration_sentence])
         db_external_id = generate_external_id(
-            person_external_id_id=_ID,
             state_code=_US_ND,
             id_type=_ID_TYPE, external_id=_EXTERNAL_ID)
         db_person.sentence_groups = [db_sentence_group]
@@ -466,7 +452,7 @@ class TestNdEntityMatching(BaseStateEntityMatcherTest):
 
         expected_incarceration_sentence = \
             StateIncarcerationSentence.new_with_defaults(
-                incarceration_sentence_id=_ID,
+                incarceration_sentence_id=db_incarceration_sentence.incarceration_sentence_id,
                 status=StateSentenceStatus.EXTERNAL_UNKNOWN,
                 state_code=_US_ND,
                 external_id=_EXTERNAL_ID,
@@ -476,11 +462,11 @@ class TestNdEntityMatching(BaseStateEntityMatcherTest):
             self.to_entity(db_sentence_group),
             incarceration_sentences=[expected_incarceration_sentence])
         expected_external_id = StatePersonExternalId.new_with_defaults(
-            person_external_id_id=_ID,
+            person_external_id_id=db_external_id.person_external_id_id,
             state_code=_US_ND,
             id_type=_ID_TYPE, external_id=_EXTERNAL_ID)
         expected_person = StatePerson.new_with_defaults(
-            person_id=_ID, full_name=_FULL_NAME,
+            person_id=db_person.person_id, full_name=_FULL_NAME,
             external_ids=[expected_external_id],
             sentence_groups=[expected_sentence_group],
             state_code=_US_ND)
@@ -497,17 +483,16 @@ class TestNdEntityMatching(BaseStateEntityMatcherTest):
         self.assertEqual(1, matched_entities.total_root_entities)
 
     def test_matchPersons_mergeCompleteIncarcerationPeriodOntoIncomplete(
-            self):
+            self) -> None:
         """Tests correct matching behavior when a complete period is ingested
         and a matching incomplete period is in the db.
         """
         # Arrange 1 - Match
-        db_person = generate_person(person_id=_ID, full_name=_FULL_NAME, state_code=_US_ND)
+        db_person = generate_person(full_name=_FULL_NAME, state_code=_US_ND)
         db_incomplete_incarceration_period = \
             generate_incarceration_period(
                 person=db_person,
                 state_code=_US_ND,
-                incarceration_period_id=_ID,
                 external_id=_EXTERNAL_ID,
                 facility=_FACILITY,
                 incarceration_type=StateIncarcerationType.STATE_PRISON.value,
@@ -520,18 +505,15 @@ class TestNdEntityMatching(BaseStateEntityMatcherTest):
             generate_incarceration_sentence(
                 person=db_person,
                 state_code=_US_ND,
-                incarceration_sentence_id=_ID,
                 status=StateSentenceStatus.EXTERNAL_UNKNOWN.value,
                 external_id=_EXTERNAL_ID,
                 incarceration_periods=[db_incomplete_incarceration_period])
         db_sentence_group = generate_sentence_group(
             state_code=_US_ND,
-            sentence_group_id=_ID,
             status=StateSentenceStatus.EXTERNAL_UNKNOWN.value,
             external_id=_EXTERNAL_ID,
             incarceration_sentences=[db_incarceration_sentence])
         db_external_id = generate_external_id(
-            person_external_id_id=_ID,
             state_code=_US_ND,
             id_type=_ID_TYPE, external_id=_EXTERNAL_ID)
         db_person.sentence_groups = [db_sentence_group]
@@ -565,11 +547,12 @@ class TestNdEntityMatching(BaseStateEntityMatcherTest):
             sentence_groups=[sentence_group])
 
         expected_complete_incarceration_period = attr.evolve(
-            complete_incarceration_period, incarceration_period_id=_ID)
+            complete_incarceration_period,
+            incarceration_period_id=db_incomplete_incarceration_period.incarceration_period_id)
 
         expected_incarceration_sentence = \
             StateIncarcerationSentence.new_with_defaults(
-                incarceration_sentence_id=_ID,
+                incarceration_sentence_id=db_incarceration_sentence.incarceration_sentence_id,
                 status=StateSentenceStatus.EXTERNAL_UNKNOWN,
                 state_code=_US_ND,
                 external_id=_EXTERNAL_ID,
@@ -578,11 +561,11 @@ class TestNdEntityMatching(BaseStateEntityMatcherTest):
             self.to_entity(db_sentence_group),
             incarceration_sentences=[expected_incarceration_sentence])
         expected_external_id = StatePersonExternalId.new_with_defaults(
-            person_external_id_id=_ID,
+            person_external_id_id=db_external_id.person_external_id_id,
             state_code=_US_ND,
             id_type=_ID_TYPE, external_id=_EXTERNAL_ID)
         expected_person = StatePerson.new_with_defaults(
-            person_id=_ID, full_name=_FULL_NAME,
+            person_id=db_person.person_id, full_name=_FULL_NAME,
             external_ids=[expected_external_id],
             sentence_groups=[expected_sentence_group],
             state_code=_US_ND)
@@ -598,16 +581,15 @@ class TestNdEntityMatching(BaseStateEntityMatcherTest):
         self.assertEqual(0, matched_entities.error_count)
         self.assertEqual(1, matched_entities.total_root_entities)
 
-    def test_matchPersons_mergeCompleteIncarcerationPeriods(self):
+    def test_matchPersons_mergeCompleteIncarcerationPeriods(self) -> None:
         """Tests correct matching behavior when a complete period is ingested
         and a matching complete period is in the db.
         """
         # Arrange 1 - Match
-        db_person = generate_person(person_id=_ID, full_name=_FULL_NAME, state_code=_US_ND)
+        db_person = generate_person(full_name=_FULL_NAME, state_code=_US_ND)
         db_complete_incarceration_period = \
             generate_incarceration_period(
                 person=db_person,
-                incarceration_period_id=_ID,
                 state_code=_US_ND,
                 external_id=_EXTERNAL_ID + '|' + _EXTERNAL_ID_2,
                 facility=_FACILITY,
@@ -623,18 +605,15 @@ class TestNdEntityMatching(BaseStateEntityMatcherTest):
             generate_incarceration_sentence(
                 person=db_person,
                 state_code=_US_ND,
-                incarceration_sentence_id=_ID,
                 status=StateSentenceStatus.EXTERNAL_UNKNOWN.value,
                 external_id=_EXTERNAL_ID,
                 incarceration_periods=[db_complete_incarceration_period])
         db_sentence_group = generate_sentence_group(
             state_code=_US_ND,
-            sentence_group_id=_ID,
             status=StateSentenceStatus.EXTERNAL_UNKNOWN.value,
             external_id=_EXTERNAL_ID,
             incarceration_sentences=[db_incarceration_sentence])
         db_external_id = generate_external_id(
-            person_external_id_id=_ID,
             state_code=_US_ND,
             id_type=_ID_TYPE, external_id=_EXTERNAL_ID)
         db_person.sentence_groups = [db_sentence_group]
@@ -659,11 +638,12 @@ class TestNdEntityMatching(BaseStateEntityMatcherTest):
             state_code=_US_ND)
 
         expected_complete_incarceration_period = attr.evolve(
-            updated_incarceration_period, incarceration_period_id=_ID)
+            updated_incarceration_period,
+            incarceration_period_id=db_complete_incarceration_period.incarceration_period_id)
 
         expected_incarceration_sentence = \
             StateIncarcerationSentence.new_with_defaults(
-                incarceration_sentence_id=_ID,
+                incarceration_sentence_id=db_incarceration_sentence.incarceration_sentence_id,
                 status=StateSentenceStatus.EXTERNAL_UNKNOWN,
                 state_code=_US_ND,
                 external_id=_EXTERNAL_ID,
@@ -672,11 +652,11 @@ class TestNdEntityMatching(BaseStateEntityMatcherTest):
             self.to_entity(db_sentence_group),
             incarceration_sentences=[expected_incarceration_sentence])
         expected_external_id = StatePersonExternalId.new_with_defaults(
-            person_external_id_id=_ID,
+            person_external_id_id=db_external_id.person_external_id_id,
             state_code=_US_ND,
             id_type=_ID_TYPE, external_id=_EXTERNAL_ID)
         expected_person = StatePerson.new_with_defaults(
-            person_id=_ID, full_name=_FULL_NAME,
+            person_id=db_person.person_id, full_name=_FULL_NAME,
             external_ids=[expected_external_id],
             sentence_groups=[expected_sentence_group],
             state_code=_US_ND)
@@ -692,16 +672,15 @@ class TestNdEntityMatching(BaseStateEntityMatcherTest):
         self.assertEqual(0, matched_entities.error_count)
         self.assertEqual(1, matched_entities.total_root_entities)
 
-    def test_matchPersons_mergeIncompleteIncarcerationPeriods(self):
+    def test_matchPersons_mergeIncompleteIncarcerationPeriods(self) -> None:
         """Tests correct matching behavior when an incomplete period is ingested
         and a matching incomplete period is in the db.
         """
         # Arrange 1 - Match
-        db_person = generate_person(person_id=_ID, full_name=_FULL_NAME, state_code=_US_ND)
+        db_person = generate_person(full_name=_FULL_NAME, state_code=_US_ND)
         db_incomplete_incarceration_period = \
             generate_incarceration_period(
                 person=db_person,
-                incarceration_period_id=_ID,
                 state_code=_US_ND,
                 external_id=_EXTERNAL_ID_3,
                 facility=_FACILITY,
@@ -712,7 +691,6 @@ class TestNdEntityMatching(BaseStateEntityMatcherTest):
         db_complete_incarceration_period = \
             generate_incarceration_period(
                 person=db_person,
-                incarceration_period_id=_ID_2,
                 state_code=_US_ND,
                 external_id=_EXTERNAL_ID + '|' + _EXTERNAL_ID_2,
                 facility=_FACILITY,
@@ -728,7 +706,6 @@ class TestNdEntityMatching(BaseStateEntityMatcherTest):
             generate_incarceration_sentence(
                 person=db_person,
                 state_code=_US_ND,
-                incarceration_sentence_id=_ID,
                 status=StateSentenceStatus.EXTERNAL_UNKNOWN.value,
                 external_id=_EXTERNAL_ID,
                 incarceration_periods=[
@@ -736,12 +713,10 @@ class TestNdEntityMatching(BaseStateEntityMatcherTest):
                     db_incomplete_incarceration_period])
         db_sentence_group = generate_sentence_group(
             state_code=_US_ND,
-            sentence_group_id=_ID,
             status=StateSentenceStatus.EXTERNAL_UNKNOWN.value,
             external_id=_EXTERNAL_ID,
             incarceration_sentences=[db_incarceration_sentence])
         db_external_id = generate_external_id(
-            person_external_id_id=_ID,
             state_code=_US_ND,
             id_type=_ID_TYPE, external_id=_EXTERNAL_ID)
         db_person.sentence_groups = [db_sentence_group]
@@ -780,7 +755,7 @@ class TestNdEntityMatching(BaseStateEntityMatcherTest):
 
         expected_incarceration_sentence = \
             StateIncarcerationSentence.new_with_defaults(
-                incarceration_sentence_id=_ID,
+                incarceration_sentence_id=db_incarceration_sentence.incarceration_sentence_id,
                 status=StateSentenceStatus.EXTERNAL_UNKNOWN,
                 state_code=_US_ND,
                 external_id=_EXTERNAL_ID,
@@ -791,11 +766,11 @@ class TestNdEntityMatching(BaseStateEntityMatcherTest):
             self.to_entity(db_sentence_group),
             incarceration_sentences=[expected_incarceration_sentence])
         expected_external_id = StatePersonExternalId.new_with_defaults(
-            person_external_id_id=_ID,
+            person_external_id_id=db_external_id.person_external_id_id,
             state_code=_US_ND,
             id_type=_ID_TYPE, external_id=_EXTERNAL_ID)
         expected_person = StatePerson.new_with_defaults(
-            person_id=_ID, full_name=_FULL_NAME,
+            person_id=db_person.person_id, full_name=_FULL_NAME,
             external_ids=[expected_external_id],
             sentence_groups=[expected_sentence_group],
             state_code=_US_ND)
@@ -811,16 +786,15 @@ class TestNdEntityMatching(BaseStateEntityMatcherTest):
         self.assertEqual(0, matched_entities.error_count)
         self.assertEqual(1, matched_entities.total_root_entities)
 
-    def test_matchPersons_dontMergePeriodsFromDifferentStates(self):
+    def test_matchPersons_dontMergePeriodsFromDifferentStates(self) -> None:
         """Tests that incarceration periods don't match when either doesn't have
         US_ND as its state code.
         """
         # Arrange 1 - Match
-        db_person = generate_person(person_id=_ID, full_name=_FULL_NAME, state_code=_US_ND)
+        db_person = generate_person(full_name=_FULL_NAME, state_code=_US_ND)
         db_incomplete_incarceration_period = \
             generate_incarceration_period(
                 person=db_person,
-                incarceration_period_id=_ID,
                 state_code=_US_ND,
                 external_id=_EXTERNAL_ID_3,
                 facility=_FACILITY,
@@ -833,18 +807,15 @@ class TestNdEntityMatching(BaseStateEntityMatcherTest):
             generate_incarceration_sentence(
                 person=db_person,
                 state_code=_US_ND,
-                incarceration_sentence_id=_ID,
                 status=StateSentenceStatus.EXTERNAL_UNKNOWN.value,
                 external_id=_EXTERNAL_ID,
                 incarceration_periods=[db_incomplete_incarceration_period])
         db_sentence_group = generate_sentence_group(
             state_code=_US_ND,
-            sentence_group_id=_ID,
             status=StateSentenceStatus.EXTERNAL_UNKNOWN.value,
             external_id=_EXTERNAL_ID,
             incarceration_sentences=[db_incarceration_sentence])
         db_external_id = generate_external_id(
-            person_external_id_id=_ID,
             state_code=_US_ND,
             id_type=_ID_TYPE, external_id=_EXTERNAL_ID)
         db_person.sentence_groups = [db_sentence_group]
@@ -879,7 +850,7 @@ class TestNdEntityMatching(BaseStateEntityMatcherTest):
 
         expected_incarceration_sentence = \
             StateIncarcerationSentence.new_with_defaults(
-                incarceration_sentence_id=_ID,
+                incarceration_sentence_id=db_incarceration_sentence.incarceration_sentence_id,
                 status=StateSentenceStatus.EXTERNAL_UNKNOWN,
                 state_code=_US_ND,
                 external_id=_EXTERNAL_ID,
@@ -890,11 +861,11 @@ class TestNdEntityMatching(BaseStateEntityMatcherTest):
             self.to_entity(db_sentence_group),
             incarceration_sentences=[expected_incarceration_sentence])
         expected_external_id = StatePersonExternalId.new_with_defaults(
-            person_external_id_id=_ID,
+            person_external_id_id=db_external_id.person_external_id_id,
             state_code=_US_ND,
             id_type=_ID_TYPE, external_id=_EXTERNAL_ID)
         expected_person = StatePerson.new_with_defaults(
-            person_id=_ID, full_name=_FULL_NAME,
+            person_id=db_person.person_id, full_name=_FULL_NAME,
             external_ids=[expected_external_id],
             sentence_groups=[expected_sentence_group],
             state_code=_US_ND)
@@ -910,13 +881,12 @@ class TestNdEntityMatching(BaseStateEntityMatcherTest):
         self.assertEqual(0, matched_entities.error_count)
         self.assertEqual(1, matched_entities.total_root_entities)
 
-    def test_matchPersons_temporaryCustodyPeriods(self):
+    def test_matchPersons_temporaryCustodyPeriods(self) -> None:
         # Arrange 1 - Match
-        db_person = generate_person(person_id=_ID, full_name=_FULL_NAME, state_code=_US_ND)
+        db_person = generate_person(full_name=_FULL_NAME, state_code=_US_ND)
         db_incomplete_temporary_custody = \
             generate_incarceration_period(
                 person=db_person,
-                incarceration_period_id=_ID,
                 state_code=_US_ND,
                 external_id=_EXTERNAL_ID,
                 facility=_FACILITY,
@@ -931,18 +901,15 @@ class TestNdEntityMatching(BaseStateEntityMatcherTest):
             generate_incarceration_sentence(
                 person=db_person,
                 state_code=_US_ND,
-                incarceration_sentence_id=_ID,
                 status=StateSentenceStatus.EXTERNAL_UNKNOWN.value,
                 external_id=_EXTERNAL_ID,
                 incarceration_periods=[db_incomplete_temporary_custody])
         db_sentence_group = generate_sentence_group(
             state_code=_US_ND,
-            sentence_group_id=_ID,
             status=StateSentenceStatus.EXTERNAL_UNKNOWN.value,
             external_id=_EXTERNAL_ID,
             incarceration_sentences=[db_incarceration_sentence])
         db_external_id = generate_external_id(
-            person_external_id_id=_ID,
             state_code=_US_ND,
             id_type=_ID_TYPE, external_id=_EXTERNAL_ID)
         db_person.sentence_groups = [db_sentence_group]
@@ -984,7 +951,7 @@ class TestNdEntityMatching(BaseStateEntityMatcherTest):
 
         expected_complete_temporary_custody = \
             StateIncarcerationPeriod.new_with_defaults(
-                incarceration_period_id=_ID,
+                incarceration_period_id=db_incomplete_temporary_custody.incarceration_period_id,
                 state_code=_US_ND,
                 external_id=_EXTERNAL_ID + '|' + _EXTERNAL_ID_2,
                 facility=_FACILITY,
@@ -1005,7 +972,7 @@ class TestNdEntityMatching(BaseStateEntityMatcherTest):
 
         expected_incarceration_sentence = \
             StateIncarcerationSentence.new_with_defaults(
-                incarceration_sentence_id=_ID,
+                incarceration_sentence_id=db_incarceration_sentence.incarceration_sentence_id,
                 status=StateSentenceStatus.EXTERNAL_UNKNOWN,
                 state_code=_US_ND,
                 external_id=_EXTERNAL_ID,
@@ -1015,11 +982,11 @@ class TestNdEntityMatching(BaseStateEntityMatcherTest):
             self.to_entity(db_sentence_group),
             incarceration_sentences=[expected_incarceration_sentence])
         expected_external_id = StatePersonExternalId.new_with_defaults(
-            person_external_id_id=_ID,
+            person_external_id_id=db_external_id.person_external_id_id,
             state_code=_US_ND,
             id_type=_ID_TYPE, external_id=_EXTERNAL_ID)
         expected_person = StatePerson.new_with_defaults(
-            person_id=_ID, full_name=_FULL_NAME,
+            person_id=db_person.person_id, full_name=_FULL_NAME,
             external_ids=[expected_external_id],
             sentence_groups=[expected_sentence_group],
             state_code=_US_ND)
@@ -1036,14 +1003,13 @@ class TestNdEntityMatching(BaseStateEntityMatcherTest):
         self.assertEqual(1, matched_entities.total_root_entities)
 
     def test_matchPersons_mergeIngestedAndDbIncarcerationPeriods_reverse(
-            self):
+            self) -> None:
         """Tests that periods are correctly merged when the release period is
         ingested before the admission period."""
         # Arrange 1 - Match
-        db_person = generate_person(person_id=_ID, full_name=_FULL_NAME, state_code=_US_ND)
+        db_person = generate_person(full_name=_FULL_NAME, state_code=_US_ND)
         db_incomplete_incarceration_period = generate_incarceration_period(
             person=db_person,
-            incarceration_period_id=_ID,
             state_code=_US_ND,
             external_id=_EXTERNAL_ID_4,
             facility=_FACILITY,
@@ -1054,7 +1020,6 @@ class TestNdEntityMatching(BaseStateEntityMatcherTest):
         db_complete_incarceration_period = \
             generate_incarceration_period(
                 person=db_person,
-                incarceration_period_id=_ID_2,
                 state_code=_US_ND,
                 external_id=_EXTERNAL_ID + '|' + _EXTERNAL_ID_2,
                 facility=_FACILITY,
@@ -1070,7 +1035,6 @@ class TestNdEntityMatching(BaseStateEntityMatcherTest):
             generate_incarceration_sentence(
                 person=db_person,
                 state_code=_US_ND,
-                incarceration_sentence_id=_ID,
                 status=StateSentenceStatus.EXTERNAL_UNKNOWN.value,
                 external_id=_EXTERNAL_ID,
                 incarceration_periods=[
@@ -1078,12 +1042,10 @@ class TestNdEntityMatching(BaseStateEntityMatcherTest):
                     db_incomplete_incarceration_period])
         db_sentence_group = generate_sentence_group(
             state_code=_US_ND,
-            sentence_group_id=_ID,
             status=StateSentenceStatus.EXTERNAL_UNKNOWN.value,
             external_id=_EXTERNAL_ID,
             incarceration_sentences=[db_incarceration_sentence])
         db_external_id = generate_external_id(
-            person_external_id_id=_ID,
             state_code=_US_ND,
             id_type=_ID_TYPE, external_id=_EXTERNAL_ID)
         db_person.sentence_groups = [db_sentence_group]
@@ -1092,7 +1054,6 @@ class TestNdEntityMatching(BaseStateEntityMatcherTest):
         self._commit_to_db(db_person)
 
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
-            incarceration_period_id=_ID,
             state_code=_US_ND,
             external_id=_EXTERNAL_ID_3,
             facility=_FACILITY,
@@ -1125,7 +1086,7 @@ class TestNdEntityMatching(BaseStateEntityMatcherTest):
 
         expected_incarceration_sentence = \
             StateIncarcerationSentence.new_with_defaults(
-                incarceration_sentence_id=_ID,
+                incarceration_sentence_id=db_incarceration_sentence.incarceration_sentence_id,
                 status=StateSentenceStatus.EXTERNAL_UNKNOWN,
                 state_code=_US_ND,
                 external_id=_EXTERNAL_ID,
@@ -1136,11 +1097,11 @@ class TestNdEntityMatching(BaseStateEntityMatcherTest):
             self.to_entity(db_sentence_group),
             incarceration_sentences=[expected_incarceration_sentence])
         expected_external_id = StatePersonExternalId.new_with_defaults(
-            person_external_id_id=_ID,
+            person_external_id_id=db_external_id.person_external_id_id,
             state_code=_US_ND,
             id_type=_ID_TYPE, external_id=_EXTERNAL_ID)
         expected_person = StatePerson.new_with_defaults(
-            person_id=_ID, full_name=_FULL_NAME,
+            person_id=db_person.person_id, full_name=_FULL_NAME,
             external_ids=[expected_external_id],
             sentence_groups=[expected_sentence_group],
             state_code=_US_ND)
@@ -1156,17 +1117,16 @@ class TestNdEntityMatching(BaseStateEntityMatcherTest):
         self.assertEqual(0, matched_entities.error_count)
         self.assertEqual(1, matched_entities.total_root_entities)
 
-    def test_runMatch_moveSupervisingOfficerOntoOpenSupervisionPeriods(self):
+    def test_runMatch_moveSupervisingOfficerOntoOpenSupervisionPeriods(self) -> None:
         db_supervising_officer = generate_agent(
-            agent_id=_ID, external_id=_EXTERNAL_ID, state_code=_US_ND)
-        db_person = generate_person(person_id=_ID, state_code=_US_ND)
+            external_id=_EXTERNAL_ID, state_code=_US_ND)
+        db_person = generate_person(state_code=_US_ND)
         db_external_id = generate_external_id(
-            person_external_id_id=_ID, external_id=_EXTERNAL_ID,
+            external_id=_EXTERNAL_ID,
             state_code=_US_ND,
             id_type=_ID_TYPE)
         db_supervision_period = generate_supervision_period(
             person=db_person,
-            supervision_period_id=_ID,
             external_id=_EXTERNAL_ID,
             start_date=_DATE_1,
             status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO.value,
@@ -1174,7 +1134,6 @@ class TestNdEntityMatching(BaseStateEntityMatcherTest):
             supervising_officer=db_supervising_officer)
         db_supervision_period_another = generate_supervision_period(
             person=db_person,
-            supervision_period_id=_ID_2,
             external_id=_EXTERNAL_ID_2,
             start_date=_DATE_2,
             status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO.value,
@@ -1182,7 +1141,6 @@ class TestNdEntityMatching(BaseStateEntityMatcherTest):
             supervising_officer=db_supervising_officer)
         db_closed_supervision_period = generate_supervision_period(
             person=db_person,
-            supervision_period_id=_ID_3,
             external_id=_EXTERNAL_ID_3,
             start_date=_DATE_3,
             termination_date=_DATE_4,
@@ -1191,12 +1149,12 @@ class TestNdEntityMatching(BaseStateEntityMatcherTest):
             supervising_officer=db_supervising_officer)
         db_supervision_sentence = generate_supervision_sentence(
             person=db_person,
-            external_id=_EXTERNAL_ID, supervision_sentence_id=_ID,
+            external_id=_EXTERNAL_ID,
             supervision_periods=[db_supervision_period,
                                  db_supervision_period_another,
                                  db_closed_supervision_period])
         db_sentence_group = generate_sentence_group(
-            external_id=_EXTERNAL_ID, sentence_group_id=_ID,
+            external_id=_EXTERNAL_ID,
             supervision_sentences=[db_supervision_sentence])
         db_person.external_ids = [db_external_id]
         db_person.sentence_groups = [db_sentence_group]
@@ -1253,10 +1211,10 @@ class TestNdEntityMatching(BaseStateEntityMatcherTest):
         self.assert_no_errors(matched_entities)
         self.assertEqual(1, matched_entities.total_root_entities)
 
-    def test_matchPersons_mergeIngestedAndDbSupervisionCaseTypeEntries(self):
-        db_person = generate_person(person_id=_ID, state_code=_US_ND)
+    def test_matchPersons_mergeIngestedAndDbSupervisionCaseTypeEntries(self) -> None:
+        db_person = generate_person(state_code=_US_ND)
         db_external_id = generate_external_id(
-            person_external_id_id=_ID, external_id=_EXTERNAL_ID,
+            external_id=_EXTERNAL_ID,
             state_code=_US_ND,
             id_type=_ID_TYPE)
         db_supervision_case_type_entry = generate_supervision_case_type_entry(

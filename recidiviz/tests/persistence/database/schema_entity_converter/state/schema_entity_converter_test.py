@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests for state/schema_entity_converter.py."""
-from typing import List
+from typing import List, Optional
 from unittest import TestCase
 
 
@@ -30,17 +30,28 @@ from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.entity_utils import print_entity_trees
 from recidiviz.tests.persistence.entity.state.entities_test_utils import \
     generate_full_graph_state_person
-from recidiviz.tests.utils import fakes
+from recidiviz.tools.postgres import local_postgres_helpers
 
 
 class TestStateSchemaEntityConverter(TestCase):
     """Tests for state/schema_entity_converter.py."""
 
+    # Stores the location of the postgres DB for this test run
+    temp_db_dir: Optional[str]
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.temp_db_dir = local_postgres_helpers.start_on_disk_postgresql_database(create_temporary_db=True)
+
     def setUp(self) -> None:
-        fakes.use_in_memory_sqlite_database(StateBase)
+        local_postgres_helpers.use_on_disk_postgresql_database(StateBase)
 
     def tearDown(self) -> None:
-        fakes.teardown_in_memory_sqlite_databases()
+        local_postgres_helpers.teardown_on_disk_postgresql_database(StateBase)
+
+    @classmethod
+    def tearDownClass(cls) -> None:
+        local_postgres_helpers.stop_and_clear_on_disk_postgresql_database(cls.temp_db_dir)
 
     def _get_schema_class_for_objects(
             self, schema_objects: List[DatabaseEntity]):

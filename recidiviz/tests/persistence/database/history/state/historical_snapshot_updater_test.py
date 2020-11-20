@@ -17,6 +17,7 @@
 """Tests for StateHistoricalSnapshotUpdater"""
 
 import datetime
+from typing import Optional
 
 from more_itertools import one
 
@@ -30,17 +31,28 @@ from recidiviz.tests.persistence.database.history.\
     )
 from recidiviz.tests.persistence.database.database_test_utils import \
     generate_schema_state_person_obj_tree
-from recidiviz.tests.utils import fakes
+from recidiviz.tools.postgres import local_postgres_helpers
 
 
 class TestStateHistoricalSnapshotUpdater(BaseHistoricalSnapshotUpdaterTest):
     """Tests for StateHistoricalSnapshotUpdater"""
 
+    # Stores the location of the postgres DB for this test run
+    temp_db_dir: Optional[str]
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.temp_db_dir = local_postgres_helpers.start_on_disk_postgresql_database(create_temporary_db=True)
+
     def setUp(self) -> None:
-        fakes.use_in_memory_sqlite_database(StateBase)
+        local_postgres_helpers.use_on_disk_postgresql_database(StateBase)
 
     def tearDown(self) -> None:
-        fakes.teardown_in_memory_sqlite_databases()
+        local_postgres_helpers.teardown_on_disk_postgresql_database(StateBase)
+
+    @classmethod
+    def tearDownClass(cls) -> None:
+        local_postgres_helpers.stop_and_clear_on_disk_postgresql_database(cls.temp_db_dir)
 
     def testStateRecordTreeSnapshotUpdate(self):
         person = generate_schema_state_person_obj_tree()
