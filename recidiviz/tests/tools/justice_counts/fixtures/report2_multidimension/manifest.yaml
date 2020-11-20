@@ -5,23 +5,25 @@ publish_date: '2020-09-24'
 tables:
     - file: 'facility_totals.csv'
       time_window:
-        snapshot:
+        fixed:
+          snapshot:
             date: '2020-09-01'
       system: 'CORRECTIONS'
       metric:
         population:
-            population_type: 'PRISON'
+          population_type: 'PRISON'
       location:
-          state: 'US_MS'
+        state: 'US_MS'
       methodology: 'Unknown'
     - file: 'facility_with_demographics.csv'
       time_window:
-        snapshot:
+        fixed:
+          snapshot:
             date: '2020-09-01'
       system: 'CORRECTIONS'
       metric:
         population:
-            population_type: 'PRISON'
+          population_type: 'PRISON'
       location:
-          state: 'US_MS'
+        state: 'US_MS'
       methodology: 'Unknown'

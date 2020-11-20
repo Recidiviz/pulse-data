@@ -17,10 +17,12 @@
 """Tests for the Justice Counts manual_upload script."""
 
 import datetime
+import decimal
 import os
 import unittest
 from typing import Optional
 
+from dateutil.relativedelta import relativedelta
 from sqlalchemy import sql
 
 from recidiviz.persistence.database.base_schema import JusticeCountsBase
@@ -87,7 +89,7 @@ class ManualUploadTest(unittest.TestCase):
 
         # Look at the first table in detail
         self.assertEqual(datetime.date(2020, 6, 30), table1.time_window_start)
-        self.assertEqual(datetime.date(2020, 6, 30), table1.time_window_end)
+        self.assertEqual(datetime.date(2020, 7, 1), table1.time_window_end)
         table1_cells = session.query(schema.Cell).filter(schema.Cell.report_table_instance == table1).all()
         # Sort in Python, as postgres sort is platform dependent (case sensitivity)
         table1_cells.sort(key=lambda cell: cell.aggregated_dimension_values)
@@ -221,3 +223,107 @@ class ManualUploadTest(unittest.TestCase):
         self.assertEqual(EXPECTED_TOTALS, facility_totals_from_demographics)
 
         session.close()
+
+    def test_ingestReport_dynamicTimeWindowSnapshot(self):
+        # Act
+        manual_upload.ingest(manifest_filepath('report3_time_snapshot'))
+
+        # Assert
+        session = SessionFactory.for_schema_base(JusticeCountsBase)
+
+        [source] = session.query(schema.Source).all()
+        self.assertEqual('Colorado Department of Corrections', source.name)
+        [report] = session.query(schema.Report).all()
+        self.assertEqual(source, report.source)
+        self.assertEqual('Dashboard Measures', report.type)
+
+        [table_definition] = session.query(schema.ReportTableDefinition).all()
+        self.assertEqual(schema.System.CORRECTIONS, table_definition.system)
+        self.assertEqual(schema.MetricType.POPULATION, table_definition.metric_type)
+        self.assertEqual([], table_definition.aggregated_dimensions)
+
+        tables = session.query(schema.ReportTableInstance).order_by(schema.ReportTableInstance.time_window_start).all()
+        self.assertEqual(13, len(tables))
+        self.assertListEqual([datetime.date(2019, 9, 1) + (n + 1) * relativedelta(months=1) - relativedelta(days=1)
+                              for n in range(13)],
+                             [table.time_window_start for table in tables])
+        for table in tables:
+            self.assertEqual(report, table.report)
+            self.assertEqual(table_definition, table.report_table_definition)
+
+        results = session.query(schema.ReportTableInstance.time_window_start,
+                                schema.ReportTableInstance.time_window_end,
+                                schema.Cell.value) \
+            .join(schema.Cell) \
+            .order_by(schema.ReportTableInstance.time_window_start).all()
+
+        EXPECTED = [
+            (datetime.date(2019, 9, 30), datetime.date(2019, 10, 1), decimal.Decimal(19748)),
+            (datetime.date(2019, 10, 31), datetime.date(2019, 11, 1), decimal.Decimal(19690)),
+            (datetime.date(2019, 11, 30), datetime.date(2019, 12, 1), decimal.Decimal(19738)),
+            (datetime.date(2019, 12, 31), datetime.date(2020, 1, 1), decimal.Decimal(19714)),
+            (datetime.date(2020, 1, 31), datetime.date(2020, 2, 1), decimal.Decimal(19668)),
+            (datetime.date(2020, 2, 29), datetime.date(2020, 3, 1), decimal.Decimal(19586)),
+            (datetime.date(2020, 3, 31), datetime.date(2020, 4, 1), decimal.Decimal(19357)),
+            (datetime.date(2020, 4, 30), datetime.date(2020, 5, 1), decimal.Decimal(18419)),
+            (datetime.date(2020, 5, 31), datetime.date(2020, 6, 1), decimal.Decimal(17808)),
+            (datetime.date(2020, 6, 30), datetime.date(2020, 7, 1), decimal.Decimal(17441)),
+            (datetime.date(2020, 7, 31), datetime.date(2020, 8, 1), decimal.Decimal(17157)),
+            (datetime.date(2020, 8, 31), datetime.date(2020, 9, 1), decimal.Decimal(16908)),
+            (datetime.date(2020, 9, 30), datetime.date(2020, 10, 1), decimal.Decimal(16673)),
+        ]
+        self.assertEqual(EXPECTED, results)
+
+    # TODO(#4483): This doesn't actually make sense for Population, we should change this to Admission or a different
+    # metric once supported.
+    def test_ingestReport_dynamicTimeWindowRange(self):
+        # Act
+        manual_upload.ingest(manifest_filepath('report4_time_range'))
+
+        # Assert
+        session = SessionFactory.for_schema_base(JusticeCountsBase)
+
+        [source] = session.query(schema.Source).all()
+        self.assertEqual('Colorado Department of Corrections', source.name)
+        [report] = session.query(schema.Report).all()
+        self.assertEqual(source, report.source)
+        self.assertEqual('Dashboard Measures', report.type)
+
+        [table_definition] = session.query(schema.ReportTableDefinition).all()
+        self.assertEqual(schema.System.CORRECTIONS, table_definition.system)
+        self.assertEqual(schema.MetricType.POPULATION, table_definition.metric_type)
+        self.assertEqual([], table_definition.aggregated_dimensions)
+
+        tables = session.query(schema.ReportTableInstance).order_by(schema.ReportTableInstance.time_window_start).all()
+        self.assertEqual(13, len(tables))
+        self.assertListEqual(
+            [(datetime.date(2019, 9, 1) + n * relativedelta(months=1),
+              datetime.date(2019, 9, 1) + (n + 1) * relativedelta(months=1))
+             for n in range(13)],
+            [(table.time_window_start, table.time_window_end) for table in tables])
+        for table in tables:
+            self.assertEqual(report, table.report)
+            self.assertEqual(table_definition, table.report_table_definition)
+
+        results = session.query(schema.ReportTableInstance.time_window_start,
+                                schema.ReportTableInstance.time_window_end,
+                                schema.Cell.value) \
+            .join(schema.Cell) \
+            .order_by(schema.ReportTableInstance.time_window_start).all()
+
+        EXPECTED = [
+            (datetime.date(2019, 9, 1), datetime.date(2019, 10, 1), decimal.Decimal(19748)),
+            (datetime.date(2019, 10, 1), datetime.date(2019, 11, 1), decimal.Decimal(19690)),
+            (datetime.date(2019, 11, 1), datetime.date(2019, 12, 1), decimal.Decimal(19738)),
+            (datetime.date(2019, 12, 1), datetime.date(2020, 1, 1), decimal.Decimal(19714)),
+            (datetime.date(2020, 1, 1), datetime.date(2020, 2, 1), decimal.Decimal(19668)),
+            (datetime.date(2020, 2, 1), datetime.date(2020, 3, 1), decimal.Decimal(19586)),
+            (datetime.date(2020, 3, 1), datetime.date(2020, 4, 1), decimal.Decimal(19357)),
+            (datetime.date(2020, 4, 1), datetime.date(2020, 5, 1), decimal.Decimal(18419)),
+            (datetime.date(2020, 5, 1), datetime.date(2020, 6, 1), decimal.Decimal(17808)),
+            (datetime.date(2020, 6, 1), datetime.date(2020, 7, 1), decimal.Decimal(17441)),
+            (datetime.date(2020, 7, 1), datetime.date(2020, 8, 1), decimal.Decimal(17157)),
+            (datetime.date(2020, 8, 1), datetime.date(2020, 9, 1), decimal.Decimal(16908)),
+            (datetime.date(2020, 9, 1), datetime.date(2020, 10, 1), decimal.Decimal(16673)),
+        ]
+        self.assertEqual(EXPECTED, results)

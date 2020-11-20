@@ -23,7 +23,7 @@ import enum
 import logging
 from numbers import Number
 import os
-from typing import Dict, List, Optional, Set, Tuple, Type, Union
+from typing import Callable, Dict, List, Optional, Set, Tuple, Type, Union
 
 import attr
 import pandas
@@ -194,7 +194,15 @@ DIMENSIONS_BY_NAME = {name: dimension
 # conversion that is not specific to a particular object, but instead a class of objects, e.g. all Metrics, is instead
 # implemented within the persistence code itself.
 
-# TODO(#4482): Use existing TimeRange class.
+# TODO(#4482): Consolidate the TimeWindow implementations and use the existing TimeRange class. Create additional
+# convenience factory methods to be used as converters.
+# * FIRST_OF_MONTH: takes a month str, gives snapshot on first of month
+# * MONTH: takes a month str, gives range for month
+# ...
+class TimeWindowType(enum.Enum):
+    SNAPSHOT = 'SNAPSHOT'
+    RANGE = 'RANGE'
+
 class TimeWindow:
     """The window of time that values in this table cover, represented by a start and an end.
 
@@ -228,7 +236,7 @@ class Snapshot(TimeWindow):
 
     @property
     def end(self) -> datetime.date:
-        return self.date
+        return self.date + datetime.timedelta(days=1)
 
 
 @attr.s(frozen=True)
@@ -288,6 +296,53 @@ class Population(Metric):
 def _convert_dimensions(dimensions: List[Tuple[str, str]]) -> List[Dimension]:
     return [dimension_type(dimension_value) for dimension_type, dimension_value in dimensions]
 
+
+# Currently we only expect one or two columns to be used to construct time windows, but this can be expanded in the
+# future if needed.
+TimeWindowConverterType = Union[
+    Callable[[str], TimeWindow],
+    Callable[[str, str], TimeWindow],
+]
+
+class TimeWindowProducer:
+    """Produces TimeWindows for a given table, splitting the table as needed.
+    """
+    @abstractmethod
+    def split_dataframe(self, df: pandas.DataFrame) -> List[Tuple[TimeWindow, pandas.DataFrame]]:
+        pass
+
+@attr.s(frozen=True, kw_only=True)
+class FixedTimeWindowProducer(TimeWindowProducer):
+    """Used when data in the table is for a single time window, configured outside of the table.
+    """
+    # The time window for the table
+    fixed_window: TimeWindow = attr.ib()
+
+    def split_dataframe(self, df: pandas.DataFrame) -> List[Tuple[TimeWindow, pandas.DataFrame]]:
+        return [(self.fixed_window, df)]
+
+@attr.s(frozen=True, kw_only=True)
+class DynamicTimeWindowProducer(TimeWindowProducer):
+    """Used when data in the table is for multiple time windows, represented by the
+    values of a particular set of columns in the table.
+    """
+    # The columns that contain the time windows
+    column_names: List[str] = attr.ib()
+    # The function to use to convert the column values into time windows
+    converter: TimeWindowConverterType = attr.ib()
+
+    def split_dataframe(self, df: pandas.DataFrame) -> List[Tuple[TimeWindow, pandas.DataFrame]]:
+        # - Groups the df by the time column, getting a separate df per time
+        # - Converts the value in the time column to a `TimeWindow`, using the provided converter
+        # - Drops the time column from the split dfs, as it is no longer needed
+        return [(self._convert(time_args), split.drop(self.column_names, axis=1))
+                for time_args, split in df.groupby(self.column_names)]
+
+    def _convert(self, args: Union[str, List[str]]) -> TimeWindow:
+        args: List[str] = [args] if isinstance(args, str) else args
+        # pylint: disable=not-callable
+        return self.converter(*args)
+
 @attr.s(frozen=True)
 class Table:
     """Ingest model that represents a table in a report"""
@@ -304,8 +359,8 @@ class Table:
 
     @classmethod
     def from_table(cls, time_window: TimeWindow, metric: Metric, system: str, methodology: str,
-                   dimension_names: List[str], rows: List[Tuple[Tuple[str, ...], Number]],
-                   location: Optional[Location], additional_filters: List[Tuple[str, str]]) -> 'Table':
+                   location: Optional[Location], additional_filters: List[Tuple[str, str]],
+                   dimension_names: List[str], rows: List[Tuple[Tuple[str, ...], Number]]) -> 'Table':
         dimensions = [DIMENSIONS_BY_NAME[identifier] for identifier in dimension_names]
 
         data = []
@@ -315,6 +370,31 @@ class Table:
 
         return cls(time_window, metric, system, methodology, dimensions, data, location,
                    _convert_dimensions(additional_filters))
+
+    @classmethod
+    def list_from_dataframe(cls, time_window_producer: TimeWindowProducer, metric: Metric, system: str,
+                            methodology: str, location: Optional[Location], additional_filters: List[Tuple[str, str]],
+                            df: pandas.DataFrame) -> List['Table']:
+        tables = []
+        for time_window, df_time in time_window_producer.split_dataframe(df):
+            dimension_names, rows = Table._transform_dataframe(df_time)
+            tables.append(cls.from_table(time_window=time_window, metric=metric, system=system, methodology=methodology,
+                                         location=location, additional_filters=additional_filters,
+                                         dimension_names=dimension_names, rows=rows))
+        return tables
+
+    @staticmethod
+    def _transform_dataframe(df: pandas.DataFrame):
+        # All columns but the last contain dimension values, the last column has the data value.
+        # TODO(#4474): Support mapping column names to dimensions and specifying which column contains the value, time
+        # window in the manifest.
+        dimension_names = df.columns.values[:-1]
+        rows = []
+        for row in df.values:
+            dimension_values = tuple(row[:-1])
+            cell_value = row[-1:].astype(decimal.Decimal)[0]
+            rows.append((dimension_values, cell_value))
+        return dimension_names, rows
 
     @property
     def filters(self) -> List[Dimension]:
@@ -377,19 +457,51 @@ def _parse_location(location_input: Dict[str, str]) -> Location:
     raise ValueError(f"Invalid location, expected a dictionary with a single key that is one of ('country', 'state', "
                      f"'county') but received: {repr(location_input)}")
 
+def _get_converter(window_type_input: str) -> TimeWindowConverterType:
+    window_type = TimeWindowType(window_type_input)
+    if window_type is TimeWindowType.SNAPSHOT:
+        return Snapshot
+    if window_type is TimeWindowType.RANGE:
+        return Range
+    raise ValueError(f"Enum case not handled for {window_type} when building converter.")
 
 # TODO(#4480): Generalize these parsing methods, instead of creating one for each class. If value is a dict, pop it,
 # find all implementing classes of `key`, find matching class, pass inner dict as parameters to matching class.
-def _parse_time_window(window_input: Dict[str, Dict[str, Union[str, float]]]) -> TimeWindow:
+FixedTimeWindowYAML = Dict[str, Dict[str, str]]
+def _parse_time_window(window_input: FixedTimeWindowYAML) -> TimeWindow:
     if isinstance(window_input, dict) and len(window_input) == 1:
-        [[time_window_type, time_window]] = window_input.items()
-        if time_window_type == 'snapshot':
-            return Snapshot(**time_window)
-        if time_window_type == 'range':
-            return Range(**time_window)
-    raise ValueError(f"Invalid time window, expected a dictionary with a single key that is one of ('snapshot', "
-                     f"'range') but received: {repr(window_input)}")
+        [[window_type, window_args]] = window_input.items()
+        return _get_converter(window_type.upper())(**window_args)
+    raise ValueError(f"Invalid time window, expected a dictionary with a single key that is one of but received: "
+                     f"{repr(window_input)}")
 
+DynamicTimeWindowYAML = Dict[str, Union[str, List[str]]]
+def _parse_dynamic_time_window_producer(window_input: DynamicTimeWindowYAML) -> DynamicTimeWindowProducer:
+    window_type: Optional[str] = window_input.pop('type', None)
+    if not window_type or not isinstance(window_type, str):
+        raise ValueError(f"Invalid column time window, expected key 'type' to have value ('SNAPSHOT', 'RANGE') "
+                         f"in input: {repr(window_input)}")
+
+    column_names: Optional[List[str]] = window_input.pop('names', None)
+    if not column_names or not isinstance(column_names, list):
+        raise ValueError(f"Invalid column time window, expected key 'names' to have non-empty list of column names in "
+                         f"input: {repr(window_input)}.")
+
+    if len(window_input) > 0:
+        raise ValueError(f"Received unexpected parameters for time window: {repr(window_input)}")
+
+    return DynamicTimeWindowProducer(converter=_get_converter(window_type), column_names=column_names)
+
+def _parse_time_window_producer(window_producer_input: Dict[str, Union[FixedTimeWindowYAML, DynamicTimeWindowYAML]]) \
+        -> TimeWindowProducer:
+    if isinstance(window_producer_input, dict) and len(window_producer_input) == 1:
+        [[window_producer_type, window_producer_args]] = window_producer_input.items()
+        if window_producer_type == 'fixed':
+            return FixedTimeWindowProducer(fixed_window=_parse_time_window(window_producer_args))
+        if window_producer_type == 'column':
+            return _parse_dynamic_time_window_producer(window_producer_args)
+    raise ValueError(f"Invalid time window, expected a dictionary with a single key that is one of ('fixed', 'column'"
+                     f") but received: {repr(window_producer_input)}")
 
 def _parse_metric(metric_input: Dict[str, Dict[str, Union[str, float]]]) -> Metric:
     if isinstance(metric_input, dict) and len(metric_input) == 1:
@@ -407,29 +519,18 @@ def _parse_tables(directory: str, tables_input: List[types.SimpleYAMLDict]) -> L
     tables = []
     for table_input in tables_input:
         # Parse nested objects separately
-        # TODO(#4463): Allow time to be a column in the csv and then unfold ourselves. Currently if a table has data for
-        # multiple time periods, someone has to manually split it out into multiple csvs.
-        time_window = _parse_time_window(table_input.pop('time_window'))
+        time_window_producer = _parse_time_window_producer(table_input.pop('time_window'))
         location: Location = _parse_location(table_input.pop('location'))
         metric = _parse_metric(table_input.pop('metric'))
 
         table_filepath = os.path.join(directory, table_input.pop('file'))
         logging.info('Reading table: %s', table_filepath)
         df = pandas.read_csv(table_filepath)
-        # All columns but the last contain dimension values, the last column has the data value.
-        # TODO(#4474): Support mapping column names to dimensions and specifying which column contains the value, time
-        # window in the manifest.
-        dimension_names = df.columns.values[:-1]
-        rows = []
-        for row in df.values:
-            dimension_values = tuple(row[:-1])
-            cell_value = decimal.Decimal(row[-1])
-            rows.append((dimension_values, cell_value))
 
-        tables.append(Table.from_table(
-            time_window=time_window, metric=metric, system=table_input.pop('system'),
-            methodology=table_input.pop('methodology'), dimension_names=dimension_names, rows=rows, location=location,
-            additional_filters=table_input.pop('additional_filters', [])))
+        tables.extend(Table.list_from_dataframe(
+            time_window_producer=time_window_producer, metric=metric, system=table_input.pop('system'),
+            methodology=table_input.pop('methodology'), location=location,
+            additional_filters=table_input.pop('additional_filters', []), df=df))
 
         if len(table_input) > 0:
             raise ValueError(f"Received unexpected parameters for table: {table_input}")
