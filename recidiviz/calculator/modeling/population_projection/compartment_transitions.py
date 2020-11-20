@@ -62,7 +62,7 @@ class CompartmentTransitions(ABC):
                 # TODO(#4512): do not allow people to create an empty model
                 self.max_sentence = 0
             elif len(self.historical_outflows) == 1:
-                self.max_sentence = int(max(self.historical_outflows['compartment_duration']))
+                self.max_sentence = int(np.ceil(max(self.historical_outflows['compartment_duration'])))
             else:
                 threshold_percentile = 0.98
                 self._set_max_sentence_from_threshold(threshold_percentile)
