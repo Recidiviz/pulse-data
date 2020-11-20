@@ -62,6 +62,7 @@ from recidiviz.tools.postgres import local_postgres_helpers
 
 class BaseTestCsvGcsfsDirectIngestController(CsvGcsfsDirectIngestController):
     """Base class for test direct ingest controllers used in this file."""
+
     def __init__(self,
                  region_name: str,
                  system_level: SystemLevel,
@@ -170,7 +171,7 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls) -> None:
-        cls.temp_db_dir = local_postgres_helpers.start_on_disk_postgresql_database(create_temporary_db=True)
+        cls.temp_db_dir = local_postgres_helpers.start_on_disk_postgresql_database()
 
     def setUp(self) -> None:
         local_postgres_helpers.use_on_disk_postgresql_database(OperationsBase)
@@ -351,7 +352,6 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
             controller,
             expected_raw_metadata_tags_with_is_processed=expected_raw_metadata_tags_with_is_processed)
 
-
     @patch("recidiviz.utils.regions.get_region", Mock(return_value=TEST_SQL_PRE_PROCESSING_LAUNCHED_REGION))
     def test_state_single_split_tag_sql_preprocessing_fully_launched(self):
         controller = build_gcsfs_controller_for_tests(
@@ -396,7 +396,6 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
         self.assertIsInstance(controller.ingest_view_export_manager.big_query_client, FakeDirectIngestBigQueryClient)
         self.assertCountEqual(controller.get_file_tag_rank_list(),
                               controller.ingest_view_export_manager.big_query_client.exported_file_tags)
-
 
     @patch("recidiviz.utils.regions.get_region", Mock(return_value=TEST_SQL_PRE_PROCESSING_LAUNCHED_REGION))
     def test_state_unexpected_tag_sql_preprocessing_fully_launched(self):
@@ -660,7 +659,6 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
         self.validate_file_metadata(controller,
                                     expected_raw_metadata_tags_with_is_processed=[],
                                     expected_ingest_metadata_tags_with_is_processed=[('tagA', True)])
-
 
     @patch("recidiviz.utils.regions.get_region", Mock(return_value=TEST_STATE_REGION))
     def test_do_not_schedule_more_than_one_delayed_scheduler_job(self) -> None:

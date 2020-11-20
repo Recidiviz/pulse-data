@@ -42,7 +42,7 @@ class ManualUploadTest(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls) -> None:
-        cls.temp_db_dir = local_postgres_helpers.start_on_disk_postgresql_database(create_temporary_db=True)
+        cls.temp_db_dir = local_postgres_helpers.start_on_disk_postgresql_database()
 
     def setUp(self) -> None:
         local_postgres_helpers.use_on_disk_postgresql_database(JusticeCountsBase)
@@ -176,24 +176,25 @@ class ManualUploadTest(unittest.TestCase):
         [facility_demographics_table] = session.query(schema.ReportTableInstance) \
             .filter(schema.ReportTableInstance.report_table_definition == facility_demographics_definition).all()
 
-        facility_demographics = [
-            (tuple(cell.aggregated_dimension_values), int(cell.value)) for cell in
-            session.query(schema.Cell) \
-                .filter(schema.Cell.report_table_instance == facility_demographics_table).all()]
         # Sort in Python, as postgres sort is platform dependent (case sensitivity)
-        facility_demographics.sort()
+        facility_demographics = sorted([
+            (tuple(cell.aggregated_dimension_values), int(cell.value)) for cell in
+            session.query(schema.Cell)
+            .filter(schema.Cell.report_table_instance == facility_demographics_table).all()])
         # There are 180 cells in the `facility_with_demographics` csv
         self.assertEqual(180, len(facility_demographics))
         self.assertEqual((('CMCF', 'Asian', 'Female'), 0), facility_demographics[0])
         self.assertEqual((('Youthful Offender Facility', 'White', 'Male'), 2), facility_demographics[-1])
 
         facility_totals = {cell.aggregated_dimension_values[0]: int(cell.value) for cell in
-                           session.query(schema.Cell) \
+                           session.query(schema.Cell)
                                .filter(schema.Cell.report_table_instance == facility_totals_table).all()}
         facility_totals_from_demographics = {result[0]: int(result[1]) for result in
-                           session.query(schema.Cell.aggregated_dimension_values[1], sql.func.sum(schema.Cell.value)) \
-                               .filter(schema.Cell.report_table_instance == facility_demographics_table) \
-                               .group_by(schema.Cell.aggregated_dimension_values[1]).all()}
+                                             session.query(
+            schema.Cell.aggregated_dimension_values[1], sql.func.sum(
+                schema.Cell.value))
+            .filter(schema.Cell.report_table_instance == facility_demographics_table)
+            .group_by(schema.Cell.aggregated_dimension_values[1]).all()}
 
         EXPECTED_TOTALS = {
             'MSP': 2027,
