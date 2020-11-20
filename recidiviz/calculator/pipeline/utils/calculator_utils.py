@@ -31,7 +31,8 @@ from recidiviz.calculator.pipeline.utils.execution_utils import year_and_month_f
 from recidiviz.calculator.pipeline.utils.metric_utils import MetricMethodologyType, RecidivizMetric, \
     PersonLevelMetric
 from recidiviz.calculator.pipeline.utils.person_utils import PersonMetadata
-from recidiviz.common.constants.state.external_id_types import US_ID_DOC, US_MO_DOC, US_PA_CONTROL, US_PA_PBPP
+from recidiviz.common.constants.state.external_id_types import US_ID_DOC, US_MO_DOC, US_PA_CONTROL, US_PA_PBPP, \
+    US_ND_ELITE
 from recidiviz.common.constants.state.state_supervision_violation_response \
     import StateSupervisionViolationResponseDecision
 from recidiviz.persistence.entity.state.entities import StatePerson
@@ -44,6 +45,9 @@ PERSON_EXTERNAL_ID_TYPES_TO_INCLUDE = {
         'US_ID': US_ID_DOC,
         'US_MO': US_MO_DOC,
         'US_PA': US_PA_CONTROL,
+    },
+    'recidivism': {
+        'US_ND': US_ND_ELITE
     },
     'supervision': {
         'US_ID': US_ID_DOC,
