@@ -336,33 +336,30 @@ def should_include_in_release_cohort(
             return False
 
     if release_reason in [ReleaseReason.DEATH, ReleaseReason.EXECUTION]:
-        # If the person was released from this incarceration period because they
-        # died or were executed, do not include them in the release cohort.
+        # If the person was released from this incarceration period because they died or were executed, do not include
+        # them in the release cohort.
         return False
     if release_reason == ReleaseReason.ESCAPE:
-        # If the person was released from this incarceration period because they
-        # escaped, do not include them in the release cohort.
+        # If the person was released from this incarceration period because they escaped, do not include them in the
+        # release cohort.
         return False
     if release_reason == ReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY:
-        # This should never happen. Should have been filtered by
-        # validate_sort_and_collapse_incarceration_periods function. Throw error
-        raise ValueError("validate_sort_and_collapse_incarceration_periods is "
-                         "not effectively filtering. Found unexpected "
-                         f"release_reason of: {release_reason}")
+        # If the person was released from a period of temporary custody, do not include them in the release_cohort.
+        return False
     if release_reason == ReleaseReason.RELEASED_IN_ERROR:
-        # If the person was released from this incarceration period due to an
-        # error, do not include them in the release cohort.
+        # If the person was released from this incarceration period due to an error, do not include them in the
+        # release cohort.
         return False
     if release_reason == ReleaseReason.TRANSFER:
-        # If the person was released from this incarceration period because they
-        # were transferred elsewhere, do not include them in the release cohort.
+        # If the person was released from this incarceration period because they were transferred elsewhere, do not
+        # include them in the release cohort.
         return False
     if release_reason == ReleaseReason.TRANSFERRED_OUT_OF_STATE:
         # Releases where the person has been transferred out of state don't really count as true releases.
         return False
     if release_reason == ReleaseReason.COURT_ORDER:
-        # If the person was released from this incarceration period due to a
-        # court order, do not include them in the release cohort.
+        # If the person was released from this incarceration period due to a court order, do not include them in the
+        # release cohort.
         return False
     if release_reason in (ReleaseReason.EXTERNAL_UNKNOWN, ReleaseReason.INTERNAL_UNKNOWN):
         # We do not have enough information to determine whether this release qualifies for inclusion in the release
