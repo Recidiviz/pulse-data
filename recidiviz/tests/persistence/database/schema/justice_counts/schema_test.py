@@ -18,6 +18,7 @@
 """Tests for justice counts schema"""
 
 import datetime
+from typing import Optional
 from unittest.case import TestCase
 
 from recidiviz.persistence.database.base_schema import JusticeCountsBase
@@ -29,10 +30,13 @@ from recidiviz.tools.postgres import local_postgres_helpers
 class TestSchema(TestCase):
     """Test the schema can be written to and read from successfully"""
 
+    # Stores the location of the postgres DB for this test run
+    temp_db_dir: Optional[str]
+
     @classmethod
     def setUpClass(cls) -> None:
         # We must use postgres because sqlite does not support array type columns
-        local_postgres_helpers.start_on_disk_postgresql_database()
+        cls.temp_db_dir = local_postgres_helpers.start_on_disk_postgresql_database(create_temporary_db=True)
 
     def setUp(self) -> None:
         local_postgres_helpers.use_on_disk_postgresql_database(JusticeCountsBase)
@@ -42,7 +46,7 @@ class TestSchema(TestCase):
 
     @classmethod
     def tearDownClass(cls) -> None:
-        local_postgres_helpers.stop_and_clear_on_disk_postgresql_database()
+        local_postgres_helpers.stop_and_clear_on_disk_postgresql_database(cls.temp_db_dir)
 
     def testSchema_insertRows_returnedInQuery(self):
         # Create an object of each type with proper relationships

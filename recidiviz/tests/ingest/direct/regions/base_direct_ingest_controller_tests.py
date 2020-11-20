@@ -22,7 +22,7 @@ import abc
 import datetime
 import os
 import unittest
-from typing import Type
+from typing import Type, Optional
 
 from freezegun import freeze_time
 from mock import patch, Mock
@@ -38,7 +38,6 @@ from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.tests.ingest.direct.direct_ingest_util import \
     build_gcsfs_controller_for_tests, ingest_args_for_fixture_file
 from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
-from recidiviz.tests.utils import fakes
 from recidiviz.tests.utils.test_utils import print_visible_header_label
 from recidiviz.tools.postgres import local_postgres_helpers
 
@@ -66,17 +65,17 @@ class BaseDirectIngestControllerTests(unittest.TestCase):
     def schema_base(cls) -> DeclarativeMeta:
         pass
 
+    # Stores the location of the postgres DB for this test run
+    temp_db_dir: Optional[str]
+
     @classmethod
     def setUpClass(cls) -> None:
-        local_postgres_helpers.start_on_disk_postgresql_database()
+        cls.temp_db_dir = local_postgres_helpers.start_on_disk_postgresql_database(create_temporary_db=True)
 
     def setUp(self) -> None:
         self.maxDiff = 250000
 
-        # TODO(#3289): Fix hanging state table queries so we can use an on-disk postgres DB for the State/Jails schemas
-        # as well. Currently, using postgres for StateBase causes a hang when we go t drop the tables in
-        # stop_and_clear_on_disk_postgresql_database()
-        fakes.use_in_memory_sqlite_database(self.schema_base())
+        local_postgres_helpers.use_on_disk_postgresql_database(self.schema_base())
         local_postgres_helpers.use_on_disk_postgresql_database(OperationsBase)
 
         self.controller = build_gcsfs_controller_for_tests(
@@ -87,11 +86,11 @@ class BaseDirectIngestControllerTests(unittest.TestCase):
 
     def tearDown(self) -> None:
         local_postgres_helpers.teardown_on_disk_postgresql_database(OperationsBase)
-        fakes.teardown_in_memory_sqlite_databases()
+        local_postgres_helpers.teardown_on_disk_postgresql_database(self.schema_base())
 
     @classmethod
     def tearDownClass(cls) -> None:
-        local_postgres_helpers.stop_and_clear_on_disk_postgresql_database()
+        local_postgres_helpers.stop_and_clear_on_disk_postgresql_database(cls.temp_db_dir)
 
     @classmethod
     def fixture_path_prefix(cls):

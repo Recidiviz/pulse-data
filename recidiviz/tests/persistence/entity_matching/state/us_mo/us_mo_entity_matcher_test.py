@@ -48,9 +48,6 @@ _EXTERNAL_ID_2 = 'EXTERNAL_ID_2'
 _EXTERNAL_ID_3 = 'EXTERNAL_ID_3'
 _EXTERNAL_ID_WITH_SUFFIX = 'EXTERNAL_ID-SEO-FSO'
 _FULL_NAME = 'FULL_NAME'
-_ID = 1
-_ID_2 = 2
-_ID_3 = 3
 _ID_TYPE = 'ID_TYPE'
 _US_MO = 'US_MO'
 _DATE_1 = datetime.date(year=2019, month=1, day=1)
@@ -62,33 +59,28 @@ _DATE_4 = datetime.date(year=2019, month=4, day=1)
 class TestMoEntityMatching(BaseStateEntityMatcherTest):
     """Test class for US_MO specific entity matching logic."""
 
-    def test_supervisionViolationsWithDifferentParents_mergesViolations(self):
-        db_person = generate_person(person_id=_ID, full_name=_FULL_NAME, state_code=_US_MO)
+    def test_supervisionViolationsWithDifferentParents_mergesViolations(self) -> None:
+        db_person = generate_person(full_name=_FULL_NAME, state_code=_US_MO)
         db_supervision_violation = generate_supervision_violation(
             person=db_person,
             state_code=_US_MO,
-            supervision_violation_id=_ID,
             external_id=_EXTERNAL_ID)
         db_placeholder_supervision_period = generate_supervision_period(
             person=db_person,
             state_code=_US_MO,
-            supervision_period_id=_ID,
             supervision_violation_entries=[db_supervision_violation])
         db_incarceration_sentence = generate_incarceration_sentence(
             person=db_person,
             state_code=_US_MO,
-            incarceration_sentence_id=_ID,
             external_id=_EXTERNAL_ID,
             supervision_periods=[db_placeholder_supervision_period])
         db_sentence_group = generate_sentence_group(
             person=db_person,
             state_code=_US_MO,
-            sentence_group_id=_ID,
             external_id=_EXTERNAL_ID,
             incarceration_sentences=[db_incarceration_sentence])
         db_external_id = generate_external_id(
             person=db_person,
-            person_external_id_id=_ID,
             state_code=_US_MO,
             external_id=_EXTERNAL_ID)
         db_person.sentence_groups = [db_sentence_group]
@@ -156,7 +148,7 @@ class TestMoEntityMatching(BaseStateEntityMatcherTest):
         self.assertEqual(0, matched_entities.error_count)
         self.assertEqual(1, matched_entities.total_root_entities)
 
-    def test_removeSeosFromSupervisionViolation(self):
+    def test_removeSeosFromSupervisionViolation(self) -> None:
         supervision_violation_response = \
             StateSupervisionViolationResponse.new_with_defaults(
                 state_code=_US_MO,
@@ -223,20 +215,18 @@ class TestMoEntityMatching(BaseStateEntityMatcherTest):
         self.assertEqual(0, matched_entities.error_count)
         self.assertEqual(1, matched_entities.total_root_entities)
 
-    def test_runMatch_supervisingOfficerNotMovedFromPersonOntoOpenSupervisionPeriods(self):
+    def test_runMatch_supervisingOfficerNotMovedFromPersonOntoOpenSupervisionPeriods(self) -> None:
         db_supervising_officer = generate_agent(
-            agent_id=_ID, external_id=_EXTERNAL_ID, state_code=_US_MO)
+            external_id=_EXTERNAL_ID, state_code=_US_MO)
 
-        db_person = generate_person(person_id=_ID,
-                                    supervising_officer=db_supervising_officer,
+        db_person = generate_person(supervising_officer=db_supervising_officer,
                                     state_code=_US_MO)
         db_external_id = generate_external_id(
-            person_external_id_id=_ID, external_id=_EXTERNAL_ID,
+            external_id=_EXTERNAL_ID,
             state_code=_US_MO,
             id_type=_ID_TYPE)
         db_supervision_period = generate_supervision_period(
             person=db_person,
-            supervision_period_id=_ID,
             external_id=_EXTERNAL_ID,
             start_date=_DATE_1,
             status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO.value,
@@ -244,7 +234,6 @@ class TestMoEntityMatching(BaseStateEntityMatcherTest):
             supervising_officer=db_supervising_officer)
         db_supervision_period_another = generate_supervision_period(
             person=db_person,
-            supervision_period_id=_ID_2,
             external_id=_EXTERNAL_ID_2,
             start_date=_DATE_2,
             status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO.value,
@@ -252,7 +241,6 @@ class TestMoEntityMatching(BaseStateEntityMatcherTest):
             supervising_officer=db_supervising_officer)
         db_closed_supervision_period = generate_supervision_period(
             person=db_person,
-            supervision_period_id=_ID_3,
             external_id=_EXTERNAL_ID_3,
             start_date=_DATE_3,
             termination_date=_DATE_4,
@@ -261,13 +249,13 @@ class TestMoEntityMatching(BaseStateEntityMatcherTest):
             supervising_officer=db_supervising_officer)
         db_supervision_sentence = generate_supervision_sentence(
             person=db_person,
-            external_id=_EXTERNAL_ID, supervision_sentence_id=_ID,
+            external_id=_EXTERNAL_ID,
             start_date=_DATE_1,
             supervision_periods=[db_supervision_period,
                                  db_supervision_period_another,
                                  db_closed_supervision_period])
         db_sentence_group = generate_sentence_group(
-            external_id=_EXTERNAL_ID, sentence_group_id=_ID,
+            external_id=_EXTERNAL_ID,
             supervision_sentences=[db_supervision_sentence])
         db_person.external_ids = [db_external_id]
         db_person.sentence_groups = [db_sentence_group]
@@ -298,23 +286,20 @@ class TestMoEntityMatching(BaseStateEntityMatcherTest):
         self.assertEqual(1, matched_entities.total_root_entities)
 
     def test_runMatch_supervisingOfficerMovedFromSupervisionPeriodToPerson(
-            self):
+            self) -> None:
         # Arrange
         db_supervising_officer = generate_agent(
-            agent_id=_ID,
             external_id=_EXTERNAL_ID,
             state_code=_US_MO,
             agent_type=StateAgentType.SUPERVISION_OFFICER.value)
-        db_person = generate_person(person_id=_ID,
-                                    supervising_officer=db_supervising_officer,
+        db_person = generate_person(supervising_officer=db_supervising_officer,
                                     state_code=_US_MO)
         db_external_id = generate_external_id(
-            person_external_id_id=_ID, external_id=_EXTERNAL_ID,
+            external_id=_EXTERNAL_ID,
             state_code=_US_MO,
             id_type=_ID_TYPE)
         db_supervision_period = generate_supervision_period(
             person=db_person,
-            supervision_period_id=_ID,
             external_id=_EXTERNAL_ID,
             start_date=_DATE_1,
             termination_date=_DATE_2,
@@ -323,7 +308,6 @@ class TestMoEntityMatching(BaseStateEntityMatcherTest):
             supervising_officer=db_supervising_officer)
         db_supervision_period_open = generate_supervision_period(
             person=db_person,
-            supervision_period_id=_ID_2,
             external_id=_EXTERNAL_ID_2,
             start_date=_DATE_2,
             status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO.value,
@@ -332,14 +316,12 @@ class TestMoEntityMatching(BaseStateEntityMatcherTest):
         db_supervision_sentence = generate_supervision_sentence(
             person=db_person,
             external_id=_EXTERNAL_ID,
-            supervision_sentence_id=_ID,
             state_code=_US_MO,
             start_date=_DATE_1,
             supervision_periods=[db_supervision_period,
                                  db_supervision_period_open])
         db_sentence_group = generate_sentence_group(
             external_id=_EXTERNAL_ID,
-            sentence_group_id=_ID,
             state_code=_US_MO,
             supervision_sentences=[db_supervision_sentence])
         db_person.external_ids = [db_external_id]
@@ -412,18 +394,16 @@ class TestMoEntityMatching(BaseStateEntityMatcherTest):
         self.assertEqual(1, matched_entities.total_root_entities)
 
 
-    def test_runMatch_supervisionPeriodDateChangesSoItDoesNotMatchSentenceOrViolations(self):
+    def test_runMatch_supervisionPeriodDateChangesSoItDoesNotMatchSentenceOrViolations(self) -> None:
         # Arrange
         db_supervising_officer = generate_agent(
-            agent_id=_ID,
             external_id=_EXTERNAL_ID,
             state_code=_US_MO,
             agent_type=StateAgentType.SUPERVISION_OFFICER.value)
-        db_person = generate_person(person_id=_ID,
-                                    supervising_officer=db_supervising_officer,
+        db_person = generate_person(supervising_officer=db_supervising_officer,
                                     state_code=_US_MO)
         db_external_id = generate_external_id(
-            person_external_id_id=_ID, external_id=_EXTERNAL_ID,
+            external_id=_EXTERNAL_ID,
             state_code=_US_MO,
             id_type=_ID_TYPE)
 
@@ -431,13 +411,11 @@ class TestMoEntityMatching(BaseStateEntityMatcherTest):
         db_supervision_violation = generate_supervision_violation(
             person=db_person,
             state_code=_US_MO,
-            supervision_violation_id=_ID,
             external_id=_EXTERNAL_ID,
             violation_date=_DATE_4)
 
         db_supervision_period_open = generate_supervision_period(
             person=db_person,
-            supervision_period_id=_ID_2,
             external_id=_EXTERNAL_ID_2,
             start_date=_DATE_2,
             status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO.value,
@@ -447,13 +425,11 @@ class TestMoEntityMatching(BaseStateEntityMatcherTest):
         db_supervision_sentence = generate_supervision_sentence(
             person=db_person,
             external_id=_EXTERNAL_ID,
-            supervision_sentence_id=_ID,
             state_code=_US_MO,
             start_date=_DATE_1,
             supervision_periods=[db_supervision_period_open])
         db_sentence_group = generate_sentence_group(
             external_id=_EXTERNAL_ID,
-            sentence_group_id=_ID,
             state_code=_US_MO,
             supervision_sentences=[db_supervision_sentence])
         db_person.external_ids = [db_external_id]
@@ -514,7 +490,7 @@ class TestMoEntityMatching(BaseStateEntityMatcherTest):
         self.assert_no_errors(matched_entities)
         self.assertEqual(1, matched_entities.total_root_entities)
 
-    def test_ssvrFlatFieldMatchingWithSomeNullValues(self):
+    def test_ssvrFlatFieldMatchingWithSomeNullValues(self) -> None:
         db_person = generate_person(state_code=_US_MO)
         db_supervision_violation_response = \
             generate_supervision_violation_response(
@@ -600,7 +576,7 @@ class TestMoEntityMatching(BaseStateEntityMatcherTest):
         self.assertEqual(0, matched_entities.error_count)
         self.assertEqual(1, matched_entities.total_root_entities)
 
-    def test_ssvrFlatFieldMatchingRevocationTypeChanges(self):
+    def test_ssvrFlatFieldMatchingRevocationTypeChanges(self) -> None:
         db_person = generate_person(state_code=_US_MO)
         db_supervision_violation_response = \
             generate_supervision_violation_response(
