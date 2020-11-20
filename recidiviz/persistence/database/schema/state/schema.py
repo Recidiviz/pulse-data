@@ -43,7 +43,9 @@ from sqlalchemy import (
     Integer,
     String,
     Text,
-    Table)
+    Table,
+    UniqueConstraint,
+)
 from sqlalchemy.ext.declarative import declared_attr
 from sqlalchemy.orm import relationship
 
@@ -737,6 +739,10 @@ class StatePersonExternalId(StateBase,
                             _StatePersonExternalIdSharedColumns):
     """Represents a StatePersonExternalId in the SQL schema"""
     __tablename__ = 'state_person_external_id'
+    __table_args__ = (
+        UniqueConstraint('state_code', 'id_type', 'external_id',
+                         name='external_ids_unique_within_type_and_region', deferrable=True, initially='DEFERRED'),
+    )
 
     person_external_id_id = Column(Integer, primary_key=True)
 

@@ -200,7 +200,7 @@ class TestDao(TestCase):
         )
         external_id_no_match = schema.StatePersonExternalId(
             person_external_id_id=2,
-            external_id=_EXTERNAL_ID,
+            external_id=_EXTERNAL_ID2,
             id_type=external_id_types.US_ND_SID,
             state_code=_STATE_CODE,
             person=person,
@@ -348,7 +348,7 @@ class TestDao(TestCase):
         person2 = schema.StatePerson(person_id=2, state_code=_STATE_CODE)
         person2_external_id = schema.StatePersonExternalId(
             person_external_id_id=2,
-            external_id=_EXTERNAL_ID,
+            external_id=_EXTERNAL_ID2,
             id_type=external_id_types.US_ND_SID,
             state_code=_STATE_CODE,
             person=person2,
@@ -398,7 +398,7 @@ class TestDao(TestCase):
         person2 = schema.StatePerson(person_id=2, state_code=_STATE_CODE)
         person2_external_id = schema.StatePersonExternalId(
             person_external_id_id=2,
-            external_id=_EXTERNAL_ID,
+            external_id=_EXTERNAL_ID2,
             id_type=external_id_types.US_ND_SID,
             state_code=_STATE_CODE,
             person=person2,
