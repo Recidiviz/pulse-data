@@ -127,6 +127,7 @@ ERROR_THRESHOLDS_WITH_FORTY_PERCENT_RATIOS = {
         }
 }
 
+
 @patch('recidiviz.utils.metadata.project_id', Mock(return_value='test-project'))
 @patch('recidiviz.environment.in_gae', Mock(return_value=True))
 @patch.dict('os.environ', {'PERSIST_LOCALLY': 'false'})
@@ -156,7 +157,7 @@ class TestPersistence(TestCase):
     def test_persistLocally(self):
         # Arrange
         with patch('recidiviz.environment.in_gae', Mock(return_value=False)) \
-             and patch.dict('os.environ', {'PERSIST_LOCALLY': 'true'}):
+                and patch.dict('os.environ', {'PERSIST_LOCALLY': 'true'}):
             ingest_info = IngestInfoProto()
             ingest_info.people.add(full_name=FULL_NAME_1)
 
@@ -327,7 +328,6 @@ class TestPersistence(TestCase):
 
         # Assert
         assert not result
-
 
     @patch('recidiviz.persistence.entity_matching.entity_matching.match')
     @patch('recidiviz.persistence.persistence.SYSTEM_TYPE_TO_ERROR_THRESHOLD',
@@ -867,6 +867,7 @@ class TestPersistence(TestCase):
 def _format_full_name(full_name: str) -> str:
     return '{{"full_name": "{}"}}'.format(full_name)
 
+
 PERSON_STATE_1_BASE_INGEST_INFO = StatePerson(
     state_person_id='39768', surname='HOPKINS', given_names='JON', birthdate='8/15/1979', gender='M',
     state_person_external_ids=[StatePersonExternalId(state_person_external_id_id='39768', id_type=US_ND_ELITE)],
@@ -889,6 +890,7 @@ INGEST_METADATA_STATE_2_INSERT = IngestMetadata.new_with_defaults(
     region='US_MO', jurisdiction_id=JURISDICTION_ID, ingest_time=DATE, system_level=SystemLevel.STATE)
 INGEST_METADATA_STATE_2_UPDATE = IngestMetadata.new_with_defaults(
     region='US_MO', jurisdiction_id=JURISDICTION_ID, ingest_time=DATE_2, system_level=SystemLevel.STATE)
+
 
 class MultipleStateTestMixin():
     """Defines the test cases for running multiple state transactions simultaneously.
@@ -1087,7 +1089,7 @@ class TestPersistenceMultipleThreadsOverlapping(TestCase, MultipleStateTestMixin
 
     @classmethod
     def setUpClass(cls) -> None:
-        cls.temp_db_dir = local_postgres_helpers.start_on_disk_postgresql_database(create_temporary_db=True)
+        cls.temp_db_dir = local_postgres_helpers.start_on_disk_postgresql_database()
 
     def setUp(self) -> None:
         self.bq_client_patcher = patch('google.cloud.bigquery.Client')
@@ -1216,7 +1218,7 @@ class TestPersistenceMultipleThreadsInterleaved(TestCase, MultipleStateTestMixin
 
     @classmethod
     def setUpClass(cls) -> None:
-        cls.temp_db_dir = local_postgres_helpers.start_on_disk_postgresql_database(create_temporary_db=True)
+        cls.temp_db_dir = local_postgres_helpers.start_on_disk_postgresql_database()
 
     def setUp(self) -> None:
         self.bq_client_patcher = patch('google.cloud.bigquery.Client')
@@ -1248,7 +1250,9 @@ class TestPersistenceMultipleThreadsInterleaved(TestCase, MultipleStateTestMixin
     def run_transactions(self, state_1_ingest_info, state_2_ingest_info):
         return _run_transactions_interleaved(state_1_ingest_info, state_2_ingest_info)
 
+
 DELAY = 0.1
+
 
 def _run_transactions_interleaved(state_1_ingest_info, state_2_ingest_info):
     """Offset transactions and delay writes slightly so that transactions are interleaved
@@ -1264,6 +1268,7 @@ def _run_transactions_interleaved(state_1_ingest_info, state_2_ingest_info):
                   | commit
     """
     orig_flush = sqlalchemy.orm.session.Session.flush
+
     def delayed_flush(self):
         time.sleep(DELAY)
         logging.info('Flushing')
