@@ -832,9 +832,6 @@ _SHOULD_BE_FILTERED_OUT_IN_VALIDATION_ADMISSION: List[AdmissionReason] = \
         AdmissionReason.TRANSFERRED_FROM_OUT_OF_STATE
     ]
 
-_SHOULD_BE_FILTERED_OUT_IN_VALIDATION_RELEASE: List[ReleaseReason] = \
-    [ReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY]
-
 # Stores whether each release type should be included in a release cohort
 RELEASE_REASON_INCLUSION: Dict[ReleaseReason, bool] = {
     ReleaseReason.COMMUTED: True,
@@ -867,12 +864,8 @@ class TestShouldIncludeInReleaseCohort(unittest.TestCase):
         status = StateIncarcerationPeriodStatus.NOT_IN_CUSTODY
 
         for release_reason in ReleaseReason:
-            if release_reason in _SHOULD_BE_FILTERED_OUT_IN_VALIDATION_RELEASE:
-                with pytest.raises(ValueError):
-                    _ = identifier.should_include_in_release_cohort(status, release_date, release_reason, None)
-            else:
-                should_include = identifier.should_include_in_release_cohort(status, release_date, release_reason, None)
-                self.assertEqual(RELEASE_REASON_INCLUSION.get(release_reason), should_include)
+            should_include = identifier.should_include_in_release_cohort(status, release_date, release_reason, None)
+            self.assertEqual(RELEASE_REASON_INCLUSION.get(release_reason), should_include)
 
     def test_should_include_in_release_cohort_in_custody(self):
         status = StateIncarcerationPeriodStatus.IN_CUSTODY
@@ -920,9 +913,6 @@ class TestShouldIncludeInReleaseCohort(unittest.TestCase):
         release_date = date(1978, 11, 1)
 
         for release_reason in ReleaseReason:
-            if release_reason in _SHOULD_BE_FILTERED_OUT_IN_VALIDATION_RELEASE:
-                continue
-
             # Assert that no error is raised
             identifier.should_include_in_release_cohort(status, release_date, release_reason, None)
 

@@ -496,6 +496,8 @@ def drop_periods_not_under_state_custodial_authority(
     return filtered_incarceration_periods
 
 
+# TODO(#4661): Update this logic once we have standardized our representation of parole board holds and periods of
+#  temporary custody
 def drop_temporary_custody_periods(incarceration_periods: List[StateIncarcerationPeriod])\
         -> List[StateIncarcerationPeriod]:
     """Removes any incarceration periods that denote an admission to a temporary custody.
