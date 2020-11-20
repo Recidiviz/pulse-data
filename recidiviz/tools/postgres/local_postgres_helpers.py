@@ -211,8 +211,13 @@ def use_on_disk_postgresql_database(declarative_base: DeclarativeMeta) -> None:
         raise ValueError(f"Unexpected declarative base: {declarative_base}.")
 
     SQLAlchemyEngineManager.init_engine_for_postgres_instance(
-        db_url=f'postgresql://{TEST_POSTGRES_USER_NAME}:@localhost:5432/{TEST_POSTGRES_DB_NAME}',
+        db_url=on_disk_postgres_db_url(),
         schema_base=declarative_base)
+
+
+@environment.local_only
+def on_disk_postgres_db_url() -> str:
+    return f'postgresql://{TEST_POSTGRES_USER_NAME}:@localhost:5432/{TEST_POSTGRES_DB_NAME}'
 
 
 @environment.local_only
