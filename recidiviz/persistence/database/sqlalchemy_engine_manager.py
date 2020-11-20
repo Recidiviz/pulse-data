@@ -59,6 +59,13 @@ class SQLAlchemyEngineManager:
         SchemaType.JUSTICE_COUNTS: 'justice_counts_db_name',
     }
 
+    _SCHEMA_TO_DECLARATIVE_META: Dict[SchemaType, DeclarativeMeta] = {
+        SchemaType.JAILS: JailsBase,
+        SchemaType.STATE: StateBase,
+        SchemaType.OPERATIONS: OperationsBase,
+        SchemaType.JUSTICE_COUNTS: JusticeCountsBase,
+    }
+
     @classmethod
     def init_engine_for_postgres_instance(
             cls,
@@ -146,8 +153,16 @@ class SQLAlchemyEngineManager:
             schema_base=JusticeCountsBase)
 
     @classmethod
+    def declarative_method_for_schema(cls, schema_type: SchemaType) -> DeclarativeMeta:
+        return cls._SCHEMA_TO_DECLARATIVE_META[schema_type]
+
+    @classmethod
     def get_alembic_file(cls, schema_type: SchemaType) -> str:
         return os.path.join(os.path.dirname(migrations.__file__), f'{schema_type.value.lower()}_alembic.ini')
+
+    @classmethod
+    def get_migrations_location(cls, schema_type: SchemaType) -> str:
+        return os.path.join(os.path.dirname(migrations.__file__), f'{schema_type.value.lower()}')
 
     @classmethod
     def get_engine_for_schema_base(
