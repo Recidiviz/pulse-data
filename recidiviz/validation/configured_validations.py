@@ -74,6 +74,10 @@ from recidiviz.validation.views.state.po_report_distinct_by_officer_month import
     PO_REPORT_DISTINCT_BY_OFFICER_MONTH_VIEW_BUILDER
 from recidiviz.validation.views.state.po_report_missing_fields import PO_REPORT_MISSING_FIELDS_VIEW_BUILDER, \
     PO_REPORT_COMPARISON_COLUMNS
+from recidiviz.validation.views.state.recidivism_release_cohort_person_level_external_comparison import \
+    RECIDIVISM_RELEASE_COHORT_PERSON_LEVEL_EXTERNAL_COMPARISON_VIEW_BUILDER
+from recidiviz.validation.views.state.recidivism_person_level_external_comparison_matching_people import \
+    RECIDIVISM_PERSON_LEVEL_EXTERNAL_COMPARISON_MATCHING_PEOPLE_VIEW_BUILDER
 from recidiviz.validation.views.state.revocation_matrix_comparison_revocation_cell_vs_caseload import \
     REVOCATION_MATRIX_COMPARISON_REVOCATION_CELL_VS_CASELOAD_VIEW_BUILDER
 from recidiviz.validation.views.state.revocation_matrix_comparison_revocation_cell_vs_month import \
@@ -317,6 +321,16 @@ def get_all_validations() -> List[DataValidationCheck]:
             validation_name_suffix='supervising_officer',
             sameness_check_type=SamenessDataValidationCheckType.STRINGS,
             comparison_columns=['external_supervising_officer', 'internal_supervising_officer'],
+            max_allowed_error=0.02),
+        SamenessDataValidationCheck(
+            view=RECIDIVISM_RELEASE_COHORT_PERSON_LEVEL_EXTERNAL_COMPARISON_VIEW_BUILDER.build(),
+            sameness_check_type=SamenessDataValidationCheckType.STRINGS,
+            comparison_columns=['external_person_external_id', 'internal_person_external_id'],
+            max_allowed_error=0.02),
+        SamenessDataValidationCheck(
+            view=RECIDIVISM_PERSON_LEVEL_EXTERNAL_COMPARISON_MATCHING_PEOPLE_VIEW_BUILDER.build(),
+            sameness_check_type=SamenessDataValidationCheckType.NUMBERS,
+            comparison_columns=['external_recidivated', 'internal_recidivated'],
             max_allowed_error=0.02),
     ]
 

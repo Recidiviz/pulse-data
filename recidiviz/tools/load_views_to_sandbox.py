@@ -17,7 +17,7 @@
 """A script for writing all regularly updated views in BigQuery to a set of temporary datasets. Used during development
 to test updates to views.
 
-This can be run on-demand wheneverlocally with the following command:
+This can be run on-demand whenever locally with the following command:
     python -m recidiviz.tools.load_views_to_sandbox
         --project_id [PROJECT_ID]
         --sandbox_dataset_prefix [SANDBOX_DATASET_PREFIX]
