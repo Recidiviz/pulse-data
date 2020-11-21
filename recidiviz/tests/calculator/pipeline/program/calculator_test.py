@@ -28,7 +28,6 @@ from recidiviz.calculator.pipeline.program.metrics import ProgramMetricType, Pro
 from recidiviz.calculator.pipeline.program.program_event import \
     ProgramReferralEvent, ProgramEvent, ProgramParticipationEvent
 from recidiviz.calculator.pipeline.utils import calculator_utils
-from recidiviz.calculator.pipeline.utils.calculator_utils import last_day_of_month
 from recidiviz.calculator.pipeline.utils.metric_utils import \
     MetricMethodologyType
 from recidiviz.calculator.pipeline.utils.person_utils import PersonMetadata
@@ -39,6 +38,7 @@ from recidiviz.common.constants.state.state_assessment import \
 from recidiviz.common.constants.state.state_program_assignment import StateProgramAssignmentParticipationStatus
 from recidiviz.common.constants.state.state_supervision import \
     StateSupervisionType
+from recidiviz.common.date import last_day_of_month
 from recidiviz.persistence.entity.state.entities import StatePerson, \
     StatePersonRace, StatePersonEthnicity
 from recidiviz.tests.calculator.calculator_test_utils import combo_has_enum_value_for_key

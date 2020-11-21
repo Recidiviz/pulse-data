@@ -42,12 +42,13 @@ from recidiviz.calculator.pipeline.recidivism.release_event import \
     ReincarcerationReturnType
 from recidiviz.calculator.pipeline.utils.metric_utils import \
     MetricMethodologyType
-from recidiviz.calculator.pipeline.utils.calculator_utils import augment_combination, last_day_of_month, \
+from recidiviz.calculator.pipeline.utils.calculator_utils import augment_combination, \
     relevant_metric_periods, characteristics_dict_builder
 from recidiviz.calculator.pipeline.utils.person_utils import PersonMetadata
 from recidiviz.common.constants.state.state_supervision_period import StateSupervisionPeriodSupervisionType
 from recidiviz.common.constants.state.state_supervision_violation import \
     StateSupervisionViolationType
+from recidiviz.common.date import last_day_of_month
 from recidiviz.persistence.entity.state.entities import StatePerson
 
 # We measure in 1-year follow up periods up to 10 years after date of release.

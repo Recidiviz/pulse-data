@@ -24,10 +24,10 @@ import pytest
 from freezegun import freeze_time
 
 from recidiviz.calculator.pipeline.utils.incarceration_period_index import IncarcerationPeriodIndex
-from recidiviz.calculator.pipeline.utils.time_range_utils import TimeRange
 from recidiviz.common.constants.state.state_incarceration_period import \
     StateIncarcerationPeriodAdmissionReason as AdmissionReason, \
     StateIncarcerationPeriodReleaseReason as ReleaseReason, StateIncarcerationPeriodStatus
+from recidiviz.common.date import DateRange, date_or_tomorrow
 from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
 
 
@@ -539,15 +539,14 @@ class TestIsFullyIncarceratedForRange(unittest.TestCase):
         if not period_range_start:
             raise ValueError("Expected admission date")
 
-        period_range_end = incarceration_periods[-1].release_date
-        period_range_end = period_range_end if period_range_end else (date.today() + timedelta(days=1))
+        period_range_end = date_or_tomorrow(incarceration_periods[-1].release_date)
 
         lower_bound_inclusive = period_range_start + timedelta(days=range_start_num_days_from_periods_start)
         upper_bound_exclusive = period_range_end + timedelta(days=range_end_num_days_from_periods_end)
 
         index = IncarcerationPeriodIndex(incarceration_periods)
 
-        time_range = TimeRange(lower_bound_inclusive_date=lower_bound_inclusive,
+        time_range = DateRange(lower_bound_inclusive_date=lower_bound_inclusive,
                                upper_bound_exclusive_date=upper_bound_exclusive)
         if is_fully_incarcerated:
             self.assertTrue(index.is_fully_incarcerated_for_range(time_range))
@@ -557,16 +556,16 @@ class TestIsFullyIncarceratedForRange(unittest.TestCase):
     def test_no_periods(self):
 
         index = IncarcerationPeriodIndex([])
-        self.assertFalse(index.is_fully_incarcerated_for_range(TimeRange(lower_bound_inclusive_date=date(2019, 1, 2),
+        self.assertFalse(index.is_fully_incarcerated_for_range(DateRange(lower_bound_inclusive_date=date(2019, 1, 2),
                                                                          upper_bound_exclusive_date=date(2020, 2, 1))))
 
-        self.assertFalse(index.is_fully_incarcerated_for_range(TimeRange(lower_bound_inclusive_date=date(2019, 1, 1),
+        self.assertFalse(index.is_fully_incarcerated_for_range(DateRange(lower_bound_inclusive_date=date(2019, 1, 1),
                                                                          upper_bound_exclusive_date=date(2019, 2, 1))))
 
-        self.assertFalse(index.is_fully_incarcerated_for_range(TimeRange(lower_bound_inclusive_date=date(2019, 1, 1),
+        self.assertFalse(index.is_fully_incarcerated_for_range(DateRange(lower_bound_inclusive_date=date(2019, 1, 1),
                                                                          upper_bound_exclusive_date=date(2019, 1, 2))))
 
-        self.assertFalse(index.is_fully_incarcerated_for_range(TimeRange(lower_bound_inclusive_date=date(2019, 1, 1),
+        self.assertFalse(index.is_fully_incarcerated_for_range(DateRange(lower_bound_inclusive_date=date(2019, 1, 1),
                                                                          upper_bound_exclusive_date=date(2019, 1, 1))))
 
     @freeze_time('2008-07-18')

@@ -19,7 +19,6 @@ import argparse
 import datetime
 import logging
 from collections import defaultdict
-from datetime import date
 
 from typing import Dict, Tuple, Any, List, Iterable, Set, Optional
 
@@ -27,6 +26,7 @@ from googleapiclient.discovery import build
 from more_itertools import one
 from oauth2client.client import GoogleCredentials
 
+from recidiviz.common.date import year_and_month_for_today
 from recidiviz.persistence.entity.state.entities import StatePerson
 
 
@@ -151,13 +151,6 @@ def calculation_end_month_arg(value) -> str:
         return value
     except ValueError as e:
         raise argparse.ArgumentTypeError("calculation_end_month parameter must be in the format YYYY-MM.") from e
-
-
-def year_and_month_for_today() -> Tuple[int, int]:
-    """Returns the year and month of today's date."""
-    today = date.today()
-
-    return today.year, today.month
 
 
 def person_and_kwargs_for_identifier(

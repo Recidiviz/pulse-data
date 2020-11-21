@@ -23,7 +23,7 @@ from typing import List, Set, Tuple, Dict
 import attr
 
 from recidiviz.calculator.pipeline.utils.incarceration_period_utils import standard_date_sort_for_incarceration_periods
-from recidiviz.calculator.pipeline.utils.time_range_utils import TimeRange, TimeRangeDiff
+from recidiviz.common.date import DateRange, DateRangeDiff
 from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
 
 
@@ -48,9 +48,7 @@ class IncarcerationPeriodIndex:
             defaultdict(lambda: defaultdict(list))
 
         for incarceration_period in self.incarceration_periods:
-            ip_time_range = TimeRange.for_incarceration_period(incarceration_period)
-
-            for year, month in ip_time_range.get_months_range_overlaps_at_all():
+            for year, month in incarceration_period.duration.get_months_range_overlaps_at_all():
                 month_to_overlapping_incarceration_periods[year][month].append(incarceration_period)
 
         return month_to_overlapping_incarceration_periods
@@ -68,14 +66,13 @@ class IncarcerationPeriodIndex:
         months_fully_incarcerated: Set[Tuple[int, int]] = set()
 
         for incarceration_period in self.incarceration_periods:
-            ip_range = TimeRange.for_incarceration_period(incarceration_period)
-            months_overlaps_at_all = ip_range.get_months_range_overlaps_at_all()
+            months_overlaps_at_all = incarceration_period.duration.get_months_range_overlaps_at_all()
 
             for year, month in months_overlaps_at_all:
                 overlapping_periods = self.month_to_overlapping_incarceration_periods[year][month]
 
                 remaining_ranges_to_cover = self._get_portions_of_range_not_covered_by_periods_subset(
-                    TimeRange.for_month(year, month),
+                    DateRange.for_month(year, month),
                     overlapping_periods
                 )
                 if not remaining_ranges_to_cover:
@@ -99,8 +96,8 @@ class IncarcerationPeriodIndex:
 
         return incarceration_periods_by_admission_date
 
-    def is_fully_incarcerated_for_range(self, range_to_cover: TimeRange) -> bool:
-        """Returns True if this person is incarcerated for the full duration of the time range."""
+    def is_fully_incarcerated_for_range(self, range_to_cover: DateRange) -> bool:
+        """Returns True if this person is incarcerated for the full duration of the date range."""
 
         months_range_overlaps = range_to_cover.get_months_range_overlaps_at_all()
 
@@ -139,21 +136,19 @@ class IncarcerationPeriodIndex:
 
     @staticmethod
     def _get_portions_of_range_not_covered_by_periods_subset(
-            time_range_to_cover: TimeRange,
-            incarceration_periods_subset: List[StateIncarcerationPeriod]) -> List[TimeRange]:
-        """Returns a list of time ranges within the provided |time_range_to_cover| which the provided set of
+            time_range_to_cover: DateRange,
+            incarceration_periods_subset: List[StateIncarcerationPeriod]) -> List[DateRange]:
+        """Returns a list of date ranges within the provided |time_range_to_cover| which the provided set of
         incarceration periods does not fully overlap.
         """
 
         remaining_ranges_to_cover = [time_range_to_cover]
 
         for incarceration_period in incarceration_periods_subset:
-            ip_time_range = TimeRange.for_incarceration_period(incarceration_period)
-
             new_remaining_ranges_to_cover = []
             for time_range in remaining_ranges_to_cover:
                 new_remaining_ranges_to_cover.extend(
-                    TimeRangeDiff(range_1=ip_time_range,
+                    DateRangeDiff(range_1=incarceration_period.duration,
                                   range_2=time_range).range_2_non_overlapping_parts)
 
             remaining_ranges_to_cover = new_remaining_ranges_to_cover
