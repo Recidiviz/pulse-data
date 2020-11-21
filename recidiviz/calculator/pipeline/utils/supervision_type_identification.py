@@ -19,12 +19,12 @@ import datetime
 import logging
 from typing import Optional, Set, List
 
-from recidiviz.calculator.pipeline.utils.calculator_utils import last_day_of_month, first_day_of_month
 from recidiviz.common.common_utils import date_spans_overlap_inclusive
 from recidiviz.common.constants.state.state_incarceration_period import \
     StateIncarcerationPeriodAdmissionReason as AdmissionReason
 from recidiviz.common.constants.state.state_supervision import StateSupervisionType
 from recidiviz.common.constants.state.state_supervision_period import StateSupervisionPeriodSupervisionType
+from recidiviz.common.date import first_day_of_month, last_day_of_month
 from recidiviz.persistence.entity.entity_utils import is_placeholder, get_ids
 from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod, StateSupervisionPeriod, \
     StateSupervisionSentence, StateIncarcerationSentence, SentenceType

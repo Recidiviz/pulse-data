@@ -16,7 +16,6 @@
 # =============================================================================
 """Utils for the various calculation pipelines."""
 import datetime
-from datetime import date
 from typing import Optional, List, Any, Dict, Type, Union
 
 import dateutil
@@ -27,7 +26,6 @@ from recidiviz.calculator.pipeline.incarceration.incarceration_event import Inca
 from recidiviz.calculator.pipeline.program.program_event import ProgramEvent
 from recidiviz.calculator.pipeline.recidivism.release_event import ReleaseEvent
 from recidiviz.calculator.pipeline.supervision.supervision_time_bucket import SupervisionTimeBucket
-from recidiviz.calculator.pipeline.utils.execution_utils import year_and_month_for_today
 from recidiviz.calculator.pipeline.utils.metric_utils import MetricMethodologyType, RecidivizMetric, \
     PersonLevelMetric
 from recidiviz.calculator.pipeline.utils.person_utils import PersonMetadata
@@ -35,6 +33,7 @@ from recidiviz.common.constants.state.external_id_types import US_ID_DOC, US_MO_
     US_ND_ELITE
 from recidiviz.common.constants.state.state_supervision_violation_response \
     import StateSupervisionViolationResponseDecision
+from recidiviz.common.date import first_day_of_month, last_day_of_month, year_and_month_for_today
 from recidiviz.persistence.entity.state.entities import StatePerson
 
 # Relevant metric period month lengths for dashboard person-based calculations
@@ -78,7 +77,7 @@ DECISION_SEVERITY_ORDER = [
 
 
 def person_characteristics(person: StatePerson,
-                           event_date: date,
+                           event_date: datetime.date,
                            person_metadata: PersonMetadata,
                            pipeline: str) -> Dict[str, Any]:
     """Adds the person's demographic characteristics to the given |characteristics| dictionary. For the 'age_bucket'
@@ -117,7 +116,7 @@ def person_characteristics(person: StatePerson,
     return characteristics
 
 
-def age_at_date(person: StatePerson, check_date: date) -> Optional[int]:
+def age_at_date(person: StatePerson, check_date: datetime.date) -> Optional[int]:
     """Calculates the age of the StatePerson at the given date.
 
     Args:
@@ -182,26 +181,6 @@ def augment_combination(characteristic_combo: Dict[str, Any],
     return augmented_combo
 
 
-def first_day_of_month(any_date: datetime.date):
-    """Returns the date corresponding to the first day of the month for the given date."""
-    year = any_date.year
-    month = any_date.month
-
-    return date(year, month, 1)
-
-
-def last_day_of_month(any_date: datetime.date):
-    """Returns the date corresponding to the last day of the month for the given date."""
-    first_of_next_month = first_day_of_next_month(any_date)
-    return first_of_next_month - datetime.timedelta(days=1)
-
-
-def first_day_of_next_month(any_date: datetime.date) -> datetime.date:
-    """Returns the date corresponding to the first day of the next month for the given date."""
-    next_month_date = any_date.replace(day=28) + datetime.timedelta(days=4)
-    return next_month_date.replace(day=1)
-
-
 def identify_most_severe_response_decision(
         decisions:
         List[StateSupervisionViolationResponseDecision]) -> \
@@ -212,7 +191,7 @@ def identify_most_severe_response_decision(
                  if decision in decisions), None)
 
 
-def relevant_metric_periods(event_date: date,
+def relevant_metric_periods(event_date: datetime.date,
                             end_year: int, end_month: int) -> List[int]:
     """Given the year and month when this metric period ends, returns the
     relevant metric period months lengths for the given event_date.
@@ -230,7 +209,7 @@ def relevant_metric_periods(event_date: date,
     [12, 36], because the event occurred within the 12-month metric period and
     the 36-month metric period of the given month.
     """
-    start_of_month = date(end_year, end_month, 1)
+    start_of_month = datetime.date(end_year, end_month, 1)
     end_of_month = last_day_of_month(start_of_month)
 
     relevant_periods = []
@@ -320,8 +299,8 @@ def person_external_id_to_include(pipeline: str,
 
 def include_in_historical_metrics(year: int,
                                   month: int,
-                                  calculation_month_upper_bound: date,
-                                  calculation_month_lower_bound: Optional[date]) -> bool:
+                                  calculation_month_upper_bound: datetime.date,
+                                  calculation_month_lower_bound: Optional[datetime.date]) -> bool:
     """Determines whether the event with the given year and month should be included in the historical metric output.
     If the calculation_month_lower_bound is None, then includes the bucket if it occurred in or before the month of the
     calculation_month_upper_bound. If the calculation_month_lower_bound is set, then includes the event if it happens
@@ -332,15 +311,15 @@ def include_in_historical_metrics(year: int,
         return (year < calculation_month_upper_bound.year
                 or (year == calculation_month_upper_bound.year and month <= calculation_month_upper_bound.month))
 
-    return calculation_month_lower_bound <= date(year, month, 1) <= calculation_month_upper_bound
+    return calculation_month_lower_bound <= datetime.date(year, month, 1) <= calculation_month_upper_bound
 
 
-def get_calculation_month_upper_bound_date(calculation_end_month: Optional[str]) -> date:
+def get_calculation_month_upper_bound_date(calculation_end_month: Optional[str]) -> datetime.date:
     """Returns the date at the end of the month represented in the calculation_end_month string. String must
     be in the format YYYY-MM. If calculation_end_month is unset, returns the last day of the current month. """
     if not calculation_end_month:
         year, month = year_and_month_for_today()
-        return last_day_of_month(date(year, month, 1))
+        return last_day_of_month(datetime.date(year, month, 1))
 
     try:
         end_month_date = datetime.datetime.strptime(calculation_end_month, '%Y-%m').date()
@@ -350,8 +329,8 @@ def get_calculation_month_upper_bound_date(calculation_end_month: Optional[str])
     return last_day_of_month(end_month_date)
 
 
-def get_calculation_month_lower_bound_date(calculation_month_upper_bound: date, calculation_month_count: int) -> \
-        Optional[date]:
+def get_calculation_month_lower_bound_date(calculation_month_upper_bound: datetime.date,
+                                           calculation_month_count: int) -> Optional[datetime.date]:
     """Returns the date at the beginning of the first month that should be included in the monthly calculations."""
 
     first_of_last_month = first_day_of_month(calculation_month_upper_bound)
@@ -367,7 +346,7 @@ def characteristics_dict_builder(
         event: Union[IncarcerationEvent, ProgramEvent, ReleaseEvent, SupervisionTimeBucket],
         metric_class: Type[RecidivizMetric],
         person: StatePerson,
-        event_date: date,
+        event_date: datetime.date,
         include_person_attributes: bool,
         person_metadata: PersonMetadata) -> Dict[str, Any]:
     """Builds a dictionary from the provided event and person that will eventually populate the values on the given

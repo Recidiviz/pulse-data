@@ -36,6 +36,7 @@ from recidiviz.calculator.pipeline.utils.metric_utils import \
 from recidiviz.calculator.pipeline.utils.person_utils import PersonMetadata
 from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_manager import \
     supervision_types_mutually_exclusive_for_state
+from recidiviz.common.date import last_day_of_month
 from recidiviz.persistence.entity.state.entities import StatePerson
 
 

@@ -31,13 +31,14 @@ from recidiviz.calculator.pipeline.incarceration.incarceration_event import \
 from recidiviz.calculator.pipeline.incarceration.metrics import \
     IncarcerationMetricType, IncarcerationMetric, IncarcerationAdmissionMetric, IncarcerationPopulationMetric, \
     IncarcerationReleaseMetric
-from recidiviz.calculator.pipeline.utils.calculator_utils import last_day_of_month, relevant_metric_periods, \
+from recidiviz.calculator.pipeline.utils.calculator_utils import relevant_metric_periods, \
     augmented_combo_for_calculations, get_calculation_month_lower_bound_date, include_in_historical_metrics, \
     get_calculation_month_upper_bound_date, characteristics_dict_builder
 from recidiviz.calculator.pipeline.utils.metric_utils import \
     MetricMethodologyType
 from recidiviz.calculator.pipeline.utils.person_utils import PersonMetadata
 from recidiviz.common.constants.state.state_incarceration_period import is_revocation_admission
+from recidiviz.common.date import last_day_of_month
 from recidiviz.persistence.entity.state.entities import StatePerson
 
 

@@ -26,7 +26,6 @@ from typing import List
 
 from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_manager import \
     temporary_custody_periods_under_state_authority, non_prison_periods_under_state_authority
-from recidiviz.calculator.pipeline.utils.time_range_utils import TimeRange, TimeRangeDiff
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
 from recidiviz.common.constants.state.state_incarceration_period import \
@@ -34,6 +33,7 @@ from recidiviz.common.constants.state.state_incarceration_period import \
     StateIncarcerationPeriodStatus, is_official_admission
 from recidiviz.common.constants.state.state_incarceration_period import \
     StateIncarcerationPeriodReleaseReason as ReleaseReason
+from recidiviz.common.date import DateRangeDiff
 from recidiviz.persistence.entity.entity_utils import is_placeholder
 
 
@@ -465,8 +465,7 @@ def _ip_is_nested_in_previous_period(ip: StateIncarcerationPeriod, previous_ip: 
     within the admission and release of the previous_ip, then it is nested within that period. If a single-day period
     falls on the previous_ip.release_date, then it is not nested within that period.
     """
-    ip_range_diff = TimeRangeDiff(TimeRange.for_incarceration_period(ip),
-                                  TimeRange.for_incarceration_period(previous_ip))
+    ip_range_diff = DateRangeDiff(ip.duration, previous_ip.duration)
 
     if not ip.admission_date or not ip.release_date:
         raise ValueError(f"ip cannot have unset dates: {ip}")
