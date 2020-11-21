@@ -194,7 +194,7 @@ DIMENSIONS_BY_NAME = {name: dimension
 # conversion that is not specific to a particular object, but instead a class of objects, e.g. all Metrics, is instead
 # implemented within the persistence code itself.
 
-# TODO(#4482): Consolidate the TimeWindow implementations and use the existing TimeRange class. Create additional
+# TODO(#4482): Consolidate the TimeWindow implementations and use the existing DateRange class. Create additional
 # convenience factory methods to be used as converters.
 # * FIRST_OF_MONTH: takes a month str, gives snapshot on first of month
 # * MONTH: takes a month str, gives range for month

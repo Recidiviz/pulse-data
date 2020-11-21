@@ -28,13 +28,10 @@ from typing import Dict, List, Optional
 
 from collections import defaultdict
 
-from dateutil.relativedelta import relativedelta
-
 from recidiviz.calculator.pipeline.recidivism.release_event import \
     ReincarcerationReturnType, ReleaseEvent, RecidivismReleaseEvent, NonRecidivismReleaseEvent
 from recidiviz.calculator.pipeline.utils.incarceration_period_utils import \
     prepare_incarceration_periods_for_calculations, drop_temporary_custody_periods
-from recidiviz.calculator.pipeline.utils.time_range_utils import TimeRange, TimeRangeDiff
 from recidiviz.calculator.pipeline.utils.violation_utils import identify_most_severe_violation_type_and_subtype
 from recidiviz.common.constants.state.state_incarceration_period import \
     StateIncarcerationPeriodStatus, is_revocation_admission
@@ -45,6 +42,7 @@ from recidiviz.common.constants.state.state_incarceration_period import \
 from recidiviz.common.constants.state.state_supervision_period import StateSupervisionPeriodSupervisionType
 from recidiviz.common.constants.state.state_supervision_violation import \
     StateSupervisionViolationType
+from recidiviz.common.date import DateRange, DateRangeDiff
 from recidiviz.persistence.entity.entity_utils import get_single_state_code
 from recidiviz.persistence.entity.state.entities import \
     StateIncarcerationPeriod, StateSupervisionViolationResponse
@@ -324,9 +322,8 @@ def should_include_in_release_cohort(
         return False
 
     if next_incarceration_period:
-        time_range_release = TimeRange(release_date, release_date + relativedelta(days=1))
-        if TimeRangeDiff(
-                time_range_release, TimeRange.for_incarceration_period(next_incarceration_period)).overlapping_range:
+        time_range_release = DateRange.for_day(release_date)
+        if DateRangeDiff(time_range_release, next_incarceration_period.duration).overlapping_range:
             # If the release overlaps with the following incarceration period, this is not an actual release from
             # incarceration
             return False

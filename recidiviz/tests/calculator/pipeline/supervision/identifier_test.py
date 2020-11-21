@@ -30,7 +30,6 @@ from freezegun import freeze_time
 
 from recidiviz.calculator.pipeline.supervision import identifier
 from recidiviz.calculator.pipeline.supervision.supervision_case_compliance import SupervisionCaseCompliance
-from recidiviz.calculator.pipeline.utils.calculator_utils import last_day_of_month
 from recidiviz.calculator.pipeline.utils.incarceration_period_index import IncarcerationPeriodIndex
 from recidiviz.calculator.pipeline.supervision.metrics import SupervisionMetricType
 from recidiviz.calculator.pipeline.supervision.supervision_time_bucket import \
@@ -62,6 +61,7 @@ from recidiviz.common.constants.state.state_supervision_violation_response \
     import StateSupervisionViolationResponseRevocationType, \
     StateSupervisionViolationResponseDecision, \
     StateSupervisionViolationResponseType
+from recidiviz.common.date import last_day_of_month
 from recidiviz.persistence.entity.state.entities import \
     StateSupervisionPeriod, StateIncarcerationPeriod, \
     StateSupervisionViolationResponse, StateSupervisionViolation, \

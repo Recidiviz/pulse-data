@@ -22,12 +22,12 @@ from typing import List, Set, Optional, Dict
 
 from dateutil.relativedelta import relativedelta
 
-from recidiviz.calculator.pipeline.utils.calculator_utils import last_day_of_month, first_day_of_month
 from recidiviz.calculator.pipeline.utils.supervision_type_identification import \
     _sentence_supervision_types_to_supervision_period_supervision_type
 from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_sentence_classification import UsMoSentenceMixin
 from recidiviz.common.constants.state.state_supervision import StateSupervisionType
 from recidiviz.common.constants.state.state_supervision_period import StateSupervisionPeriodSupervisionType
+from recidiviz.common.date import first_day_of_month, last_day_of_month
 from recidiviz.persistence.entity.state.entities import StateSupervisionSentence, StateIncarcerationSentence, \
     StateSupervisionPeriod, StateIncarcerationPeriod
 
@@ -131,7 +131,7 @@ def us_mo_get_month_supervision_type(
     else:
         upper_bound_exclusive_date = min(first_of_next_month, supervision_period.termination_date)
 
-    lower_bound_inclusive = max(start_of_month, supervision_period.start_date)
+    lower_bound_inclusive = max(start_of_month, supervision_period.start_date or datetime.date.min)
 
     supervision_type = \
         us_mo_get_most_recent_supervision_period_supervision_type_before_upper_bound_day(

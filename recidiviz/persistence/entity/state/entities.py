@@ -93,12 +93,12 @@ from recidiviz.common.constants.state.state_supervision_violation_response \
     StateSupervisionViolationResponseDecidingBodyType, \
     StateSupervisionViolationResponseType
 
+from recidiviz.common.date import DateRange, DurationMixin
 from recidiviz.persistence.entity.base_entity import Entity, ExternalIdEntity
 
 # **** Entity Types for convenience *****:
 SentenceType = TypeVar('SentenceType', 'StateSupervisionSentence', 'StateIncarcerationSentence')
 PeriodType = TypeVar('PeriodType', 'StateSupervisionPeriod', 'StateIncarcerationPeriod')
-
 
 # **** Entity ordering template *****:
 
@@ -594,7 +594,7 @@ class StateFine(ExternalIdEntity, BuildableAttr, DefaultableAttr):
 
 
 @attr.s(eq=False)
-class StateIncarcerationPeriod(ExternalIdEntity, BuildableAttr, DefaultableAttr):
+class StateIncarcerationPeriod(ExternalIdEntity, BuildableAttr, DefaultableAttr, DurationMixin):
     """Models an uninterrupted period of time that a StatePerson is incarcerated at a single facility as a result of a
     particular sentence.
     """
@@ -661,9 +661,24 @@ class StateIncarcerationPeriod(ExternalIdEntity, BuildableAttr, DefaultableAttr)
     # violation/hearing that resulted in the revocation
     source_supervision_violation_response: Optional['StateSupervisionViolationResponse'] = attr.ib(default=None)
 
+    @property
+    def duration(self) -> DateRange:
+        """Generates a DateRange for the days covered by the incarceration period.  Since DateRange is never open,
+        if the incarceration period is still active, then the exclusive upper bound of the range is set to tomorrow.
+        """
+        if not self.admission_date:
+            raise ValueError(
+                f'Expected start date for period {self.incarceration_period_id}, found None')
+
+        if (not self.release_date and self.status != StateIncarcerationPeriodStatus.IN_CUSTODY):
+            raise ValueError("Unexpected missing release date. _infer_missing_dates_and_statuses is not properly"
+                                " setting missing dates.")
+
+        return DateRange.from_maybe_open_range(start_date=self.admission_date, end_date=self.release_date)
+
 
 @attr.s(eq=False)
-class StateSupervisionPeriod(ExternalIdEntity, BuildableAttr, DefaultableAttr):
+class StateSupervisionPeriod(ExternalIdEntity, BuildableAttr, DefaultableAttr, DurationMixin):
     """Models a distinct period of time that a StatePerson is under supervision as a result of a particular sentence."""
     # Status
     status: StateSupervisionPeriodStatus = attr.ib()  # non-nullable
@@ -722,6 +737,16 @@ class StateSupervisionPeriod(ExternalIdEntity, BuildableAttr, DefaultableAttr):
     assessments: List['StateAssessment'] = attr.ib(factory=list)
     case_type_entries: List['StateSupervisionCaseTypeEntry'] = attr.ib(factory=list)
     supervision_contacts: List['StateSupervisionContact'] = attr.ib(factory=list)
+
+    @property
+    def duration(self) -> DateRange:
+        """Generates a DateRange for the days covered by the supervision period.  Since DateRange is never open,
+        if the supervision period is still active, then the exclusive upper bound of the range is set to tomorrow.
+        """
+        if not self.start_date:
+            raise ValueError(f'Expected start date for period {self.supervision_period_id}, found None')
+
+        return DateRange.from_maybe_open_range(start_date=self.start_date, end_date=self.termination_date)
 
 
 @attr.s(eq=False)
