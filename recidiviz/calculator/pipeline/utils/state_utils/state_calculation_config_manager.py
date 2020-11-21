@@ -38,7 +38,6 @@ from recidiviz.calculator.pipeline.utils.supervision_period_utils import \
     get_relevant_supervision_periods_before_admission_date
 from recidiviz.calculator.pipeline.utils.supervision_type_identification import get_month_supervision_type_default, \
     get_pre_incarceration_supervision_type_from_incarceration_period
-from recidiviz.calculator.pipeline.utils.time_range_utils import TimeRange, TimeRangeDiff
 from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_supervision_type_identification import \
     us_mo_get_month_supervision_type, us_mo_get_pre_incarceration_supervision_type, \
     us_mo_get_most_recent_supervision_period_supervision_type_before_upper_bound_day, \
@@ -50,6 +49,7 @@ from recidiviz.common.constants.state.state_incarceration_period import is_revoc
 from recidiviz.common.constants.state.state_supervision import StateSupervisionType
 from recidiviz.common.constants.state.state_supervision_period import StateSupervisionPeriodSupervisionType
 from recidiviz.common.constants.state.state_supervision_violation import StateSupervisionViolationType
+from recidiviz.common.date import DateRange, DateRangeDiff
 from recidiviz.persistence.entity.state.entities import StateSupervisionSentence, StateIncarcerationSentence, \
     StateSupervisionPeriod, StateIncarcerationPeriod, StateSupervisionViolationResponse, StateAssessment, \
     StateSupervisionContact, StateSupervisionViolation
@@ -358,7 +358,7 @@ def should_produce_supervision_time_bucket_for_period(supervision_period: StateS
     """
     if supervision_period.state_code == 'US_MO':
         # If no days of this supervision_period should count towards any metrics, we can drop this period entirely
-        sp_range = TimeRange.for_supervision_period(supervision_period)
+        sp_range = supervision_period.duration
 
         return us_mo_get_most_recent_supervision_period_supervision_type_before_upper_bound_day(
             upper_bound_exclusive_date=sp_range.upper_bound_exclusive_date,
@@ -376,17 +376,16 @@ def should_produce_supervision_time_bucket_for_period(supervision_period: StateS
 
 
 def supervision_period_counts_towards_supervision_population_in_date_range_state_specific(
-        date_range: TimeRange,
+        date_range: DateRange,
         supervision_sentences: List[StateSupervisionSentence],
         incarceration_sentences: List[StateIncarcerationSentence],
         supervision_period: StateSupervisionPeriod) -> bool:
     """Returns False if there is state-specific information to indicate that the supervision period should not count
-    towards any supervision metrics in the time range. Returns True if either there is a state-specific check that
+    towards any supervision metrics in the date range. Returns True if either there is a state-specific check that
     indicates that the supervision period should count or if there is no state-specific check to perform.
     """
     if supervision_period.state_code == 'US_MO':
-        sp_range = TimeRange.for_supervision_period(supervision_period)
-        overlapping_range = TimeRangeDiff(range_1=date_range, range_2=sp_range).overlapping_range
+        overlapping_range = DateRangeDiff(range_1=date_range, range_2=supervision_period.duration).overlapping_range
 
         if not overlapping_range:
             return False

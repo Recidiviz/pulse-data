@@ -32,8 +32,7 @@ from recidiviz.calculator.pipeline.supervision.supervision_time_bucket import \
     ProjectedSupervisionCompletionBucket, SupervisionTerminationBucket
 from recidiviz.calculator.pipeline.utils import assessment_utils
 from recidiviz.calculator.pipeline.utils.execution_utils import list_of_dicts_to_dict_with_keys
-from recidiviz.calculator.pipeline.utils.calculator_utils import \
-    last_day_of_month, identify_most_severe_response_decision, first_day_of_next_month
+from recidiviz.calculator.pipeline.utils.calculator_utils import identify_most_severe_response_decision
 from recidiviz.calculator.pipeline.utils.incarceration_period_index import IncarcerationPeriodIndex
 from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_manager import \
     supervision_types_mutually_exclusive_for_state, \
@@ -52,7 +51,6 @@ from recidiviz.calculator.pipeline.utils.supervision_period_index import Supervi
 from recidiviz.calculator.pipeline.utils.supervision_period_utils import prepare_supervision_periods_for_calculations
 from recidiviz.calculator.pipeline.utils.supervision_type_identification import \
     get_supervision_type_from_sentences
-from recidiviz.calculator.pipeline.utils.time_range_utils import TimeRange, TimeRangeDiff
 from recidiviz.calculator.pipeline.utils.violation_utils import identify_most_severe_violation_type_and_subtype, \
     shorthand_description_for_ranked_violation_counts, get_violation_type_frequency_counter, \
     prepare_violation_responses_for_calculations
@@ -70,6 +68,7 @@ from recidiviz.common.constants.state.state_supervision_violation import \
 from recidiviz.common.constants.state.state_supervision_violation_response \
     import StateSupervisionViolationResponseRevocationType, \
     StateSupervisionViolationResponseDecision, StateSupervisionViolationResponseType
+from recidiviz.common.date import DateRange, DateRangeDiff, last_day_of_month
 from recidiviz.persistence.entity.entity_utils import get_single_state_code
 from recidiviz.persistence.entity.state.entities import \
     StateIncarcerationPeriod, StateSupervisionPeriod, \
@@ -405,7 +404,7 @@ def has_revocation_admission_on_date(
 
 
 def supervision_period_counts_towards_supervision_population_in_date_range(
-        date_range: TimeRange,
+        date_range: DateRange,
         incarceration_period_index: IncarcerationPeriodIndex,
         supervision_sentences: List[StateSupervisionSentence],
         incarceration_sentences: List[StateIncarcerationSentence],
@@ -419,7 +418,7 @@ def supervision_period_counts_towards_supervision_population_in_date_range(
         return False
 
     supervision_overlapping_range = \
-        TimeRangeDiff(TimeRange.for_supervision_period(supervision_period), date_range).overlapping_range
+        DateRangeDiff(supervision_period.duration, date_range).overlapping_range
 
     if not supervision_overlapping_range:
         return False
@@ -444,10 +443,10 @@ def on_supervision_on_date(
         return False
 
     # This should never happen
-    if not TimeRange.for_supervision_period(supervision_period).contains_day(evaluation_date):
+    if not supervision_period.duration.contains_day(evaluation_date):
         raise ValueError("evaluation_date must fall between the start and end of the supervision_period")
 
-    day_range = TimeRange.for_day(evaluation_date)
+    day_range = DateRange.for_day(evaluation_date)
 
     supervision_period_counts_towards_supervision_population_on_date = \
         supervision_period_counts_towards_supervision_population_in_date_range(
@@ -753,27 +752,6 @@ def _get_responses_in_window_before_revocation(revocation_date: date,
     ]
 
     return responses_in_window
-
-
-def _get_is_on_supervision_last_day_of_month(
-        any_date_in_month: date,
-        incarceration_period_index: IncarcerationPeriodIndex,
-        supervision_sentences: List[StateSupervisionSentence],
-        incarceration_sentences: List[StateIncarcerationSentence],
-        supervision_period: StateSupervisionPeriod
-) -> bool:
-    if date.today() < last_day_of_month(any_date_in_month):
-        return False
-
-    end_of_month = last_day_of_month(any_date_in_month)
-    first_of_next_month = first_day_of_next_month(any_date_in_month)
-
-    return supervision_period_counts_towards_supervision_population_in_date_range(
-        date_range=TimeRange(end_of_month, first_of_next_month),
-        supervision_sentences=supervision_sentences,
-        incarceration_sentences=incarceration_sentences,
-        supervision_period=supervision_period,
-        incarceration_period_index=incarceration_period_index)
 
 
 def find_revocation_return_buckets(
