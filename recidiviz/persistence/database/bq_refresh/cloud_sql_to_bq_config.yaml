@@ -2,8 +2,7 @@
 production:
   region_codes_to_exclude: [] # CREATE A TO-DO TASK FOR EVERY REGION CODE ADDED HERE TO UN-PAUSE THE EXPORT
 staging:
-  region_codes_to_exclude: # CREATE A TO-DO TASK FOR EVERY REGION CODE ADDED HERE TO UN-PAUSE THE EXPORT
-    - US_MO # TODO(#4050): Un-pause MO export after ingest is complete
+  region_codes_to_exclude: [] # CREATE A TO-DO TASK FOR EVERY REGION CODE ADDED HERE TO UN-PAUSE THE EXPORT
 state_history_tables_to_include:
   - state_person_history
 county_columns_to_exclude:
