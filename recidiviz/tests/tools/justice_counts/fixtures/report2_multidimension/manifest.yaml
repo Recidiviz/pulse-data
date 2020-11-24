@@ -4,7 +4,7 @@ report_instance: '2020-09-01'
 publish_date: '2020-09-24'
 tables:
     - file: 'facility_totals.csv'
-      time_window:
+      date_range:
         fixed:
           snapshot:
             date: '2020-09-01'
@@ -16,7 +16,7 @@ tables:
         state: 'US_MS'
       methodology: 'Unknown'
     - file: 'facility_with_demographics.csv'
-      time_window:
+      date_range:
         fixed:
           snapshot:
             date: '2020-09-01'

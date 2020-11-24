@@ -104,6 +104,10 @@ class DateRange:
         return months_range_overlaps
 
     @classmethod
+    def for_month_of_date(cls, date: datetime.date) -> 'DateRange':
+        return cls.for_month(date.year, date.month)
+
+    @classmethod
     def for_month(cls, year: int, month: int) -> 'DateRange':
         start_of_month = datetime.date(year, month, 1)
         start_of_next_month = first_day_of_next_month(start_of_month)
@@ -111,8 +115,8 @@ class DateRange:
         return cls(lower_bound_inclusive_date=start_of_month, upper_bound_exclusive_date=start_of_next_month)
 
     @classmethod
-    def for_day(cls, day: datetime.date) -> 'DateRange':
-        return cls(day, day + datetime.timedelta(days=1))
+    def for_day(cls, date: datetime.date) -> 'DateRange':
+        return cls(date, date + datetime.timedelta(days=1))
 
     @classmethod
     def from_maybe_open_range(cls, start_date: datetime.date, end_date: Optional[datetime.date]) -> 'DateRange':
