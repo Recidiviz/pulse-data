@@ -224,9 +224,16 @@ class ManualUploadTest(unittest.TestCase):
 
         session.close()
 
-    def test_ingestReport_dynamicTimeWindowSnapshot(self):
+    def test_ingestReport_dynamicDateSnapshot(self):
+        self._test_ingestReport_dynamicSnapshot('report3_date_snapshot')
+
+    def test_ingestReport_dynamicLastDayOfMonthSnapshot(self):
+        self._test_ingestReport_dynamicSnapshot('report3_last_day_of_month_snapshot')
+
+    def _test_ingestReport_dynamicSnapshot(self, report_id):
+        """Ingests a report with a dynamic snapshot time window and verifies the output."""
         # Act
-        manual_upload.ingest(manifest_filepath('report3_time_snapshot'))
+        manual_upload.ingest(manifest_filepath(report_id))
 
         # Assert
         session = SessionFactory.for_schema_base(JusticeCountsBase)
@@ -274,11 +281,18 @@ class ManualUploadTest(unittest.TestCase):
         ]
         self.assertEqual(EXPECTED, results)
 
+    def test_ingestReport_dynamicCustomRange(self):
+        self._test_ingestReport_dynamicDateRange('report4_custom_range')
+
+    def test_ingestReport_dynamicMonthRange(self):
+        self._test_ingestReport_dynamicDateRange('report4_month_range')
+
     # TODO(#4483): This doesn't actually make sense for Population, we should change this to Admission or a different
     # metric once supported.
-    def test_ingestReport_dynamicTimeWindowRange(self):
+    def _test_ingestReport_dynamicDateRange(self, report_id):
+        """Ingests a report with a dynamic range time window and verifies the output."""
         # Act
-        manual_upload.ingest(manifest_filepath('report4_time_range'))
+        manual_upload.ingest(manifest_filepath(report_id))
 
         # Assert
         session = SessionFactory.for_schema_base(JusticeCountsBase)

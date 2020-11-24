@@ -1,13 +1,15 @@
 source: 'Colorado Department of Corrections'
 report_type: 'Dashboard Measures'
 report_instance: '2020-10-05'
-publish_date: '2020-10-15'
+publish_date: '2020-10-05'
 tables:
-    - file: 'ManualData-Prison_US_CO_DashboardMeasures_Jul20.csv'
+    - file: 'table.csv'
       date_range:
-        fixed:
-          snapshot:
-            date: '2020-07-31'
+        dynamic:
+          columns:
+            Start Date: 'DATE'
+            End Date: 'DATE'
+          type: 'RANGE'
       system: 'CORRECTIONS'
       metric:
         population:
