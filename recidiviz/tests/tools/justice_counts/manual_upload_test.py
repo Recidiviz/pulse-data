@@ -76,8 +76,8 @@ class ManualUploadTest(unittest.TestCase):
         [table_definition] = session.query(schema.ReportTableDefinition).all()
         self.assertEqual(schema.System.CORRECTIONS, table_definition.system)
         self.assertEqual(schema.MetricType.POPULATION, table_definition.metric_type)
-        self.assertEqual(['global/location/state', 'metric/population/type'], table_definition.filtered_dimensions)
-        self.assertEqual(['US_CO', 'PRISON'], table_definition.filtered_dimension_values)
+        self.assertEqual(['metric/population/type', 'global/location/state'], table_definition.filtered_dimensions)
+        self.assertEqual(['PRISON', 'US_CO'], table_definition.filtered_dimension_values)
         self.assertEqual(['global/raw/facility'], table_definition.aggregated_dimensions)
 
         tables = session.query(schema.ReportTableInstance).order_by(schema.ReportTableInstance.time_window_start).all()
