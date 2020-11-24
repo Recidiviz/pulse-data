@@ -19,6 +19,7 @@ nose = "*"
 pytest-alembic = "*"
 pipenv = "*"
 typing-extensions = "*"
+pygit2 = "*"
 
 [packages]
 jupyter = "*"

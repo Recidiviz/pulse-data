@@ -24,10 +24,13 @@ import sqlalchemy
 from sqlalchemy.engine import Engine
 from sqlalchemy.ext.declarative import DeclarativeMeta
 
+from recidiviz.persistence.database import SQLALCHEMY_DB_NAME, SQLALCHEMY_DB_HOST, SQLALCHEMY_DB_USER, \
+    SQLALCHEMY_DB_PASSWORD, SQLALCHEMY_USE_SSL, SQLALCHEMY_SSL_CERT_PATH, SQLALCHEMY_SSL_KEY_PATH
 from recidiviz.persistence.database.base_schema import JailsBase, \
     StateBase, OperationsBase, JusticeCountsBase
 from recidiviz.persistence.database import migrations
 from recidiviz.utils import secrets, environment
+from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION
 
 
 @enum.unique
@@ -52,11 +55,11 @@ class SQLAlchemyEngineManager:
         SchemaType.JUSTICE_COUNTS: 'justice_counts_cloudsql_instance_id',
     }
 
-    _SCHEMA_TO_DB_NAME_KEY: Dict[SchemaType, str] = {
-        SchemaType.JAILS: 'sqlalchemy_db_name',
-        SchemaType.STATE: 'state_db_name',
-        SchemaType.OPERATIONS: 'operations_db_name',
-        SchemaType.JUSTICE_COUNTS: 'justice_counts_db_name',
+    _SCHEMA_TO_SECRET_MANAGER_PREFIX: Dict[SchemaType, str] = {
+        SchemaType.JAILS: 'sqlalchemy',
+        SchemaType.STATE: 'state',
+        SchemaType.OPERATIONS: 'operations',
+        SchemaType.JUSTICE_COUNTS: 'justice_counts',
     }
 
     _SCHEMA_TO_DECLARATIVE_META: Dict[SchemaType, DeclarativeMeta] = {
@@ -170,8 +173,19 @@ class SQLAlchemyEngineManager:
         return cls._engine_for_schema.get(schema_base, None)
 
     @classmethod
+    def get_db_host_key(cls, schema_type: SchemaType) -> str:
+        return f'{cls._SCHEMA_TO_SECRET_MANAGER_PREFIX[schema_type]}_db_host'
+
+    @classmethod
+    def get_db_host(cls, schema_type: SchemaType) -> str:
+        host = secrets.get_secret(cls.get_db_host_key(schema_type))
+        if host is None:
+            raise ValueError(f"Unable to retrieve database host for schema type [{schema_type}]")
+        return host
+
+    @classmethod
     def get_db_name_key(cls, schema_type: SchemaType) -> str:
-        return cls._SCHEMA_TO_DB_NAME_KEY[schema_type]
+        return f'{cls._SCHEMA_TO_SECRET_MANAGER_PREFIX[schema_type]}_db_name'
 
     @classmethod
     def get_db_name(cls, schema_type: SchemaType) -> str:
@@ -179,6 +193,28 @@ class SQLAlchemyEngineManager:
         if db_name is None:
             raise ValueError(f"Unable to retrieve database name for schema type [{schema_type}]")
         return db_name
+
+    @classmethod
+    def get_db_password_key(cls, schema_type: SchemaType) -> str:
+        return f'{cls._SCHEMA_TO_SECRET_MANAGER_PREFIX[schema_type]}_db_password'
+
+    @classmethod
+    def get_db_password(cls, schema_type: SchemaType) -> str:
+        password = secrets.get_secret(cls.get_db_password_key(schema_type))
+        if password is None:
+            raise ValueError(f"Unable to retrieve database password for schema type [{schema_type}]")
+        return password
+
+    @classmethod
+    def get_db_user_key(cls, schema_type: SchemaType) -> str:
+        return f'{cls._SCHEMA_TO_SECRET_MANAGER_PREFIX[schema_type]}_db_user'
+
+    @classmethod
+    def get_db_user(cls, schema_type: SchemaType) -> str:
+        user = secrets.get_secret(cls.get_db_user_key(schema_type))
+        if user is None:
+            raise ValueError(f"Unable to retrieve database user for schema type [{schema_type}]")
+        return user
 
     @classmethod
     def get_cloudsql_instance_id_key(
@@ -218,6 +254,44 @@ class SQLAlchemyEngineManager:
         ids_for_all_schemas = [cls.get_stripped_cloudsql_instance_id(schema_type) for schema_type in SchemaType]
         return [instance_id for instance_id in ids_for_all_schemas if instance_id is not None]
 
+    @classmethod
+    def update_sqlalchemy_env_vars(cls, schema_type: SchemaType,
+                                   ssl_cert_path: Optional[str] = None) -> Dict[str, Optional[str]]:
+        """Updates the appropriate env vars for SQLAlchemy to talk to the postgres instance associated with the schema.
+
+        It returns the old set of env variables that were overridden.
+        """
+        sqlalchemy_vars = [
+            SQLALCHEMY_DB_NAME,
+            SQLALCHEMY_DB_HOST,
+            SQLALCHEMY_DB_USER,
+            SQLALCHEMY_DB_PASSWORD,
+            SQLALCHEMY_USE_SSL,
+        ]
+        original_values = {env_var: os.environ.get(env_var) for env_var in sqlalchemy_vars}
+
+        os.environ[SQLALCHEMY_DB_NAME] = cls.get_db_name(schema_type)
+        os.environ[SQLALCHEMY_DB_HOST] = cls.get_db_host(schema_type)
+        os.environ[SQLALCHEMY_DB_USER] = cls.get_db_user(schema_type)
+        os.environ[SQLALCHEMY_DB_PASSWORD] = cls.get_db_password(schema_type)
+
+        if ssl_cert_path is None:
+            os.environ[SQLALCHEMY_USE_SSL] = '0'
+        else:
+            original_values[SQLALCHEMY_SSL_CERT_PATH] = os.environ.get(SQLALCHEMY_SSL_CERT_PATH)
+            original_values[SQLALCHEMY_SSL_KEY_PATH] = os.environ.get(SQLALCHEMY_SSL_KEY_PATH)
+
+            os.environ[SQLALCHEMY_USE_SSL] = '1'
+            os.environ[SQLALCHEMY_SSL_CERT_PATH] = os.path.join(ssl_cert_path, 'client-cert.pem')
+            os.environ[SQLALCHEMY_SSL_KEY_PATH] = os.path.join(ssl_cert_path, 'client-key.pem')
+
+        return original_values
+
+    @classmethod
+    def database_requires_ssl(cls, project_id: str) -> bool:
+        return project_id == GCP_PROJECT_PRODUCTION
+
+    # TODO(#4627): These methods can be collapsed given the introduction of _SCHEMA_TO_SECRET_MANAGER_PREFIX.
     @classmethod
     def _get_state_server_postgres_instance_url(cls) -> str:
         return cls._get_server_postgres_instance_url(
