@@ -129,31 +129,22 @@ class SQLAlchemyEngineManager:
         cls._engine_for_schema.clear()
 
     @classmethod
+    def init_engine(cls, schema_type: SchemaType) -> None:
+        cls.init_engine_for_postgres_instance(
+            db_url=cls._get_server_postgres_instance_url(schema_type=schema_type),
+            schema_base=cls._SCHEMA_TO_DECLARATIVE_META[schema_type])
+
+    @classmethod
     def init_engines_for_server_postgres_instances(cls) -> None:
         if not environment.in_gae():
             logging.info(
                 "Environment is not GAE, not connecting to postgres instances.")
             return
 
-        # Initialize Jails database instance
-        cls.init_engine_for_postgres_instance(
-            db_url=cls._get_jails_server_postgres_instance_url(),
-            schema_base=JailsBase)
-
-        # Initialize State database instance
-        cls.init_engine_for_postgres_instance(
-            db_url=cls._get_state_server_postgres_instance_url(),
-            schema_base=StateBase)
-
-        # Initialize Operations database instance
-        cls.init_engine_for_postgres_instance(
-            db_url=cls._get_operations_server_postgres_instance_url(),
-            schema_base=OperationsBase)
-
-        # Initialize Justice Counts database instance
-        cls.init_engine_for_postgres_instance(
-            db_url=cls._get_justice_counts_server_postgres_instance_url(),
-            schema_base=JusticeCountsBase)
+        cls.init_engine(SchemaType.JAILS)
+        cls.init_engine(SchemaType.STATE)
+        cls.init_engine(SchemaType.OPERATIONS)
+        cls.init_engine(SchemaType.JUSTICE_COUNTS)
 
     @classmethod
     def declarative_method_for_schema(cls, schema_type: SchemaType) -> DeclarativeMeta:
@@ -328,47 +319,14 @@ class SQLAlchemyEngineManager:
     def database_requires_ssl(cls, project_id: str) -> bool:
         return project_id == GCP_PROJECT_PRODUCTION
 
-    # TODO(#4627): These methods can be collapsed given the introduction of _SCHEMA_TO_SECRET_MANAGER_PREFIX.
     @classmethod
-    def _get_state_server_postgres_instance_url(cls) -> str:
-        return cls._get_server_postgres_instance_url(
-            db_user_key='state_db_user',
-            db_password_key='state_db_password',
-            schema_type=SchemaType.STATE)
-
-    @classmethod
-    def _get_jails_server_postgres_instance_url(cls) -> str:
-        return cls._get_server_postgres_instance_url(
-            db_user_key='sqlalchemy_db_user',
-            db_password_key='sqlalchemy_db_password',
-            schema_type=SchemaType.JAILS)
-
-    @classmethod
-    def _get_operations_server_postgres_instance_url(cls) -> str:
-        return cls._get_server_postgres_instance_url(
-            db_user_key='operations_db_user',
-            db_password_key='operations_db_password',
-            schema_type=SchemaType.OPERATIONS)
-
-    @classmethod
-    def _get_justice_counts_server_postgres_instance_url(cls) -> str:
-        return cls._get_server_postgres_instance_url(
-            db_user_key='justice_counts_db_user',
-            db_password_key='justice_counts_db_password',
-            schema_type=SchemaType.JUSTICE_COUNTS)
-
-    @classmethod
-    def _get_server_postgres_instance_url(cls,
-                                          *,
-                                          db_user_key: str,
-                                          db_password_key: str,
-                                          schema_type: SchemaType) -> str:
+    def _get_server_postgres_instance_url(cls, *, schema_type: SchemaType) -> str:
         instance_id_key = cls.get_cloudsql_instance_id_key(schema_type)
         if instance_id_key is None:
             raise ValueError(f'Instance id is not configured for schema type [{schema_type}]')
 
-        db_user = secrets.get_secret(db_user_key)
-        db_password = secrets.get_secret(db_password_key)
+        db_user = secrets.get_secret(f'{cls._SCHEMA_TO_SECRET_MANAGER_PREFIX[schema_type]}_db_user')
+        db_password = secrets.get_secret(f'{cls._SCHEMA_TO_SECRET_MANAGER_PREFIX[schema_type]}_db_password')
         db_name = cls.get_db_name(schema_type)
         cloudsql_instance_id = secrets.get_secret(instance_id_key)
 
