@@ -4,10 +4,10 @@ report_instance: '2020-10-05'
 publish_date: '2020-10-05'
 tables:
     - file: 'table.csv'
-      time_window:
-        column:
-          names:
-            - 'Date'
+      date_range:
+        dynamic:
+          columns:
+            Date: 'DATE'
           type: 'SNAPSHOT'
       system: 'CORRECTIONS'
       metric:

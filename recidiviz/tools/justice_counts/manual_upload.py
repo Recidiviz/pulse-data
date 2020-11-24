@@ -23,7 +23,7 @@ import enum
 import logging
 from numbers import Number
 import os
-from typing import Callable, Dict, List, Optional, Set, Tuple, Type, Union
+from typing import Callable, Dict, List, Optional, OrderedDict, Set, Tuple, Type, Union
 
 import attr
 import pandas
@@ -32,6 +32,7 @@ from sqlalchemy.orm.session import Session
 from sqlalchemy.sql.schema import UniqueConstraint
 import yaml
 
+from recidiviz.common.date import DateRange, first_day_of_month, last_day_of_month
 from recidiviz.persistence.database.base_schema import JusticeCountsBase
 from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.persistence.database.session_factory import SessionFactory
@@ -193,64 +194,67 @@ DIMENSIONS_BY_NAME = {name: dimension
 # if and when, for instance, a new metric needs to be added, it is clear what conversion steps must be implemented. Any
 # conversion that is not specific to a particular object, but instead a class of objects, e.g. all Metrics, is instead
 # implemented within the persistence code itself.
+class DateFormatType(enum.Enum):
+    DATE = 'DATE'
+    MONTH = 'MONTH'
 
-# TODO(#4482): Consolidate the TimeWindow implementations and use the existing DateRange class. Create additional
-# convenience factory methods to be used as converters.
-# * FIRST_OF_MONTH: takes a month str, gives snapshot on first of month
-# * MONTH: takes a month str, gives range for month
-# ...
-class TimeWindowType(enum.Enum):
-    SNAPSHOT = 'SNAPSHOT'
+
+DateFormatParserType = Callable[[str], datetime.date]
+
+
+DATE_FORMAT_PARSERS: Dict[DateFormatType, DateFormatParserType] = {
+    DateFormatType.DATE: datetime.date.fromisoformat,
+    DateFormatType.MONTH: lambda text: datetime.datetime.strptime(text, "%Y-%m").date()
+}
+
+
+class MeasurementWindowType(enum.Enum):
     RANGE = 'RANGE'
-
-class TimeWindow:
-    """The window of time that values in this table cover, represented by a start and an end.
-
-    The data could represent an instant measurement, where the start and end are equal, or a range, e.g. ADP over the
-    last month.
-    """
-    @property
-    @abstractmethod
-    def start(self) -> datetime.date:
-        """The start of the window that the given data covers, inclusive.
-
-        For example, if the data is an average over the month of August 2020, this would be 2020-08-01.
-        """
-
-    @property
-    @abstractmethod
-    def end(self) -> datetime.date:
-        """The end of the window that the given data covers, exclusive.
-
-        For example, if the data is an average over the month of August 2020, this would be 2020-09-01.
-        """
+    SNAPSHOT = 'SNAPSHOT'
 
 
-@attr.s(frozen=True)
-class Snapshot(TimeWindow):
-    date: datetime.date = attr.ib(converter=datetime.date.fromisoformat)
-
-    @property
-    def start(self) -> datetime.date:
-        return self.date
-
-    @property
-    def end(self) -> datetime.date:
-        return self.date + datetime.timedelta(days=1)
+# Currently we only expect one or two columns to be used to construct date ranges, but this can be expanded in the
+# future if needed.
+DateRangeConverterType = Union[
+    Callable[[datetime.date], DateRange],
+    Callable[[datetime.date, datetime.date], DateRange],
+]
 
 
-@attr.s(frozen=True)
-class Range(TimeWindow):
-    from_date: datetime.date = attr.ib(converter=datetime.date.fromisoformat)
-    to_date: datetime.date = attr.ib(converter=datetime.date.fromisoformat)
+class RangeType(enum.Enum):
+    @classmethod
+    def get_or_default(cls, text: Optional[str]) -> 'RangeType':
+        if text is None:
+            return RangeType.CUSTOM
+        return cls(text)
 
-    @property
-    def start(self) -> datetime.date:
-        return self.from_date
+    CUSTOM = 'CUSTOM'
+    MONTH = 'MONTH'
 
-    @property
-    def end(self) -> datetime.date:
-        return self.to_date
+
+RANGE_CONVERTERS: Dict[RangeType, DateRangeConverterType] = {
+    RangeType.CUSTOM: DateRange,
+    RangeType.MONTH: DateRange.for_month_of_date,
+}
+
+
+class SnapshotType(enum.Enum):
+    @classmethod
+    def get_or_default(cls, text: Optional[str]) -> 'SnapshotType':
+        if text is None:
+            return SnapshotType.DAY
+        return cls(text)
+
+    DAY = 'DAY'
+    FIRST_DAY_OF_MONTH = 'FIRST_DAY_OF_MONTH'
+    LAST_DAY_OF_MONTH = 'LAST_DAY_OF_MONTH'
+
+
+SNAPSHOT_CONVERTERS: Dict[SnapshotType, DateRangeConverterType] = {
+    SnapshotType.DAY: DateRange.for_day,
+    SnapshotType.FIRST_DAY_OF_MONTH: lambda date: DateRange.for_day(first_day_of_month(date)),
+    SnapshotType.LAST_DAY_OF_MONTH: lambda date: DateRange.for_day(last_day_of_month(date)),
+}
 
 
 class Metric:
@@ -286,7 +290,7 @@ class Population(Metric):
     @property
     def measurement_type(self) -> schema.MeasurementType:
         # TODO(#4484): Population isn't always instant, make this dynamic and straightforward to configure. Potentially
-        # integrate with TimeWindow?
+        # integrate with DateRange?
         return schema.MeasurementType.INSTANT
 
     @classmethod
@@ -296,57 +300,59 @@ class Population(Metric):
 def _convert_dimensions(dimensions: List[Tuple[str, str]]) -> List[Dimension]:
     return [dimension_type(dimension_value) for dimension_type, dimension_value in dimensions]
 
-
-# Currently we only expect one or two columns to be used to construct time windows, but this can be expanded in the
-# future if needed.
-TimeWindowConverterType = Union[
-    Callable[[str], TimeWindow],
-    Callable[[str, str], TimeWindow],
-]
-
-class TimeWindowProducer:
-    """Produces TimeWindows for a given table, splitting the table as needed.
+class DateRangeProducer:
+    """Produces DateRanges for a given table, splitting the table as needed.
     """
     @abstractmethod
-    def split_dataframe(self, df: pandas.DataFrame) -> List[Tuple[TimeWindow, pandas.DataFrame]]:
+    def split_dataframe(self, df: pandas.DataFrame) -> List[Tuple[DateRange, pandas.DataFrame]]:
         pass
 
 @attr.s(frozen=True, kw_only=True)
-class FixedTimeWindowProducer(TimeWindowProducer):
-    """Used when data in the table is for a single time window, configured outside of the table.
+class FixedDateRangeProducer(DateRangeProducer):
+    """Used when data in the table is for a single date range, configured outside of the table.
     """
-    # The time window for the table
-    fixed_window: TimeWindow = attr.ib()
+    # The date range for the table
+    fixed_range: DateRange = attr.ib()
 
-    def split_dataframe(self, df: pandas.DataFrame) -> List[Tuple[TimeWindow, pandas.DataFrame]]:
-        return [(self.fixed_window, df)]
+    def split_dataframe(self, df: pandas.DataFrame) -> List[Tuple[DateRange, pandas.DataFrame]]:
+        return [(self.fixed_range, df)]
 
 @attr.s(frozen=True, kw_only=True)
-class DynamicTimeWindowProducer(TimeWindowProducer):
-    """Used when data in the table is for multiple time windows, represented by the
+class DynamicDateRangeProducer(DateRangeProducer):
+    """Used when data in the table is for multiple date ranges, represented by the
     values of a particular set of columns in the table.
     """
-    # The columns that contain the time windows
-    column_names: List[str] = attr.ib()
-    # The function to use to convert the column values into time windows
-    converter: TimeWindowConverterType = attr.ib()
+    # The columns that contain the date ranges and how to parse the values in that column.
+    # The parsed values are passed to `converter` in the same order in which the columns are specified in the dict.
+    columns: OrderedDict[str, DateFormatParserType] = attr.ib()
+    # The function to use to convert the column values into date ranges
+    converter: DateRangeConverterType = attr.ib()
 
-    def split_dataframe(self, df: pandas.DataFrame) -> List[Tuple[TimeWindow, pandas.DataFrame]]:
-        # - Groups the df by the time column, getting a separate df per time
-        # - Converts the value in the time column to a `TimeWindow`, using the provided converter
-        # - Drops the time column from the split dfs, as it is no longer needed
-        return [(self._convert(time_args), split.drop(self.column_names, axis=1))
-                for time_args, split in df.groupby(self.column_names)]
+    @property
+    def column_names(self) -> List[str]:
+        return list(self.columns.keys())
 
-    def _convert(self, args: Union[str, List[str]]) -> TimeWindow:
+    @property
+    def column_parsers(self) -> List[DateFormatParserType]:
+        return list(self.columns.values())
+
+    def split_dataframe(self, df: pandas.DataFrame) -> List[Tuple[DateRange, pandas.DataFrame]]:
+        # - Groups the df by the specified column, getting a separate df per date range
+        # - Converts the column values to a `DateRange`, using the provided converter
+        # - Drops the columns from the split dfs, as they are no longer needed
+        return [(self._convert(date_args), split.drop(self.column_names, axis=1))
+                for date_args, split in df.groupby(self.column_names)]
+
+    def _convert(self, args: Union[str, List[str]]) -> DateRange:
         args: List[str] = [args] if isinstance(args, str) else args
+        parsed_args: List[datetime.date] = [parser(arg) for arg, parser in zip(args, self.column_parsers)]
         # pylint: disable=not-callable
-        return self.converter(*args)
+        return self.converter(*parsed_args)
 
 @attr.s(frozen=True)
 class Table:
     """Ingest model that represents a table in a report"""
-    time_window: TimeWindow = attr.ib()
+    date_range: DateRange = attr.ib()
     metric: Metric = attr.ib()
     system: schema.System = attr.ib(converter=schema.System)
     methodology: str = attr.ib()
@@ -358,7 +364,7 @@ class Table:
     additional_filters: List[Dimension] = attr.ib()
 
     @classmethod
-    def from_table(cls, time_window: TimeWindow, metric: Metric, system: str, methodology: str,
+    def from_table(cls, date_range: DateRange, metric: Metric, system: str, methodology: str,
                    location: Optional[Location], additional_filters: List[Tuple[str, str]],
                    dimension_names: List[str], rows: List[Tuple[Tuple[str, ...], Number]]) -> 'Table':
         dimensions = [DIMENSIONS_BY_NAME[identifier] for identifier in dimension_names]
@@ -368,17 +374,17 @@ class Table:
             dimension_entries = _convert_dimensions(zip(dimensions, dimension_values))
             data.append((tuple(dimension_entries), decimal.Decimal(data_value)))
 
-        return cls(time_window, metric, system, methodology, dimensions, data, location,
+        return cls(date_range, metric, system, methodology, dimensions, data, location,
                    _convert_dimensions(additional_filters))
 
     @classmethod
-    def list_from_dataframe(cls, time_window_producer: TimeWindowProducer, metric: Metric, system: str,
+    def list_from_dataframe(cls, date_range_producer: DateRangeProducer, metric: Metric, system: str,
                             methodology: str, location: Optional[Location], additional_filters: List[Tuple[str, str]],
                             df: pandas.DataFrame) -> List['Table']:
         tables = []
-        for time_window, df_time in time_window_producer.split_dataframe(df):
-            dimension_names, rows = Table._transform_dataframe(df_time)
-            tables.append(cls.from_table(time_window=time_window, metric=metric, system=system, methodology=methodology,
+        for date_range, df_date in date_range_producer.split_dataframe(df):
+            dimension_names, rows = Table._transform_dataframe(df_date)
+            tables.append(cls.from_table(date_range=date_range, metric=metric, system=system, methodology=methodology,
                                          location=location, additional_filters=additional_filters,
                                          dimension_names=dimension_names, rows=rows))
         return tables
@@ -386,8 +392,8 @@ class Table:
     @staticmethod
     def _transform_dataframe(df: pandas.DataFrame):
         # All columns but the last contain dimension values, the last column has the data value.
-        # TODO(#4474): Support mapping column names to dimensions and specifying which column contains the value, time
-        # window in the manifest.
+        # TODO(#4474): Support mapping column names to dimensions and specifying which column contains the value, date
+        # range in the manifest.
         dimension_names = df.columns.values[:-1]
         rows = []
         for row in df.values:
@@ -457,51 +463,55 @@ def _parse_location(location_input: Dict[str, str]) -> Location:
     raise ValueError(f"Invalid location, expected a dictionary with a single key that is one of ('country', 'state', "
                      f"'county') but received: {repr(location_input)}")
 
-def _get_converter(window_type_input: str) -> TimeWindowConverterType:
-    window_type = TimeWindowType(window_type_input)
-    if window_type is TimeWindowType.SNAPSHOT:
-        return Snapshot
-    if window_type is TimeWindowType.RANGE:
-        return Range
-    raise ValueError(f"Enum case not handled for {window_type} when building converter.")
+def _get_converter(range_type_input: str, range_converter_input: Optional[str] = None) -> DateRangeConverterType:
+    range_type = MeasurementWindowType(range_type_input)
+    if range_type is MeasurementWindowType.SNAPSHOT:
+        return SNAPSHOT_CONVERTERS[SnapshotType.get_or_default(range_converter_input)]
+    if range_type is MeasurementWindowType.RANGE:
+        return RANGE_CONVERTERS[RangeType.get_or_default(range_converter_input)]
+    raise ValueError(f"Enum case not handled for {range_type} when building converter.")
 
 # TODO(#4480): Generalize these parsing methods, instead of creating one for each class. If value is a dict, pop it,
 # find all implementing classes of `key`, find matching class, pass inner dict as parameters to matching class.
-FixedTimeWindowYAML = Dict[str, Dict[str, str]]
-def _parse_time_window(window_input: FixedTimeWindowYAML) -> TimeWindow:
-    if isinstance(window_input, dict) and len(window_input) == 1:
-        [[window_type, window_args]] = window_input.items()
-        return _get_converter(window_type.upper())(**window_args)
-    raise ValueError(f"Invalid time window, expected a dictionary with a single key that is one of but received: "
-                     f"{repr(window_input)}")
+FixedDateRangeYAML = Dict[str, Dict[str, str]]
+def _parse_date_range(range_input: FixedDateRangeYAML) -> DateRange:
+    if isinstance(range_input, dict) and len(range_input) == 1:
+        [[range_type, range_args]] = range_input.items()
+        converter = _get_converter(range_type.upper())
+        parsed_args = {key: datetime.date.fromisoformat(value) for key, value in range_args.items()}
+        return converter(**parsed_args)
+    raise ValueError(f"Invalid date range, expected a dictionary with a single key that is one of but received: "
+                     f"{repr(range_input)}")
 
-DynamicTimeWindowYAML = Dict[str, Union[str, List[str]]]
-def _parse_dynamic_time_window_producer(window_input: DynamicTimeWindowYAML) -> DynamicTimeWindowProducer:
-    window_type: Optional[str] = window_input.pop('type', None)
-    if not window_type or not isinstance(window_type, str):
-        raise ValueError(f"Invalid column time window, expected key 'type' to have value ('SNAPSHOT', 'RANGE') "
-                         f"in input: {repr(window_input)}")
+DynamicDateRangeYAML = Dict[str, Union[str, List[str]]]
+def _parse_dynamic_date_range_producer(range_input: DynamicDateRangeYAML) -> DynamicDateRangeProducer:
+    range_type: Optional[str] = range_input.pop('type', None)
+    if not range_type or not isinstance(range_type, str):
+        raise ValueError(f"Invalid column date range, expected key 'type' to have value ('SNAPSHOT', 'RANGE') "
+                         f"in input: {repr(range_input)}")
+    range_converter: Optional[str] = range_input.pop('converter', None)
 
-    column_names: Optional[List[str]] = window_input.pop('names', None)
-    if not column_names or not isinstance(column_names, list):
-        raise ValueError(f"Invalid column time window, expected key 'names' to have non-empty list of column names in "
-                         f"input: {repr(window_input)}.")
+    column_names: Optional[Dict[str, str]] = range_input.pop('columns', None)
+    if not column_names or not isinstance(column_names, dict):
+        raise ValueError(f"Invalid column date range, expected key 'names' to have non-empty list of column names in "
+                         f"input: {repr(range_input)}.")
+    columns = {key: DATE_FORMAT_PARSERS[DateFormatType(value)] for key, value in column_names.items()}
 
-    if len(window_input) > 0:
-        raise ValueError(f"Received unexpected parameters for time window: {repr(window_input)}")
+    if len(range_input) > 0:
+        raise ValueError(f"Received unexpected parameters for date range: {repr(range_input)}")
 
-    return DynamicTimeWindowProducer(converter=_get_converter(window_type), column_names=column_names)
+    return DynamicDateRangeProducer(converter=_get_converter(range_type, range_converter), columns=columns)
 
-def _parse_time_window_producer(window_producer_input: Dict[str, Union[FixedTimeWindowYAML, DynamicTimeWindowYAML]]) \
-        -> TimeWindowProducer:
-    if isinstance(window_producer_input, dict) and len(window_producer_input) == 1:
-        [[window_producer_type, window_producer_args]] = window_producer_input.items()
-        if window_producer_type == 'fixed':
-            return FixedTimeWindowProducer(fixed_window=_parse_time_window(window_producer_args))
-        if window_producer_type == 'column':
-            return _parse_dynamic_time_window_producer(window_producer_args)
-    raise ValueError(f"Invalid time window, expected a dictionary with a single key that is one of ('fixed', 'column'"
-                     f") but received: {repr(window_producer_input)}")
+def _parse_date_range_producer(range_producer_input: Dict[str, Union[FixedDateRangeYAML, DynamicDateRangeYAML]]) \
+        -> DateRangeProducer:
+    if isinstance(range_producer_input, dict) and len(range_producer_input) == 1:
+        [[range_producer_type, range_producer_args]] = range_producer_input.items()
+        if range_producer_type == 'fixed':
+            return FixedDateRangeProducer(fixed_range=_parse_date_range(range_producer_args))
+        if range_producer_type == 'dynamic':
+            return _parse_dynamic_date_range_producer(range_producer_args)
+    raise ValueError(f"Invalid date range, expected a dictionary with a single key that is one of ('fixed', 'dynamic'"
+                     f") but received: {repr(range_producer_input)}")
 
 def _parse_metric(metric_input: Dict[str, Dict[str, Union[str, float]]]) -> Metric:
     if isinstance(metric_input, dict) and len(metric_input) == 1:
@@ -519,7 +529,7 @@ def _parse_tables(directory: str, tables_input: List[types.SimpleYAMLDict]) -> L
     tables = []
     for table_input in tables_input:
         # Parse nested objects separately
-        time_window_producer = _parse_time_window_producer(table_input.pop('time_window'))
+        date_range_producer = _parse_date_range_producer(table_input.pop('date_range'))
         location: Location = _parse_location(table_input.pop('location'))
         metric = _parse_metric(table_input.pop('metric'))
 
@@ -528,7 +538,7 @@ def _parse_tables(directory: str, tables_input: List[types.SimpleYAMLDict]) -> L
         df = pandas.read_csv(table_filepath)
 
         tables.extend(Table.list_from_dataframe(
-            time_window_producer=time_window_producer, metric=metric, system=table_input.pop('system'),
+            date_range_producer=date_range_producer, metric=metric, system=table_input.pop('system'),
             methodology=table_input.pop('methodology'), location=location,
             additional_filters=table_input.pop('additional_filters', []), df=df))
 
@@ -545,7 +555,7 @@ def _get_report(manifest_filepath):
         manifest: dict = yaml.full_load(manifest_file)
 
         # Parse tables separately
-        # TODO(#4479): Also allow for location to be a column in the csv, much like should be done for time above.
+        # TODO(#4479): Also allow for location to be a column in the csv, as is done for dates.
         tables = _parse_tables(directory, manifest.pop('tables'))
 
         report = Report(
@@ -625,8 +635,8 @@ def _convert_entities(session: Session, ingested_report: Report, metadata: Metad
         table_instance = _update_existing_or_create(schema.ReportTableInstance(
             report=report,
             report_table_definition=table_definition,
-            time_window_start=table.time_window.start,
-            time_window_end=table.time_window.end,
+            time_window_start=table.date_range.lower_bound_inclusive_date,
+            time_window_end=table.date_range.upper_bound_exclusive_date,
         ), session)
 
         # TODO(#4476): Clear any existing cells in the database for this report table instance. In the common case,
