@@ -4,7 +4,7 @@ report_instance: '2020-10-05'
 publish_date: '2020-10-05'
 tables:
     - file: 'ManualData-Prison_US_CO_DashboardMeasures_Aug20.csv'
-      time_window:
+      date_range:
         fixed:
           snapshot:
             date: '2020-08-31'
@@ -16,7 +16,7 @@ tables:
         state: 'US_CO'
       methodology: 'Unknown'
     - file: 'ManualData-Prison_US_CO_DashboardMeasures_Jul20.csv'
-      time_window:
+      date_range:
         fixed:
           snapshot:
             date: '2020-07-31'
@@ -28,7 +28,7 @@ tables:
         state: 'US_CO'
       methodology: 'Unknown'
     - file: 'ManualData-Prison_US_CO_DashboardMeasures_Jun20.csv'
-      time_window:
+      date_range:
         fixed:
           snapshot:
             date: '2020-06-30'
