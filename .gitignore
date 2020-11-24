@@ -132,3 +132,9 @@ secrets.yaml # keep in case any developers still have them
 
 # Mac
 .DS_Store
+
+# Terraform
+**/.terraform/*
+*.tfstate
+*.tfstate.*
+*.tfvars
