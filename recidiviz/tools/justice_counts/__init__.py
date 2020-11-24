@@ -14,8 +14,3 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""General use mypy types."""
-
-from typing import TypeVar
-
-ClsType = TypeVar('ClsType', bound=object)
