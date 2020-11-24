@@ -422,7 +422,7 @@ def run(apache_beam_pipeline_options: PipelineOptions,
                 ImportTableAsKVTuples(
                     dataset_id=reference_dataset,
                     table_id=INCARCERATION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_NAME,
-                    table_key='supervision_period_id',
+                    table_key='person_id',
                     state_code_filter=state_code,
                     person_id_filter_set=person_id_filter_set
                 ))
