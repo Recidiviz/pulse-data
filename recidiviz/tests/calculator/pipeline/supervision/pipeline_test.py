@@ -567,7 +567,9 @@ class TestSupervisionPipeline(unittest.TestCase):
         )
 
         supervision_period_judicial_district_association_rows = [{
-            'supervision_period_id': 999,
+            'state_code': 'US_XX',
+            'person_id': fake_person_id,
+            'supervision_period_id': fake_supervision_period_id,
             'judicial_district_code': 'XXX',
         }]
 

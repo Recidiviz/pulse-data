@@ -19,6 +19,7 @@
 import unittest
 
 import apache_beam as beam
+import pytest
 from apache_beam.testing.test_pipeline import TestPipeline
 from apache_beam.testing.util import assert_that, equal_to
 
@@ -115,3 +116,39 @@ class TestBeamUtils(unittest.TestCase):
         assert_that(output, equal_to([]))
 
         test_pipeline.run()
+
+    def testConvertDictToKVTuple(self):
+        test_input = [{'key_field': 'a', 'other_field': 'x'},
+                      {'key_field': 'b', 'other_field': 'y'}]
+
+        test_pipeline = TestPipeline()
+
+        output = (test_pipeline
+                  | beam.Create(test_input)
+                  | 'Test ConvertDictToKVTuple' >>
+                  beam.ParDo(beam_utils.ConvertDictToKVTuple(),
+                             'key_field'))
+
+        correct_output = [
+            ('a', {'key_field': 'a', 'other_field': 'x'}),
+            ('b', {'key_field': 'b', 'other_field': 'y'})
+        ]
+
+        assert_that(output, equal_to(correct_output))
+
+        test_pipeline.run()
+
+    def testConvertDictToKVTuple_InvalidKey(self):
+        test_input = [{'key_field': 'a', 'other_field': 'x'},
+                      {'key_field': 'b', 'other_field': 'y'}]
+
+        test_pipeline = TestPipeline()
+
+        with pytest.raises(ValueError):
+            _ = (test_pipeline
+                 | beam.Create(test_input)
+                 | 'Test ConvertDictToKVTuple' >>
+                 beam.ParDo(beam_utils.ConvertDictToKVTuple(),
+                            'not_the_key_field'))
+
+            test_pipeline.run()

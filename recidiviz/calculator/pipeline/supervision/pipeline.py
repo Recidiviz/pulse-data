@@ -420,7 +420,7 @@ def run(apache_beam_pipeline_options: PipelineOptions,
         ssvr_agent_associations_as_kv = (p | 'Load ssvr_agent_associations_as_kv' >> ImportTableAsKVTuples(
             dataset_id=reference_dataset,
             table_id=SSVR_TO_AGENT_ASSOCIATION_VIEW_NAME,
-            table_key='supervision_period_id',
+            table_key='supervision_violation_response_id',
             state_code_filter=state_code,
             person_id_filter_set=None
         ))
