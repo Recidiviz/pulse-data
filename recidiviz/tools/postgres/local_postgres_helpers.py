@@ -62,7 +62,7 @@ def update_local_sqlalchemy_postgres_env_vars() -> Dict[str, Optional[str]]:
     return original_values
 
 
-def restore_local_sqlalchemy_postgres_env_vars(overridden_env_vars: Dict[str, Optional[str]]):
+def restore_local_env_vars(overridden_env_vars: Dict[str, Optional[str]]):
     for var, value in overridden_env_vars.items():
         if value is None:
             del os.environ[var]
