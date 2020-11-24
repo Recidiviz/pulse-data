@@ -81,11 +81,14 @@ class SumFn(beam.CombineFn):
 @with_input_types(beam.typehints.Dict[str, Any], str)
 @with_output_types(beam.typehints.Tuple[Any, Dict[str, Any]])
 class ConvertDictToKVTuple(beam.DoFn):
-    """Converts a dictionary into a key value tuple by extracting a value from
-     the dictionary and setting it as the key."""
+    """Converts a dictionary into a key value tuple by extracting a value from the dictionary and setting it as the
+    key."""
 
     #pylint: disable=arguments-differ
     def process(self, element, key):
+        if key not in element:
+            raise ValueError(f"Dictionary element [{element}] does not contain expected key {key}.")
+
         key_value = element.get(key)
 
         if key_value:

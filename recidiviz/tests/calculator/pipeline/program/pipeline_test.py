@@ -770,7 +770,7 @@ class TestClassifyProgramAssignments(unittest.TestCase):
         test_pipeline = TestPipeline()
 
         supervision_period_to_agent_map = {
-            'fake': 'map'
+            'supervision_period_id': 'fake_map'
         }
 
         supervision_period_to_agent_associations = (
