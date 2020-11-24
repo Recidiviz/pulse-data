@@ -21,9 +21,8 @@ import datetime
 import decimal
 import enum
 import logging
-from numbers import Number
 import os
-from typing import Callable, Dict, List, Optional, OrderedDict, Set, Tuple, Type, Union
+from typing import Callable, Dict, Iterable, List, Optional, Set, Tuple, Type, Union
 
 import attr
 import pandas
@@ -36,7 +35,7 @@ from recidiviz.common.date import DateRange, first_day_of_month, last_day_of_mon
 from recidiviz.persistence.database.base_schema import JusticeCountsBase
 from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.persistence.database.session_factory import SessionFactory
-from recidiviz.utils import types
+from recidiviz.utils.yaml import YAMLDict
 
 # Dimensions
 
@@ -47,6 +46,11 @@ class Dimension:
     enums. Others are classes with a single text field to hold any value, and are potentially normalized to a
     pre-defined set of values as a separate dimension.
     """
+    @classmethod
+    @abstractmethod
+    def get(cls, value: str):
+        """Create an instance of the dimension based on the given value."""
+
     @classmethod
     @abstractmethod
     def identifier(cls) -> str:
@@ -81,6 +85,10 @@ class Dimension:
 
 class PopulationType(Dimension, enum.Enum):
     @classmethod
+    def get(cls, value: str) -> 'PopulationType':
+        return cls(value)
+
+    @classmethod
     def identifier(cls) -> str:
         return 'metric/population/type'
 
@@ -95,6 +103,10 @@ class PopulationType(Dimension, enum.Enum):
 
 class Country(Dimension, enum.Enum):
     @classmethod
+    def get(cls, value: str) -> 'Country':
+        return cls(value)
+
+    @classmethod
     def identifier(cls) -> str:
         return 'global/location/country'
 
@@ -107,6 +119,10 @@ class Country(Dimension, enum.Enum):
 
 # TODO(#4472): Pull this out to a common place and add all states.
 class State(Dimension, enum.Enum):
+    @classmethod
+    def get(cls, value: str) -> 'State':
+        return cls(value)
+
     @classmethod
     def identifier(cls) -> str:
         return 'global/location/state'
@@ -121,6 +137,11 @@ class State(Dimension, enum.Enum):
 
 
 class County(Dimension, enum.Enum):
+    @classmethod
+    def get(cls, value: str) -> 'County':
+        return cls(value)
+
+
     @classmethod
     def identifier(cls) -> str:
         return 'global/location/county'
@@ -137,11 +158,15 @@ class Facility(Dimension):
     name: str = attr.ib()
 
     @classmethod
+    def get(cls, value: str) -> 'Facility':
+        return cls(value)
+
+    @classmethod
     def identifier(cls) -> str:
         return 'global/raw/facility'
 
     @classmethod
-    def alternative_names(cls) -> str:
+    def alternative_names(cls) -> Set[str]:
         return {'Facility'}
 
     @property
@@ -154,11 +179,15 @@ class Race(Dimension):
     value: str = attr.ib()
 
     @classmethod
+    def get(cls, value: str) -> 'Race':
+        return cls(value)
+
+    @classmethod
     def identifier(cls) -> str:
         return 'global/raw/race'
 
     @classmethod
-    def alternative_names(cls) -> str:
+    def alternative_names(cls) -> Set[str]:
         return {'Race'}
 
     @property
@@ -171,11 +200,15 @@ class Gender(Dimension):
     value: str = attr.ib()
 
     @classmethod
+    def get(cls, value: str) -> 'Gender':
+        return cls(value)
+
+    @classmethod
     def identifier(cls) -> str:
         return 'global/raw/gender'
 
     @classmethod
-    def alternative_names(cls) -> str:
+    def alternative_names(cls) -> Set[str]:
         return {'Gender', 'Sex'}
 
     @property
@@ -297,8 +330,8 @@ class Population(Metric):
     def metric_type(cls) -> schema.MetricType:
         return schema.MetricType.POPULATION
 
-def _convert_dimensions(dimensions: List[Tuple[str, str]]) -> List[Dimension]:
-    return [dimension_type(dimension_value) for dimension_type, dimension_value in dimensions]
+def _convert_dimensions(dimensions: Iterable[Tuple[Type[Dimension], str]]) -> List[Dimension]:
+    return [dimension_type.get(dimension_value) for dimension_type, dimension_value in dimensions]
 
 class DateRangeProducer:
     """Produces DateRanges for a given table, splitting the table as needed.
@@ -324,7 +357,7 @@ class DynamicDateRangeProducer(DateRangeProducer):
     """
     # The columns that contain the date ranges and how to parse the values in that column.
     # The parsed values are passed to `converter` in the same order in which the columns are specified in the dict.
-    columns: OrderedDict[str, DateFormatParserType] = attr.ib()
+    columns: Dict[str, DateFormatParserType] = attr.ib()
     # The function to use to convert the column values into date ranges
     converter: DateRangeConverterType = attr.ib()
 
@@ -344,8 +377,8 @@ class DynamicDateRangeProducer(DateRangeProducer):
                 for date_args, split in df.groupby(self.column_names)]
 
     def _convert(self, args: Union[str, List[str]]) -> DateRange:
-        args: List[str] = [args] if isinstance(args, str) else args
-        parsed_args: List[datetime.date] = [parser(arg) for arg, parser in zip(args, self.column_parsers)]
+        unified_args: List[str] = [args] if isinstance(args, str) else args
+        parsed_args: List[datetime.date] = [parser(arg) for arg, parser in zip(unified_args, self.column_parsers)]
         # pylint: disable=not-callable
         return self.converter(*parsed_args)
 
@@ -366,16 +399,16 @@ class Table:
     @classmethod
     def from_table(cls, date_range: DateRange, metric: Metric, system: str, methodology: str,
                    location: Optional[Location], additional_filters: List[Tuple[str, str]],
-                   dimension_names: List[str], rows: List[Tuple[Tuple[str, ...], Number]]) -> 'Table':
-        dimensions = [DIMENSIONS_BY_NAME[identifier] for identifier in dimension_names]
+                   dimension_names: List[str], rows: List[Tuple[Tuple[str, ...], decimal.Decimal]]) -> 'Table':
+        dimensions = [DIMENSIONS_BY_NAME[name] for name in dimension_names]
 
         data = []
         for dimension_values, data_value in rows:
             dimension_entries = _convert_dimensions(zip(dimensions, dimension_values))
-            data.append((tuple(dimension_entries), decimal.Decimal(data_value)))
+            data.append((tuple(dimension_entries), data_value))
 
         return cls(date_range, metric, system, methodology, dimensions, data, location,
-                   _convert_dimensions(additional_filters))
+                   _convert_dimensions([(DIMENSIONS_BY_NAME[name], value) for name, value in additional_filters]))
 
     @classmethod
     def list_from_dataframe(cls, date_range_producer: DateRangeProducer, metric: Metric, system: str,
@@ -405,7 +438,10 @@ class Table:
     @property
     def filters(self) -> List[Dimension]:
         # TODO(#4473): Enforce sorting, naming scheme/organization, normalization of (additional filters, dimensions)
-        return ([self.location] or []) + self.metric.filters + self.additional_filters
+        filters = self.metric.filters + self.additional_filters
+        if self.location is not None:
+            filters.append(self.location)
+        return filters
 
     @property
     def filtered_dimension_names(self) -> List[str]:
@@ -443,7 +479,7 @@ class Report:
     tables: List[Table] = attr.ib()
 
     # The date the report was published, used to identify updated reports.
-    publish_date: datetime.date = attr.ib(converter=datetime.date.fromisoformat)
+    publish_date: datetime.date = attr.ib(converter=datetime.date.fromisoformat)  # type: ignore[misc]
 
     # TODO(#4481): Add field to store URL the report was pulled from, or other text describing how it was acquired.
 
@@ -451,9 +487,10 @@ class Report:
 # Parsing Layer
 # TODO(#4480): Pull this out to somewhere within ingest
 
-def _parse_location(location_input: Dict[str, str]) -> Location:
-    if isinstance(location_input, dict) and len(location_input) == 1:
-        [[location_type, location_name]] = location_input.items()
+def _parse_location(location_input: YAMLDict) -> Location:
+    """Expects a dict with a single entry, e.g. `{'state': 'US_XX'}`"""
+    if len(location_input) == 1:
+        [[location_type, location_name]] = location_input.get().items()
         if location_type == 'country':
             return Country(location_name)
         if location_type == 'state':
@@ -473,28 +510,25 @@ def _get_converter(range_type_input: str, range_converter_input: Optional[str] =
 
 # TODO(#4480): Generalize these parsing methods, instead of creating one for each class. If value is a dict, pop it,
 # find all implementing classes of `key`, find matching class, pass inner dict as parameters to matching class.
-FixedDateRangeYAML = Dict[str, Dict[str, str]]
-def _parse_date_range(range_input: FixedDateRangeYAML) -> DateRange:
-    if isinstance(range_input, dict) and len(range_input) == 1:
-        [[range_type, range_args]] = range_input.items()
+def _parse_date_range(range_input: YAMLDict) -> DateRange:
+    """Expects a dict with a single entry that is a dict, e.g. `{'snapshot': {'date': '2020-11-01'}}`"""
+    if len(range_input) == 1:
+        [[range_type, range_args]] = range_input.get().items()
         converter = _get_converter(range_type.upper())
-        parsed_args = {key: datetime.date.fromisoformat(value) for key, value in range_args.items()}
-        return converter(**parsed_args)
+        if isinstance(range_args, dict):
+            parsed_args = {key: datetime.date.fromisoformat(value) for key, value in range_args.items()}
+            return converter(**parsed_args)  # type: ignore[call-arg]
     raise ValueError(f"Invalid date range, expected a dictionary with a single key that is one of but received: "
-                     f"{repr(range_input)}")
+                        f"{repr(range_input)}")
 
-DynamicDateRangeYAML = Dict[str, Union[str, List[str]]]
-def _parse_dynamic_date_range_producer(range_input: DynamicDateRangeYAML) -> DynamicDateRangeProducer:
-    range_type: Optional[str] = range_input.pop('type', None)
-    if not range_type or not isinstance(range_type, str):
-        raise ValueError(f"Invalid column date range, expected key 'type' to have value ('SNAPSHOT', 'RANGE') "
-                         f"in input: {repr(range_input)}")
-    range_converter: Optional[str] = range_input.pop('converter', None)
+def _parse_dynamic_date_range_producer(range_input: YAMLDict) -> DynamicDateRangeProducer:
+    """Expects a dict with type (str), columns (dict) and converter (str, optional) entries.
 
-    column_names: Optional[Dict[str, str]] = range_input.pop('columns', None)
-    if not column_names or not isinstance(column_names, dict):
-        raise ValueError(f"Invalid column date range, expected key 'names' to have non-empty list of column names in "
-                         f"input: {repr(range_input)}.")
+    E.g. `{'type': 'SNAPSHOT' {'columns': 'Date': 'DATE'}}`
+    """
+    range_type = range_input.pop('type', str)
+    range_converter = range_input.pop_optional('converter', str)
+    column_names = range_input.pop('columns', dict)
     columns = {key: DATE_FORMAT_PARSERS[DateFormatType(value)] for key, value in column_names.items()}
 
     if len(range_input) > 0:
@@ -502,10 +536,12 @@ def _parse_dynamic_date_range_producer(range_input: DynamicDateRangeYAML) -> Dyn
 
     return DynamicDateRangeProducer(converter=_get_converter(range_type, range_converter), columns=columns)
 
-def _parse_date_range_producer(range_producer_input: Dict[str, Union[FixedDateRangeYAML, DynamicDateRangeYAML]]) \
+def _parse_date_range_producer(range_producer_input: YAMLDict) \
         -> DateRangeProducer:
-    if isinstance(range_producer_input, dict) and len(range_producer_input) == 1:
-        [[range_producer_type, range_producer_args]] = range_producer_input.items()
+    """Expects a dict with a single entry that is the arguments for the producer, e.g. `{'fixed': ...}`"""
+    if len(range_producer_input) == 1:
+        [range_producer_type] = range_producer_input.get().keys()
+        range_producer_args = range_producer_input.pop_dict(range_producer_type)
         if range_producer_type == 'fixed':
             return FixedDateRangeProducer(fixed_range=_parse_date_range(range_producer_args))
         if range_producer_type == 'dynamic':
@@ -513,34 +549,36 @@ def _parse_date_range_producer(range_producer_input: Dict[str, Union[FixedDateRa
     raise ValueError(f"Invalid date range, expected a dictionary with a single key that is one of ('fixed', 'dynamic'"
                      f") but received: {repr(range_producer_input)}")
 
-def _parse_metric(metric_input: Dict[str, Dict[str, Union[str, float]]]) -> Metric:
-    if isinstance(metric_input, dict) and len(metric_input) == 1:
-        [[metric_type, metric]] = metric_input.items()
+def _parse_metric(metric_input: YAMLDict) -> Metric:
+    """Expects a dict with a single entry that is the arguments for the metric, e.g. `{'population': ...}`"""
+    if len(metric_input) == 1:
+        [metric_type] = metric_input.get().keys()
+        metric_args = metric_input.pop(metric_type, dict)
         if metric_type == 'population':
-            return Population(**metric)
+            return Population(**metric_args)
     raise ValueError(f"Invalid metric, expected a dictionary with a single key that is one of ('population') but "
                      f"received: {repr(metric_input)}")
 
 
 # Only three layers of dictionary nesting is currently supported by the table parsing logic but we use the recursive
 # dictionary type for convenience.
-def _parse_tables(directory: str, tables_input: List[types.SimpleYAMLDict]) -> List[Table]:
+def _parse_tables(directory: str, tables_input: List[YAMLDict]) -> List[Table]:
     """Parses the YAML list of dictionaries describing tables into Table objects"""
     tables = []
     for table_input in tables_input:
         # Parse nested objects separately
-        date_range_producer = _parse_date_range_producer(table_input.pop('date_range'))
-        location: Location = _parse_location(table_input.pop('location'))
-        metric = _parse_metric(table_input.pop('metric'))
+        date_range_producer = _parse_date_range_producer(table_input.pop_dict('date_range'))
+        location: Location = _parse_location(table_input.pop_dict('location'))
+        metric = _parse_metric(table_input.pop_dict('metric'))
 
-        table_filepath = os.path.join(directory, table_input.pop('file'))
+        table_filepath = os.path.join(directory, table_input.pop('file', str))
         logging.info('Reading table: %s', table_filepath)
         df = pandas.read_csv(table_filepath)
 
         tables.extend(Table.list_from_dataframe(
-            date_range_producer=date_range_producer, metric=metric, system=table_input.pop('system'),
-            methodology=table_input.pop('methodology'), location=location,
-            additional_filters=table_input.pop('additional_filters', []), df=df))
+            date_range_producer=date_range_producer, metric=metric, system=table_input.pop('system', str),
+            methodology=table_input.pop('methodology', str), location=location,
+            additional_filters=table_input.pop_optional('additional_filters', list) or [], df=df))
 
         if len(table_input) > 0:
             raise ValueError(f"Received unexpected parameters for table: {table_input}")
@@ -552,17 +590,20 @@ def _get_report(manifest_filepath):
     logging.info('Reading report manifest: %s', manifest_filepath)
     with open(manifest_filepath) as manifest_file:
         directory = os.path.dirname(manifest_filepath)
-        manifest: dict = yaml.full_load(manifest_file)
+        loaded_yaml = yaml.full_load(manifest_file)
+        if not isinstance(loaded_yaml, dict):
+            raise ValueError(f"Expected manifest to contain a top-level dictionary, but received: {loaded_yaml}")
+        manifest = YAMLDict(loaded_yaml)
 
         # Parse tables separately
         # TODO(#4479): Also allow for location to be a column in the csv, as is done for dates.
-        tables = _parse_tables(directory, manifest.pop('tables'))
+        tables = _parse_tables(directory, manifest.pop_dicts('tables'))
 
         report = Report(
-            source_name=manifest.pop('source'),
-            report_type=manifest.pop('report_type'),
-            report_instance=manifest.pop('report_instance'),
-            publish_date=manifest.pop('publish_date'),
+            source_name=manifest.pop('source', str),
+            report_type=manifest.pop('report_type', str),
+            report_instance=manifest.pop('report_instance', str),
+            publish_date=manifest.pop('publish_date', str),
             tables=tables)
 
         if len(manifest) > 0:
