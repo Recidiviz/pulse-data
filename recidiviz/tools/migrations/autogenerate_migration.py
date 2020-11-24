@@ -60,7 +60,7 @@ def main(database: SchemaType, message: str):
     except Exception as e:
         logging.error('Automigration generation failed: %s', e)
 
-    local_postgres_helpers.restore_local_sqlalchemy_postgres_env_vars(overridden_env_vars)
+    local_postgres_helpers.restore_local_env_vars(overridden_env_vars)
     local_postgres_helpers.stop_and_clear_on_disk_postgresql_database(tmp_db_dir)
 
 

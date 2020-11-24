@@ -43,7 +43,7 @@ class MigrationsTestBase:
         self.overridden_env_vars = local_postgres_helpers.update_local_sqlalchemy_postgres_env_vars()
 
     def tearDown(self) -> None:
-        local_postgres_helpers.restore_local_sqlalchemy_postgres_env_vars(self.overridden_env_vars)
+        local_postgres_helpers.restore_local_env_vars(self.overridden_env_vars)
         local_postgres_helpers.stop_and_clear_on_disk_postgresql_database(self.db_dir)
 
     def fetch_all_enums(self) -> Dict[str, Set[str]]:
@@ -85,7 +85,7 @@ class MigrationsTestBase:
         migration_enums = self.fetch_all_enums()
 
         # Doing teardown/setup to generate a new postgres instance
-        local_postgres_helpers.restore_local_sqlalchemy_postgres_env_vars(self.overridden_env_vars)
+        local_postgres_helpers.restore_local_env_vars(self.overridden_env_vars)
         local_postgres_helpers.stop_and_clear_on_disk_postgresql_database(self.db_dir)
 
         self.db_dir = local_postgres_helpers.start_on_disk_postgresql_database()
