@@ -206,6 +206,28 @@ class SQLAlchemyEngineManager:
         return password
 
     @classmethod
+    def get_db_readonly_password_key(cls, schema_type: SchemaType) -> str:
+        return f'{cls._SCHEMA_TO_SECRET_MANAGER_PREFIX[schema_type]}_db_readonly_password'
+
+    @classmethod
+    def get_db_readonly_password(cls, schema_type: SchemaType) -> str:
+        password = secrets.get_secret(cls.get_db_readonly_password_key(schema_type))
+        if password is None:
+            raise ValueError(f"Unable to retrieve database readonly password for schema type [{schema_type}]")
+        return password
+
+    @classmethod
+    def get_db_readonly_user_key(cls, schema_type: SchemaType) -> str:
+        return f'{cls._SCHEMA_TO_SECRET_MANAGER_PREFIX[schema_type]}_db_readonly_user'
+
+    @classmethod
+    def get_db_readonly_user(cls, schema_type: SchemaType) -> str:
+        user = secrets.get_secret(cls.get_db_readonly_user_key(schema_type))
+        if user is None:
+            raise ValueError(f"Unable to retrieve database readonly user for schema type [{schema_type}]")
+        return user
+
+    @classmethod
     def get_db_user_key(cls, schema_type: SchemaType) -> str:
         return f'{cls._SCHEMA_TO_SECRET_MANAGER_PREFIX[schema_type]}_db_user'
 
@@ -261,6 +283,21 @@ class SQLAlchemyEngineManager:
 
         It returns the old set of env variables that were overridden.
         """
+        original_values = cls.update_readonly_sqlalchemy_env_vars(schema_type, ssl_cert_path=ssl_cert_path)
+
+        os.environ[SQLALCHEMY_DB_USER] = cls.get_db_user(schema_type)
+        os.environ[SQLALCHEMY_DB_PASSWORD] = cls.get_db_password(schema_type)
+
+        return original_values
+
+    @classmethod
+    def update_readonly_sqlalchemy_env_vars(cls, schema_type: SchemaType,
+                                            ssl_cert_path: Optional[str] = None) -> Dict[str, Optional[str]]:
+        """Updates the appropriate env vars for SQLAlchemy to talk to the postgres instance associated with the schema
+        for a read-only user.
+
+        It returns the old set of env variables that were overridden.
+        """
         sqlalchemy_vars = [
             SQLALCHEMY_DB_NAME,
             SQLALCHEMY_DB_HOST,
@@ -272,8 +309,8 @@ class SQLAlchemyEngineManager:
 
         os.environ[SQLALCHEMY_DB_NAME] = cls.get_db_name(schema_type)
         os.environ[SQLALCHEMY_DB_HOST] = cls.get_db_host(schema_type)
-        os.environ[SQLALCHEMY_DB_USER] = cls.get_db_user(schema_type)
-        os.environ[SQLALCHEMY_DB_PASSWORD] = cls.get_db_password(schema_type)
+        os.environ[SQLALCHEMY_DB_USER] = cls.get_db_readonly_user(schema_type)
+        os.environ[SQLALCHEMY_DB_PASSWORD] = cls.get_db_readonly_password(schema_type)
 
         if ssl_cert_path is None:
             os.environ[SQLALCHEMY_USE_SSL] = '0'
