@@ -75,6 +75,12 @@ resource "google_cloudfunctions_function" "export_metric_view_data" {
     url = local.repo_url
   }
 
+  # TODO(#4379): This should be removed when we have a more scalable solution
+  # for preventing 499s in the metric export pipeline. Longer term, we want this
+  # cloud function to issue an async request and return an id that can be queried
+  # by another process.
+  timeout = 540
+
   timeouts {}
 }
 
