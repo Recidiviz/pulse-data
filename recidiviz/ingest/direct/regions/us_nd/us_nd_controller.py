@@ -136,9 +136,19 @@ class UsNdController(CsvGcsfsDirectIngestController):
                 self._add_supervising_officer,
                 self._add_case_type_external_id
             ],
+            # TODO(#3444): Clean up before launching SQL preprocessing in production
             'docstars_offendercasestable': [
                 self._concatenate_docstars_length_periods,
                 self._add_terminating_officer_to_supervision_periods,
+                self._record_revocation,
+                gen_set_agent_type(StateAgentType.JUDGE),
+                self._hydrate_supervision_period_sentence_shared_date_fields,
+                gen_normalize_county_codes_posthook(
+                    self.region.region_code, 'TB_CTY', StateSupervisionPeriod, normalized_county_code),
+            ],
+            'docstars_offendercasestable_with_officers': [
+                self._concatenate_docstars_length_periods,
+                self._add_officer_to_supervision_periods,
                 self._record_revocation,
                 gen_set_agent_type(StateAgentType.JUDGE),
                 self._hydrate_supervision_period_sentence_shared_date_fields,
@@ -191,10 +201,16 @@ class UsNdController(CsvGcsfsDirectIngestController):
         if not environment.in_gae_production() and not environment.in_gae_staging():
             tags.append('elite_offense_in_custody_and_pos_report_data')
 
+        # Docstars - supervision-focused
+        tags.append('docstars_offenders')
+
+        # TODO(#3444): Clean up before launching SQL preprocessing in production
+        if environment.in_gae_production():
+            tags.append('docstars_offendercasestable')
+        else:
+            tags.append('docstars_offendercasestable_with_officers')
+
         tags += [
-            # Docstars - supervision-focused
-            'docstars_offenders',
-            'docstars_offendercasestable',
             'docstars_offensestable',
             'docstars_ftr_episode',
             'docstars_lsi_chronology',
@@ -473,6 +489,45 @@ class UsNdController(CsvGcsfsDirectIngestController):
         for extracted_object in extracted_objects:
             if isinstance(extracted_object, StateSupervisionPeriod):
                 create_if_not_exists(agent_to_create, extracted_object, 'supervising_officer')
+
+    @staticmethod
+    def _add_officer_to_supervision_periods(
+            _file_tag: str,
+            row: Dict[str, str],
+            extracted_objects: List[IngestObject],
+            _cache: IngestObjectCache):
+        """When present, adds supervising officer to the extracted SupervisionPeriods."""
+        terminating_officer_id = row.get('terminating_officer_id', None)
+        recent_officer_id = row.get('recent_officer_id', None)
+        if not terminating_officer_id and not recent_officer_id:
+            return
+
+        termination_date = row.get('TERM_DATE', None)
+
+        if terminating_officer_id:
+            officer_id: Optional[str] = terminating_officer_id
+            officer_fname = row.get('terminating_officer_fname', None)
+            officer_lname = row.get('terminating_officer_lname', None)
+            officer_siteid = row.get('terminating_officer_siteid', None)
+        elif not termination_date:
+            officer_id = recent_officer_id
+            officer_fname = row.get('recent_officer_fname', None)
+            officer_lname = row.get('recent_officer_lname', None)
+            officer_siteid = row.get('recent_officer_siteid', None)
+        else:
+            return
+
+        agent_to_create = StateAgent(
+            state_agent_id=officer_id,
+            agent_type=StateAgentType.SUPERVISION_OFFICER.value,
+            given_names=officer_fname,
+            surname=officer_lname
+        )
+
+        for extracted_object in extracted_objects:
+            if isinstance(extracted_object, StateSupervisionPeriod):
+                create_if_not_exists(agent_to_create, extracted_object, 'supervising_officer')
+                extracted_object.supervision_site = officer_siteid
 
     # TODO(#1882): Specify this mapping in the YAML once a single csv column can
     # can be mapped to multiple fields.

@@ -35,6 +35,7 @@ from recidiviz.persistence.entity_matching.state.state_period_matching_utils imp
     add_supervising_officer_to_open_supervision_periods
 from recidiviz.persistence.entity_matching.state.us_nd.us_nd_matching_utils import associate_revocation_svrs_with_ips, \
     update_temporary_holds, merge_incarceration_periods, merge_incomplete_periods, is_incarceration_period_match
+from recidiviz.utils import environment
 
 
 class UsNdMatchingDelegate(BaseStateMatchingDelegate):
@@ -81,9 +82,10 @@ class UsNdMatchingDelegate(BaseStateMatchingDelegate):
         logging.info("[Entity matching] Associate revocation SVRs with IPs")
         associate_revocation_svrs_with_ips(matched_persons)
 
-        logging.info('[Entity matching] Moving supervising officer onto open '
-                     'supervision periods')
-        add_supervising_officer_to_open_supervision_periods(matched_persons)
+        # TODO(#3444): Clean up before launching SQL preprocessing in production
+        if environment.in_gae_production():
+            logging.info('[Entity matching] Moving supervising officer onto open supervision periods')
+            add_supervising_officer_to_open_supervision_periods(matched_persons)
 
     def perform_match_preprocessing(
             self, ingested_persons: List[schema.StatePerson]):

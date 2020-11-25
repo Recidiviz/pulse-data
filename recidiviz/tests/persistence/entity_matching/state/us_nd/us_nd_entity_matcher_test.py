@@ -18,7 +18,7 @@
 import datetime
 
 import attr
-from mock import create_autospec
+from mock import create_autospec, patch
 
 from recidiviz.common.constants.enum_overrides import EnumOverrides
 from recidiviz.common.constants.state.state_agent import StateAgentType
@@ -1117,7 +1117,9 @@ class TestNdEntityMatching(BaseStateEntityMatcherTest):
         self.assertEqual(0, matched_entities.error_count)
         self.assertEqual(1, matched_entities.total_root_entities)
 
-    def test_runMatch_moveSupervisingOfficerOntoOpenSupervisionPeriods(self) -> None:
+    @patch("recidiviz.utils.environment.get_gae_environment")
+    def test_runMatch_moveSupervisingOfficerOntoOpenSupervisionPeriods(self, mock_environment) -> None:
+        mock_environment.return_value = 'production'
         db_supervising_officer = generate_agent(
             external_id=_EXTERNAL_ID, state_code=_US_ND)
         db_person = generate_person(state_code=_US_ND)

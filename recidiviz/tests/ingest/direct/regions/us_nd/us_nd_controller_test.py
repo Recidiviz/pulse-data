@@ -968,9 +968,25 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
 
         self.run_parse_file_test(expected, 'docstars_offenders')
 
-    def test_populate_data_docstars_offendercasestable(self):
-        agent_63 = StateAgent(state_agent_id='63', agent_type='SUPERVISION_OFFICER')
-        agent_77 = StateAgent(state_agent_id='77', agent_type='SUPERVISION_OFFICER')
+    def test_populate_data_docstars_offendercasestable_with_officers(self):
+        agent_63 = StateAgent(
+            state_agent_id='63',
+            agent_type='SUPERVISION_OFFICER',
+            given_names='DAVID',
+            surname='BORG'
+        )
+        agent_77 = StateAgent(
+            state_agent_id='77',
+            agent_type='SUPERVISION_OFFICER',
+            given_names='COREY',
+            surname='KOLPIN'
+        )
+        agent_154 = StateAgent(
+            state_agent_id='154',
+            agent_type='SUPERVISION_OFFICER',
+            given_names='JOSEPH',
+            surname='LUND'
+        )
 
         violation_for_17111 = StateSupervisionViolation(
             violation_type='ABSCONDED',
@@ -1008,7 +1024,24 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
                     revocation_type='DOCR Inmate Sentence',
                     decision_agents=[agent_77])
             ])
-
+        supervision_period_117109 = StateSupervisionPeriod(
+            state_supervision_period_id='117109',
+            start_date='1/1/2013',
+            termination_date='2/2/2013',
+            termination_reason='4',
+            supervision_type='Pre-Trial',
+            supervising_officer=agent_63,
+            supervision_site='4',
+            county_code='US_ND_CASS'
+        )
+        supervision_period_117110 = StateSupervisionPeriod(
+            state_supervision_period_id='117110',
+            start_date='7/17/2014',
+            supervision_type='Parole',
+            county_code='US_ND_CASS',
+            supervising_officer=agent_154,
+            supervision_site='4'
+        )
         supervision_period_117111 = StateSupervisionPeriod(
             state_supervision_period_id=
             '117111',
@@ -1017,6 +1050,7 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
             termination_date='12/8/2014',
             termination_reason='9',
             supervising_officer=agent_63,
+            supervision_site='4',
             state_supervision_violation_entries=[violation_for_17111],
             county_code='INVALID'
         )
@@ -1027,6 +1061,7 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
             termination_date='2/27/2018',
             termination_reason='9',
             supervising_officer=agent_77,
+            supervision_site='2',
             state_supervision_violation_entries=[violation_for_140408],
             county_code='US_ND_GRIGGS'
         )
@@ -1037,9 +1072,11 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
             termination_date='2/27/2016',
             termination_reason='9',
             supervising_officer=agent_77,
+            supervision_site='2',
             state_supervision_violation_entries=[violation_for_147777],
             county_code='US_ND_GRIGGS'
         )
+
         expected = IngestInfo(state_people=[
             StatePerson(state_person_id='92237',
                         state_person_external_ids=[
@@ -1056,14 +1093,7 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
                                         completion_date='2/2/2013',
                                         max_length='59d',
                                         state_supervision_periods=[
-                                            StateSupervisionPeriod(
-                                                state_supervision_period_id='117109',
-                                                start_date='1/1/2013',
-                                                termination_date='2/2/2013',
-                                                termination_reason='4',
-                                                supervision_type='Pre-Trial',
-                                                supervising_officer=agent_63,
-                                                county_code='US_ND_CASS')
+                                            supervision_period_117109
                                         ],
                                     ),
                                     StateSupervisionSentence(
@@ -1073,11 +1103,7 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
                                         projected_completion_date='10/6/2014',
                                         max_length='92d',
                                         state_supervision_periods=[
-                                            StateSupervisionPeriod(
-                                                state_supervision_period_id='117110',
-                                                start_date='7/17/2014',
-                                                supervision_type='Parole',
-                                                county_code='US_ND_CASS')
+                                            supervision_period_117110
                                         ],
                                         state_charges=[
                                             StateCharge(
@@ -1151,7 +1177,7 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
                         )
         ])
 
-        self.run_parse_file_test(expected, 'docstars_offendercasestable')
+        self.run_parse_file_test(expected, 'docstars_offendercasestable_with_officers')
 
     def test_populate_data_docstars_offensestable(self):
         expected = IngestInfo(
@@ -2590,12 +2616,21 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
             state_code=_STATE_CODE,
             agent_type=StateAgentType.SUPERVISION_OFFICER,
             agent_type_raw_text='SUPERVISION_OFFICER',
+            full_name='{"given_names": "DAVID", "surname": "BORG"}'
         )
         agent_77 = entities.StateAgent.new_with_defaults(
             external_id='77',
             state_code=_STATE_CODE,
             agent_type=StateAgentType.SUPERVISION_OFFICER,
             agent_type_raw_text='SUPERVISION_OFFICER',
+            full_name = '{"given_names": "COREY", "surname": "KOLPIN"}'
+        )
+        agent_154 = entities.StateAgent.new_with_defaults(
+            external_id='154',
+            state_code=_STATE_CODE,
+            agent_type=StateAgentType.SUPERVISION_OFFICER,
+            agent_type_raw_text='SUPERVISION_OFFICER',
+            full_name='{"given_names": "JOSEPH", "surname": "LUND"}'
         )
         sentence_group_placeholder_ss = entities.StateSentenceGroup.new_with_defaults(
             state_code=_STATE_CODE,
@@ -2625,6 +2660,7 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
             status=StateSupervisionPeriodStatus.TERMINATED,
             state_code=_STATE_CODE,
             county_code='US_ND_CASS',
+            supervision_site='4',
             supervision_sentences=[supervision_sentence_117109],
             person=supervision_sentence_117109.person)
         supervision_sentence_117109.supervision_periods.append(supervision_period_117109)
@@ -2642,12 +2678,13 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
         supervision_period_117110 = entities.StateSupervisionPeriod.new_with_defaults(
             external_id='117110',
             start_date=datetime.date(year=2014, month=7, day=17),
-            supervising_officer=agent_40,
             supervision_type=StateSupervisionType.PAROLE,
             supervision_type_raw_text='PAROLE',
             status=StateSupervisionPeriodStatus.UNDER_SUPERVISION,
             state_code=_STATE_CODE,
             county_code='US_ND_CASS',
+            supervision_site='4',
+            supervising_officer=agent_154,
             supervision_sentences=[supervision_sentence_117110],
             person=supervision_sentence_117110.person)
         charge_117110 = entities.StateCharge.new_with_defaults(
@@ -2704,6 +2741,7 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
             status=StateSupervisionPeriodStatus.TERMINATED,
             state_code=_STATE_CODE,
             county_code='INVALID',
+            supervision_site='4',
             supervising_officer=agent_63,
             supervision_sentences=[supervision_sentence_117111],
             person=supervision_sentence_117111.person)
@@ -2765,6 +2803,7 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
             status=StateSupervisionPeriodStatus.TERMINATED,
             state_code=_STATE_CODE,
             county_code='US_ND_GRIGGS',
+            supervision_site='2',
             supervising_officer=agent_77,
             supervision_sentences=[supervision_sentence_140408],
             person=supervision_sentence_140408.person)
@@ -2828,6 +2867,7 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
             status=StateSupervisionPeriodStatus.TERMINATED,
             state_code=_STATE_CODE,
             county_code='US_ND_GRIGGS',
+            supervision_site='2',
             supervising_officer=agent_77,
             supervision_sentences=[supervision_sentence_147777],
             person=supervision_sentence_147777.person)
@@ -2890,7 +2930,7 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
         person_2.sentence_groups.append(sentence_group_person_2_placeholder_ss)
 
         # Act
-        self._run_ingest_job_for_filename('docstars_offendercasestable.csv')
+        self._run_ingest_job_for_filename('docstars_offendercasestable_with_officers.csv')
 
         # Assert
         self.assert_expected_db_people(expected_people)
