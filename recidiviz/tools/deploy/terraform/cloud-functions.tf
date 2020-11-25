@@ -15,14 +15,13 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 
-# NOTE: county-map-updater is not tracked here since its code is defined
-# directly in the Google Cloud Functions UI.
-
-# All the "pipeline" cloud functions are omitted because those processes
-# are triggered by Airflow directly.
-
 # The execute-covid-aggregation is not included because it will eventually
 # be deprecated. See #4464.
+
+# TODO(#4690): The direct-ingest-county cloud function is not included because its entry
+# point is `direct_ingest_county`, which no longer exists in our codebase!!
+# If we get approval to delete it, we will remove this comment. Otherwise,
+# we will find the right endpoint and fold it into this file.
 
 data "google_secret_manager_secret_version" "sendgrid_api_key" {
   secret = "sendgrid_api_key"
@@ -33,25 +32,8 @@ data "google_secret_manager_secret_version" "po_report_cdn_static_ip" {
 }
 
 locals {
-  repo_url      = "https://source.developers.google.com/projects/${var.project_id}/repos/github_Recidiviz_pulse-data/moveable-aliases/${var.release_tag}/paths/recidiviz/cloud_functions"
+  repo_url      = "https://source.developers.google.com/projects/${var.project_id}/repos/github_Recidiviz_pulse-data/fixed-aliases/${var.release_tag}/paths/recidiviz/cloud_functions"
   is_production = (var.project_id == "recidiviz-123")
-}
-
-resource "google_cloudfunctions_function" "direct-ingest-county" {
-  name    = "direct-ingest-county"
-  runtime = "python37"
-  labels = {
-    "deployment-tool" = "console-cloud"
-  }
-
-  entry_point           = "direct_ingest_county"
-  environment_variables = {}
-
-  source_repository {
-    url = local.repo_url
-  }
-
-  timeouts {}
 }
 
 
@@ -65,7 +47,7 @@ resource "google_cloudfunctions_function" "direct-ingest-states" {
   name    = "direct-ingest-state-${replace(lower(each.key), "_", "-")}"
   runtime = "python37"
   labels = {
-    "deployment-tool" = "console-cloud"
+    "deployment-tool" = "terraform"
   }
 
   entry_point           = "handle_state_direct_ingest_file"
@@ -83,7 +65,7 @@ resource "google_cloudfunctions_function" "export_metric_view_data" {
   name    = "export_metric_view_data"
   runtime = "python37"
   labels = {
-    "deployment-tool" = "console-cloud"
+    "deployment-tool" = "terraform"
   }
 
   entry_point           = "export_metric_view_data"
@@ -101,7 +83,7 @@ resource "google_cloudfunctions_function" "handle-covid-source-upload" {
   name    = "handle-covid-source-upload"
   runtime = "python37"
   labels = {
-    "deployment-tool" = "console-cloud"
+    "deployment-tool" = "terraform"
   }
 
   available_memory_mb = 2048
@@ -118,35 +100,33 @@ resource "google_cloudfunctions_function" "handle-covid-source-upload" {
   timeouts {}
 }
 
-# TODO(#4690): Once @jamwalla confirms that "parse-state-aggregate" in prod is the
-# same as "state-aggregate-function" in staging, then we rename staging, import the
-# two states and add this to the terraform workflow.
+resource "google_cloudfunctions_function" "parse-state-aggregate" {
+  name    = "parse-state-aggregate"
+  runtime = "python37"
+  labels = {
+    "deployment-tool" = "terraform"
+  }
 
-# resource "google_cloudfunctions_function" "parse-state-aggregate" {
-#   name    = "parse-state-aggregate"
-#   runtime = "python37"
-#   labels = {
-#     "deployment-tool" = "console-cloud"
-#   }
+  available_memory_mb = 2048
 
-#   entry_point           = "parse_state_aggregate"
-#   environment_variables = {}
+  entry_point           = "parse_state_aggregate"
+  environment_variables = {}
 
-#   source_repository {
-#     url = local.repo_url
-#   }
+  source_repository {
+    url = local.repo_url
+  }
 
-#   timeout = 120
+  timeout = 540
 
-#   timeouts {}
-# }
+  timeouts {}
+}
 
 
 resource "google_cloudfunctions_function" "report_deliver_emails_for_batch" {
   name    = "report_deliver_emails_for_batch"
   runtime = "python37"
   labels = {
-    "deployment-tool" = "console-cloud"
+    "deployment-tool" = "terraform"
   }
 
   entry_point = "handle_deliver_emails_for_batch_email_reporting"
@@ -171,7 +151,7 @@ resource "google_cloudfunctions_function" "report_start_new_batch" {
   name    = "report_start_new_batch"
   runtime = "python37"
   labels = {
-    "deployment-tool" = "console-cloud"
+    "deployment-tool" = "terraform"
   }
 
   entry_point = "handle_start_new_batch_email_reporting"
@@ -189,25 +169,21 @@ resource "google_cloudfunctions_function" "report_start_new_batch" {
   timeouts {}
 }
 
-# TODO(#4690): Re-enable this after "run-calc-pipelines" in staging has been renamed.
-# Note: It doesn't seem like it's possible to rename cloud functions, so we will need
-# to copy it and then delete the old one.
+resource "google_cloudfunctions_function" "run_calculation_pipelines" {
+  name    = "run_calculation_pipelines"
+  runtime = "python37"
+  labels = {
+    "deployment-tool" = "terraform"
+  }
 
-# resource "google_cloudfunctions_function" "run_calculation_pipelines" {
-#   name    = "run_calculation_pipelines"
-#   runtime = "python37"
-#   labels = {
-#     "deployment-tool" = "console-cloud"
-#   }
+  entry_point = "trigger_calculation_pipeline_dag"
+  environment_variables = {
+    "WEBSERVER_ID" = local.is_production ? "p03ca791d5f21b85cp-tp" : "jef8828f38bc9738ap-tp"
+  }
 
-#   entry_point = "trigger_calculation_pipeline_dag"
-#   environment_variables = {
-#     "WEBSERVER_ID" = "p03ca791d5f21b85cp-tp"
-#   }
+  source_repository {
+    url = local.repo_url
+  }
 
-#   source_repository {
-#     url = local.repo_url
-#   }
-
-#   timeouts {}
-# }
+  timeouts {}
+}
