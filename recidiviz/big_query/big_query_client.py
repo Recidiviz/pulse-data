@@ -68,6 +68,38 @@ class BigQueryClient:
         """
 
     @abc.abstractmethod
+    def delete_dataset(self,
+                       dataset_ref: bigquery.DatasetReference,
+                       delete_contents: bool = False,
+                       not_found_ok: bool = False) -> None:
+        """Deletes a BigQuery dataset
+        Args:
+            dataset_ref: The BigQuery dataset to delete
+            delete_contents: Whether to delete all tables within the dataset. If set to
+                False and the dataset has tables, this method fails.
+            not_found_ok: If False, this raises an exception when the dataset_ref is
+                not found.
+        """
+
+    @abc.abstractmethod
+    def get_dataset(self, dataset_ref: bigquery.DatasetReference) -> bigquery.Dataset:
+        """Fetches a BigQuery dataset.
+        Args:
+            dataset_ref: The BigQuery dataset to look for
+
+        Returns:
+            A bigquery.Dataset object if it exists.
+        """
+
+    @abc.abstractmethod
+    def list_datasets(self) -> Iterator[bigquery.dataset.DatasetListItem]:
+        """List BigQuery datasets. Does not perform a full fetch of each dataset.
+
+        Returns:
+            An Iterator of bigquery.DatasetListItems.
+        """
+
+    @abc.abstractmethod
     def table_exists(
             self,
             dataset_ref: bigquery.DatasetReference,
@@ -503,6 +535,18 @@ class BigQueryClientImpl(BigQueryClient):
         except exceptions.NotFound:
             logging.warning("Dataset [%s] does not exist", str(dataset_ref))
             return False
+
+    def delete_dataset(self,
+                       dataset_ref: bigquery.DatasetReference,
+                       delete_contents: bool = False,
+                       not_found_ok: bool = False) -> None:
+        return self.client.delete_dataset(dataset_ref, delete_contents=delete_contents, not_found_ok=not_found_ok)
+
+    def get_dataset(self, dataset_ref: bigquery.DatasetReference) -> bigquery.Dataset:
+        return self.client.get_dataset(dataset_ref)
+
+    def list_datasets(self) -> Iterator[bigquery.dataset.DatasetListItem]:
+        return self.client.list_datasets()
 
     def table_exists(self, dataset_ref: bigquery.DatasetReference, table_id: str) -> bool:
         table_ref = dataset_ref.table(table_id)
