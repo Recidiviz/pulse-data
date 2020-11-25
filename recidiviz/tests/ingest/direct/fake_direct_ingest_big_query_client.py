@@ -29,12 +29,14 @@ from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 
 class FakeQueryJob:
     """A fake implementation of bigquery.QueryJob for use in direct ingest tests."""
+
     def result(self, _page_size=None, _max_results=None, _retry=None, _timeout=None) -> None:
         return
 
 
 class FakeDirectIngestBigQueryClient(BigQueryClient):
     """A fake implementation of BigQueryClient for use in direct ingest tests."""
+
     def __init__(self,
                  project_id: str,
                  fs: FakeGCSFileSystem):
@@ -55,6 +57,18 @@ class FakeDirectIngestBigQueryClient(BigQueryClient):
         raise ValueError('Must be implemented for use in tests.')
 
     def dataset_exists(self, dataset_ref: bigquery.DatasetReference) -> bool:
+        raise ValueError('Must be implemented for use in tests.')
+
+    def delete_dataset(self,
+                       dataset_ref: bigquery.DatasetReference,
+                       delete_contents: bool = False,
+                       not_found_ok: bool = False) -> None:
+        raise ValueError('Must be implemented for use in tests.')
+
+    def get_dataset(self, dataset_ref: bigquery.DatasetReference) -> bigquery.Dataset:
+        raise ValueError('Must be implemented for use in tests.')
+
+    def list_datasets(self) -> Iterator[bigquery.dataset.DatasetListItem]:
         raise ValueError('Must be implemented for use in tests.')
 
     def table_exists(self, dataset_ref: bigquery.DatasetReference, table_id: str) -> bool:
