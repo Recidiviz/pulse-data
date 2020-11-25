@@ -1,1 +1,9 @@
+#!/bin/sh
+
 recidiviz/tools/diff_pipenv.sh
+
+# The post-checkout hook is called at the start of rebase and if the hook exits with a non-zero status, the entire
+# rebase is aborted and you end up in a detached HEAD state. To avoid this, we always exit with zero, but the error
+# message will still be printed. Hopefully in the future rebase will not call this hook and we can unsilence:
+# https://github.com/git/git/blob/f7139e7cc2d97a18f1bccfe48c4a270372917c91/Documentation/git-rebase.txt#L683-L697
+exit 0
