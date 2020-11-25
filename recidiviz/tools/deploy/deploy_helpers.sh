@@ -118,6 +118,7 @@ function calculation_pipeline_changes_since_last_deploy {
 function pre_deploy_configure_infrastructure {
     PROJECT=$1
     DEBUG_BUILD_NAME=$2
+    VERSION_TAG=$3
 
     echo "Deploying cron.yaml"
     run_cmd gcloud -q app deploy cron.yaml --project=${PROJECT}
@@ -164,6 +165,8 @@ function pre_deploy_configure_infrastructure {
     else
         echo "Skipping pipeline template deploy for debug build."
     fi
+
+    deploy_terraform_infrastructure ${PROJECT} ${VERSION_TAG} || exit_on_fail
 }
 
 function check_docker_installed {
@@ -172,6 +175,15 @@ function check_docker_installed {
         echo_error "Also make sure you've configured gcloud docker permissions with:"
         echo_error "    $ gcloud auth login"
         echo_error "    $ gcloud auth configure-docker"
+        exit 1
+    fi
+}
+
+function check_terraform_installed {
+    if [[ -z $(which terraform) ]]; then
+        echo_error "The \`terraform\` package is not installed (needed to install cloud functions). To install..."
+        echo_error "... on Mac:"
+        echo_error "    $ brew install terraform"
         exit 1
     fi
 }
@@ -228,6 +240,9 @@ function verify_can_deploy {
     echo "Checking jq is installed"
     run_cmd check_jq_installed
 
+    echo "Checking terraform is installed"
+    run_cmd check_terraform_installed
+
     echo "Checking for too many deployed versions"
     run_cmd check_for_too_many_deployed_versions ${PROJECT_ID}
 
@@ -236,6 +251,25 @@ function verify_can_deploy {
 
     echo "Checking pipenv is synced"
     ${BASH_SOURCE_DIR}/../diff_pipenv.sh || exit_on_fail
+}
+
+function deploy_terraform_infrastructure {
+    PROJECT_ID=$1
+    RELEASE_TAG=$2
+
+    echo "Starting terraform deployment..."
+    rm -rf .terraform/
+
+    run_cmd terraform init -backend-config "bucket=${PROJECT_ID}-tf-state" ${BASH_SOURCE_DIR}/terraform
+    run_cmd terraform plan -var="project_id=${PROJECT_ID}" -var="release_tag=${RELEASE_TAG}" -out=tfplan ${BASH_SOURCE_DIR}/terraform
+    
+    script_prompt "Does the generated terraform plan look correct? [You can inspect it with \`terraform show tfplan\`]"
+
+    echo "Applying the terraform plan..."
+    run_cmd terraform apply tfplan
+    rm ./tfplan
+
+    echo "Terraform deployment complete."
 }
 
 function post_deploy_triggers {
