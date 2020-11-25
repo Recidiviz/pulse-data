@@ -23,6 +23,7 @@ import tempfile
 from typing import Callable, Optional, Dict
 
 from sqlalchemy.ext.declarative import DeclarativeMeta
+from sqlalchemy.orm.session import close_all_sessions
 
 from recidiviz.persistence.database import SQLALCHEMY_DB_NAME, SQLALCHEMY_DB_HOST, SQLALCHEMY_USE_SSL, \
     SQLALCHEMY_DB_USER, SQLALCHEMY_DB_PASSWORD
@@ -192,6 +193,9 @@ def teardown_on_disk_postgresql_database(declarative_base: DeclarativeMeta) -> N
     stop_and_clear_on_disk_postgresql_database() once all tests in a test class are complete to actually drop the
     tables.
     """
+    # Ensure all sessions are closed, otherwise the below may hang.
+    close_all_sessions()
+
     session = SessionFactory.for_schema_base(declarative_base)
     try:
         for table in reversed(declarative_base.metadata.sorted_tables):
