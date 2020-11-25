@@ -57,7 +57,7 @@ echo "Performing pre-deploy verification"
 run_cmd verify_can_deploy recidiviz-staging
 
 if [[ ! -z ${PROMOTE} || ! -z ${DEBUG_BUILD_NAME} ]]; then
-    pre_deploy_configure_infrastructure 'recidiviz-staging' "${DEBUG_BUILD_NAME}"
+    pre_deploy_configure_infrastructure 'recidiviz-staging' "${DEBUG_BUILD_NAME}" "${VERSION_TAG}"
 else
     echo "Skipping configuration and pipeline deploy steps for no promote release build."
 fi
