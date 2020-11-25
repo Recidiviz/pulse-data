@@ -27,7 +27,7 @@ from recidiviz.utils import environment
 _in_memory_sqlite_connection_thread_ids: Set[int] = set()
 
 
-@environment.test_only
+@environment.local_only
 def use_in_memory_sqlite_database(declarative_base: DeclarativeMeta) -> None:
     """Creates a new SqlDatabase object used to communicate to a fake in-memory
     sqlite database.
