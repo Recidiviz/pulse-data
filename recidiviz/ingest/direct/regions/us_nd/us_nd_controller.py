@@ -219,7 +219,7 @@ class UsNdController(CsvGcsfsDirectIngestController):
 
         return tags
 
-    def _normalize_id_fields(self, _file_tag: str, row: Dict[str, str]):
+    def _normalize_id_fields(self, _file_tag: str, row: Dict[str, str]) -> None:
         """A number of ID fields come in as comma-separated strings in some of the files. This function converts
         those id column values to a standard format without decimals or commas before the row is processed.
 
@@ -280,7 +280,7 @@ class UsNdController(CsvGcsfsDirectIngestController):
     def _add_supervising_officer(_file_tag: str,
                                  row: Dict[str, str],
                                  extracted_objects: List[IngestObject],
-                                 _cache: IngestObjectCache):
+                                 _cache: IngestObjectCache) -> None:
         """Adds the current supervising officer onto the extracted person."""
         supervising_officer_id = row.get('AGENT')
         if not supervising_officer_id:
@@ -296,7 +296,7 @@ class UsNdController(CsvGcsfsDirectIngestController):
     def _add_case_type_external_id(_file_tag: str,
                                    row: Dict[str, str],
                                    extracted_objects: List[IngestObject],
-                                   _cache: IngestObjectCache):
+                                   _cache: IngestObjectCache) -> None:
         """Adds the person external_id to the extracted supervision case type."""
         external_id = row.get('SID')
         if not external_id:
@@ -307,8 +307,8 @@ class UsNdController(CsvGcsfsDirectIngestController):
 
     @staticmethod
     def _rationalize_race_and_ethnicity(_file_tag: str,
-                                        _,
-                                        cache: Optional[IngestObjectCache]):
+                                        _extracted_objects: List[IngestObject],
+                                        cache: Optional[IngestObjectCache]) -> None:
         """For a person whose provided race is HISPANIC, we set the ethnicity to HISPANIC, and the race will be
         cleared.
         """
@@ -329,7 +329,7 @@ class UsNdController(CsvGcsfsDirectIngestController):
     def _rationalize_max_length(_file_tag: str,
                                 row: Dict[str, str],
                                 extracted_objects: List[IngestObject],
-                                _cache: IngestObjectCache):
+                                _cache: IngestObjectCache) -> None:
         """
         There are several values that sometimes appear in the MAX_TERM field which we need to clear out since they
         don't actually give us valid length information.
@@ -350,7 +350,7 @@ class UsNdController(CsvGcsfsDirectIngestController):
     def _normalize_external_id_type(_file_tag: str,
                                     _row: Dict[str, str],
                                     extracted_objects: List[IngestObject],
-                                    _cache: IngestObjectCache):
+                                    _cache: IngestObjectCache) -> None:
         for extracted_object in extracted_objects:
             if isinstance(extracted_object, StatePersonExternalId):
                 id_type = f"US_ND_{extracted_object.id_type}"
@@ -360,7 +360,7 @@ class UsNdController(CsvGcsfsDirectIngestController):
     def _process_external_movement(_file_tag: str,
                                    row: Dict[str, str],
                                    extracted_objects: List[IngestObject],
-                                   _cache: IngestObjectCache):
+                                   _cache: IngestObjectCache) -> None:
         """Sets admission- or release-specific fields based on whether this movement represents an admission into or a
         release from a particular facility."""
         direction_code = row['DIRECTION_CODE']
@@ -399,7 +399,7 @@ class UsNdController(CsvGcsfsDirectIngestController):
     def _enrich_addresses(_file_tag: str,
                           row: Dict[str, str],
                           extracted_objects: List[IngestObject],
-                          _cache: IngestObjectCache):
+                          _cache: IngestObjectCache) -> None:
         """Concatenate address, city, state, and zip information."""
         city = row.get('CITY', None)
         state = row.get('STATE', None)
@@ -415,7 +415,7 @@ class UsNdController(CsvGcsfsDirectIngestController):
     def _enrich_sorac_assessments(_file_tag: str,
                                   _row: Dict[str, str],
                                   extracted_objects: List[IngestObject],
-                                  _cache: IngestObjectCache):
+                                  _cache: IngestObjectCache) -> None:
         """For SORAC assessments in Docstars' incoming person data, add metadata we can infer from context."""
         for extracted_object in extracted_objects:
             if isinstance(extracted_object, StateAssessment):
@@ -426,7 +426,7 @@ class UsNdController(CsvGcsfsDirectIngestController):
     def _process_lsir_assessments(_file_tag: str,
                                   row: Dict[str, str],
                                   extracted_objects: List[IngestObject],
-                                  _cache: IngestObjectCache):
+                                  _cache: IngestObjectCache) -> None:
         """For rich LSIR historical data from Docstars, manually process individual domain and question values."""
         # Cast the LSIR keys to lower case to avoid casing inconsistencies
         lower_case_row = {key.lower(): value for key, value in row.items()}
@@ -452,7 +452,7 @@ class UsNdController(CsvGcsfsDirectIngestController):
     def _process_ftr_episode(_file_tag: str,
                              row: Dict[str, str],
                              extracted_objects: List[IngestObject],
-                             _cache: IngestObjectCache):
+                             _cache: IngestObjectCache) -> None:
         """Manually add referral_metadata and discharge_date to ProgramAssignment entities, if applicable."""
 
         referral_field_labels: List[str] = [
@@ -476,7 +476,7 @@ class UsNdController(CsvGcsfsDirectIngestController):
             _file_tag: str,
             row: Dict[str, str],
             extracted_objects: List[IngestObject],
-            _cache: IngestObjectCache):
+            _cache: IngestObjectCache) -> None:
         """When present, adds supervising officer to the extracted SupervisionPeriods."""
         terminating_officer_id = row.get('TERMINATING_OFFICER', None)
         if not terminating_officer_id:
@@ -495,7 +495,7 @@ class UsNdController(CsvGcsfsDirectIngestController):
             _file_tag: str,
             row: Dict[str, str],
             extracted_objects: List[IngestObject],
-            _cache: IngestObjectCache):
+            _cache: IngestObjectCache) -> None:
         """When present, adds supervising officer to the extracted SupervisionPeriods."""
         terminating_officer_id = row.get('terminating_officer_id', None)
         recent_officer_id = row.get('recent_officer_id', None)
@@ -536,7 +536,7 @@ class UsNdController(CsvGcsfsDirectIngestController):
             _file_tag: str,
             _row: Dict[str, str],
             extracted_objects: List[IngestObject],
-            _cache: IngestObjectCache):
+            _cache: IngestObjectCache) -> None:
         """Sets SupervisionPeriod.termination_date/supervision_type from the parent
         SupervisionSentence.completion_date. This is possible because in ND, we always have a 1:1 mapping of
         SupervisionSentence:SupervisionPeriod.
@@ -559,13 +559,12 @@ class UsNdController(CsvGcsfsDirectIngestController):
                     supervision_periods[0].termination_date = completion_date
                     supervision_periods[0].supervision_type = supervision_type
 
-
     @staticmethod
     def _concatenate_docstars_length_periods(
             _file_tag: str,
             row: Dict[str, str],
             extracted_objects: List[IngestObject],
-            _cache: IngestObjectCache):
+            _cache: IngestObjectCache) -> None:
         """For a sentence row in Docstars that contains distinct SENT_YY and SENT_MM fields, compose these into a
         single string of days and set it on the appropriate length field."""
         years = row.get('SENT_YY', None)
@@ -595,7 +594,7 @@ class UsNdController(CsvGcsfsDirectIngestController):
     def _record_revocation(_file_tag: str,
                            row: Dict[str, str],
                            extracted_objects: List[IngestObject],
-                           _cache: IngestObjectCache):
+                           _cache: IngestObjectCache) -> None:
         """Captures information in a Docstars cases row that indicates a revocation, and fills out the surrounding data
         model accordingly."""
         revocation_occurred = bool(row.get('REV_DATE', None) or row.get('RevoDispo', None))
@@ -615,7 +614,7 @@ class UsNdController(CsvGcsfsDirectIngestController):
     def _rationalize_incident_type(_file_tag: str,
                                    _row: Dict[str, str],
                                    extracted_objects: List[IngestObject],
-                                   _cache: IngestObjectCache):
+                                   _cache: IngestObjectCache) -> None:
         for extracted_object in extracted_objects:
             if isinstance(extracted_object, StateIncarcerationIncident):
                 if extracted_object.incident_type == 'MISC':
@@ -626,7 +625,7 @@ class UsNdController(CsvGcsfsDirectIngestController):
     def _rationalize_outcome_type(_file_tag: str,
                                   row: Dict[str, str],
                                   extracted_objects: List[IngestObject],
-                                  _cache: IngestObjectCache):
+                                  _cache: IngestObjectCache) -> None:
         finding = row['FINDING_DESCRIPTION']
 
         if finding == 'NOT GUILTY':
@@ -638,7 +637,7 @@ class UsNdController(CsvGcsfsDirectIngestController):
     def _set_punishment_length_days(_file_tag: str,
                                     row: Dict[str, str],
                                     extracted_objects: List[IngestObject],
-                                    _cache: IngestObjectCache):
+                                    _cache: IngestObjectCache) -> None:
 
         months = row['SANCTION_MONTHS']
         days = row['SANCTION_DAYS']
@@ -660,7 +659,7 @@ class UsNdController(CsvGcsfsDirectIngestController):
     def _set_location_within_facility(_file_tag: str,
                                       row: Dict[str, str],
                                       extracted_objects: List[IngestObject],
-                                      _cache: IngestObjectCache):
+                                      _cache: IngestObjectCache) -> None:
 
         facility = row['AGY_LOC_ID']
         facility_with_loc = row['OMS_OWNER_V_OIC_INCIDENTS_INT_LOC_DESCRIPTION']
@@ -682,7 +681,7 @@ class UsNdController(CsvGcsfsDirectIngestController):
     def _set_incident_outcome_id(_file_tag: str,
                                  row: Dict[str, str],
                                  extracted_objects: List[IngestObject],
-                                 _cache: IngestObjectCache):
+                                 _cache: IngestObjectCache) -> None:
         incident_id = _generate_incident_id(row)
         sanction_seq = row['SANCTION_SEQ']
 
@@ -697,7 +696,7 @@ class UsNdController(CsvGcsfsDirectIngestController):
     def _add_sentence_children(_file_tag: str,
                                row: Dict[str, str],
                                extracted_objects: List[IngestObject],
-                               _cache: IngestObjectCache):
+                               _cache: IngestObjectCache) -> None:
         term_code = row.get('SENTENCE_TERM_CODE', None)
         for extracted_object in extracted_objects:
             if isinstance(extracted_object, StateSentenceGroup):
@@ -718,7 +717,7 @@ class UsNdController(CsvGcsfsDirectIngestController):
     def _set_elite_charge_status(_file_tag: str,
                                  _row: Dict[str, str],
                                  extracted_objects: List[IngestObject],
-                                 _cache: IngestObjectCache):
+                                 _cache: IngestObjectCache) -> None:
         for extracted_object in extracted_objects:
             if isinstance(extracted_object, StateCharge):
                 # Note: If we hear about a charge in Elite, the person has already been sentenced.
@@ -728,7 +727,7 @@ class UsNdController(CsvGcsfsDirectIngestController):
     def _rationalize_controlling_charge(_file_tag: str,
                                         row: Dict[str, str],
                                         extracted_objects: List[IngestObject],
-                                        _cache: IngestObjectCache):
+                                        _cache: IngestObjectCache) -> None:
         status = row.get('CHARGE_STATUS', None)
         is_controlling = status and status.upper() in ['C', 'CT']
 
@@ -741,7 +740,7 @@ class UsNdController(CsvGcsfsDirectIngestController):
             _file_tag: str,
             row: Dict[str, str],
             extracted_objects: List[IngestObject],
-            _cache: IngestObjectCache):
+            _cache: IngestObjectCache) -> None:
         classification_str = row['OFFENCE_TYPE']
         _parse_charge_classification(classification_str, extracted_objects)
 
@@ -750,7 +749,7 @@ class UsNdController(CsvGcsfsDirectIngestController):
             _file_tag: str,
             row: Dict[str, str],
             extracted_objects: List[IngestObject],
-            _cache: IngestObjectCache):
+            _cache: IngestObjectCache) -> None:
         classification_str = row['LEVEL']
         _parse_charge_classification(classification_str, extracted_objects)
 
@@ -759,7 +758,7 @@ class UsNdController(CsvGcsfsDirectIngestController):
             _file_tag: str,
             _row: Dict[str, str],
             extracted_objects: List[IngestObject],
-            _cache: IngestObjectCache):
+            _cache: IngestObjectCache) -> None:
         for extracted_object in extracted_objects:
             if isinstance(extracted_object, StateCourtCase):
                 normalized_code = normalized_judicial_district_code(extracted_object.judicial_district_code)
@@ -906,7 +905,7 @@ class UsNdController(CsvGcsfsDirectIngestController):
         return self.enum_overrides
 
 
-def _yaml_filepath(filename):
+def _yaml_filepath(filename: str) -> str:
     return os.path.join(os.path.dirname(__file__), filename)
 
 
@@ -978,7 +977,7 @@ def _state_charge_ancestor_chain_overrides(
 
 
 def _parse_charge_classification(classification_str: Optional[str],
-                                 extracted_objects: List[IngestObject]):
+                                 extracted_objects: List[IngestObject]) -> None:
     if not classification_str:
         return
 
@@ -1082,7 +1081,7 @@ def get_program_referral_fields(
     return referral_fields
 
 
-def _record_revocation_on_violation(violation: StateSupervisionViolation, row: Dict[str, str]):
+def _record_revocation_on_violation(violation: StateSupervisionViolation, row: Dict[str, str]) -> None:
     """Adds revocation information onto the provided |violation| as necessary."""
     # These three flags are either '0' (False) or '-1' (True). That -1 may now be (1) after a recent Docstars
     # change.
@@ -1090,7 +1089,7 @@ def _record_revocation_on_violation(violation: StateSupervisionViolation, row: D
     revocation_for_absconsion = row.get('REV_ABSC_YN', None) in ['-1', '(1)']
     revocation_for_technical = row.get('REV_TECH_YN', None) in ['-1', '(1)']
 
-    def _get_ncic_codes():
+    def _get_ncic_codes() -> List[str]:
         first = row.get('NEW_OFF', None)
         second = row.get('NEW_OFF2', None)
         third = row.get('NEW_OFF3', None)
@@ -1123,7 +1122,7 @@ def _record_revocation_on_violation(violation: StateSupervisionViolation, row: D
 
 
 def _record_revocation_on_violation_response(
-        violation_response: StateSupervisionViolationResponse, terminating_officer: Optional[StateAgent]):
+        violation_response: StateSupervisionViolationResponse, terminating_officer: Optional[StateAgent]) -> None:
     """Adds revocation information onto the provided |violation_response| as necessary."""
     violation_response.response_type = StateSupervisionViolationResponseType.PERMANENT_DECISION.value
     violation_response.decision = StateSupervisionViolationResponseDecision.REVOCATION.value
