@@ -134,7 +134,7 @@ class BaseStateDirectIngestControllerTests(BaseDirectIngestControllerTests):
                                               filename,
                                               file_type=file_type,
                                               should_normalize=True)
-            self.controller.fs.gcs_file_system.test_add_path(file_path)
+            self.controller.fs.gcs_file_system.test_add_path(file_path, filename)
 
         run_task_queues_to_empty(self.controller)
 

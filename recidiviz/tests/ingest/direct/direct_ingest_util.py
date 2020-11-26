@@ -51,6 +51,7 @@ from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.tests.ingest.direct. \
     fake_synchronous_direct_ingest_cloud_task_manager import \
     FakeSynchronousDirectIngestCloudTaskManager
+from recidiviz.tests.ingest.direct import fixture_util
 from recidiviz.utils import metadata
 from recidiviz.utils.regions import Region
 
@@ -323,7 +324,8 @@ def add_paths_with_tags(controller: GcsfsDirectIngestController,
             f'{file_tag}.csv',
             should_normalize=pre_normalize_filename,
             file_type=file_type)
-        controller.fs.gcs_file_system.test_add_path(file_path)
+        # Only get a fixture path if it is a file, if it is a directory leave it as None
+        fixture_util.add_direct_ingest_path(controller.fs.gcs_file_system, file_path)
         time.sleep(.05)
 
 

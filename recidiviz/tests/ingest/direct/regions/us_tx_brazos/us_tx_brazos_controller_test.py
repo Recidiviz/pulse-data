@@ -33,6 +33,7 @@ from recidiviz.persistence.persistence import OVERALL_THRESHOLD, ENUM_THRESHOLD,
     DATABASE_INVARIANT_THRESHOLD
 from recidiviz.tests.ingest.direct.direct_ingest_util import \
     path_for_fixture_file, process_task_queues
+from recidiviz.tests.ingest.direct import fixture_util
 from recidiviz.tests.ingest.direct.regions.base_direct_ingest_controller_tests \
     import BaseDirectIngestControllerTests
 from recidiviz.tests.utils.individual_ingest_test import IndividualIngestTest
@@ -225,5 +226,5 @@ class UsTxBrazosControllerTest(IndividualIngestTest,
         file_tags = sorted(self.controller.get_file_tag_rank_list())
         file_path = path_for_fixture_file(
             self.controller, 'VERABrazosJailData_01012019_115703.csv', False)
-        self.controller.fs.gcs_file_system.test_add_path(file_path)
+        fixture_util.add_direct_ingest_path(self.controller.fs.gcs_file_system, file_path)
         process_task_queues(self, self.controller, file_tags)

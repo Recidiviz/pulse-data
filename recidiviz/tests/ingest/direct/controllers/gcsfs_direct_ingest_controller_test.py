@@ -55,6 +55,10 @@ from recidiviz.tests.ingest.direct.fake_direct_ingest_big_query_client import Fa
 from recidiviz.tests.ingest.direct. \
     fake_synchronous_direct_ingest_cloud_task_manager import \
     FakeSynchronousDirectIngestCloudTaskManager
+from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
+from recidiviz.tests.ingest.direct.fake_synchronous_direct_ingest_cloud_task_manager import \
+    FakeSynchronousDirectIngestCloudTaskManager
+from recidiviz.tests.ingest.direct import fixture_util
 from recidiviz.tests.utils.fake_region import TEST_STATE_REGION, \
     TEST_COUNTY_REGION, fake_region
 from recidiviz.tools.postgres import local_postgres_helpers
@@ -505,13 +509,13 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
                              f"FakeGCSFileSystem. Found instead "
                              f"type [{type(controller.fs.gcs_file_system)}]")
 
-        controller.fs.gcs_file_system.test_add_path(file_path)
+        fixture_util.add_direct_ingest_path(controller.fs.gcs_file_system, file_path)
 
         while task_manager.scheduler_tasks:
             task_manager.test_run_next_scheduler_task()
             task_manager.test_pop_finished_scheduler_task()
 
-        controller.fs.gcs_file_system.test_add_path(file_path2)
+        fixture_util.add_direct_ingest_path(controller.fs.gcs_file_system, file_path2)
 
         # Task for handling unnormalized file_path2
         task_manager.test_run_next_scheduler_task()
@@ -553,16 +557,17 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
         file_path = \
             path_for_fixture_file(controller, 'tagA.csv',
                                   should_normalize=False)
+        fixture_util.add_direct_ingest_path(controller.fs.gcs_file_system, file_path)
+
         file_path2 = \
             path_for_fixture_file(controller, 'tagB.csv',
                                   should_normalize=False)
+        fixture_util.add_direct_ingest_path(controller.fs.gcs_file_system, file_path2)
+
         if not isinstance(controller.fs.gcs_file_system, FakeGCSFileSystem):
             raise ValueError(f"Controller fs must have type "
                              f"FakeGCSFileSystem. Found instead "
                              f"type [{type(controller.fs.gcs_file_system)}]")
-
-        controller.fs.gcs_file_system.test_add_path(file_path)
-        controller.fs.gcs_file_system.test_add_path(file_path2)
 
         # At this point we have a series of tasks handling / renaming /
         # splitting the new files, then scheduling the next job. They run in
@@ -619,7 +624,7 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
                              f"FakeGCSFileSystem. Found instead "
                              f"type [{type(controller.fs.gcs_file_system)}]")
 
-        controller.fs.gcs_file_system.test_add_path(file_path)
+        fixture_util.add_direct_ingest_path(controller.fs.gcs_file_system, file_path)
         parts = filename_parts_from_path(file_path)
         metadata = controller.file_metadata_manager.register_ingest_file_export_job(GcsfsIngestViewExportArgs(
             ingest_view_name=parts.file_tag,
@@ -684,7 +689,7 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
                              f"type [{type(controller.fs.gcs_file_system)}]")
 
         # This will kick the scheduler once
-        controller.fs.gcs_file_system.test_add_path(path)
+        fixture_util.add_direct_ingest_path(controller.fs.gcs_file_system, path, has_fixture=False)
 
         # Kick the scheduler 5 times
         for _ in range(5):
@@ -911,7 +916,7 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
             'tagC.csv',
             should_normalize=True,
             dt=datetime.datetime.fromisoformat('2019-09-19'))
-        controller.fs.gcs_file_system.test_add_path(file_path, fail_handle_file_call=True)
+        fixture_util.add_direct_ingest_path(controller.fs.gcs_file_system, file_path, fail_handle_file_call=True)
 
         controller.kick_scheduler(just_finished_job=False)
 
@@ -957,8 +962,8 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
             should_normalize=True,
             dt=datetime.datetime.fromisoformat(previous_date))
 
-        controller.fs.gcs_file_system.test_add_path(processed_file_from_prev_day)
-        controller.fs.gcs_file_system.test_add_path(unexpected_file_path_from_prev_day)
+        fixture_util.add_direct_ingest_path(controller.fs.gcs_file_system, processed_file_from_prev_day)
+        fixture_util.add_direct_ingest_path(controller.fs.gcs_file_system, unexpected_file_path_from_prev_day)
 
         file_tags = list(sorted(controller.get_file_tag_rank_list()))
 
@@ -1006,8 +1011,8 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
             file_type=GcsfsDirectIngestFileType.RAW_DATA,
             dt=prev_date_datetime)
 
-        controller.fs.gcs_file_system.test_add_path(processed_file_from_prev_day)
-        controller.fs.gcs_file_system.test_add_path(unexpected_file_path_from_prev_day)
+        fixture_util.add_direct_ingest_path(controller.fs.gcs_file_system, processed_file_from_prev_day)
+        fixture_util.add_direct_ingest_path(controller.fs.gcs_file_system, unexpected_file_path_from_prev_day)
 
         file_tags = list(sorted(controller.get_file_tag_rank_list()))
 
@@ -1066,8 +1071,8 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
             file_type=GcsfsDirectIngestFileType.RAW_DATA,
             dt=prev_date_datetime)
 
-        controller.fs.gcs_file_system.test_add_path(processed_file_from_prev_day)
-        controller.fs.gcs_file_system.test_add_path(unexpected_file_path_from_prev_day)
+        fixture_util.add_direct_ingest_path(controller.fs.gcs_file_system, processed_file_from_prev_day)
+        fixture_util.add_direct_ingest_path(controller.fs.gcs_file_system, unexpected_file_path_from_prev_day)
 
         file_tags = list(sorted(controller.get_file_tag_rank_list()))
 
@@ -1142,9 +1147,9 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
             should_normalize=True,
             dt=current_date_datetime)
 
-        controller.fs.gcs_file_system.test_add_path(processed_file_from_prev_day)
-        controller.fs.gcs_file_system.test_add_path(unexpected_file_path_from_prev_day)
-        controller.fs.gcs_file_system.test_add_path(file_path_from_current_day)
+        fixture_util.add_direct_ingest_path(controller.fs.gcs_file_system, processed_file_from_prev_day)
+        fixture_util.add_direct_ingest_path(controller.fs.gcs_file_system, unexpected_file_path_from_prev_day)
+        fixture_util.add_direct_ingest_path(controller.fs.gcs_file_system, file_path_from_current_day)
 
         run_task_queues_to_empty(controller)
 
@@ -1224,9 +1229,9 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
             file_type=GcsfsDirectIngestFileType.INGEST_VIEW,
             dt=current_date_datetime)
 
-        controller.fs.gcs_file_system.test_add_path(processed_file_from_prev_day)
-        controller.fs.gcs_file_system.test_add_path(unexpected_file_path_from_prev_day)
-        controller.fs.gcs_file_system.test_add_path(file_path_from_current_day)
+        fixture_util.add_direct_ingest_path(controller.fs.gcs_file_system, processed_file_from_prev_day)
+        fixture_util.add_direct_ingest_path(controller.fs.gcs_file_system, unexpected_file_path_from_prev_day)
+        fixture_util.add_direct_ingest_path(controller.fs.gcs_file_system, file_path_from_current_day)
 
         run_task_queues_to_empty(controller)
 
@@ -1302,8 +1307,8 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
                 should_normalize=True,
                 file_type=GcsfsDirectIngestFileType.RAW_DATA)
 
-            controller.fs.gcs_file_system.test_add_path(unexpected_file_path_from_prev_day)
-            controller.fs.gcs_file_system.test_add_path(processed_file_from_prev_day)
+            fixture_util.add_direct_ingest_path(controller.fs.gcs_file_system, unexpected_file_path_from_prev_day)
+            fixture_util.add_direct_ingest_path(controller.fs.gcs_file_system, processed_file_from_prev_day)
 
         run_task_queues_to_empty(controller)
 
@@ -1313,7 +1318,7 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
             should_normalize=True,
             file_type=GcsfsDirectIngestFileType.RAW_DATA)
 
-        controller.fs.gcs_file_system.test_add_path(file_path_from_current_day)
+        fixture_util.add_direct_ingest_path(controller.fs.gcs_file_system, file_path_from_current_day)
 
         run_task_queues_to_empty(controller)
 
@@ -1387,7 +1392,7 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
                                   should_normalize=False)
         file_path3 = \
             path_for_fixture_file(controller, 'tagC.csv',
-                                  should_normalize=False)
+                                  should_normalize=True)
 
         if not isinstance(controller.fs.gcs_file_system, FakeGCSFileSystem):
             raise ValueError(f"Controller fs must have type "
@@ -1395,8 +1400,8 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
                              f"type [{type(controller.fs.gcs_file_system)}]")
 
         # Upload two new files without triggering the controller
-        controller.fs.gcs_file_system.test_add_path(file_path, fail_handle_file_call=True)
-        controller.fs.gcs_file_system.test_add_path(file_path2, fail_handle_file_call=True)
+        fixture_util.add_direct_ingest_path(controller.fs.gcs_file_system, file_path, fail_handle_file_call=True)
+        fixture_util.add_direct_ingest_path(controller.fs.gcs_file_system, file_path2, fail_handle_file_call=True)
 
         self.assertEqual(
             0,
@@ -1406,7 +1411,7 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
             task_manager.get_process_job_queue_info(controller.region).size())
 
         # Later file that succeeds will trigger proper upload of all files
-        controller.fs.gcs_file_system.test_add_path(file_path3)
+        fixture_util.add_direct_ingest_path(controller.fs.gcs_file_system, file_path3)
 
         run_task_queues_to_empty(controller)
         check_all_paths_processed(self,
@@ -1443,9 +1448,9 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
                              f"type [{type(controller.fs.gcs_file_system)}]")
 
         # Upload new files without triggering the controller
-        controller.fs.gcs_file_system.test_add_path(file_path, fail_handle_file_call=True)
-        controller.fs.gcs_file_system.test_add_path(file_path2, fail_handle_file_call=True)
-        controller.fs.gcs_file_system.test_add_path(file_path3, fail_handle_file_call=True)
+        fixture_util.add_direct_ingest_path(controller.fs.gcs_file_system, file_path, fail_handle_file_call=True)
+        fixture_util.add_direct_ingest_path(controller.fs.gcs_file_system, file_path2, fail_handle_file_call=True)
+        fixture_util.add_direct_ingest_path(controller.fs.gcs_file_system, file_path3, fail_handle_file_call=True)
 
         self.assertEqual(
             0,
@@ -1553,25 +1558,23 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
                              f"FakeGCSFileSystem. Found instead "
                              f"type [{type(controller.fs.gcs_file_system)}]")
 
+        subdir_path_name = 'subdir/'
         subdir_path = \
-            path_for_fixture_file(controller, 'subdir/',
+            path_for_fixture_file(controller, subdir_path_name,
                                   should_normalize=False)
-        paths = [
-            subdir_path,
-            path_for_fixture_file(controller, 'subdir/Unexpected_Tag.csv',
-                                  should_normalize=False),
-            path_for_fixture_file(controller, 'tagA.csv',
-                                  should_normalize=False),
-            path_for_fixture_file(controller, 'tagB.csv',
-                                  should_normalize=False),
-            path_for_fixture_file(controller, 'tagC.csv',
-                                  should_normalize=False),
-            path_for_fixture_file(controller, 'subdir/tagC_2.csv',
-                                  should_normalize=False),
+        fixture_util.add_direct_ingest_path(controller.fs.gcs_file_system, subdir_path, has_fixture=False)
+        path_names = [
+            ('subdir/Unexpected_Tag.csv', False),
+            ('tagA.csv', True),
+            ('tagB.csv', True),
+            ('tagC.csv', True),
+            ('subdir/tagC_2.csv', False),
         ]
 
-        for path in paths:
-            controller.fs.gcs_file_system.test_add_path(path)
+        for path_name, has_fixture in path_names:
+            fixture_util.add_direct_ingest_path(
+                controller.fs.gcs_file_system, path_for_fixture_file(controller, path_name, should_normalize=False),
+                has_fixture=has_fixture)
 
         run_task_queues_to_empty(controller)
 
