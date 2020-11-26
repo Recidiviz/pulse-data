@@ -25,6 +25,7 @@ from recidiviz.big_query.export.export_query_config import ExportQueryConfig
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import filename_parts_from_path
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
+from recidiviz.tests.ingest.direct import fixture_util
 
 
 class FakeQueryJob:
@@ -115,7 +116,7 @@ class FakeDirectIngestBigQueryClient(BigQueryClient):
                                               export_configs: List[ExportQueryConfig]) -> None:
         for export_config in export_configs:
             export_path = GcsfsFilePath.from_absolute_path(export_config.output_uri)
-            self.fs.test_add_path(export_path)
+            fixture_util.add_direct_ingest_path(self.fs, export_path)
             self.exported_file_tags.append(filename_parts_from_path(export_path).file_tag)
 
     def run_query_async(self, query_str: str, query_parameters: List[bigquery.ScalarQueryParameter] = None) \

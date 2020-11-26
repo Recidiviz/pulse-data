@@ -38,6 +38,7 @@ from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.tests.ingest.direct.direct_ingest_util import \
     build_gcsfs_controller_for_tests, ingest_args_for_fixture_file
 from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
+from recidiviz.tests.ingest.direct import fixture_util
 from recidiviz.tests.utils.test_utils import print_visible_header_label
 from recidiviz.tools.postgres import local_postgres_helpers
 
@@ -121,7 +122,7 @@ class BaseDirectIngestControllerTests(unittest.TestCase):
             self.controller.file_metadata_manager.register_ingest_file_export_job(ingest_file_export_job_args)
             self.controller.ingest_view_export_manager.export_view_for_args(ingest_file_export_job_args)
         else:
-            self.controller.fs.gcs_file_system.test_add_path(args.file_path)
+            fixture_util.add_direct_ingest_path(self.controller.fs.gcs_file_system, args.file_path)
 
         # pylint:disable=protected-access
         fixture_contents_handle = self.controller._get_contents_handle(args)

@@ -92,7 +92,10 @@ class CsvGcsfsDirectIngestController(GcsfsDirectIngestController):
         delegate = ReadOneGcsfsCsvReaderDelegate()
 
         # Read a chunk up to one line bigger than the acceptable size
-        self.csv_reader.streaming_read(path, delegate=delegate, chunk_size=(line_limit + 1))
+        try:
+            self.csv_reader.streaming_read(path, delegate=delegate, chunk_size=(line_limit + 1))
+        except FileNotFoundError:
+            return True
 
         if delegate.df is None:
             # If the file is empty, it's fine.
