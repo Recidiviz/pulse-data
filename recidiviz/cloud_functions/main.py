@@ -21,6 +21,7 @@ import logging
 import os
 import traceback
 
+from flask import Request
 # Mypy errors "Cannot find implementation or library stub for module named 'xxxx'" ignored here because cloud functions
 # require that imports are declared relative to the cloud functions package itself. In general, we should avoid shipping
 # complex code in cloud functions. The function itself should call an API endpoint that can live in an external package
@@ -47,15 +48,14 @@ _DATAFLOW_MONITOR_URL = (
     '&location={}&topic={}'
 )
 _APP_ENGINE_PO_MONTHLY_REPORT_GENERATE_EMAILS_URL = (
-    'https://{}.appspot.com/reporting/start_new_batch?state_code={}&report_type={}'
+    'https://{}.appspot.com/reporting/start_new_batch?state_code={}&report_type={}&test_address={}'
 )
 _APP_ENGINE_PO_MONTHLY_REPORT_DELIVER_EMAILS_URL = (
-    'https://{}.appspot.com/reporting/deliver_emails_for_batch?batch_id={}'
-    '&test_address={}'
+    'https://{}.appspot.com/reporting/deliver_emails_for_batch?batch_id={}&redirect_address={}'
 )
 
 
-def parse_state_aggregate(data, _):
+def parse_state_aggregate(data, _) -> None:
     """This function is triggered when a file is dropped into the state
     aggregate bucket and makes a request to parse and write the data to the
     aggregate table database.
@@ -78,7 +78,7 @@ def parse_state_aggregate(data, _):
     logging.info("The response status is %s", response.status_code)
 
 
-def handle_state_direct_ingest_file(data, _):
+def handle_state_direct_ingest_file(data, _) -> None:
     """This function is triggered when a file is dropped into any of the state
     direct ingest buckets and makes a request to parse and write the data to
     the database.
@@ -91,7 +91,7 @@ def handle_state_direct_ingest_file(data, _):
     _handle_state_direct_ingest_file(data, start_ingest=True)
 
 
-def handle_state_direct_ingest_file_rename_only(data, _):
+def handle_state_direct_ingest_file_rename_only(data, _) -> None:
     """Cloud functions can be configured to trigger this function instead of
     handle_state_direct_ingest_file when a region has turned on nightly
     ingest before we are ready to schedule and process ingest jobs for that
@@ -107,7 +107,7 @@ def handle_state_direct_ingest_file_rename_only(data, _):
 
 
 def _handle_state_direct_ingest_file(data,
-                                     start_ingest: bool):
+                                     start_ingest: bool) -> None:
     """Calls direct ingest cloud function when a new file is dropped into a
     bucket."""
     project_id = os.environ.get(GCP_PROJECT_ID_KEY)
@@ -135,7 +135,7 @@ def _handle_state_direct_ingest_file(data,
     logging.info("The response status is %s", response.status_code)
 
 
-def export_metric_view_data(event, _context):
+def export_metric_view_data(event, _context) -> None:
     """This function is triggered by a Pub/Sub event to begin the export of data contained in BigQuery metric views to
     files in cloud storage buckets.
     """
@@ -159,11 +159,11 @@ def export_metric_view_data(event, _context):
     logging.info("The response status is %s", response.status_code)
 
 
-def trigger_calculation_pipeline_dag(data, _context):
+def trigger_calculation_pipeline_dag(data, _context) -> None:
     """This function is triggered by a Pub/Sub event, triggers an Airflow DAG where all
     the calculation pipelines run simultaneously.
     """
-    gcp_project_id = os.environ.get(GCP_PROJECT_ID_KEY)
+    gcp_project_id = os.environ.get(GCP_PROJECT_ID_KEY, '')
     project_id = gcp_project_id + '-airflow'
     if not project_id:
         logging.error('No project id set for call to run the calculation pipelines, returning.')
@@ -181,7 +181,7 @@ def trigger_calculation_pipeline_dag(data, _context):
     logging.info("The monitoring Airflow response is %s", monitor_response)
 
 
-def run_calculation_pipelines(_event, _context):
+def run_calculation_pipelines(_event, _context) -> None:
     """This function, which is triggered by a Pub/Sub event, kicks off
     the historical ND pipelines on deployment.
 
@@ -227,7 +227,7 @@ def run_calculation_pipelines(_event, _context):
     logging.info("The monitoring Dataflow response is %s", monitor_response)
 
 
-def handle_covid_ingest_on_upload(_data, _context):
+def handle_covid_ingest_on_upload(_data, _context) -> None:
     """Ingests and aggregates the currently available COVID data into an output
     file stored in a GCP bucket.
 
@@ -238,7 +238,7 @@ def handle_covid_ingest_on_upload(_data, _context):
     _ingest_and_aggregate_covid_data()
 
 
-def handle_covid_ingest_on_trigger(_request):
+def handle_covid_ingest_on_trigger(_request: Request) -> None:
     """Ingests and aggregates the currently available COVID data into an output
     file stored in a GCP bucket.
 
@@ -254,7 +254,7 @@ def handle_covid_ingest_on_trigger(_request):
     _ingest_and_aggregate_covid_data()
 
 
-def _ingest_and_aggregate_covid_data():
+def _ingest_and_aggregate_covid_data() -> None:
     """Calls main COVID ingest function"""
     # TODO(https://issuetracker.google.com/issues/155215191): zdg2102
     #  remove this try-except wrapper once GCP cloud function
@@ -266,13 +266,16 @@ def _ingest_and_aggregate_covid_data():
         raise RuntimeError('Stack trace: {}'.format(traceback.format_exc())) from e
 
 
-def handle_start_new_batch_email_reporting(request):
+def handle_start_new_batch_email_reporting(request: Request) -> None:
     """Start a new batch of email generation for the indicated state.
         This function is the entry point for generating a new batch. It hits the App Engine endpoint `/start_new_batch`.
-        The caller should provide valid JSON with a "state_code" and "report_type" keys.
+        It requires a JSON input containing the following keys:
+            state_code: (required) State code for the report (i.e. "US_ID")
+            report_type: (required) The type of report (i.e. "po_monthly_report")
+            test_address: (optional) A test address to generate emails for
         Args:
-            request: The HTTP request.  Must contain JSON with "state_code" and
-            "report_type" keys
+            request: The HTTP request. Must contain JSON with "state_code" and
+            "report_type" keys, and may contain an optional "test_address" key.
         Returns:
             Nothing.
         Raises:
@@ -288,10 +291,11 @@ def handle_start_new_batch_email_reporting(request):
         logging.error("No request params, returning")
         return
 
-    state_code = request_params.get('state_code')
-    report_type = request_params.get('report_type')
+    state_code = request_params.get('state_code', '')
+    report_type = request_params.get('report_type', '')
+    test_address = request_params.get('test_address', '')
 
-    url = _APP_ENGINE_PO_MONTHLY_REPORT_GENERATE_EMAILS_URL.format(project_id, state_code, report_type)
+    url = _APP_ENGINE_PO_MONTHLY_REPORT_GENERATE_EMAILS_URL.format(project_id, state_code, report_type, test_address)
 
     logging.info("Calling URL: %s", url)
 
@@ -300,12 +304,12 @@ def handle_start_new_batch_email_reporting(request):
     logging.info("The response status is %s", response.status_code)
 
 
-def handle_deliver_emails_for_batch_email_reporting(request):
+def handle_deliver_emails_for_batch_email_reporting(request: Request) -> None:
     """Cloud function to deliver a batch of generated emails.
     It hits the App Engine endpoint `reporting/deliver_emails_for_batch`. It requires a JSON input containing the
     following keys:
         batch_id: (required) Identifier for this batch
-        test_address: (optional) An email address to which all emails should
+        redirect_address: (optional) An email address to which all emails should
         be sent instead of to their actual recipients.
     Args:
         request: HTTP request payload containing JSON with keys as described above
@@ -325,8 +329,8 @@ def handle_deliver_emails_for_batch_email_reporting(request):
         return
 
     batch_id = request_params.get("batch_id", '')
-    test_address = request_params.get("test_address", '')
-    url = _APP_ENGINE_PO_MONTHLY_REPORT_DELIVER_EMAILS_URL.format(project_id, batch_id, test_address)
+    redirect_address = request_params.get("redirect_address", '')
+    url = _APP_ENGINE_PO_MONTHLY_REPORT_DELIVER_EMAILS_URL.format(project_id, batch_id, redirect_address)
 
     logging.info("Calling URL: %s", url)
     response = make_iap_request(url, IAP_CLIENT_ID[project_id])
