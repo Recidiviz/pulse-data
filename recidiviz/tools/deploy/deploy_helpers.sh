@@ -118,7 +118,6 @@ function calculation_pipeline_changes_since_last_deploy {
 function pre_deploy_configure_infrastructure {
     PROJECT=$1
     DEBUG_BUILD_NAME=$2
-    VERSION_TAG=$3
 
     echo "Deploying cron.yaml"
     run_cmd gcloud -q app deploy cron.yaml --project=${PROJECT}
@@ -165,8 +164,6 @@ function pre_deploy_configure_infrastructure {
     else
         echo "Skipping pipeline template deploy for debug build."
     fi
-
-    deploy_terraform_infrastructure ${PROJECT} ${VERSION_TAG} || exit_on_fail
 }
 
 function check_docker_installed {
