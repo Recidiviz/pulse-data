@@ -24,18 +24,19 @@ from recidiviz.common.constants.state.state_supervision_period import StateSuper
 from recidiviz.common.str_field_utils import sorted_list_from_str
 from recidiviz.ingest.direct.regions.us_id.us_id_constants import JAIL_FACILITY_CODES, DEPORTED_LOCATION_NAME, \
     INTERSTATE_FACILITY_CODE, COMMUTED_LOCATION_NAMES, EARLY_DISCHARGE_LOCATION_NAME, DECEASED_LOCATION_NAMES, \
-    DISMISSED_LOCATION_NAME, PARDONED_LOCATION_NAMES, HISTORY_FACILITY_TYPE
+    DISMISSED_LOCATION_NAME, PARDONED_LOCATION_NAMES, HISTORY_FACILITY_TYPE, SUPERVISION_FACILITY_TYPE, \
+    INCARCERATION_FACILITY_TYPE, OTHER_FACILITY_TYPE, FUGITIVE_FACILITY_TYPE
 
 
-# TODO(#4588): Move all repeated enums into constant file
 def supervision_admission_reason_mapper(label: str) -> Optional[StateSupervisionPeriodAdmissionReason]:
     if label == HISTORY_FACILITY_TYPE:    # Coming from history (person had completed sentences in past)
         return StateSupervisionPeriodAdmissionReason.COURT_SENTENCE
-    if label == 'P':    # Coming from probation/parole within the state
+    if label == SUPERVISION_FACILITY_TYPE:    # Coming from probation/parole within the state
         return StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE
-    if label in ('I', 'O'):  # Coming from incarceration. TODO(#3506): Clarify when 'O' is used.
+    # TODO(#3506): Clarify when OTHER_FACILITY_TYPE is used.
+    if label in (INCARCERATION_FACILITY_TYPE, OTHER_FACILITY_TYPE):  # Coming from incarceration.
         return StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE
-    if label == 'F':    # Coming from absconsion.
+    if label == FUGITIVE_FACILITY_TYPE:    # Coming from absconsion.
         return StateSupervisionPeriodAdmissionReason.RETURN_FROM_ABSCONSION
     if label in (DEPORTED_LOCATION_NAME, INTERSTATE_FACILITY_CODE):
         return StateSupervisionPeriodAdmissionReason.TRANSFER_OUT_OF_STATE
@@ -46,11 +47,12 @@ def supervision_termination_reason_mapper(label: str) -> Optional[StateSupervisi
     # TODO(#2865): Update enum normalization so that we separate by -s instead of spaces
     if label.startswith(f'{HISTORY_FACILITY_TYPE} '):    # Going to history (completed all sentences)
         return _supervision_history_termination_reason_mapper(label)
-    if label == 'P':    # Going to probation/parole within the state
+    if label == SUPERVISION_FACILITY_TYPE:    # Going to probation/parole within the state
         return StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE
-    if label in ('I', 'O'):     # Going to incarceration. TODO(#3506): Clarify when 'O' is used.
+    # TODO(#3506): Clarify when OTHER_FACILITY_TYPE is used.
+    if label in (INCARCERATION_FACILITY_TYPE, OTHER_FACILITY_TYPE):     # Going to incarceration.
         return StateSupervisionPeriodTerminationReason.RETURN_TO_INCARCERATION
-    if label == 'F':    # End of absconsion period
+    if label == FUGITIVE_FACILITY_TYPE:    # End of absconsion period
         return StateSupervisionPeriodTerminationReason.ABSCONSION
     if label in (DEPORTED_LOCATION_NAME, INTERSTATE_FACILITY_CODE):
         return StateSupervisionPeriodTerminationReason.TRANSFER_OUT_OF_STATE
@@ -80,11 +82,12 @@ def _supervision_history_termination_reason_mapper(label: str) -> Optional[State
 def incarceration_admission_reason_mapper(label: str) -> Optional[StateIncarcerationPeriodAdmissionReason]:
     if label == HISTORY_FACILITY_TYPE:    # Coming from history (person had completed sentences in past)
         return StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION
-    if label == 'P':    # Coming from probation/parole within the state
+    if label == SUPERVISION_FACILITY_TYPE:    # Coming from probation/parole within the state
         return StateIncarcerationPeriodAdmissionReason.RETURN_FROM_SUPERVISION
-    if label in ('I', 'O'):     # Coming from incarceration. TODO(#3506): Clarify when 'O' is used.
+    # TODO(#3506): Clarify when OTHER_FACILITY_TYPE is used.
+    if label in (INCARCERATION_FACILITY_TYPE, OTHER_FACILITY_TYPE):     # Coming from incarceration.
         return StateIncarcerationPeriodAdmissionReason.TRANSFER
-    if label == 'F':    # Coming from absconsion.
+    if label == FUGITIVE_FACILITY_TYPE:    # Coming from absconsion.
         return StateIncarcerationPeriodAdmissionReason.RETURN_FROM_ESCAPE
     return None
 
@@ -93,11 +96,12 @@ def incarceration_release_reason_mapper(label: str) -> Optional[StateIncarcerati
     # TODO(#2865): Update enum normalization so that we separate by -s instead of spaces
     if label.startswith(f'{HISTORY_FACILITY_TYPE} '):    # Going to history (completed all sentences)
         return _incarceration_history_release_reason_mapper(label)
-    if label == 'P':    # Going to probation/parole within the state
+    if label == SUPERVISION_FACILITY_TYPE:    # Going to probation/parole within the state
         return StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE
-    if label in ('I', 'O'):     # Going to incarceration. TODO(#3506): Clarify when 'O' is used.
+    # TODO(#3506): Clarify when OTHER_FACILITY_TYPE is used.
+    if label in (INCARCERATION_FACILITY_TYPE, OTHER_FACILITY_TYPE):     # Going to incarceration.
         return StateIncarcerationPeriodReleaseReason.TRANSFER
-    if label == 'F':    # Going to absconsion.
+    if label == FUGITIVE_FACILITY_TYPE:    # Going to absconsion.
         return StateIncarcerationPeriodReleaseReason.ESCAPE
     return None
 
