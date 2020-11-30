@@ -56,7 +56,7 @@ fi
 
 echo "Updating configuration / infrastructure in preparation for deploy"
 DEBUG_BUILD_NAME='' # A production build is not a debug build
-pre_deploy_configure_infrastructure 'recidiviz-123' "$DEBUG_BUILD_NAME" "$GIT_VERSION_TAG"
+pre_deploy_configure_infrastructure 'recidiviz-123' "$DEBUG_BUILD_NAME"
 
 GAE_VERSION=$(echo ${GIT_VERSION_TAG} | tr '.' '-') || exit_on_fail
 STAGING_IMAGE_URL=us.gcr.io/recidiviz-staging/appengine/default.${GAE_VERSION}:latest || exit_on_fail
@@ -68,6 +68,8 @@ run_cmd gcloud -q app deploy prod.yaml --project=recidiviz-123 --version=${GAE_V
 
 echo "Deploy succeeded - triggering post-deploy jobs."
 post_deploy_triggers 'recidiviz-123'
+
+deploy_terraform_infrastructure 'recidiviz-123' ${GIT_VERSION_TAG} || exit_on_fail
 
 script_prompt "Have you completed all Post-Deploy tasks listed at http://go/deploy-checklist?"
 
