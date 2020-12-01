@@ -83,6 +83,10 @@ def main(database: SchemaType, repo_root: str, ssl_cert_path: str, dry_run: bool
         sys.exit(1)
 
     if dry_run:
+        if not local_postgres_helpers.can_start_on_disk_postgresql_database():
+            logging.error('pg_ctl is not installed. Cannot perform a dry-run.')
+            logging.error('Exiting...')
+            sys.exit(1)
         logging.info('Creating a dry-run...\n')
 
     is_prod = metadata.project_id() == GCP_PROJECT_PRODUCTION
