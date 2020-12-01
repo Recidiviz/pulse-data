@@ -47,6 +47,8 @@ def get_urls_to_download() -> Set[str]:
                 link = link.replace('12-17-19', '10-17-19')
             elif link.endswith('09-26-19.pdf'):
                 link = link.replace('09-26-19.pdf', '09-26-19 new.pdf')
+            elif link.endswith('11-14-19.pdf'):
+                link = link.replace('2020', '2019')
             else:
                 # Make sure we only take things after Aug 9th 2018 as the format
                 # changed before that.
