@@ -109,6 +109,11 @@ function safe_git_checkout_remote_branch {
             echo origin/${BRANCH} does not contain HEAD
             echo_error "Remote branch origin/${BRANCH} does not contain the commit at HEAD."
             echo_error "Please revert any local commit history before continuing."
+            echo_error "!! DO NOT COMMENT OUT THIS BLOCK. IF YOU RUN THIS SCRIPT ON A COMMIT THAT IS NOT IN THE MAIN "
+            echo_error "!! BRANCH, IT WILL BREAK FUTURE RUNS OF THIS SCRIPT BECAUSE THEY WILL NOT BE ABLE TO DETERMINE "
+            echo_error "!! THE PROPER NEXT TAG TO DEPLOY. IF YOU MUST RUN WITH LOCAL CHANGES TO FIX AN ISSUE WITH THE "
+            echo_error "!! DEPLOY SCRIPT ITSELF, APPLY THE CHANGES AS UN-COMMITTED UPDATES, THEN COMMENT OUT THE BLOCK "
+            echo_error "!! THAT COMPLAINS ABOUT A DIRTY GIT STATUS."
             exit 1
         fi
 
