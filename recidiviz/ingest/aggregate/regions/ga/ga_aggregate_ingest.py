@@ -97,16 +97,32 @@ def _parse_table(_: str, filename: str) -> pd.DataFrame:
     # the right half of the page
     use_lattice = True
 
-    result = tabula.read_pdf(
-        filename,
-        pages=pages,
-        lattice=use_lattice,
-        pandas_options={
-            'names': column_names,
-            'skiprows': _header_on_each_page(),
-            'skipfooter': 1,  # The last row is the grand totals
-            'engine': 'python'  # Only python engine supports 'skipfooter'
-        })
+    if filename.endswith('jun19.pdf'):
+        # Tabula can't handle the multiple tables because it thinks the one on
+        # the last page has extra columns. This concats them manually.
+        *dfs, df4 = tabula.read_pdf(
+            filename,
+            pages=pages,
+            lattice=use_lattice,
+            multiple_tables=True)
+        df4 = df4.iloc[:-1, 1:14]
+        df4.columns = range(13)
+        df4.iloc[33, 1] = df4.iloc[33, 1].strip(" '")
+        breakpoint()
+        dfs.append(df4)
+        result = pd.concat(df.iloc[1:] for df in dfs)
+        result.columns = column_names
+    else:
+        result = tabula.read_pdf(
+            filename,
+            pages=pages,
+            lattice=use_lattice,
+            pandas_options={
+                'names': column_names,
+                'skiprows': _header_on_each_page(),
+                'skipfooter': 1,  # The last row is the grand totals
+                'engine': 'python'  # Only python engine supports 'skipfooter'
+            })
 
     result = aggregate_ingest_utils.rename_columns_and_select(result, {
         'Jurisdiction': 'county_name',
