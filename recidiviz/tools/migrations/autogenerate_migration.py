@@ -34,6 +34,7 @@ python -m recidiviz.tools.migrations.autogenerate_migration --database JAILS --m
 """
 import argparse
 import logging
+import sys
 
 from alembic.command import revision, upgrade
 import alembic.config
@@ -67,6 +68,12 @@ def main(database: SchemaType, message: str, use_local_db: bool):
     if use_local_db:
         # TODO(#4619): We should eventually move this from a local postgres instance to running
         # postgres from a docker container.
+        if not local_postgres_helpers.can_start_on_disk_postgresql_database():
+            logging.error(
+                'pg_ctl is not installed, so the script cannot be run locally. '
+                '--project-id must be specified to run against staging or production.')
+            logging.error('Exiting...')
+            sys.exit(1)
         logging.info('Starting local postgres database for autogeneration...')
         tmp_db_dir = local_postgres_helpers.start_on_disk_postgresql_database()
         original_env_vars = local_postgres_helpers.update_local_sqlalchemy_postgres_env_vars()

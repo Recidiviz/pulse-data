@@ -111,6 +111,15 @@ def _run_command(command: str, assert_success: bool = True, as_user: Optional[pw
 
 
 @environment.local_only
+def can_start_on_disk_postgresql_database() -> bool:
+    try:
+        _run_command('which pg_ctl')
+    except RuntimeError:
+        return False
+    return True
+
+
+@environment.local_only
 def start_on_disk_postgresql_database() -> str:
     """Starts and initializes a local postgres database for use in tests. Should be called in the setUpClass function so
     this only runs once per test class.
