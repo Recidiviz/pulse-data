@@ -78,13 +78,12 @@ SUPERVISION_DISCHARGES_BY_OFFICER_BY_MONTH_QUERY_TEMPLATE = \
       SELECT
         state_code, year, month, district,
         officer_external_id,
-        COUNT(DISTINCT person_id) AS discharge_count
+          -- Do not count any discharges that are overlapping with another open supervision period
+        COUNT(DISTINCT IF(overlapping_open_period.supervision_period_id IS NULL, person_id, NULL)) AS discharge_count
       FROM `{project_id}.{po_report_dataset}.officer_supervision_district_association_materialized`
       LEFT JOIN supervision_discharges
         USING (state_code, year, month, officer_external_id)
       LEFT JOIN overlapping_open_period USING (supervision_period_id)
-      -- Do not count any discharges that are overlapping with another open supervision period
-      WHERE overlapping_open_period.supervision_period_id IS NULL
       GROUP BY state_code, year, month, district, officer_external_id
     ),
     avg_discharges_by_district_state AS (
