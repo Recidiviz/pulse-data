@@ -24,6 +24,7 @@ from dateutil.relativedelta import relativedelta
 from recidiviz.calculator.pipeline.program.program_event import \
     ProgramReferralEvent, ProgramEvent, ProgramParticipationEvent
 from recidiviz.calculator.pipeline.utils import assessment_utils
+from recidiviz.calculator.pipeline.utils.execution_utils import list_of_dicts_to_dict_with_keys
 from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_manager import \
     only_state_custodial_authority_in_supervision_population
 from recidiviz.calculator.pipeline.utils.supervision_period_utils import prepare_supervision_periods_for_calculations
@@ -41,8 +42,8 @@ def find_program_events(
         program_assignments: List[StateProgramAssignment],
         assessments: List[StateAssessment],
         supervision_periods: List[StateSupervisionPeriod],
-        supervision_period_to_agent_associations:
-        Dict[int, Dict[Any, Any]]) -> List[ProgramEvent]:
+        supervision_period_to_agent_association: List[Dict[str, Any]],
+) -> List[ProgramEvent]:
     """Finds instances of interaction with a program.
 
     Identifies instances of being referred to a program and actively participating in a program.
@@ -63,6 +64,9 @@ def find_program_events(
 
     if not program_assignments:
         return program_events
+
+    supervision_period_to_agent_associations = list_of_dicts_to_dict_with_keys(
+        supervision_period_to_agent_association, StateSupervisionPeriod.get_class_id_name())
 
     state_code = get_single_state_code(program_assignments)
 

@@ -45,11 +45,16 @@ SSVR_TO_AGENT_ASSOCIATION_QUERY_TEMPLATE = \
         SELECT
           agents.state_code,
           response.supervision_violation_response_id,
+          person_ids.person_id,
           agents.agent_id,
           CAST(agents.agent_external_id AS STRING) as agent_external_id,
           CAST(agents.latest_district_external_id AS STRING) AS district_external_id
         FROM
         `{project_id}.{base_dataset}.state_supervision_violation_response_decision_agent_association` response
+        LEFT JOIN
+        (SELECT DISTINCT person_id, supervision_violation_response_id 
+         FROM `{project_id}.state.state_supervision_violation_response`) person_ids
+        USING (supervision_violation_response_id)
         LEFT JOIN
         `{project_id}.{reference_views_dataset}.augmented_agent_info` agents
         ON agents.agent_id = response.agent_id

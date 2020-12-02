@@ -37,13 +37,13 @@ SUPERVISION_DISCHARGES_BY_OFFICER_BY_MONTH_QUERY_TEMPLATE = \
     /*{description}*/
     WITH supervision_periods AS (
       SELECT
-        state_code, person_id, supervision_period_id,
+        state_code, sp.person_id, supervision_period_id,
         start_date, termination_date, termination_reason,
         EXTRACT(YEAR FROM termination_date) AS year,
         EXTRACT(MONTH FROM termination_date) AS month,
         -- TODO(#4491): Consider using `external_id` instead of `agent_external_id`
         COALESCE(agent.agent_external_id, 'UNKNOWN') AS officer_external_id,
-      FROM `{project_id}.{state_dataset}.state_supervision_period`
+      FROM `{project_id}.{state_dataset}.state_supervision_period` sp
       LEFT JOIN `{project_id}.{reference_views_dataset}.supervision_period_to_agent_association` agent
         USING (state_code, supervision_period_id)
       -- Only the following supervision types should be included in the PO report

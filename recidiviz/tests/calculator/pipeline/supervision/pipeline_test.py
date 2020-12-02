@@ -25,7 +25,6 @@ from unittest import mock
 
 import apache_beam as beam
 import pytest
-from apache_beam.pvalue import AsDict
 from apache_beam.testing.util import assert_that, equal_to, BeamAssertException
 from apache_beam.testing.test_pipeline import TestPipeline
 from apache_beam.options.pipeline_options import PipelineOptions
@@ -327,6 +326,7 @@ class TestSupervisionPipeline(unittest.TestCase):
         ssvr_to_agent_data = [{
             'state_code': 'US_XX',
             'agent_id': 1010,
+            'person_id': fake_person_id,
             'agent_external_id': 'OFFICER0009',
             'district_external_id': '10',
             'supervision_violation_response_id': fake_svr_id
@@ -335,6 +335,7 @@ class TestSupervisionPipeline(unittest.TestCase):
         supervision_period_to_agent_data = [{
             'state_code': 'US_XX',
             'agent_id': 1010,
+            'person_id': fake_person_id,
             'agent_external_id': 'OFFICER0009',
             'district_external_id': '10',
             'supervision_period_id': fake_supervision_period_id
@@ -665,6 +666,7 @@ class TestSupervisionPipeline(unittest.TestCase):
         ssvr_to_agent_data = [{
             'state_code': 'US_XX',
             'agent_id': 1010,
+            'person_id': fake_person_id,
             'agent_external_id': 'OFFICER0009',
             'district_external_id': '10',
             'supervision_violation_response_id': fake_svr_id
@@ -673,6 +675,7 @@ class TestSupervisionPipeline(unittest.TestCase):
         supervision_period_to_agent_data = [{
             'state_code': 'US_XX',
             'agent_id': 1010,
+            'person_id': fake_person_id,
             'agent_external_id': 'OFFICER0009',
             'district_external_id': '10',
             'supervision_period_id': supervision_period.supervision_period_id
@@ -951,6 +954,7 @@ class TestSupervisionPipeline(unittest.TestCase):
         ssvr_to_agent_data = [{
             'state_code': 'US_XX',
             'agent_id': 1010,
+            'person_id': fake_person_id,
             'agent_external_id': 'OFFICER0009',
             'district_external_id': '10',
             'supervision_violation_response_id': fake_svr_id
@@ -959,6 +963,7 @@ class TestSupervisionPipeline(unittest.TestCase):
         supervision_period_to_agent_data = [{
             'state_code': 'US_XX',
             'agent_id': 1010,
+            'person_id': fake_person_id,
             'agent_external_id': 'OFFICER0009',
             'district_external_id': '10',
             'supervision_period_id': supervision_period.supervision_period_id
@@ -1213,6 +1218,7 @@ class TestSupervisionPipeline(unittest.TestCase):
         ssvr_to_agent_data = [{
             'state_code': 'US_XX',
             'agent_id': 1010,
+            'person_id': fake_person_id,
             'agent_external_id': 'OFFICER0009',
             'district_external_id': '10',
             'supervision_violation_response_id': fake_svr_id
@@ -1221,6 +1227,7 @@ class TestSupervisionPipeline(unittest.TestCase):
         supervision_period_to_agent_data = [{
             'state_code': 'US_XX',
             'agent_id': 1010,
+            'person_id': fake_person_id,
             'agent_external_id': 'OFFICER0009',
             'district_external_id': '10',
             'supervision_period_id': supervision_period.supervision_period_id
@@ -1453,6 +1460,7 @@ class TestSupervisionPipeline(unittest.TestCase):
         ssvr_to_agent_data = [{
             'state_code': 'US_XX',
             'agent_id': 1010,
+            'person_id': supervision_violation_response.person_id,
             'agent_external_id': 'OFFICER0009',
             'district_external_id': '10',
             'supervision_violation_response_id': supervision_violation_response.supervision_violation_response_id
@@ -1461,6 +1469,7 @@ class TestSupervisionPipeline(unittest.TestCase):
         supervision_period_to_agent_data = [{
             'state_code': 'US_XX',
             'agent_id': 1010,
+            'person_id': supervision_period__1.person_id,
             'agent_external_id': 'OFFICER0009',
             'district_external_id': '10',
             'supervision_period_id': supervision_period__1.supervision_period_id
@@ -1540,7 +1549,9 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             violation_responses: List[entities.StateSupervisionViolationResponse] = None,
             assessments: List[entities.StateAssessment] = None,
             supervision_contacts: List[entities.StateSupervisionContact] = None,
-            supervision_period_judicial_district_association: List[Dict[Any, Any]] = None
+            supervision_period_judicial_district_association: List[Dict[Any, Any]] = None,
+            supervision_period_to_agent_association: List[Dict[Any, Any]] = None,
+            ssvr_to_agent_association: List[Dict[Any, Any]] = None
     ):
         return {
             'person': [person],
@@ -1553,7 +1564,9 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             'supervision_contacts': supervision_contacts if supervision_contacts else [],
             'supervision_period_judicial_district_association': (supervision_period_judicial_district_association
                                                                  if supervision_period_judicial_district_association
-                                                                 else [])
+                                                                 else []),
+            'supervision_period_to_agent_association': supervision_period_to_agent_association or [],
+            'ssvr_to_agent_association': ssvr_to_agent_association or []
         }
 
     def testClassifySupervisionTimeBuckets(self):
@@ -1620,6 +1633,22 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             'judicial_district_code': judicial_district_code
         }
 
+        ssvr_to_agent_map = {
+            'agent_id': 000,
+            'agent_external_id': 'XXX',
+            'district_external_id': 'X',
+            'supervision_violation_response_id': 999
+        }
+
+        supervision_period_to_agent_map = {
+            'agent_id': 1010,
+            'person_id': fake_person_id,
+            'agent_external_id': 'OFFICER0009',
+            'district_external_id': '10',
+            'supervision_period_id':
+                supervision_period.supervision_period_id
+        }
+
         person_entities = self.load_person_entities_dict(
             person=fake_person,
             supervision_periods=[supervision_period],
@@ -1627,7 +1656,9 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             incarceration_periods=[incarceration_period],
             incarceration_sentences=[incarceration_sentence],
             supervision_sentences=[supervision_sentence],
-            supervision_period_judicial_district_association=[supervision_period_to_judicial_district_row]
+            supervision_period_judicial_district_association=[supervision_period_to_judicial_district_row],
+            supervision_period_to_agent_association=[supervision_period_to_agent_map],
+            ssvr_to_agent_association=[ssvr_to_agent_map]
         )
 
         supervision_period_supervision_type = StateSupervisionPeriodSupervisionType.PROBATION
@@ -1682,55 +1713,11 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
 
         test_pipeline = TestPipeline()
 
-        ssvr_to_agent_map = {
-            'agent_id': 000,
-            'agent_external_id': 'XXX',
-            'district_external_id': 'X',
-            'supervision_violation_response_id': 999
-        }
-
-        ssvr_to_agent_associations = (
-            test_pipeline
-            | 'Create SSVR to Agent table' >>
-            beam.Create([ssvr_to_agent_map])
-        )
-
-        ssvr_agent_associations_as_kv = (
-            ssvr_to_agent_associations |
-            'Convert SSVR to Agent table to KV tuples' >>
-            beam.ParDo(pipeline.ConvertDictToKVTuple(),
-                       'supervision_violation_response_id')
-        )
-
-        supervision_period_to_agent_map = {
-            'agent_id': 1010,
-            'agent_external_id': 'OFFICER0009',
-            'district_external_id': '10',
-            'supervision_period_id':
-                supervision_period.supervision_period_id
-        }
-
-        supervision_period_to_agent_associations = (
-            test_pipeline
-            | 'Create SupervisionPeriod to Agent table' >>
-            beam.Create([supervision_period_to_agent_map])
-        )
-
-        supervision_periods_to_agent_associations_as_kv = (
-            supervision_period_to_agent_associations |
-            'Convert SupervisionPeriod to Agent table to KV tuples' >>
-            beam.ParDo(pipeline.ConvertDictToKVTuple(),
-                       'supervision_period_id')
-        )
-
         output = (test_pipeline
                   | beam.Create([(fake_person_id, person_entities)])
                   | 'Identify Supervision Time Buckets' >>
                   beam.ParDo(
-                      pipeline.ClassifySupervisionTimeBuckets(),
-                      AsDict(ssvr_agent_associations_as_kv),
-                      AsDict(supervision_periods_to_agent_associations_as_kv))
-                  )
+                      pipeline.ClassifySupervisionTimeBuckets()))
 
         assert_that(output, equal_to(correct_output))
 
@@ -1804,13 +1791,32 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             assessment_date=date(2015, 3, 10)
         )
 
+        ssvr_to_agent_map = {
+            'agent_id': 000,
+            'person_id': fake_person_id,
+            'agent_external_id': 'OFFICER0009',
+            'district_external_id': '10',
+            'supervision_violation_response_id': 999
+        }
+
+        supervision_period_to_agent_map = {
+            'agent_id': 1010,
+            'person_id': fake_person_id,
+            'agent_external_id': 'OFFICER0009',
+            'district_external_id': '10',
+            'supervision_period_id':
+                supervision_period.supervision_period_id
+        }
+
         person_entities = self.load_person_entities_dict(
             person=fake_person,
             assessments=[assessment],
             supervision_periods=[supervision_period],
             incarceration_periods=[incarceration_period],
             supervision_sentences=[supervision_sentence],
-            violation_responses=[violation_report]
+            violation_responses=[violation_report],
+            supervision_period_to_agent_association=[supervision_period_to_agent_map],
+            ssvr_to_agent_association=[ssvr_to_agent_map],
         )
 
         supervision_period_supervision_type = StateSupervisionPeriodSupervisionType.PROBATION
@@ -1882,55 +1888,11 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
 
         test_pipeline = TestPipeline()
 
-        ssvr_to_agent_map = {
-            'agent_id': 000,
-            'agent_external_id': 'OFFICER0009',
-            'district_external_id': '10',
-            'supervision_violation_response_id': 999
-        }
-
-        ssvr_to_agent_associations = (
-            test_pipeline
-            | 'Create SSVR to Agent table' >>
-            beam.Create([ssvr_to_agent_map])
-        )
-
-        ssvr_agent_associations_as_kv = (
-            ssvr_to_agent_associations |
-            'Convert SSVR to Agent table to KV tuples' >>
-            beam.ParDo(pipeline.ConvertDictToKVTuple(),
-                       'supervision_violation_response_id')
-        )
-
-        supervision_period_to_agent_map = {
-            'agent_id': 1010,
-            'agent_external_id': 'OFFICER0009',
-            'district_external_id': '10',
-            'supervision_period_id':
-                supervision_period.supervision_period_id
-        }
-
-        supervision_period_to_agent_associations = (
-            test_pipeline
-            | 'Create SupervisionPeriod to Agent table' >>
-            beam.Create([supervision_period_to_agent_map])
-        )
-
-        supervision_periods_to_agent_associations_as_kv = (
-            supervision_period_to_agent_associations |
-            'Convert SupervisionPeriod to Agent table to KV tuples' >>
-            beam.ParDo(pipeline.ConvertDictToKVTuple(),
-                       'supervision_period_id')
-        )
-
         output = (test_pipeline
                   | beam.Create([(fake_person_id, person_entities)])
                   | 'Identify Supervision Time Buckets' >>
                   beam.ParDo(
-                      pipeline.ClassifySupervisionTimeBuckets(),
-                      AsDict(ssvr_agent_associations_as_kv),
-                      AsDict(supervision_periods_to_agent_associations_as_kv))
-                  )
+                      pipeline.ClassifySupervisionTimeBuckets()))
 
         assert_that(output, equal_to(correct_output))
 
@@ -2015,13 +1977,32 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             assessment_date=date(2015, 3, 10)
         )
 
+        ssvr_to_agent_map = {
+            'agent_id': 000,
+            'person_id': fake_person_id,
+            'agent_external_id': 'OFFICER0009',
+            'district_external_id': '10',
+            'supervision_violation_response_id': 999
+        }
+
+        supervision_period_to_agent_map = {
+            'agent_id': 1010,
+            'person_id': fake_person_id,
+            'agent_external_id': 'OFFICER0009',
+            'district_external_id': '10',
+            'supervision_period_id':
+                supervision_period.supervision_period_id
+        }
+
         person_entities = self.load_person_entities_dict(
             person=fake_person,
             assessments=[assessment],
             supervision_periods=[supervision_period],
             incarceration_periods=[incarceration_period],
             supervision_sentences=[supervision_sentence],
-            violation_responses=[violation_report]
+            violation_responses=[violation_report],
+            supervision_period_to_agent_association=[supervision_period_to_agent_map],
+            ssvr_to_agent_association=[ssvr_to_agent_map],
         )
 
         supervision_period_supervision_type = StateSupervisionPeriodSupervisionType.PROBATION
@@ -2094,55 +2075,11 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
 
         test_pipeline = TestPipeline()
 
-        ssvr_to_agent_map = {
-            'agent_id': 000,
-            'agent_external_id': 'OFFICER0009',
-            'district_external_id': '10',
-            'supervision_violation_response_id': 999
-        }
-
-        ssvr_to_agent_associations = (
-            test_pipeline
-            | 'Create SSVR to Agent table' >>
-            beam.Create([ssvr_to_agent_map])
-        )
-
-        ssvr_agent_associations_as_kv = (
-            ssvr_to_agent_associations |
-            'Convert SSVR to Agent table to KV tuples' >>
-            beam.ParDo(pipeline.ConvertDictToKVTuple(),
-                       'supervision_violation_response_id')
-        )
-
-        supervision_period_to_agent_map = {
-            'agent_id': 1010,
-            'agent_external_id': 'OFFICER0009',
-            'district_external_id': '10',
-            'supervision_period_id':
-                supervision_period.supervision_period_id
-        }
-
-        supervision_period_to_agent_associations = (
-            test_pipeline
-            | 'Create SupervisionPeriod to Agent table' >>
-            beam.Create([supervision_period_to_agent_map])
-        )
-
-        supervision_periods_to_agent_associations_as_kv = (
-            supervision_period_to_agent_associations |
-            'Convert SupervisionPeriod to Agent table to KV tuples' >>
-            beam.ParDo(pipeline.ConvertDictToKVTuple(),
-                       'supervision_period_id')
-        )
-
         output = (test_pipeline
                   | beam.Create([(fake_person_id, person_entities)])
                   | 'Identify Supervision Time Buckets' >>
                   beam.ParDo(
-                      pipeline.ClassifySupervisionTimeBuckets(),
-                      AsDict(ssvr_agent_associations_as_kv),
-                      AsDict(supervision_periods_to_agent_associations_as_kv))
-                  )
+                      pipeline.ClassifySupervisionTimeBuckets()))
 
         assert_that(output, equal_to(correct_output))
 
@@ -2187,11 +2124,29 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             assessment_date=date(2015, 3, 13)
         )
 
+        ssvr_to_agent_map = {
+            'agent_id': 000,
+            'agent_external_id': 'XXX',
+            'district_external_id': 'X',
+            'supervision_violation_response_id': 999
+        }
+
+        supervision_period_to_agent_map = {
+            'agent_id': 1010,
+            'person_id': fake_person_id,
+            'agent_external_id': 'OFFICER0009',
+            'district_external_id': '10',
+            'supervision_period_id':
+                supervision_period.supervision_period_id
+        }
+
         person_entities = self.load_person_entities_dict(
             person=fake_person,
             assessments=[assessment],
             supervision_periods=[supervision_period],
             supervision_sentences=[supervision_sentence],
+            supervision_period_to_agent_association=[supervision_period_to_agent_map],
+            ssvr_to_agent_association=[ssvr_to_agent_map],
         )
 
         supervision_period_supervision_type = StateSupervisionPeriodSupervisionType.PROBATION
@@ -2226,55 +2181,11 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
 
         test_pipeline = TestPipeline()
 
-        ssvr_to_agent_map = {
-            'agent_id': 000,
-            'agent_external_id': 'XXX',
-            'district_external_id': 'X',
-            'supervision_violation_response_id': 999
-        }
-
-        ssvr_to_agent_associations = (
-            test_pipeline
-            | 'Create SSVR to Agent table' >>
-            beam.Create([ssvr_to_agent_map])
-        )
-
-        ssvr_agent_associations_as_kv = (
-            ssvr_to_agent_associations |
-            'Convert SSVR to Agent table to KV tuples' >>
-            beam.ParDo(pipeline.ConvertDictToKVTuple(),
-                       'supervision_violation_response_id')
-        )
-
-        supervision_period_to_agent_map = {
-            'agent_id': 1010,
-            'agent_external_id': 'OFFICER0009',
-            'district_external_id': '10',
-            'supervision_period_id':
-                supervision_period.supervision_period_id
-        }
-
-        supervision_period_to_agent_associations = (
-            test_pipeline
-            | 'Create SupervisionPeriod to Agent table' >>
-            beam.Create([supervision_period_to_agent_map])
-        )
-
-        supervision_periods_to_agent_associations_as_kv = (
-            supervision_period_to_agent_associations |
-            'Convert SupervisionPeriod to Agent table to KV tuples' >>
-            beam.ParDo(pipeline.ConvertDictToKVTuple(),
-                       'supervision_period_id')
-        )
-
         output = (test_pipeline
                   | beam.Create([(fake_person_id, person_entities)])
                   | 'Identify Supervision Time Buckets' >>
                   beam.ParDo(
-                      pipeline.ClassifySupervisionTimeBuckets(),
-                      AsDict(ssvr_agent_associations_as_kv),
-                      AsDict(supervision_periods_to_agent_associations_as_kv))
-                  )
+                      pipeline.ClassifySupervisionTimeBuckets()))
 
         assert_that(output, equal_to(correct_output))
 
@@ -2312,10 +2223,28 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 supervision_periods=[supervision_period]
             )
 
+        ssvr_to_agent_map = {
+            'agent_id': 000,
+            'agent_external_id': 'XXX',
+            'district_external_id': 'X',
+            'supervision_violation_response_id': 999
+        }
+
+        supervision_period_to_agent_map = {
+            'agent_id': 1010,
+            'person_id': fake_person_id,
+            'agent_external_id': 'OFFICER0009',
+            'district_external_id': '10',
+            'supervision_period_id':
+                supervision_period.supervision_period_id
+        }
+
         person_entities = self.load_person_entities_dict(
             person=fake_person,
             supervision_periods=[supervision_period],
             supervision_sentences=[supervision_sentence],
+            supervision_period_to_agent_association=[supervision_period_to_agent_map],
+            ssvr_to_agent_association=[ssvr_to_agent_map],
         )
 
         supervision_period_supervision_type = StateSupervisionPeriodSupervisionType.PROBATION
@@ -2347,55 +2276,11 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
 
         test_pipeline = TestPipeline()
 
-        ssvr_to_agent_map = {
-            'agent_id': 000,
-            'agent_external_id': 'XXX',
-            'district_external_id': 'X',
-            'supervision_violation_response_id': 999
-        }
-
-        ssvr_to_agent_associations = (
-            test_pipeline
-            | 'Create SSVR to Agent table' >>
-            beam.Create([ssvr_to_agent_map])
-        )
-
-        ssvr_agent_associations_as_kv = (
-            ssvr_to_agent_associations |
-            'Convert SSVR to Agent table to KV tuples' >>
-            beam.ParDo(pipeline.ConvertDictToKVTuple(),
-                       'supervision_violation_response_id')
-        )
-
-        supervision_period_to_agent_map = {
-            'agent_id': 1010,
-            'agent_external_id': 'OFFICER0009',
-            'district_external_id': '10',
-            'supervision_period_id':
-                supervision_period.supervision_period_id
-        }
-
-        supervision_period_to_agent_associations = (
-            test_pipeline
-            | 'Create SupervisionPeriod to Agent table' >>
-            beam.Create([supervision_period_to_agent_map])
-        )
-
-        supervision_periods_to_agent_associations_as_kv = (
-            supervision_period_to_agent_associations |
-            'Convert SupervisionPeriod to Agent table to KV tuples' >>
-            beam.ParDo(pipeline.ConvertDictToKVTuple(),
-                       'supervision_period_id')
-        )
-
         output = (test_pipeline
                   | beam.Create([(fake_person_id, person_entities)])
                   | 'Identify Supervision Time Buckets' >>
                   beam.ParDo(
-                      pipeline.ClassifySupervisionTimeBuckets(),
-                      AsDict(ssvr_agent_associations_as_kv),
-                      AsDict(supervision_periods_to_agent_associations_as_kv))
-                  )
+                      pipeline.ClassifySupervisionTimeBuckets()))
 
         assert_that(output, equal_to(correct_output))
 
@@ -2430,16 +2315,6 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             assessment_date=date(2015, 3, 10)
         )
 
-        person_entities = self.load_person_entities_dict(
-            person=fake_person,
-            assessments=[assessment],
-            incarceration_periods=[incarceration_period],
-        )
-
-        correct_output = []
-
-        test_pipeline = TestPipeline()
-
         ssvr_to_agent_map = {
             'agent_id': 000,
             'agent_external_id': 'XXX',
@@ -2447,47 +2322,31 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             'supervision_violation_response_id': 999
         }
 
-        ssvr_to_agent_associations = (
-            test_pipeline
-            | 'Create SSVR to Agent table' >>
-            beam.Create([ssvr_to_agent_map])
-        )
-
-        ssvr_agent_associations_as_kv = (
-            ssvr_to_agent_associations |
-            'Convert SSVR to Agent table to KV tuples' >>
-            beam.ParDo(pipeline.ConvertDictToKVTuple(),
-                       'supervision_violation_response_id')
-        )
-
         supervision_period_to_agent_map = {
             'agent_id': 1010,
+            'person_id': fake_person_id,
             'agent_external_id': 'OFFICER0009',
             'district_external_id': '10',
             'supervision_period_id': 9999
         }
 
-        supervision_period_to_agent_associations = (
-            test_pipeline
-            | 'Create SupervisionPeriod to Agent table' >>
-            beam.Create([supervision_period_to_agent_map])
+        person_entities = self.load_person_entities_dict(
+            person=fake_person,
+            assessments=[assessment],
+            incarceration_periods=[incarceration_period],
+            supervision_period_to_agent_association=[supervision_period_to_agent_map],
+            ssvr_to_agent_association=[ssvr_to_agent_map],
         )
 
-        supervision_periods_to_agent_associations_as_kv = (
-            supervision_period_to_agent_associations |
-            'Convert SupervisionPeriod to Agent table to KV tuples' >>
-            beam.ParDo(pipeline.ConvertDictToKVTuple(),
-                       'supervision_period_id')
-        )
+        correct_output = []
+
+        test_pipeline = TestPipeline()
 
         output = (test_pipeline
                   | beam.Create([(fake_person_id, person_entities)])
                   | 'Identify Supervision Time Buckets' >>
                   beam.ParDo(
-                      pipeline.ClassifySupervisionTimeBuckets(),
-                      AsDict(ssvr_agent_associations_as_kv),
-                      AsDict(supervision_periods_to_agent_associations_as_kv))
-                  )
+                      pipeline.ClassifySupervisionTimeBuckets()))
 
         assert_that(output, equal_to(correct_output))
 
