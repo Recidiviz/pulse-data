@@ -71,8 +71,6 @@ run_cmd `git tag -m "Version [$RELEASE_VERSION_TAG] release - $(date +'%Y-%m-%d 
 echo "Pushing tags to remote"
 run_cmd git push origin --tags
 
-deploy_terraform_infrastructure "recidiviz-staging" ${RELEASE_VERSION_TAG} || exit_on_fail
-
 # Create and push a new releases branch
 if [[ ${RELEASE_CANDIDATE_BASE_BRANCH} == "master" ]]; then
     NEW_VERSION_PARTS=($(parse_version ${RELEASE_VERSION_TAG}))
