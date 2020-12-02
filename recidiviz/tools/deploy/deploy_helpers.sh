@@ -165,7 +165,7 @@ function pre_deploy_configure_infrastructure {
         echo "Skipping pipeline template deploy for debug build."
     fi
 
-    if [[ -z ${DEBUG_BUILD_NAME} ]] then
+    if [[ -z ${DEBUG_BUILD_NAME} ]]; then
         deploy_terraform_infrastructure ${PROJECT} $(git rev-parse HEAD) || exit_on_fail
     else
         echo "Skipping terraform changes for debug build."
