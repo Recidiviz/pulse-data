@@ -69,8 +69,6 @@ run_cmd gcloud -q app deploy prod.yaml --project=recidiviz-123 --version=${GAE_V
 echo "Deploy succeeded - triggering post-deploy jobs."
 post_deploy_triggers 'recidiviz-123'
 
-deploy_terraform_infrastructure 'recidiviz-123' ${GIT_VERSION_TAG} || exit_on_fail
-
 script_prompt "Have you completed all Post-Deploy tasks listed at http://go/deploy-checklist?"
 
 echo "Production deploy complete."

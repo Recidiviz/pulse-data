@@ -164,6 +164,12 @@ function pre_deploy_configure_infrastructure {
     else
         echo "Skipping pipeline template deploy for debug build."
     fi
+
+    if [[ -z ${DEBUG_BUILD_NAME} ]] then
+        deploy_terraform_infrastructure ${PROJECT} $(git rev-parse HEAD) || exit_on_fail
+    else
+        echo "Skipping terraform changes for debug build."
+    fi
 }
 
 function check_docker_installed {
@@ -252,17 +258,15 @@ function verify_can_deploy {
 
 function deploy_terraform_infrastructure {
     PROJECT_ID=$1
-    RELEASE_TAG=$2
+    GIT_HASH=$2
 
     echo "Starting terraform deployment..."
     rm -rf .terraform/
-
     run_cmd terraform init -backend-config "bucket=${PROJECT_ID}-tf-state" ${BASH_SOURCE_DIR}/terraform
 
     while true
     do
-        run_cmd terraform plan -var="project_id=${PROJECT_ID}" -var="release_tag=${RELEASE_TAG}" -out=tfplan ${BASH_SOURCE_DIR}/terraform
-
+        run_cmd terraform plan -var="project_id=${PROJECT_ID}" -var="git_hash=${GIT_HASH}" -out=tfplan ${BASH_SOURCE_DIR}/terraform
         script_prompt "Does the generated terraform plan look correct? [You can inspect it with \`terraform show tfplan\`]"
 
         echo "Applying the terraform plan..."
