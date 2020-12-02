@@ -24,6 +24,6 @@ variable "region" {
   default = "us-central1"
 }
 
-variable "release_tag" {
+variable "git_hash" {
   type = string
 }
