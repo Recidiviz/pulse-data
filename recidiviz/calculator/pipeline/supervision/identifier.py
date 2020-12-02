@@ -110,8 +110,8 @@ def find_supervision_time_buckets(
         assessments: List[StateAssessment],
         violation_responses: List[StateSupervisionViolationResponse],
         supervision_contacts: List[StateSupervisionContact],
-        ssvr_agent_associations: Dict[int, Dict[Any, Any]],
-        supervision_period_to_agent_associations: Dict[int, Dict[Any, Any]],
+        ssvr_to_agent_association: List[Dict[str, Any]],
+        supervision_period_to_agent_association: List[Dict[str, Any]],
         supervision_period_judicial_district_association: List[Dict[str, Any]],
 ) -> List[SupervisionTimeBucket]:
     """Finds buckets of time that a person was on supervision and determines if they resulted in revocation return.
@@ -140,10 +140,10 @@ def find_supervision_time_buckets(
         - assessments: list of StateAssessments for a person
         - violations: list of StateSupervisionViolations for a person
         - violation_responses: list of StateSupervisionViolationResponses for a person
-        - ssvr_agent_associations: dictionary associating StateSupervisionViolationResponse ids to information about the
-            corresponding StateAgent on the response
-        - supervision_period_to_agent_associations: dictionary associating StateSupervisionPeriod ids to information
-            about the corresponding StateAgent
+        - ssvr_agent_associations: A list of dictionaries associating StateSupervisionViolationResponse ids to
+            information about the corresponding StateAgent on the response
+        - supervision_period_to_agent_associations: A list of dictionaries associating StateSupervisionPeriod ids to
+            information about the corresponding StateAgent
         - supervision_period_judicial_district_association: a list of dictionaries with information connecting
             StateSupervisionPeriod ids to the judicial district responsible for the period of supervision
 
@@ -160,6 +160,12 @@ def find_supervision_time_buckets(
 
     supervision_period_to_judicial_district_associations = list_of_dicts_to_dict_with_keys(
         supervision_period_judicial_district_association, StateSupervisionPeriod.get_class_id_name())
+
+    supervision_period_to_agent_associations = list_of_dicts_to_dict_with_keys(
+        supervision_period_to_agent_association, StateSupervisionPeriod.get_class_id_name())
+
+    ssvr_to_agent_associations = list_of_dicts_to_dict_with_keys(
+        ssvr_to_agent_association, StateSupervisionViolationResponse.get_class_id_name())
 
     supervision_time_buckets: List[SupervisionTimeBucket] = []
 
@@ -240,7 +246,7 @@ def find_supervision_time_buckets(
         supervision_periods,
         assessments,
         violation_responses,
-        ssvr_agent_associations,
+        ssvr_to_agent_associations,
         supervision_period_to_agent_associations,
         supervision_period_to_judicial_district_associations,
         incarceration_period_index)

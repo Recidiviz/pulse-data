@@ -24,7 +24,7 @@ from typing import Dict, Any, List, Tuple, Set, Optional, cast
 
 import apache_beam as beam
 from apache_beam.options.pipeline_options import SetupOptions, PipelineOptions
-from apache_beam.pvalue import AsDict, AsList
+from apache_beam.pvalue import AsList
 from apache_beam.typehints import with_input_types, with_output_types
 
 from recidiviz.calculator.calculation_data_storage_config import DATAFLOW_METRICS_TO_TABLES
@@ -119,23 +119,17 @@ class GetSupervisionMetrics(beam.PTransform):
         return supervision_metrics
 
 
-@with_input_types(beam.typehints.Tuple[int, Dict[str, Any]],
-                  beam.typehints.Optional[Dict[Any, Tuple[Any, Dict[str, Any]]]],
-                  beam.typehints.Optional[Dict[Any, Tuple[Any, Dict[str, Any]]]])
+@with_input_types(beam.typehints.Tuple[int, Dict[str, Any]])
 @with_output_types(beam.typehints.Tuple[int, Tuple[entities.StatePerson, List[SupervisionTimeBucket]]])
 class ClassifySupervisionTimeBuckets(beam.DoFn):
     """Classifies time on supervision according to multiple types of measurement."""
 
     #pylint: disable=arguments-differ
-    def process(self, element, ssvr_agent_associations, supervision_period_to_agent_associations):
+    def process(self, element):
         """Identifies various events related to supervision relevant to calculations."""
         _, person_entities = element
 
         person, kwargs = person_and_kwargs_for_identifier(person_entities)
-
-        # Add these arguments to the keyword args for the identifier
-        kwargs['ssvr_agent_associations'] = ssvr_agent_associations
-        kwargs['supervision_period_to_agent_associations'] = supervision_period_to_agent_associations
 
         # Find the SupervisionTimeBuckets from the supervision and incarceration
         # periods
@@ -426,9 +420,9 @@ def run(apache_beam_pipeline_options: PipelineOptions,
         ssvr_agent_associations_as_kv = (p | 'Load ssvr_agent_associations_as_kv' >> ImportTableAsKVTuples(
             dataset_id=reference_dataset,
             table_id=SSVR_TO_AGENT_ASSOCIATION_VIEW_NAME,
-            table_key='supervision_violation_response_id',
+            table_key='person_id',
             state_code_filter=state_code,
-            person_id_filter_set=None
+            person_id_filter_set=person_id_filter_set
         ))
 
         supervision_period_to_agent_associations_as_kv = (
@@ -436,9 +430,9 @@ def run(apache_beam_pipeline_options: PipelineOptions,
                 ImportTableAsKVTuples(
                     dataset_id=reference_dataset,
                     table_id=SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION_VIEW_NAME,
-                    table_key='supervision_period_id',
+                    table_key='person_id',
                     state_code_filter=state_code,
-                    person_id_filter_set=None
+                    person_id_filter_set=person_id_filter_set
                 ))
 
         # Bring in the judicial districts associated with supervision_periods
@@ -541,7 +535,9 @@ def run(apache_beam_pipeline_options: PipelineOptions,
              'incarceration_sentences': sentences_converted.incarceration_sentences,
              'violation_responses': violation_responses_with_hydrated_violations,
              'supervision_contacts': supervision_contacts,
-             'supervision_period_judicial_district_association': sp_to_judicial_district_kv
+             'supervision_period_judicial_district_association': sp_to_judicial_district_kv,
+             'supervision_period_to_agent_association': supervision_period_to_agent_associations_as_kv,
+             'ssvr_to_agent_association': ssvr_agent_associations_as_kv
              }
             | 'Group StatePerson to all entities' >>
             beam.CoGroupByKey()
@@ -551,9 +547,7 @@ def run(apache_beam_pipeline_options: PipelineOptions,
         person_time_buckets = (
             person_entities
             | 'Get SupervisionTimeBuckets' >>
-            beam.ParDo(ClassifySupervisionTimeBuckets(),
-                       AsDict(ssvr_agent_associations_as_kv),
-                       AsDict(supervision_period_to_agent_associations_as_kv)))
+            beam.ParDo(ClassifySupervisionTimeBuckets()))
 
         person_metadata = (persons
                            | "Build the person_metadata dictionary" >>

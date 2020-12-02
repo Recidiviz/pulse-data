@@ -24,7 +24,7 @@ from typing import Dict, Any, List, Tuple, Set, Optional, cast
 
 import apache_beam as beam
 from apache_beam.options.pipeline_options import SetupOptions, PipelineOptions
-from apache_beam.pvalue import AsDict, AsList
+from apache_beam.pvalue import AsList
 from apache_beam.typehints import with_input_types, with_output_types
 
 from recidiviz.calculator.calculation_data_storage_config import DATAFLOW_METRICS_TO_TABLES
@@ -108,27 +108,20 @@ class GetProgramMetrics(beam.PTransform):
         return program_metrics
 
 
-@with_input_types(beam.typehints.Tuple[int, Dict[str, Any]],
-                  beam.typehints.Optional[Dict[Any,
-                                               Tuple[Any, Dict[str, Any]]]]
-                  )
+@with_input_types(beam.typehints.Tuple[int, Dict[str, Any]])
 @with_output_types(beam.typehints.Tuple[int, Tuple[entities.StatePerson, List[ProgramEvent]]])
 class ClassifyProgramAssignments(beam.DoFn):
     """Classifies program assignments as program events, such as referrals to a program."""
 
     # pylint: disable=arguments-differ
-    def process(self, element, supervision_period_to_agent_associations):
+    def process(self, element):
         """Identifies instances of referrals to a program."""
         _, person_entities = element
 
         person, kwargs = person_and_kwargs_for_identifier(person_entities)
 
-        # Add this arguments to the keyword args for the identifier
-        kwargs['supervision_period_to_agent_associations'] = supervision_period_to_agent_associations
-
         # Find the ProgramEvents from the StateProgramAssignments
-        program_events = \
-            identifier.find_program_events(**kwargs)
+        program_events = identifier.find_program_events(**kwargs)
 
         if not program_events:
             logging.info(
@@ -349,9 +342,9 @@ def run(apache_beam_pipeline_options: PipelineOptions,
                 ImportTableAsKVTuples(
                     dataset_id=reference_dataset,
                     table_id=SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION_VIEW_NAME,
-                    table_key='supervision_period_id',
+                    table_key='person_id',
                     state_code_filter=state_code,
-                    person_id_filter_set=None
+                    person_id_filter_set=person_id_filter_set
                 ))
 
         state_race_ethnicity_population_counts = (
@@ -368,7 +361,8 @@ def run(apache_beam_pipeline_options: PipelineOptions,
             {'person': persons,
              'program_assignments': program_assignments,
              'assessments': assessments,
-             'supervision_periods': supervision_periods
+             'supervision_periods': supervision_periods,
+             'supervision_period_to_agent_association': supervision_period_to_agent_associations_as_kv,
              }
             | 'Group StatePerson to StateProgramAssignments and' >> beam.CoGroupByKey()
         )
@@ -376,8 +370,7 @@ def run(apache_beam_pipeline_options: PipelineOptions,
         # Identify ProgramEvents from the StatePerson's StateProgramAssignments
         person_program_events = (
             persons_entities
-            | beam.ParDo(ClassifyProgramAssignments(),
-                         AsDict(supervision_period_to_agent_associations_as_kv))
+            | beam.ParDo(ClassifyProgramAssignments())
         )
 
         person_metadata = (persons

@@ -42,7 +42,7 @@ SUPERVISION_EARLY_DISCHARGE_REQUESTS_BY_OFFICER_BY_MONTH_QUERY_TEMPLATE = \
         EXTRACT(MONTH FROM request_date) AS month,
         -- TODO(#4491): Consider using `external_id` instead of `agent_external_id`
         COALESCE(agent.agent_external_id, 'UNKNOWN') AS officer_external_id,
-        COUNT(DISTINCT person_id) AS earned_discharges
+        COUNT(DISTINCT period.person_id) AS earned_discharges
       FROM `{project_id}.{state_dataset}.state_early_discharge` discharge
       JOIN `{project_id}.{state_dataset}.state_supervision_period` period
         USING (state_code, person_id)

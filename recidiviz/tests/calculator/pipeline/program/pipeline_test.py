@@ -23,7 +23,6 @@ from unittest import mock
 
 import apache_beam as beam
 import pytest
-from apache_beam.pvalue import AsDict
 from apache_beam.testing.util import assert_that, equal_to, BeamAssertException
 from apache_beam.testing.test_pipeline import TestPipeline
 from apache_beam.options.pipeline_options import PipelineOptions
@@ -38,7 +37,6 @@ from recidiviz.calculator.pipeline.program.metrics import ProgramMetric, \
     ProgramMetricType
 from recidiviz.calculator.pipeline.program.program_event import \
     ProgramReferralEvent, ProgramParticipationEvent
-from recidiviz.calculator.pipeline.utils.beam_utils import ConvertDictToKVTuple
 from recidiviz.calculator.pipeline.utils.metric_utils import MetricMethodologyType
 from recidiviz.calculator.pipeline.utils.person_utils import PersonMetadata, ExtractPersonEventsMetadata
 from recidiviz.common.constants.state.state_assessment import \
@@ -163,6 +161,7 @@ class TestProgramPipeline(unittest.TestCase):
 
         supervision_period_to_agent_data = [{
             'agent_id': 1010,
+            'person_id': fake_person_id,
             'state_code': 'US_XX',
             'agent_external_id': 'OFFICER0009',
             'district_external_id': '10',
@@ -341,6 +340,7 @@ class TestProgramPipeline(unittest.TestCase):
 
         supervision_period_to_agent_data = [{
             'agent_id': 1010,
+            'person_id': fake_person_id,
             'state_code': 'US_XX',
             'agent_external_id': 'OFFICER0009',
             'district_external_id': '10',
@@ -427,10 +427,20 @@ class TestClassifyProgramAssignments(unittest.TestCase):
                 supervision_type=StateSupervisionType.PAROLE
             )
 
+        supervision_period_to_agent_map = {
+            'agent_id': 1010,
+            'person_id': fake_person_id,
+            'agent_external_id': 'OFFICER0009',
+            'district_external_id': '10',
+            'supervision_period_id':
+                supervision_period.supervision_period_id
+        }
+
         person_periods = {'person': [fake_person],
                           'program_assignments': [program_assignment],
                           'assessments': [assessment],
-                          'supervision_periods': [supervision_period]
+                          'supervision_periods': [supervision_period],
+                          'supervision_period_to_agent_association': [supervision_period_to_agent_map]
                           }
 
         program_events = [ProgramReferralEvent(
@@ -456,35 +466,12 @@ class TestClassifyProgramAssignments(unittest.TestCase):
 
         test_pipeline = TestPipeline()
 
-        supervision_period_to_agent_map = {
-            'agent_id': 1010,
-            'agent_external_id': 'OFFICER0009',
-            'district_external_id': '10',
-            'supervision_period_id':
-                supervision_period.supervision_period_id
-        }
-
-        supervision_period_to_agent_associations = (
-            test_pipeline
-            | 'Create SupervisionPeriod to Agent table' >>
-            beam.Create([supervision_period_to_agent_map])
-        )
-
-        supervision_periods_to_agent_associations_as_kv = (
-            supervision_period_to_agent_associations |
-            'Convert SupervisionPeriod to Agent table to KV tuples' >>
-            beam.ParDo(ConvertDictToKVTuple(),
-                       'supervision_period_id')
-        )
-
         output = (test_pipeline
                   | beam.Create([(fake_person_id,
                                   person_periods)])
                   | 'Identify Program Events' >>
                   beam.ParDo(
-                      pipeline.ClassifyProgramAssignments(),
-                      AsDict(supervision_periods_to_agent_associations_as_kv))
-                  )
+                      pipeline.ClassifyProgramAssignments()))
 
         assert_that(output, equal_to(correct_output))
 
@@ -519,45 +506,32 @@ class TestClassifyProgramAssignments(unittest.TestCase):
                 supervision_type=StateSupervisionType.PAROLE
             )
 
-        person_periods = {'person': [fake_person],
-                          'program_assignments': [],
-                          'assessments': [assessment],
-                          'supervision_periods': [supervision_period]
-                          }
-
-        correct_output = []
-
-        test_pipeline = TestPipeline()
-
         supervision_period_to_agent_map = {
             'agent_id': 1010,
+            'person_id': fake_person_id,
             'agent_external_id': 'OFFICER0009',
             'district_external_id': '10',
             'supervision_period_id':
                 supervision_period.supervision_period_id
         }
 
-        supervision_period_to_agent_associations = (
-            test_pipeline
-            | 'Create SupervisionPeriod to Agent table' >>
-            beam.Create([supervision_period_to_agent_map])
-        )
+        person_periods = {'person': [fake_person],
+                          'program_assignments': [],
+                          'assessments': [assessment],
+                          'supervision_periods': [supervision_period],
+                          'supervision_period_to_agent_association': [supervision_period_to_agent_map]
+                          }
 
-        supervision_periods_to_agent_associations_as_kv = (
-            supervision_period_to_agent_associations |
-            'Convert SupervisionPeriod to Agent table to KV tuples' >>
-            beam.ParDo(ConvertDictToKVTuple(),
-                       'supervision_period_id')
-        )
+        correct_output = []
+
+        test_pipeline = TestPipeline()
 
         output = (test_pipeline
                   | beam.Create([(fake_person_id,
                                   person_periods)])
                   | 'Identify Program Events' >>
                   beam.ParDo(
-                      pipeline.ClassifyProgramAssignments(),
-                      AsDict(supervision_periods_to_agent_associations_as_kv))
-                  )
+                      pipeline.ClassifyProgramAssignments()))
 
         assert_that(output, equal_to(correct_output))
 
@@ -591,10 +565,20 @@ class TestClassifyProgramAssignments(unittest.TestCase):
                 supervision_type=StateSupervisionType.PAROLE
             )
 
+        supervision_period_to_agent_map = {
+            'agent_id': 1010,
+            'person_id': fake_person_id,
+            'agent_external_id': 'OFFICER0009',
+            'district_external_id': '10',
+            'supervision_period_id':
+                supervision_period.supervision_period_id
+        }
+
         person_periods = {'person': [fake_person],
                           'program_assignments': [program_assignment],
                           'assessments': [],
-                          'supervision_periods': [supervision_period]
+                          'supervision_periods': [supervision_period],
+                          'supervision_period_to_agent_association': [supervision_period_to_agent_map]
                           }
 
         program_event = ProgramReferralEvent(
@@ -610,35 +594,12 @@ class TestClassifyProgramAssignments(unittest.TestCase):
 
         test_pipeline = TestPipeline()
 
-        supervision_period_to_agent_map = {
-            'agent_id': 1010,
-            'agent_external_id': 'OFFICER0009',
-            'district_external_id': '10',
-            'supervision_period_id':
-                supervision_period.supervision_period_id
-        }
-
-        supervision_period_to_agent_associations = (
-            test_pipeline
-            | 'Create SupervisionPeriod to Agent table' >>
-            beam.Create([supervision_period_to_agent_map])
-        )
-
-        supervision_periods_to_agent_associations_as_kv = (
-            supervision_period_to_agent_associations |
-            'Convert SupervisionPeriod to Agent table to KV tuples' >>
-            beam.ParDo(ConvertDictToKVTuple(),
-                       'supervision_period_id')
-        )
-
         output = (test_pipeline
                   | beam.Create([(fake_person_id,
                                   person_periods)])
                   | 'Identify Program Events' >>
                   beam.ParDo(
-                      pipeline.ClassifyProgramAssignments(),
-                      AsDict(supervision_periods_to_agent_associations_as_kv))
-                  )
+                      pipeline.ClassifyProgramAssignments()))
 
         assert_that(output, equal_to(correct_output))
 
@@ -667,10 +628,15 @@ class TestClassifyProgramAssignments(unittest.TestCase):
             assessment_date=date(2009, 7, 10)
         )
 
+        supervision_period_to_agent_map = {
+            'supervision_period_id': 'fake_map'
+        }
+
         person_periods = {'person': [fake_person],
                           'program_assignments': [program_assignment],
                           'assessments': [assessment],
-                          'supervision_periods': []
+                          'supervision_periods': [],
+                          'supervision_period_to_agent_association': [supervision_period_to_agent_map]
                           }
 
         program_event = ProgramReferralEvent(
@@ -685,31 +651,12 @@ class TestClassifyProgramAssignments(unittest.TestCase):
 
         test_pipeline = TestPipeline()
 
-        supervision_period_to_agent_map = {
-            'supervision_period_id': 'fake_map'
-        }
-
-        supervision_period_to_agent_associations = (
-            test_pipeline
-            | 'Create SupervisionPeriod to Agent table' >>
-            beam.Create([supervision_period_to_agent_map])
-        )
-
-        supervision_periods_to_agent_associations_as_kv = (
-            supervision_period_to_agent_associations |
-            'Convert SupervisionPeriod to Agent table to KV tuples' >>
-            beam.ParDo(ConvertDictToKVTuple(),
-                       'supervision_period_id')
-        )
-
         output = (test_pipeline
                   | beam.Create([(fake_person_id,
                                   person_periods)])
                   | 'Identify Program Events' >>
                   beam.ParDo(
-                      pipeline.ClassifyProgramAssignments(),
-                      AsDict(supervision_periods_to_agent_associations_as_kv))
-                  )
+                      pipeline.ClassifyProgramAssignments()))
 
         assert_that(output, equal_to(correct_output))
 

@@ -33,6 +33,7 @@ SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION_QUERY_TEMPLATE = \
     /*{description}*/
     SELECT 
       sup.state_code, 
+      sup.person_id,
       sup.supervision_period_id, 
       agents.agent_id, 
       CAST(agents.agent_external_id AS STRING) as agent_external_id, 
