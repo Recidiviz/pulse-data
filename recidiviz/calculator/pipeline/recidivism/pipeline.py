@@ -47,7 +47,7 @@ from recidiviz.calculator.pipeline.utils.beam_utils import RecidivizMetricWritab
 from recidiviz.calculator.pipeline.utils.entity_hydration_utils import \
     SetViolationResponseOnIncarcerationPeriod, SetViolationOnViolationsResponse
 from recidiviz.calculator.pipeline.utils.execution_utils import get_job_id, person_and_kwargs_for_identifier
-from recidiviz.calculator.pipeline.utils.extractor_utils import BuildRootEntity
+from recidiviz.calculator.pipeline.utils.extractor_utils import BuildRootEntity, WriteAppendToBigQuery
 from recidiviz.calculator.pipeline.utils.person_utils import PersonMetadata, BuildPersonMetadata
 from recidiviz.calculator.pipeline.utils.pipeline_args_utils import add_shared_pipeline_arguments
 from recidiviz.calculator.query.state.views.reference.persons_to_recent_county_of_residence import \
@@ -318,7 +318,7 @@ def run(apache_beam_pipeline_options: PipelineOptions,
         static_reference_input: str,
         output: str,
         metric_types: List[str],
-        state_code: Optional[str],
+        state_code: str,
         person_filter_ids: Optional[List[int]]):
     """Runs the recidivism calculation pipeline."""
 
@@ -335,6 +335,12 @@ def run(apache_beam_pipeline_options: PipelineOptions,
     # Get pipeline job details
     all_pipeline_options = apache_beam_pipeline_options.get_all_options()
     project_id = all_pipeline_options['project']
+
+    if project_id is None:
+        raise ValueError(f'No project set in pipeline options: {all_pipeline_options}')
+
+    if state_code is None:
+        raise ValueError('No state_code set for pipeline')
 
     input_dataset = project_id + '.' + data_input
     reference_dataset = project_id + '.' + reference_view_input
@@ -499,25 +505,19 @@ def run(apache_beam_pipeline_options: PipelineOptions,
                             ))
 
         # Write the recidivism metrics to the output tables in BigQuery
-        rates_table_id = DATAFLOW_METRICS_TO_TABLES.get(ReincarcerationRecidivismRateMetric)
-        counts_table_id = DATAFLOW_METRICS_TO_TABLES.get(ReincarcerationRecidivismCountMetric)
+        rates_table_id = DATAFLOW_METRICS_TO_TABLES[ReincarcerationRecidivismRateMetric]
+        counts_table_id = DATAFLOW_METRICS_TO_TABLES[ReincarcerationRecidivismCountMetric]
 
         _ = (writable_metrics.REINCARCERATION_RATE
              | f"Write rate metrics to BQ table: {rates_table_id}" >>
-             beam.io.WriteToBigQuery(
-                 table=rates_table_id,
-                 dataset=output,
-                 create_disposition=beam.io.BigQueryDisposition.CREATE_NEVER,
-                 write_disposition=beam.io.BigQueryDisposition.WRITE_APPEND,
-                 method=beam.io.WriteToBigQuery.Method.FILE_LOADS
+             WriteAppendToBigQuery(
+                 output_table=rates_table_id,
+                 output_dataset=output,
              ))
 
         _ = (writable_metrics.REINCARCERATION_COUNT
              | f"Write count metrics to BQ table: {counts_table_id}" >>
-             beam.io.WriteToBigQuery(
-                 table=counts_table_id,
-                 dataset=output,
-                 create_disposition=beam.io.BigQueryDisposition.CREATE_NEVER,
-                 write_disposition=beam.io.BigQueryDisposition.WRITE_APPEND,
-                 method=beam.io.WriteToBigQuery.Method.FILE_LOADS
+             WriteAppendToBigQuery(
+                 output_table=counts_table_id,
+                 output_dataset=output,
              ))

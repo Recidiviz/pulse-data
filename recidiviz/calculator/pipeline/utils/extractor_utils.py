@@ -46,8 +46,8 @@ class BuildRootEntity(beam.PTransform):
                  root_entity_class: Type[state_entities.Entity],
                  unifying_id_field: str,
                  build_related_entities: bool,
-                 unifying_id_field_filter_set: Optional[Set[int]] = None,
-                 state_code: Optional[str] = None):
+                 state_code: str,
+                 unifying_id_field_filter_set: Optional[Set[int]] = None):
         """Initializes the PTransform with the required arguments.
 
         Arguments:
@@ -60,6 +60,7 @@ class BuildRootEntity(beam.PTransform):
                 field in its database table. This value is usually 'person_id'.
             build_related_entities: When True, also builds and attaches all
                 forward-edge children of this entity.
+            state_code: The state code to filter all results by
             unifying_id_field_filter_set: When non-empty, we will only build entity
                 objects that can be connected to root entities with one of these
                 unifying ids.
@@ -187,6 +188,19 @@ class ReadFromBigQuery(beam.PTransform):
                 | 'Process table rows as elements' >>
                 beam.ParDo(LiftToPCollectionElement())
                 )
+
+
+class WriteAppendToBigQuery(beam.io.WriteToBigQuery):
+    """Appends result rows to the given output BigQuery table."""
+
+    def __init__(self, output_dataset: str, output_table: str):
+        super().__init__(
+            table=output_table,
+            dataset=output_dataset,
+            create_disposition=beam.io.BigQueryDisposition.CREATE_NEVER,
+            write_disposition=beam.io.BigQueryDisposition.WRITE_APPEND,
+            method=beam.io.WriteToBigQuery.Method.FILE_LOADS
+        )
 
 
 class _ExtractEntityBase(beam.PTransform):
