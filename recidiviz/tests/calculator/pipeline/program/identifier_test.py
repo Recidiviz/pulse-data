@@ -47,6 +47,8 @@ DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS = {
     }
 }
 
+DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST = list(DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS.values())
+
 
 class TestFindProgramEvents(unittest.TestCase):
     """Tests the find_program_events function."""
@@ -95,7 +97,7 @@ class TestFindProgramEvents(unittest.TestCase):
             program_assignments,
             assessments,
             supervision_periods,
-            DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS
+            DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST
         )
 
         expected_events = [
@@ -129,7 +131,7 @@ class TestFindProgramEvents(unittest.TestCase):
 
     def test_find_program_events_no_program_assignments(self):
         program_events = identifier.find_program_events(
-            [], [], [], DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS
+            [], [], [], DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST
         )
 
         self.assertEqual([], program_events)
