@@ -609,7 +609,7 @@ def _get_revocation_details(incarceration_period: StateIncarcerationPeriod,
                 StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON:
             revocation_type = StateSupervisionViolationResponseRevocationType.TREATMENT_IN_PRISON
         elif incarceration_period.specialized_purpose_for_incarceration == \
-                StateSupervisionViolationResponseRevocationType.SHOCK_INCARCERATION:
+                StateSpecializedPurposeForIncarceration.SHOCK_INCARCERATION:
             revocation_type = StateSupervisionViolationResponseRevocationType.SHOCK_INCARCERATION
         else:
             # If the person is not admitted for treatment or shock incarceration, assume this is a reincarceration
