@@ -4247,6 +4247,211 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
 
         self.assertCountEqual(supervision_time_buckets, expected_buckets)
 
+    # # pylint: disable=line-too-long
+    @mock.patch('recidiviz.calculator.pipeline.supervision.identifier.assessment_utils._assessment_types_of_class_for_state')
+    def test_supervision_time_buckets_revocation_details_us_mo_shock_spfi(self, mock_assessment_types):
+        mock_assessment_types.return_value = [
+            StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
+            StateAssessmentType.ORAS_COMMUNITY_SUPERVISION_SCREENING
+        ]
+
+        supervision_period = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=111,
+            external_id='sp1',
+            status=StateSupervisionPeriodStatus.TERMINATED,
+            state_code='US_MO',
+            start_date=date(2018, 3, 5),
+            termination_date=date(2018, 5, 19),
+            supervision_type=StateSupervisionType.PROBATION
+        )
+
+        supervision_violation = StateSupervisionViolation.new_with_defaults(
+            supervision_violation_id=123455,
+            state_code='US_MO',
+            violation_date=date(2018, 4, 20),
+            supervision_violation_types=[
+                StateSupervisionViolationTypeEntry.new_with_defaults(
+                    violation_type=StateSupervisionViolationType.TECHNICAL
+                ),
+                StateSupervisionViolationTypeEntry.new_with_defaults(
+                    violation_type=StateSupervisionViolationType.FELONY
+                )
+            ]
+        )
+
+        violation_report = StateSupervisionViolationResponse.new_with_defaults(
+            state_code='US_MO',
+            supervision_violation_response_id=888,
+            response_date=date(2018, 4, 21),
+            response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
+            response_subtype='INI',
+            supervision_violation=supervision_violation,
+            supervision_violation_response_decisions=[
+                StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                    decision=StateSupervisionViolationResponseDecision.REVOCATION,
+                ),
+            ]
+        )
+
+        source_supervision_violation_response = StateSupervisionViolationResponse.new_with_defaults(
+            state_code='US_MO',
+            supervision_violation_response_id=_DEFAULT_SSVR_ID,
+            response_date=date(2018, 4, 23),
+            response_type=StateSupervisionViolationResponseType.PERMANENT_DECISION,
+            supervision_violation_response_decisions=[
+                StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                    decision=StateSupervisionViolationResponseDecision.REVOCATION,
+                )
+            ],
+            supervision_violation=supervision_violation
+        )
+
+        incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=111,
+            external_id='ip1',
+            status=StateIncarcerationPeriodStatus.IN_CUSTODY,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            state_code='US_MO',
+            admission_date=date(2018, 5, 25),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
+            source_supervision_violation_response=source_supervision_violation_response,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.SHOCK_INCARCERATION
+        )
+
+        relevant_assessment = StateAssessment.new_with_defaults(
+            state_code='US_MO',
+            assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
+            assessment_score=33,
+            assessment_date=date(2018, 3, 1)
+        )
+
+        irrelevant_assessment = StateAssessment.new_with_defaults(
+            state_code='US_MO',
+            assessment_type=StateAssessmentType.ORAS_PRISON_INTAKE,
+            assessment_score=39,
+            assessment_date=date(2018, 5, 25)
+        )
+
+        supervision_sentence = \
+            FakeUsMoSupervisionSentence.fake_sentence_from_sentence(
+                StateSupervisionSentence.new_with_defaults(
+                    supervision_sentence_id=111,
+                    start_date=date(2017, 1, 1),
+                    external_id='ss1',
+                    supervision_type=StateSupervisionType.PROBATION,
+                    status=StateSentenceStatus.REVOKED,
+                    completion_date=date(2018, 5, 19),
+                    supervision_periods=[supervision_period]
+                ),
+                supervision_type_spans=[
+                    SupervisionTypeSpan(
+                        start_date=supervision_period.start_date,
+                        end_date=supervision_period.termination_date,
+                        supervision_type=StateSupervisionType.PROBATION
+                    ),
+                    SupervisionTypeSpan(
+                        start_date=supervision_period.termination_date,
+                        end_date=None,
+                        supervision_type=None
+                    )
+                ]
+            )
+
+        incarceration_sentence = \
+            FakeUsMoIncarcerationSentence.fake_sentence_from_sentence(
+                StateIncarcerationSentence.new_with_defaults(
+                    incarceration_sentence_id=123,
+                    external_id='is1',
+                    start_date=date(2018, 5, 25),
+                    incarceration_periods=[incarceration_period]
+                ),
+                supervision_type_spans=[
+                    SupervisionTypeSpan(
+                        start_date=incarceration_period.admission_date,
+                        end_date=None,
+                        supervision_type=None
+                    )
+                ]
+            )
+
+        assessments = [relevant_assessment, irrelevant_assessment]
+        violation_reports = [violation_report]
+        incarceration_sentences = [incarceration_sentence]
+        supervision_contacts = []
+
+        supervision_time_buckets = identifier.find_supervision_time_buckets(
+            [supervision_sentence],
+            incarceration_sentences,
+            [supervision_period],
+            [incarceration_period],
+            assessments,
+            violation_reports,
+            supervision_contacts,
+            DEFAULT_SSVR_AGENT_ASSOCIATIONS,
+            DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
+            DEFAULT_SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATIONS
+        )
+
+        supervision_period_supervision_type = StateSupervisionPeriodSupervisionType.PROBATION
+
+        expected_buckets = [
+            RevocationReturnSupervisionTimeBucket(
+                state_code=supervision_period.state_code,
+                year=2018, month=5,
+                bucket_date=incarceration_period.admission_date,
+                supervision_type=supervision_period_supervision_type,
+                case_type=StateSupervisionCaseType.GENERAL,
+                assessment_score=relevant_assessment.assessment_score,
+                assessment_level=relevant_assessment.assessment_level,
+                assessment_type=relevant_assessment.assessment_type,
+                revocation_type=StateSupervisionViolationResponseRevocationType.SHOCK_INCARCERATION,
+                source_violation_type=StateSupervisionViolationType.FELONY,
+                most_severe_violation_type=StateSupervisionViolationType.FELONY,
+                most_severe_violation_type_subtype=StateSupervisionViolationType.FELONY.value,
+                most_severe_response_decision=StateSupervisionViolationResponseDecision.REVOCATION,
+                response_count=1,
+                violation_history_description='1fel',
+                violation_type_frequency_counter=[['FELONY', 'TECHNICAL']],
+                supervising_officer_external_id=r'ZZZ',
+                supervising_district_external_id='Z',
+                is_on_supervision_last_day_of_month=False),
+            SupervisionTerminationBucket(
+                state_code=supervision_period.state_code,
+                year=supervision_period.termination_date.year,
+                month=supervision_period.termination_date.month,
+                bucket_date=supervision_period.termination_date,
+                supervision_type=supervision_period_supervision_type,
+                case_type=StateSupervisionCaseType.GENERAL,
+                termination_reason=supervision_period.termination_reason,
+                response_count=1,
+                most_severe_violation_type=StateSupervisionViolationType.FELONY,
+                most_severe_violation_type_subtype=StateSupervisionViolationType.FELONY.value,
+            )
+        ]
+
+        expected_buckets.extend(expected_non_revocation_return_time_buckets(
+            supervision_period,
+            supervision_period_supervision_type,
+            end_date=violation_report.response_date,
+            assessment_score=relevant_assessment.assessment_score,
+            assessment_level=relevant_assessment.assessment_level,
+            assessment_type=relevant_assessment.assessment_type
+        ))
+
+        expected_buckets.extend(expected_non_revocation_return_time_buckets(
+            attr.evolve(supervision_period, start_date=violation_report.response_date),
+            supervision_period_supervision_type,
+            assessment_score=relevant_assessment.assessment_score,
+            assessment_level=relevant_assessment.assessment_level,
+            assessment_type=relevant_assessment.assessment_type,
+            most_severe_violation_type=StateSupervisionViolationType.FELONY,
+            most_severe_violation_type_subtype=StateSupervisionViolationType.FELONY.value,
+            response_count=1
+        ))
+
+        self.assertCountEqual(supervision_time_buckets, expected_buckets)
+
+
     def test_supervision_time_buckets_technical_revocation_with_subtype_us_mo(self):
         """Tests the find_supervision_time_buckets function when there is an incarceration period with a
         revocation admission in the same month as the supervision period's termination_date. Also ensures that the
