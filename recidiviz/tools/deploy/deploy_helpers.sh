@@ -258,13 +258,24 @@ function deploy_terraform_infrastructure {
     rm -rf .terraform/
 
     run_cmd terraform init -backend-config "bucket=${PROJECT_ID}-tf-state" ${BASH_SOURCE_DIR}/terraform
-    run_cmd terraform plan -var="project_id=${PROJECT_ID}" -var="release_tag=${RELEASE_TAG}" -out=tfplan ${BASH_SOURCE_DIR}/terraform
-    
-    script_prompt "Does the generated terraform plan look correct? [You can inspect it with \`terraform show tfplan\`]"
 
-    echo "Applying the terraform plan..."
-    run_cmd terraform apply tfplan
-    rm ./tfplan
+    while true
+    do
+        run_cmd terraform plan -var="project_id=${PROJECT_ID}" -var="release_tag=${RELEASE_TAG}" -out=tfplan ${BASH_SOURCE_DIR}/terraform
+
+        script_prompt "Does the generated terraform plan look correct? [You can inspect it with \`terraform show tfplan\`]"
+
+        echo "Applying the terraform plan..."
+        # not using run_cmd because we don't want to exit_on_fail
+        terraform apply tfplan | indent_output
+        return_code=$?
+        rm ./tfplan
+
+        if [[ $return_code -eq 0 ]]; then
+            break
+        fi
+        script_prompt "There was an error applying the terraform plan. Would you like to re-plan and retry? [no exits the script]"
+    done
 
     echo "Terraform deployment complete."
 }
