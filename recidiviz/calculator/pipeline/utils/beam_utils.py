@@ -136,7 +136,7 @@ class ImportTable(beam.PTransform):
     def __init__(self,
                  dataset_id: str,
                  table_id: str,
-                 state_code_filter: Optional[str],
+                 state_code_filter: str,
                  person_id_filter_set: Optional[Set[int]]):
         super().__init__()
         self.dataset_id = dataset_id
@@ -165,7 +165,7 @@ class ImportTableAsKVTuples(beam.PTransform):
                  dataset_id: str,
                  table_id: str,
                  table_key: str,
-                 state_code_filter: Optional[str],
+                 state_code_filter: str,
                  person_id_filter_set: Optional[Set[int]]):
         super().__init__()
         self.dataset_id = dataset_id

@@ -16,11 +16,15 @@
 # =============================================================================
 """Helper classes for mocking reading / writing from BigQuery in tests."""
 import re
-from typing import Dict, Callable, List, Set
+from typing import Dict, Callable, List, Set, Union, Any, TypeVar, Generic, Type, Collection
+
+from apache_beam.testing.util import assert_that, BeamAssertException, equal_to
 
 import apache_beam
 from more_itertools import one
 
+from recidiviz.calculator.calculation_data_storage_config import DATAFLOW_METRICS_TO_TABLES
+from recidiviz.calculator.pipeline.utils.metric_utils import RecidivizMetricType
 from recidiviz.persistence.database.schema_utils import get_state_table_classes
 from recidiviz.tests.calculator.calculator_test_utils import NormalizedDatabaseDict
 
@@ -29,17 +33,51 @@ QueryStr = str
 DataTablesDict = Dict[str, List[NormalizedDatabaseDict]]
 DataDictQueryFn = Callable[[DatasetStr, QueryStr, DataTablesDict, str], List[NormalizedDatabaseDict]]
 
+# Regex matching queries used by calc pipelines to hydrate database entities.
+# Example query:
+# SELECT * FROM `recidiviz-staging.state.state_person` WHERE state_code IN ('US_XX') AND person_id IN (123, 456)
 ENTITY_TABLE_QUERY_REGEX = re.compile(
-    r'SELECT \* FROM `([a-z\d\-.]+)\.([a-z_]+)`'
-    r'( WHERE ([a-z_]+) IN \(([\'\w\d ,]+)\))?'
+    r'SELECT \* FROM `([a-z\d\-]+\.[a-z_]+)\.([a-z_]+)` '
+    r'WHERE state_code IN \(\'([\w\d]+)\'\)( AND ([a-z_]+) IN \(([\'\w\d ,]+)\))?'
 )
 
+# Regex matching queries used by calc pipelines to hydrate association table rows.
+# Example query (with newlines added for readability):
+# SELECT state_incarceration_period.incarceration_period_id,
+#   state_incarceration_period.source_supervision_violation_response_id
+# FROM `recidiviz-123.state.state_incarceration_period` state_incarceration_period
+# JOIN (SELECT * FROM `recidiviz-123.state.state_supervision_violation_response`
+#       WHERE state_code IN ('US_XX') AND person_id IN (12345)) state_supervision_violation_response
+# ON state_supervision_violation_response.supervision_violation_response_id
+#   = state_incarceration_period.source_supervision_violation_response_id
 ASSOCIATION_TABLE_QUERY_REGEX = re.compile(
     r'SELECT ([a-z_]+\.[a-z_]+), ([a-z_]+\.[a-z_]+) '
-    r'FROM `([a-z\d\-.]+)\.([a-z_]+)` ([a-z_]+) '
-    r'JOIN \(SELECT \* FROM `([a-z\d\-.]+)\.([a-z_]+)`( WHERE ([a-z_]+) IN \(([\d ,]+)\))?\) ([a-z_]+) '
+    r'FROM `([a-z\d\-]+\.[a-z_]+)\.([a-z_]+)` ([a-z_]+) '
+    r'JOIN \(SELECT \* FROM `([a-z\d\-]+\.[a-z_]+)\.([a-z_]+)` '
+    r'WHERE state_code IN \(\'([\w\d]+)\'\)( AND ([a-z_]+) IN \(([\'\w\d ,]+)\))?\) ([a-z_]+) '
     r'ON ([a-z_]+\.[a-z_]+) = ([a-z_]+\.[a-z_]+)'
 )
+
+
+class FakeBigQueryAssertMatchers:
+    """Functions to be used by Apache Beam testing `assert_that` functions to
+    validate pipeline outputs."""
+
+    @staticmethod
+    def validate_metric_output(expected_metric_type: RecidivizMetricType):
+        """Asserts that the pipeline produced the expected types of metrics, and that it produced aggregate metrics
+        only for the expected aggregate metric types."""
+        def _validate_metric_output(output) -> None:
+            if not output:
+                raise BeamAssertException(
+                    f'Failed assert. Output is empty for expected type [{expected_metric_type}].')
+
+            for metric in output:
+                if not metric['metric_type'] == expected_metric_type.value:
+                    raise BeamAssertException(
+                        f'Failed assert. Output metric is not of type [{expected_metric_type}].')
+
+        return _validate_metric_output
 
 
 class FakeReadFromBigQuery(apache_beam.PTransform):
@@ -100,7 +138,7 @@ class FakeReadFromBigQueryFactory:
     def _do_fake_entity_table_query(data_dict: DataTablesDict,
                                     query: str,
                                     expected_dataset: str,
-                                    unifying_id_field: str) -> List[NormalizedDatabaseDict]:
+                                    expected_unifying_id_field: str) -> List[NormalizedDatabaseDict]:
         """Parses, validates, and replicates the behavior of the provided entity table query string, returning
         data out of the data_dict object.
         """
@@ -118,38 +156,39 @@ class FakeReadFromBigQueryFactory:
         if table_name not in data_dict:
             raise ValueError(f'Table {table_name} not in data dict')
 
-        filter_field = match.group(4)
-        filter_field_list_str = match.group(5)
-        if filter_field and filter_field_list_str:
-            if filter_field == 'state_code':
-                filter_field_list_value = filter_field_list_str.replace("\'", "")
+        all_table_rows = data_dict[table_name]
 
-                matching_entities: List[NormalizedDatabaseDict] = []
-                for entity_dict in data_dict[table_name]:
-                    if filter_field not in entity_dict.keys() or entity_dict.get(filter_field) is None:
-                        raise ValueError(
-                            f'Expected {filter_field} to be a set field in {table_name}.'
-                        )
-                    if entity_dict.get(filter_field) == filter_field_list_value:
-                        matching_entities.append(entity_dict)
+        state_code_value = match.group(3)
+        if not state_code_value:
+            raise ValueError(f'Found no state_code in query [{query}]')
 
-                return matching_entities
-            if unifying_id_field != filter_field:
+        filtered_rows = filter_results(
+            table_name, all_table_rows, 'state_code', {state_code_value}, allow_none_values=False)
+
+        unifying_id_field = match.group(5)
+        unifying_id_field_filter_list_str = match.group(6)
+
+        if unifying_id_field and unifying_id_field_filter_list_str:
+            if unifying_id_field != expected_unifying_id_field:
                 raise ValueError(
-                    f'Expected unifying_id_field {unifying_id_field} to equal the filter_id_name {filter_field}')
+                    f'Expected value [{expected_unifying_id_field}] for unifying_id_field does not match: '
+                    f'[{unifying_id_field}')
 
-            return filter_results(data_dict, table_name, filter_field, id_list_str_to_set(filter_field_list_str))
+            filtered_rows = filter_results(table_name,
+                                           filtered_rows,
+                                           unifying_id_field,
+                                           id_list_str_to_set(unifying_id_field_filter_list_str),
+                                           allow_none_values=False)
+        elif unifying_id_field or unifying_id_field_filter_list_str:
+            raise ValueError('Found one of unifying_id_field, unifying_id_field_filter_list_str is None, but not both.')
 
-        if filter_field or filter_field_list_str:
-            raise ValueError('Found one of filter_id_name, filter_id_list_str is None, but not both.')
-
-        return data_dict[table_name]
+        return filtered_rows
 
     @staticmethod
     def _do_fake_association_tables_query(data_dict: DataTablesDict,
                                           query: str,
                                           expected_dataset: str,
-                                          unifying_id_field: str) -> List[NormalizedDatabaseDict]:
+                                          expected_unifying_id_field: str) -> List[NormalizedDatabaseDict]:
         """Parses, validates, and replicates the behavior of the provided association table query string, returning
         data out of the data_dict object.
         """
@@ -164,9 +203,9 @@ class FakeReadFromBigQueryFactory:
         association_table_alias_3 = match.group(5)
         dataset_2 = match.group(6)
         entity_table_name = match.group(7)
-        entity_table_alias_1 = match.group(11)
-        entity_table_alias_2, entity_table_join_column = match.group(12).split('.')
-        association_table_alias_4, association_table_join_column = match.group(13).split('.')
+        entity_table_alias_1 = match.group(12)
+        entity_table_alias_2, entity_table_join_column = match.group(13).split('.')
+        association_table_alias_4, association_table_join_column = match.group(14).split('.')
 
         all_association_table_aliases = {association_table_alias_1,
                                          association_table_alias_2,
@@ -192,46 +231,129 @@ class FakeReadFromBigQueryFactory:
         check_field_exists_in_table(association_table_name, association_table_join_column)
         check_field_exists_in_table(entity_table_name, entity_table_join_column)
 
-        filter_id_name = match.group(9)
-        filter_id_list_str = match.group(10)
-        if filter_id_name and filter_id_list_str:
-            if unifying_id_field != filter_id_name:
+        all_entity_table_rows = data_dict[entity_table_name]
+        state_code_value = match.group(8)
+        if not state_code_value:
+            raise ValueError(f'Found no state_code in query [{query}]')
+
+        filtered_enity_rows = filter_results(
+            entity_table_name, all_entity_table_rows, 'state_code', {state_code_value}, allow_none_values=False)
+        unifying_id_field = match.group(10)
+        unifying_id_field_filter_list_str = match.group(11)
+
+        if unifying_id_field and unifying_id_field_filter_list_str:
+            if unifying_id_field != expected_unifying_id_field:
                 raise ValueError(
-                    f'Expected unifying_id_field {unifying_id_field} to equal the filter_id_name {filter_id_name}')
+                    f'Expected value [{expected_unifying_id_field}] for unifying_id_field does not match: '
+                    f'[{unifying_id_field}')
 
-            valid_entities = \
-                filter_results(data_dict, entity_table_name, filter_id_name,
-                               id_list_str_to_set(filter_id_list_str))
-            valid_entity_join_ids = {row[entity_table_join_column] for row in valid_entities}
+            filtered_enity_rows = filter_results(entity_table_name,
+                                                 filtered_enity_rows,
+                                                 unifying_id_field,
+                                                 id_list_str_to_set(unifying_id_field_filter_list_str),
+                                                 allow_none_values=False)
+        elif unifying_id_field or unifying_id_field_filter_list_str:
+            raise ValueError('Found one of unifying_id_field, unifying_id_field_filter_list_str is None, but not both.')
 
-            return filter_results(data_dict,
-                                  association_table_name,
-                                  association_table_join_column,
-                                  valid_entity_join_ids)
+        valid_entity_join_ids = {row[entity_table_join_column] for row in filtered_enity_rows}
 
-        if filter_id_name or filter_id_list_str:
-            raise ValueError('Found one of filter_id_name, filter_id_list_str is None, but not both.')
+        all_association_table_rows = data_dict[association_table_name]
+        return filter_results(association_table_name,
+                              all_association_table_rows,
+                              association_table_join_column,
+                              valid_entity_join_ids,
+                              allow_none_values=True)
 
-        return data_dict[association_table_name]
+
+class FakeWriteToBigQuery(apache_beam.PTransform):
+    """Fake PTransform that no-ops instead of writing to BQ."""
+    def __init__(self, output_table: str, expected_output_metric_types: Collection[RecidivizMetricType]):
+        super().__init__()
+        metric_types_for_table = {metric_class(job_id='xxx', state_code='xxx').metric_type  # type: ignore[call-arg]
+                                  for metric_class, table_id in DATAFLOW_METRICS_TO_TABLES.items()
+                                  if table_id == output_table}
+
+        self._expected_output_metric_types = expected_output_metric_types
+        self._expected_metric_type = one(metric_types_for_table)
+
+    def expand(self, input_or_inputs):
+        if self._expected_metric_type in self._expected_output_metric_types:
+            assert_that(input_or_inputs, FakeBigQueryAssertMatchers.validate_metric_output(self._expected_metric_type))
+        else:
+            assert_that(input_or_inputs, equal_to([]))
+
+        return {}
+
+
+FakeWriteToBigQueryType = TypeVar('FakeWriteToBigQueryType', bound=FakeWriteToBigQuery)
+
+
+class FakeWriteToBigQueryFactory(Generic[FakeWriteToBigQueryType]):
+    """Factory class that vends fake constructors that can be used to mock the FakeWriteToBigQuery object."""
+
+    def __init__(self, fake_write_to_big_query_cls: Type[FakeWriteToBigQueryType]):
+        self._fake_write_to_big_query_cls = fake_write_to_big_query_cls
+
+    def create_fake_bq_sink_constructor(
+            self,
+            expected_dataset: str,
+            expected_output_metric_types: Collection[RecidivizMetricType],
+            **kwargs: Any
+    ) -> Callable[[str, str], FakeWriteToBigQueryType]:
+        def write_constructor(
+            output_table: str,
+            output_dataset: str,
+        ) -> FakeWriteToBigQuery:
+            if output_dataset != expected_dataset:
+                raise ValueError(
+                    f'Output dataset [{output_dataset}] does not match expected_dataset [{expected_dataset}] '
+                    f'writing to table [{output_table}]')
+            return self._fake_write_to_big_query_cls(  # type: ignore[call-arg]
+                output_table, expected_output_metric_types, **kwargs)
+
+        return write_constructor
 
 
 def id_list_str_to_set(id_list_str: str) -> Set[int]:
     return {int(filter_id) for filter_id in id_list_str.split(', ')}
 
 
-def filter_results(data_dict: DataTablesDict,
-                   table_name: str,
+def filter_results(table_name: str,
+                   unfiltered_table_rows: List[NormalizedDatabaseDict],
                    filter_id_name: str,
-                   filter_id_set: Set[int]) -> List[NormalizedDatabaseDict]:
-    unfiltered_data = data_dict[table_name]
+                   filter_id_set: Union[Set[int], Set[str]],
+                   allow_none_values: bool) -> List[NormalizedDatabaseDict]:
 
     check_field_exists_in_table(table_name, filter_id_name)
 
-    return [row for row in unfiltered_data if row[filter_id_name] in filter_id_set]
+    for row in unfiltered_table_rows:
+        if filter_id_name not in row:
+            raise ValueError(f'Field [{filter_id_name}] not in row for table [{table_name}]: {row}')
+        if not allow_none_values and row[filter_id_name] is None:
+            raise ValueError(f'Field [{filter_id_name}] is None for row in [{table_name}]: {row}')
+
+    return [row for row in unfiltered_table_rows if row[filter_id_name] in filter_id_set]
 
 
 def check_field_exists_in_table(table_name: str, field_name: str) -> None:
-    table = one({table for table in get_state_table_classes() if table.name == table_name})
+    if table_name in {
+        # These are tables read by pipelines that are not in the sqlalchemy schema - skip this check
+        'ssvr_to_agent_association',
+        'supervision_period_to_agent_association',
+        'supervision_period_judicial_district_association',
+        'state_race_ethnicity_population_counts',
+        'us_mo_sentence_statuses',
+        'persons_to_recent_county_of_residence',
+        'incarceration_period_judicial_district_association',
+        'state_race_ethnicity_population_counts',
+    }:
+        return
+
+    matching_tables = {table for table in get_state_table_classes() if table.name == table_name}
+    if not matching_tables:
+        raise ValueError(f'No valid table with name: [{table_name}]')
+
+    table = one(matching_tables)
 
     column_names = {sqlalchemy_column.name for sqlalchemy_column in table.columns}
 

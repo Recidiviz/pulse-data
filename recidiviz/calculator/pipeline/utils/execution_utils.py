@@ -183,33 +183,33 @@ def person_and_kwargs_for_identifier(
 def select_all_by_person_query(
         dataset: str,
         table: str,
-        state_code_filter: Optional[str],
+        state_code_filter: str,
         person_id_filter_set: Optional[Set[int]]) -> str:
     return select_all_query(dataset, table, state_code_filter, 'person_id', person_id_filter_set)
 
 
 def select_all_query(dataset: str,
                      table: str,
-                     state_code_filter: Optional[str],
+                     state_code_filter: str,
                      unifying_id_field: Optional[str],
                      unifying_id_field_filter_set: Optional[Set[int]]) -> str:
     """Returns a query string formatted to select all contents of the table in the given dataset, filtering by the
     provided state code and unifying id filter sets, if necessary."""
-    entity_query = f"SELECT * FROM `{dataset}.{table}`"
+
+    if not state_code_filter:
+        raise ValueError(f'State code filter unexpectedly empty for table [{table}]')
+
+    entity_query = f"SELECT * FROM `{dataset}.{table}` WHERE state_code IN ('{state_code_filter}')"
 
     if unifying_id_field_filter_set:
         if not unifying_id_field:
             raise ValueError(
-                f'Expected nonnull unifying_id_field for nonnull unifying_id_field_filter_set when querying'
+                f'Expected non-null unifying_id_field for nonnull unifying_id_field_filter_set when querying'
                 f'dataset [{dataset}] and table [{table}].')
 
         id_str_set = {str(unifying_id) for unifying_id in unifying_id_field_filter_set if str(unifying_id)}
 
-        entity_query = entity_query + f" WHERE {unifying_id_field} IN ({', '.join(sorted(id_str_set))})"
-
-    if state_code_filter:
-        conjunctive_word = 'AND' if unifying_id_field_filter_set else 'WHERE'
-        entity_query = entity_query + f" {conjunctive_word} state_code IN ('{state_code_filter}')"
+        entity_query = entity_query + f" AND {unifying_id_field} IN ({', '.join(sorted(id_str_set))})"
 
     return entity_query
 
