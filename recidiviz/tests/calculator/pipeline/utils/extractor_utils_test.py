@@ -86,7 +86,8 @@ class TestBuildRootEntity(unittest.TestCase):
                           dataset=dataset,
                           root_entity_class=entities.StatePerson,
                           unifying_id_field=entities.StatePerson.get_class_id_name(),
-                          build_related_entities=False))
+                          build_related_entities=False,
+                          state_code=fake_person.state_code))
 
             assert_that(output, equal_to([(12345, fake_person_entity)]))
 
@@ -211,7 +212,8 @@ class TestBuildRootEntity(unittest.TestCase):
                           dataset=dataset,
                           root_entity_class=entities.StatePerson,
                           unifying_id_field=entities.StatePerson.get_class_id_name(),
-                          build_related_entities=True))
+                          build_related_entities=True,
+                          state_code=fake_person.state_code))
 
             assert_that(output, equal_to([(12345, fake_person_entity)]))
 
@@ -317,7 +319,8 @@ class TestBuildRootEntity(unittest.TestCase):
                       extractor_utils.BuildRootEntity(dataset=dataset,
                                                       root_entity_class=entities.StatePerson,
                                                       unifying_id_field=entities.StatePerson.get_class_id_name(),
-                                                      build_related_entities=False))
+                                                      build_related_entities=False,
+                                                      state_code=fake_person.state_code))
 
             assert_that(output, equal_to([(12345, fake_person_entity)]))
 
@@ -336,7 +339,8 @@ class TestBuildRootEntity(unittest.TestCase):
                  extractor_utils.BuildRootEntity(dataset=None,
                                                  root_entity_class=entities.StateIncarcerationSentence,
                                                  unifying_id_field=entities.StatePerson.get_class_id_name(),
-                                                 build_related_entities=True))
+                                                 build_related_entities=True,
+                                                 state_code='US_XX'))
 
             test_pipeline.run()
 
@@ -369,7 +373,8 @@ class TestBuildRootEntity(unittest.TestCase):
                      |
                      extractor_utils.BuildRootEntity(dataset=dataset, root_entity_class=None,
                                                      unifying_id_field=entities.StatePerson.get_class_id_name(),
-                                                     build_related_entities=True))
+                                                     build_related_entities=True,
+                                                     state_code='US_XX'))
 
                 test_pipeline.run()
 
@@ -403,7 +408,8 @@ class TestBuildRootEntity(unittest.TestCase):
                      extractor_utils.BuildRootEntity(dataset=dataset,
                                                      root_entity_class=entities.StateSupervisionViolation,
                                                      unifying_id_field='XX',
-                                                     build_related_entities=True))
+                                                     build_related_entities=True,
+                                                     state_code=supervision_violation.state_code))
 
                 test_pipeline.run()
 
@@ -437,7 +443,8 @@ class TestBuildRootEntity(unittest.TestCase):
                      extractor_utils.BuildRootEntity(dataset=dataset,
                                                      root_entity_class=entities.StateSupervisionViolation,
                                                      unifying_id_field=None,
-                                                     build_related_entities=True))
+                                                     build_related_entities=True,
+                                                     state_code='US_XX'))
 
                 test_pipeline.run()
 
@@ -491,7 +498,8 @@ class TestBuildRootEntity(unittest.TestCase):
                           extractor_utils.BuildRootEntity(dataset=dataset,
                                                           root_entity_class=entities.StateSupervisionViolation,
                                                           unifying_id_field='supervision_period_id',
-                                                          build_related_entities=True))
+                                                          build_related_entities=True,
+                                                          state_code=supervision_violation.state_code))
 
                 output_violation_entity = \
                     StateSchemaToEntityConverter().convert(supervision_violation)
@@ -802,7 +810,7 @@ class TestExtractEntity(unittest.TestCase):
                       extractor_utils._ExtractEntity(dataset=dataset, entity_class=entity_class,
                                                      unifying_id_field=entity_class.get_class_id_name(),
                                                      parent_id_field=None, unifying_id_field_filter_set=None,
-                                                     state_code=None)
+                                                     state_code=person.state_code)
                       )
 
             assert_that(output, equal_to([
@@ -866,7 +874,7 @@ class TestExtractEntity(unittest.TestCase):
                                                     unifying_id_field=entities.StatePerson.get_class_id_name(),
                                                     parent_id_field='AAA',
                                                     unifying_id_field_filter_set=None,
-                                                    state_code=None)
+                                                    state_code=incarceration_period.state_code)
                      )
 
                 test_pipeline.run()
@@ -920,7 +928,7 @@ class TestExtractRelationshipPropertyEntities(unittest.TestCase):
                                    parent_id_field='supervision_period_id',
                                    unifying_id_field=entities.StatePerson.get_class_id_name(),
                                    unifying_id_field_filter_set=None,
-                                   state_code=None))
+                                   state_code=supervision_period.state_code))
 
             # Assert it has the property fields we expect
             self.assertEqual(properties_dict.keys(),
@@ -984,7 +992,7 @@ class TestExtractRelationshipPropertyEntities(unittest.TestCase):
                                    parent_id_field='incarceration_sentence_id',
                                    unifying_id_field=entities.StatePerson.get_class_id_name(),
                                    unifying_id_field_filter_set=None,
-                                   state_code=None))
+                                   state_code=incarceration_sentence.state_code))
 
             # Assert it has the property fields we expect
             self.assertEqual(properties_dict.keys(),
@@ -1033,7 +1041,7 @@ class TestExtractRelationshipPropertyEntities(unittest.TestCase):
                                    parent_id_field=charge.get_class_id_name(),
                                    unifying_id_field=entities.StatePerson.get_class_id_name(),
                                    unifying_id_field_filter_set=None,
-                                   state_code=None))
+                                   state_code=court_case.state_code))
 
             # Assert it has the property fields we expect
             self.assertEqual(properties_dict.keys(), {'court_case', 'bond'})
@@ -1089,7 +1097,7 @@ class TestExtractRelationshipPropertyEntities(unittest.TestCase):
                                    parent_id_field='incarceration_incident_id',
                                    unifying_id_field=entities.StatePerson.get_class_id_name(),
                                    unifying_id_field_filter_set=None,
-                                   state_code=None))
+                                   state_code=incarceration_incident.state_code))
 
             # Assert it has the property fields we expect
             self.assertEqual(properties_dict.keys(), {'responding_officer', 'incarceration_incident_outcomes'})
@@ -1151,7 +1159,7 @@ class TestExtractRelationshipPropertyEntities(unittest.TestCase):
                                           parent_id_field='incarceration_period_id',
                                           unifying_id_field=entities.StatePerson.get_class_id_name(),
                                           unifying_id_field_filter_set=None,
-                                          state_code=None
+                                          state_code=incarceration_period_1.state_code
                                       ))
 
             output_supervision_violation_response = \
@@ -1224,7 +1232,7 @@ class TestExtractRelationshipPropertyEntities(unittest.TestCase):
                                           parent_id_field='incarceration_period_id',
                                           unifying_id_field=entities.StatePerson.get_class_id_name(),
                                           unifying_id_field_filter_set=None,
-                                          state_code=None
+                                          state_code=incarceration_period_1.state_code
                                       ))
 
             output_supervision_violation_response = \
@@ -1293,7 +1301,7 @@ class TestExtractEntityWithAssociationTable(unittest.TestCase):
                           association_table_parent_id_field=entities.StateIncarcerationSentence.get_class_id_name(),
                           association_table_entity_id_field=entities.StateCharge.get_class_id_name(),
                           unifying_id_field_filter_set=None,
-                          state_code=None))
+                          state_code=charge.state_code))
 
             assert_that(output, ExtractAssertMatchers.
                         validate_extract_relationship_property_entities(

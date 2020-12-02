@@ -37,7 +37,7 @@ from recidiviz.calculator.pipeline.utils.beam_utils import RecidivizMetricWritab
     ImportTable
 from recidiviz.calculator.pipeline.utils.event_utils import IdentifierEvent
 from recidiviz.calculator.pipeline.utils.execution_utils import get_job_id, person_and_kwargs_for_identifier
-from recidiviz.calculator.pipeline.utils.extractor_utils import BuildRootEntity
+from recidiviz.calculator.pipeline.utils.extractor_utils import BuildRootEntity, WriteAppendToBigQuery
 from recidiviz.calculator.pipeline.utils.person_utils import PersonMetadata, BuildPersonMetadata, \
     ExtractPersonEventsMetadata
 from recidiviz.calculator.pipeline.utils.pipeline_args_utils import add_shared_pipeline_arguments
@@ -280,7 +280,7 @@ def run(apache_beam_pipeline_options: PipelineOptions,
         output: str,
         calculation_month_count: int,
         metric_types: List[str],
-        state_code: Optional[str],
+        state_code: str,
         calculation_end_month: Optional[str],
         person_filter_ids: Optional[List[int]]):
     """Runs the program calculation pipeline."""
@@ -296,6 +296,12 @@ def run(apache_beam_pipeline_options: PipelineOptions,
     # Get pipeline job details
     all_pipeline_options = apache_beam_pipeline_options.get_all_options()
     project_id = all_pipeline_options['project']
+
+    if project_id is None:
+        raise ValueError(f'No project set in pipeline options: {all_pipeline_options}')
+
+    if state_code is None:
+        raise ValueError('No state_code set for pipeline')
 
     input_dataset = project_id + '.' + data_input
     reference_dataset = project_id + '.' + reference_view_input
@@ -345,7 +351,7 @@ def run(apache_beam_pipeline_options: PipelineOptions,
                     table_id=SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION_VIEW_NAME,
                     table_key='supervision_period_id',
                     state_code_filter=state_code,
-                    person_id_filter_set=person_id_filter_set
+                    person_id_filter_set=None
                 ))
 
         state_race_ethnicity_population_counts = (
@@ -420,24 +426,18 @@ def run(apache_beam_pipeline_options: PipelineOptions,
                             ))
 
         # Write the metrics to the output tables in BigQuery
-        referrals_table_id = DATAFLOW_METRICS_TO_TABLES.get(ProgramReferralMetric)
-        participation_table_id = DATAFLOW_METRICS_TO_TABLES.get(ProgramParticipationMetric)
+        referrals_table_id = DATAFLOW_METRICS_TO_TABLES[ProgramReferralMetric]
+        participation_table_id = DATAFLOW_METRICS_TO_TABLES[ProgramParticipationMetric]
 
         _ = (writable_metrics.PROGRAM_REFERRAL | f"Write referral metrics to BQ table: {referrals_table_id}" >>
-             beam.io.WriteToBigQuery(
-                 table=referrals_table_id,
-                 dataset=output,
-                 create_disposition=beam.io.BigQueryDisposition.CREATE_NEVER,
-                 write_disposition=beam.io.BigQueryDisposition.WRITE_APPEND,
-                 method=beam.io.WriteToBigQuery.Method.FILE_LOADS
+             WriteAppendToBigQuery(
+                 output_table=referrals_table_id,
+                 output_dataset=output,
              ))
 
         _ = (writable_metrics.PROGRAM_PARTICIPATION
              | f"Write participation metrics to BQ table: {participation_table_id}" >>
-             beam.io.WriteToBigQuery(
-                 table=participation_table_id,
-                 dataset=output,
-                 create_disposition=beam.io.BigQueryDisposition.CREATE_NEVER,
-                 write_disposition=beam.io.BigQueryDisposition.WRITE_APPEND,
-                 method=beam.io.WriteToBigQuery.Method.FILE_LOADS
+             WriteAppendToBigQuery(
+                 output_table=participation_table_id,
+                 output_dataset=output,
              ))

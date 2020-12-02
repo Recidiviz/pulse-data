@@ -228,20 +228,6 @@ class TestSelectAllQuery(unittest.TestCase):
         self.dataset = 'project-id.my_dataset'
         self.table_id = 'TABLE_WHERE_DATA_IS'
 
-    def test_simple_select_all_no_filters(self):
-        expected_query = 'SELECT * FROM `project-id.my_dataset.TABLE_WHERE_DATA_IS`'
-
-        self.assertEqual(expected_query,
-                         select_all_by_person_query(self.dataset,
-                                                    self.table_id,
-                                                    state_code_filter=None,
-                                                    person_id_filter_set=None))
-
-        self.assertEqual(expected_query, select_all_query(self.dataset, self.table_id,
-                                                          state_code_filter=None,
-                                                          unifying_id_field='field_name',
-                                                          unifying_id_field_filter_set=None))
-
     def test_select_all_with_state_code_filter_only(self):
         expected_query = 'SELECT * FROM `project-id.my_dataset.TABLE_WHERE_DATA_IS` WHERE state_code IN (\'US_XX\')'
 
@@ -256,25 +242,10 @@ class TestSelectAllQuery(unittest.TestCase):
                                                           unifying_id_field='field_name',
                                                           unifying_id_field_filter_set=None))
 
-    def test_select_all_with_ids_filter_only(self):
-        expected_query = 'SELECT * FROM `project-id.my_dataset.TABLE_WHERE_DATA_IS` WHERE person_id IN (1234)'
-
-        self.assertEqual(expected_query,
-                         select_all_by_person_query(self.dataset,
-                                                    self.table_id,
-                                                    state_code_filter=None,
-                                                    person_id_filter_set={1234}))
-
-        expected_query = 'SELECT * FROM `project-id.my_dataset.TABLE_WHERE_DATA_IS` WHERE field_name IN (1234)'
-        self.assertEqual(expected_query, select_all_query(self.dataset, self.table_id,
-                                                          state_code_filter=None,
-                                                          unifying_id_field='field_name',
-                                                          unifying_id_field_filter_set={1234}))
-
     def test_select_all_state_code_and_ids_filter(self):
         expected_query = \
             'SELECT * FROM `project-id.my_dataset.TABLE_WHERE_DATA_IS` ' \
-            'WHERE person_id IN (1234) AND state_code IN (\'US_XX\')'
+            'WHERE state_code IN (\'US_XX\') AND person_id IN (1234)'
 
         self.assertEqual(expected_query,
                          select_all_by_person_query(self.dataset,
@@ -284,7 +255,7 @@ class TestSelectAllQuery(unittest.TestCase):
 
         expected_query = \
             'SELECT * FROM `project-id.my_dataset.TABLE_WHERE_DATA_IS` ' \
-            'WHERE field_name IN (1234, 56) AND state_code IN (\'US_XX\')'
+            'WHERE state_code IN (\'US_XX\') AND field_name IN (1234, 56)'
         self.assertEqual(expected_query, select_all_query(self.dataset, self.table_id,
                                                           state_code_filter='US_XX',
                                                           unifying_id_field='field_name',
