@@ -23,7 +23,7 @@ from typing import Optional, Set
 
 import apache_beam as beam
 import pytest
-from apache_beam.pvalue import AsDict, AsList
+from apache_beam.pvalue import AsDict
 from apache_beam.testing.util import assert_that, equal_to, BeamAssertException
 from apache_beam.testing.test_pipeline import TestPipeline
 from apache_beam.options.pipeline_options import PipelineOptions
@@ -33,23 +33,20 @@ from datetime import date
 from dateutil.relativedelta import relativedelta
 from enum import Enum
 
-from mock import patch
 
 from recidiviz.calculator.pipeline.recidivism import pipeline
 from recidiviz.calculator.pipeline.recidivism.metrics import \
     ReincarcerationRecidivismMetric, \
-    ReincarcerationRecidivismRateMetric
+    ReincarcerationRecidivismRateMetric, ReincarcerationRecidivismMetricType
 from recidiviz.calculator.pipeline.recidivism.metrics import \
     ReincarcerationRecidivismMetricType as MetricType
 from recidiviz.calculator.pipeline.utils.beam_utils import ConvertDictToKVTuple, RecidivizMetricWritableDict
 from recidiviz.calculator.pipeline.utils.metric_utils import \
     MetricMethodologyType
-from recidiviz.calculator.pipeline.utils import extractor_utils
-from recidiviz.calculator.pipeline.recidivism.pipeline import ClassifyReleaseEvents
 from recidiviz.calculator.pipeline.recidivism.release_event import \
     ReincarcerationReturnType, RecidivismReleaseEvent, \
     NonRecidivismReleaseEvent
-from recidiviz.calculator.pipeline.utils.person_utils import PersonMetadata, BuildPersonMetadata
+from recidiviz.calculator.pipeline.utils.person_utils import PersonMetadata
 from recidiviz.common.constants.person_characteristics import Ethnicity, ResidencyStatus, Gender, Race
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_period import \
@@ -60,7 +57,9 @@ from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.entity.state import entities
 from recidiviz.tests.calculator.calculator_test_utils import \
     normalized_database_base_dict, normalized_database_base_dict_list
-from recidiviz.tests.calculator.pipeline.fake_bigquery import FakeReadFromBigQueryFactory
+from recidiviz.tests.calculator.pipeline.fake_bigquery import FakeReadFromBigQueryFactory, FakeWriteToBigQuery, \
+    FakeWriteToBigQueryFactory, DataTablesDict
+from recidiviz.tests.calculator.pipeline.utils.run_pipeline_test_utils import run_test_pipeline
 from recidiviz.tests.persistence.database import database_test_utils
 
 _COUNTY_OF_RESIDENCE = 'county'
@@ -75,12 +74,13 @@ class TestRecidivismPipeline(unittest.TestCase):
     """Tests the entire recidivism pipeline."""
     def setUp(self) -> None:
         self.fake_bq_source_factory = FakeReadFromBigQueryFactory()
+        self.fake_bq_sink_factory = FakeWriteToBigQueryFactory(FakeWriteToBigQuery)
 
     @staticmethod
     def build_data_dict(fake_person_id: int):
         """Builds a data_dict for a basic run of the pipeline."""
         fake_person = schema.StatePerson(
-            state_code='US_XX',
+            state_code='CA',
             person_id=fake_person_id, gender=Gender.MALE,
             birthdate=date(1970, 1, 1),
             residency_status=ResidencyStatus.PERMANENT)
@@ -184,6 +184,18 @@ class TestRecidivismPipeline(unittest.TestCase):
             normalized_database_base_dict(supervision_violation)
         ]
 
+        fake_person_id_to_county_query_result = [
+            {'state_code': 'CA',
+             'person_id': fake_person_id,
+             'county_of_residence': _COUNTY_OF_RESIDENCE}]
+
+        state_race_ethnicity_population_count_data = [{
+            'state_code': 'CA',
+            'race_or_ethnicity': 'BLACK',
+            'population_count': 1,
+            'representation_priority': 1
+        }]
+
         data_dict = {
             schema.StatePerson.__tablename__: persons_data,
             schema.StatePersonRace.__tablename__: races_data,
@@ -203,6 +215,8 @@ class TestRecidivismPipeline(unittest.TestCase):
             schema.StateSupervisionViolatedConditionEntry.__tablename__: [],
             schema.StateSupervisionViolationResponseDecisionEntry.__tablename__: [],
             schema.state_incarceration_period_program_assignment_association_table.name: [],
+            'persons_to_recent_county_of_residence': fake_person_id_to_county_query_result,
+            'state_race_ethnicity_population_counts': state_race_ethnicity_population_count_data,
         }
 
         return data_dict
@@ -217,9 +231,7 @@ class TestRecidivismPipeline(unittest.TestCase):
 
         dataset = 'recidiviz-123.state'
 
-        with patch('recidiviz.calculator.pipeline.utils.extractor_utils.ReadFromBigQuery',
-                   self.fake_bq_source_factory.create_fake_bq_source_constructor(dataset, data_dict)):
-            self.run_test_pipeline(dataset, fake_person_id)
+        self.run_test_pipeline(dataset, data_dict)
 
     def testRecidivismPipelineWithFilterSet(self):
         """Tests the entire recidivism pipeline with one person and three
@@ -231,9 +243,7 @@ class TestRecidivismPipeline(unittest.TestCase):
 
         dataset = 'recidiviz-123.state'
 
-        with patch('recidiviz.calculator.pipeline.utils.extractor_utils.ReadFromBigQuery',
-                   self.fake_bq_source_factory.create_fake_bq_source_constructor(dataset, data_dict)):
-            self.run_test_pipeline(dataset, fake_person_id, )
+        self.run_test_pipeline(dataset, data_dict)
 
     def testRecidivismPipeline_WithConditionalReturns(self):
         """Tests the entire RecidivismPipeline with two person and three
@@ -244,7 +254,7 @@ class TestRecidivismPipeline(unittest.TestCase):
         fake_person_id_1 = 12345
 
         fake_person_1 = schema.StatePerson(
-            state_code='US_XX',
+            state_code='CA',
             person_id=fake_person_id_1, gender=Gender.MALE,
             birthdate=date(1970, 1, 1),
             residency_status=ResidencyStatus.PERMANENT)
@@ -252,7 +262,7 @@ class TestRecidivismPipeline(unittest.TestCase):
         fake_person_id_2 = 6789
 
         fake_person_2 = schema.StatePerson(
-            state_code='US_XX',
+            state_code='CA',
             person_id=fake_person_id_2, gender=Gender.FEMALE,
             birthdate=date(1990, 1, 1),
             residency_status=ResidencyStatus.PERMANENT)
@@ -379,6 +389,18 @@ class TestRecidivismPipeline(unittest.TestCase):
             normalized_database_base_dict(subsequent_reincarceration_2)
         ]
 
+        fake_person_id_to_county_query_result = [
+            {'state_code': 'CA',
+             'person_id': fake_person_id_1,
+             'county_of_residence': _COUNTY_OF_RESIDENCE}]
+
+        state_race_ethnicity_population_count_data = [{
+            'state_code': 'CA',
+            'race_or_ethnicity': 'BLACK',
+            'population_count': 1,
+            'representation_priority': 1
+        }]
+
         data_dict = {
             schema.StatePerson.__tablename__: persons_data,
             schema.StateIncarcerationPeriod.__tablename__: incarceration_periods_data,
@@ -398,180 +420,41 @@ class TestRecidivismPipeline(unittest.TestCase):
             schema.StateSupervisionViolatedConditionEntry.__tablename__: [],
             schema.StateSupervisionViolationResponseDecisionEntry.__tablename__: [],
             schema.state_incarceration_period_program_assignment_association_table.name: [],
+            'persons_to_recent_county_of_residence': fake_person_id_to_county_query_result,
+            'state_race_ethnicity_population_counts': state_race_ethnicity_population_count_data,
         }
         dataset = 'recidiviz-123.state'
 
-        with patch('recidiviz.calculator.pipeline.utils.extractor_utils.ReadFromBigQuery',
-                   self.fake_bq_source_factory.create_fake_bq_source_constructor(dataset, data_dict)):
-            self.run_test_pipeline(dataset, fake_person_id_1)
+        self.run_test_pipeline(dataset, data_dict)
 
-    # TODO(#4375): Update tests to run actual pipeline code and only mock BQ I/O
     def run_test_pipeline(self,
                           dataset: str,
-                          fake_person_id_1: int,
+                          data_dict: DataTablesDict,
                           unifying_id_field_filter_set: Optional[Set[int]] = None,
                           metric_types_filter: Optional[Set[str]] = None):
         """Runs a test version of the recidivism pipeline."""
-        test_pipeline = TestPipeline()
 
-        # Get entities.StatePersons
-        persons = (
-            test_pipeline
-            | 'Load Persons' >>  # type: ignore
-            extractor_utils.BuildRootEntity(
-                dataset=dataset,
-                root_entity_class=entities.StatePerson,
-                unifying_id_field=entities.StatePerson.get_class_id_name(),
-                build_related_entities=True,
-                unifying_id_field_filter_set=unifying_id_field_filter_set))
-
-        # Get entities.StateIncarcerationPeriods
-        incarceration_periods = (
-            test_pipeline
-            | 'Load IncarcerationPeriods' >>  # type: ignore
-            extractor_utils.BuildRootEntity(
-                dataset=dataset,
-                root_entity_class=entities.StateIncarcerationPeriod,
-                unifying_id_field=entities.StatePerson.get_class_id_name(),
-                build_related_entities=True,
-                unifying_id_field_filter_set=unifying_id_field_filter_set))
-
-        # Get StateSupervisionViolations
-        supervision_violations = \
-            (test_pipeline
-             | 'Load SupervisionViolations' >>  # type: ignore
-             extractor_utils.BuildRootEntity(
-                 dataset=dataset,
-                 root_entity_class=entities.StateSupervisionViolation,
-                 unifying_id_field=entities.StatePerson.get_class_id_name(),
-                 build_related_entities=True,
-                 unifying_id_field_filter_set=unifying_id_field_filter_set
-             ))
-
-        # Get entities.StateSupervisionViolationResponses
-        supervision_violation_responses = \
-            (test_pipeline
-             | 'Load SupervisionViolationResponses' >>  # type: ignore
-             extractor_utils.BuildRootEntity(
-                 dataset=dataset,
-                 root_entity_class=entities.StateSupervisionViolationResponse,
-                 unifying_id_field=entities.StatePerson.get_class_id_name(),
-                 build_related_entities=True,
-                 unifying_id_field_filter_set=unifying_id_field_filter_set
-             ))
-
-        # Group entities.StateSupervisionViolationResponses and
-        # StateSupervisionViolations by person_id
-        supervision_violations_and_responses = (
-            {'violations': supervision_violations,
-             'violation_responses': supervision_violation_responses
-             } | 'Group entities.StateSupervisionViolationResponses to '
-                 'StateSupervisionViolations' >>
-            beam.CoGroupByKey()
-        )
-
-        # Set the fully hydrated StateSupervisionViolation entities on
-        # the corresponding entities.StateSupervisionViolationResponses
-        violation_responses_with_hydrated_violations = (
-            supervision_violations_and_responses
-            | 'Set hydrated StateSupervisionViolations on '
-              'the entities.StateSupervisionViolationResponses' >>
-            beam.ParDo(pipeline.SetViolationOnViolationsResponse()))
-
-        # Group entities.StateIncarcerationPeriods and entities.StateSupervisionViolationResponses
-        # by person_id
-        incarceration_periods_and_violation_responses = (
-            {'incarceration_periods': incarceration_periods,
-             'violation_responses':
-                 violation_responses_with_hydrated_violations}
-            | 'Group entities.StateIncarcerationPeriods to '
-              'entities.StateSupervisionViolationResponses' >>
-            beam.CoGroupByKey()
-        )
-
-        # Set the fully hydrated entities.StateSupervisionViolationResponse entities on
-        # the corresponding entities.StateIncarcerationPeriods
-        incarceration_periods_with_source_violations = (
-            incarceration_periods_and_violation_responses
-            | 'Set hydrated entities.StateSupervisionViolationResponses on'
-            'the entities.StateIncarcerationPeriods' >>
-            beam.ParDo(
-                pipeline.SetViolationResponseOnIncarcerationPeriod()))
-
-        # Group each entities.StatePerson with their entities.StateIncarcerationPeriods
-        person_and_incarceration_periods = (
-            {'person': persons,
-             'incarceration_periods':
-                 incarceration_periods_with_source_violations}
-            | 'Group entities.StatePerson to entities.StateIncarcerationPeriods' >>
-            beam.CoGroupByKey()
-        )
-
-        # Identify ReleaseEvents events from the entities.StatePerson's
-        # entities.StateIncarcerationPeriods
-        fake_person_id_to_county_query_result = [
-            {'person_id': fake_person_id_1,
-             'county_of_residence': _COUNTY_OF_RESIDENCE}]
-        person_id_to_county_kv = (
-            test_pipeline
-            | "Read person id to county associations from BigQuery" >>
-            beam.Create(fake_person_id_to_county_query_result)
-            | "Convert to KV" >>
-            beam.ParDo(ConvertDictToKVTuple(), 'person_id')
-        )
-
-        state_race_ethnicity_population_count = {
-            'state_code': 'US_XX',
-            'race_or_ethnicity': 'BLACK',
-            'population_count': 1,
-            'representation_priority': 1
+        expected_metric_types: Set[MetricType] = {
+            ReincarcerationRecidivismMetricType.REINCARCERATION_RATE,
+            ReincarcerationRecidivismMetricType.REINCARCERATION_COUNT
         }
 
-        state_race_ethnicity_population_counts = (
-            test_pipeline | 'Create state_race_ethnicity_population_count table' >> beam.Create(
-                [state_race_ethnicity_population_count])
+        read_from_bq_constructor = self.fake_bq_source_factory.create_fake_bq_source_constructor(dataset, data_dict)
+        write_to_bq_constructor = self.fake_bq_sink_factory.create_fake_bq_sink_constructor(
+            dataset,
+            expected_output_metric_types=expected_metric_types,
         )
 
-        person_release_events = (
-            person_and_incarceration_periods
-            | "ClassifyReleaseEvents" >>
-            beam.ParDo(ClassifyReleaseEvents(), AsDict(person_id_to_county_kv))
+        run_test_pipeline(
+            pipeline_module=pipeline,
+            state_code='CA',
+            dataset=dataset,
+            read_from_bq_constructor=read_from_bq_constructor,
+            write_to_bq_constructor=write_to_bq_constructor,
+            unifying_id_field_filter_set=unifying_id_field_filter_set,
+            metric_types_filter=metric_types_filter,
+            include_calculation_limit_args=False
         )
-
-        person_metadata = (persons
-                           | "Build the person_metadata dictionary" >>
-                           beam.ParDo(BuildPersonMetadata(),
-                                      AsList(state_race_ethnicity_population_counts)))
-
-        person_release_events_with_metadata = (
-                {
-                    'person_events': person_release_events,
-                    'person_metadata': person_metadata
-                }
-                | 'Group ReleaseEvents with person-level metadata' >> beam.CoGroupByKey()
-                | 'Organize StatePerson, PersonMetadata and ReleaseEvents for calculations' >>
-                beam.ParDo(pipeline.ExtractPersonReleaseEventsMetadata())
-        )
-
-        # Get pipeline job details for accessing job_id
-        all_pipeline_options = PipelineOptions().get_all_options()
-
-        # Add timestamp for local jobs
-        job_timestamp = datetime.datetime.now().strftime('%Y-%m-%d_%H_%M_%S.%f')
-        all_pipeline_options['job_timestamp'] = job_timestamp
-
-        metric_types = metric_types_filter if metric_types_filter else {'ALL'}
-
-        # Get recidivism metrics
-        recidivism_metrics = (person_release_events_with_metadata
-                              | 'Get Recidivism Metrics' >>  # type: ignore
-                              pipeline.GetRecidivismMetrics(
-                                  all_pipeline_options,
-                                  metric_types))
-
-        assert_that(recidivism_metrics, AssertMatchers.validate_pipeline_test())
-
-        test_pipeline.run()
 
 
 class TestClassifyReleaseEvents(unittest.TestCase):

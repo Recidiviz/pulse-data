@@ -18,12 +18,14 @@
 
 """Tests for supervision/pipeline.py"""
 import unittest
-from typing import Set, Optional, Dict, List, Any
+
+from more_itertools import one
+from typing import Set, Optional, Dict, List, Any, Collection
 from unittest import mock
 
 import apache_beam as beam
 import pytest
-from apache_beam.pvalue import AsDict, AsList
+from apache_beam.pvalue import AsDict
 from apache_beam.testing.util import assert_that, equal_to, BeamAssertException
 from apache_beam.testing.test_pipeline import TestPipeline
 from apache_beam.options.pipeline_options import PipelineOptions
@@ -37,7 +39,7 @@ from mock import patch
 
 from recidiviz.calculator.pipeline.supervision import pipeline
 from recidiviz.calculator.pipeline.supervision.metrics import \
-    SupervisionMetric, SupervisionMetricType, SupervisionRevocationMetric, \
+    SupervisionMetricType, SupervisionRevocationMetric, \
     SupervisionRevocationViolationTypeAnalysisMetric, SupervisionPopulationMetric, \
     SupervisionRevocationAnalysisMetric, \
     SupervisionTerminationMetric, SupervisionSuccessMetric, \
@@ -47,14 +49,11 @@ from recidiviz.calculator.pipeline.supervision.supervision_time_bucket import \
     NonRevocationReturnSupervisionTimeBucket, \
     RevocationReturnSupervisionTimeBucket, \
     ProjectedSupervisionCompletionBucket, SupervisionTerminationBucket, SupervisionTimeBucket
-from recidiviz.calculator.pipeline.utils.beam_utils import ConvertDictToKVTuple
-from recidiviz.calculator.pipeline.utils.entity_hydration_utils import ConvertSentencesToStateSpecificType
 from recidiviz.calculator.pipeline.utils.metric_utils import \
-    MetricMethodologyType
-from recidiviz.calculator.pipeline.utils import extractor_utils
-from recidiviz.calculator.pipeline.utils.person_utils import PersonMetadata, BuildPersonMetadata, \
-    ExtractPersonEventsMetadata
+    MetricMethodologyType, RecidivizMetricType
+from recidiviz.calculator.pipeline.utils.person_utils import PersonMetadata, ExtractPersonEventsMetadata
 from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_sentence_classification import SupervisionTypeSpan
+from recidiviz.common.constants.person_characteristics import Race
 from recidiviz.common.constants.state.state_assessment import \
     StateAssessmentType
 from recidiviz.common.constants.state.state_case_type import \
@@ -84,10 +83,14 @@ from recidiviz.persistence.entity.state.entities import \
 from recidiviz.persistence.entity.state.entities import StatePerson
 from recidiviz.tests.calculator.calculator_test_utils import \
     normalized_database_base_dict
-from recidiviz.tests.calculator.pipeline.fake_bigquery import FakeReadFromBigQueryFactory
+from recidiviz.tests.calculator.pipeline.fake_bigquery import FakeReadFromBigQueryFactory, FakeWriteToBigQueryFactory, \
+    FakeWriteToBigQuery, DataTablesDict
 from recidiviz.tests.calculator.pipeline.supervision import identifier_test
+from recidiviz.tests.calculator.pipeline.utils.run_pipeline_test_utils import run_test_pipeline
 from recidiviz.tests.calculator.pipeline.utils.us_mo_fakes import FakeUsMoSupervisionSentence
 from recidiviz.tests.persistence.database import database_test_utils
+
+SUPERVISION_PIPELINE_PACKAGE_NAME = pipeline.__name__
 
 
 class TestSupervisionPipeline(unittest.TestCase):
@@ -95,6 +98,7 @@ class TestSupervisionPipeline(unittest.TestCase):
 
     def setUp(self) -> None:
         self.fake_bq_source_factory = FakeReadFromBigQueryFactory()
+        self.fake_bq_sink_factory = FakeWriteToBigQueryFactory(SupervisionPipelineFakeWriteToBigQuery)
 
         self.metric_inclusions_dict: Dict[str, bool] = {
             metric_type.value: True for metric_type in SupervisionMetricType
@@ -141,19 +145,32 @@ class TestSupervisionPipeline(unittest.TestCase):
             schema.StateSupervisionViolationResponseDecisionEntry.__tablename__: [],
             schema.state_incarceration_period_program_assignment_association_table.name: [],
             schema.StateEarlyDischarge.__tablename__: [],
-            schema.StateSupervisionContact.__tablename__: []
+            schema.StateSupervisionContact.__tablename__: [],
+            schema.state_supervision_period_supervision_violation_association_table.name: [],
+            schema.state_supervision_period_program_assignment_association_table.name: [],
+            schema.StateSupervisionCaseTypeEntry.__tablename__: [],
+            schema.state_supervision_period_supervision_contact_association_table.name: [],
         }
 
     def build_supervision_pipeline_data_dict(
-            self, fake_person_id: int, fake_supervision_period_id: int):
+            self, fake_person_id: int, fake_supervision_period_id: int, fake_svr_id: int):
         """Builds a data_dict for a basic run of the pipeline."""
         fake_person = schema.StatePerson(
             state_code='US_XX',
-            person_id=fake_person_id, gender=Gender.MALE,
+            person_id=fake_person_id,
+            gender=Gender.MALE,
             birthdate=date(1970, 1, 1),
             residency_status=ResidencyStatus.PERMANENT)
 
         persons_data = [normalized_database_base_dict(fake_person)]
+
+        fake_person_race = schema.StatePersonRace(
+            state_code='US_XX',
+            person_id=fake_person_id,
+            race=Race.BLACK,
+            race_raw_text=Race.BLACK.name
+        )
+        person_race_data = [normalized_database_base_dict(fake_person_race)]
 
         initial_incarceration = schema.StateIncarcerationPeriod(
             incarceration_period_id=1111,
@@ -211,6 +228,7 @@ class TestSupervisionPipeline(unittest.TestCase):
         supervision_sentence = schema.StateSupervisionSentence(
             supervision_sentence_id=1122,
             state_code='US_XX',
+            supervision_type=StateSupervisionType.PROBATION,
             supervision_periods=[supervision_period],
             start_date=date(2015, 3, 1),
             projected_completion_date=date(2016, 12, 31),
@@ -243,12 +261,14 @@ class TestSupervisionPipeline(unittest.TestCase):
 
         assessment = schema.StateAssessment(
             assessment_id=298374,
+            state_code='US_XX',
             assessment_date=date(2015, 3, 19),
             assessment_type=StateAssessmentType.LSIR,
             person_id=fake_person_id
         )
 
         supervision_contact = schema.StateSupervisionContact(
+            state_code='US_XX',
             contact_date=supervision_period.start_date,
             person_id=fake_person_id
         )
@@ -304,225 +324,37 @@ class TestSupervisionPipeline(unittest.TestCase):
             normalized_database_base_dict(supervision_contact)
         ]
 
-        data_dict = self._default_data_dict()
-        data_dict_overrides = {
-            schema.StatePerson.__tablename__: persons_data,
-            schema.StateIncarcerationPeriod.__tablename__: incarceration_periods_data,
-            schema.StateSupervisionViolationResponse.__tablename__: supervision_violation_response_data,
-            schema.StateSupervisionViolation.__tablename__: supervision_violation_data,
-            schema.StateSupervisionPeriod.__tablename__: supervision_periods_data,
-            schema.StateSupervisionSentence.__tablename__: supervision_sentences_data,
-            schema.StateIncarcerationSentence.__tablename__: incarceration_sentences_data,
-            schema.StateCharge.__tablename__: charge_data,
-            schema.state_supervision_sentence_supervision_period_association_table.name:
-            supervision_sentence_supervision_period_association,
-            schema.StateAssessment.__tablename__: assessment_data,
-            schema.StateSupervisionContact.__tablename__: supervision_contact_data
-        }
-        data_dict.update(data_dict_overrides)
+        ssvr_to_agent_data = [{
+            'state_code': 'US_XX',
+            'agent_id': 1010,
+            'agent_external_id': 'OFFICER0009',
+            'district_external_id': '10',
+            'supervision_violation_response_id': fake_svr_id
+        }]
 
-        return data_dict
+        supervision_period_to_agent_data = [{
+            'state_code': 'US_XX',
+            'agent_id': 1010,
+            'agent_external_id': 'OFFICER0009',
+            'district_external_id': '10',
+            'supervision_period_id': fake_supervision_period_id
+        }]
 
-    def testSupervisionPipeline(self):
-        fake_person_id = 12345
-        fake_supervision_period_id = 1111
-        fake_svr_id = \
-            database_test_utils.generate_test_supervision_violation_response(
-                fake_person_id).supervision_violation_response_id
+        supervision_period_judicial_district_association_data = [{
+            'state_code': 'US_XX',
+            'person_id': fake_person_id,
+            'supervision_period_id': fake_supervision_period_id,
+            'judicial_district_code': 'XXX',
+        }]
 
-        data_dict = self.build_supervision_pipeline_data_dict(
-            fake_person_id, fake_supervision_period_id)
-        dataset = 'recidiviz-123.state'
+        state_race_ethnicity_population_count_data = [{
+            'state_code': 'US_XX',
+            'race_or_ethnicity': 'BLACK',
+            'population_count': 1,
+            'representation_priority': 1
+        }]
 
-        expected_metric_types = {
-            SupervisionMetricType.SUPERVISION_POPULATION,
-            SupervisionMetricType.SUPERVISION_SUCCESS,
-            SupervisionMetricType.SUPERVISION_TERMINATION
-        }
-
-        # We do not expect any aggregate metrics
-        expected_aggregate_metric_types = set()
-
-        with patch('recidiviz.calculator.pipeline.utils.extractor_utils.ReadFromBigQuery',
-                   self.fake_bq_source_factory.create_fake_bq_source_constructor(dataset, data_dict)):
-            self.run_test_pipeline(dataset,
-                                   fake_person_id,
-                                   fake_supervision_period_id,
-                                   fake_svr_id,
-                                   expected_metric_types,
-                                   expected_aggregate_metric_types)
-
-    def testSupervisionPipelineWithFilterSet(self):
-        fake_person_id = 12345
-        fake_supervision_period_id = 1111
-        fake_svr_id = \
-            database_test_utils.generate_test_supervision_violation_response(
-                fake_person_id).supervision_violation_response_id
-
-        data_dict = self.build_supervision_pipeline_data_dict(
-            fake_person_id, fake_supervision_period_id)
-        dataset = 'recidiviz-123.state'
-
-        expected_metric_types = {
-            SupervisionMetricType.SUPERVISION_POPULATION,
-            SupervisionMetricType.SUPERVISION_SUCCESS,
-            SupervisionMetricType.SUPERVISION_TERMINATION
-        }
-
-        # We do not expect any aggregate metrics
-        expected_aggregate_metric_types = set()
-
-        with patch('recidiviz.calculator.pipeline.utils.extractor_utils.ReadFromBigQuery',
-                   self.fake_bq_source_factory.create_fake_bq_source_constructor(dataset, data_dict)):
-            self.run_test_pipeline(dataset,
-
-                                   fake_person_id,
-                                   fake_supervision_period_id,
-                                   fake_svr_id,
-                                   expected_metric_types,
-                                   expected_aggregate_metric_types,
-                                   unifying_id_field_filter_set={fake_person_id})
-
-    # TODO(#4375): Update tests to run actual pipeline code and only mock BQ I/O
-    @staticmethod
-    def run_test_pipeline(dataset: str,
-                          fake_person_id: int,
-                          fake_supervision_period_id: int,
-                          fake_svr_id: int,
-                          expected_metric_types: Set[SupervisionMetricType],
-                          expected_aggregate_metric_types: Set[SupervisionMetricType],
-                          expected_violation_types: Set[ViolationType] = None,
-                          unifying_id_field_filter_set: Optional[Set[int]] = None,
-                          metric_types_filter: Optional[Set[str]] = None):
-        """Runs a test version of the supervision pipeline."""
-        test_pipeline = TestPipeline()
-
-        # Get StatePersons
-        persons = (test_pipeline
-                   | 'Load Persons' >>  # type: ignore
-                   extractor_utils.BuildRootEntity(
-                       dataset=dataset,
-                       root_entity_class=entities.StatePerson,
-                       unifying_id_field=entities.StatePerson.get_class_id_name(),
-                       build_related_entities=True,
-                       unifying_id_field_filter_set=unifying_id_field_filter_set))
-
-        # Get StateIncarcerationPeriods
-        incarceration_periods = (test_pipeline
-                                 | 'Load IncarcerationPeriods' >>  # type: ignore
-                                 extractor_utils.BuildRootEntity(
-                                     dataset=dataset,
-                                     root_entity_class=entities.StateIncarcerationPeriod,
-                                     unifying_id_field=entities.StatePerson.get_class_id_name(),
-                                     build_related_entities=True,
-                                     unifying_id_field_filter_set=unifying_id_field_filter_set
-                                 ))
-
-        # Get StateSupervisionViolations
-        supervision_violations = \
-            (test_pipeline
-             | 'Load SupervisionViolations' >>  # type: ignore
-             extractor_utils.BuildRootEntity(
-                 dataset=dataset,
-                 root_entity_class=entities.StateSupervisionViolation,
-                 unifying_id_field=entities.StatePerson.get_class_id_name(),
-                 build_related_entities=True,
-                 unifying_id_field_filter_set=unifying_id_field_filter_set
-             ))
-
-        # Get StateSupervisionViolationResponses
-        supervision_violation_responses = \
-            (test_pipeline
-             | 'Load SupervisionViolationResponses' >>  # type: ignore
-             extractor_utils.BuildRootEntity(
-                 dataset=dataset,
-                 root_entity_class=entities.StateSupervisionViolationResponse,
-                 unifying_id_field=entities.StatePerson.get_class_id_name(),
-                 build_related_entities=True,
-                 unifying_id_field_filter_set=unifying_id_field_filter_set
-             ))
-
-        # Get StateSupervisionSentences
-        supervision_sentences = (test_pipeline
-                                 | 'Load SupervisionSentences' >>  # type: ignore
-                                 extractor_utils.BuildRootEntity(
-                                     dataset=dataset,
-                                     root_entity_class=entities.StateSupervisionSentence,
-                                     unifying_id_field=entities.StatePerson.get_class_id_name(),
-                                     build_related_entities=True,
-                                     unifying_id_field_filter_set=unifying_id_field_filter_set))
-
-        # Get StateIncarcerationSentences
-        incarceration_sentences = (test_pipeline
-                                   | 'Load IncarcerationSentences' >>  # type: ignore
-                                   extractor_utils.BuildRootEntity(
-                                       dataset=dataset,
-                                       root_entity_class=entities.StateIncarcerationSentence,
-                                       unifying_id_field=entities.StatePerson.get_class_id_name(),
-                                       build_related_entities=True,
-                                       unifying_id_field_filter_set=unifying_id_field_filter_set))
-
-        # Get StateSupervisionPeriods
-        supervision_periods = (test_pipeline
-                               | 'Load SupervisionPeriods' >>  # type: ignore
-                               extractor_utils.BuildRootEntity(
-                                   dataset=dataset,
-                                   root_entity_class=entities.StateSupervisionPeriod,
-                                   unifying_id_field=entities.StatePerson.get_class_id_name(),
-                                   build_related_entities=False,
-                                   unifying_id_field_filter_set=unifying_id_field_filter_set))
-
-        # Get StateAssessments
-        assessments = (test_pipeline
-                       | 'Load Assessments' >>  # type: ignore
-                       extractor_utils.BuildRootEntity(
-                           dataset=dataset,
-                           root_entity_class=entities.StateAssessment,
-                           unifying_id_field=entities.StatePerson.get_class_id_name(),
-                           build_related_entities=False,
-                           unifying_id_field_filter_set=unifying_id_field_filter_set))
-
-        supervision_contacts = (test_pipeline
-                                | 'Load SupervisionContacts' >>  # type: ignore
-                                extractor_utils.BuildRootEntity(
-                                    dataset=dataset,
-                                    root_entity_class=entities.StateSupervisionContact,
-                                    unifying_id_field=entities.StatePerson.get_class_id_name(),
-                                    build_related_entities=False,
-                                    unifying_id_field_filter_set=unifying_id_field_filter_set)
-                                )
-
-        # Group StateSupervisionViolationResponses and StateSupervisionViolations by person_id
-        supervision_violations_and_responses = (
-            {'violations': supervision_violations,
-             'violation_responses': supervision_violation_responses
-             } | 'Group StateSupervisionViolationResponses to StateSupervisionViolations' >>
-            beam.CoGroupByKey()
-        )
-
-        # Set the fully hydrated StateSupervisionViolation entities on the corresponding
-        # StateSupervisionViolationResponses
-        violation_responses_with_hydrated_violations = (
-            supervision_violations_and_responses
-            | 'Set hydrated StateSupervisionViolations on the StateSupervisionViolationResponses' >>
-            beam.ParDo(pipeline.SetViolationOnViolationsResponse()))
-
-        # Group StateIncarcerationPeriods and StateSupervisionViolationResponses by person_id
-        incarceration_periods_and_violation_responses = (
-            {'incarceration_periods': incarceration_periods,
-             'violation_responses': violation_responses_with_hydrated_violations}
-            | 'Group StateIncarcerationPeriods to StateSupervisionViolationResponses' >>
-            beam.CoGroupByKey()
-        )
-
-        # Set the fully hydrated StateSupervisionViolationResponse entities on
-        # the corresponding StateIncarcerationPeriods
-        incarceration_periods_with_source_violations = (
-            incarceration_periods_and_violation_responses
-            | 'Set hydrated StateSupervisionViolationResponses on the StateIncarcerationPeriods' >>
-            beam.ParDo(pipeline.SetViolationResponseOnIncarcerationPeriod()))
-
-        us_mo_sentence_status_rows: List[Dict[str, Any]] = [
+        us_mo_sentence_status_data: List[Dict[str, Any]] = [
             {'person_id': fake_person_id, 'sentence_external_id': 'is-123', 'sentence_status_external_id': 'is-123-1',
              'status_code': '10I1000', 'status_date': '20081120',
              'status_description': 'New Court Comm-Institution'},
@@ -540,165 +372,102 @@ class TestSupervisionPipeline(unittest.TestCase):
              'status_code': '45O1010', 'status_date': '20170104', 'status_description': 'Parole Ret-Tech Viol'},
         ]
 
-        us_mo_sentence_statuses = (
-            test_pipeline | 'Create MO sentence statuses' >> beam.Create(
-                us_mo_sentence_status_rows)
-        )
+        data_dict = self._default_data_dict()
+        data_dict_overrides = {
+            schema.StatePerson.__tablename__: persons_data,
+            schema.StatePersonRace.__tablename__: person_race_data,
+            schema.StateIncarcerationPeriod.__tablename__: incarceration_periods_data,
+            schema.StateSupervisionViolationResponse.__tablename__: supervision_violation_response_data,
+            schema.StateSupervisionViolation.__tablename__: supervision_violation_data,
+            schema.StateSupervisionPeriod.__tablename__: supervision_periods_data,
+            schema.StateSupervisionSentence.__tablename__: supervision_sentences_data,
+            schema.StateIncarcerationSentence.__tablename__: incarceration_sentences_data,
+            schema.StateCharge.__tablename__: charge_data,
+            schema.state_supervision_sentence_supervision_period_association_table.name:
+            supervision_sentence_supervision_period_association,
+            schema.StateAssessment.__tablename__: assessment_data,
+            schema.StateSupervisionContact.__tablename__: supervision_contact_data,
+            'ssvr_to_agent_association': ssvr_to_agent_data,
+            'supervision_period_to_agent_association': supervision_period_to_agent_data,
+            'supervision_period_judicial_district_association': supervision_period_judicial_district_association_data,
+            'state_race_ethnicity_population_counts': state_race_ethnicity_population_count_data,
+            'us_mo_sentence_statuses': us_mo_sentence_status_data,
+        }
+        data_dict.update(data_dict_overrides)
 
-        us_mo_sentence_status_rankings_as_kv = (
-            us_mo_sentence_statuses |
-            'Convert MO sentence status ranking table to KV tuples' >>
-            beam.ParDo(ConvertDictToKVTuple(), 'person_id')
-        )
+        return data_dict
 
-        sentences_and_statuses = (
-            {'incarceration_sentences': incarceration_sentences,
-             'supervision_sentences': supervision_sentences,
-             'sentence_statuses': us_mo_sentence_status_rankings_as_kv}
-            | 'Group sentences to the sentence statuses for that person' >>
-            beam.CoGroupByKey()
-        )
+    @freeze_time('2017-01-31')
+    def testSupervisionPipeline(self):
+        fake_person_id = 12345
+        fake_supervision_period_id = 1111
+        fake_svr_id = \
+            database_test_utils.generate_test_supervision_violation_response(
+                fake_person_id).supervision_violation_response_id
 
-        sentences_converted = (
-            sentences_and_statuses
-            | 'Convert to state-specific sentences' >>
-            beam.ParDo(ConvertSentencesToStateSpecificType()).with_outputs('incarceration_sentences',
-                                                                           'supervision_sentences')
-        )
+        data_dict = self.build_supervision_pipeline_data_dict(
+            fake_person_id, fake_supervision_period_id, fake_svr_id)
+        dataset = 'recidiviz-123.state'
 
-        supervision_period_judicial_district_association_rows = [{
-            'state_code': 'US_XX',
-            'person_id': fake_person_id,
-            'supervision_period_id': fake_supervision_period_id,
-            'judicial_district_code': 'XXX',
-        }]
-
-        sp_to_judicial_district_kv = (
-            test_pipeline | "Read supervision_period to judicial_district associations from BigQuery" >>
-            beam.Create(supervision_period_judicial_district_association_rows)
-            | "Convert supervision_period to judicial_district association table to KV" >>
-            beam.ParDo(ConvertDictToKVTuple(), 'person_id')
-        )
-
-        # Group each StatePerson with their StateIncarcerationPeriods and
-        # StateSupervisionSentences
-        person_periods_and_sentences = (
-            {'person': persons,
-             'assessments': assessments,
-             'supervision_periods': supervision_periods,
-             'incarceration_periods': incarceration_periods_with_source_violations,
-             'supervision_sentences': sentences_converted.supervision_sentences,
-             'incarceration_sentences': sentences_converted.incarceration_sentences,
-             'violation_responses': violation_responses_with_hydrated_violations,
-             'supervision_contacts': supervision_contacts,
-             'supervision_period_judicial_district_association': sp_to_judicial_district_kv
-             }
-            | 'Group StatePerson to StateIncarcerationPeriods and StateSupervisionPeriods' >>
-            beam.CoGroupByKey()
-        )
-
-        ssvr_to_agent_map = {
-            'agent_id': 1010,
-            'agent_external_id': 'OFFICER0009',
-            'district_external_id': '10',
-            'supervision_violation_response_id': fake_svr_id
+        expected_metric_types = {
+            SupervisionMetricType.SUPERVISION_POPULATION,
+            SupervisionMetricType.SUPERVISION_SUCCESS,
+            SupervisionMetricType.SUPERVISION_TERMINATION,
+            SupervisionMetricType.SUPERVISION_SUCCESSFUL_SENTENCE_DAYS_SERVED
         }
 
-        ssvr_to_agent_associations = (
-            test_pipeline | 'Create SSVR to Agent table' >> beam.Create(
-                [ssvr_to_agent_map])
-        )
+        self.run_test_pipeline(dataset,
+                               data_dict,
+                               expected_metric_types)
 
-        ssvr_agent_associations_as_kv = (
-            ssvr_to_agent_associations | 'Convert SSVR to Agent table to KV tuples' >>
-            beam.ParDo(pipeline.ConvertDictToKVTuple(),
-                       'supervision_violation_response_id')
-        )
+    @freeze_time('2017-01-31')
+    def testSupervisionPipelineWithPersonIdFilterSet(self):
+        fake_person_id = 12345
+        fake_supervision_period_id = 1111
+        fake_svr_id = \
+            database_test_utils.generate_test_supervision_violation_response(
+                fake_person_id).supervision_violation_response_id
 
-        supervision_period_to_agent_map = {
-            'agent_id': 1010,
-            'agent_external_id': 'OFFICER0009',
-            'district_external_id': '10',
-            'supervision_period_id': fake_supervision_period_id
+        data_dict = self.build_supervision_pipeline_data_dict(
+            fake_person_id, fake_supervision_period_id, fake_svr_id)
+        dataset = 'recidiviz-123.state'
+
+        expected_metric_types = {
+            SupervisionMetricType.SUPERVISION_POPULATION,
+            SupervisionMetricType.SUPERVISION_SUCCESS,
+            SupervisionMetricType.SUPERVISION_TERMINATION
         }
 
-        supervision_period_to_agent_associations = (
-            test_pipeline | 'Create SupervisionPeriod to Agent table' >> beam.Create(
-                [supervision_period_to_agent_map])
+        self.run_test_pipeline(dataset,
+                               data_dict,
+                               expected_metric_types,
+                               unifying_id_field_filter_set={fake_person_id})
+
+    def run_test_pipeline(self,
+                          dataset: str,
+                          data_dict: DataTablesDict,
+                          expected_metric_types: Set[SupervisionMetricType],
+                          expected_violation_types: Set[ViolationType] = None,
+                          unifying_id_field_filter_set: Optional[Set[int]] = None,
+                          metric_types_filter: Optional[Set[str]] = None) -> None:
+        """Runs a test version of the supervision pipeline."""
+        read_from_bq_constructor = self.fake_bq_source_factory.create_fake_bq_source_constructor(dataset, data_dict)
+        write_to_bq_constructor = self.fake_bq_sink_factory.create_fake_bq_sink_constructor(
+            dataset,
+            expected_output_metric_types=expected_metric_types,
+            expected_violation_types=expected_violation_types
         )
+        with patch(f'{SUPERVISION_PIPELINE_PACKAGE_NAME}.ReadFromBigQuery', read_from_bq_constructor):
+            run_test_pipeline(
+                pipeline_module=pipeline,
+                state_code='US_XX',
+                dataset=dataset,
+                read_from_bq_constructor=read_from_bq_constructor,
+                write_to_bq_constructor=write_to_bq_constructor,
+                unifying_id_field_filter_set=unifying_id_field_filter_set,
+                metric_types_filter=metric_types_filter
+            )
 
-        supervision_periods_to_agent_associations_as_kv = (
-            supervision_period_to_agent_associations |
-            'Convert SupervisionPeriod to Agent table to KV tuples' >>
-            beam.ParDo(pipeline.ConvertDictToKVTuple(),
-                       'supervision_period_id')
-        )
-
-        state_race_ethnicity_population_count = {
-            'state_code': 'US_XX',
-            'race_or_ethnicity': 'BLACK',
-            'population_count': 1,
-            'representation_priority': 1
-        }
-
-        state_race_ethnicity_population_counts = (
-            test_pipeline | 'Create state_race_ethnicity_population_count table' >> beam.Create(
-                [state_race_ethnicity_population_count])
-        )
-
-        # Identify SupervisionTimeBuckets from the StatePerson's
-        # StateSupervisionSentences and StateIncarcerationPeriods
-        person_time_buckets = (
-            person_periods_and_sentences
-            | beam.ParDo(
-                pipeline.ClassifySupervisionTimeBuckets(),
-                AsDict(ssvr_agent_associations_as_kv),
-                AsDict(supervision_periods_to_agent_associations_as_kv)))
-
-        person_metadata = (persons
-                           | "Build the person_metadata dictionary" >>
-                           beam.ParDo(BuildPersonMetadata(),
-                                      AsList(state_race_ethnicity_population_counts)))
-
-        person_time_buckets_with_metadata = (
-            {
-                'person_events': person_time_buckets,
-                'person_metadata': person_metadata
-            }
-            | 'Group SupervisionTimeBuckets with person-level metadata' >> beam.CoGroupByKey()
-            | 'Organize StatePerson, PersonMetadata and SupervisionTimeBuckets for calculations' >>
-            beam.ParDo(ExtractPersonEventsMetadata())
-        )
-
-        # Get pipeline job details for accessing job_id
-        all_pipeline_options = PipelineOptions().get_all_options()
-
-        # Add timestamp for local jobs
-        job_timestamp = datetime.datetime.now().strftime('%Y-%m-%d_%H_%M_%S.%f')
-        all_pipeline_options['job_timestamp'] = job_timestamp
-
-        metric_types = metric_types_filter if metric_types_filter else {'ALL'}
-
-        # Get supervision metrics
-        supervision_metrics = (person_time_buckets_with_metadata
-                               | 'Get Supervision Metrics' >>  # type: ignore
-                               pipeline.GetSupervisionMetrics(
-                                   pipeline_options=all_pipeline_options,
-                                   metric_types=metric_types,
-                                   calculation_end_month=None,
-                                   calculation_month_count=-1))
-
-        assert_that(supervision_metrics, AssertMatchers.validate_pipeline_test(expected_metric_types,
-                                                                               expected_aggregate_metric_types))
-
-        if expected_violation_types:
-            for expected_violation_type in expected_violation_types:
-                assert_that(supervision_metrics,
-                            AssertMatchers.assert_source_violation_type_set(
-                                expected_violation_type),
-                            f"Assert source violation {expected_violation_type} type is set")
-
-        test_pipeline.run()
 
     @freeze_time('2017-01-31')
     def testSupervisionPipeline_withRevocations(self):
@@ -893,6 +662,36 @@ class TestSupervisionPipeline(unittest.TestCase):
             normalized_database_base_dict(assessment)
         ]
 
+        ssvr_to_agent_data = [{
+            'state_code': 'US_XX',
+            'agent_id': 1010,
+            'agent_external_id': 'OFFICER0009',
+            'district_external_id': '10',
+            'supervision_violation_response_id': fake_svr_id
+        }]
+
+        supervision_period_to_agent_data = [{
+            'state_code': 'US_XX',
+            'agent_id': 1010,
+            'agent_external_id': 'OFFICER0009',
+            'district_external_id': '10',
+            'supervision_period_id': supervision_period.supervision_period_id
+        }]
+
+        supervision_period_judicial_district_association_data = [{
+            'state_code': 'US_XX',
+            'person_id': fake_person_id,
+            'supervision_period_id': supervision_period.supervision_period_id,
+            'judicial_district_code': 'XXX',
+        }]
+
+        state_race_ethnicity_population_count_data = [{
+            'state_code': 'US_XX',
+            'race_or_ethnicity': 'BLACK',
+            'population_count': 1,
+            'representation_priority': 1
+        }]
+
         data_dict = self._default_data_dict()
         data_dict_overrides = {
             schema.StatePerson.__tablename__: persons_data,
@@ -907,6 +706,10 @@ class TestSupervisionPipeline(unittest.TestCase):
             schema.state_supervision_sentence_supervision_period_association_table.name:
             supervision_sentence_supervision_period_association,
             schema.StateAssessment.__tablename__: assessment_data,
+            'ssvr_to_agent_association': ssvr_to_agent_data,
+            'supervision_period_to_agent_association': supervision_period_to_agent_data,
+            'supervision_period_judicial_district_association': supervision_period_judicial_district_association_data,
+            'state_race_ethnicity_population_counts': state_race_ethnicity_population_count_data,
         }
         data_dict.update(data_dict_overrides)
 
@@ -920,19 +723,11 @@ class TestSupervisionPipeline(unittest.TestCase):
             SupervisionMetricType.SUPERVISION_TERMINATION
         }
 
-        expected_aggregate_metric_types = {
-            SupervisionMetricType.SUPERVISION_REVOCATION_VIOLATION_TYPE_ANALYSIS}
+        self.run_test_pipeline(dataset,
+                               data_dict,
+                               expected_metric_types)
 
-        with patch('recidiviz.calculator.pipeline.utils.extractor_utils.ReadFromBigQuery',
-                   self.fake_bq_source_factory.create_fake_bq_source_constructor(dataset, data_dict)):
-            self.run_test_pipeline(dataset,
-
-                                   fake_person_id,
-                                   supervision_period.supervision_period_id,
-                                   fake_svr_id,
-                                   expected_metric_types,
-                                   expected_aggregate_metric_types)
-
+    @freeze_time('2017-07-31')
     def testSupervisionPipeline_withTechnicalRevocations(self):
         fake_person_id = 562
         fake_svr_id = 5582552
@@ -1101,7 +896,8 @@ class TestSupervisionPipeline(unittest.TestCase):
             supervision_violated_conditions=[supervision_violation_condition]
         )
 
-        assessment = schema.StateAssessment(assessment_id=298374, assessment_date=date(2016, 12, 20),
+        assessment = schema.StateAssessment(assessment_id=298374, state_code='US_XX',
+                                            assessment_date=date(2016, 12, 20),
                                             assessment_score=32, assessment_type=StateAssessmentType.LSIR,
                                             person_id=fake_person_id)
 
@@ -1152,6 +948,36 @@ class TestSupervisionPipeline(unittest.TestCase):
             normalized_database_base_dict(assessment)
         ]
 
+        ssvr_to_agent_data = [{
+            'state_code': 'US_XX',
+            'agent_id': 1010,
+            'agent_external_id': 'OFFICER0009',
+            'district_external_id': '10',
+            'supervision_violation_response_id': fake_svr_id
+        }]
+
+        supervision_period_to_agent_data = [{
+            'state_code': 'US_XX',
+            'agent_id': 1010,
+            'agent_external_id': 'OFFICER0009',
+            'district_external_id': '10',
+            'supervision_period_id': supervision_period.supervision_period_id
+        }]
+
+        supervision_period_judicial_district_association_data = [{
+            'state_code': 'US_XX',
+            'person_id': fake_person_id,
+            'supervision_period_id': supervision_period.supervision_period_id,
+            'judicial_district_code': 'XXX',
+        }]
+
+        state_race_ethnicity_population_count_data = [{
+            'state_code': 'US_XX',
+            'race_or_ethnicity': 'BLACK',
+            'population_count': 1,
+            'representation_priority': 1
+        }]
+
         data_dict = self._default_data_dict()
         data_dict_overrides = {
             schema.StatePerson.__tablename__: persons_data,
@@ -1166,6 +992,10 @@ class TestSupervisionPipeline(unittest.TestCase):
             schema.state_supervision_sentence_supervision_period_association_table.name:
             supervision_sentence_supervision_period_association,
             schema.StateAssessment.__tablename__: assessment_data,
+            'ssvr_to_agent_association': ssvr_to_agent_data,
+            'supervision_period_to_agent_association': supervision_period_to_agent_data,
+            'supervision_period_judicial_district_association': supervision_period_judicial_district_association_data,
+            'state_race_ethnicity_population_counts': state_race_ethnicity_population_count_data,
         }
         data_dict.update(data_dict_overrides)
 
@@ -1180,21 +1010,13 @@ class TestSupervisionPipeline(unittest.TestCase):
             SupervisionMetricType.SUPERVISION_TERMINATION
         }
 
-        expected_aggregate_metric_types = {
-            SupervisionMetricType.SUPERVISION_REVOCATION_VIOLATION_TYPE_ANALYSIS}
-
         expected_violation_types = {
             ViolationType.FELONY, ViolationType.TECHNICAL}
-        with patch('recidiviz.calculator.pipeline.utils.extractor_utils.ReadFromBigQuery',
-                   self.fake_bq_source_factory.create_fake_bq_source_constructor(dataset, data_dict)):
-            self.run_test_pipeline(dataset,
 
-                                   fake_person_id,
-                                   supervision_period.supervision_period_id,
-                                   fake_svr_id,
-                                   expected_metric_types,
-                                   expected_aggregate_metric_types,
-                                   expected_violation_types)
+        self.run_test_pipeline(dataset,
+                               data_dict,
+                               expected_metric_types,
+                               expected_violation_types)
 
     @freeze_time('2017-01-31')
     def testSupervisionPipeline_withMetricTypesFilter(self):
@@ -1388,6 +1210,36 @@ class TestSupervisionPipeline(unittest.TestCase):
             normalized_database_base_dict(assessment)
         ]
 
+        ssvr_to_agent_data = [{
+            'state_code': 'US_XX',
+            'agent_id': 1010,
+            'agent_external_id': 'OFFICER0009',
+            'district_external_id': '10',
+            'supervision_violation_response_id': fake_svr_id
+        }]
+
+        supervision_period_to_agent_data = [{
+            'state_code': 'US_XX',
+            'agent_id': 1010,
+            'agent_external_id': 'OFFICER0009',
+            'district_external_id': '10',
+            'supervision_period_id': supervision_period.supervision_period_id
+        }]
+
+        supervision_period_judicial_district_association_data = [{
+            'state_code': 'US_XX',
+            'person_id': fake_person_id,
+            'supervision_period_id': supervision_period.supervision_period_id,
+            'judicial_district_code': 'XXX',
+        }]
+
+        state_race_ethnicity_population_count_data = [{
+            'state_code': 'US_XX',
+            'race_or_ethnicity': 'BLACK',
+            'population_count': 1,
+            'representation_priority': 1
+        }]
+
         data_dict = self._default_data_dict()
         data_dict_overrides = {
             schema.StatePerson.__tablename__: persons_data,
@@ -1402,6 +1254,10 @@ class TestSupervisionPipeline(unittest.TestCase):
             schema.state_supervision_sentence_supervision_period_association_table.name:
             supervision_sentence_supervision_period_association,
             schema.StateAssessment.__tablename__: assessment_data,
+            'ssvr_to_agent_association': ssvr_to_agent_data,
+            'supervision_period_to_agent_association': supervision_period_to_agent_data,
+            'supervision_period_judicial_district_association': supervision_period_judicial_district_association_data,
+            'state_race_ethnicity_population_counts': state_race_ethnicity_population_count_data,
         }
         data_dict.update(data_dict_overrides)
 
@@ -1413,24 +1269,16 @@ class TestSupervisionPipeline(unittest.TestCase):
             SupervisionMetricType.SUPERVISION_TERMINATION
         }
 
-        # We do not expect any aggregate metrics
-        expected_aggregate_metric_types = set()
-
         metric_types_filter = {
             metric.value for metric in expected_metric_types
         }
 
-        with patch('recidiviz.calculator.pipeline.utils.extractor_utils.ReadFromBigQuery',
-                   self.fake_bq_source_factory.create_fake_bq_source_constructor(dataset, data_dict)):
-            self.run_test_pipeline(dataset,
+        self.run_test_pipeline(dataset,
+                               data_dict,
+                               expected_metric_types,
+                               metric_types_filter=metric_types_filter)
 
-                                   fake_person_id,
-                                   supervision_period.supervision_period_id,
-                                   fake_svr_id,
-                                   expected_metric_types,
-                                   expected_aggregate_metric_types,
-                                   metric_types_filter=metric_types_filter)
-
+    @freeze_time('2019-11-26')
     def testSupervisionPipelineNoSupervision(self):
         """Tests the supervision pipeline when a person doesn't have any supervision periods."""
         fake_person_id_1 = 12345
@@ -1582,6 +1430,7 @@ class TestSupervisionPipeline(unittest.TestCase):
 
         assessment = schema.StateAssessment(
             assessment_id=298374,
+            state_code='US_XX',
             assessment_date=date(2015, 3, 19),
             assessment_type=StateAssessmentType.LSIR,
             person_id=fake_person_id_1
@@ -1601,6 +1450,36 @@ class TestSupervisionPipeline(unittest.TestCase):
             normalized_database_base_dict(assessment)
         ]
 
+        ssvr_to_agent_data = [{
+            'state_code': 'US_XX',
+            'agent_id': 1010,
+            'agent_external_id': 'OFFICER0009',
+            'district_external_id': '10',
+            'supervision_violation_response_id': supervision_violation_response.supervision_violation_response_id
+        }]
+
+        supervision_period_to_agent_data = [{
+            'state_code': 'US_XX',
+            'agent_id': 1010,
+            'agent_external_id': 'OFFICER0009',
+            'district_external_id': '10',
+            'supervision_period_id': supervision_period__1.supervision_period_id
+        }]
+
+        supervision_period_judicial_district_association_data = [{
+            'state_code': 'US_XX',
+            'person_id': fake_person_id_1,
+            'supervision_period_id': supervision_period__1.supervision_period_id,
+            'judicial_district_code': 'XXX',
+        }]
+
+        state_race_ethnicity_population_count_data = [{
+            'state_code': 'US_XX',
+            'race_or_ethnicity': 'BLACK',
+            'population_count': 1,
+            'representation_priority': 1
+        }]
+
         data_dict = self._default_data_dict()
         data_dict_overrides = {
             schema.StatePerson.__tablename__: persons_data,
@@ -1614,6 +1493,10 @@ class TestSupervisionPipeline(unittest.TestCase):
             schema.state_supervision_sentence_supervision_period_association_table.name:
                 supervision_sentence_supervision_period_association,
             schema.StateAssessment.__tablename__: assessment_data,
+            'ssvr_to_agent_association': ssvr_to_agent_data,
+            'supervision_period_to_agent_association': supervision_period_to_agent_data,
+            'supervision_period_judicial_district_association': supervision_period_judicial_district_association_data,
+            'state_race_ethnicity_population_counts': state_race_ethnicity_population_count_data,
         }
         data_dict.update(data_dict_overrides)
         dataset = 'recidiviz-123.state'
@@ -1623,21 +1506,13 @@ class TestSupervisionPipeline(unittest.TestCase):
             SupervisionMetricType.SUPERVISION_SUCCESS,
             SupervisionMetricType.SUPERVISION_REVOCATION,
             SupervisionMetricType.SUPERVISION_REVOCATION_ANALYSIS,
-            SupervisionMetricType.SUPERVISION_TERMINATION
+            SupervisionMetricType.SUPERVISION_TERMINATION,
+            SupervisionMetricType.SUPERVISION_SUCCESSFUL_SENTENCE_DAYS_SERVED
         }
 
-        # We do not expect any aggregate metrics
-        expected_aggregate_metric_types = set()
-
-        with patch('recidiviz.calculator.pipeline.utils.extractor_utils.ReadFromBigQuery',
-                   self.fake_bq_source_factory.create_fake_bq_source_constructor(dataset, data_dict)):
-            self.run_test_pipeline(dataset,
-
-                                   fake_person_id_1,
-                                   supervision_period__1.supervision_period_id,
-                                   supervision_violation_response.supervision_violation_response_id,
-                                   expected_metric_types,
-                                   expected_aggregate_metric_types)
+        self.run_test_pipeline(dataset,
+                               data_dict,
+                               expected_metric_types)
 
 
 class TestClassifySupervisionTimeBuckets(unittest.TestCase):
@@ -2864,82 +2739,43 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             test_pipeline.run()
 
 
+class SupervisionPipelineFakeWriteToBigQuery(FakeWriteToBigQuery):
+    def __init__(self,
+                 output_table: str,
+                 expected_output_metric_types: Collection[RecidivizMetricType],
+                 expected_violation_types: Set[ViolationType] = None):
+        super().__init__(output_table, expected_output_metric_types)
+        self._expected_violation_types = expected_violation_types
+        self._table = output_table
+
+    def expand(self, input_or_inputs):
+        ret = super().expand(input_or_inputs)
+
+        if self._expected_violation_types:
+            for expected_violation_type in self._expected_violation_types:
+                assert_that(input_or_inputs,
+                            AssertMatchers.assert_source_violation_type_set(expected_violation_type),
+                            f"Assert source violation {expected_violation_type} type is set")
+        return ret
+
+
 class AssertMatchers:
     """Functions to be used by Apache Beam testing `assert_that` functions to
     validate pipeline outputs."""
 
     @staticmethod
-    def validate_pipeline_test(expected_metric_types: Set[SupervisionMetricType],
-                               expected_aggregate_metric_types: Set[SupervisionMetricType]):
-        """Asserts that the pipeline produced the expected types of metrics, and that it produced aggregate metrics
-        only for the expected aggregate metric types."""
-        def _validate_pipeline_test(output):
-            observed_metric_types: Set[SupervisionMetricType] = set()
-            observed_aggregate_metric_types: Set[SupervisionMetricType] = set()
-
-            for metric in output:
-                if not isinstance(metric, SupervisionMetric):
-                    raise BeamAssertException(
-                        'Failed assert. Output is not of type SupervisionMetric.')
-
-                if isinstance(metric, SupervisionTerminationMetric):
-                    observed_metric_types.add(
-                        SupervisionMetricType.SUPERVISION_TERMINATION)
-
-                    if metric.person_id is None:
-                        observed_aggregate_metric_types.add(
-                            SupervisionMetricType.SUPERVISION_TERMINATION)
-                elif isinstance(metric, SupervisionSuccessMetric):
-                    observed_metric_types.add(SupervisionMetricType.SUPERVISION_SUCCESS)
-
-                    if metric.person_id is None:
-                        observed_aggregate_metric_types.add(
-                            SupervisionMetricType.SUPERVISION_SUCCESS)
-                elif isinstance(metric, SupervisionPopulationMetric):
-                    observed_metric_types.add(SupervisionMetricType.SUPERVISION_POPULATION)
-
-                    if metric.person_id is None:
-                        observed_aggregate_metric_types.add(
-                            SupervisionMetricType.SUPERVISION_POPULATION)
-                elif isinstance(metric, SupervisionRevocationAnalysisMetric):
-                    observed_metric_types.add(
-                        SupervisionMetricType.SUPERVISION_REVOCATION_ANALYSIS)
-
-                    if metric.person_id is None:
-                        observed_aggregate_metric_types.add(
-                            SupervisionMetricType.SUPERVISION_REVOCATION_ANALYSIS)
-                elif isinstance(metric, SupervisionRevocationViolationTypeAnalysisMetric):
-                    observed_metric_types.add(
-                        SupervisionMetricType.SUPERVISION_REVOCATION_VIOLATION_TYPE_ANALYSIS)
-                    observed_aggregate_metric_types.add(
-                        SupervisionMetricType.SUPERVISION_REVOCATION_VIOLATION_TYPE_ANALYSIS)
-                elif isinstance(metric, SupervisionRevocationMetric):
-                    observed_metric_types.add(SupervisionMetricType.SUPERVISION_REVOCATION)
-
-                    if metric.person_id is None:
-                        observed_aggregate_metric_types.add(
-                            SupervisionMetricType.SUPERVISION_REVOCATION)
-
-            if observed_metric_types != expected_metric_types:
-                raise BeamAssertException(f"Failed assert. Expected metric types {expected_metric_types} does not equal"
-                                          f" observed metric types {observed_metric_types}.")
-
-            if observed_aggregate_metric_types != expected_aggregate_metric_types:
-                raise BeamAssertException(f"Failed assert. Expected aggregate metric types"
-                                          f" {expected_aggregate_metric_types} does"
-                                          f" not equal observed metric types {observed_aggregate_metric_types}.")
-
-        return _validate_pipeline_test
-
-    @staticmethod
     def assert_source_violation_type_set(expected_violation: ViolationType):
         """Asserts that there are some revocation metrics with the source_violation_type set."""
         def _assert_source_violation_type_set(output):
+            if not output:
+                return
 
-            with_violation_types = [metric for metric in output if
-                                    isinstance(
-                                        metric, SupervisionRevocationMetric)
-                                    and metric.source_violation_type == expected_violation]
+            metric_type = one({metric['metric_type'] for metric in output})
+            if metric_type != SupervisionMetricType.SUPERVISION_REVOCATION.value:
+                return
+
+            with_violation_types = [metric
+                                    for metric in output if metric['source_violation_type'] == expected_violation.value]
 
             if len(with_violation_types) == 0:
                 raise BeamAssertException(
@@ -2971,23 +2807,6 @@ class AssertMatchers:
                                               f'{expected_combination_counts[key]} != {actual_combination_counts[key]}')
 
         return _count_combinations
-
-    @staticmethod
-    def validate_supervision_population_metric(expected_population_count):
-        """Asserts that the count on the SupervisionMetric produced by the
-        pipeline matches the expected population count."""
-        def _validate_supervision_population_metric(output):
-            if len(output) != 1:
-                raise BeamAssertException('Failed assert. Should be only one '
-                                          'SupervisionMetric returned.')
-
-            supervision_metric = output[0]
-
-            if supervision_metric.count != expected_population_count:
-                raise BeamAssertException('Failed assert. Supervision count '
-                                          'does not match expected value.')
-
-        return _validate_supervision_population_metric
 
     @staticmethod
     def validate_metric_is_expected_type(expected_metric_type):

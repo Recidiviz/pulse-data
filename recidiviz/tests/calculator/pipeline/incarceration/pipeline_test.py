@@ -18,15 +18,15 @@
 
 """Tests for incarceration/pipeline.py"""
 import unittest
+
+from freezegun import freeze_time
 from typing import Optional, Set, List, Dict, Any
 
 import apache_beam as beam
-from apache_beam.pvalue import AsDict, AsList
+from apache_beam.pvalue import AsDict
 from apache_beam.testing.util import assert_that, equal_to, BeamAssertException
 from apache_beam.testing.test_pipeline import TestPipeline
-from apache_beam.options.pipeline_options import PipelineOptions
 
-import datetime
 from datetime import date
 
 from mock import patch
@@ -38,12 +38,9 @@ from recidiviz.calculator.pipeline.incarceration.incarceration_event import \
 from recidiviz.calculator.pipeline.incarceration.metrics import \
     IncarcerationMetric, IncarcerationMetricType, IncarcerationAdmissionMetric, IncarcerationPopulationMetric, \
     IncarcerationReleaseMetric
-from recidiviz.calculator.pipeline.utils import extractor_utils
 from recidiviz.calculator.pipeline.utils.beam_utils import \
     ConvertDictToKVTuple
-from recidiviz.calculator.pipeline.utils.entity_hydration_utils import SetSentencesOnSentenceGroup, \
-    ConvertSentencesToStateSpecificType
-from recidiviz.calculator.pipeline.utils.person_utils import PersonMetadata, BuildPersonMetadata, \
+from recidiviz.calculator.pipeline.utils.person_utils import PersonMetadata, \
     ExtractPersonEventsMetadata
 from recidiviz.common.constants.state.state_incarceration import \
     StateIncarcerationType
@@ -56,10 +53,11 @@ from recidiviz.persistence.entity.state.entities import \
     Gender, Race, ResidencyStatus, Ethnicity, StatePerson, \
     StateIncarcerationPeriod, StateIncarcerationSentence, StateSentenceGroup, StateCharge
 from recidiviz.persistence.database.schema.state import schema
-from recidiviz.persistence.entity.state import entities
 from recidiviz.tests.calculator.calculator_test_utils import \
     normalized_database_base_dict, normalized_database_base_dict_list
-from recidiviz.tests.calculator.pipeline.fake_bigquery import FakeReadFromBigQueryFactory
+from recidiviz.tests.calculator.pipeline.fake_bigquery import FakeReadFromBigQueryFactory, FakeWriteToBigQueryFactory, \
+    FakeWriteToBigQuery
+from recidiviz.tests.calculator.pipeline.utils.run_pipeline_test_utils import run_test_pipeline
 
 _COUNTY_OF_RESIDENCE = 'county_of_residence'
 _STATE_CODE = 'US_XX'
@@ -76,12 +74,15 @@ ALL_METRIC_TYPES_SET = {
     IncarcerationMetricType.INCARCERATION_RELEASE
 }
 
+INCARCERATION_PIPELINE_PACKAGE_NAME = pipeline.__name__
+
 
 class TestIncarcerationPipeline(unittest.TestCase):
     """Tests the entire incarceration pipeline."""
 
     def setUp(self) -> None:
         self.fake_bq_source_factory = FakeReadFromBigQueryFactory()
+        self.fake_bq_sink_factory = FakeWriteToBigQueryFactory(FakeWriteToBigQuery)
 
     @staticmethod
     def _default_data_dict():
@@ -145,7 +146,8 @@ class TestIncarcerationPipeline(unittest.TestCase):
         ethnicity_data = normalized_database_base_dict_list([ethnicity])
 
         sentence_group = schema.StateSentenceGroup(
-            sentence_group_id=111,
+            sentence_group_id=98765,
+            state_code=state_code,
             person_id=fake_person_id
         )
 
@@ -220,10 +222,12 @@ class TestIncarcerationPipeline(unittest.TestCase):
         supervision_sentence = schema.StateSupervisionSentence(
             supervision_sentence_id=123,
             state_code=state_code,
+            sentence_group_id=sentence_group.sentence_group_id,
             person_id=fake_person_id
         )
 
         sentence_group.incarceration_sentences = [incarceration_sentence]
+        sentence_group.supervision_sentences = [supervision_sentence]
 
         sentence_group_data = [
             normalized_database_base_dict(sentence_group)
@@ -258,6 +262,34 @@ class TestIncarcerationPipeline(unittest.TestCase):
             },
         ]
 
+        fake_person_id_to_county_query_result = [
+            {'state_code': state_code,
+             'person_id': fake_person_id,
+             'county_of_residence': _COUNTY_OF_RESIDENCE}]
+
+        us_mo_sentence_status_data: List[Dict[str, Any]] = [{
+            'state_code': 'US_MO',
+            'person_id': fake_person_id,
+            'sentence_external_id': 'XXX',
+            'sentence_status_external_id': 'YYY',
+            'status_code': 'ZZZ',
+            'status_date': 'not_a_date',
+            'status_description': 'XYZ'
+        }]
+
+        incarceration_period_judicial_district_association_data = [{
+            'state_code': state_code,
+            'person_id': fake_person_id,
+            'incarceration_period_id': 123,
+            'judicial_district_code': 'NW'}]
+
+        state_race_ethnicity_population_count_data = [{
+            'state_code': state_code,
+            'race_or_ethnicity': 'BLACK',
+            'population_count': 1,
+            'representation_priority': 1
+        }]
+
         data_dict = self._default_data_dict()
         data_dict_overrides = {
             schema.StatePerson.__tablename__: persons_data,
@@ -269,20 +301,28 @@ class TestIncarcerationPipeline(unittest.TestCase):
             schema.StateIncarcerationPeriod.__tablename__: incarceration_periods_data,
             schema.state_incarceration_sentence_incarceration_period_association_table.name:
                 state_incarceration_sentence_incarceration_period_association,
+            'persons_to_recent_county_of_residence': fake_person_id_to_county_query_result,
+            'incarceration_period_judicial_district_association':
+                incarceration_period_judicial_district_association_data,
+            'state_race_ethnicity_population_counts': state_race_ethnicity_population_count_data,
+            'us_mo_sentence_statuses': us_mo_sentence_status_data,
         }
         data_dict.update(data_dict_overrides)
         return data_dict
 
+    @freeze_time('2015-01-31')
     def testIncarcerationPipeline(self):
         fake_person_id = 12345
         data_dict = self.build_incarceration_pipeline_data_dict(fake_person_id=fake_person_id)
         dataset = 'recidiviz-123.state'
 
-        with patch('recidiviz.calculator.pipeline.utils.extractor_utils.ReadFromBigQuery',
-                   self.fake_bq_source_factory.create_fake_bq_source_constructor(dataset, data_dict)):
-            self.run_test_pipeline(
-                fake_person_id, _STATE_CODE, dataset, expected_metric_types=ALL_METRIC_TYPES_SET)
+        self.run_test_pipeline(
+            state_code=_STATE_CODE,
+            dataset=dataset,
+            data_dict=data_dict,
+            expected_metric_types=ALL_METRIC_TYPES_SET)
 
+    @freeze_time('2015-01-31')
     def testIncarcerationPipelineFilterMetrics(self):
         fake_person_id = 12345
         data_dict = self.build_incarceration_pipeline_data_dict(fake_person_id=fake_person_id)
@@ -291,217 +331,62 @@ class TestIncarcerationPipeline(unittest.TestCase):
         expected_metric_types = {IncarcerationMetricType.INCARCERATION_ADMISSION}
         metric_types_filter = {IncarcerationMetricType.INCARCERATION_ADMISSION.value}
 
-        with patch('recidiviz.calculator.pipeline.utils.extractor_utils.ReadFromBigQuery',
-                   self.fake_bq_source_factory.create_fake_bq_source_constructor(dataset, data_dict)):
-            self.run_test_pipeline(fake_person_id, _STATE_CODE, dataset, expected_metric_types=expected_metric_types,
-                                   metric_types_filter=metric_types_filter)
+        self.run_test_pipeline(
+            state_code=_STATE_CODE,
+            dataset=dataset,
+            data_dict=data_dict,
+            expected_metric_types=expected_metric_types,
+            metric_types_filter=metric_types_filter
+        )
 
     def testIncarcerationPipelineUsMo(self):
         fake_person_id = 12345
         data_dict = self.build_incarceration_pipeline_data_dict(fake_person_id=fake_person_id, state_code='US_MO')
         dataset = 'recidiviz-123.state'
 
-        with patch('recidiviz.calculator.pipeline.utils.extractor_utils.ReadFromBigQuery',
-                   self.fake_bq_source_factory.create_fake_bq_source_constructor(dataset, data_dict)):
-            self.run_test_pipeline(fake_person_id, 'US_MO', dataset, expected_metric_types=ALL_METRIC_TYPES_SET)
+        self.run_test_pipeline(
+            state_code='US_MO',
+            dataset=dataset,
+            data_dict=data_dict,
+            expected_metric_types=ALL_METRIC_TYPES_SET,
+        )
 
     def testIncarcerationPipelineWithFilterSet(self):
         fake_person_id = 12345
         data_dict = self.build_incarceration_pipeline_data_dict(fake_person_id=fake_person_id)
         dataset = 'recidivz-staging.state'
 
-        with patch('recidiviz.calculator.pipeline.utils.extractor_utils.ReadFromBigQuery',
-                   self.fake_bq_source_factory.create_fake_bq_source_constructor(dataset, data_dict)):
-            self.run_test_pipeline(fake_person_id, _STATE_CODE, dataset, unifying_id_field_filter_set={fake_person_id},
-                                   expected_metric_types=ALL_METRIC_TYPES_SET)
+        self.run_test_pipeline(
+            state_code=_STATE_CODE,
+            dataset=dataset,
+            data_dict=data_dict,
+            expected_metric_types=ALL_METRIC_TYPES_SET,
+            unifying_id_field_filter_set={fake_person_id}
+        )
 
-    # TODO(#4375): Update tests to run actual pipeline code and only mock BQ I/O
-    @staticmethod
-    def run_test_pipeline(fake_person_id: int,
+    def run_test_pipeline(self,
                           state_code: str,
                           dataset: str,
+                          data_dict: Dict[str, List[Dict]],
                           expected_metric_types: Set[IncarcerationMetricType],
-                          allow_empty: bool = False,
                           unifying_id_field_filter_set: Optional[Set[int]] = None,
-                          metric_types_filter: Optional[Set[str]] = None):
-        """Runs a test version of the incarceration pipeline."""
-        test_pipeline = TestPipeline()
-
-        # Get StatePersons
-        persons = (test_pipeline
-                   | 'Load Persons' >>  # type: ignore
-                   extractor_utils.BuildRootEntity(
-                       dataset=dataset,
-                       root_entity_class=entities.StatePerson,
-                       unifying_id_field=entities.StatePerson.get_class_id_name(),
-                       build_related_entities=True))
-
-        # Get StateSentenceGroups
-        sentence_groups = (test_pipeline
-                           | 'Load StateSentenceGroups' >>  # type: ignore
-                           extractor_utils.BuildRootEntity(
-                               dataset=dataset,
-                               root_entity_class=entities.StateSentenceGroup,
-                               unifying_id_field=entities.StatePerson.get_class_id_name(),
-                               build_related_entities=True,
-                               unifying_id_field_filter_set=unifying_id_field_filter_set))
-
-        # Get StateIncarcerationSentences
-        incarceration_sentences = (test_pipeline | 'Load StateIncarcerationSentences' >>  # type: ignore
-                                   extractor_utils.BuildRootEntity(
-                                       dataset=dataset,
-                                       root_entity_class=entities.StateIncarcerationSentence,
-                                       unifying_id_field=entities.StatePerson.get_class_id_name(),
-                                       build_related_entities=True,
-                                       unifying_id_field_filter_set=unifying_id_field_filter_set))
-
-        # Get StateSupervisionSentences
-        supervision_sentences = (test_pipeline | 'Load StateSupervisionSentences' >>  # type: ignore
-                                 extractor_utils.BuildRootEntity(
-                                     dataset=dataset,
-                                     root_entity_class=entities.StateSupervisionSentence,
-                                     unifying_id_field=entities.StatePerson.get_class_id_name(),
-                                     build_related_entities=True,
-                                     unifying_id_field_filter_set=unifying_id_field_filter_set))
-
-        us_mo_sentence_status_rows: List[Dict[str, Any]] = [{
-            'person_id': fake_person_id,
-            'sentence_external_id': 'XXX',
-            'sentence_status_external_id': 'YYY',
-            'status_code': 'ZZZ',
-            'status_date': 'not_a_date',
-            'status_description': 'XYZ'
-        }]
-
-        us_mo_sentence_statuses = (
-            test_pipeline | 'Create MO sentence statuses' >> beam.Create(us_mo_sentence_status_rows)
+                          metric_types_filter: Optional[Set[str]] = None) -> None:
+        """Runs a test version of the supervision pipeline."""
+        read_from_bq_constructor = self.fake_bq_source_factory.create_fake_bq_source_constructor(dataset, data_dict)
+        write_to_bq_constructor = self.fake_bq_sink_factory.create_fake_bq_sink_constructor(
+            dataset,
+            expected_output_metric_types=expected_metric_types,
         )
-
-        us_mo_sentence_status_rankings_as_kv = (
-            us_mo_sentence_statuses |
-            'Convert sentence status ranking table to KV tuples' >>
-            beam.ParDo(ConvertDictToKVTuple(), 'person_id')
-        )
-
-        sentences_and_statuses = (
-            {'incarceration_sentences': incarceration_sentences,
-             'supervision_sentences': supervision_sentences,
-             'sentence_statuses': us_mo_sentence_status_rankings_as_kv}
-            | 'Group sentences to the sentence statuses for that person' >>
-            beam.CoGroupByKey()
-        )
-
-        sentences_converted = (
-            sentences_and_statuses
-            | 'Convert to state-specific sentences' >>
-            beam.ParDo(ConvertSentencesToStateSpecificType()).with_outputs('incarceration_sentences',
-                                                                           'supervision_sentences')
-        )
-
-        sentences_and_sentence_groups = (
-            {'sentence_groups': sentence_groups,
-             'incarceration_sentences': sentences_converted.incarceration_sentences,
-             'supervision_sentences': sentences_converted.supervision_sentences}
-            | 'Group sentences to sentence groups' >>
-            beam.CoGroupByKey()
-        )
-
-        sentence_groups_with_hydrated_sentences = (
-            sentences_and_sentence_groups | 'Set hydrated sentences on sentence groups' >>
-            beam.ParDo(SetSentencesOnSentenceGroup())
-        )
-
-        # Identify IncarcerationEvents events from the StatePerson's
-        # StateIncarcerationPeriods
-        fake_person_id_to_county_query_result = [
-            {'person_id': fake_person_id,
-             'county_of_residence': _COUNTY_OF_RESIDENCE}]
-        person_id_to_county_kv = (
-            test_pipeline
-            | "Read person id to county associations from BigQuery" >>
-            beam.Create(fake_person_id_to_county_query_result)
-            | "Convert person_id to counties to KV" >>
-            beam.ParDo(ConvertDictToKVTuple(), 'person_id')
-        )
-
-        incarceration_period_judicial_district_association_row = \
-            {'person_id': fake_person_id, 'incarceration_period_id': 123, 'judicial_district_code': 'NW'}
-
-        ip_to_judicial_district_kv = (
-            test_pipeline
-            | "Read incarceration_period to judicial_district associations from BigQuery" >>
-            beam.Create([incarceration_period_judicial_district_association_row])
-            | "Convert ips to judicial districts to KV" >>
-            beam.ParDo(ConvertDictToKVTuple(), 'person_id')
-        )
-
-        state_race_ethnicity_population_count = {
-            'state_code': state_code,
-            'race_or_ethnicity': 'BLACK',
-            'population_count': 1,
-            'representation_priority': 1
-        }
-
-        state_race_ethnicity_population_counts = (
-            test_pipeline | 'Create state_race_ethnicity_population_count table' >> beam.Create(
-                [state_race_ethnicity_population_count])
-        )
-
-        # Group each StatePerson with their related entities
-        person_entities = (
-            {'person': persons,
-             'sentence_groups': sentence_groups_with_hydrated_sentences,
-             'incarceration_period_judicial_district_association': ip_to_judicial_district_kv
-             }
-            | 'Group StatePerson to SentenceGroups' >>
-            beam.CoGroupByKey()
-        )
-
-        # Identify IncarcerationEvents events from the StatePerson's StateIncarcerationPeriods
-        person_incarceration_events = (person_entities | 'Classify Incarceration Events' >>
-                                       beam.ParDo(pipeline.ClassifyIncarcerationEvents(),
-                                                  AsDict(person_id_to_county_kv)))
-
-        person_metadata = (persons
-                           | "Build the person_metadata dictionary" >>
-                           beam.ParDo(BuildPersonMetadata(),
-                                      AsList(state_race_ethnicity_population_counts)))
-
-        person_incarceration_events_with_metadata = (
-            {
-                'person_events': person_incarceration_events,
-                'person_metadata': person_metadata
-            }
-            | 'Group IncarcerationEvents with person-level metadata' >> beam.CoGroupByKey()
-            | 'Organize StatePerson, PersonMetadata and IncarcerationEvents for calculations' >>
-            beam.ParDo(ExtractPersonEventsMetadata())
-        )
-
-        # Get pipeline job details for accessing job_id
-        all_pipeline_options = PipelineOptions().get_all_options()
-
-        # Add timestamp for local jobs
-        job_timestamp = datetime.datetime.now().strftime('%Y-%m-%d_%H_%M_%S.%f')
-        all_pipeline_options['job_timestamp'] = job_timestamp
-
-        metric_types = metric_types_filter if metric_types_filter else {'ALL'}
-
-        # Get IncarcerationMetrics
-        incarceration_metrics = (person_incarceration_events_with_metadata
-                                 | 'Get Incarceration Metrics' >>  # type: ignore
-                                 pipeline.GetIncarcerationMetrics(
-                                     pipeline_options=all_pipeline_options,
-                                     metric_types=metric_types,
-                                     calculation_end_month=None,
-                                     calculation_month_count=-1))
-
-        assert_that(incarceration_metrics, AssertMatchers.validate_metric_type(allow_empty=allow_empty),
-                    'Assert that all metrics are of the expected type.')
-
-        assert_that(incarceration_metrics, AssertMatchers.validate_pipeline_test(expected_metric_types),
-                    'Assert the type of metrics produced are expected')
-
-        test_pipeline.run()
+        with patch(f'{INCARCERATION_PIPELINE_PACKAGE_NAME}.ReadFromBigQuery', read_from_bq_constructor):
+            run_test_pipeline(
+                pipeline_module=pipeline,
+                state_code=state_code,
+                dataset=dataset,
+                read_from_bq_constructor=read_from_bq_constructor,
+                write_to_bq_constructor=write_to_bq_constructor,
+                unifying_id_field_filter_set=unifying_id_field_filter_set,
+                metric_types_filter=metric_types_filter
+            )
 
     def build_incarceration_pipeline_data_dict_no_incarceration(self, fake_person_id: int):
         """Builds a data_dict for a run of the pipeline where the person has no incarceration."""
@@ -524,6 +409,7 @@ class TestIncarcerationPipeline(unittest.TestCase):
 
         sentence_group = schema.StateSentenceGroup(
             sentence_group_id=111,
+            state_code='US_XX',
             person_id=fake_person_id
         )
 
@@ -547,6 +433,7 @@ class TestIncarcerationPipeline(unittest.TestCase):
 
         incarceration_sentence = schema.StateIncarcerationSentence(
             incarceration_sentence_id=1111,
+            state_code='US_XX',
             sentence_group_id=sentence_group.sentence_group_id,
             incarceration_periods=[incarceration_period],
             person_id=fake_person_id
@@ -554,6 +441,7 @@ class TestIncarcerationPipeline(unittest.TestCase):
 
         supervision_sentence = schema.StateSupervisionSentence(
             supervision_sentence_id=123,
+            state_code='US_XX',
             person_id=fake_person_id
         )
 
@@ -582,6 +470,34 @@ class TestIncarcerationPipeline(unittest.TestCase):
             },
         ]
 
+        fake_person_id_to_county_query_result = [
+            {'state_code': 'US_XX',
+             'person_id': fake_person_id,
+             'county_of_residence': _COUNTY_OF_RESIDENCE}]
+
+        us_mo_sentence_status_data: List[Dict[str, Any]] = [{
+            'state_code': 'US_MO',
+            'person_id': fake_person_id,
+            'sentence_external_id': 'XXX',
+            'sentence_status_external_id': 'YYY',
+            'status_code': 'ZZZ',
+            'status_date': 'not_a_date',
+            'status_description': 'XYZ'
+        }]
+
+        incarceration_period_judicial_district_association_data = [{
+            'state_code': 'US_XX',
+            'person_id': fake_person_id,
+            'incarceration_period_id': 123,
+            'judicial_district_code': 'NW'}]
+
+        state_race_ethnicity_population_count_data = [{
+            'state_code': 'US_XX',
+            'race_or_ethnicity': 'BLACK',
+            'population_count': 1,
+            'representation_priority': 1
+        }]
+
         data_dict = self._default_data_dict()
         data_dict_overrides = {
             schema.StatePerson.__tablename__: persons_data,
@@ -591,6 +507,11 @@ class TestIncarcerationPipeline(unittest.TestCase):
             schema.StateIncarcerationPeriod.__tablename__: incarceration_periods_data,
             schema.state_incarceration_sentence_incarceration_period_association_table.name:
                 state_incarceration_sentence_incarceration_period_association,
+            'persons_to_recent_county_of_residence': fake_person_id_to_county_query_result,
+            'incarceration_period_judicial_district_association':
+                incarceration_period_judicial_district_association_data,
+            'state_race_ethnicity_population_counts': state_race_ethnicity_population_count_data,
+            'us_mo_sentence_statuses': us_mo_sentence_status_data,
         }
         data_dict.update(data_dict_overrides)
 
@@ -603,9 +524,7 @@ class TestIncarcerationPipeline(unittest.TestCase):
         data_dict = self.build_incarceration_pipeline_data_dict_no_incarceration(fake_person_id)
         dataset = 'recidiviz-123.state'
 
-        with patch('recidiviz.calculator.pipeline.utils.extractor_utils.ReadFromBigQuery',
-                   self.fake_bq_source_factory.create_fake_bq_source_constructor(dataset, data_dict)):
-            self.run_test_pipeline(fake_person_id, _STATE_CODE, dataset, expected_metric_types=set(), allow_empty=True)
+        self.run_test_pipeline(_STATE_CODE, dataset, data_dict, expected_metric_types=set())
 
 
 class TestClassifyIncarcerationEvents(unittest.TestCase):

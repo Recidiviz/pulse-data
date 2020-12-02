@@ -46,7 +46,7 @@ from recidiviz.calculator.pipeline.utils.entity_hydration_utils import SetSenten
 from recidiviz.calculator.pipeline.utils.event_utils import IdentifierEvent
 from recidiviz.calculator.pipeline.utils.execution_utils import get_job_id, person_and_kwargs_for_identifier, \
     select_all_by_person_query
-from recidiviz.calculator.pipeline.utils.extractor_utils import BuildRootEntity
+from recidiviz.calculator.pipeline.utils.extractor_utils import BuildRootEntity, WriteAppendToBigQuery, ReadFromBigQuery
 from recidiviz.calculator.pipeline.utils.person_utils import PersonMetadata, BuildPersonMetadata, \
     ExtractPersonEventsMetadata
 from recidiviz.calculator.pipeline.utils.pipeline_args_utils import add_shared_pipeline_arguments
@@ -296,7 +296,7 @@ def run(apache_beam_pipeline_options: PipelineOptions,
         output: str,
         calculation_month_count: int,
         metric_types: List[str],
-        state_code: Optional[str],
+        state_code: str,
         calculation_end_month: Optional[str],
         person_filter_ids: Optional[List[int]]):
     """Runs the incarceration calculation pipeline."""
@@ -312,6 +312,12 @@ def run(apache_beam_pipeline_options: PipelineOptions,
     # Get pipeline job details
     all_pipeline_options = apache_beam_pipeline_options.get_all_options()
     project_id = all_pipeline_options['project']
+
+    if project_id is None:
+        raise ValueError(f'No project set in pipeline options: {all_pipeline_options}')
+
+    if state_code is None:
+        raise ValueError('No state_code set for pipeline')
 
     input_dataset = project_id + '.' + data_input
     reference_dataset = project_id + '.' + reference_view_input
@@ -361,14 +367,13 @@ def run(apache_beam_pipeline_options: PipelineOptions,
                                      state_code=state_code
                                  ))
 
-        if state_code is None or state_code == 'US_MO':
+        if state_code == 'US_MO':
             # Bring in the reference table that includes sentence status ranking information
             us_mo_sentence_status_query = select_all_by_person_query(
                 reference_dataset, US_MO_SENTENCE_STATUSES_VIEW_NAME, state_code, person_id_filter_set)
 
             us_mo_sentence_statuses = (p | "Read MO sentence status table from BigQuery" >>
-                                       beam.io.Read(beam.io.BigQuerySource(query=us_mo_sentence_status_query,
-                                                                           use_standard_sql=True)))
+                                       ReadFromBigQuery(query=us_mo_sentence_status_query))
         else:
             us_mo_sentence_statuses = (p | f"Generate empty MO statuses list for non-MO state run: {state_code} " >>
                                        beam.Create([]))
@@ -497,36 +502,27 @@ def run(apache_beam_pipeline_options: PipelineOptions,
                             ))
 
         # Write the metrics to the output tables in BigQuery
-        admissions_table_id = DATAFLOW_METRICS_TO_TABLES.get(IncarcerationAdmissionMetric)
-        population_table_id = DATAFLOW_METRICS_TO_TABLES.get(IncarcerationPopulationMetric)
-        releases_table_id = DATAFLOW_METRICS_TO_TABLES.get(IncarcerationReleaseMetric)
+        admissions_table_id = DATAFLOW_METRICS_TO_TABLES[IncarcerationAdmissionMetric]
+        population_table_id = DATAFLOW_METRICS_TO_TABLES[IncarcerationPopulationMetric]
+        releases_table_id = DATAFLOW_METRICS_TO_TABLES[IncarcerationReleaseMetric]
 
         _ = (writable_metrics.INCARCERATION_ADMISSION
              | f"Write admission metrics to BQ table: {admissions_table_id}" >>
-             beam.io.WriteToBigQuery(
-                 table=admissions_table_id,
-                 dataset=output,
-                 create_disposition=beam.io.BigQueryDisposition.CREATE_NEVER,
-                 write_disposition=beam.io.BigQueryDisposition.WRITE_APPEND,
-                 method=beam.io.WriteToBigQuery.Method.FILE_LOADS
+             WriteAppendToBigQuery(
+                 output_table=admissions_table_id,
+                 output_dataset=output,
              ))
 
         _ = (writable_metrics.INCARCERATION_POPULATION
              | f"Write population metrics to BQ table: {population_table_id}" >>
-             beam.io.WriteToBigQuery(
-                 table=population_table_id,
-                 dataset=output,
-                 create_disposition=beam.io.BigQueryDisposition.CREATE_NEVER,
-                 write_disposition=beam.io.BigQueryDisposition.WRITE_APPEND,
-                 method=beam.io.WriteToBigQuery.Method.FILE_LOADS
+             WriteAppendToBigQuery(
+                 output_table=population_table_id,
+                 output_dataset=output,
              ))
 
         _ = (writable_metrics.INCARCERATION_RELEASE
              | f"Write release metrics to BQ table: {releases_table_id}" >>
-             beam.io.WriteToBigQuery(
-                 table=releases_table_id,
-                 dataset=output,
-                 create_disposition=beam.io.BigQueryDisposition.CREATE_NEVER,
-                 write_disposition=beam.io.BigQueryDisposition.WRITE_APPEND,
-                 method=beam.io.WriteToBigQuery.Method.FILE_LOADS
+             WriteAppendToBigQuery(
+                 output_table=releases_table_id,
+                 output_dataset=output,
              ))
