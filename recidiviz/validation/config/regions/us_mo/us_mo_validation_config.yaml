@@ -14,9 +14,8 @@ exclusions:
 max_allowed_error_overrides: []  # This region will use only the default max_allowed_error values
 num_allowed_rows_overrides:
   - validation_name: overlapping_incarceration_periods
-    num_allowed_rows_override: 600
-    override_reason: TODO(#4043) - Before we launch SQL preprocessing in MO to production, we should make sure these
-      overlapping periods no longer exist.
+    num_allowed_rows_override: 174
+    override_reason: In MO we rely on a table where they build incarceration period spans for us; some older rows have issues with overlap.
   - validation_name: overlapping_supervision_periods
     num_allowed_rows_override: 30000
     override_reason: TODO(#4043) - Before we launch SQL preprocessing in MO to production, we should make sure these
