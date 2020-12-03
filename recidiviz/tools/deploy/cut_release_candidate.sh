@@ -23,9 +23,6 @@ run_cmd safe_git_checkout_remote_branch ${RELEASE_CANDIDATE_BASE_BRANCH}
 
 HEAD_COMMIT=$(git rev-parse HEAD) || exit_on_fail
 
-echo "Checking for green build at HEAD commit [$HEAD_COMMIT]"
-run_cmd check_commit_is_green ${HEAD_COMMIT}
-
 echo "Checking for existing release tags at tip of [$RELEASE_CANDIDATE_BASE_BRANCH]"
 check_for_tags_at_branch_tip ${RELEASE_CANDIDATE_BASE_BRANCH} ALLOW_ALPHA
 
