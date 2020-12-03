@@ -15,8 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Sentences associated with each compartment session"""
-# pylint: disable=trailing-whitespace
-# pylint: disable=line-too-long
+# pylint: disable=trailing-whitespace, line-too-long
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.calculator.query.state.dataset_config import STATE_BASE_DATASET, ANALYST_VIEWS_DATASET
@@ -52,6 +51,7 @@ COMPARTMENT_SENTENCES_QUERY_TEMPLATE = \
         DATE(NULL) AS parole_eligibility_date,
         classification_type,
         description,
+        FALSE AS life_sentence,
         'SUPERVISION' AS data_source
     FROM `{project_id}.{base_dataset}.state_supervision_sentence` AS sss
     LEFT JOIN `{project_id}.{base_dataset}.state_charge_supervision_sentence_association`
@@ -74,6 +74,7 @@ COMPARTMENT_SENTENCES_QUERY_TEMPLATE = \
       parole_eligibility_date,
       classification_type,
       description,
+      COALESCE(sis.is_life, FALSE) AS life_sentence,
       'INCARCERATION' AS data_source
     FROM `{project_id}.{base_dataset}.state_incarceration_sentence` AS sis
     LEFT JOIN `{project_id}.{base_dataset}.state_charge_incarceration_sentence_association`
@@ -91,7 +92,8 @@ COMPARTMENT_SENTENCES_QUERY_TEMPLATE = \
     deduped_sentence_id_cte AS 
     /*
     Dedup cases where there are multiple offenses associated with the same sentence. Create an array of offense 
-    classifications and descriptions.
+    classifications and descriptions. Exclude rows that are missing start dates and/or projected end dates unless it
+    is a life sentence.
     */
     (
     SELECT 
@@ -100,18 +102,28 @@ COMPARTMENT_SENTENCES_QUERY_TEMPLATE = \
         date_imposed,
         sentence_id,
         start_date,
-        projected_completion_date_min,
-        projected_completion_date_max,
+        -- ID has sentences with unreasonable start dates and the date imposed appears to be the real start date
+        -- Use this value for computing the lag between sentence start and session start
+        LEAST(start_date, COALESCE(date_imposed, start_date)) AS estimated_start_date,
+        -- Some records have max but no min or vice versa, fill in the one that is missing with the other value
+        COALESCE(projected_completion_date_min, projected_completion_date_max) AS projected_completion_date_min,
+        COALESCE(projected_completion_date_max, projected_completion_date_min) AS projected_completion_date_max,
+        -- Fill in an estimated end date for life sentences in order to determine the longest sentence later
+        CASE WHEN life_sentence THEN '9999-01-01'
+            ELSE COALESCE(projected_completion_date_max, projected_completion_date_min)
+        END AS estimated_end_date,
         completion_date,
         parole_eligibility_date,
         data_source,
         COUNT(1) as offense_count,
         ARRAY_AGG(COALESCE(classification_type, 'MISSING')) classification_type,
-        ARRAY_AGG(COALESCE(description, 'MISSING')) description
+        ARRAY_AGG(COALESCE(description, 'MISSING')) description,
+        LOGICAL_OR(life_sentence) AS life_sentence,
     FROM unioned_sentences_cte
-    WHERE start_date is not null
-    GROUP BY 1,2,3,4,5,6,7,8,9,10
-    ORDER BY 1 ASC, 2 ASC, 3 ASC, 4 ASC, 5 ASC, 6 ASC, 7 ASC, 8 ASC, 9 ASC, 10 ASC
+    WHERE start_date IS NOT NULL
+        AND (projected_completion_date_max IS NOT NULL OR projected_completion_date_min IS NOT NULL OR life_sentence)
+    GROUP BY 1,2,3,4,5,6,7,8,9,10,11,12
+    ORDER BY 1 ASC, 2 ASC, 3 ASC, 4 ASC, 5 ASC, 6 ASC, 7 ASC, 8 ASC, 9 ASC, 10 ASC, 11 ASC, 12 ASC
     )
     ,
     sentences_with_session_id AS 
@@ -120,21 +132,24 @@ COMPARTMENT_SENTENCES_QUERY_TEMPLATE = \
     sentences. Calculate the difference between the session start date and the sentence start date, which is ultimately 
     used to identify the best matched sentence.
     
-    There is a criterion on the join that the session start date needs to be less than the sentence completion date. This is 
-    obvious but there were a few edge cases where this was not the case, so here it is prevented from happening upfront.
-    With additional validation, it is possible we discover other edge cases like this and the join logic can be further 
-    refined.
+    There is a criterion on the join that the session must overlap with the sentence. The session start date needs to be
+    less than the sentence completion date and the sentence start date needs to be less than the session end date.
+    There are cases where a session is missing the corresponding sentence data and would join with another session's
+    sentence if this logic is not included.
     */
     (
     SELECT 
         sentences.*,
         sessions.session_id,
         sessions.last_day_of_data,
-        RANK() OVER(PARTITION BY sessions.person_id, session_id ORDER BY ABS(date_diff(sentences.start_date, sessions.start_date, DAY)) ASC) as date_proximity_rank
+        RANK() OVER(PARTITION BY sessions.person_id, session_id ORDER BY ABS(date_diff(estimated_start_date, sessions.start_date, DAY)) ASC) as date_proximity_rank
     FROM `{project_id}.{analyst_dataset}.compartment_sessions_materialized`  sessions
     JOIN deduped_sentence_id_cte sentences 
         ON sessions.person_id = sentences.person_id
+        -- Session start date must be before the sentence completion date
         AND sessions.start_date < COALESCE(sentences.completion_date, '9999-01-01')
+        -- Sentence start date (or date imposed for ID) must be before the session end date
+        AND estimated_start_date < COALESCE(sessions.end_date, '9999-01-01')
         AND sessions.compartment_level_1 in ('INCARCERATION','SUPERVISION') 
     ORDER by session_id ASC, date_proximity_rank ASC
     )
@@ -152,13 +167,10 @@ COMPARTMENT_SENTENCES_QUERY_TEMPLATE = \
     */
     (
     SELECT *,
-        DATE_DIFF(completion_date, start_date, DAY) AS sentence_length_days,
+        DATE_DIFF(completion_date, estimated_start_date, DAY) AS sentence_length_days,
         DATE_DIFF(projected_completion_date_min, start_date, DAY) AS min_projected_sentence_length,
         DATE_DIFF(projected_completion_date_max, start_date, DAY) AS max_projected_sentence_length,
-        ROW_NUMBER() OVER(PARTITION BY person_id, session_id ORDER BY date_imposed ASC, sentence_id) AS first_sentence,
-        ROW_NUMBER() OVER(PARTITION BY person_id, session_id ORDER BY date_imposed DESC, sentence_id DESC) AS last_sentence, 
-        ROW_NUMBER() OVER(PARTITION BY person_id, session_id ORDER BY projected_completion_date_max ASC, sentence_id) AS shortest_projected_sentence,
-        ROW_NUMBER() OVER(PARTITION BY person_id, session_id ORDER BY projected_completion_date_max DESC, sentence_id) AS longest_projected_sentence
+        ROW_NUMBER() OVER(PARTITION BY person_id, session_id ORDER BY estimated_end_date DESC, sentence_id) AS longest_projected_sentence
     FROM sentences_with_session_id
     WHERE date_proximity_rank = 1
     ORDER by person_id ASC, session_id ASC, start_date ASC
@@ -181,6 +193,7 @@ COMPARTMENT_SENTENCES_QUERY_TEMPLATE = \
         projected_completion_date_min,
         projected_completion_date_max,
         parole_eligibility_date,
+        life_sentence,
         offense_count,
         classification_type,
         description,
