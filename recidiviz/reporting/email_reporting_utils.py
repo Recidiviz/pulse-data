@@ -52,6 +52,7 @@ def get_env_var(key: str) -> str:
 
 # Keys used to identify elements in dictionaries
 KEY_BATCH_ID = "batch_id"
+KEY_DISTRICT = "district"
 KEY_REPORT_TYPE = "report_type"
 KEY_EMAIL_ADDRESS = "email_address"
 KEY_STATE_CODE = "state_code"
