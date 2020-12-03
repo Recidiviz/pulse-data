@@ -25,16 +25,16 @@ are being run before executing them.
 
 Example usage (run from `pipenv shell`):
 
-python -m recidiviz.tools.migrations.run_migrations --database JAILS --project-id recidiviz-staging --dry-run
+python -m recidiviz.tools.migrations.run_migrations_to_head --database JAILS --project-id recidiviz-staging --dry-run
 """
 import argparse
 import logging
 import sys
 
 import alembic.config
-from pygit2.repository import Repository
 
 from recidiviz.persistence.database.sqlalchemy_engine_manager import SchemaType, SQLAlchemyEngineManager
+from recidiviz.tools.migrations.migration_helpers import confirm_correct_db, confirm_correct_git_branch
 from recidiviz.tools.postgres import local_postgres_helpers
 from recidiviz.utils import metadata
 from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION, GCP_PROJECT_STAGING
@@ -90,39 +90,12 @@ def main(database: SchemaType, repo_root: str, ssl_cert_path: str, dry_run: bool
         logging.info('Creating a dry-run...\n')
 
     is_prod = metadata.project_id() == GCP_PROJECT_PRODUCTION
-    dbname = SQLAlchemyEngineManager.get_stripped_cloudsql_instance_id(database)
     if is_prod:
         logging.info('RUNNING AGAINST PRODUCTION\n')
 
-    db_check = input(f'Running new migrations on {dbname}. Please type "{dbname}" to confirm. (Anything else exits):\n')
-    if db_check != dbname:
-        logging.warning('\nConfirmation aborted.')
-        sys.exit(1)
+    confirm_correct_db(database)
+    confirm_correct_git_branch(repo_root, is_prod=is_prod)
 
-    # Get user to validate git branch
-    try:
-        repo = Repository(repo_root)
-    except Exception as e:
-        logging.error('improper project root provided: %s', e)
-        sys.exit(1)
-
-    current_branch = repo.head.shorthand
-
-    if is_prod and not current_branch.startswith('releases/'):
-        logging.error(
-            'Migrations run against production must be from a release branch. The current branch is %s.',
-            current_branch
-        )
-        sys.exit(1)
-
-    branch_check = input(
-        f'\nThis script will execute all migrations on this branch ({current_branch}) that have not yet been run '
-        f'against {dbname}. Please type "{current_branch}" to confirm your branch. (Anything else exits):\n')
-    if branch_check != current_branch:
-        logging.warning('\nConfirmation aborted.')
-        sys.exit(1)
-
-    # Fetch secrets
     if dry_run:
         overriden_env_vars = local_postgres_helpers.update_local_sqlalchemy_postgres_env_vars()
     else:
