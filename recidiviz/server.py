@@ -37,6 +37,7 @@ from recidiviz.cloud_functions.covid.covid_ingest_endpoint import covid_blueprin
 from recidiviz.ingest.aggregate.scrape_aggregate_reports import scrape_aggregate_reports_blueprint
 from recidiviz.ingest.aggregate.single_count import store_single_count_blueprint
 from recidiviz.ingest.direct.direct_ingest_control import direct_ingest_control
+from recidiviz.ingest.justice_counts.control import justice_counts_control
 from recidiviz.ingest.scrape.infer_release import infer_release_blueprint
 from recidiviz.ingest.scrape.scraper_control import scraper_control
 from recidiviz.ingest.scrape.scraper_status import scraper_status
@@ -73,6 +74,7 @@ app.register_blueprint(validation_manager_blueprint, url_prefix='/validation_man
 app.register_blueprint(calculation_data_storage_manager_blueprint, url_prefix='/calculation_data_storage_manager')
 app.register_blueprint(reporting_endpoint_blueprint, url_prefix='/reporting')
 app.register_blueprint(export_blueprint, url_prefix='/export')
+app.register_blueprint(justice_counts_control, url_prefix='/justice_counts')
 
 if environment.in_gae():
     SQLAlchemyEngineManager.init_engines_for_server_postgres_instances()

@@ -25,9 +25,11 @@ from typing import Optional
 from dateutil.relativedelta import relativedelta
 from sqlalchemy import sql
 
+from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.persistence.database.base_schema import JusticeCountsBase
 from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.persistence.database.session_factory import SessionFactory
+from recidiviz.tests.tools.justice_counts import test_utils
 from recidiviz.tools.justice_counts import manual_upload
 from recidiviz.tools.postgres import local_postgres_helpers
 
@@ -48,6 +50,7 @@ class ManualUploadTest(unittest.TestCase):
 
     def setUp(self) -> None:
         local_postgres_helpers.use_on_disk_postgresql_database(JusticeCountsBase)
+        self.fs = FakeGCSFileSystem()
 
     def tearDown(self) -> None:
         local_postgres_helpers.teardown_on_disk_postgresql_database(JusticeCountsBase)
@@ -58,7 +61,7 @@ class ManualUploadTest(unittest.TestCase):
 
     def test_ingestReport_isPersisted(self):
         # Act
-        manual_upload.ingest(manifest_filepath('report1'))
+        manual_upload.ingest(self.fs, test_utils.prepare_files(self.fs, manifest_filepath('report1')))
 
         # Assert
         session = SessionFactory.for_schema_base(JusticeCountsBase)
@@ -121,9 +124,9 @@ class ManualUploadTest(unittest.TestCase):
 
     def test_ingestAndUpdateReport_isPersisted(self):
         # Act
-        manual_upload.ingest(manifest_filepath('report1'))
+        manual_upload.ingest(self.fs, test_utils.prepare_files(self.fs, manifest_filepath('report1')))
         # This contains a new table for Jul20, with the state prisons population increased by 100.
-        manual_upload.ingest(manifest_filepath('report1_updated'))
+        manual_upload.ingest(self.fs, test_utils.prepare_files(self.fs, manifest_filepath('report1_updated')))
 
         # Note: If a report is published monthly, but has data for the last six months, we will always re-ingest all of
         # it each time
@@ -162,7 +165,7 @@ class ManualUploadTest(unittest.TestCase):
 
     def test_ingestMultiDimensionReport_isPersisted(self):
         # Act
-        manual_upload.ingest(manifest_filepath('report2_multidimension'))
+        manual_upload.ingest(self.fs, test_utils.prepare_files(self.fs, manifest_filepath('report2_multidimension')))
 
         # Assert
         session = SessionFactory.for_schema_base(JusticeCountsBase)
@@ -233,7 +236,7 @@ class ManualUploadTest(unittest.TestCase):
     def _test_ingestReport_dynamicSnapshot(self, report_id):
         """Ingests a report with a dynamic snapshot time window and verifies the output."""
         # Act
-        manual_upload.ingest(manifest_filepath(report_id))
+        manual_upload.ingest(self.fs, test_utils.prepare_files(self.fs, manifest_filepath(report_id)))
 
         # Assert
         session = SessionFactory.for_schema_base(JusticeCountsBase)
@@ -292,7 +295,7 @@ class ManualUploadTest(unittest.TestCase):
     def _test_ingestReport_dynamicDateRange(self, report_id):
         """Ingests a report with a dynamic range time window and verifies the output."""
         # Act
-        manual_upload.ingest(manifest_filepath(report_id))
+        manual_upload.ingest(self.fs, test_utils.prepare_files(self.fs, manifest_filepath(report_id)))
 
         # Assert
         session = SessionFactory.for_schema_base(JusticeCountsBase)
