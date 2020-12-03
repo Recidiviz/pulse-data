@@ -4394,8 +4394,8 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             assessments,
             violation_reports,
             supervision_contacts,
-            DEFAULT_SSVR_AGENT_ASSOCIATIONS,
-            DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS,
+            DEFAULT_SSVR_AGENT_ASSOCIATION_LIST,
+            DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
             DEFAULT_SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATIONS
         )
 
