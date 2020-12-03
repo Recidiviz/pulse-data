@@ -49,6 +49,7 @@ _DATAFLOW_MONITOR_URL = (
 )
 _APP_ENGINE_PO_MONTHLY_REPORT_GENERATE_EMAILS_URL = (
     'https://{}.appspot.com/reporting/start_new_batch?state_code={}&report_type={}&test_address={}'
+    '&region_code={}'
 )
 _APP_ENGINE_PO_MONTHLY_REPORT_DELIVER_EMAILS_URL = (
     'https://{}.appspot.com/reporting/deliver_emails_for_batch?batch_id={}&redirect_address={}'
@@ -147,7 +148,7 @@ def export_metric_view_data(event, _context) -> None:
     if 'data' in event:
         logging.info("data found")
         url = _METRIC_VIEW_EXPORT_CLOUD_FUNCTION_URL.format(project_id) + '?export_job_filter=' + \
-                b64decode(event['data']).decode('utf-8')
+            b64decode(event['data']).decode('utf-8')
     else:
         url = _METRIC_VIEW_EXPORT_CLOUD_FUNCTION_URL.format(project_id)
 
@@ -294,8 +295,10 @@ def handle_start_new_batch_email_reporting(request: Request) -> None:
     state_code = request_params.get('state_code', '')
     report_type = request_params.get('report_type', '')
     test_address = request_params.get('test_address', '')
+    region_code = request_params.get('region_code', '')
 
-    url = _APP_ENGINE_PO_MONTHLY_REPORT_GENERATE_EMAILS_URL.format(project_id, state_code, report_type, test_address)
+    url = _APP_ENGINE_PO_MONTHLY_REPORT_GENERATE_EMAILS_URL.format(
+        project_id, state_code, report_type, test_address, region_code)
 
     logging.info("Calling URL: %s", url)
 

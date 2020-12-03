@@ -28,6 +28,7 @@ from flask import Blueprint, request
 
 import recidiviz.reporting.data_retrieval as data_retrieval
 import recidiviz.reporting.email_delivery as email_delivery
+from recidiviz.reporting.region_codes import InvalidRegionCodeException
 from recidiviz.utils.auth import authenticate_request
 from recidiviz.utils.params import get_str_param_value
 
@@ -43,9 +44,11 @@ def start_new_batch() -> Tuple[str, HTTPStatus]:
         state_code: (required) A valid state code for which reporting is enabled (ex: "US_ID")
         report_type: (required) A valid report type identifier (ex: "po_monthly_report)
         test_address: (optional) Should only be used for testing. When provided, the test_address is used to generate
-        the email filenames, ensuring that all emails in the batch can only be delivered to the test_address and not
-        to the usual recipients of the report. The email filenames will include the original recipient's email username,
-        for example: tester+recipient_username@tester-domain.org.
+            the email filenames, ensuring that all emails in the batch can only be delivered to the test_address and not
+            to the usual recipients of the report. The email filenames will include the original recipient's email
+            username, for example: tester+recipient_username@tester-domain.org.
+        region_code: (optional) Indicates the sub-region of the state to generate emails for. If
+            omitted, we generate emails for all sub-regions of the state.
 
     Returns:
         Text indicating the results of the run and an HTTP status
@@ -56,19 +59,28 @@ def start_new_batch() -> Tuple[str, HTTPStatus]:
     state_code = get_str_param_value('state_code', request.args)
     report_type = get_str_param_value('report_type', request.args)
     test_address = get_str_param_value('test_address', request.args)
+    region_code = get_str_param_value('region_code', request.args)
 
     if not state_code or not report_type:
         msg = "Request does not include 'state_code' and 'report_type' parameters"
         logging.error(msg)
         return msg, HTTPStatus.BAD_REQUEST
 
+    # Normalize query param inputs
     state_code = state_code.upper()
+    if test_address == '':
+        test_address = None
+    if region_code == '':
+        region_code = None
 
-    batch_id = data_retrieval.start(state_code, report_type, test_address)
-
-    test_address_text = f"Emails generated for test address: {test_address}" if test_address else ""
-    return (f"New batch started for {state_code} and {report_type}.  Batch "
-            f"id = {batch_id}. {test_address_text}"), HTTPStatus.OK
+    try:
+        batch_id = data_retrieval.start(state_code, report_type, test_address, region_code)
+    except InvalidRegionCodeException:
+        return 'Invalid region code provided', HTTPStatus.BAD_REQUEST
+    else:
+        test_address_text = f"Emails generated for test address: {test_address}" if test_address else ""
+        return (f"New batch started for {state_code} and {report_type}.  Batch "
+                f"id = {batch_id}. {test_address_text}"), HTTPStatus.OK
 
 
 @reporting_endpoint_blueprint.route('/deliver_emails_for_batch', methods=['GET', 'POST'])
