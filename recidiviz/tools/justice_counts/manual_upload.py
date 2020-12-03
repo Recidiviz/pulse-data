@@ -14,15 +14,29 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Utilities for ingesting a report (as CSVs) into the Justice Counts database. """
+"""Utilities for ingesting a report (as CSVs) into the Justice Counts database.
+
+Example usage:
+python -m recidiviz.tools.justice_counts.manual_upload \
+    --manifest-file recidiviz/tests/tools/justice_counts/reports/report1/manifest.yaml \
+    --project-id recidiviz-staging
+python -m recidiviz.tools.justice_counts.manual_upload \
+    --manifest-file recidiviz/tests/tools/justice_counts/reports/report1/manifest.yaml \
+    --project-id recidiviz-staging \
+    --app-url http://127.0.0.1:5000
+"""
 
 from abc import abstractmethod
+import argparse
 import datetime
 import decimal
 import enum
 import logging
 import os
+import sys
 from typing import Callable, Dict, Iterable, List, Optional, Set, Tuple, Type, Union
+from typing import Dict, List, Optional, Set, Tuple, Type, Union
+import webbrowser
 
 import attr
 import pandas
@@ -32,10 +46,14 @@ from sqlalchemy.sql.schema import UniqueConstraint
 import yaml
 
 from recidiviz.common.date import DateRange, first_day_of_month, last_day_of_month
+from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
+from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath, GcsfsFilePath
+from recidiviz.cloud_storage.gcs_file_system import GCSFileSystem, GcsfsFileContentsHandle
 from recidiviz.persistence.database.base_schema import JusticeCountsBase
 from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.utils.yaml import YAMLDict
+from recidiviz.utils import metadata
 
 # Dimensions
 
@@ -562,7 +580,7 @@ def _parse_metric(metric_input: YAMLDict) -> Metric:
 
 # Only three layers of dictionary nesting is currently supported by the table parsing logic but we use the recursive
 # dictionary type for convenience.
-def _parse_tables(directory: str, tables_input: List[YAMLDict]) -> List[Table]:
+def _parse_tables(gcs: GCSFileSystem, directory_path: GcsfsDirectoryPath, tables_input: List[YAMLDict]) -> List[Table]:
     """Parses the YAML list of dictionaries describing tables into Table objects"""
     tables = []
     for table_input in tables_input:
@@ -571,9 +589,13 @@ def _parse_tables(directory: str, tables_input: List[YAMLDict]) -> List[Table]:
         location: Location = _parse_location(table_input.pop_dict('location'))
         metric = _parse_metric(table_input.pop_dict('metric'))
 
-        table_filepath = os.path.join(directory, table_input.pop('file', str))
-        logging.info('Reading table: %s', table_filepath)
-        df = pandas.read_csv(table_filepath)
+        table_path = GcsfsFilePath.from_directory_and_file_name(directory_path, table_input.pop('file', str))
+        logging.info('Reading table: %s', table_path)
+        table_handle = gcs.download_to_temp_file(table_path)
+        if table_handle is None:
+            raise ValueError(f"Unable to download table from path: {table_path}")
+        with table_handle.open() as table_file:
+            df = pandas.read_csv(table_file)
 
         tables.extend(Table.list_from_dataframe(
             date_range_producer=date_range_producer, metric=metric, system=table_input.pop('system', str),
@@ -586,18 +608,21 @@ def _parse_tables(directory: str, tables_input: List[YAMLDict]) -> List[Table]:
     return tables
 
 
-def _get_report(manifest_filepath):
-    logging.info('Reading report manifest: %s', manifest_filepath)
-    with open(manifest_filepath) as manifest_file:
-        directory = os.path.dirname(manifest_filepath)
+def _get_report(gcs: GCSFileSystem, manifest_path: GcsfsFilePath) -> Report:
+    logging.info('Reading report manifest: %s', manifest_path)
+    manifest_handle = gcs.download_to_temp_file(manifest_path)
+    if manifest_handle is None:
+        raise ValueError(f"Unable to download manifest from path: {manifest_path}")
+    with manifest_handle.open() as manifest_file:
         loaded_yaml = yaml.full_load(manifest_file)
         if not isinstance(loaded_yaml, dict):
             raise ValueError(f"Expected manifest to contain a top-level dictionary, but received: {loaded_yaml}")
         manifest = YAMLDict(loaded_yaml)
 
+        directory_path = GcsfsDirectoryPath.from_file_path(manifest_path)
         # Parse tables separately
         # TODO(#4479): Also allow for location to be a column in the csv, as is done for dates.
-        tables = _parse_tables(directory, manifest.pop_dicts('tables'))
+        tables = _parse_tables(gcs, directory_path, manifest.pop_dicts('tables'))
 
         report = Report(
             source_name=manifest.pop('source', str),
@@ -650,14 +675,14 @@ def _update_existing_or_create(ingested_entity: schema.JusticeCountsDatabaseEnti
     return ingested_entity
 
 
-def _convert_entities(session: Session, ingested_report: Report, metadata: Metadata) -> None:
+def _convert_entities(session: Session, ingested_report: Report, report_metadata: Metadata) -> None:
     """Convert the ingested report into SQLAlchemy models"""
     report = _update_existing_or_create(schema.Report(
         source=_update_existing_or_create(schema.Source(name=ingested_report.source_name), session),
         type=ingested_report.report_type,
         instance=ingested_report.report_instance,
         publish_date=ingested_report.publish_date,
-        acquisition_method=metadata.acquisition_method,
+        acquisition_method=report_metadata.acquisition_method,
     ), session)
 
     for table in ingested_report.tables:
@@ -690,11 +715,11 @@ def _convert_entities(session: Session, ingested_report: Report, metadata: Metad
                 value=value), session)
 
 
-def _persist_report(report: Report, metadata: Metadata):
+def _persist_report(report: Report, report_metadata: Metadata):
     session: Session = SessionFactory.for_schema_base(JusticeCountsBase)
 
     try:
-        _convert_entities(session, report, metadata)
+        _convert_entities(session, report, report_metadata)
         # TODO(#4475): Add sanity check validation of the data provided (e.g. summing data across dimensions is
         # consistent). Validation of dimension values should already be enforced by enums above.
         session.commit()
@@ -705,9 +730,94 @@ def _persist_report(report: Report, metadata: Metadata):
         session.close()
 
 
-def ingest(manifest_filepath: str) -> None:
+def ingest(gcs: GCSFileSystem, manifest_filepath: GcsfsFilePath) -> None:
     logging.info('Fetching report for ingest...')
-    report = _get_report(manifest_filepath)
+    report = _get_report(gcs, manifest_filepath)
     logging.info('Ingesting report...')
     _persist_report(report, Metadata(acquisition_method=schema.AcquisitionMethod.MANUALLY_ENTERED))
     logging.info('Report ingested.')
+
+# TODO(#4127): Everything above should be refactored out of the tools directory so only the script below is left.
+
+def _create_parser():
+    """Creates the CLI argument parser."""
+    parser = argparse.ArgumentParser(
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser.add_argument(
+        '--manifest-file', required=True, type=str,
+        help="The yaml describing how to ingest the data"
+    )
+    parser.add_argument(
+        '--project-id', required=True, type=str,
+        help="The GCP project to ingest the data into"
+    )
+    parser.add_argument(
+        '--app-url', required=False, type=str,
+        help="Override the url of the app."
+    )
+    parser.add_argument(
+        '--log', required=False, default='INFO', type=logging.getLevelName,
+        help="Set the logging level"
+    )
+    return parser
+
+def upload(gcs: GCSFileSystem, manifest_path: str) -> GcsfsFilePath:
+    with open(manifest_path, mode='r') as manifest_file:
+        directory = os.path.dirname(manifest_path)
+        manifest: dict = yaml.full_load(manifest_file)
+
+        gcs_directory = GcsfsDirectoryPath.from_absolute_path(
+            os.path.join(f'gs://{metadata.project_id()}-justice-counts-ingest', manifest['source'],
+                         manifest['report_type'], manifest['report_instance'])
+        )
+
+        for table in manifest['tables']:
+            table_filename = table['file']
+            gcs.upload_from_contents_handle(
+                path=GcsfsFilePath.from_directory_and_file_name(gcs_directory, table_filename),
+                contents_handle=GcsfsFileContentsHandle(os.path.join(directory, table_filename)),
+                content_type='text/csv'
+            )
+
+        manifest_gcs_path = GcsfsFilePath.from_directory_and_file_name(gcs_directory, os.path.basename(manifest_path))
+        gcs.upload_from_contents_handle(
+            path=manifest_gcs_path,
+            contents_handle=GcsfsFileContentsHandle(manifest_path),
+            content_type='text/yaml'
+        )
+        return manifest_gcs_path
+
+def trigger_ingest(gcs_path: GcsfsFilePath, app_url: Optional[str]):
+    app_url = app_url or f'https://{metadata.project_id()}.appspot.com'
+    webbrowser.open(url=f'{app_url}/justice_counts/ingest?manifest_path={gcs_path.uri()}')
+
+
+def main(manifest_path: str, app_url: Optional[str]) -> None:
+    logging.info('Uploading report for ingest...')
+    gcs_path = upload(GcsfsFactory.build(), manifest_path)
+
+    # We can't hit the endpoint on the app directly from the python script as we don't have IAP credentials. Instead we
+    # launch the browser to hit the app and allow the user to auth in browser.
+    logging.info('Opening browser to trigger ingest...')
+    trigger_ingest(gcs_path, app_url)
+    # Then we ask the user if the browser request was successful or displayed an error.
+    i = input('Was the ingest successful? [Y/n]: ')
+    if i and i.strip().lower() != 'y':
+        logging.error('Ingest failed.')
+        sys.exit(1)
+    logging.info('Report ingested.')
+
+
+def _configure_logging(level):
+    root = logging.getLogger()
+    root.setLevel(level)
+
+
+if __name__ == '__main__':
+    arg_parser = _create_parser()
+    arguments = arg_parser.parse_args()
+
+    _configure_logging(arguments.log)
+
+    with metadata.local_project_id_override(arguments.project_id):
+        main(arguments.manifest_file, arguments.app_url)

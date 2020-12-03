@@ -14,12 +14,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Test script to verify manual upload is working correctly.
+"""Test script to verify ingest is working correctly.
 
 Example usage:
-python -m recidiviz.tests.tools.development_scripts.justice_counts --manifest-file path/to/manifest.yaml
 python -m recidiviz.tests.tools.development_scripts.justice_counts \
-    --manifest-file recidiviz/tests/tools/justice_counts/fixtures/report1/manifest.yaml
+    --manifest-file recidiviz/tests/tools/justice_counts/fixtures/report1.yaml
 """
 
 
@@ -28,6 +27,8 @@ import logging
 
 import recidiviz
 from recidiviz.persistence.database.base_schema import JusticeCountsBase
+from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
+from recidiviz.tests.tools.justice_counts import test_utils
 from recidiviz.tools.justice_counts import manual_upload
 from recidiviz.tools.postgres import local_postgres_helpers
 
@@ -37,7 +38,7 @@ def _create_parser():
     parser = argparse.ArgumentParser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument(
-        '--manifest-file', required=False, type=str,
+        '--manifest-file', required=True, type=str,
         help="The yaml describing how to ingest the data"
     )
     parser.add_argument(
@@ -58,19 +59,12 @@ if __name__ == '__main__':
 
     _configure_logging(arguments.log)
 
-    # TODO(#4386): Currently this starts a local postgres and talks to it as we aren't able to talk to a postgres
-    # instance in GCP from local. Long-term there are a few options:
-    # - Upload the files to a gcs bucket to be processed by the app
-    #   - This is straightforward, but to see what is happening you have to go to GCP
-    # - Create an endpoint that takes the parsed `Report` object
-    #   - This allows any conversion errors to show up locally, and persistence errors to be communicated back
-    #   - However, then `Report` becomes an api and can't evolve as easily (which maybe is true no matter what once
-    #     manifest files have been created?)
     recidiviz.called_from_test = True
     tmp_db_dir = local_postgres_helpers.start_on_disk_postgresql_database()
     local_postgres_helpers.use_on_disk_postgresql_database(JusticeCountsBase)
 
-    manual_upload.ingest(arguments.manifest_file)
+    fs = FakeGCSFileSystem()
+    manual_upload.ingest(fs, test_utils.prepare_files(fs, arguments.manifest_file))
 
     # Don't cleanup the database so that user can query the data afterward.
     logging.info("To query the data, connect to the local database with `psql --dbname=recidiviz_test_db`")
