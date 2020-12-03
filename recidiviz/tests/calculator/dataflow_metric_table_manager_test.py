@@ -18,12 +18,10 @@
 import unittest
 from unittest import mock
 from mock import patch
-from flask import Flask
 
 from google.cloud import bigquery
 
-from recidiviz.calculator import calculation_data_storage_manager
-from recidiviz.calculator.calculation_data_storage_manager import calculation_data_storage_manager_blueprint
+from recidiviz.calculator import dataflow_metric_table_manager
 
 
 class CalculationDataStorageManagerTest(unittest.TestCase):
@@ -42,7 +40,7 @@ class CalculationDataStorageManagerTest(unittest.TestCase):
         self.project_number_patcher.start().return_value = '123456789'
 
         self.bq_client_patcher = mock.patch(
-            'recidiviz.calculator.calculation_data_storage_manager.BigQueryClientImpl')
+            'recidiviz.calculator.dataflow_metric_table_manager.BigQueryClientImpl')
         self.mock_client = self.bq_client_patcher.start().return_value
 
         self.mock_client.dataset_ref_for_id.return_value = self.mock_dataset
@@ -53,42 +51,27 @@ class CalculationDataStorageManagerTest(unittest.TestCase):
         self.mock_client.list_tables.return_value = self.mock_dataflow_tables
         self.mock_client.project_id.return_value = self.project_id
 
-        self.data_storage_config_patcher = mock.patch('recidiviz.calculator.dataflow_output_storage_config')
-        self.mock_data_storage_config = self.data_storage_config_patcher.start()
-
         self.fake_dataflow_metrics_dataset = 'fake_dataflow_metrics_dataset'
         self.fake_cold_storage_dataset = 'fake_cold_storage_dataset'
         self.fake_max_jobs = 10
-
-        self.mock_data_storage_config.MAX_DAYS_IN_DATAFLOW_METRICS_TABLE.return_value = self.fake_max_jobs
-        self.mock_data_storage_config.DATAFLOW_METRICS_COLD_STORAGE_DATASET = self.fake_cold_storage_dataset
-
-        app = Flask(__name__)
-        app.register_blueprint(calculation_data_storage_manager_blueprint)
-        app.config['TESTING'] = True
-        self.client = app.test_client()
 
     def tearDown(self):
         self.bq_client_patcher.stop()
         self.project_id_patcher.stop()
         self.project_number_patcher.stop()
-        self.data_storage_config_patcher.stop()
 
-    def test_move_old_dataflow_metrics_to_cold_storage(self):
-        """Test that move_old_dataflow_metrics_to_cold_storage gets the list of tables to prune, calls the client to
-        insert into the cold storage table, and calls the client to replace the dataflow table."""
-        calculation_data_storage_manager.move_old_dataflow_metrics_to_cold_storage()
+    def test_update_dataflow_metric_tables_schemas(self):
+        """Test that update_dataflow_metric_tables_schemas calls the client to update the schemas of the metric
+        tables."""
+        dataflow_metric_table_manager.update_dataflow_metric_tables_schemas()
 
-        self.mock_client.list_tables.assert_called()
-        self.mock_client.insert_into_table_from_query.assert_called()
-        self.mock_client.create_table_from_query_async.assert_called()
+        self.mock_client.add_missing_fields_to_schema.assert_called()
 
-    @patch('recidiviz.calculator.calculation_data_storage_manager.move_old_dataflow_metrics_to_cold_storage')
-    def test_prune_old_dataflow_data(self, mock_move_metrics):
-        """Tests that the move_old_dataflow_metrics_to_cold_storage function is called when the /prune_old_dataflow_data
-        endpoint is hit."""
-        headers = {'X-Appengine-Cron': 'test-cron'}
-        response = self.client.get('/prune_old_dataflow_data', headers=headers)
+    def test_update_dataflow_metric_tables_schemas_create_table(self):
+        """Test that update_dataflow_metric_tables_schemas calls the client to create a new table when the table
+        does not yet exist."""
+        self.mock_client.table_exists.return_value = False
 
-        self.assertEqual(200, response.status_code)
-        mock_move_metrics.assert_called()
+        dataflow_metric_table_manager.update_dataflow_metric_tables_schemas()
+
+        self.mock_client.create_table_with_schema.assert_called()
