@@ -60,39 +60,6 @@ function next_alpha_version {
     echo ${NEW_VERSION}
 }
 
-function verify_deploy_permissions {
-    # TODO(#3996): Actually check Github for Owner-level repo permissions
-
-    GIT_USER_EMAIL="$(git config user.email)"
-    EMAIL_PATTERN=".*\@recidiviz\.org$"
-
-    if [[ ! ${GIT_USER_EMAIL} =~ ${EMAIL_PATTERN} ]]
-    then
-        echo_error "User [$GIT_USER_EMAIL] does not have sufficient permissions to deploy."
-        echo_error "Please reach out to Recidiviz administrators if you need to deploy."
-        exit 1
-    fi
-}
-
-# Prints an error and exits if the provided commit does not have a green build on Travis.
-function check_commit_is_green {
-    COMMIT=$1
-
-    # This returns an SVG with an element that will have the text "passing" if the build is passing.
-    URL="https://api.travis-ci.com/Recidiviz/pulse-data.svg?token=pa7kG645RqXUvoHE2g9n&commit=$COMMIT"
-    TRAVIS_BUILD_STATUS_SVG=$(curl ${URL})
-
-    PASSING_PATTERN=">passing<"
-
-    if [[ ! ${TRAVIS_BUILD_STATUS_SVG} =~ ${PASSING_PATTERN} ]]
-    then
-        echo_error "Commit [$COMMIT] is not passing on Travis. You must wait for a green build to deploy."
-        exit 1
-    fi
-
-    echo "Build is passing for commit [$COMMIT]."
-}
-
 # If there have been changes since the last deploy that indicate pipeline results may have changed, returns a non-empty
 # string. Otherwise, if there have been no changes impacting pipelines, returns an empty result.
 function calculation_pipeline_changes_since_last_deploy {
@@ -234,8 +201,6 @@ function check_for_too_many_deployed_versions {
 
 function verify_can_deploy {
     PROJECT_ID=$1
-    echo "Verifying deploy permissions"
-    verify_deploy_permissions
 
     echo "Checking Docker is installed"
     run_cmd check_docker_installed
