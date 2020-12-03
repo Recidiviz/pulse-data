@@ -21,7 +21,7 @@ import logging
 import os
 import tempfile
 import uuid
-from typing import List, Optional, Union, Iterator, Callable, Dict
+from typing import List, Optional, TextIO, Union, Iterator, Callable, Dict
 
 from google.api_core import retry, exceptions
 from google.cloud import storage
@@ -38,12 +38,15 @@ class GcsfsFileContentsHandle(FileContentsHandle[str]):
 
     def get_contents_iterator(self) -> Iterator[str]:
         """Lazy function (generator) to read a file line by line."""
-        with open(self.local_file_path, encoding='utf-8') as f:
+        with self.open() as f:
             while True:
                 line = f.readline()
                 if not line:
                     break
                 yield line
+
+    def open(self) -> TextIO:
+        return open(self.local_file_path, mode='r', encoding='utf-8')
 
     def __del__(self) -> None:
         """This ensures that the file contents on local disk are deleted when
