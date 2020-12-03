@@ -34,7 +34,7 @@ from apache_beam.options.pipeline_options import SetupOptions, PipelineOptions
 from apache_beam.typehints import with_input_types, with_output_types
 from more_itertools import one
 
-from recidiviz.calculator.calculation_data_storage_config import DATAFLOW_METRICS_TO_TABLES
+from recidiviz.calculator.dataflow_output_storage_config import DATAFLOW_METRICS_TO_TABLES
 from recidiviz.calculator.pipeline.recidivism import identifier
 from recidiviz.calculator.pipeline.recidivism import calculator
 from recidiviz.calculator.pipeline.recidivism.release_event import ReleaseEvent

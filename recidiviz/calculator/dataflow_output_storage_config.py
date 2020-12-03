@@ -14,9 +14,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Calculation data storage configuration."""
+"""Config for storing Dataflow output."""
 
-# The maximum number days of output that should be stored in a dataflow metrics table before being moved to cold storage
 from typing import Dict, Type
 
 from recidiviz.calculator.pipeline.incarceration.metrics import IncarcerationAdmissionMetric, \
@@ -30,6 +29,7 @@ from recidiviz.calculator.pipeline.supervision.metrics import \
     SuccessfulSupervisionSentenceDaysServedMetric, SupervisionCaseComplianceMetric, SupervisionTerminationMetric
 from recidiviz.calculator.pipeline.utils.metric_utils import RecidivizMetric
 
+# The maximum number days of output that should be stored in a dataflow metrics table before being moved to cold storage
 MAX_DAYS_IN_DATAFLOW_METRICS_TABLE: int = 7
 
 # Where the metrics from outdated Dataflow jobs are stored

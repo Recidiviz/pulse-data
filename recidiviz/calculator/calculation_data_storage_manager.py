@@ -14,38 +14,26 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Manages the storage of data produced by calculations.
-
-Run locally with the following command:
-
-    python -m recidiviz.calculator.calculation_data_storage_manager \
-        --project_id [PROJECT_ID]
-        --function_to_execute [cold_storage_export, update_schemas]
-
-"""
-import argparse
-import logging
-import sys
+"""Manages the storage of data produced by calculations."""
 from http import HTTPStatus
-from typing import Tuple, List
+from typing import Tuple
 
 import flask
 from google.cloud.bigquery import WriteDisposition
 
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
-from recidiviz.calculator.calculation_data_storage_config import DATAFLOW_METRICS_COLD_STORAGE_DATASET, \
-    MAX_DAYS_IN_DATAFLOW_METRICS_TABLE, DATAFLOW_METRICS_TO_TABLES
+from recidiviz.calculator.dataflow_output_storage_config import DATAFLOW_METRICS_COLD_STORAGE_DATASET, \
+    MAX_DAYS_IN_DATAFLOW_METRICS_TABLE
 from recidiviz.calculator.query.state.dataset_config import DATAFLOW_METRICS_DATASET, REFERENCE_VIEWS_DATASET
 from recidiviz.utils.auth import authenticate_request
-from recidiviz.utils.environment import GCP_PROJECT_STAGING, GCP_PROJECT_PRODUCTION
-from recidiviz.utils.metadata import local_project_id_override
+
 
 calculation_data_storage_manager_blueprint = flask.Blueprint('calculation_data_storage_manager', __name__)
 
 
 @calculation_data_storage_manager_blueprint.route('/prune_old_dataflow_data')
 @authenticate_request
-def prune_old_dataflow_data()-> Tuple[str, HTTPStatus]:
+def prune_old_dataflow_data() -> Tuple[str, HTTPStatus]:
     """Calls the move_old_dataflow_metrics_to_cold_storage function."""
     move_old_dataflow_metrics_to_cold_storage()
 
@@ -135,52 +123,3 @@ def move_old_dataflow_metrics_to_cold_storage() -> None:
 
         # Wait for the replace job to complete before moving on
         replace_job.result()
-
-
-def update_dataflow_metric_tables_schemas() -> None:
-    """For each table that stores Dataflow metric output, ensures that all attributes on the corresponding metric are
-    present in the table in BigQuery."""
-    bq_client = BigQueryClientImpl()
-    dataflow_metrics_dataset_id = DATAFLOW_METRICS_DATASET
-    dataflow_metrics_dataset_ref = bq_client.dataset_ref_for_id(dataflow_metrics_dataset_id)
-
-    bq_client.create_dataset_if_necessary(dataflow_metrics_dataset_ref)
-
-    for metric_class, table_id in DATAFLOW_METRICS_TO_TABLES.items():
-        schema_for_metric_class = metric_class.bq_schema_for_metric_table()
-
-        if bq_client.table_exists(dataflow_metrics_dataset_ref, table_id):
-            # Add any missing fields to the table's schema
-            bq_client.add_missing_fields_to_schema(dataflow_metrics_dataset_id, table_id, schema_for_metric_class)
-        else:
-            # Create a table with this schema
-            bq_client.create_table_with_schema(dataflow_metrics_dataset_id, table_id, schema_for_metric_class)
-
-
-def parse_arguments(argv: List[str]) -> Tuple[argparse.Namespace, List[str]]:
-    """Parses the arguments needed to call the desired function."""
-    parser = argparse.ArgumentParser()
-
-    parser.add_argument('--project_id',
-                        dest='project_id',
-                        type=str,
-                        choices=[GCP_PROJECT_STAGING, GCP_PROJECT_PRODUCTION],
-                        required=True)
-    parser.add_argument('--function_to_execute',
-                        dest='function_to_execute',
-                        type=str,
-                        choices=['cold_storage_export', 'update_schemas'],
-                        required=True)
-
-    return parser.parse_known_args(argv)
-
-
-if __name__ == '__main__':
-    logging.getLogger().setLevel(logging.INFO)
-    known_args, _ = parse_arguments(sys.argv)
-
-    with local_project_id_override(known_args.project_id):
-        if known_args.function_to_execute == 'cold_storage_export':
-            move_old_dataflow_metrics_to_cold_storage()
-        elif known_args.function_to_execute == 'update_schemas':
-            update_dataflow_metric_tables_schemas()
