@@ -129,6 +129,8 @@ raw_files:
       - LIVING_UNIT_ID
     datetime_cols:
       - DEACTIVATE_DATE
+  - file_tag: elite_offender_trust_details
+    primary_key_cols: []
   - file_tag: elite_offenderbookingstable
     primary_key_cols:
       - OFFENDER_BOOK_ID
@@ -193,6 +195,8 @@ raw_files:
       - END_DATE
       - CREATE_DATETIME
       - MODIFY_DATETIME
+  - file_tag: elite_offense_in_custody_and_pos_report_data
+    primary_key_cols: []
   - file_tag: elite_orderstable
     primary_key_cols:
       - ORDER_ID
