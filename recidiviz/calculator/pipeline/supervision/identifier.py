@@ -140,7 +140,7 @@ def find_supervision_time_buckets(
         - assessments: list of StateAssessments for a person
         - violations: list of StateSupervisionViolations for a person
         - violation_responses: list of StateSupervisionViolationResponses for a person
-        - ssvr_agent_associations: A list of dictionaries associating StateSupervisionViolationResponse ids to
+        - ssvr_agent_association: A list of dictionaries associating StateSupervisionViolationResponse ids to
             information about the corresponding StateAgent on the response
         - supervision_period_to_agent_associations: A list of dictionaries associating StateSupervisionPeriod ids to
             information about the corresponding StateAgent
