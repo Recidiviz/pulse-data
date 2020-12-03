@@ -28,9 +28,13 @@ from typing import List, Optional
 import recidiviz.reporting.email_generation as email_generation
 import recidiviz.reporting.email_reporting_utils as utils
 from recidiviz.reporting.context.available_context import get_report_context
+from recidiviz.reporting.region_codes import InvalidRegionCodeException, REGION_CODES
 
 
-def start(state_code: str, report_type: str, test_address: Optional[str] = None) -> str:
+def start(state_code: str,
+          report_type: str,
+          test_address: Optional[str] = None,
+          region_code: Optional[str] = None) -> str:
     """Begins data retrieval for a new batch of email reports.
 
     Start with collection of data from the calculation pipelines.
@@ -42,13 +46,19 @@ def start(state_code: str, report_type: str, test_address: Optional[str] = None)
         state_code: The state for which to generate reports
         report_type: The type of report to send
         test_address: Optional email address for which to generate all emails
+        region_code: Optional region code which specifies the sub-region of the state in which to
+            generate reports. If empty, this generates reports for all regions.
 
     Returns: The batch id for the newly started batch
     """
     batch_id = utils.generate_batch_id()
-    logging.info("New batch started for %s and %s. Batch id = %s", state_code, report_type, batch_id)
+    logging.info("New batch started for %s (region: %s) and %s. Batch id = %s",
+                 state_code, region_code, report_type, batch_id)
 
     recipient_data = retrieve_data(state_code, report_type, batch_id)
+
+    if region_code is not None and region_code not in REGION_CODES:
+        raise InvalidRegionCodeException()
 
     for recipient in recipient_data:
         if test_address:
@@ -58,6 +68,9 @@ def start(state_code: str, report_type: str, test_address: Optional[str] = None)
             recipient[utils.KEY_EMAIL_ADDRESS] = formatted_test_address
             logging.info("Generating email for [%s] with test address: %s", recipient_email_address,
                          formatted_test_address)
+
+        if region_code is not None and recipient[utils.KEY_DISTRICT] != REGION_CODES[region_code]:
+            continue
 
         recipient[utils.KEY_BATCH_ID] = batch_id
         report_context = get_report_context(state_code, report_type, recipient)
@@ -90,7 +103,7 @@ def retrieve_data(state_code: str, report_type: str, batch_id: str) -> List:
     try:
         data_filename = utils.get_data_filename(state_code, report_type)
         file_contents_string = utils.load_string_from_storage(data_bucket, data_filename)
-    except:
+    except BaseException:
         logging.info("Unable to load data file %s/%s", data_bucket, data_filename)
         raise
 
