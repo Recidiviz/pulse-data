@@ -56,7 +56,7 @@ def run_test_pipeline(pipeline_module: ModuleType,
     if include_calculation_limit_args:
         calculation_limit_args = {
             'calculation_end_month': None,
-            'calculation_month_count': 240
+            'calculation_month_count': -1
         }
 
     with patch('recidiviz.calculator.pipeline.utils.extractor_utils.ReadFromBigQuery', read_from_bq_constructor):
