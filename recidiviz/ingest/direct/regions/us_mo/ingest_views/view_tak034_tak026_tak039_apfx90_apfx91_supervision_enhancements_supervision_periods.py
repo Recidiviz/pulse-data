@@ -79,8 +79,9 @@ WITH field_assignments_ce AS (
             {{LBAKRDTA_TAK034}}.*,
             CE_DOC AS DOC,
             CE_CYC AS CYC,
-            CE_HF AS FLD_ASSN_BEG_DT,
-            CE_EH AS FLD_ASSN_END_DT,
+            -- We correct potential input error on closed periods with flipped start and end dates
+            IF(CE_EH != '0', LEAST(CE_HF, CE_EH), CE_HF) AS FLD_ASSN_BEG_DT,
+            IF(CE_EH != '0', GREATEST(CE_HF, CE_EH), CE_EH)  AS FLD_ASSN_END_DT,
             CE_PLN AS LOC_ACRO,
             SUBSTR(CE_PLN, 1,2) AS LOC_ACRO_TWO_LETTER
         FROM
@@ -512,7 +513,15 @@ WITH field_assignments_ce AS (
     SELECT
         periods_with_officer_case_type_and_supervision_type_info.DOC,
         periods_with_officer_case_type_and_supervision_type_info.CYC,
-        periods_with_officer_case_type_and_supervision_type_info.FIELD_ASSIGNMENT_SEQ_NUM,
+        ROW_NUMBER() OVER (
+            PARTITION BY 
+                periods_with_officer_case_type_and_supervision_type_info.DOC,
+                periods_with_officer_case_type_and_supervision_type_info.CYC
+            ORDER BY 
+                periods_with_officer_case_type_and_supervision_type_info.SUPV_PERIOD_BEG_DT, 
+                periods_with_officer_case_type_and_supervision_type_info.SUPV_PERIOD_END_DT, 
+                periods_with_officer_case_type_and_supervision_type_info.FIELD_ASSIGNMENT_SEQ_NUM
+        ) AS FIELD_ASSIGNMENT_SEQ_NUM,
         periods_with_officer_case_type_and_supervision_type_info.START_STATUS_SEQ_NUM,
         periods_with_officer_case_type_and_supervision_type_info.SUPV_PERIOD_BEG_DT,
         start_statuses.STATUS_CODE_LIST AS START_STATUS_CODE_LIST,

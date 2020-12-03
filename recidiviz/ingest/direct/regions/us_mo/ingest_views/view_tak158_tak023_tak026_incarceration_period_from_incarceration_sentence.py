@@ -59,7 +59,11 @@ VIEW_QUERY_TEMPLATE = f"""
             incarceration_subcycle_from_incarceration_sentence.F1_SQN = sub_subcycle_spans.SQN
         )
     SELECT
-        incarceration_periods_from_incarceration_sentence.*,
+        incarceration_periods_from_incarceration_sentence.* EXCEPT(SQN),
+        ROW_NUMBER() OVER (
+            PARTITION BY DOC, CYC 
+            ORDER BY SUB_SUBCYCLE_START_DT, SUB_SUBCYCLE_END_DT, SQN
+        ) AS SQN,
         start_codes.STATUS_CODES AS START_SCD_CODES,
         end_codes.STATUS_CODES AS END_SCD_CODES,
         most_recent_status_updates.MOST_RECENT_SENTENCE_STATUS_DATE 
