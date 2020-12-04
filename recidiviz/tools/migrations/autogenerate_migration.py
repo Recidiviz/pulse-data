@@ -64,7 +64,7 @@ def create_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def main(database: SchemaType, message: str, use_local_db: bool):
+def main(database: SchemaType, message: str, use_local_db: bool) -> None:
     if use_local_db:
         # TODO(#4619): We should eventually move this from a local postgres instance to running
         # postgres from a docker container.

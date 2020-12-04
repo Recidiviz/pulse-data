@@ -63,7 +63,7 @@ def update_local_sqlalchemy_postgres_env_vars() -> Dict[str, Optional[str]]:
     return original_values
 
 
-def restore_local_env_vars(overridden_env_vars: Dict[str, Optional[str]]):
+def restore_local_env_vars(overridden_env_vars: Dict[str, Optional[str]]) -> None:
     for var, value in overridden_env_vars.items():
         if value is None:
             del os.environ[var]
@@ -167,7 +167,7 @@ def stop_and_clear_on_disk_postgresql_database(temp_db_data_dir: str) -> None:
     shutil.rmtree(temp_db_data_dir)
 
 
-def _stop_on_disk_postgresql_database(temp_db_data_dir: str):
+def _stop_on_disk_postgresql_database(temp_db_data_dir: str) -> None:
     # If the current user is root then the database is owned by a separate OS test user. Run as them to stop the server.
     password_record = pwd.getpwnam(LINUX_TEST_DB_OWNER_NAME) if _is_root_user() else None
     _run_command(f'pg_ctl -D {temp_db_data_dir} -l /tmp/postgres stop', as_user=password_record)

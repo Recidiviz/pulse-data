@@ -67,7 +67,7 @@ def create_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def main(database: SchemaType, repo_root: str, ssl_cert_path: str, dry_run: bool):
+def main(database: SchemaType, repo_root: str, ssl_cert_path: str, dry_run: bool) -> None:
     """
     Invokes the main code path for running migrations.
 
