@@ -31,6 +31,7 @@ from cloud_function_utils import (  # type: ignore[import]
     get_state_region_code_from_direct_ingest_bucket,
     get_dataflow_template_bucket,
     trigger_dataflow_job_from_template,
+    build_query_param_string
 )
 from covid import covid_ingest  # type: ignore[import]
 
@@ -48,11 +49,10 @@ _DATAFLOW_MONITOR_URL = (
     '&location={}&topic={}'
 )
 _APP_ENGINE_PO_MONTHLY_REPORT_GENERATE_EMAILS_URL = (
-    'https://{}.appspot.com/reporting/start_new_batch?state_code={}&report_type={}&test_address={}'
-    '&region_code={}'
+    'https://{}.appspot.com/reporting/start_new_batch{}'
 )
 _APP_ENGINE_PO_MONTHLY_REPORT_DELIVER_EMAILS_URL = (
-    'https://{}.appspot.com/reporting/deliver_emails_for_batch?batch_id={}&redirect_address={}'
+    'https://{}.appspot.com/reporting/deliver_emails_for_batch{}'
 )
 
 
@@ -291,13 +291,10 @@ def handle_start_new_batch_email_reporting(request: Request) -> None:
         logging.error("No request params, returning")
         return
 
-    state_code = request_params.get('state_code', '')
-    report_type = request_params.get('report_type', '')
-    test_address = request_params.get('test_address', '')
-    region_code = request_params.get('region_code', '')
+    query_params = build_query_param_string(request_params,
+                                            ["state_code", "report_type", "test_address", "region_code"])
 
-    url = _APP_ENGINE_PO_MONTHLY_REPORT_GENERATE_EMAILS_URL.format(
-        project_id, state_code, report_type, test_address, region_code)
+    url = _APP_ENGINE_PO_MONTHLY_REPORT_GENERATE_EMAILS_URL.format(project_id, query_params)
 
     logging.info("Calling URL: %s", url)
 
@@ -313,6 +310,9 @@ def handle_deliver_emails_for_batch_email_reporting(request: Request) -> None:
         batch_id: (required) Identifier for this batch
         redirect_address: (optional) An email address to which all emails should
         be sent instead of to their actual recipients.
+        cc_address: (optional) List of email addresses to include in the CC field.
+            Example JSON:
+            { "batch_id": "XXXX", "cc_address": ["cc_address@domain.org"] }
     Args:
         request: HTTP request payload containing JSON with keys as described above
     Returns:
@@ -330,9 +330,9 @@ def handle_deliver_emails_for_batch_email_reporting(request: Request) -> None:
         logging.error("No request params, returning")
         return
 
-    batch_id = request_params.get("batch_id", '')
-    redirect_address = request_params.get("redirect_address", '')
-    url = _APP_ENGINE_PO_MONTHLY_REPORT_DELIVER_EMAILS_URL.format(project_id, batch_id, redirect_address)
+    query_params = build_query_param_string(request_params, ["batch_id", "redirect_address", "cc_address"])
+
+    url = _APP_ENGINE_PO_MONTHLY_REPORT_DELIVER_EMAILS_URL.format(project_id, query_params)
 
     logging.info("Calling URL: %s", url)
     response = make_iap_request(url, IAP_CLIENT_ID[project_id])
