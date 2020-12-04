@@ -170,7 +170,10 @@ def person_and_kwargs_for_identifier(
 
     for key, values in arg_to_entities_map.items():
         if key == 'person':
-            person = one(arg_to_entities_map[key])
+            if not values:
+                raise ValueError(f'Found no person values in arg_to_entities_map: {arg_to_entities_map}')
+
+            person = one(values)
         else:
             kwargs[key] = list(values)
 
@@ -228,3 +231,20 @@ def list_of_dicts_to_dict_with_keys(list_of_dicts: List[Dict[str, Any]], key: st
         result_dict[key_value] = dict_entry
 
     return result_dict
+
+
+def extract_county_of_residence_from_rows(persons_to_recent_county_of_residence: List[Dict[str, Any]]) -> Optional[str]:
+    """Extracts the single county of residence from a list of dictionaries representing rows in the
+    persons_to_recent_county_of_residence table. Throws if there is more than one row (there should never be for a given
+    person).
+    """
+    county_of_residence = None
+    if persons_to_recent_county_of_residence:
+        if len(persons_to_recent_county_of_residence) > 1:
+            person_id = persons_to_recent_county_of_residence[0]['person_id']
+            raise ValueError(f'Found more than one county of residence for person with id [{person_id}]: '
+                             f'{persons_to_recent_county_of_residence}')
+
+        county_of_residence = persons_to_recent_county_of_residence[0]['county_of_residence']
+
+    return county_of_residence

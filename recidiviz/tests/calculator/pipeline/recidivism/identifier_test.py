@@ -41,6 +41,12 @@ from recidiviz.persistence.entity.state.entities import \
 
 
 _COUNTY_OF_RESIDENCE = 'county'
+_COUNTY_OF_RESIDENCE_ROWS = [
+    {'state_code': 'US_XX',
+     'person_id': 123,
+     'county_of_residence': _COUNTY_OF_RESIDENCE}
+]
+
 
 
 class TestClassifyReleaseEvents(unittest.TestCase):
@@ -100,7 +106,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
             temporary_custody_reincarceration_standalone]
 
         release_events_by_cohort = identifier.find_release_events_by_cohort_year(
-            incarceration_periods, _COUNTY_OF_RESIDENCE)
+            incarceration_periods, _COUNTY_OF_RESIDENCE_ROWS)
 
         self.assertEqual(1, len(release_events_by_cohort))
 
@@ -126,7 +132,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
             external_id='1',
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-            state_code='TX',
+            state_code='US_XX',
             admission_date=date(2008, 11, 20),
             admission_reason=AdmissionReason.NEW_ADMISSION,
             release_date=date(2010, 12, 4),
@@ -137,7 +143,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
             external_id='2',
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-            state_code='TX',
+            state_code='US_XX',
             admission_date=date(2011, 4, 5),
             admission_reason=AdmissionReason.TEMPORARY_CUSTODY,
             release_date=date(2014, 4, 14),
@@ -148,7 +154,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
             external_id='3',
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             status=StateIncarcerationPeriodStatus.IN_CUSTODY,
-            state_code='TX',
+            state_code='US_XX',
             admission_date=date(2014, 4, 14),
             admission_reason=AdmissionReason.PROBATION_REVOCATION)
 
@@ -158,13 +164,13 @@ class TestClassifyReleaseEvents(unittest.TestCase):
             revocation_incarceration_period]
 
         release_events_by_cohort = identifier.find_release_events_by_cohort_year(
-            incarceration_periods, _COUNTY_OF_RESIDENCE)
+            incarceration_periods, _COUNTY_OF_RESIDENCE_ROWS)
 
         self.assertEqual(1, len(release_events_by_cohort))
 
         self.assertCountEqual(
             [RecidivismReleaseEvent(
-                state_code='TX',
+                state_code='US_XX',
                 original_admission_date=initial_incarceration_period.admission_date,
                 release_date=initial_incarceration_period.release_date,
                 release_facility=None,
@@ -184,7 +190,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
                 incarceration_period_id=1111,
                 incarceration_type=StateIncarcerationType.STATE_PRISON,
                 status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-                state_code='TX',
+                state_code='US_XX',
                 admission_date=date(2008, 11, 20),
                 admission_reason=AdmissionReason.NEW_ADMISSION,
                 release_date=date(2010, 12, 4),
@@ -195,7 +201,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
                 incarceration_period_id=2222,
                 incarceration_type=StateIncarcerationType.STATE_PRISON,
                 status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-                state_code='TX',
+                state_code='US_XX',
                 admission_date=date(2011, 4, 5),
                 admission_reason=AdmissionReason.NEW_ADMISSION,
                 release_date=date(2014, 4, 14),
@@ -206,7 +212,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
                 incarceration_period_id=3333,
                 incarceration_type=StateIncarcerationType.STATE_PRISON,
                 status=StateIncarcerationPeriodStatus.IN_CUSTODY,
-                state_code='TX',
+                state_code='US_XX',
                 admission_date=date(2017, 1, 4),
                 admission_reason=AdmissionReason.NEW_ADMISSION)
 
@@ -217,13 +223,13 @@ class TestClassifyReleaseEvents(unittest.TestCase):
         release_events_by_cohort = \
             identifier.find_release_events_by_cohort_year(
                 incarceration_periods,
-                _COUNTY_OF_RESIDENCE)
+                _COUNTY_OF_RESIDENCE_ROWS)
 
         self.assertEqual(2, len(release_events_by_cohort))
 
         self.assertCountEqual(
             [RecidivismReleaseEvent(
-                state_code='TX',
+                state_code='US_XX',
                 original_admission_date=initial_incarceration_period.admission_date,
                 release_date=initial_incarceration_period.release_date,
                 release_facility=None,
@@ -235,7 +241,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
 
         self.assertCountEqual(
             [RecidivismReleaseEvent(
-                state_code='TX',
+                state_code='US_XX',
                 original_admission_date=first_reincarceration_period.admission_date,
                 release_date=first_reincarceration_period.release_date,
                 release_facility=None,
@@ -252,7 +258,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
         has no StateIncarcerationPeriods."""
         release_events_by_cohort = \
             identifier.find_release_events_by_cohort_year(
-                [], _COUNTY_OF_RESIDENCE)
+                [], _COUNTY_OF_RESIDENCE_ROWS)
 
         assert not release_events_by_cohort
 
@@ -264,7 +270,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
                 incarceration_period_id=1111,
                 status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
                 incarceration_type=StateIncarcerationType.STATE_PRISON,
-                state_code='TX',
+                state_code='US_XX',
                 admission_date=date(2000, 1, 9),
                 admission_reason=AdmissionReason.NEW_ADMISSION,
                 release_date=date(2003, 12, 8),
@@ -273,13 +279,13 @@ class TestClassifyReleaseEvents(unittest.TestCase):
         release_events_by_cohort = \
             identifier.find_release_events_by_cohort_year(
                 [only_incarceration_period],
-                _COUNTY_OF_RESIDENCE)
+                _COUNTY_OF_RESIDENCE_ROWS)
 
         assert len(release_events_by_cohort) == 1
 
         assert release_events_by_cohort[2003] == [
             NonRecidivismReleaseEvent(
-                state_code='TX',
+                state_code='US_XX',
                 original_admission_date=only_incarceration_period.
                 admission_date,
                 release_date=only_incarceration_period.release_date,
@@ -295,14 +301,14 @@ class TestClassifyReleaseEvents(unittest.TestCase):
                 incarceration_period_id=1111,
                 incarceration_type=StateIncarcerationType.STATE_PRISON,
                 status=StateIncarcerationPeriodStatus.IN_CUSTODY,
-                state_code='TX',
+                state_code='US_XX',
                 admission_date=date(2008, 11, 20),
                 admission_reason=AdmissionReason.NEW_ADMISSION)
 
         release_events_by_cohort = \
             identifier.find_release_events_by_cohort_year(
                 [only_incarceration_period],
-                _COUNTY_OF_RESIDENCE)
+                _COUNTY_OF_RESIDENCE_ROWS)
 
         assert not release_events_by_cohort
 
@@ -313,7 +319,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
             incarceration_period_id=1111,
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             status=StateIncarcerationPeriodStatus.IN_CUSTODY,
-            state_code='TX',
+            state_code='US_XX',
             admission_date=date(2008, 11, 20),
             admission_reason=AdmissionReason.NEW_ADMISSION)
 
@@ -321,7 +327,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
             incarceration_period_id=1111,
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-            state_code='TX',
+            state_code='US_XX',
             admission_date=date(2008, 11, 20),
             admission_reason=AdmissionReason.NEW_ADMISSION,
             release_date=date(2009, 3, 14),
@@ -330,11 +336,11 @@ class TestClassifyReleaseEvents(unittest.TestCase):
         release_events_by_cohort = \
             identifier.find_release_events_by_cohort_year(
                 [invalid_open_incarceration_period, closed_incarceration_period],
-                _COUNTY_OF_RESIDENCE)
+                _COUNTY_OF_RESIDENCE_ROWS)
 
         assert release_events_by_cohort[2009] == [
             NonRecidivismReleaseEvent(
-                state_code='TX',
+                state_code='US_XX',
                 county_of_residence=_COUNTY_OF_RESIDENCE,
                 original_admission_date=closed_incarceration_period.admission_date,
                 release_date=closed_incarceration_period.release_date,
@@ -368,7 +374,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
 
         release_events_by_cohort = \
             identifier.find_release_events_by_cohort_year(
-                [incarceration_period_1, incarceration_period_2], _COUNTY_OF_RESIDENCE)
+                [incarceration_period_1, incarceration_period_2], _COUNTY_OF_RESIDENCE_ROWS)
 
         self.assertCountEqual([
             NonRecidivismReleaseEvent(
@@ -407,7 +413,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
 
         release_events_by_cohort = \
             identifier.find_release_events_by_cohort_year(
-                [incarceration_period_1, incarceration_period_2], _COUNTY_OF_RESIDENCE)
+                [incarceration_period_1, incarceration_period_2], _COUNTY_OF_RESIDENCE_ROWS)
 
         self.assertCountEqual([
             NonRecidivismReleaseEvent(
@@ -443,7 +449,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
 
         release_events_by_cohort = \
             identifier.find_release_events_by_cohort_year(
-                [incarceration_period_1, incarceration_period_2], _COUNTY_OF_RESIDENCE)
+                [incarceration_period_1, incarceration_period_2], _COUNTY_OF_RESIDENCE_ROWS)
 
         self.assertEqual({}, release_events_by_cohort)
 
@@ -456,7 +462,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
                 incarceration_period_id=1111,
                 incarceration_type=StateIncarcerationType.STATE_PRISON,
                 status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-                state_code='TX',
+                state_code='US_XX',
                 admission_date=date(2000, 1, 9),
                 admission_reason=AdmissionReason.NEW_ADMISSION,
                 release_date=date(2003, 12, 8),
@@ -464,13 +470,13 @@ class TestClassifyReleaseEvents(unittest.TestCase):
 
         release_events_by_cohort = \
             identifier.find_release_events_by_cohort_year(
-                [only_incarceration_period], _COUNTY_OF_RESIDENCE)
+                [only_incarceration_period], _COUNTY_OF_RESIDENCE_ROWS)
 
         assert len(release_events_by_cohort) == 1
 
         assert release_events_by_cohort[2003] == [
             NonRecidivismReleaseEvent(
-                state_code='TX',
+                state_code='US_XX',
                 county_of_residence=_COUNTY_OF_RESIDENCE,
                 original_admission_date=only_incarceration_period.
                 admission_date,
@@ -487,7 +493,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
                 incarceration_period_id=1111,
                 incarceration_type=StateIncarcerationType.STATE_PRISON,
                 status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-                state_code='TX',
+                state_code='US_XX',
                 admission_date=date(2008, 11, 20),
                 admission_reason=AdmissionReason.NEW_ADMISSION,
                 release_date=date(2010, 12, 4),
@@ -498,7 +504,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
                 incarceration_period_id=2222,
                 incarceration_type=StateIncarcerationType.STATE_PRISON,
                 status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-                state_code='TX',
+                state_code='US_XX',
                 admission_date=date(2011, 4, 5),
                 admission_reason=AdmissionReason.PAROLE_REVOCATION,
                 release_date=date(2014, 4, 14),
@@ -510,12 +516,12 @@ class TestClassifyReleaseEvents(unittest.TestCase):
         release_events_by_cohort = \
             identifier.find_release_events_by_cohort_year(
                 incarceration_periods=incarceration_periods,
-                county_of_residence=_COUNTY_OF_RESIDENCE)
+                persons_to_recent_county_of_residence=_COUNTY_OF_RESIDENCE_ROWS)
 
         assert len(release_events_by_cohort) == 2
 
         assert release_events_by_cohort[2010] == [RecidivismReleaseEvent(
-            state_code='TX',
+            state_code='US_XX',
             original_admission_date=initial_incarceration_period.admission_date,
             release_date=initial_incarceration_period.release_date,
             release_facility=None,
@@ -528,7 +534,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
 
         assert release_events_by_cohort[2014] == [
             NonRecidivismReleaseEvent(
-                state_code='TX',
+                state_code='US_XX',
                 original_admission_date=first_reincarceration_period.
                 admission_date,
                 release_date=first_reincarceration_period.release_date,
@@ -545,7 +551,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
                 incarceration_period_id=1111,
                 incarceration_type=StateIncarcerationType.STATE_PRISON,
                 status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-                state_code='TX',
+                state_code='US_XX',
                 admission_date=date(2008, 11, 20),
                 admission_reason=AdmissionReason.NEW_ADMISSION,
                 release_date=date(2010, 12, 4),
@@ -556,7 +562,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
                 incarceration_period_id=2222,
                 incarceration_type=StateIncarcerationType.STATE_PRISON,
                 status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-                state_code='TX',
+                state_code='US_XX',
                 admission_date=date(2011, 4, 5),
                 admission_reason=AdmissionReason.PROBATION_REVOCATION,
                 release_date=date(2014, 4, 14),
@@ -568,12 +574,12 @@ class TestClassifyReleaseEvents(unittest.TestCase):
         release_events_by_cohort = \
             identifier.find_release_events_by_cohort_year(
                 incarceration_periods=incarceration_periods,
-                county_of_residence=_COUNTY_OF_RESIDENCE)
+                persons_to_recent_county_of_residence=_COUNTY_OF_RESIDENCE_ROWS)
 
         assert len(release_events_by_cohort) == 2
 
         assert release_events_by_cohort[2010] == [RecidivismReleaseEvent(
-            state_code='TX',
+            state_code='US_XX',
             original_admission_date=initial_incarceration_period.admission_date,
             release_date=initial_incarceration_period.release_date,
             release_facility=None,
@@ -586,7 +592,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
 
         assert release_events_by_cohort[2014] == [
             NonRecidivismReleaseEvent(
-                state_code='TX',
+                state_code='US_XX',
                 original_admission_date=first_reincarceration_period.
                 admission_date,
                 release_date=first_reincarceration_period.release_date,
@@ -603,7 +609,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
                 incarceration_period_id=1111,
                 incarceration_type=StateIncarcerationType.STATE_PRISON,
                 status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-                state_code='TX',
+                state_code='US_XX',
                 admission_date=date(2008, 11, 20),
                 admission_reason=AdmissionReason.NEW_ADMISSION,
                 release_date=date(2010, 12, 4),
@@ -614,7 +620,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
                 incarceration_period_id=2222,
                 incarceration_type=StateIncarcerationType.STATE_PRISON,
                 status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-                state_code='TX',
+                state_code='US_XX',
                 admission_date=date(2011, 4, 5),
                 admission_reason=AdmissionReason.NEW_ADMISSION,
                 release_date=date(2014, 4, 14),
@@ -626,12 +632,12 @@ class TestClassifyReleaseEvents(unittest.TestCase):
         release_events_by_cohort = \
             identifier.find_release_events_by_cohort_year(
                 incarceration_periods=incarceration_periods,
-                county_of_residence=_COUNTY_OF_RESIDENCE)
+                persons_to_recent_county_of_residence=_COUNTY_OF_RESIDENCE_ROWS)
 
         assert len(release_events_by_cohort) == 2
 
         assert release_events_by_cohort[2010] == [RecidivismReleaseEvent(
-            state_code='TX',
+            state_code='US_XX',
             original_admission_date=initial_incarceration_period.admission_date,
             release_date=initial_incarceration_period.release_date,
             release_facility=None,
@@ -642,7 +648,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
 
         assert release_events_by_cohort[2014] == [
             NonRecidivismReleaseEvent(
-                state_code='TX',
+                state_code='US_XX',
                 original_admission_date=first_reincarceration_period.
                 admission_date,
                 release_date=first_reincarceration_period.release_date,
@@ -659,7 +665,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
                 incarceration_period_id=1111,
                 incarceration_type=StateIncarcerationType.STATE_PRISON,
                 status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-                state_code='TX',
+                state_code='US_XX',
                 admission_date=date(2008, 11, 20),
                 admission_reason=AdmissionReason.NEW_ADMISSION,
                 release_date=date(2010, 12, 4),
@@ -670,7 +676,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
                 incarceration_period_id=2222,
                 incarceration_type=StateIncarcerationType.STATE_PRISON,
                 status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-                state_code='TX',
+                state_code='US_XX',
                 admission_date=date(2011, 4, 5),
                 admission_reason=AdmissionReason.PROBATION_REVOCATION,
                 release_date=date(2014, 4, 14),
@@ -682,12 +688,12 @@ class TestClassifyReleaseEvents(unittest.TestCase):
         release_events_by_cohort = \
             identifier.find_release_events_by_cohort_year(
                 incarceration_periods=incarceration_periods,
-                county_of_residence=_COUNTY_OF_RESIDENCE)
+                persons_to_recent_county_of_residence=_COUNTY_OF_RESIDENCE_ROWS)
 
         assert len(release_events_by_cohort) == 2
 
         assert release_events_by_cohort[2010] == [RecidivismReleaseEvent(
-            state_code='TX',
+            state_code='US_XX',
             original_admission_date=initial_incarceration_period.admission_date,
             release_date=initial_incarceration_period.release_date,
             release_facility=None,
@@ -700,7 +706,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
 
         assert release_events_by_cohort[2014] == [
             NonRecidivismReleaseEvent(
-                state_code='TX',
+                state_code='US_XX',
                 original_admission_date=first_reincarceration_period.
                 admission_date,
                 release_date=first_reincarceration_period.release_date,
@@ -716,7 +722,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
                 incarceration_period_id=1111,
                 incarceration_type=StateIncarcerationType.STATE_PRISON,
                 status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-                state_code='TX',
+                state_code='US_XX',
                 admission_date=date(2008, 11, 20),
                 admission_reason=AdmissionReason.NEW_ADMISSION,
                 release_date=date(2010, 12, 4),
@@ -727,7 +733,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
                 incarceration_period_id=2222,
                 incarceration_type=StateIncarcerationType.STATE_PRISON,
                 status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-                state_code='TX',
+                state_code='US_XX',
                 admission_date=date(2010, 12, 4),
                 admission_reason=AdmissionReason.TRANSFER,
                 release_date=date(2014, 4, 14),
@@ -739,13 +745,13 @@ class TestClassifyReleaseEvents(unittest.TestCase):
         release_events_by_cohort = \
             identifier.find_release_events_by_cohort_year(
                 incarceration_periods=incarceration_periods,
-                county_of_residence=_COUNTY_OF_RESIDENCE)
+                persons_to_recent_county_of_residence=_COUNTY_OF_RESIDENCE_ROWS)
 
         assert len(release_events_by_cohort) == 1
 
         assert release_events_by_cohort[2014] == [
             NonRecidivismReleaseEvent(
-                state_code='TX',
+                state_code='US_XX',
                 original_admission_date=initial_incarceration_period.
                 admission_date,
                 release_date=first_reincarceration_period.release_date,
@@ -761,7 +767,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
                 incarceration_period_id=1111,
                 incarceration_type=StateIncarcerationType.STATE_PRISON,
                 status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-                state_code='TX',
+                state_code='US_XX',
                 admission_date=date(2008, 11, 20),
                 admission_reason=AdmissionReason.NEW_ADMISSION,
                 release_date=date(2010, 12, 4),
@@ -772,7 +778,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
                 incarceration_period_id=2222,
                 incarceration_type=StateIncarcerationType.STATE_PRISON,
                 status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-                state_code='TX',
+                state_code='US_XX',
                 admission_date=date(2011, 4, 5),
                 admission_reason=AdmissionReason.NEW_ADMISSION,
                 release_date=date(2014, 4, 14),
@@ -784,13 +790,13 @@ class TestClassifyReleaseEvents(unittest.TestCase):
         release_events_by_cohort = \
             identifier.find_release_events_by_cohort_year(
                 incarceration_periods=incarceration_periods,
-                county_of_residence=_COUNTY_OF_RESIDENCE)
+                persons_to_recent_county_of_residence=_COUNTY_OF_RESIDENCE_ROWS)
 
         assert len(release_events_by_cohort) == 1
 
         assert release_events_by_cohort[2014] == [
             NonRecidivismReleaseEvent(
-                state_code='TX',
+                state_code='US_XX',
                 original_admission_date=first_reincarceration_period.
                 admission_date,
                 release_date=first_reincarceration_period.release_date,
@@ -805,7 +811,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
         release_events_by_cohort = \
             identifier.find_release_events_by_cohort_year(
                 incarceration_periods=[incarceration_period],
-                county_of_residence=_COUNTY_OF_RESIDENCE)
+                persons_to_recent_county_of_residence=_COUNTY_OF_RESIDENCE_ROWS)
 
         assert len(release_events_by_cohort) == 0
 

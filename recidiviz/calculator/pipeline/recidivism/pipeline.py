@@ -27,7 +27,7 @@ import logging
 from typing import Any, Dict, List, Tuple, Set, Optional, Iterable
 import datetime
 
-from apache_beam.pvalue import AsDict, AsList
+from apache_beam.pvalue import AsList
 
 import apache_beam as beam
 from apache_beam.options.pipeline_options import SetupOptions, PipelineOptions
@@ -137,16 +137,14 @@ class GetRecidivismMetrics(beam.PTransform):
         return metrics
 
 
-@with_input_types(beam.typehints.Tuple[int, Dict[str, Any]],
-                  beam.typehints.Optional[Dict[Any, Tuple[Any, Dict[str, Any]]]]
-                  )
+@with_input_types(beam.typehints.Tuple[int, Dict[str, Any]])
 @with_output_types(beam.typehints.Tuple[entities.StatePerson,
                                         Dict[int, List[ReleaseEvent]]])
 class ClassifyReleaseEvents(beam.DoFn):
     """Classifies releases as either recidivism or non-recidivism events."""
 
     # pylint: disable=arguments-differ
-    def process(self, element, person_id_to_county):
+    def process(self, element):
         """Identifies instances of recidivism and non-recidivism.
 
         Sends the identifier the StateIncarcerationPeriods for a given
@@ -164,14 +162,6 @@ class ClassifyReleaseEvents(beam.DoFn):
         _, person_entities = element
 
         person, kwargs = person_and_kwargs_for_identifier(person_entities)
-
-        # Get the person's county of residence, if present
-        person_id_to_county_fields = person_id_to_county.get(person.person_id, None)
-        county_of_residence = (person_id_to_county_fields.get('county_of_residence', None)
-                               if person_id_to_county_fields else None)
-
-        # Add this arguments to the keyword args for the identifier
-        kwargs['county_of_residence'] = county_of_residence
 
         release_events_by_cohort_year = \
             identifier.find_release_events_by_cohort_year(**kwargs)
@@ -426,15 +416,6 @@ def run(apache_beam_pipeline_options: PipelineOptions,
             'the StateIncarcerationPeriods' >>
             beam.ParDo(SetViolationResponseOnIncarcerationPeriod()))
 
-        # Group each StatePerson with their StateIncarcerationPeriods
-        person_and_incarceration_periods = (
-            {'person': persons,
-             'incarceration_periods':
-                 incarceration_periods_with_source_violations}
-            | 'Group StatePerson to StateIncarcerationPeriods' >>
-            beam.CoGroupByKey()
-        )
-
         # Bring in the table that associates people and their county of residence
         person_id_to_county_kv = (p | 'Load person_id_to_county_kv' >> ImportTableAsKVTuples(
             dataset_id=reference_dataset,
@@ -443,6 +424,16 @@ def run(apache_beam_pipeline_options: PipelineOptions,
             state_code_filter=state_code,
             person_id_filter_set=person_id_filter_set
         ))
+
+        # Group each StatePerson with their StateIncarcerationPeriods
+        person_entities = (
+            {'person': persons,
+             'incarceration_periods': incarceration_periods_with_source_violations,
+             'persons_to_recent_county_of_residence': person_id_to_county_kv
+             }
+            | 'Group StatePerson to StateIncarcerationPeriods' >>
+            beam.CoGroupByKey()
+        )
 
         state_race_ethnicity_population_counts = (
                 p | 'Load state_race_ethnicity_population_counts' >>
@@ -455,9 +446,9 @@ def run(apache_beam_pipeline_options: PipelineOptions,
 
         # Identify ReleaseEvents events from the StatePerson's StateIncarcerationPeriods
         person_release_events = (
-            person_and_incarceration_periods
+            person_entities
             | "ClassifyReleaseEvents" >>
-            beam.ParDo(ClassifyReleaseEvents(), AsDict(person_id_to_county_kv))
+            beam.ParDo(ClassifyReleaseEvents())
         )
 
         person_metadata = (persons

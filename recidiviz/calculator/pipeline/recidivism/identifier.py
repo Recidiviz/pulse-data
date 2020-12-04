@@ -24,12 +24,13 @@ into instances of recidivism or non-recidivism as appropriate.
 
 """
 from datetime import date
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Any
 
 from collections import defaultdict
 
 from recidiviz.calculator.pipeline.recidivism.release_event import \
     ReincarcerationReturnType, ReleaseEvent, RecidivismReleaseEvent, NonRecidivismReleaseEvent
+from recidiviz.calculator.pipeline.utils.execution_utils import extract_county_of_residence_from_rows
 from recidiviz.calculator.pipeline.utils.incarceration_period_utils import \
     prepare_incarceration_periods_for_calculations, drop_temporary_custody_periods
 from recidiviz.calculator.pipeline.utils.violation_utils import identify_most_severe_violation_type_and_subtype
@@ -50,7 +51,7 @@ from recidiviz.persistence.entity.state.entities import \
 
 def find_release_events_by_cohort_year(
         incarceration_periods: List[StateIncarcerationPeriod],
-        county_of_residence: Optional[str]) -> Dict[int, List[ReleaseEvent]]:
+        persons_to_recent_county_of_residence: List[Dict[str, Any]]) -> Dict[int, List[ReleaseEvent]]:
     """Finds instances of release and determines if they resulted in recidivism.
 
     Transforms each StateIncarcerationPeriod from which the person has been released into a mapping from its release
@@ -69,7 +70,8 @@ def find_release_events_by_cohort_year(
 
     Args:
         incarceration_periods: list of StateIncarcerationPeriods for a person
-        county_of_residence: the county that the incarcerated person lives in (prior to incarceration).
+        persons_to_recent_county_of_residence: Reference table rows containing the county that the incarcerated person
+            lives in (prior to incarceration).
 
     Returns:
         A dictionary mapping release cohorts to a list of ReleaseEvents for the given person in that cohort.
@@ -80,6 +82,8 @@ def find_release_events_by_cohort_year(
         return release_events
 
     state_code = get_single_state_code(incarceration_periods)
+
+    county_of_residence = extract_county_of_residence_from_rows(persons_to_recent_county_of_residence)
 
     incarceration_periods = prepare_incarceration_periods_for_recidivism_calculations(
         state_code, incarceration_periods)

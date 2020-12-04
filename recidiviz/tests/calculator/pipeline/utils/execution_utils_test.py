@@ -33,7 +33,7 @@ from freezegun import freeze_time
 
 from recidiviz.calculator.pipeline.utils import execution_utils
 from recidiviz.calculator.pipeline.utils.execution_utils import person_and_kwargs_for_identifier, \
-    select_all_by_person_query, select_all_query
+    select_all_by_person_query, select_all_query, extract_county_of_residence_from_rows
 from recidiviz.persistence.entity.state.entities import StatePerson, StateAssessment
 
 
@@ -260,3 +260,37 @@ class TestSelectAllQuery(unittest.TestCase):
                                                           state_code_filter='US_XX',
                                                           unifying_id_field='field_name',
                                                           unifying_id_field_filter_set={1234, 56}))
+
+
+class TestExtractCountyOfResidenceFromRows(unittest.TestCase):
+    """Tests for extract_county_of_residence_from_rows in execution_utils.py."""
+
+    def test_no_rows(self):
+        county_of_residence = extract_county_of_residence_from_rows([])
+        self.assertIsNone(county_of_residence)
+
+    def test_single_row(self):
+        expected_county_of_residence = 'county'
+        rows = [
+            {'state_code': 'US_XX',
+             'person_id': 123,
+             'county_of_residence': expected_county_of_residence}
+        ]
+
+        county_of_residence = extract_county_of_residence_from_rows(rows)
+        self.assertEqual(expected_county_of_residence, county_of_residence)
+
+    def test_multiple_rows_asserts(self):
+        rows = [
+            {'state_code': 'US_XX',
+             'person_id': 123,
+             'county_of_residence': 'county_1'},
+            {'state_code': 'US_XX',
+             'person_id': 123,
+             'county_of_residence': 'county_2'}
+        ]
+
+        with self.assertRaises(ValueError) as e:
+            _ = extract_county_of_residence_from_rows(rows)
+
+        self.assertTrue(str(e.exception).startswith('Found more than one county of residence for person with id [123]'))
