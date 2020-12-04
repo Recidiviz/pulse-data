@@ -47,6 +47,11 @@ from recidiviz.tests.calculator.pipeline.utils.us_mo_fakes import FakeUsMoSuperv
     FakeUsMoIncarcerationSentence
 
 _COUNTY_OF_RESIDENCE = 'county'
+_COUNTY_OF_RESIDENCE_ROWS = [
+    {'state_code': 'US_XX',
+     'person_id': 123,
+     'county_of_residence': _COUNTY_OF_RESIDENCE}
+]
 
 _DEFAULT_IP_ID = 123
 _DEFAULT_SP_ID = 456
@@ -65,7 +70,7 @@ class TestFindIncarcerationEvents(unittest.TestCase):
                 incarceration_period_id=_DEFAULT_IP_ID,
                 incarceration_type=StateIncarcerationType.STATE_PRISON,
                 status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-                state_code='TX',
+                state_code='US_XX',
                 facility='PRISON3',
                 admission_date=date(2008, 11, 20),
                 admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
@@ -95,7 +100,7 @@ class TestFindIncarcerationEvents(unittest.TestCase):
         sentence_groups = [sentence_group]
 
         incarceration_events = identifier.find_incarceration_events(
-            sentence_groups, _DEFAULT_INCARCERATION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION, _COUNTY_OF_RESIDENCE)
+            sentence_groups, _DEFAULT_INCARCERATION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION, _COUNTY_OF_RESIDENCE_ROWS)
 
         expected_events: List[IncarcerationEvent] = expected_incarceration_stay_events(
             incarceration_period,
@@ -135,7 +140,7 @@ class TestFindIncarcerationEvents(unittest.TestCase):
                 incarceration_period_id=_DEFAULT_IP_ID,
                 incarceration_type=StateIncarcerationType.STATE_PRISON,
                 status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-                state_code='TX',
+                state_code='US_XX',
                 facility='PRISON3',
                 admission_date=date(2009, 11, 20),
                 admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
@@ -148,7 +153,7 @@ class TestFindIncarcerationEvents(unittest.TestCase):
                 incarceration_period_id=2222,
                 incarceration_type=StateIncarcerationType.STATE_PRISON,
                 status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-                state_code='TX',
+                state_code='US_XX',
                 facility='PRISON 10',
                 admission_date=date(2009, 12, 1),
                 admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
@@ -178,7 +183,7 @@ class TestFindIncarcerationEvents(unittest.TestCase):
         sentence_groups = [sentence_group]
 
         incarceration_events = identifier.find_incarceration_events(
-            sentence_groups, _DEFAULT_INCARCERATION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION, _COUNTY_OF_RESIDENCE)
+            sentence_groups, _DEFAULT_INCARCERATION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION, _COUNTY_OF_RESIDENCE_ROWS)
 
         expected_events: List[IncarcerationEvent] = expected_incarceration_stay_events(
             incarceration_period_1,
@@ -225,7 +230,7 @@ class TestFindIncarcerationEvents(unittest.TestCase):
             incarceration_period_id=_DEFAULT_IP_ID,
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-            state_code='TX',
+            state_code='US_XX',
             facility='PRISON3',
             admission_date=date(2008, 11, 20),
             admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
@@ -253,7 +258,7 @@ class TestFindIncarcerationEvents(unittest.TestCase):
         sentence_groups = [sentence_group]
 
         incarceration_events = identifier.find_incarceration_events(
-            sentence_groups, _DEFAULT_INCARCERATION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION, _COUNTY_OF_RESIDENCE)
+            sentence_groups, _DEFAULT_INCARCERATION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION, _COUNTY_OF_RESIDENCE_ROWS)
 
         expected_events: List[IncarcerationEvent] = expected_incarceration_stay_events(
             incarceration_period,
@@ -321,7 +326,7 @@ class TestFindIncarcerationEvents(unittest.TestCase):
         sentence_groups = [sentence_group]
 
         incarceration_events = identifier.find_incarceration_events(
-            sentence_groups, _DEFAULT_INCARCERATION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION, _COUNTY_OF_RESIDENCE)
+            sentence_groups, _DEFAULT_INCARCERATION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION, _COUNTY_OF_RESIDENCE_ROWS)
 
         expected_events: List[IncarcerationEvent] = expected_incarceration_stay_events(
             incarceration_period,
@@ -381,7 +386,7 @@ class TestFindIncarcerationEvents(unittest.TestCase):
         sentence_groups = [sentence_group]
 
         incarceration_events = identifier.find_incarceration_events(
-            sentence_groups, _DEFAULT_INCARCERATION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION, _COUNTY_OF_RESIDENCE)
+            sentence_groups, _DEFAULT_INCARCERATION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION, _COUNTY_OF_RESIDENCE_ROWS)
 
         self.assertCountEqual([], incarceration_events)
 
@@ -436,7 +441,7 @@ class TestFindIncarcerationEvents(unittest.TestCase):
         sentence_groups = [sentence_group]
 
         incarceration_events = identifier.find_incarceration_events(
-            sentence_groups, _DEFAULT_INCARCERATION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION, _COUNTY_OF_RESIDENCE)
+            sentence_groups, _DEFAULT_INCARCERATION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION, _COUNTY_OF_RESIDENCE_ROWS)
 
         self.assertCountEqual([
             IncarcerationStayEvent(
@@ -575,7 +580,7 @@ class TestFindIncarcerationEvents(unittest.TestCase):
         sentence_groups = [sentence_group]
 
         incarceration_events = identifier.find_incarceration_events(
-            sentence_groups, _DEFAULT_INCARCERATION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION, _COUNTY_OF_RESIDENCE)
+            sentence_groups, _DEFAULT_INCARCERATION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION, _COUNTY_OF_RESIDENCE_ROWS)
 
         self.maxDiff = None
         self.assertCountEqual([
@@ -726,7 +731,7 @@ class TestFindEndOfMonthStatePrisonStays(unittest.TestCase):
                 incarceration_period_id=1111,
                 incarceration_type=StateIncarcerationType.STATE_PRISON,
                 status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-                state_code='TX',
+                state_code='US_XX',
                 facility='PRISON3',
                 admission_date=date(2000, 1, 20),
                 admission_reason=StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
@@ -758,7 +763,7 @@ class TestFindEndOfMonthStatePrisonStays(unittest.TestCase):
                 incarceration_period_id=1111,
                 incarceration_type=StateIncarcerationType.STATE_PRISON,
                 status=StateIncarcerationPeriodStatus.IN_CUSTODY,
-                state_code='TX',
+                state_code='US_XX',
                 facility='PRISON3',
                 admission_date=date(2018, 1, 20),
                 admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION)
@@ -787,7 +792,7 @@ class TestFindEndOfMonthStatePrisonStays(unittest.TestCase):
                 incarceration_period_id=1111,
                 incarceration_type=StateIncarcerationType.STATE_PRISON,
                 status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-                state_code='TX',
+                state_code='US_XX',
                 facility='PRISON3')
 
         with pytest.raises(ValueError):
@@ -800,7 +805,7 @@ class TestFindEndOfMonthStatePrisonStays(unittest.TestCase):
                 incarceration_period_id=1111,
                 incarceration_type=StateIncarcerationType.STATE_PRISON,
                 status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-                state_code='TX',
+                state_code='US_XX',
                 facility='PRISON3',
                 admission_date=date(2000, 1, 20),
                 admission_reason=StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
@@ -830,7 +835,7 @@ class TestFindEndOfMonthStatePrisonStays(unittest.TestCase):
                 incarceration_period_id=1111,
                 incarceration_type=StateIncarcerationType.STATE_PRISON,
                 status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-                state_code='TX',
+                state_code='US_XX',
                 facility='PRISON3',
                 admission_date=date(2000, 1, 31),
                 admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
@@ -860,7 +865,7 @@ class TestFindEndOfMonthStatePrisonStays(unittest.TestCase):
                 incarceration_period_id=1111,
                 incarceration_type=StateIncarcerationType.STATE_PRISON,
                 status=StateIncarcerationPeriodStatus.IN_CUSTODY,
-                state_code='TX',
+                state_code='US_XX',
                 facility='PRISON3',
                 admission_date=date(2019, 11, 30),
                 admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION)
@@ -886,7 +891,7 @@ class TestFindEndOfMonthStatePrisonStays(unittest.TestCase):
                 incarceration_period_id=1111,
                 incarceration_type=StateIncarcerationType.STATE_PRISON,
                 status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-                state_code='TX',
+                state_code='US_XX',
                 facility='PRISON3',
                 admission_date=date(2019, 11, 29),
                 admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
@@ -917,7 +922,7 @@ class TestFindEndOfMonthStatePrisonStays(unittest.TestCase):
                 incarceration_period_id=1111,
                 incarceration_type=StateIncarcerationType.STATE_PRISON,
                 status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-                state_code='TX',
+                state_code='US_XX',
                 facility='PRISON3',
                 admission_date=date(2019, 11, 29),
                 admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
@@ -928,7 +933,7 @@ class TestFindEndOfMonthStatePrisonStays(unittest.TestCase):
                 incarceration_period_id=1111,
                 incarceration_type=StateIncarcerationType.STATE_PRISON,
                 status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-                state_code='TX',
+                state_code='US_XX',
                 facility='PRISON4',
                 admission_date=date(2019, 11, 30),
                 admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
@@ -969,7 +974,7 @@ class TestFindEndOfMonthStatePrisonStays(unittest.TestCase):
                 incarceration_period_id=1111,
                 incarceration_type=StateIncarcerationType.STATE_PRISON,
                 status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-                state_code='TX',
+                state_code='US_XX',
                 facility='PRISON3',
                 admission_date=date(2019, 11, 15),
                 admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
@@ -999,7 +1004,7 @@ class TestFindEndOfMonthStatePrisonStays(unittest.TestCase):
                 incarceration_period_id=1111,
                 incarceration_type=StateIncarcerationType.STATE_PRISON,
                 status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-                state_code='TX',
+                state_code='US_XX',
                 facility='PRISON3',
                 admission_date=date(2019, 7, 31),
                 admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
@@ -1034,7 +1039,7 @@ class TestFindEndOfMonthStatePrisonStays(unittest.TestCase):
                 incarceration_period_id=1111,
                 incarceration_type=StateIncarcerationType.COUNTY_JAIL,
                 status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-                state_code='TX',
+                state_code='US_XX',
                 facility='PRISON3',
                 admission_date=date(2000, 1, 31),
                 admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
@@ -1191,7 +1196,7 @@ class TestDeDuplicatedAdmissions(unittest.TestCase):
                 incarceration_period_id=1111,
                 incarceration_type=StateIncarcerationType.STATE_PRISON,
                 status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-                state_code='TX',
+                state_code='US_XX',
                 facility='PRISON3',
                 admission_date=date(2008, 11, 20),
                 admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
@@ -1203,7 +1208,7 @@ class TestDeDuplicatedAdmissions(unittest.TestCase):
                 incarceration_period_id=1111,
                 incarceration_type=StateIncarcerationType.STATE_PRISON,
                 status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-                state_code='TX',
+                state_code='US_XX',
                 facility='PRISON3',
                 admission_date=date(2008, 11, 20),
                 admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
@@ -1227,7 +1232,7 @@ class TestDeDuplicatedAdmissions(unittest.TestCase):
                 incarceration_period_id=1111,
                 incarceration_type=StateIncarcerationType.STATE_PRISON,
                 status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-                state_code='TX',
+                state_code='US_XX',
                 facility='PRISON3',
                 admission_date=date(2008, 11, 20),
                 admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
@@ -1239,7 +1244,7 @@ class TestDeDuplicatedAdmissions(unittest.TestCase):
                 incarceration_period_id=1111,
                 incarceration_type=StateIncarcerationType.STATE_PRISON,
                 status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-                state_code='TX',
+                state_code='US_XX',
                 facility='PRISON3',
                 admission_date=date(2008, 11, 20),
                 admission_reason=StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
@@ -1267,7 +1272,7 @@ class TestDeDuplicatedReleases(unittest.TestCase):
                 incarceration_period_id=1111,
                 incarceration_type=StateIncarcerationType.STATE_PRISON,
                 status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-                state_code='TX',
+                state_code='US_XX',
                 facility='PRISON3',
                 admission_date=date(2008, 11, 19),
                 admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
@@ -1279,7 +1284,7 @@ class TestDeDuplicatedReleases(unittest.TestCase):
                 incarceration_period_id=1111,
                 incarceration_type=StateIncarcerationType.STATE_PRISON,
                 status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-                state_code='TX',
+                state_code='US_XX',
                 facility='PRISON3',
                 admission_date=date(2008, 11, 20),
                 admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
@@ -1303,7 +1308,7 @@ class TestDeDuplicatedReleases(unittest.TestCase):
                 incarceration_period_id=1111,
                 incarceration_type=StateIncarcerationType.STATE_PRISON,
                 status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-                state_code='TX',
+                state_code='US_XX',
                 facility='PRISON3',
                 admission_date=date(2008, 11, 20),
                 admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
@@ -1315,7 +1320,7 @@ class TestDeDuplicatedReleases(unittest.TestCase):
                 incarceration_period_id=1111,
                 incarceration_type=StateIncarcerationType.STATE_PRISON,
                 status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-                state_code='TX',
+                state_code='US_XX',
                 facility='PRISON3',
                 admission_date=date(2008, 11, 20),
                 admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
@@ -1443,7 +1448,7 @@ class TestAdmissionEventForPeriod(unittest.TestCase):
             incarceration_period_id=1111,
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-            state_code='TX',
+            state_code='US_XX',
             facility='PRISON3',
             admission_date=date(2008, 11, 20),
             admission_reason=StateIncarcerationPeriodAdmissionReason.DUAL_REVOCATION,
@@ -1468,7 +1473,7 @@ class TestAdmissionEventForPeriod(unittest.TestCase):
                 incarceration_period_id=1111,
                 incarceration_type=StateIncarcerationType.STATE_PRISON,
                 status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-                state_code='TX',
+                state_code='US_XX',
                 facility='PRISON3',
                 admission_date=date(2013, 11, 20),
                 release_date=date(2019, 12, 4),
@@ -1488,7 +1493,7 @@ class TestAdmissionEventForPeriod(unittest.TestCase):
                 incarceration_period_id=1111,
                 incarceration_type=StateIncarcerationType.STATE_PRISON,
                 status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-                state_code='TX',
+                state_code='US_XX',
                 facility='PRISON3',
                 admission_date=date(2008, 11, 20),
                 admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
@@ -1514,7 +1519,7 @@ class TestAdmissionEventForPeriod(unittest.TestCase):
                 incarceration_period_id=1111,
                 incarceration_type=StateIncarcerationType.COUNTY_JAIL,
                 status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-                state_code='TX',
+                state_code='US_XX',
                 facility='CJ10',
                 admission_date=date(2013, 11, 20),
                 admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
@@ -1557,7 +1562,7 @@ class TestReleaseEventForPeriod(unittest.TestCase):
                 incarceration_period_id=1111,
                 incarceration_type=StateIncarcerationType.STATE_PRISON,
                 status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-                state_code='TX',
+                state_code='US_XX',
                 facility='PRISON3',
                 admission_date=date(2008, 11, 20),
                 admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
@@ -1587,7 +1592,7 @@ class TestReleaseEventForPeriod(unittest.TestCase):
                 incarceration_period_id=1111,
                 incarceration_type=StateIncarcerationType.STATE_PRISON,
                 status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-                state_code='TX',
+                state_code='US_XX',
                 facility='PRISON3',
                 admission_date=date(2013, 11, 20),
                 admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
@@ -1608,7 +1613,7 @@ class TestReleaseEventForPeriod(unittest.TestCase):
                 incarceration_period_id=1111,
                 incarceration_type=StateIncarcerationType.COUNTY_JAIL,
                 status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-                state_code='TX',
+                state_code='US_XX',
                 facility='CJ19',
                 admission_date=date(2013, 11, 20),
                 admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
@@ -1767,7 +1772,7 @@ class TestGetUniquePeriodsFromSentenceGroupAndAddBackedges(unittest.TestCase):
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=1112,
             supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
-            state_code='TX',
+            state_code='US_XX',
             start_date=date(2008, 11, 20),
             termination_date=date(2010, 12, 4))
 
@@ -1775,7 +1780,7 @@ class TestGetUniquePeriodsFromSentenceGroupAndAddBackedges(unittest.TestCase):
             incarceration_period_id=1111,
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-            state_code='TX',
+            state_code='US_XX',
             facility='PRISON3',
             admission_date=date(2008, 11, 20),
             admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
@@ -1786,7 +1791,7 @@ class TestGetUniquePeriodsFromSentenceGroupAndAddBackedges(unittest.TestCase):
             incarceration_period_id=2222,
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-            state_code='TX',
+            state_code='US_XX',
             facility='PRISON3',
             admission_date=date(2011, 1, 20),
             admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
@@ -1797,7 +1802,7 @@ class TestGetUniquePeriodsFromSentenceGroupAndAddBackedges(unittest.TestCase):
             incarceration_period_id=3333,
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-            state_code='TX',
+            state_code='US_XX',
             facility='PRISON3',
             admission_date=date(2013, 5, 22),
             admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
@@ -1870,7 +1875,7 @@ class TestFindMostSeriousOffenseStatuteInSentenceGroup(unittest.TestCase):
                 incarceration_period_id=1111,
                 incarceration_type=StateIncarcerationType.STATE_PRISON,
                 status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-                state_code='TX',
+                state_code='US_XX',
                 facility='PRISON3',
                 admission_date=date(2008, 11, 20),
                 admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
@@ -1916,7 +1921,7 @@ class TestFindMostSeriousOffenseStatuteInSentenceGroup(unittest.TestCase):
             incarceration_period_id=1111,
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-            state_code='TX',
+            state_code='US_XX',
             facility='PRISON3',
             admission_date=date(2008, 11, 20),
             admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
@@ -1950,7 +1955,7 @@ class TestFindMostSeriousOffenseStatuteInSentenceGroup(unittest.TestCase):
                 incarceration_period_id=2222,
                 incarceration_type=StateIncarcerationType.STATE_PRISON,
                 status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-                state_code='TX',
+                state_code='US_XX',
                 facility='PRISON3',
                 admission_date=date(2003, 1, 20),
                 admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
@@ -2000,7 +2005,7 @@ class TestFindMostSeriousOffenseStatuteInSentenceGroup(unittest.TestCase):
                 incarceration_period_id=1111,
                 incarceration_type=StateIncarcerationType.STATE_PRISON,
                 status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-                state_code='TX',
+                state_code='US_XX',
                 facility='PRISON3',
                 admission_date=date(2008, 11, 20),
                 admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
@@ -2055,7 +2060,7 @@ class TestFindMostSeriousOffenseStatuteInSentenceGroup(unittest.TestCase):
                 incarceration_period_id=1111,
                 incarceration_type=StateIncarcerationType.STATE_PRISON,
                 status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-                state_code='TX',
+                state_code='US_XX',
                 facility='PRISON3',
                 admission_date=date(2008, 11, 20),
                 admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
@@ -2098,7 +2103,7 @@ class TestFindMostSeriousOffenseStatuteInSentenceGroup(unittest.TestCase):
                 incarceration_period_id=1111,
                 incarceration_type=StateIncarcerationType.STATE_PRISON,
                 status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-                state_code='TX',
+                state_code='US_XX',
                 facility='PRISON3',
                 admission_date=date(2008, 11, 20),
                 admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
@@ -2145,7 +2150,7 @@ class TestFindMostSeriousOffenseStatuteInSentenceGroup(unittest.TestCase):
                 incarceration_period_id=1111,
                 incarceration_type=StateIncarcerationType.STATE_PRISON,
                 status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-                state_code='TX',
+                state_code='US_XX',
                 facility='PRISON3',
                 admission_date=date(2008, 11, 20),
                 admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
@@ -2190,7 +2195,7 @@ class TestFindMostSeriousOffenseStatuteInSentenceGroup(unittest.TestCase):
                 incarceration_period_id=1111,
                 incarceration_type=StateIncarcerationType.STATE_PRISON,
                 status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-                state_code='TX',
+                state_code='US_XX',
                 facility='PRISON3',
                 admission_date=date(2008, 11, 20),
                 admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
@@ -2238,7 +2243,7 @@ class TestFindMostSeriousOffenseStatuteInSentenceGroup(unittest.TestCase):
                 incarceration_period_id=1111,
                 incarceration_type=StateIncarcerationType.STATE_PRISON,
                 status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-                state_code='TX',
+                state_code='US_XX',
                 facility='PRISON3',
                 admission_date=date(2008, 11, 20),
                 admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
