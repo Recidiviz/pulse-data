@@ -195,8 +195,7 @@ raw_files:
       - END_DATE
       - CREATE_DATETIME
       - MODIFY_DATETIME
-  - file_tag: elite_offense_in_custody_and_pos_report_data
-    primary_key_cols: []
+  # TODO(#4823) add file_tag for elite_offense_in_custody_and_pos_report_data
   - file_tag: elite_orderstable
     primary_key_cols:
       - ORDER_ID
