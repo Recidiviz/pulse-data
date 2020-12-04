@@ -29,7 +29,8 @@ OFFICER_ROLE_SPANS_FRAGMENT = \
     officers_with_role_time_ranks AS(
         -- Officers with their roles ranked from least recent to most recent,
         -- based on start date, then end date (current assignments with
-        -- DTEORD=1 ranked last).
+        -- DTEORD=1 ranked last). If roles have the same start and end date,
+        -- we look at the job ID to retain deterministic ordering.
         SELECT
             BDGNO,
             DEPCLS,
@@ -40,7 +41,7 @@ OFFICER_ROLE_SPANS_FRAGMENT = \
             STRDTE,
             ENDDTE,
             ROW_NUMBER() OVER (
-                PARTITION BY BDGNO ORDER BY STRDTE, DTEORD, ENDDTE DESC
+                PARTITION BY BDGNO ORDER BY STRDTE, DTEORD, ENDDTE DESC, DEPCLS DESC
             ) AS ROLE_TIME_RANK
         FROM
             normalized_all_officers
