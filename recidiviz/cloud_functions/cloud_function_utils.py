@@ -178,3 +178,23 @@ def get_state_region_code_from_direct_ingest_bucket(bucket) -> Optional[str]:
 
 def get_dataflow_template_bucket(project_id: str) -> str:
     return f'{project_id}-dataflow-templates'
+
+
+def build_query_param_string(request_params: dict, accepted_query_params: list) -> str:
+    """Given a dict of request params from the CF event JSON, it returns a query string for a URL endpoint for the
+    request params that are included in the `accepted_query_params` list.
+    If the param value is a list, it will add a query param for each value in the list.
+    If a request param key is not accepted by the endpoint, it will raise a KeyError.
+    """
+    query_params = []
+    for param_key, param_value in request_params.items():
+        if param_key not in accepted_query_params:
+            raise KeyError(f"Unexpected key in request: [{param_key}]. "
+                           f"Expected one of the following: {accepted_query_params}")
+        if isinstance(param_value, list):
+            query_params.extend([f"{param_key}={value}" for value in param_value])
+        if isinstance(param_value, str):
+            query_params.append(f"{param_key}={param_value}")
+    if not query_params:
+        return ""
+    return f"?{'&'.join(query_params)}"

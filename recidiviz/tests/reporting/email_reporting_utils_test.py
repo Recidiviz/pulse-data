@@ -133,3 +133,12 @@ class EmailReportingUtilsTests(TestCase):
         """Given an invalid email address, it does raise a ValueError."""
         with self.assertRaises(ValueError):
             utils.validate_email_address("some random string @ fake domain")
+
+    def test_validate_email_address_none_provided(self) -> None:
+        """Given an empty argument, it does not raise a ValueError."""
+        utils.validate_email_address(None)
+
+    def test_validate_email_address_empty_string(self) -> None:
+        """Given an empty string, it does raise a ValueError."""
+        with self.assertRaises(ValueError):
+            utils.validate_email_address("")

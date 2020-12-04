@@ -89,7 +89,8 @@ class EmailDeliveryTest(TestCase):
             from_email_name=self.mock_env_vars['FROM_EMAIL_NAME'],
             subject='Your monthly Recidiviz report',
             html_content=self.mock_html_files[self.to_address],
-            redirect_address=None
+            redirect_address=None,
+            cc_addresses=None
         )
 
     @patch('recidiviz.reporting.email_delivery.retrieve_html_files')
@@ -107,7 +108,8 @@ class EmailDeliveryTest(TestCase):
             from_email_name=self.mock_env_vars['FROM_EMAIL_NAME'],
             subject='Your monthly Recidiviz report',
             html_content=self.mock_html_files[self.to_address],
-            redirect_address=self.redirect_address
+            redirect_address=self.redirect_address,
+            cc_addresses=None
         )
 
     @patch('recidiviz.reporting.email_delivery.retrieve_html_files')
