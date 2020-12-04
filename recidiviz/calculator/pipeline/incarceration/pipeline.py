@@ -26,7 +26,7 @@ import logging
 from typing import Any, Dict, List, Tuple, Set, Optional, cast
 import datetime
 
-from apache_beam.pvalue import AsDict, AsList
+from apache_beam.pvalue import AsList
 
 import apache_beam as beam
 from apache_beam.options.pipeline_options import SetupOptions, PipelineOptions
@@ -120,26 +120,17 @@ class GetIncarcerationMetrics(beam.PTransform):
         return incarceration_metrics
 
 
-@with_input_types(beam.typehints.Tuple[int, Dict[str, Any]],
-                  beam.typehints.Optional[Dict[Any, Tuple[Any, Dict[str, Any]]]])
+@with_input_types(beam.typehints.Tuple[int, Dict[str, Any]])
 @with_output_types(beam.typehints.Tuple[int, Tuple[entities.StatePerson, List[IncarcerationEvent]]])
 class ClassifyIncarcerationEvents(beam.DoFn):
     """Classifies incarceration periods as admission and release events."""
 
     # pylint: disable=arguments-differ
-    def process(self, element, person_id_to_county):
+    def process(self, element):
         """Identifies instances of admission and release from incarceration."""
         _, person_entities = element
 
         person, kwargs = person_and_kwargs_for_identifier(person_entities)
-
-        # Get the person's county of residence, if present
-        person_id_to_county_fields = person_id_to_county.get(person.person_id, None)
-        county_of_residence = person_id_to_county_fields.get('county_of_residence', None) \
-            if person_id_to_county_fields else None
-
-        # Add this arguments to the keyword args for the identifier
-        kwargs['county_of_residence'] = county_of_residence
 
         # Find the IncarcerationEvents
         incarceration_events = identifier.find_incarceration_events(**kwargs)
@@ -445,7 +436,8 @@ def run(apache_beam_pipeline_options: PipelineOptions,
         person_entities = (
             {'person': persons,
              'sentence_groups': sentence_groups_with_hydrated_sentences,
-             'incarceration_period_judicial_district_association': ip_to_judicial_district_kv
+             'incarceration_period_judicial_district_association': ip_to_judicial_district_kv,
+             'persons_to_recent_county_of_residence': person_id_to_county_kv
              }
             | 'Group StatePerson to SentenceGroups' >>
             beam.CoGroupByKey()
@@ -453,8 +445,7 @@ def run(apache_beam_pipeline_options: PipelineOptions,
 
         # Identify IncarcerationEvents events from the StatePerson's StateIncarcerationPeriods
         person_incarceration_events = (person_entities | 'Classify Incarceration Events' >>
-                                       beam.ParDo(ClassifyIncarcerationEvents(),
-                                                  AsDict(person_id_to_county_kv)))
+                                       beam.ParDo(ClassifyIncarcerationEvents()))
 
         person_metadata = (persons
                            | "Build the person_metadata dictionary" >>
