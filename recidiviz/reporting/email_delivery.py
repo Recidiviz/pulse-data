@@ -27,7 +27,7 @@ and conform to the following:
 """
 
 import logging
-from typing import Dict, Tuple, Optional
+from typing import Dict, Tuple, Optional, List
 from google.cloud import storage
 
 import recidiviz.reporting.email_reporting_utils as utils
@@ -36,7 +36,9 @@ from recidiviz.reporting.sendgrid_client_wrapper import SendGridClientWrapper
 EMAIL_SUBJECT = "Your monthly Recidiviz report"
 
 
-def deliver(batch_id: str, redirect_address: Optional[str] = None) -> Tuple[int, int]:
+def deliver(batch_id: str,
+            redirect_address: Optional[str] = None,
+            cc_addresses: Optional[List[str]] = None) -> Tuple[int, int]:
     """Delivers emails for the given batch.
 
     Delivers emails to the email address specified in the generated email filename.
@@ -55,10 +57,13 @@ def deliver(batch_id: str, redirect_address: Optional[str] = None) -> Tuple[int,
         Raises errors related to external services like Google Storage but continues attempting to send subsequent
         emails if it receives an exception while attempting to send.  In that case the error is logged.
     """
+    logging.info("Delivering emails for batch %s", batch_id)
+
     if redirect_address:
         logging.info("Redirecting all emails for batch %s to be sent to %s", batch_id, redirect_address)
-    else:
-        logging.info("Delivering emails for batch %s", batch_id)
+
+    if cc_addresses:
+        logging.info("CCing the following addresses: [%s]", ','.join(address for address in cc_addresses))
 
     try:
         from_email_address = utils.get_env_var('FROM_EMAIL_ADDRESS')
@@ -79,7 +84,8 @@ def deliver(batch_id: str, redirect_address: Optional[str] = None) -> Tuple[int,
                                                   from_email_name=from_email_name,
                                                   subject=EMAIL_SUBJECT,
                                                   html_content=files[recipient_email_address],
-                                                  redirect_address=redirect_address)
+                                                  redirect_address=redirect_address,
+                                                  cc_addresses=cc_addresses)
 
         if sent_successfully:
             success_count = success_count + 1
