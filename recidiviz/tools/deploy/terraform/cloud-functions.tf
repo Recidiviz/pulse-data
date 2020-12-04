@@ -175,16 +175,76 @@ resource "google_cloudfunctions_function" "report_start_new_batch" {
   timeouts {}
 }
 
-resource "google_cloudfunctions_function" "run_calculation_pipelines" {
-  name    = "run_calculation_pipelines"
+resource "google_cloudfunctions_function" "trigger_daily_calculation_pipeline_dag" {
+  name    = "trigger_daily_calculation_pipeline_dag"
   runtime = "python37"
   labels = {
     "deployment-tool" = "terraform"
   }
 
-  entry_point = "trigger_calculation_pipeline_dag"
+  event_trigger {
+    event_type = "google.pubsub.topic.publish"
+    resource = "projects/${var.project_id}/topics/v1.calculator.trigger_daily_pipelines"
+  }
+
+  entry_point = "trigger_daily_calculation_pipeline_dag"
   environment_variables = {
     "WEBSERVER_ID" = local.is_production ? "p03ca791d5f21b85cp-tp" : "jef8828f38bc9738ap-tp"
+  }
+
+  source_repository {
+    url = local.repo_url
+  }
+
+  timeouts {}
+}
+
+resource "google_cloudfunctions_function" "trigger_calculation_pipeline_historical_incarceration_us_nd" {
+  name    = "trigger_calculation_pipeline_historical_incarceration_us_nd"
+  runtime = "python37"
+  labels = {
+    "deployment-tool" = "terraform"
+  }
+
+  event_trigger {
+    event_type = "google.pubsub.topic.publish"
+    resource = "projects/${var.project_id}/topics/v1.calculator.historical_incarceration_us_nd"
+  }
+
+
+  entry_point           = "start_and_monitor_calculation_pipeline"
+  environment_variables = {
+    "TEMPLATE_NAME" = "us-nd-incarceration-population-240"
+    "JOB_NAME" = "us-nd-incarceration-population-240"
+    "ON_DATAFLOW_JOB_COMPLETION_TOPIC" = "v1.do.nothing"
+  }
+
+  source_repository {
+    url = local.repo_url
+  }
+
+  timeouts {}
+}
+
+
+resource "google_cloudfunctions_function" "trigger_calculation_pipeline_historical_supervision_us_nd" {
+  name    = "trigger_calculation_pipeline_historical_supervision_us_nd"
+  runtime = "python37"
+  labels = {
+    "deployment-tool" = "terraform"
+  }
+
+  event_trigger {
+    event_type = "google.pubsub.topic.publish"
+    resource = "projects/${var.project_id}/topics/v1.calculator.historical_supervision_us_nd"
+  }
+
+
+  entry_point           = "start_and_monitor_calculation_pipeline"
+  environment_variables = {
+    "TEMPLATE_NAME" = "us-nd-supervision-population-240"
+    "JOB_NAME" = "us-nd-supervision-population-240"
+    "ON_DATAFLOW_JOB_COMPLETION_TOPIC" = "v1.do.nothing"
   }
 
   source_repository {
