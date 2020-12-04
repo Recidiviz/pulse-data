@@ -17,12 +17,11 @@
 """An wrapper class for accessing the SendGridAPIClient"""
 
 import logging
-from typing import Optional
+from typing import Optional, List
 
 from sendgrid import SendGridAPIClient
-from sendgrid.helpers.mail import Mail, Email
+from sendgrid.helpers.mail import Mail, Email, Cc
 
-from recidiviz.reporting.email_reporting_utils import validate_email_address
 from recidiviz.utils import secrets
 
 _SENDGRID_API_KEY = 'sendgrid_api_key'
@@ -47,13 +46,20 @@ class SendGridClientWrapper:
                         from_email: str,
                         from_email_name: str,
                         subject: str,
-                        html_content: str) -> Mail:
+                        html_content: str,
+                        cc_addresses: Optional[List[str]] = None) -> Mail:
         """Creates the request body for the email that will be sent. Includes all required data to send a single email.
+
+        If there are cc_addresses, it adds those to the request body for the emails.
         """
-        return Mail(to_emails=to_email,
-                    from_email=self._create_email_address(from_email, from_email_name),
-                    subject=subject,
-                    html_content=html_content)
+        message = Mail(to_emails=to_email,
+                       from_email=self._create_email_address(from_email, from_email_name),
+                       subject=subject,
+                       html_content=html_content)
+        if cc_addresses:
+            message.cc = [Cc(email=cc_email_address) for cc_email_address in cc_addresses]
+
+        return message
 
     @staticmethod
     def _create_email_address(from_email_address: str, from_email_name: str) -> Email:
@@ -66,7 +72,8 @@ class SendGridClientWrapper:
                      from_email_name: str,
                      subject: str,
                      html_content: str,
-                     redirect_address: Optional[str] = None) -> bool:
+                     redirect_address: Optional[str] = None,
+                     cc_addresses: Optional[List[str]] = None) -> bool:
         """Sends the email to the provided address by making a Twilio SendGrid API request.
 
         If there is a redirect_address, it creates the message for the redirect address instead and updates the
@@ -80,13 +87,13 @@ class SendGridClientWrapper:
             html_content: An string with HTML content for the email body
             redirect_address: (Optional) An email address to which all emails will be sent
             instead of the to_email address.
+            cc_addresses: (Optional) A list of email addresses to CC
 
         Returns:
             True if the message is sent successfully
             False if the response is not OK or an exception is thrown
         """
         if redirect_address:
-            validate_email_address(redirect_address)
             subject = f"[{to_email}] {subject}"
             to_email = redirect_address
 
@@ -94,7 +101,8 @@ class SendGridClientWrapper:
                                        from_email=from_email,
                                        from_email_name=from_email_name,
                                        subject=subject,
-                                       html_content=html_content)
+                                       html_content=html_content,
+                                       cc_addresses=cc_addresses)
         try:
             response = self.client.send(message)
         except Exception:
