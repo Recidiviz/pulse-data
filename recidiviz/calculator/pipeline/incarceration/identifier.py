@@ -24,7 +24,8 @@ from pydot import frozendict
 
 from recidiviz.calculator.pipeline.incarceration.incarceration_event import \
     IncarcerationEvent, IncarcerationAdmissionEvent, IncarcerationReleaseEvent, IncarcerationStayEvent
-from recidiviz.calculator.pipeline.utils.execution_utils import list_of_dicts_to_dict_with_keys
+from recidiviz.calculator.pipeline.utils.execution_utils import list_of_dicts_to_dict_with_keys, \
+    extract_county_of_residence_from_rows
 from recidiviz.calculator.pipeline.utils.incarceration_period_utils import \
     prepare_incarceration_periods_for_calculations
 from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_manager import \
@@ -40,7 +41,7 @@ from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
 def find_incarceration_events(
         sentence_groups: List[StateSentenceGroup],
         incarceration_period_judicial_district_association: List[Dict[str, Any]],
-        county_of_residence: Optional[str]) -> List[IncarcerationEvent]:
+        persons_to_recent_county_of_residence: List[Dict[str, Any]]) -> List[IncarcerationEvent]:
     """Finds instances of admission or release from incarceration.
 
     Transforms the person's StateIncarcerationPeriods, which are connected to their StateSentenceGroups, into
@@ -51,7 +52,8 @@ def find_incarceration_events(
         - sentence_groups: All of the person's StateSentenceGroups
         - incarceration_period_judicial_district_association: A list of dictionaries with information connecting
             StateIncarcerationPeriod ids to the judicial district responsible for the period of incarceration
-        - county_of_residence: The person's most recent county of residence
+        - persons_to_recent_county_of_residence: Reference table rows containing the county that the incarcerated person
+            lives in (prior to incarceration).
 
     Returns:
         A list of IncarcerationEvents for the person.
@@ -67,6 +69,8 @@ def find_incarceration_events(
 
     if not incarceration_periods:
         return incarceration_events
+
+    county_of_residence = extract_county_of_residence_from_rows(persons_to_recent_county_of_residence)
 
     state_code = get_single_state_code(incarceration_periods)
 

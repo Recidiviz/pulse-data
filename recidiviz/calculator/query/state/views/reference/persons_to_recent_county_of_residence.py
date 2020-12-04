@@ -31,27 +31,30 @@ PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_DESCRIPTION = \
 PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_QUERY_TEMPLATE = \
     """
 /*{description}*/
-    SELECT
-      CONCAT('US_', UPPER(state_code)) AS state_code,
-      person_id,
-      CONCAT('US_', UPPER(state_code), '_', UPPER(county)) AS county_of_residence
-    FROM (
+    WITH zip_code_county_map AS (
+      SELECT
+        UPPER(SUBSTR(county, 0, LENGTH(county) -7)) AS normalized_county_name,
+        zip_code
+      FROM
+        `{project_id}.{static_reference_dataset}.zipcode_county_map`
+    ),
+    persons_with_last_known_address_and_zip AS (
       SELECT
         person_id,
-        SUBSTR(last_known_address, -9, 2) AS state_code,
-        SUBSTR(county, 0, LENGTH(county) -7) AS county
-      FROM
-        `{project_id}.{reference_views_dataset}.persons_with_last_known_address` as persons_with_address
-      JOIN
-        `{project_id}.{static_reference_dataset}.zipcode_county_map` zipcode_county_map
-      ON
-        substr(persons_with_address.last_known_address, -5) = zipcode_county_map.zip_code
-      WHERE
-        persons_with_address.last_known_address IS NOT NULL
+        state_code,
+        SUBSTR(last_known_address, -5) AS zip_code
+      FROM `{project_id}.{reference_views_dataset}.persons_with_last_known_address`
     )
-
-    WHERE
-      state_code IN ('ND', 'MO')
+    SELECT
+      state_code,
+      person_id,
+      CONCAT(state_code, '_', normalized_county_name) AS county_of_residence
+    FROM
+      persons_with_last_known_address_and_zip
+    JOIN
+      zip_code_county_map
+    USING (zip_code)
+    WHERE state_code IN ('US_ND', 'US_MO')
 """
 
 PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_VIEW_BUILDER = SimpleBigQueryViewBuilder(
