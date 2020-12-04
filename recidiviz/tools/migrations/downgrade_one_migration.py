@@ -68,7 +68,7 @@ def create_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def main(database: SchemaType, repo_root: str, ssl_cert_path: str):
+def main(database: SchemaType, repo_root: str, ssl_cert_path: str) -> None:
     """
     Invokes the main code path for running a downgrade.
 
