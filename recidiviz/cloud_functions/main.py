@@ -160,9 +160,9 @@ def export_metric_view_data(event, _context) -> None:
     logging.info("The response status is %s", response.status_code)
 
 
-def trigger_calculation_pipeline_dag(data, _context) -> None:
+def trigger_daily_calculation_pipeline_dag(data, _context) -> None:
     """This function is triggered by a Pub/Sub event, triggers an Airflow DAG where all
-    the calculation pipelines run simultaneously.
+    the daily calculation pipelines run simultaneously.
     """
     gcp_project_id = os.environ.get(GCP_PROJECT_ID_KEY, '')
     project_id = gcp_project_id + '-airflow'
@@ -182,9 +182,8 @@ def trigger_calculation_pipeline_dag(data, _context) -> None:
     logging.info("The monitoring Airflow response is %s", monitor_response)
 
 
-def run_calculation_pipelines(_event, _context) -> None:
-    """This function, which is triggered by a Pub/Sub event, kicks off
-    the historical ND pipelines on deployment.
+def start_and_monitor_calculation_pipeline(_event, _context) -> None:
+    """This function, which is triggered by a Pub/Sub event, can kick off any single Dataflow pipeline template.
 
     On successful triggering of the job, this function makes a call to the app
     to begin monitoring the progress of the job.

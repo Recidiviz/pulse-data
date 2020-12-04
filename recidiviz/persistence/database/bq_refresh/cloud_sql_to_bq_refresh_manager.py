@@ -166,7 +166,7 @@ def create_all_state_bq_refresh_tasks() -> Tuple[str, int]:
     for table in cloud_sql_to_bq_config.get_tables_to_export():
         task_manager.create_refresh_bq_table_task(table.name, SchemaType.STATE)
 
-    pub_sub_topic = 'v1.calculator.recidivism'
+    pub_sub_topic = 'v1.calculator.trigger_daily_pipelines'
     pub_sub_message = 'State export to BQ complete'
     task_manager.create_bq_refresh_monitor_task(pub_sub_topic, pub_sub_message)
     return ('', HTTPStatus.OK)
