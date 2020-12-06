@@ -23,6 +23,7 @@ import pandas as pd
 SPARK_OUTPUT_DATASET = 'population_projection_data'
 
 COST_AVOIDANCE_TABLE_NAME = 'cost_avoidance_estimate_raw'
+COST_AVOIDANCE_NON_CUMULATIVE_TABLE_NAME = 'cost_avoidance_non_cumulative_estimate_raw'
 COST_AVOIDANCE_SCHEMA = [
     {'name': 'simulation_tag', 'type': 'STRING', 'mode': 'REQUIRED'},
     {'name': 'simulation_date', 'type': 'DATE', 'mode': 'REQUIRED'},
@@ -30,6 +31,7 @@ COST_AVOIDANCE_SCHEMA = [
     {'name': 'total_cost', 'type': 'FLOAT', 'mode': 'REQUIRED'},
     {'name': 'date_created', 'type': 'TIMESTAMP', 'mode': 'REQUIRED'}
 ]
+
 
 LIFE_YEARS_TABLE_NAME = 'life_years_estimate_raw'
 LIFE_YEARS_SCHEMA = [
@@ -51,7 +53,8 @@ POPULATION_SCHEMA = [
 ]
 
 
-def upload_spark_results(project_id, simulation_tag, cost_avoidance_df, life_years_df, population_change_df):
+def upload_spark_results(project_id, simulation_tag, cost_avoidance_df, life_years_df, population_change_df,
+                         cost_avoidance_non_cumulative_df):
     """Reformat the simulation results to match the table schema and upload them to BigQuery"""
 
     # Set the upload timestamp for all tables
@@ -60,6 +63,11 @@ def upload_spark_results(project_id, simulation_tag, cost_avoidance_df, life_yea
 
     cost_avoidance_table = format_spark_results(cost_avoidance_df, 'total_cost', **data_format_args)
     store_simulation_results(project_id, COST_AVOIDANCE_TABLE_NAME, COST_AVOIDANCE_SCHEMA, cost_avoidance_table)
+
+    cost_avoidance_non_cumulative_table = format_spark_results(cost_avoidance_non_cumulative_df, 'total_cost',
+                                                               **data_format_args)
+    store_simulation_results(project_id, COST_AVOIDANCE_NON_CUMULATIVE_TABLE_NAME, COST_AVOIDANCE_SCHEMA,
+                             cost_avoidance_non_cumulative_table)
 
     life_years_table = format_spark_results(life_years_df, 'life_years', **data_format_args)
     store_simulation_results(project_id, LIFE_YEARS_TABLE_NAME, LIFE_YEARS_SCHEMA, life_years_table)
