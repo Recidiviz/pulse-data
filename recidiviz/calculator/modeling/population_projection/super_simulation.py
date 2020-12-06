@@ -49,6 +49,9 @@ class SuperSimulation:
                 initialization_params.get('big_query_inputs') is not None]) != 1:
             raise ValueError("Only one option can be set in the yaml file: `state_data` OR `big_query_inputs`")
 
+        self.reference_year = initialization_params['reference_date']
+        self.time_step = initialization_params['time_step']
+
         if initialization_params.get('state_data', False):
             simulation_data = pd.read_csv(initialization_params['state_data'])
             self._initialize_data_from_csv(simulation_data)
@@ -58,9 +61,6 @@ class SuperSimulation:
         model_architecture_yaml_key = 'model_architecture'
         self.data_dict['simulation_compartments_architecture'] = initialization_params[model_architecture_yaml_key]
         self.data_dict['disaggregation_axes'] = initialization_params['disaggregation_axes']
-
-        self.reference_year = initialization_params['reference_date']
-        self.time_step = initialization_params['time_step']
 
         # Parse the simulation settings from the initialization parameters
         self._set_user_inputs(initialization_params['user_inputs'])
@@ -259,18 +259,21 @@ class SuperSimulation:
                 (compartment_data['control_total_population']
                  - compartment_data['policy_total_population']) * self.time_step
 
+        spending_diff_non_cumulative = compartment_life_years_diff.copy()
         compartment_life_years_diff = compartment_life_years_diff.cumsum()
 
         spending_diff = compartment_life_years_diff.copy()
 
         for compartment in self.compartment_costs:
             spending_diff[compartment] *= self.compartment_costs[compartment]
+            spending_diff_non_cumulative[compartment] *= self.compartment_costs[compartment]
 
         # Store output metrics in the output_data dict
         self.output_data['cost_avoidance'] = spending_diff
         self.output_data['life_years'] = compartment_life_years_diff
+        self.output_data['cost_avoidance_non_cumulative'] = spending_diff_non_cumulative
 
-        return spending_diff, compartment_life_years_diff
+        return spending_diff, compartment_life_years_diff, spending_diff_non_cumulative
 
     def simulate_baseline(self, output_compartment: str, outflow_to: str, initialization_period: float = None):
         """
@@ -482,9 +485,10 @@ class SuperSimulation:
         return error_results
 
     def upload_simulation_results_to_bq(self, project_id, simulation_tag):
-        required_keys = ['policy_simulation', 'cost_avoidance', 'life_years']
+        required_keys = ['policy_simulation', 'cost_avoidance', 'life_years', 'cost_avoidance_non_cumulative']
         missing_keys = [key for key in required_keys if key not in self.output_data.keys()]
         if len(missing_keys) != 0:
             raise ValueError(f"Output data is missing the required columns {missing_keys}")
         upload_spark_results(project_id, simulation_tag, self.output_data['cost_avoidance'],
-                             self.output_data['life_years'], self.output_data['policy_simulation'])
+                             self.output_data['life_years'], self.output_data['policy_simulation'],
+                             self.output_data['cost_avoidance_non_cumulative'])
