@@ -38,11 +38,7 @@ locals {
 
 
 resource "google_cloudfunctions_function" "direct-ingest-states" {
-  # TODO(#4690): The cloud function for US_MO ingest on prod apparently oscillates
-  # between a "handle_state_direct_ingest_file" and
-  # "handle_state_direct_ingest_file_rename_only" entrypoint. As a result, prod
-  # and staging drift :(. Once that's more stable, we can add it to this list.
-  for_each = toset(["US_ID", "US_ND", "US_PA"])
+  for_each = toset(["US_ID", "US_MO", "US_ND", "US_PA"])
 
   name    = "direct-ingest-state-${replace(lower(each.key), "_", "-")}"
   runtime = "python37"
@@ -50,7 +46,38 @@ resource "google_cloudfunctions_function" "direct-ingest-states" {
     "deployment-tool" = "terraform"
   }
 
+  event_trigger {
+    event_type = "google.storage.object.finalize"
+    resource = "${var.project_id}-direct-ingest-state-${replace(lower(each.key), "_", "-")}"
+  }
+
   entry_point           = "handle_state_direct_ingest_file"
+  environment_variables = {}
+
+  source_repository {
+    url = local.repo_url
+  }
+
+  timeouts {}
+}
+
+# Cloud Functions that trigger file name normalization and nothing else for buckets designated as automatic upload
+# test beds.
+resource "google_cloudfunctions_function" "direct-ingest-states-upload-testing" {
+  for_each = toset(["US_MO"])
+
+  name    = "direct-ingest-state-${replace(lower(each.key), "_", "-")}-upload-testing"
+  runtime = "python37"
+  labels = {
+    "deployment-tool" = "terraform"
+  }
+
+  event_trigger {
+    event_type = "google.storage.object.finalize"
+    resource = "${var.project_id}-direct-ingest-state-${replace(lower(each.key), "_", "-")}-upload-testing"
+  }
+
+  entry_point           = "normalize_raw_file_path"
   environment_variables = {}
 
   source_repository {

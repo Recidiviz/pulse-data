@@ -25,6 +25,8 @@ from typing import Optional, Tuple
 from flask import Blueprint, request
 
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
+from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
+from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import DirectIngestGCSFileSystem
 from recidiviz.ingest.direct.controllers.direct_ingest_raw_data_table_latest_view_updater import \
     DirectIngestRawDataTableLatestViewUpdater
 from recidiviz.ingest.direct.controllers.direct_ingest_raw_update_cloud_task_manager import \
@@ -32,7 +34,7 @@ from recidiviz.ingest.direct.controllers.direct_ingest_raw_update_cloud_task_man
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_controller import \
     GcsfsDirectIngestController
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import GcsfsRawDataBQImportArgs, \
-    GcsfsIngestViewExportArgs
+    GcsfsIngestViewExportArgs, GcsfsDirectIngestFileType
 from recidiviz.cloud_storage.gcsfs_path import \
     GcsfsFilePath, GcsfsPath
 from recidiviz.ingest.direct.direct_ingest_cloud_task_manager import \
@@ -51,6 +53,33 @@ from recidiviz.utils.params import get_str_param_value, get_bool_param_value
 from recidiviz.utils.regions import get_supported_direct_ingest_region_codes, get_region
 
 direct_ingest_control = Blueprint('direct_ingest_control', __name__)
+
+
+@direct_ingest_control.route('/normalize_raw_file_path')
+@authenticate_request
+def normalize_raw_file_path() -> Tuple[str, HTTPStatus]:
+    """Called from a Cloud Function when a new file is added to a bucket that is configured to rename files but not
+    ingest them. For example, a bucket that is being used for automatic data transfer testing.
+    """
+    # The bucket name for the file to normalize
+    bucket = get_str_param_value('bucket', request.args)
+    # The relative path to the file, not including the bucket name
+    relative_file_path = get_str_param_value('relative_file_path',
+                                             request.args, preserve_case=True)
+
+    if not bucket or not relative_file_path:
+        return f'Bad parameters [{request.args}]', HTTPStatus.BAD_REQUEST
+
+    path = GcsfsPath.from_bucket_and_blob_name(bucket_name=bucket,
+                                               blob_name=relative_file_path)
+
+    if not isinstance(path, GcsfsFilePath):
+        raise ValueError(f'Incorrect type [{type(path)}] for path: {path.uri()}')
+
+    fs = DirectIngestGCSFileSystem(GcsfsFactory.build())
+    fs.mv_path_to_normalized_path(path, file_type=GcsfsDirectIngestFileType.RAW_DATA)
+
+    return '', HTTPStatus.OK
 
 
 @direct_ingest_control.route('/handle_direct_ingest_file')
