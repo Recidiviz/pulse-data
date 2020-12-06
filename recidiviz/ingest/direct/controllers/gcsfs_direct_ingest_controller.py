@@ -161,6 +161,13 @@ class GcsfsDirectIngestController(
 
         Should only be called from the scheduler queue.
         """
+        if not can_start_ingest and self.region.is_ingest_launched_in_env():
+            raise ValueError(
+                'The can_start_ingest flag should only be used for regions where ingest is not yet launched in a '
+                'particular environment. If we want to be able to selectively pause ingest processing for a state, we '
+                'will first have to build a config that is respected by both the /ensure_all_file_paths_normalized '
+                'endpoint and any cloud functions that trigger ingest.')
+
         unnormalized_paths = self.fs.get_unnormalized_file_paths(self.ingest_directory_path)
 
         unnormalized_path_file_type = GcsfsDirectIngestFileType.RAW_DATA \

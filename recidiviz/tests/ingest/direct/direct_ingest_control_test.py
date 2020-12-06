@@ -25,7 +25,8 @@ from flask import Flask
 from mock import patch, create_autospec, Mock
 
 from recidiviz.ingest.direct import direct_ingest_control
-from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import to_normalized_unprocessed_file_path
+from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import to_normalized_unprocessed_file_path, \
+    DirectIngestGCSFileSystem
 from recidiviz.ingest.direct.controllers.direct_ingest_raw_data_table_latest_view_updater import \
     DirectIngestRawDataTableLatestViewUpdater
 from recidiviz.ingest.direct.controllers.direct_ingest_raw_update_cloud_task_manager import \
@@ -39,6 +40,7 @@ from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.ingest.direct.direct_ingest_cloud_task_manager import \
     DirectIngestCloudTaskManager
 from recidiviz.ingest.direct.direct_ingest_region_utils import get_existing_region_dir_names
+from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.tests.utils.fake_region import fake_region
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -389,6 +391,36 @@ class TestDirectIngestControl(unittest.TestCase):
         mock_controller.handle_new_files.assert_called_with(False)
 
         self.assertEqual(200, response.status_code)
+
+    @patch("recidiviz.utils.environment.get_gae_environment")
+    @patch("recidiviz.ingest.direct.direct_ingest_control.GcsfsFactory.build")
+    def test_normalize_file_path(
+            self, mock_fs_factory, mock_environment):
+
+        mock_environment.return_value = 'production'
+        mock_fs = FakeGCSFileSystem()
+        mock_fs_factory.return_value = mock_fs
+
+        path = GcsfsFilePath.from_absolute_path(
+            'bucket-us-xx/file-tag.csv')
+
+        mock_fs.test_add_path(path, local_path=None)
+
+        request_args = {
+            'bucket': path.bucket_name,
+            'relative_file_path': path.blob_name,
+        }
+
+        headers = {'X-Appengine-Cron': 'test-cron'}
+        response = self.client.get('/normalize_raw_file_path',
+                                   query_string=request_args,
+                                   headers=headers)
+
+        self.assertEqual(200, response.status_code)
+
+        self.assertEqual(1, len(mock_fs.all_paths))
+        self.assertTrue(DirectIngestGCSFileSystem.is_normalized_file_path(mock_fs.all_paths[0]))
+
 
     @patch("recidiviz.utils.environment.get_gae_environment")
     @patch("recidiviz.utils.regions.get_region")
