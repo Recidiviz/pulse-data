@@ -41,6 +41,10 @@ _STATE_AGGREGATE_CLOUD_FUNCTION_URL = (
 _DIRECT_INGEST_CLOUD_FUNCTION_URL = (
     'http://{}.appspot.com/direct/handle_direct_ingest_file?region={}'
     '&bucket={}&relative_file_path={}&start_ingest={}')
+
+_DIRECT_INGEST_NORMALIZE_RAW_PATH_URL = (
+    'http://{}.appspot.com/direct/normalize_raw_file_path?bucket={}&relative_file_path={}')
+
 _METRIC_VIEW_EXPORT_CLOUD_FUNCTION_URL = (
     'http://{}.appspot.com/export/metric_view_data'
 )
@@ -79,6 +83,29 @@ def parse_state_aggregate(data, _) -> None:
     logging.info("The response status is %s", response.status_code)
 
 
+def normalize_raw_file_path(data) -> None:
+    """Cloud functions can be configured to trigger this function on any bucket that is being used as a test bed for
+    automatic uploads. This will just rename the incoming files to have a normalized path with a timestamp so
+    subsequent uploads do not have naming conflicts."""
+    project_id = os.environ.get(GCP_PROJECT_ID_KEY)
+    if not project_id:
+        logging.error('No project id set for call to direct ingest cloud '
+                      'function, returning.')
+        return
+
+    bucket = data['bucket']
+    relative_file_path = data['name']
+
+    url = _DIRECT_INGEST_NORMALIZE_RAW_PATH_URL.format(project_id, bucket, relative_file_path)
+
+    logging.info("Calling URL: %s", url)
+
+    # Hit the cloud function backend, which will schedule jobs to parse
+    # data for unprocessed files in this bucket and persist to our database.
+    response = make_iap_request(url, IAP_CLIENT_ID[project_id])
+    logging.info("The response status is %s", response.status_code)
+
+
 def handle_state_direct_ingest_file(data, _) -> None:
     """This function is triggered when a file is dropped into any of the state
     direct ingest buckets and makes a request to parse and write the data to
@@ -94,10 +121,11 @@ def handle_state_direct_ingest_file(data, _) -> None:
 
 def handle_state_direct_ingest_file_rename_only(data, _) -> None:
     """Cloud functions can be configured to trigger this function instead of
-    handle_state_direct_ingest_file when a region has turned on nightly
-    ingest before we are ready to schedule and process ingest jobs for that
-    region. This will just rename the incoming files to have a normalized path
-    with a timestamp so subsequent nightly uploads do not have naming conflicts.
+    handle_state_direct_ingest_file when a region has turned on nightly/weekly
+    automatic data transfer before we are ready to schedule and process ingest
+    jobs for that region (e.g. before ingest is "launched"). This will just
+    rename the incoming files to have a normalized path with a timestamp
+    so subsequent nightly uploads do not have naming conflicts.
 
     data: A cloud storage object that holds name information and other metadata
     related to the file that was dropped into the bucket.

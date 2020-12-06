@@ -1465,7 +1465,7 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
         # Cron job to handle unseen files triggers later
         controller.cloud_task_manager. \
             create_direct_ingest_handle_new_files_task(
-                controller.region, can_start_ingest=False)
+                controller.region, can_start_ingest=True)
 
         run_task_queues_to_empty(controller)
 
@@ -1474,6 +1474,7 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
 
         self.validate_file_metadata(controller)
 
+    @patch("recidiviz.utils.environment.get_gae_environment", Mock(return_value='production'))
     @patch("recidiviz.utils.regions.get_region", Mock(return_value=TEST_STATE_REGION))
     def test_can_start_ingest_is_false_does_not_start_ingest(self):
         controller = build_gcsfs_controller_for_tests(StateTestGcsfsDirectIngestController,
@@ -1498,6 +1499,7 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
                                     expected_raw_metadata_tags_with_is_processed=[],
                                     expected_ingest_metadata_tags_with_is_processed=[])
 
+    @patch("recidiviz.utils.environment.get_gae_environment", Mock(return_value='production'))
     @patch("recidiviz.utils.regions.get_region", Mock(return_value=TEST_SQL_PRE_PROCESSING_LAUNCHED_REGION))
     def test_can_start_ingest_is_false_does_not_start_ingest_sql_preprocessing_enabled(self):
         controller = build_gcsfs_controller_for_tests(StateTestGcsfsDirectIngestController,
@@ -1541,6 +1543,27 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
             self.assertFalse(controller.fs.is_split_file(path))
             self.assertFalse(controller.fs.is_processed_file(path))
             self.assertEqual(GcsfsDirectIngestFileType.RAW_DATA, filename_parts_from_path(path).file_type)
+
+        self.validate_file_metadata(controller,
+                                    expected_raw_metadata_tags_with_is_processed=[],
+                                    expected_ingest_metadata_tags_with_is_processed=[])
+
+    @patch("recidiviz.utils.regions.get_region", Mock(return_value=TEST_SQL_PRE_PROCESSING_LAUNCHED_REGION))
+    def test_launched_region_raises_if_can_start_ingest_false(self):
+        controller = build_gcsfs_controller_for_tests(StateTestGcsfsDirectIngestController,
+                                                      self.FIXTURE_PATH_PREFIX,
+                                                      run_async=True,
+                                                      can_start_ingest=False)
+
+        add_paths_with_tags(controller, ['tagA'], pre_normalize_filename=False, file_type=None)
+        with self.assertRaises(ValueError) as e:
+            run_task_queues_to_empty(controller)
+
+        self.assertTrue(str(e.exception).startswith(
+            'The can_start_ingest flag should only be used for regions where ingest is not yet launched'))
+
+        for path in controller.fs.gcs_file_system.all_paths:
+            self.assertFalse(controller.fs.is_normalized_file_path(path))
 
         self.validate_file_metadata(controller,
                                     expected_raw_metadata_tags_with_is_processed=[],
