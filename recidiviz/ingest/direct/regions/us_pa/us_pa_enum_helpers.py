@@ -26,10 +26,11 @@ from recidiviz.common.constants.state.state_supervision_violation_response impor
 from recidiviz.ingest.direct.direct_ingest_controller_utils import invert_enum_to_str_mappings
 
 
-INCARCERATION_PERIOD_RELEASE_REASON_TO_MOVEMENT_CODE_MAPPINGS: \
+INCARCERATION_PERIOD_ADMISSION_REASON_TO_MOVEMENT_CODE_MAPPINGS: \
     Dict[StateIncarcerationPeriodAdmissionReason, List[str]] = {
         StateIncarcerationPeriodAdmissionReason.EXTERNAL_UNKNOWN: [
             'AOTH',  # Other - Use Sparingly
+            'X',  # Unknown
         ],
         StateIncarcerationPeriodAdmissionReason.INTERNAL_UNKNOWN: [
             'RTN'  # (Not in PA data dictionary, no instances after 1996)
@@ -75,6 +76,7 @@ INCARCERATION_PERIOD_RELEASE_REASON_TO_MOVEMENT_CODE_MAPPINGS: \
             'AW',  # Add - WRIT/ATA (Writ of Habeas Corpus Ad Prosequendum)
 
             'PLC',  # Permanent Location Change
+            'DTT',  # Unlisted Transfer
             'RTT',  # Return Temporary Transfer
             'STT',  # Send Temporary Transfer
             'TFM',  # From Medical Facility
@@ -115,6 +117,7 @@ INCARCERATION_PERIOD_RELEASE_REASON_TO_STR_MAPPINGS: Dict[StateIncarcerationPeri
     StateIncarcerationPeriodReleaseReason.EXTERNAL_UNKNOWN: [
         'AOTH',  # Other - Use Sparingly
         'X',  # Unknown
+        'O',  # Unknown
     ],
     StateIncarcerationPeriodReleaseReason.INTERNAL_UNKNOWN: [
         'AA',    # Administrative
@@ -126,6 +129,7 @@ INCARCERATION_PERIOD_RELEASE_REASON_TO_STR_MAPPINGS: Dict[StateIncarcerationPeri
         'AS',    # Actively Serving
         'CS',    # Change Other Sentence
         'RTN',  # (Not in PA data dictionary, no instances after 1996)
+        'W',  # Waiting
     ],
     StateIncarcerationPeriodReleaseReason.ESCAPE: [
         'AE',  # Escape
@@ -137,6 +141,7 @@ INCARCERATION_PERIOD_RELEASE_REASON_TO_STR_MAPPINGS: Dict[StateIncarcerationPeri
     ],
     StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY: [
         'APV',  # Parole Violator
+        'AOPV',  # Out Of State Probation/Parole Violator
     ],
     StateIncarcerationPeriodReleaseReason.RELEASED_FROM_ERRONEOUS_ADMISSION: [
         'RE',  # Received In Error
@@ -147,6 +152,7 @@ INCARCERATION_PERIOD_RELEASE_REASON_TO_STR_MAPPINGS: Dict[StateIncarcerationPeri
         'NC',  # Non-return CSC
         'NF',  # Non-return Furlough
         'NR',  # [Unlisted]
+        'NW',  # Non-return Work Release
     ],
     StateIncarcerationPeriodReleaseReason.TRANSFER: [
         'ACT',  # County Transfer
@@ -180,8 +186,8 @@ INCARCERATION_PERIOD_RELEASE_REASON_TO_STR_MAPPINGS: Dict[StateIncarcerationPeri
         'VS',  # Vacated Sentence
     ],
 }
-MOVEMENT_CODE_TO_INCARCERATION_PERIOD_RELEASE_REASON_MAPPINGS: Dict[str, StateIncarcerationPeriodAdmissionReason] = \
-    invert_enum_to_str_mappings(INCARCERATION_PERIOD_RELEASE_REASON_TO_MOVEMENT_CODE_MAPPINGS)
+MOVEMENT_CODE_TO_INCARCERATION_PERIOD_ADMISSION_REASON_MAPPINGS: Dict[str, StateIncarcerationPeriodAdmissionReason] = \
+    invert_enum_to_str_mappings(INCARCERATION_PERIOD_ADMISSION_REASON_TO_MOVEMENT_CODE_MAPPINGS)
 
 REVOCATION_TYPE_TO_STR_MAPPINGS: Dict[StateSupervisionViolationResponseRevocationType, List[str]] = {
     StateSupervisionViolationResponseRevocationType.REINCARCERATION: [
@@ -210,7 +216,7 @@ def incarceration_period_admission_reason_mapper(concatenated_codes: str) -> Sta
     if start_is_new_revocation == 'TRUE':
         return StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION
 
-    admission_reason = MOVEMENT_CODE_TO_INCARCERATION_PERIOD_RELEASE_REASON_MAPPINGS.get(start_movement_code, None)
+    admission_reason = MOVEMENT_CODE_TO_INCARCERATION_PERIOD_ADMISSION_REASON_MAPPINGS.get(start_movement_code, None)
     if not admission_reason:
         raise ValueError(
             f'No mapping for incarceration period admission reason from movement code {start_movement_code}')
