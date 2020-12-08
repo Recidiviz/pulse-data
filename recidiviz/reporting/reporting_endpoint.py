@@ -34,6 +34,7 @@ from recidiviz.utils.params import get_only_str_param_value, get_str_param_value
 
 reporting_endpoint_blueprint = Blueprint('reporting_endpoint_blueprint', __name__)
 
+
 @reporting_endpoint_blueprint.route('/start_new_batch', methods=['GET', 'POST'])
 @authenticate_request
 def start_new_batch() -> Tuple[str, HTTPStatus]:
@@ -77,8 +78,7 @@ def start_new_batch() -> Tuple[str, HTTPStatus]:
     state_code = state_code.upper()
     if test_address == '':
         test_address = None
-    if region_code == '':
-        region_code = None
+    region_code = None if not region_code else region_code.upper()
 
     try:
         batch_id = data_retrieval.start(state_code, report_type, test_address, region_code)
