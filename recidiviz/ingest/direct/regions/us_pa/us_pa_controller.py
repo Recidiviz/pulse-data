@@ -71,6 +71,7 @@ MAGICAL_DATES = [
 
 AGENT_NAME_AND_ID_REGEX = re.compile(r'(.*?)( (\d+))$')
 
+
 class UsPaController(CsvGcsfsDirectIngestController):
     """Direct ingest controller implementation for US_PA."""
 
@@ -592,7 +593,7 @@ class UsPaController(CsvGcsfsDirectIngestController):
         def _hydrate_external_id(_file_tag: str,
                                  row: Dict[str, str],
                                  extracted_objects: List[IngestObject],
-                                 _cache: IngestObjectCache):
+                                 _cache: IngestObjectCache) -> None:
             for obj in extracted_objects:
                 if isinstance(obj, StatePerson):
                     external_ids_to_create = []
@@ -622,7 +623,9 @@ class UsPaController(CsvGcsfsDirectIngestController):
 
     @staticmethod
     def _hydrate_person_external_ids(
-            _file_tag: str, row: Dict[str, str], extracted_objects: List[IngestObject], _cache: IngestObjectCache):
+            _file_tag: str, row: Dict[str, str],
+            extracted_objects: List[IngestObject],
+            _cache: IngestObjectCache) -> None:
         for obj in extracted_objects:
             if isinstance(obj, StatePerson):
                 control_numbers = row['control_numbers'].split(',') if row['control_numbers'] else []
@@ -644,7 +647,9 @@ class UsPaController(CsvGcsfsDirectIngestController):
 
     @staticmethod
     def _hydrate_sentence_group_ids(
-            _file_tag: str, row: Dict[str, str], extracted_objects: List[IngestObject], _cache: IngestObjectCache):
+            _file_tag: str, row: Dict[str, str],
+            extracted_objects: List[IngestObject],
+            _cache: IngestObjectCache) -> None:
         for obj in extracted_objects:
             if isinstance(obj, StatePerson):
                 inmate_numbers = row['inmate_numbers'].split(',') if row['inmate_numbers'] else []
@@ -658,7 +663,9 @@ class UsPaController(CsvGcsfsDirectIngestController):
 
     @staticmethod
     def _hydrate_races(
-            _file_tag: str, row: Dict[str, str], extracted_objects: List[IngestObject], _cache: IngestObjectCache):
+            _file_tag: str, row: Dict[str, str],
+            extracted_objects: List[IngestObject],
+            _cache: IngestObjectCache) -> None:
         for obj in extracted_objects:
             if isinstance(obj, StatePerson):
                 races = row['races_ethnicities_list'].split(',') if row['races_ethnicities_list'] else []
@@ -668,7 +675,9 @@ class UsPaController(CsvGcsfsDirectIngestController):
 
     @staticmethod
     def _compose_current_address(
-            _file_tag: str, row: Dict[str, str], extracted_objects: List[IngestObject], _cache: IngestObjectCache):
+            _file_tag: str, row: Dict[str, str],
+            extracted_objects: List[IngestObject],
+            _cache: IngestObjectCache) -> None:
         """Composes all of the address-related fields into a single address."""
         line_1 = row['legal_address_1']
         line_2 = row['legal_address_2']
@@ -696,7 +705,7 @@ class UsPaController(CsvGcsfsDirectIngestController):
     def _generate_doc_assessment_external_id(_file_tag: str,
                                              row: Dict[str, str],
                                              extracted_objects: List[IngestObject],
-                                             _cache: IngestObjectCache):
+                                             _cache: IngestObjectCache) -> None:
         """Adds the assessment external_id to the extracted state assessment."""
         control_number = row['Control_Number']
         inmate_number = row['Inmate_number']
@@ -712,7 +721,7 @@ class UsPaController(CsvGcsfsDirectIngestController):
                                 _file_tag: str,
                                 row: Dict[str, str],
                                 extracted_objects: List[IngestObject],
-                                _cache: IngestObjectCache):
+                                _cache: IngestObjectCache) -> None:
         """Enriches the assessment object with additional metadata."""
 
         def _rst_metadata() -> Optional[Dict]:
@@ -740,7 +749,7 @@ class UsPaController(CsvGcsfsDirectIngestController):
     def _generate_pbpp_assessment_external_id(_file_tag: str,
                                               row: Dict[str, str],
                                               extracted_objects: List[IngestObject],
-                                              _cache: IngestObjectCache):
+                                              _cache: IngestObjectCache) -> None:
         """Adds the assessment external_id to the extracted state assessment."""
         parole_number = row['ParoleNumber']
         parole_count_id = row['ParoleCountID']
@@ -755,7 +764,7 @@ class UsPaController(CsvGcsfsDirectIngestController):
     def _enrich_pbpp_assessments(_file_tag: str,
                                  _row: Dict[str, str],
                                  extracted_objects: List[IngestObject],
-                                 _cache: IngestObjectCache):
+                                 _cache: IngestObjectCache) -> None:
         """Enriches the assessment object with additional metadata."""
         for obj in extracted_objects:
             if isinstance(obj, StateAssessment):
@@ -767,7 +776,7 @@ class UsPaController(CsvGcsfsDirectIngestController):
     def _set_incarceration_sentence_id(_file_tag: str,
                                        row: Dict[str, str],
                                        extracted_objects: List[IngestObject],
-                                       _cache: IngestObjectCache):
+                                       _cache: IngestObjectCache) -> None:
         sentence_group_id = row['curr_inmate_num']
         sentence_number = row['type_number']
         sentence_id = f"{sentence_group_id}-{sentence_number}"
@@ -780,7 +789,7 @@ class UsPaController(CsvGcsfsDirectIngestController):
     def _enrich_incarceration_sentence(_file_tag: str,
                                        row: Dict[str, str],
                                        extracted_objects: List[IngestObject],
-                                       _cache: IngestObjectCache):
+                                       _cache: IngestObjectCache) -> None:
         """Enriches incarceration sentences by setting sentence length and boolean fields."""
         max_years = row.get('max_cort_sent_yrs', '0')
         max_months = row.get('max_cort_sent_mths', '0')
@@ -814,7 +823,7 @@ class UsPaController(CsvGcsfsDirectIngestController):
     def _strip_id_whitespace(_file_tag: str,
                              _row: Dict[str, str],
                              extracted_objects: List[IngestObject],
-                             _cache: IngestObjectCache):
+                             _cache: IngestObjectCache) -> None:
         """Strips id fields provided as strings with inconsistent whitespace padding to avoid id matching issues."""
         for obj in extracted_objects:
             if isinstance(obj, StateCharge):
@@ -825,7 +834,7 @@ class UsPaController(CsvGcsfsDirectIngestController):
     def _concatenate_admission_reason_codes(_file_tag: str,
                                             row: Dict[str, str],
                                             extracted_objects: List[IngestObject],
-                                            _cache: IngestObjectCache):
+                                            _cache: IngestObjectCache) -> None:
         """Concatenates the incarceration period admission reason-related codes to be parsed in the enum mapper."""
         for obj in extracted_objects:
             if isinstance(obj, StateIncarcerationPeriod):
@@ -835,7 +844,7 @@ class UsPaController(CsvGcsfsDirectIngestController):
     def _concatenate_release_reason_codes(_file_tag: str,
                                           row: Dict[str, str],
                                           extracted_objects: List[IngestObject],
-                                          _cache: IngestObjectCache):
+                                          _cache: IngestObjectCache) -> None:
         """Concatenates the incarceration period release reason-related codes to be parsed in the enum mapper."""
         for obj in extracted_objects:
             if isinstance(obj, StateIncarcerationPeriod):
@@ -846,7 +855,7 @@ class UsPaController(CsvGcsfsDirectIngestController):
     def _concatenate_incarceration_purpose_codes(_file_tag: str,
                                                  row: Dict[str, str],
                                                  extracted_objects: List[IngestObject],
-                                                 _cache: IngestObjectCache):
+                                                 _cache: IngestObjectCache) -> None:
         """Concatenates the incarceration period specialized purpose-related codes to be parsed in the enum mapper."""
         for obj in extracted_objects:
             if isinstance(obj, StateIncarcerationPeriod):
@@ -857,7 +866,7 @@ class UsPaController(CsvGcsfsDirectIngestController):
             _file_tag: str,
             _row: Dict[str, str],
             extracted_objects: List[IngestObject],
-            _cache: IngestObjectCache):
+            _cache: IngestObjectCache) -> None:
         """Sets incarceration type on incarceration periods based on facility."""
         for obj in extracted_objects:
             if isinstance(obj, StateIncarcerationPeriod):
@@ -869,7 +878,7 @@ class UsPaController(CsvGcsfsDirectIngestController):
     def _specify_incident_location(_file_tag: str,
                                    row: Dict[str, str],
                                    extracted_objects: List[IngestObject],
-                                   _cache: IngestObjectCache):
+                                   _cache: IngestObjectCache) -> None:
         """Specifies the exact location where the incarceration incident took place."""
         place_code = row.get('place_hvl_code', None)
         place_extended = row.get('place_extended', None)
@@ -884,7 +893,7 @@ class UsPaController(CsvGcsfsDirectIngestController):
     def _specify_incident_type(_file_tag: str,
                                row: Dict[str, str],
                                extracted_objects: List[IngestObject],
-                               _cache: IngestObjectCache):
+                               _cache: IngestObjectCache) -> None:
         """Specifies the type of incarceration incident."""
         drug_related = row.get('drug_related', None)
         is_contraband = drug_related == 'Y'
@@ -900,7 +909,7 @@ class UsPaController(CsvGcsfsDirectIngestController):
     def _specify_incident_details(_file_tag: str,
                                   row: Dict[str, str],
                                   extracted_objects: List[IngestObject],
-                                  _cache: IngestObjectCache):
+                                  _cache: IngestObjectCache) -> None:
         """Specifies the incarceration incident details. This is a grouping of flags indicating whether certain
         "classes" of charges are involved in the incident."""
         category_1 = row.get('ctgory_of_chrgs_1', None)
@@ -925,7 +934,7 @@ class UsPaController(CsvGcsfsDirectIngestController):
     def _specify_incident_outcome(_file_tag: str,
                                   row: Dict[str, str],
                                   extracted_objects: List[IngestObject],
-                                  _cache: IngestObjectCache):
+                                  _cache: IngestObjectCache) -> None:
         """Specifies the type of outcome of the incarceration incident."""
         misconduct_number = row.get('misconduct_number', None)
         confinement_code = row.get('confinement', None)
@@ -946,7 +955,7 @@ class UsPaController(CsvGcsfsDirectIngestController):
     def _enrich_supervision_sentence(_file_tag: str,
                                      row: Dict[str, str],
                                      extracted_objects: List[IngestObject],
-                                     _cache: IngestObjectCache):
+                                     _cache: IngestObjectCache) -> None:
         """Enriches supervision sentences by setting sentence length and date fields."""
         is_life = row.get('SentMinSentenceYear', None) == 'LIFE' or row.get('SentMaxSentenceYear', None) == 'LIFE'
 
@@ -1012,7 +1021,7 @@ class UsPaController(CsvGcsfsDirectIngestController):
     def _set_default_supervision_sentence_type(_file_tag: str,
                                                row: Dict[str, str],
                                                extracted_objects: List[IngestObject],
-                                               _cache: IngestObjectCache):
+                                               _cache: IngestObjectCache) -> None:
         """Defaults the supervision type to PAROLE if the probation indicator field did not get set."""
         probation_indicator = row['SenProbInd'] or None
         is_probation = probation_indicator == 'Y'
@@ -1026,7 +1035,7 @@ class UsPaController(CsvGcsfsDirectIngestController):
     def _append_additional_charges_to_supervision_sentence(_file_tag: str,
                                                            row: Dict[str, str],
                                                            extracted_objects: List[IngestObject],
-                                                           _cache: IngestObjectCache):
+                                                           _cache: IngestObjectCache) -> None:
         """Optionally appends additional charges to the supervision sentence, if they exist on the row."""
         second_charge_statute = row.get('sentCodeSentOffense2', None)
         second_charge_description = row.get('SentOffense2', None)
@@ -1045,7 +1054,7 @@ class UsPaController(CsvGcsfsDirectIngestController):
     def _unpack_supervision_period_conditions(_file_tag: str,
                                               row: Dict[str, str],
                                               extracted_objects: List[IngestObject],
-                                              _cache: IngestObjectCache):
+                                              _cache: IngestObjectCache) -> None:
         """Unpacks the comma-separated string of condition codes into an array of strings."""
         for obj in extracted_objects:
             if isinstance(obj, StateSupervisionPeriod):
@@ -1057,7 +1066,7 @@ class UsPaController(CsvGcsfsDirectIngestController):
     def _set_supervising_officer(_file_tag: str,
                                  row: Dict[str, str],
                                  extracted_objects: List[IngestObject],
-                                 _cache: IngestObjectCache):
+                                 _cache: IngestObjectCache) -> None:
         """Sets the supervision officer (as an Agent entity) on the supervision period."""
         officer_full_name_and_id = row.get('supervising_officer_name', None)
 
@@ -1085,7 +1094,7 @@ class UsPaController(CsvGcsfsDirectIngestController):
     def _set_supervision_site(_file_tag: str,
                               row: Dict[str, str],
                               extracted_objects: List[IngestObject],
-                              _cache: IngestObjectCache):
+                              _cache: IngestObjectCache) -> None:
         """Sets the supervision_site on the supervision period."""
         district_office = row['district_office']
         district_sub_office_id = row['district_sub_office_id']
@@ -1101,7 +1110,7 @@ class UsPaController(CsvGcsfsDirectIngestController):
     def _set_custodial_authority(_file_tag: str,
                                  row: Dict[str, str],
                                  extracted_objects: List[IngestObject],
-                                 _cache: IngestObjectCache):
+                                 _cache: IngestObjectCache) -> None:
         """Sets the custodial_authority on the supervision period."""
 
         supervision_type = row['supervision_type']
@@ -1147,7 +1156,7 @@ class UsPaController(CsvGcsfsDirectIngestController):
             _file_tag: str,
             row: Dict[str, str],
             extracted_objects: List[IngestObject],
-            _cache: IngestObjectCache):
+            _cache: IngestObjectCache) -> None:
 
         case_types = sorted_list_from_str(row['case_types_list'])
 
@@ -1161,7 +1170,7 @@ class UsPaController(CsvGcsfsDirectIngestController):
     def _append_supervision_violation_entries(_file_tag: str,
                                               row: Dict[str, str],
                                               extracted_objects: List[IngestObject],
-                                              _cache: IngestObjectCache):
+                                              _cache: IngestObjectCache) -> None:
         """Appends violation type and violated condition entries to the parent supervision violation."""
         parole_number = row['parole_number']
         parole_count_id = row['parole_count_id']
@@ -1198,7 +1207,7 @@ class UsPaController(CsvGcsfsDirectIngestController):
     def _append_supervision_violation_response_entries(_file_tag: str,
                                                        row: Dict[str, str],
                                                        extracted_objects: List[IngestObject],
-                                                       _cache: IngestObjectCache):
+                                                       _cache: IngestObjectCache) -> None:
         """Appends violation response decision entries to the parent supervision violation response."""
         parole_number = row['parole_number']
         parole_count_id = row['parole_count_id']
@@ -1224,7 +1233,7 @@ class UsPaController(CsvGcsfsDirectIngestController):
     def _set_violation_response_type(_file_tag: str,
                                      _row: Dict[str, str],
                                      extracted_objects: List[IngestObject],
-                                     _cache: IngestObjectCache):
+                                     _cache: IngestObjectCache) -> None:
         """Sets relevant fields on the parent supervision violation response.
 
         We set all violation response types as VIOLATION REPORT because we have no additional metadata to make
@@ -1233,6 +1242,7 @@ class UsPaController(CsvGcsfsDirectIngestController):
         for obj in extracted_objects:
             if isinstance(obj, StateSupervisionViolationResponse):
                 obj.response_type = StateSupervisionViolationResponseType.VIOLATION_REPORT.value
+
 
 def _generate_incarceration_period_primary_key(_file_tag: str, row: Dict[str, str]) -> IngestFieldCoordinates:
     person_id = row['control_number']
