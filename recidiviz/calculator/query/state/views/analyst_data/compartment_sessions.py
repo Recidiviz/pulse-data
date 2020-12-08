@@ -52,8 +52,9 @@ COMPARTMENT_SESSIONS_QUERY_TEMPLATE = \
         gender,
         prioritized_race_or_ethnicity,
         'INCARCERATION' as compartment_level_1,
-        CASE WHEN specialized_purpose_for_incarceration IN ('GENERAL','PAROLE_BOARD_HOLD','TREATMENT_IN_PRISON')
-          THEN specialized_purpose_for_incarceration END AS compartment_level_2
+        CASE WHEN state_code = 'US_ID' AND specialized_purpose_for_incarceration IN ('GENERAL','PAROLE_BOARD_HOLD','TREATMENT_IN_PRISON')
+          THEN specialized_purpose_for_incarceration 
+          ELSE 'GENERAL' END AS compartment_level_2
     FROM
         `{project_id}.{metrics_dataset}.incarceration_population_metrics`
     INNER JOIN
@@ -268,7 +269,7 @@ COMPARTMENT_SESSIONS_QUERY_TEMPLATE = \
         'RELEASE' AS compartment_level_2,
         start_date,
         end_date,
-        DATE(NULL) AS last_day_of_data
+        MIN(last_day_of_data) OVER(PARTITION BY state_code) AS last_day_of_data
     FROM
         (
         SELECT 
@@ -277,7 +278,8 @@ COMPARTMENT_SESSIONS_QUERY_TEMPLATE = \
             --new session starts the day after the current row's end date
             DATE_ADD(end_date, INTERVAL 1 DAY) as start_date,
             --new session ends the day before the following row's start date
-            DATE_SUB(LEAD(start_date) OVER(PARTITION BY person_id ORDER BY start_date ASC), INTERVAL 1 DAY) AS end_date
+            DATE_SUB(LEAD(start_date) OVER(PARTITION BY person_id ORDER BY start_date ASC), INTERVAL 1 DAY) AS end_date,
+            last_day_of_data
         FROM sessionized_null_end_date_cte
         )
     /*
@@ -336,6 +338,49 @@ COMPARTMENT_SESSIONS_QUERY_TEMPLATE = \
     WHERE methodology = 'EVENT'
         AND metric_period_months = 1
     )
+    ,
+    release_metric_cte AS
+     /*
+    Pull in release reasons to join to the sessions view.
+    TODO(#142): Add validation to ensure all release reasons are in the static ranking table.
+    */
+    (
+    SELECT 
+        person_id,
+        state_code,
+        release_date AS end_date,
+        release_reason AS end_reason,
+        'INCARCERATION' AS data_source,
+        ROW_NUMBER() OVER(PARTITION BY person_id, release_date ORDER BY COALESCE(priority, 999)) AS rn
+    FROM `{project_id}.{metrics_dataset}.incarceration_release_metrics` AS m
+    INNER JOIN
+        `{project_id}.{reference_views_dataset}.most_recent_job_id_by_metric_and_state_code_materialized` 
+    USING (state_code, year, month, metric_period_months, metric_type, job_id)
+    LEFT JOIN `{project_id}.{static_reference_views_dataset}.release_termination_reason_dedup_priority` AS p
+        ON m.release_reason = p.end_reason
+        AND p.data_source = 'INCARCERATION'
+    WHERE metric_period_months = 1
+        AND methodology = 'EVENT'
+        AND end_reason IS NOT NULL
+    UNION ALL  
+    SELECT 
+        person_id,
+        state_code,
+        termination_date AS end_date,
+        termination_reason AS end_reason,
+        'SUPERVISION' AS data_source,
+        ROW_NUMBER() OVER(PARTITION BY person_id, termination_date ORDER BY COALESCE(priority, 999)) AS rn
+    FROM `{project_id}.{metrics_dataset}.supervision_termination_metrics` m
+    INNER JOIN
+        `{project_id}.{reference_views_dataset}.most_recent_job_id_by_metric_and_state_code_materialized`
+    USING (state_code, year, month, metric_period_months, metric_type, job_id)
+    LEFT JOIN `{project_id}.{static_reference_views_dataset}.release_termination_reason_dedup_priority` AS p
+        ON m.termination_reason = p.end_reason
+        AND p.data_source = 'SUPERVISION'
+    WHERE metric_period_months = 1
+        AND methodology = 'EVENT'
+        AND end_reason IS NOT NULL
+    )
     /*
     Final view that includes a session_id, which is created based on the order of an individual's sessions. This view
     is also joined back to the admissions_metric_cte table to pull in the admission reason and supervision type associated with 
@@ -349,8 +394,10 @@ COMPARTMENT_SESSIONS_QUERY_TEMPLATE = \
         sessions.compartment_level_2,
         admissions.admission_type,
         admissions.revocation_violation_type,
+        releases.end_reason,
         sessions.start_date,
         sessions.end_date,
+        releases.end_date AS release_date,
         start_of_session.gender,
         start_of_session.age_bucket,
         start_of_session.prioritized_race_or_ethnicity,
@@ -369,6 +416,13 @@ COMPARTMENT_SESSIONS_QUERY_TEMPLATE = \
     LEFT JOIN admissions_metric_cte admissions
         ON admissions.person_id = sessions.person_id
         AND admissions.admission_date = sessions.start_date
+    LEFT JOIN release_metric_cte releases
+        -- The release date will be a day after the session end date as the population metrics count a person towards 
+        -- population based on full days within that compartment
+        ON releases.end_date = DATE_ADD(sessions.end_date, INTERVAL 1 DAY)
+        AND releases.person_id = sessions.person_id
+        AND releases.data_source = sessions.compartment_level_1
+        AND releases.rn = 1
     ORDER BY sessions.person_id ASC, session_id ASC
     """
 
@@ -380,6 +434,7 @@ COMPARTMENT_SESSIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     metrics_dataset=DATAFLOW_METRICS_DATASET,
     static_reference_dataset=STATIC_REFERENCE_TABLES_DATASET,
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
+    static_reference_views_dataset=dataset_config.STATIC_REFERENCE_TABLES_DATASET,
     should_materialize=True
 )
 
