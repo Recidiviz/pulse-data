@@ -19,7 +19,7 @@
 import sys
 from datetime import date
 import logging
-from typing import List, Optional, Tuple, Callable
+from typing import List, Optional, Tuple, Callable, Dict, Any
 
 from recidiviz.calculator.pipeline.supervision.supervision_case_compliance import SupervisionCaseCompliance
 from recidiviz.calculator.pipeline.utils.calculator_utils import safe_list_index
@@ -423,16 +423,44 @@ def get_case_compliance_on_date(supervision_period: StateSupervisionPeriod,
     return None
 
 
-# TODO(#3829): Determine if we want a supervision district / supervision site distinction in our schema and/or metrics.
-def get_supervision_district_from_supervision_period(supervision_period: StateSupervisionPeriod) -> Optional[str]:
-    """Given |supervision_period| returns the relevant supervision site abiding by state-specific logic."""
+# TODO(#3829): Build level 1/level 2 supervision location distinction directly into our schema (info currently
+#  packed into supervision_site for states that have both).
+def get_supervising_officer_and_location_info_from_supervision_period(
+        supervision_period: StateSupervisionPeriod,
+        supervision_period_to_agent_associations: Dict[int, Dict[str, Any]]) \
+        -> Tuple[Optional[str], Optional[str], Optional[str]]:
+    """Given |supervision_period| returns the relevant officer and supervision location info abiding by state-specific
+    logic.
+    """
+    supervising_officer_external_id = None
+    level_1_supervision_location = None
+    level_2_supervision_location = None
 
-    # In some states we have squashed the notion of district and site into one field, so all filled in supervision sites
-    # are in the format "{supervision district}|{location/office within district}". This separates out the district
-    # info.
-    if supervision_period.state_code in ('US_ID', 'US_PA') and supervision_period.supervision_site:
-        return supervision_period.supervision_site.split('|')[0]
-    return supervision_period.supervision_site
+    if not supervision_period.supervision_period_id:
+        raise ValueError('Unexpected null supervision_period_id')
+
+    if supervision_period.state_code in ('US_ID', 'US_PA'):
+        # In some states we have squashed the notion of district and site into one field, so all filled in supervision
+        # sites are in the format "{supervision district}|{location/office within district}". This separates out the
+        # district info.
+        if supervision_period.supervision_site:
+            level_2_supervision_location, level_1_supervision_location = supervision_period.supervision_site.split('|')
+    elif supervision_period.state_code == 'US_ND':
+        # TODO(#4547): Remove this ND-specific logic once we hydrate the supervision site on supervision periods
+        agent_info = supervision_period_to_agent_associations.get(supervision_period.supervision_period_id)
+        if agent_info:
+            level_1_supervision_location = agent_info['district_external_id']
+    else:
+        level_1_supervision_location = supervision_period.supervision_site
+
+    agent_info = supervision_period_to_agent_associations.get(supervision_period.supervision_period_id)
+
+    if agent_info is not None:
+        supervising_officer_external_id = agent_info['agent_external_id']
+
+    return (supervising_officer_external_id,
+            level_1_supervision_location or None,
+            level_2_supervision_location or None)
 
 
 def get_violation_type_subtype_strings_for_violation(violation: StateSupervisionViolation) -> List[str]:

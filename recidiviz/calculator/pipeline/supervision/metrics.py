@@ -22,7 +22,7 @@ from typing import Any, Dict, Optional, cast
 import attr
 
 from recidiviz.calculator.pipeline.utils.metric_utils import RecidivizMetric, PersonLevelMetric, RecidivizMetricType, \
-    AssessmentMetric
+    AssessmentMetric, SupervisionLocationMetric
 from recidiviz.common.attr_mixins import BuildableAttr
 from recidiviz.common.constants.state.state_case_type import \
     StateSupervisionCaseType
@@ -51,7 +51,7 @@ class SupervisionMetricType(RecidivizMetricType):
 
 
 @attr.s
-class SupervisionMetric(RecidivizMetric):
+class SupervisionMetric(RecidivizMetric, SupervisionLocationMetric):
     """Models a single supervision metric.
 
     Contains all of the identifying characteristics of the metric, including required characteristics for
@@ -90,11 +90,8 @@ class SupervisionMetric(RecidivizMetric):
     # TODO(#3885): Add a custodial_authority field to this metric, then update BQ views to pass through to dashboard
     # for new custodial authority dropdown feature.
 
-    # External ID of the officer who was supervising the people described by this metric.
+    # External ID of the officer who was supervising the person described by this metric.
     supervising_officer_external_id: Optional[str] = attr.ib(default=None)
-
-    # External ID of the district of the officer that was supervising the people described by this metric.
-    supervising_district_external_id: Optional[str] = attr.ib(default=None)
 
     # Area of jurisdictional coverage of the court that sentenced the person to this supervision
     judicial_district_code: Optional[str] = attr.ib(default=None)

@@ -64,9 +64,19 @@ class ProgramReferralEvent(ProgramEvent, AssessmentEventMixin):
     # External ID of the officer who was supervising the person
     supervising_officer_external_id: Optional[str] = attr.ib(default=None)
 
-    # External ID of the district of the officer that was supervising the
-    # person
+    # External ID of the district of the officer that was supervising the person
+    # TODO(#4709): THIS FIELD IS DEPRECATED - USE level_1_supervision_location_external_id and
+    #  level_2_supervision_location_external_id instead.
     supervising_district_external_id: Optional[str] = attr.ib(default=None)
+
+    # External ID of the lowest-level sub-geography (e.g. an individual office with a street address) of the officer
+    # that was supervising the person described by this metric.
+    level_1_supervision_location_external_id: Optional[str] = attr.ib(default=None)
+
+    # For states with a hierachical structure of supervision locations, this is the external ID the next-lowest-level
+    # sub-geography after level_1_supervision_sub_geography_external_id. For example, in PA this is a "district" where
+    # level 1 is an office.
+    level_2_supervision_location_external_id: Optional[str] = attr.ib(default=None)
 
 
 @attr.s(frozen=True)

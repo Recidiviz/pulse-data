@@ -164,7 +164,7 @@ class TestProgramPipeline(unittest.TestCase):
             'person_id': fake_person_id,
             'state_code': 'US_XX',
             'agent_external_id': 'OFFICER0009',
-            'district_external_id': '10',
+            'district_external_id': None,
             'supervision_period_id': fake_supervision_period_id
         }]
 
@@ -343,7 +343,7 @@ class TestProgramPipeline(unittest.TestCase):
             'person_id': fake_person_id,
             'state_code': 'US_XX',
             'agent_external_id': 'OFFICER0009',
-            'district_external_id': '10',
+            'district_external_id': None,
             'supervision_period_id': supervision_period.supervision_period_id
         }]
 
@@ -424,7 +424,95 @@ class TestClassifyProgramAssignments(unittest.TestCase):
                 status=StateSupervisionPeriodStatus.TERMINATED,
                 state_code='US_XX',
                 start_date=date(2008, 3, 5),
-                supervision_type=StateSupervisionType.PAROLE
+                supervision_type=StateSupervisionType.PAROLE,
+                supervision_site='10'
+            )
+
+        supervision_period_to_agent_map = {
+            'agent_id': 1010,
+            'person_id': fake_person_id,
+            'agent_external_id': 'OFFICER0009',
+            'district_external_id': None,
+            'supervision_period_id':
+                supervision_period.supervision_period_id
+        }
+
+        person_periods = {'person': [fake_person],
+                          'program_assignments': [program_assignment],
+                          'assessments': [assessment],
+                          'supervision_periods': [supervision_period],
+                          'supervision_period_to_agent_association': [supervision_period_to_agent_map]
+                          }
+
+        program_events = [ProgramReferralEvent(
+            state_code=program_assignment.state_code,
+            program_id=program_assignment.program_id,
+            event_date=program_assignment.referral_date,
+            participation_status=program_assignment.participation_status,
+            assessment_score=33,
+            assessment_type=StateAssessmentType.ORAS,
+            supervision_type=supervision_period.supervision_type,
+            supervising_officer_external_id='OFFICER0009',
+            supervising_district_external_id='10',
+            level_1_supervision_location_external_id='10'
+        ), ProgramParticipationEvent(
+            state_code=program_assignment.state_code,
+            program_id=program_assignment.program_id,
+            program_location_id=program_assignment.program_location_id,
+            event_date=date.today(),
+            is_first_day_in_program=True,
+            supervision_type=supervision_period.supervision_type
+        )]
+
+        correct_output = [(fake_person.person_id, (fake_person, program_events))]
+
+        test_pipeline = TestPipeline()
+
+        output = (test_pipeline
+                  | beam.Create([(fake_person_id,
+                                  person_periods)])
+                  | 'Identify Program Events' >>
+                  beam.ParDo(
+                      pipeline.ClassifyProgramAssignments()))
+
+        assert_that(output, equal_to(correct_output))
+
+        test_pipeline.run()
+
+    @freeze_time('2009-10-19')
+    def testClassifyProgramAssignments_us_nd(self):
+        """Tests the ClassifyProgramAssignments DoFn."""
+        fake_person_id = 12345
+
+        fake_person = entities.StatePerson.new_with_defaults(
+            person_id=fake_person_id, gender=Gender.MALE,
+            birthdate=date(1970, 1, 1),
+            residency_status=ResidencyStatus.PERMANENT
+        )
+
+        program_assignment = entities.StateProgramAssignment.new_with_defaults(
+            state_code='US_ND',
+            program_id='PG3',
+            program_location_id='XYZ',
+            referral_date=date(2009, 10, 3),
+            participation_status=StateProgramAssignmentParticipationStatus.IN_PROGRESS,
+            start_date=date(2009, 10, 19)
+        )
+
+        assessment = entities.StateAssessment.new_with_defaults(
+            state_code='US_ND',
+            assessment_type=StateAssessmentType.ORAS,
+            assessment_score=33,
+            assessment_date=date(2009, 7, 10)
+        )
+
+        supervision_period = \
+            entities.StateSupervisionPeriod.new_with_defaults(
+                supervision_period_id=111,
+                status=StateSupervisionPeriodStatus.TERMINATED,
+                state_code='US_ND',
+                start_date=date(2008, 3, 5),
+                supervision_type=StateSupervisionType.PAROLE,
             )
 
         supervision_period_to_agent_map = {
@@ -452,7 +540,8 @@ class TestClassifyProgramAssignments(unittest.TestCase):
             assessment_type=StateAssessmentType.ORAS,
             supervision_type=supervision_period.supervision_type,
             supervising_officer_external_id='OFFICER0009',
-            supervising_district_external_id='10'
+            supervising_district_external_id='10',
+            level_1_supervision_location_external_id='10'
         ), ProgramParticipationEvent(
             state_code=program_assignment.state_code,
             program_id=program_assignment.program_id,
@@ -510,7 +599,7 @@ class TestClassifyProgramAssignments(unittest.TestCase):
             'agent_id': 1010,
             'person_id': fake_person_id,
             'agent_external_id': 'OFFICER0009',
-            'district_external_id': '10',
+            'district_external_id': None,
             'supervision_period_id':
                 supervision_period.supervision_period_id
         }
@@ -562,14 +651,15 @@ class TestClassifyProgramAssignments(unittest.TestCase):
                 termination_date=date(2010, 5, 19),
                 termination_reason=
                 StateSupervisionPeriodTerminationReason.DISCHARGE,
-                supervision_type=StateSupervisionType.PAROLE
+                supervision_type=StateSupervisionType.PAROLE,
+                supervision_site='10'
             )
 
         supervision_period_to_agent_map = {
             'agent_id': 1010,
             'person_id': fake_person_id,
             'agent_external_id': 'OFFICER0009',
-            'district_external_id': '10',
+            'district_external_id': None,
             'supervision_period_id':
                 supervision_period.supervision_period_id
         }
@@ -587,7 +677,8 @@ class TestClassifyProgramAssignments(unittest.TestCase):
             event_date=program_assignment.referral_date,
             supervision_type=supervision_period.supervision_type,
             supervising_officer_external_id='OFFICER0009',
-            supervising_district_external_id='10'
+            supervising_district_external_id='10',
+            level_1_supervision_location_external_id='10'
         )
 
         correct_output = [(fake_person.person_id, (fake_person, [program_event]))]
