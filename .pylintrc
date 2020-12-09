@@ -163,7 +163,7 @@ ignore-docstrings=yes
 
 [FORMAT]
 
-# Maximum number of characters on a single line.
+# Maximum number of characters allowed on a single line.
 max-line-length=120
 
 # Maximum number of lines in a module
