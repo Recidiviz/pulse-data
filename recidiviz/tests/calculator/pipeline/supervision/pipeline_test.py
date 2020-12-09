@@ -329,7 +329,7 @@ class TestSupervisionPipeline(unittest.TestCase):
             'agent_id': 1010,
             'person_id': fake_person_id,
             'agent_external_id': 'OFFICER0009',
-            'district_external_id': '10',
+            'district_external_id': None,
             'supervision_violation_response_id': fake_svr_id
         }]
 
@@ -338,7 +338,7 @@ class TestSupervisionPipeline(unittest.TestCase):
             'agent_id': 1010,
             'person_id': fake_person_id,
             'agent_external_id': 'OFFICER0009',
-            'district_external_id': '10',
+            'district_external_id': None,
             'supervision_period_id': fake_supervision_period_id
         }]
 
@@ -669,7 +669,7 @@ class TestSupervisionPipeline(unittest.TestCase):
             'agent_id': 1010,
             'person_id': fake_person_id,
             'agent_external_id': 'OFFICER0009',
-            'district_external_id': '10',
+            'district_external_id': None,
             'supervision_violation_response_id': fake_svr_id
         }]
 
@@ -678,7 +678,7 @@ class TestSupervisionPipeline(unittest.TestCase):
             'agent_id': 1010,
             'person_id': fake_person_id,
             'agent_external_id': 'OFFICER0009',
-            'district_external_id': '10',
+            'district_external_id': None,
             'supervision_period_id': supervision_period.supervision_period_id
         }]
 
@@ -749,7 +749,7 @@ class TestSupervisionPipeline(unittest.TestCase):
         initial_supervision_period = schema.StateSupervisionPeriod(
             supervision_period_id=5876524,
             state_code='US_XX',
-            county_code='US_ND_RAMSEY',
+            county_code='US_XX_RAMSEY',
             start_date=date(2014, 10, 31),
             termination_date=date(2015, 4, 21),
             termination_reason=StateSupervisionPeriodTerminationReason.REVOCATION,
@@ -958,7 +958,7 @@ class TestSupervisionPipeline(unittest.TestCase):
             'agent_id': 1010,
             'person_id': fake_person_id,
             'agent_external_id': 'OFFICER0009',
-            'district_external_id': '10',
+            'district_external_id': None,
             'supervision_violation_response_id': fake_svr_id
         }]
 
@@ -967,7 +967,7 @@ class TestSupervisionPipeline(unittest.TestCase):
             'agent_id': 1010,
             'person_id': fake_person_id,
             'agent_external_id': 'OFFICER0009',
-            'district_external_id': '10',
+            'district_external_id': None,
             'supervision_period_id': supervision_period.supervision_period_id
         }]
 
@@ -1223,7 +1223,7 @@ class TestSupervisionPipeline(unittest.TestCase):
             'agent_id': 1010,
             'person_id': fake_person_id,
             'agent_external_id': 'OFFICER0009',
-            'district_external_id': '10',
+            'district_external_id': None,
             'supervision_violation_response_id': fake_svr_id
         }]
 
@@ -1232,7 +1232,7 @@ class TestSupervisionPipeline(unittest.TestCase):
             'agent_id': 1010,
             'person_id': fake_person_id,
             'agent_external_id': 'OFFICER0009',
-            'district_external_id': '10',
+            'district_external_id': None,
             'supervision_period_id': supervision_period.supervision_period_id
         }]
 
@@ -1466,7 +1466,7 @@ class TestSupervisionPipeline(unittest.TestCase):
             'agent_id': 1010,
             'person_id': supervision_violation_response.person_id,
             'agent_external_id': 'OFFICER0009',
-            'district_external_id': '10',
+            'district_external_id': None,
             'supervision_violation_response_id': supervision_violation_response.supervision_violation_response_id
         }]
 
@@ -1475,7 +1475,7 @@ class TestSupervisionPipeline(unittest.TestCase):
             'agent_id': 1010,
             'person_id': supervision_period__1.person_id,
             'agent_external_id': 'OFFICER0009',
-            'district_external_id': '10',
+            'district_external_id': None,
             'supervision_period_id': supervision_period__1.supervision_period_id
         }]
 
@@ -1604,6 +1604,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.MEDIUM,
             supervision_level_raw_text='MEDM',
+            supervision_site='10',
             person=fake_person
         )
 
@@ -1641,7 +1642,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         ssvr_to_agent_map = {
             'agent_id': 000,
             'agent_external_id': 'XXX',
-            'district_external_id': 'X',
+            'district_external_id': None,
             'supervision_violation_response_id': 999
         }
 
@@ -1649,7 +1650,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             'agent_id': 1010,
             'person_id': fake_person_id,
             'agent_external_id': 'OFFICER0009',
-            'district_external_id': '10',
+            'district_external_id': None,
             'supervision_period_id':
                 supervision_period.supervision_period_id
         }
@@ -1676,6 +1677,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 case_type=StateSupervisionCaseType.GENERAL,
                 supervising_officer_external_id='OFFICER0009',
                 supervising_district_external_id='10',
+                level_1_supervision_location_external_id='10',
                 supervision_level=supervision_period.supervision_level,
                 supervision_level_raw_text=supervision_period.supervision_level_raw_text,
                 successful_completion=True,
@@ -1695,7 +1697,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             assessment_level=assessment.assessment_level,
             assessment_type=assessment.assessment_type,
             supervising_officer_external_id='OFFICER0009',
-            supervising_district_external_id='10',
+            level_1_supervision_location_external_id='10',
             judicial_district_code=judicial_district_code,
         ))
 
@@ -1709,6 +1711,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             termination_reason=supervision_period.termination_reason,
             supervising_officer_external_id='OFFICER0009',
             supervising_district_external_id='10',
+            level_1_supervision_location_external_id='10',
             judicial_district_code=judicial_district_code,
             supervision_level=supervision_period.supervision_level,
             supervision_level_raw_text=supervision_period.supervision_level_raw_text,
@@ -1752,6 +1755,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.HIGH,
             supervision_level_raw_text='H',
+            supervision_site='10',
             person=fake_person
         )
 
@@ -1806,7 +1810,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             'agent_id': 000,
             'person_id': fake_person_id,
             'agent_external_id': 'OFFICER0009',
-            'district_external_id': '10',
+            'district_external_id': None,
             'supervision_violation_response_id': 999
         }
 
@@ -1814,7 +1818,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             'agent_id': 1010,
             'person_id': fake_person_id,
             'agent_external_id': 'OFFICER0009',
-            'district_external_id': '10',
+            'district_external_id': None,
             'supervision_period_id':
                 supervision_period.supervision_period_id
         }
@@ -1839,7 +1843,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             assessment_level=assessment.assessment_level,
             assessment_type=assessment.assessment_type,
             supervising_officer_external_id='OFFICER0009',
-            supervising_district_external_id='10',
+            level_1_supervision_location_external_id='10',
         )
 
         expected_buckets.extend(identifier_test.expected_non_revocation_return_time_buckets(
@@ -1849,7 +1853,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             assessment_level=assessment.assessment_level,
             assessment_type=assessment.assessment_type,
             supervising_officer_external_id='OFFICER0009',
-            supervising_district_external_id='10',
+            level_1_supervision_location_external_id='10',
             response_count=1,
             most_severe_violation_type=StateSupervisionViolationType.MISDEMEANOR,
             most_severe_violation_type_subtype=StateSupervisionViolationType.MISDEMEANOR.value
@@ -1868,6 +1872,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 termination_reason=supervision_period.termination_reason,
                 supervising_officer_external_id='OFFICER0009',
                 supervising_district_external_id='10',
+                level_1_supervision_location_external_id='10',
                 most_severe_violation_type=StateSupervisionViolationType.MISDEMEANOR,
                 most_severe_violation_type_subtype=StateSupervisionViolationType.MISDEMEANOR.value,
                 response_count=1
@@ -1893,6 +1898,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 assessment_type=assessment.assessment_type,
                 supervising_officer_external_id='OFFICER0009',
                 supervising_district_external_id='10',
+                level_1_supervision_location_external_id='10',
                 supervision_level=StateSupervisionLevel.HIGH,
                 supervision_level_raw_text='H',
                 is_on_supervision_last_day_of_month=False,
@@ -1931,6 +1937,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.HIGH,
             supervision_level_raw_text='H',
+            supervision_site='10',
             person=fake_person
         )
 
@@ -1996,7 +2003,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             'agent_id': 000,
             'person_id': fake_person_id,
             'agent_external_id': 'OFFICER0009',
-            'district_external_id': '10',
+            'district_external_id': None,
             'supervision_violation_response_id': 999
         }
 
@@ -2004,7 +2011,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             'agent_id': 1010,
             'person_id': fake_person_id,
             'agent_external_id': 'OFFICER0009',
-            'district_external_id': '10',
+            'district_external_id': None,
             'supervision_period_id':
                 supervision_period.supervision_period_id
         }
@@ -2030,7 +2037,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             assessment_level=assessment.assessment_level,
             assessment_type=assessment.assessment_type,
             supervising_officer_external_id='OFFICER0009',
-            supervising_district_external_id='10',
+            level_1_supervision_location_external_id='10',
         )
         expected_buckets.append(
             identifier_test.create_start_bucket_from_period(
@@ -2046,7 +2053,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             assessment_level=assessment.assessment_level,
             assessment_type=assessment.assessment_type,
             supervising_officer_external_id='OFFICER0009',
-            supervising_district_external_id='10',
+            level_1_supervision_location_external_id='10',
         ))
 
         expected_buckets.extend(identifier_test.expected_non_revocation_return_time_buckets(
@@ -2056,7 +2063,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             assessment_level=assessment.assessment_level,
             assessment_type=assessment.assessment_type,
             supervising_officer_external_id='OFFICER0009',
-            supervising_district_external_id='10',
+            level_1_supervision_location_external_id='10',
             response_count=1,
             most_severe_violation_type=StateSupervisionViolationType.MISDEMEANOR,
             most_severe_violation_type_subtype=StateSupervisionViolationType.MISDEMEANOR.value,
@@ -2075,6 +2082,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 termination_reason=supervision_period.termination_reason,
                 supervising_officer_external_id='OFFICER0009',
                 supervising_district_external_id='10',
+                level_1_supervision_location_external_id='10',
                 response_count=1,
                 most_severe_violation_type=StateSupervisionViolationType.MISDEMEANOR,
                 most_severe_violation_type_subtype=StateSupervisionViolationType.MISDEMEANOR.value,
@@ -2096,6 +2104,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 assessment_type=assessment.assessment_type,
                 supervising_officer_external_id='OFFICER0009',
                 supervising_district_external_id='10',
+                level_1_supervision_location_external_id='10',
                 supervision_level=StateSupervisionLevel.HIGH,
                 supervision_level_raw_text='H',
                 is_on_supervision_last_day_of_month=False,
@@ -2135,6 +2144,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.INTERNAL_UNKNOWN,
             supervision_level_raw_text='XXXX',
+            supervision_site='10',
             person=fake_person
         )
 
@@ -2158,7 +2168,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         ssvr_to_agent_map = {
             'agent_id': 000,
             'agent_external_id': 'XXX',
-            'district_external_id': 'X',
+            'district_external_id': None,
             'supervision_violation_response_id': 999
         }
 
@@ -2166,7 +2176,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             'agent_id': 1010,
             'person_id': fake_person_id,
             'agent_external_id': 'OFFICER0009',
-            'district_external_id': '10',
+            'district_external_id': None,
             'supervision_period_id':
                 supervision_period.supervision_period_id
         }
@@ -2189,7 +2199,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             assessment_level=assessment.assessment_level,
             assessment_type=assessment.assessment_type,
             supervising_officer_external_id='OFFICER0009',
-            supervising_district_external_id='10',
+            level_1_supervision_location_external_id='10',
         )
 
         expected_buckets.extend([
@@ -2203,6 +2213,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 termination_reason=supervision_period.termination_reason,
                 supervising_officer_external_id='OFFICER0009',
                 supervising_district_external_id='10',
+                level_1_supervision_location_external_id='10',
                 supervision_level=supervision_period.supervision_level,
                 supervision_level_raw_text=supervision_period.supervision_level_raw_text
             ),
@@ -2245,6 +2256,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.INTERNAL_UNKNOWN,
             supervision_level_raw_text='XXXX',
+            supervision_site='10',
             person=fake_person
         )
 
@@ -2261,7 +2273,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         ssvr_to_agent_map = {
             'agent_id': 000,
             'agent_external_id': 'XXX',
-            'district_external_id': 'X',
+            'district_external_id': None,
             'supervision_violation_response_id': 999
         }
 
@@ -2269,7 +2281,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             'agent_id': 1010,
             'person_id': fake_person_id,
             'agent_external_id': 'OFFICER0009',
-            'district_external_id': '10',
+            'district_external_id': None,
             'supervision_period_id':
                 supervision_period.supervision_period_id
         }
@@ -2288,7 +2300,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             supervision_period,
             supervision_period_supervision_type,
             supervising_officer_external_id='OFFICER0009',
-            supervising_district_external_id='10',
+            level_1_supervision_location_external_id='10',
         )
 
         expected_buckets.extend([
@@ -2302,6 +2314,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 termination_reason=supervision_period.termination_reason,
                 supervising_officer_external_id='OFFICER0009',
                 supervising_district_external_id='10',
+                level_1_supervision_location_external_id='10',
                 supervision_level=supervision_period.supervision_level,
                 supervision_level_raw_text=supervision_period.supervision_level_raw_text
             ),
@@ -2357,7 +2370,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         ssvr_to_agent_map = {
             'agent_id': 000,
             'agent_external_id': 'XXX',
-            'district_external_id': 'X',
+            'district_external_id': None,
             'supervision_violation_response_id': 999
         }
 
@@ -2365,7 +2378,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             'agent_id': 1010,
             'person_id': fake_person_id,
             'agent_external_id': 'OFFICER0009',
-            'district_external_id': '10',
+            'district_external_id': None,
             'supervision_period_id': 9999
         }
 

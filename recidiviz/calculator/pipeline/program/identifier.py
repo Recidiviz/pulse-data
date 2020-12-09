@@ -26,7 +26,8 @@ from recidiviz.calculator.pipeline.program.program_event import \
 from recidiviz.calculator.pipeline.utils import assessment_utils
 from recidiviz.calculator.pipeline.utils.execution_utils import list_of_dicts_to_dict_with_keys
 from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_manager import \
-    only_state_custodial_authority_in_supervision_population
+    only_state_custodial_authority_in_supervision_population, \
+    get_supervising_officer_and_location_info_from_supervision_period
 from recidiviz.calculator.pipeline.utils.supervision_period_utils import prepare_supervision_periods_for_calculations
 from recidiviz.common.constants.state.state_assessment import \
     StateAssessmentType, StateAssessmentClass
@@ -236,16 +237,14 @@ def referrals_for_supervision_periods(
     if supervision_periods:
         for supervision_period in supervision_periods:
             # Return one ProgramReferralEvent per supervision period
-            supervising_officer_external_id = None
-            supervising_district_external_id = None
+            (supervising_officer_external_id,
+             level_1_supervision_location_external_id,
+             level_2_supervision_location_external_id) = \
+                get_supervising_officer_and_location_info_from_supervision_period(
+                    supervision_period, supervision_period_to_agent_associations)
 
-            if supervision_period.supervision_period_id:
-                agent_info = supervision_period_to_agent_associations.get(supervision_period.supervision_period_id)
-
-                if agent_info is not None:
-                    supervising_officer_external_id = agent_info.get('agent_external_id')
-                    supervising_district_external_id = agent_info.get('district_external_id')
-
+            deprecated_supervising_district_external_id = \
+                level_2_supervision_location_external_id or level_1_supervision_location_external_id
             program_referrals.append(
                 ProgramReferralEvent(
                     state_code=state_code,
@@ -257,7 +256,9 @@ def referrals_for_supervision_periods(
                     # TODO(#2891): Use supervision_period_supervision_type
                     supervision_type=supervision_period.supervision_type,
                     supervising_officer_external_id=supervising_officer_external_id,
-                    supervising_district_external_id=supervising_district_external_id
+                    supervising_district_external_id=deprecated_supervising_district_external_id,
+                    level_1_supervision_location_external_id=level_1_supervision_location_external_id,
+                    level_2_supervision_location_external_id=level_2_supervision_location_external_id
                 )
             )
     else:

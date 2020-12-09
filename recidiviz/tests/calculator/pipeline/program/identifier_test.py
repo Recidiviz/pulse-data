@@ -42,7 +42,7 @@ DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS = {
     999: {
         'agent_id': 000,
         'agent_external_id': 'XXX',
-        'district_external_id': 'X',
+        'district_external_id': None,
         'supervision_period_id': 999
     }
 }
@@ -82,11 +82,12 @@ class TestFindProgramEvents(unittest.TestCase):
         )
 
         supervision_period = StateSupervisionPeriod.new_with_defaults(
-            supervision_period_id=111,
+            supervision_period_id=999,
             status=StateSupervisionPeriodStatus.TERMINATED,
             state_code='US_XX',
             start_date=date(2019, 3, 5),
-            supervision_type=StateSupervisionType.PAROLE
+            supervision_type=StateSupervisionType.PAROLE,
+            supervision_site='OFFICE_1'
         )
 
         program_assignments = [program_assignment]
@@ -108,7 +109,12 @@ class TestFindProgramEvents(unittest.TestCase):
                 supervision_type=supervision_period.supervision_type,
                 participation_status=program_assignment.participation_status,
                 assessment_score=assessment.assessment_score,
-                assessment_type=assessment.assessment_type),
+                assessment_type=assessment.assessment_type,
+                supervising_officer_external_id='XXX',
+                supervising_district_external_id='OFFICE_1',
+                level_1_supervision_location_external_id='OFFICE_1',
+                level_2_supervision_location_external_id=None
+            ),
             ProgramParticipationEvent(
                 state_code=program_assignment.state_code,
                 event_date=program_assignment.start_date,
@@ -166,13 +172,14 @@ class TestFindProgramReferrals(unittest.TestCase):
         )
 
         supervision_period = StateSupervisionPeriod.new_with_defaults(
-            supervision_period_id=111,
+            supervision_period_id=999,
             status=StateSupervisionPeriodStatus.TERMINATED,
             state_code='US_XX',
             start_date=date(2008, 3, 5),
             termination_date=date(2010, 5, 19),
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-            supervision_type=StateSupervisionType.PAROLE
+            supervision_type=StateSupervisionType.PAROLE,
+            supervision_site='OFFICE_1'
         )
 
         assessments = [assessment]
@@ -190,7 +197,10 @@ class TestFindProgramReferrals(unittest.TestCase):
             participation_status=program_assignment.participation_status,
             assessment_score=33,
             assessment_type=StateAssessmentType.ORAS,
-            supervision_type=supervision_period.supervision_type
+            supervision_type=supervision_period.supervision_type,
+            supervising_officer_external_id='XXX',
+            supervising_district_external_id='OFFICE_1',
+            level_1_supervision_location_external_id='OFFICE_1'
         )], program_referrals)
 
     def test_find_program_referrals_no_referral(self):
@@ -367,16 +377,16 @@ class TestFindProgramReferrals(unittest.TestCase):
 
             ], program_referrals)
 
-    def test_find_program_referrals_officer_info(self):
+    def test_find_program_referrals_officer_info_us_nd(self):
         program_assignment = StateProgramAssignment.new_with_defaults(
-            state_code='US_XX',
+            state_code='US_ND',
             program_id='PG3',
             referral_date=date(2009, 10, 3),
             participation_status=StateProgramAssignmentParticipationStatus.DISCHARGED,
         )
 
         assessment = StateAssessment.new_with_defaults(
-            state_code='US_XX',
+            state_code='US_ND',
             assessment_type=StateAssessmentType.ORAS,
             assessment_score=33,
             assessment_date=date(2009, 7, 10)
@@ -386,7 +396,7 @@ class TestFindProgramReferrals(unittest.TestCase):
             StateSupervisionPeriod.new_with_defaults(
                 supervision_period_id=111,
                 status=StateSupervisionPeriodStatus.TERMINATED,
-                state_code='US_XX',
+                state_code='US_ND',
                 start_date=date(2008, 3, 5),
                 termination_date=date(2010, 5, 19),
                 termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
@@ -420,7 +430,9 @@ class TestFindProgramReferrals(unittest.TestCase):
             assessment_type=StateAssessmentType.ORAS,
             supervision_type=supervision_period.supervision_type,
             supervising_officer_external_id='OFFICER10',
-            supervising_district_external_id='DISTRICT8'
+            supervising_district_external_id='DISTRICT8',
+            level_1_supervision_location_external_id='DISTRICT8',
+            level_2_supervision_location_external_id=None
         )], program_referrals)
 
 
