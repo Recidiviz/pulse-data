@@ -22,17 +22,19 @@ from typing import Optional, List, Dict, Set
 
 from dateutil.relativedelta import relativedelta
 
+from recidiviz.calculator.pipeline.utils.supervision_period_index import SupervisionPeriodIndex
 from recidiviz.calculator.pipeline.utils.supervision_type_identification import _get_most_relevant_supervision_type
 from recidiviz.common.common_utils import date_spans_overlap_exclusive
 from recidiviz.common.constants.state.state_incarceration_period import StateIncarcerationPeriodReleaseReason
-from recidiviz.common.constants.state.state_supervision_period import StateSupervisionPeriodSupervisionType
+from recidiviz.common.constants.state.state_supervision_period import StateSupervisionPeriodSupervisionType, \
+    StateSupervisionPeriodAdmissionReason
 from recidiviz.persistence.entity.state.entities import StateIncarcerationSentence, StateSupervisionSentence, \
     StateIncarcerationPeriod, StateSupervisionPeriod
 
 # We expect transition dates from supervision to incarceration to be fairly close together for the data in US_ID. We
 # limit the search for a pre or post-incarceration supervision type to 30 days prior to admission or 30 days following
 # release.
-INCARCERATION_SUPERVISION_TYPE_DAYS_LIMIT = 30
+SUPERVISION_TYPE_LOOKBACK_DAYS_LIMIT = 30
 
 
 def us_id_get_pre_incarceration_supervision_type(
@@ -54,7 +56,7 @@ def us_id_get_pre_incarceration_supervision_type(
     return us_id_get_most_recent_supervision_period_supervision_type_before_upper_bound_day(
         upper_bound_exclusive_date=admission_date,
         lower_bound_inclusive_date=
-        admission_date - relativedelta(days=INCARCERATION_SUPERVISION_TYPE_DAYS_LIMIT),
+        admission_date - relativedelta(days=SUPERVISION_TYPE_LOOKBACK_DAYS_LIMIT),
         supervision_periods=supervision_periods
     )
 
@@ -77,7 +79,7 @@ def us_id_get_post_incarceration_supervision_type(
 
     return us_id_get_most_recent_supervision_period_supervision_type_before_upper_bound_day(
         upper_bound_exclusive_date=
-        incarceration_period.release_date + relativedelta(days=INCARCERATION_SUPERVISION_TYPE_DAYS_LIMIT),
+        incarceration_period.release_date + relativedelta(days=SUPERVISION_TYPE_LOOKBACK_DAYS_LIMIT),
         lower_bound_inclusive_date=incarceration_period.release_date,
         supervision_periods=supervision_periods
     )
@@ -92,7 +94,9 @@ def us_id_get_most_recent_supervision_period_supervision_type_before_upper_bound
     overlapping the provided date. An optional lower bound may be provided to limit the lookback window.
 
     Returns the most recent StateSupervisionPeriodSupervisionType. If there is no valid supervision
-    type found (e.g. the person has only been incarcerated for the time window), returns None.
+    type found (e.g. the person has only been incarcerated for the time window), returns None. In the case where
+    multiple SupervisionPeriodSupervisionTypes end on the same day, this returns only the most relevant
+    SupervisionPeriodSupervisionType based on our own ranking.
     """
     supervision_types_by_end_date: Dict[date, Set[StateSupervisionPeriodSupervisionType]] = defaultdict(set)
 
@@ -150,3 +154,43 @@ def _get_supervision_periods_from_sentences(incarceration_sentences: List[StateI
                 supervision_period_ids.add(supervision_period_id)
 
     return supervision_periods
+
+
+def us_id_get_supervision_period_admission_override(
+        supervision_period: StateSupervisionPeriod,
+        supervision_period_index: SupervisionPeriodIndex) -> Optional[StateSupervisionPeriodAdmissionReason]:
+    """Looks at the provided |supervision_period| and all supervision periods for this person via the
+    |supervision_period_index| and returns the (potentially updated) admission reason for this |supervision period|.
+    This is necessary because ID periods that occur after investigation should be counted as newly court sentenced, as
+    opposed to transfers.
+
+    In order to determine if an override should occur, this method looks at the sorted list of supervision periods
+    from |supervision_period_index| to find the most recently non-null supervision period supervision type preceding
+    the given |supervision_period|.
+    """
+    if not supervision_period.start_date:
+        raise ValueError('Found null supervision_period.start_date while getting admission reason override.')
+
+    lower_bound_date = supervision_period.start_date - relativedelta(days=SUPERVISION_TYPE_LOOKBACK_DAYS_LIMIT)
+
+    # Get the most recent, non-null previous supervision type.
+    previous_supervision_type = None
+    previous_index = supervision_period_index.supervision_periods.index(supervision_period) - 1
+    while previous_index >= 0:
+        previous_sp = supervision_period_index.supervision_periods[previous_index]
+
+        # Stop looking if we go too far back
+        if previous_sp.termination_date and previous_sp.termination_date < lower_bound_date:
+            break
+
+        # Stop looking if we found a non-null previous supervision type
+        previous_supervision_type = previous_sp.supervision_period_supervision_type
+        if previous_supervision_type:
+            break
+
+        previous_index = previous_index - 1
+
+    if previous_supervision_type == StateSupervisionPeriodSupervisionType.INVESTIGATION \
+            and supervision_period.admission_reason == StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE:
+        return StateSupervisionPeriodAdmissionReason.COURT_SENTENCE
+    return supervision_period.admission_reason

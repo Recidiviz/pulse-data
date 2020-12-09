@@ -30,7 +30,7 @@ from recidiviz.calculator.pipeline.recidivism.metrics import ReincarcerationReci
 from recidiviz.calculator.pipeline.supervision.metrics import SupervisionMetricType, SupervisionPopulationMetric, \
     SupervisionTerminationMetric, SupervisionRevocationMetric, \
     SupervisionRevocationAnalysisMetric, SupervisionRevocationViolationTypeAnalysisMetric, SupervisionSuccessMetric, \
-    SuccessfulSupervisionSentenceDaysServedMetric, SupervisionCaseComplianceMetric
+    SuccessfulSupervisionSentenceDaysServedMetric, SupervisionCaseComplianceMetric, SupervisionStartMetric
 from recidiviz.calculator.pipeline.utils.metric_utils import MetricMethodologyType, json_serializable_metric_key, \
     RecidivizMetric
 from recidiviz.common.constants.person_characteristics import Gender, Race, Ethnicity
@@ -196,6 +196,7 @@ class TestBQSchemaForMetricTable(unittest.TestCase):
             SupervisionMetricType.SUPERVISION_REVOCATION_ANALYSIS: SupervisionRevocationAnalysisMetric,
             SupervisionMetricType.SUPERVISION_REVOCATION_VIOLATION_TYPE_ANALYSIS:
                 SupervisionRevocationViolationTypeAnalysisMetric,
+            SupervisionMetricType.SUPERVISION_START: SupervisionStartMetric,
             SupervisionMetricType.SUPERVISION_SUCCESS: SupervisionSuccessMetric,
             SupervisionMetricType.SUPERVISION_SUCCESSFUL_SENTENCE_DAYS_SERVED:
                 SuccessfulSupervisionSentenceDaysServedMetric,
