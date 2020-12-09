@@ -22,6 +22,8 @@ from datetime import date
 
 from dateutil.relativedelta import relativedelta
 
+from recidiviz.common.constants.state.state_supervision_period import FEDERAL_CUSTODIAL_AUTHORITY,\
+    OTHER_COUNTRY_CUSTODIAL_AUTHORITY
 from recidiviz.calculator.pipeline.utils.supervision_period_utils import \
     find_last_supervision_period_terminated_before_date, SUPERVISION_PERIOD_PROXIMITY_MONTH_LIMIT, \
     prepare_supervision_periods_for_calculations
@@ -199,8 +201,8 @@ class TestPrepareSupervisionPeriodsForCalculations(unittest.TestCase):
             termination_date=date(2007, 12, 31)
         )
 
-        updated_periods = prepare_supervision_periods_for_calculations([supervision_period],
-                                                                       drop_non_state_custodial_authority_periods=False)
+        updated_periods = prepare_supervision_periods_for_calculations(
+            [supervision_period], drop_federal_and_other_country_supervision_periods=False)
 
         self.assertEqual([supervision_period], updated_periods)
 
@@ -210,57 +212,34 @@ class TestPrepareSupervisionPeriodsForCalculations(unittest.TestCase):
             state_code='US_XX',
         )
 
-        updated_periods = prepare_supervision_periods_for_calculations([supervision_period],
-                                                                       drop_non_state_custodial_authority_periods=False)
+        updated_periods = prepare_supervision_periods_for_calculations(
+            [supervision_period], drop_federal_and_other_country_supervision_periods=False)
         self.assertEqual([], updated_periods)
 
-    def test_prepare_supervision_periods_for_calculations_usID(self):
+    def test_prepare_supervision_periods_for_calculations_usID_drop_federal(self):
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             state_code='US_ID',
             start_date=date(2006, 1, 1),
             termination_date=date(2007, 12, 31),
-            custodial_authority='US_ID_DOC',
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE
-        )
-
-        updated_periods = prepare_supervision_periods_for_calculations([supervision_period],
-                                                                       drop_non_state_custodial_authority_periods=True)
-        self.assertEqual([supervision_period], updated_periods)
-
-    def test_prepare_supervision_periods_for_calculations_usID_dropNonDOC(self):
-        supervision_period = StateSupervisionPeriod.new_with_defaults(
-            state_code='US_ID',
-            start_date=date(2006, 1, 1),
-            termination_date=date(2007, 12, 31),
-            custodial_authority='ALABAMA',  # Not the state's DOC authority
+            custodial_authority=FEDERAL_CUSTODIAL_AUTHORITY,  # Not the state's DOC authority
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION
         )
 
-        updated_periods = prepare_supervision_periods_for_calculations([supervision_period],
-                                                                       drop_non_state_custodial_authority_periods=True)
+        updated_periods = prepare_supervision_periods_for_calculations(
+            [supervision_period], drop_federal_and_other_country_supervision_periods=True)
+
         self.assertEqual([], updated_periods)
 
-    def test_prepare_supervision_periods_for_calculations_usID_unsetType(self):
+    def test_prepare_supervision_periods_for_calculations_usID_drop_other_country(self):
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             state_code='US_ID',
             start_date=date(2006, 1, 1),
             termination_date=date(2007, 12, 31),
-            custodial_authority='US_ID_DOC',
-            supervision_period_supervision_type=None
+            custodial_authority=OTHER_COUNTRY_CUSTODIAL_AUTHORITY,  # Not the state's DOC authority
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION
         )
 
-        updated_periods = prepare_supervision_periods_for_calculations([supervision_period],
-                                                                       drop_non_state_custodial_authority_periods=True)
-        self.assertEqual([supervision_period], updated_periods)
+        updated_periods = prepare_supervision_periods_for_calculations(
+            [supervision_period], drop_federal_and_other_country_supervision_periods=True)
 
-    def test_prepare_supervision_periods_for_calculations_usMO_custodialAuthority(self):
-        supervision_period = StateSupervisionPeriod.new_with_defaults(
-            state_code='US_MO',
-            start_date=date(2006, 1, 1),
-            termination_date=date(2007, 12, 31),
-            custodial_authority='IDAHO'
-        )
-
-        updated_periods = prepare_supervision_periods_for_calculations([supervision_period],
-                                                                       drop_non_state_custodial_authority_periods=False)
-        self.assertEqual([supervision_period], updated_periods)
+        self.assertEqual([], updated_periods)
