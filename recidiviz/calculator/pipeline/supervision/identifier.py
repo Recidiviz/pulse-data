@@ -44,7 +44,8 @@ from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_ma
     filter_supervision_periods_for_revocation_identification, get_pre_revocation_supervision_type, \
     should_produce_supervision_time_bucket_for_period, only_state_custodial_authority_in_supervision_population, \
     get_case_compliance_on_date, include_decisions_on_follow_up_responses, \
-    second_assessment_on_supervision_is_more_reliable, get_supervision_district_from_supervision_period, \
+    second_assessment_on_supervision_is_more_reliable, \
+    get_supervising_officer_and_location_info_from_supervision_period, \
     revoked_supervision_periods_if_revocation_occurred, \
     state_specific_violation_response_pre_processing_function, state_specific_supervision_admission_reason_override
 from recidiviz.calculator.pipeline.utils.supervision_period_index import SupervisionPeriodIndex
@@ -334,8 +335,11 @@ def find_time_buckets_for_supervision_period(
                 assessment_level = most_recent_assessment.assessment_level
                 assessment_type = most_recent_assessment.assessment_type
 
-            supervising_officer_external_id, supervising_district_external_id = \
-                _get_supervising_officer_and_district(supervision_period, supervision_period_to_agent_associations)
+            (supervising_officer_external_id,
+             level_1_supervision_location_external_id,
+             level_2_supervision_location_external_id) = \
+                get_supervising_officer_and_location_info_from_supervision_period(
+                    supervision_period, supervision_period_to_agent_associations)
 
             case_type = _identify_most_severe_case_type(supervision_period)
 
@@ -365,6 +369,9 @@ def find_time_buckets_for_supervision_period(
                                                               assessments,
                                                               supervision_contacts)
 
+            deprecated_supervising_district_external_id = \
+                level_2_supervision_location_external_id or level_1_supervision_location_external_id
+
             supervision_day_buckets.append(
                 NonRevocationReturnSupervisionTimeBucket(
                     state_code=supervision_period.state_code,
@@ -380,7 +387,9 @@ def find_time_buckets_for_supervision_period(
                     most_severe_violation_type_subtype=violation_history.most_severe_violation_type_subtype,
                     response_count=violation_history.response_count,
                     supervising_officer_external_id=supervising_officer_external_id,
-                    supervising_district_external_id=supervising_district_external_id,
+                    supervising_district_external_id=deprecated_supervising_district_external_id,
+                    level_1_supervision_location_external_id=level_1_supervision_location_external_id,
+                    level_2_supervision_location_external_id=level_2_supervision_location_external_id,
                     supervision_level=supervision_period.supervision_level,
                     supervision_level_raw_text=supervision_period.supervision_level_raw_text,
                     is_on_supervision_last_day_of_month=is_on_supervision_last_day_of_month,
@@ -487,14 +496,20 @@ def find_supervision_start_bucket(
         return None
 
     start_date = supervision_period.start_date
-    supervising_officer_external_id, supervising_district_external_id = \
-        _get_supervising_officer_and_district(supervision_period, supervision_period_to_agent_associations)
+    (supervising_officer_external_id,
+     level_1_supervision_location_external_id,
+     level_2_supervision_location_external_id) = \
+        get_supervising_officer_and_location_info_from_supervision_period(
+            supervision_period, supervision_period_to_agent_associations)
 
     state_code = supervision_period.state_code
     admission_reason = state_specific_supervision_admission_reason_override(
         state_code=state_code,
         supervision_period=supervision_period,
         supervision_period_index=supervision_period_index)
+
+    deprecated_supervising_district_external_id = \
+        level_2_supervision_location_external_id or level_1_supervision_location_external_id
 
     return SupervisionStartBucket(
         state_code=supervision_period.state_code,
@@ -507,7 +522,9 @@ def find_supervision_start_bucket(
         supervision_level=supervision_period.supervision_level,
         supervision_level_raw_text=supervision_period.supervision_level_raw_text,
         supervising_officer_external_id=supervising_officer_external_id,
-        supervising_district_external_id=supervising_district_external_id,
+        supervising_district_external_id=deprecated_supervising_district_external_id,
+        level_1_supervision_location_external_id=level_1_supervision_location_external_id,
+        level_2_supervision_location_external_id=level_2_supervision_location_external_id,
         judicial_district_code=judicial_district_code,
     )
 
@@ -572,13 +589,19 @@ def find_supervision_termination_bucket(
                                                                termination_date,
                                                                violation_responses)
 
-        supervising_officer_external_id, supervising_district_external_id = \
-            _get_supervising_officer_and_district(supervision_period, supervision_period_to_agent_associations)
+        (supervising_officer_external_id,
+         level_1_supervision_location_external_id,
+         level_2_supervision_location_external_id) = \
+            get_supervising_officer_and_location_info_from_supervision_period(
+                supervision_period, supervision_period_to_agent_associations)
 
         case_type = _identify_most_severe_case_type(supervision_period)
 
         supervision_type = terminating_supervision_period_supervision_type(
             supervision_period, supervision_sentences, incarceration_sentences)
+
+        deprecated_supervising_district_external_id = \
+            level_2_supervision_location_external_id or level_1_supervision_location_external_id
 
         return SupervisionTerminationBucket(
             state_code=supervision_period.state_code,
@@ -595,7 +618,9 @@ def find_supervision_termination_bucket(
             termination_reason=supervision_period.termination_reason,
             assessment_score_change=assessment_score_change,
             supervising_officer_external_id=supervising_officer_external_id,
-            supervising_district_external_id=supervising_district_external_id,
+            supervising_district_external_id=deprecated_supervising_district_external_id,
+            level_1_supervision_location_external_id=level_1_supervision_location_external_id,
+            level_2_supervision_location_external_id=level_2_supervision_location_external_id,
             judicial_district_code=judicial_district_code,
             response_count=violation_history.response_count,
             most_severe_violation_type=violation_history.most_severe_violation_type,
@@ -609,7 +634,8 @@ RevocationDetails = NamedTuple('RevocationDetails', [
         ('revocation_type', Optional[StateSupervisionViolationResponseRevocationType]),
         ('source_violation_type', Optional[StateSupervisionViolationType]),
         ('supervising_officer_external_id', Optional[str]),
-        ('supervising_district_external_id', Optional[str])])
+        ('level_1_supervision_location_external_id', Optional[str]),
+        ('level_2_supervision_location_external_id', Optional[str])])
 
 
 def _get_revocation_details(incarceration_period: StateIncarcerationPeriod,
@@ -623,9 +649,32 @@ def _get_revocation_details(incarceration_period: StateIncarcerationPeriod,
     revocation_type = None
     source_violation_type = None
     supervising_officer_external_id = None
-    supervising_district_external_id = None
+    level_1_supervision_location_external_id = None
+    level_2_supervision_location_external_id = None
 
     source_violation_response = incarceration_period.source_supervision_violation_response
+
+    if not default_to_supervision_period_officer_for_revocation_details_for_state(incarceration_period.state_code):
+        # TODO(#4547): Once reruns in stage and prod complete for the change (#4638) that properly ingests ND agent info
+        # onto supervision periods, most critically, prioritizing terminating agent over the most recent agent, we
+        # should be able to remove this block and just use the
+        # get_supervising_officer_and_location_info_from_supervision_period function for all states.
+        if source_violation_response:
+            supervision_violation_response_id = source_violation_response.supervision_violation_response_id
+
+            if supervision_violation_response_id:
+                agent_info = ssvr_agent_associations.get(supervision_violation_response_id)
+
+                if agent_info is not None:
+                    supervising_officer_external_id = agent_info.get('agent_external_id')
+                    level_1_supervision_location_external_id = agent_info.get('district_external_id')
+    else:
+        if supervision_period and supervision_period_to_agent_associations:
+            (supervising_officer_external_id,
+             level_1_supervision_location_external_id,
+             level_2_supervision_location_external_id) = \
+                get_supervising_officer_and_location_info_from_supervision_period(
+                    supervision_period, supervision_period_to_agent_associations)
 
     if source_violation_response:
         response_decisions = source_violation_response.supervision_violation_response_decisions
@@ -639,21 +688,6 @@ def _get_revocation_details(incarceration_period: StateIncarcerationPeriod,
         source_violation = source_violation_response.supervision_violation
         if source_violation:
             source_violation_type, _ = identify_most_severe_violation_type_and_subtype([source_violation])
-
-        supervision_violation_response_id = source_violation_response.supervision_violation_response_id
-
-        if supervision_violation_response_id:
-            agent_info = ssvr_agent_associations.get(supervision_violation_response_id)
-
-            if agent_info is not None:
-                supervising_officer_external_id = agent_info.get('agent_external_id')
-                supervising_district_external_id = agent_info.get('district_external_id')
-
-    if not supervising_officer_external_id and \
-            default_to_supervision_period_officer_for_revocation_details_for_state(incarceration_period.state_code):
-        if supervision_period and supervision_period_to_agent_associations:
-            supervising_officer_external_id, supervising_district_external_id = \
-                _get_supervising_officer_and_district(supervision_period, supervision_period_to_agent_associations)
 
     if revocation_type is None:
         # TODO(#3341): Consider removing revocation_type and always looking at the specialized_purpose_for_incarceration
@@ -669,7 +703,10 @@ def _get_revocation_details(incarceration_period: StateIncarcerationPeriod,
             revocation_type = StateSupervisionViolationResponseRevocationType.REINCARCERATION
 
     revocation_details_result = RevocationDetails(
-        revocation_type, source_violation_type, supervising_officer_external_id, supervising_district_external_id)
+        revocation_type, source_violation_type,
+        supervising_officer_external_id,
+        level_1_supervision_location_external_id,
+        level_2_supervision_location_external_id)
 
     return revocation_details_result
 
@@ -879,6 +916,9 @@ def find_revocation_return_buckets(
                     supervision_period, supervision_period_to_judicial_district_associations)
 
                 if pre_revocation_supervision_type is not None:
+                    deprecated_supervising_district_external_id = \
+                        revocation_details.level_2_supervision_location_external_id or \
+                        revocation_details.level_1_supervision_location_external_id
                     revocation_month_bucket = RevocationReturnSupervisionTimeBucket(
                         state_code=incarceration_period.state_code,
                         year=admission_year,
@@ -898,7 +938,11 @@ def find_revocation_return_buckets(
                         violation_history_description=violation_history.violation_history_description,
                         violation_type_frequency_counter=violation_history.violation_type_frequency_counter,
                         supervising_officer_external_id=revocation_details.supervising_officer_external_id,
-                        supervising_district_external_id=revocation_details.supervising_district_external_id,
+                        supervising_district_external_id=deprecated_supervising_district_external_id,
+                        level_1_supervision_location_external_id=
+                        revocation_details.level_1_supervision_location_external_id,
+                        level_2_supervision_location_external_id=
+                        revocation_details.level_2_supervision_location_external_id,
                         supervision_level=supervision_level,
                         supervision_level_raw_text=supervision_level_raw_text,
                         # Note: This is incorrect in the case where you are revoked, then released by the end of the
@@ -926,6 +970,9 @@ def find_revocation_return_buckets(
                                                                    violation_responses)
 
             if pre_revocation_supervision_type is not None:
+                deprecated_supervising_district_external_id = \
+                    revocation_details.level_2_supervision_location_external_id or \
+                    revocation_details.level_1_supervision_location_external_id
                 revocation_month_bucket = RevocationReturnSupervisionTimeBucket(
                     state_code=incarceration_period.state_code,
                     year=admission_year,
@@ -947,7 +994,11 @@ def find_revocation_return_buckets(
                     violation_history_description=violation_history.violation_history_description,
                     violation_type_frequency_counter=violation_history.violation_type_frequency_counter,
                     supervising_officer_external_id=revocation_details.supervising_officer_external_id,
-                    supervising_district_external_id=revocation_details.supervising_district_external_id,
+                    supervising_district_external_id=deprecated_supervising_district_external_id,
+                    level_1_supervision_location_external_id=
+                    revocation_details.level_1_supervision_location_external_id,
+                    level_2_supervision_location_external_id=
+                    revocation_details.level_2_supervision_location_external_id,
                     # Note: This is incorrect in the case where you are revoked, then released by the end of the
                     #  month to a new supervision period that overlaps with EOM. We expect this case to be rare or
                     #  non-existent since we don't count temporary / board hold periods as revocations.
@@ -1043,8 +1094,11 @@ def _get_projected_completion_bucket(
     incarcerated_during_sentence = incarceration_period_index.incarceration_admissions_between_dates(start_date,
                                                                                                      completion_date)
 
-    supervising_officer_external_id, supervising_district_external_id = \
-        _get_supervising_officer_and_district(supervision_period, supervision_period_to_agent_associations)
+    (supervising_officer_external_id,
+     level_1_supervision_location_external_id,
+     level_2_supervision_location_external_id) = \
+        get_supervising_officer_and_location_info_from_supervision_period(
+            supervision_period, supervision_period_to_agent_associations)
 
     case_type = _identify_most_severe_case_type(supervision_period)
 
@@ -1052,6 +1106,9 @@ def _get_projected_completion_bucket(
                                                          supervision_period_to_judicial_district_associations)
 
     last_day_of_projected_month = last_day_of_month(projected_completion_date)
+
+    deprecated_supervising_district_external_id = \
+        level_2_supervision_location_external_id or level_1_supervision_location_external_id
 
     # TODO(#2975): Note that this metric measures success by projected completion month. Update or expand this
     #  metric to capture the success of early termination as well
@@ -1068,12 +1125,15 @@ def _get_projected_completion_bucket(
         incarcerated_during_sentence=incarcerated_during_sentence,
         sentence_days_served=sentence_days_served,
         supervising_officer_external_id=supervising_officer_external_id,
-        supervising_district_external_id=supervising_district_external_id,
+        supervising_district_external_id=deprecated_supervising_district_external_id,
+        level_1_supervision_location_external_id=level_1_supervision_location_external_id,
+        level_2_supervision_location_external_id=level_2_supervision_location_external_id,
         judicial_district_code=judicial_district_code
     )
 
 
-def _include_termination_in_success_metric(termination_reason: Optional[StateSupervisionPeriodTerminationReason]):
+def _include_termination_in_success_metric(
+        termination_reason: Optional[StateSupervisionPeriodTerminationReason]) -> bool:
     """Determines whether the given termination of supervision should be included in a supervision success metric."""
     # If this is the last supervision period termination status, there is some kind of data error and we cannot
     # determine whether this sentence ended successfully - exclude these entirely
@@ -1114,25 +1174,6 @@ def _include_termination_in_success_metric(termination_reason: Optional[StateSup
         return True
 
     raise ValueError(f"Unexpected StateSupervisionPeriodTerminationReason: {termination_reason}")
-
-
-def _get_supervising_officer_and_district(
-        supervision_period: StateSupervisionPeriod,
-        supervision_period_to_agent_associations: Dict[int, Dict[Any, Any]]) \
-        -> Tuple[Optional[str], Optional[str]]:
-    supervising_officer_external_id = None
-    supervising_district_external_id = get_supervision_district_from_supervision_period(supervision_period)
-
-    if supervision_period.supervision_period_id:
-        agent_info = supervision_period_to_agent_associations.get(supervision_period.supervision_period_id)
-
-        if agent_info is not None:
-            supervising_officer_external_id = agent_info.get('agent_external_id')
-
-            if supervising_district_external_id is None:
-                supervising_district_external_id = agent_info.get('district_external_id')
-
-    return supervising_officer_external_id, supervising_district_external_id
 
 
 def _identify_most_severe_revocation_type(

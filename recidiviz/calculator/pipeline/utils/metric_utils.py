@@ -166,6 +166,25 @@ class AssessmentMetric(BuildableAttr):
     assessment_type: Optional[StateAssessmentType] = attr.ib(default=None)
 
 
+@attr.s
+class SupervisionLocationMetric(BuildableAttr):
+    """Base class for including supervision location information on a metric."""
+
+    # External ID of the district of the officer that was supervising the person described by this metric
+    # TODO(#4709): THIS FIELD IS DEPRECATED - USE level_1_supervision_location_external_id and
+    #  level_2_supervision_location_external_id instead.
+    supervising_district_external_id: Optional[str] = attr.ib(default=None)
+
+    # External ID of the lowest-level sub-geography (e.g. an individual office with a street address) of the officer
+    # that was supervising the person described by this metric.
+    level_1_supervision_location_external_id: Optional[str] = attr.ib(default=None)
+
+    # For states with a hierachical structure of supervision locations, this is the external ID the next-lowest-level
+    # sub-geography after level_1_supervision_sub_geography_external_id. For example, in PA this is a "district" where
+    # level 1 is an office.
+    level_2_supervision_location_external_id: Optional[str] = attr.ib(default=None)
+
+
 def json_serializable_metric_key(metric_key: Dict[str, Any]) -> Dict[str, Any]:
     """Converts a metric key into a format that is JSON serializable.
 

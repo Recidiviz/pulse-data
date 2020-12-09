@@ -22,7 +22,7 @@ from typing import Optional, Dict, Any, cast
 import attr
 
 from recidiviz.calculator.pipeline.utils.metric_utils import RecidivizMetric, PersonLevelMetric, RecidivizMetricType, \
-    AssessmentMetric
+    AssessmentMetric, SupervisionLocationMetric
 from recidiviz.common.constants.state.state_program_assignment import StateProgramAssignmentParticipationStatus
 from recidiviz.common.constants.state.state_supervision import StateSupervisionType
 
@@ -84,7 +84,7 @@ class ProgramMetric(RecidivizMetric, PersonLevelMetric):
 
 
 @attr.s
-class ProgramReferralMetric(ProgramMetric, AssessmentMetric):
+class ProgramReferralMetric(ProgramMetric, AssessmentMetric, SupervisionLocationMetric):
     """Subclass of ProgramMetric that contains program referral counts."""
     # Required characteristics
 
@@ -103,13 +103,8 @@ class ProgramReferralMetric(ProgramMetric, AssessmentMetric):
     # Program participation status
     participation_status: Optional[StateProgramAssignmentParticipationStatus] = attr.ib(default=None)
 
-    # External ID of the officer who was supervising the people described by
-    # this metric
+    # External ID of the officer who was supervising the person described by this metric
     supervising_officer_external_id: Optional[str] = attr.ib(default=None)
-
-    # External ID of the district of the officer that was supervising the
-    # people described by this metric
-    supervising_district_external_id: Optional[str] = attr.ib(default=None)
 
     @staticmethod
     def build_from_metric_key_group(metric_key: Dict[str, Any],
