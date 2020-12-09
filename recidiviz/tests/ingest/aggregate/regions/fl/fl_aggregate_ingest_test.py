@@ -52,6 +52,8 @@ def parsed_pdf(request):
 
 
 @pytest.mark.usefixtures("parsed_pdf")
+@pytest.mark.skip("TODO(#4865): This test fails on master for some, possibly due to underlying Java issues related to "
+                  "Apache Beam and Tabula.")
 class TestFlAggregateIngest(TestCase):
     """Test that fl_aggregate_ingest correctly parses the FL PDF."""
 
