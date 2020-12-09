@@ -28,7 +28,8 @@ from recidiviz.common.constants.state.state_assessment import \
 from recidiviz.common.constants.state.state_case_type import \
     StateSupervisionCaseType
 from recidiviz.common.constants.state.state_supervision_period import \
-    StateSupervisionPeriodTerminationReason, StateSupervisionPeriodSupervisionType, StateSupervisionLevel
+    StateSupervisionPeriodTerminationReason, StateSupervisionPeriodSupervisionType, StateSupervisionLevel, \
+    StateSupervisionPeriodAdmissionReason
 from recidiviz.common.constants.state.state_supervision_violation import \
     StateSupervisionViolationType
 from recidiviz.common.constants.state.state_supervision_violation_response \
@@ -55,7 +56,7 @@ class SupervisionTimeBucket(IdentifierEvent, AssessmentEventMixin):
     # TODO(#2891): Consider moving this out of the base class, and making the supervision type specific to each
     #   bucket type
     # The type of supervision the person was on on the last day of the time bucket
-    supervision_type: StateSupervisionPeriodSupervisionType = attr.ib(default=None)
+    supervision_type: Optional[StateSupervisionPeriodSupervisionType] = attr.ib(default=None)
 
     # Level of supervision
     supervision_level: Optional[StateSupervisionLevel] = attr.ib(default=None)
@@ -195,6 +196,18 @@ class ProjectedSupervisionCompletionBucket(SupervisionTimeBucket):
 
     # Length of time served on the supervision sentence, in days
     sentence_days_served: int = attr.ib(default=None)
+
+
+@attr.s(frozen=True)
+class SupervisionStartBucket(SupervisionTimeBucket):
+    """Models details regarding the start of supervision."""
+
+    # The reason for supervision admission
+    admission_reason: Optional[StateSupervisionPeriodAdmissionReason] = attr.ib(default=None)
+
+    @property
+    def start_date(self):
+        return self.bucket_date
 
 
 @attr.s(frozen=True)
