@@ -14,6 +14,9 @@ tables:
       metric:
         population:
           population_type: 'PRISON'
+          measurement_type: 'INSTANT'
+      value_column:
+        column_name: 'Population'
       location:
         state: 'US_CO'
       methodology: 'Unknown'

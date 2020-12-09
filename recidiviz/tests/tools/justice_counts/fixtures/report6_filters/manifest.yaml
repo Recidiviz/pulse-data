@@ -5,15 +5,21 @@ publish_date: '2020-10-05'
 tables:
     - file: 'table.csv'
       date_range:
-        dynamic:
-          columns:
-            Date: 'DATE'
-          type: 'SNAPSHOT'
+        fixed:
+          snapshot:
+            date: '2020-09-01'
       system: 'CORRECTIONS'
       metric:
         population:
           population_type: 'PRISON'
           measurement_type: 'INSTANT'
+      additional_filters:
+        FACILITY: 'MSP'
+      dimension_columns:
+        - column_name: 'Race'
+          dimension_name: 'RACE'
+        - column_name: 'Sex'
+          dimension_name: 'GENDER'
       value_column:
         column_name: 'Population'
       location:
