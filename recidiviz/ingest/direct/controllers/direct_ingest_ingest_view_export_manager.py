@@ -26,7 +26,8 @@ from google.cloud import bigquery
 from recidiviz.big_query.big_query_client import BigQueryClient
 from recidiviz.big_query.big_query_view_collector import BigQueryViewCollector
 from recidiviz.big_query.export.export_query_config import ExportQueryConfig
-from recidiviz.ingest.direct.controllers.direct_ingest_big_query_view_types import DirectIngestPreProcessedIngestView
+from recidiviz.ingest.direct.controllers.direct_ingest_big_query_view_types import DirectIngestPreProcessedIngestView, \
+    DirectIngestPreProcessedIngestViewBuilder
 from recidiviz.ingest.direct.controllers.direct_ingest_file_metadata_manager import DirectIngestFileMetadataManager
 from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import DirectIngestGCSFileSystem, \
     to_normalized_unprocessed_file_name
@@ -77,6 +78,7 @@ class _IngestViewExportState:
 # TODO(#3020): Detailed tests for this class
 class DirectIngestIngestViewExportManager:
     """Class that manages logic related to exporting ingest views to a region's direct ingest bucket."""
+
     def __init__(self,
                  *,
                  region: Region,
@@ -84,7 +86,7 @@ class DirectIngestIngestViewExportManager:
                  ingest_directory_path: GcsfsDirectoryPath,
                  big_query_client: BigQueryClient,
                  file_metadata_manager: DirectIngestFileMetadataManager,
-                 view_collector: BigQueryViewCollector[DirectIngestPreProcessedIngestView]):
+                 view_collector: BigQueryViewCollector[DirectIngestPreProcessedIngestViewBuilder]):
 
         self.region = region
         self.fs = fs
@@ -92,8 +94,8 @@ class DirectIngestIngestViewExportManager:
         self.big_query_client = big_query_client
         self.file_metadata_manager = file_metadata_manager
         self.ingest_views_by_tag = {
-            view.file_tag: view
-            for view in view_collector.collect_views()}
+            builder.file_tag: builder.build()
+            for builder in view_collector.collect_view_builders()}
 
     def get_ingest_view_export_task_args(self) -> List[GcsfsIngestViewExportArgs]:
         """Looks at what files have been exported for a given region and returns args for all the export jobs that
@@ -432,8 +434,8 @@ if __name__ == '__main__':
         region_ = regions.get_region(region_code_, is_direct_ingest=True)
         view_collector_ = DirectIngestPreProcessedIngestViewCollector(region_, [])
         views_by_tag_ = {
-            view.file_tag: view
-            for view in view_collector_.collect_views()}
+            builder.file_tag: builder.build()
+            for builder in view_collector_.collect_view_builders()}
 
         DirectIngestIngestViewExportManager.print_debug_query_for_args(
             views_by_tag_,

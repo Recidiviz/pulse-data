@@ -26,6 +26,7 @@ import gcsfs
 from mock import Mock, patch, create_autospec
 
 from recidiviz.big_query.big_query_client import BigQueryClient
+from recidiviz.big_query.big_query_view import BigQueryViewBuilder
 from recidiviz.big_query.big_query_view_collector import BigQueryViewCollector
 from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import \
     BaseDirectIngestController
@@ -151,27 +152,49 @@ class FakeDirectIngestRawFileImportManager(DirectIngestRawFileImportManager):
         self.imported_paths.append(path)
 
 
-class FakeDirectIngestPreProcessedIngestViewCollector(BigQueryViewCollector[DirectIngestPreProcessedIngestView]):
+class FakeDirectIngestPreProcessedIngestViewBuilder(BigQueryViewBuilder[DirectIngestPreProcessedIngestView]):
+    """Fake BQ View Builder for tests."""
+    def __init__(self, tag: str, region: Region):
+        self.region = region
+        self.tag = tag
+
+    def build(self,
+              *,
+              dataset_overrides: Optional[Dict[str, str]] = None  # pylint: disable=unused-argument
+              ) -> DirectIngestPreProcessedIngestView:
+        return DirectIngestPreProcessedIngestView(
+            ingest_view_name=self.tag,
+            view_query_template=(f'SELECT * FROM {{{self.tag}}}'),
+            region_raw_table_config=FakeDirectIngestRegionRawFileConfig(region_code=self.region.region_code),
+            order_by_cols=None,
+            is_detect_row_deletion_view=False,
+            primary_key_tables_for_entity_deletion=[],
+        )
+
+    def build_and_print(self) -> None:
+        self.build()
+
+    @property
+    def file_tag(self):
+        return self.tag
+
+
+class FakeDirectIngestPreProcessedIngestViewCollector(
+    BigQueryViewCollector[FakeDirectIngestPreProcessedIngestViewBuilder]
+    ):
     def __init__(self,
                  region: Region,
                  controller_file_tags: List[str]):
         self.region = region
         self.controller_file_tags = controller_file_tags
 
-    def collect_views(self) -> List[DirectIngestPreProcessedIngestView]:
-        views = [
-            DirectIngestPreProcessedIngestView(
-                ingest_view_name=tag,
-                view_query_template=('SELECT * FROM {' + tag + '}'),
-                region_raw_table_config=FakeDirectIngestRegionRawFileConfig(region_code=self.region.region_code),
-                order_by_cols=None,
-                is_detect_row_deletion_view=False,
-                primary_key_tables_for_entity_deletion=[],
-            )
+    def collect_view_builders(self) -> List[FakeDirectIngestPreProcessedIngestViewBuilder]:
+        builders = [
+            FakeDirectIngestPreProcessedIngestViewBuilder(tag=tag, region=self.region)
             for tag in self.controller_file_tags
         ]
 
-        return views
+        return builders
 
 
 def build_controller_for_tests(controller_cls,

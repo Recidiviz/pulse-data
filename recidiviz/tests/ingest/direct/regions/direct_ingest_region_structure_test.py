@@ -125,7 +125,7 @@ class DirectIngestRegionDirStructureTest(unittest.TestCase):
                 config_file_tags.add(config.file_tag)
 
     @staticmethod
-    def test_collect_ingest_views():
+    def test_collect_and_build_ingest_view_builders():
         with local_project_id_override('project'):
             for region_code in get_existing_region_dir_names():
                 region = get_region(region_code, is_direct_ingest=True)
@@ -134,5 +134,7 @@ class DirectIngestRegionDirStructureTest(unittest.TestCase):
                 if not issubclass(controller_class, GcsfsDirectIngestController):
                     continue
 
-                _ = DirectIngestPreProcessedIngestViewCollector(
-                    region, controller_class.get_file_tag_rank_list()).collect_views()
+                builders = DirectIngestPreProcessedIngestViewCollector(
+                    region, controller_class.get_file_tag_rank_list()).collect_view_builders()
+                for builder in builders:
+                    builder.build()
