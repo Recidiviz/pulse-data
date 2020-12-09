@@ -42,12 +42,13 @@ from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_ma
     filter_violation_responses_before_revocation, \
     should_collapse_transfers_different_purpose_for_incarceration, incarceration_period_is_from_revocation, \
     filter_supervision_periods_for_revocation_identification, get_pre_revocation_supervision_type, \
-    should_produce_supervision_time_bucket_for_period, only_state_custodial_authority_in_supervision_population, \
+    should_produce_supervision_time_bucket_for_period, \
     get_case_compliance_on_date, include_decisions_on_follow_up_responses, \
     second_assessment_on_supervision_is_more_reliable, \
     get_supervising_officer_and_location_info_from_supervision_period, \
     revoked_supervision_periods_if_revocation_occurred, \
-    state_specific_violation_response_pre_processing_function, state_specific_supervision_admission_reason_override
+    state_specific_violation_response_pre_processing_function, \
+    state_specific_supervision_admission_reason_override, filter_out_federal_and_other_country_supervision_periods
 from recidiviz.calculator.pipeline.utils.supervision_period_index import SupervisionPeriodIndex
 from recidiviz.calculator.pipeline.utils.supervision_period_utils import prepare_supervision_periods_for_calculations
 from recidiviz.calculator.pipeline.utils.supervision_type_identification import \
@@ -170,12 +171,11 @@ def find_supervision_time_buckets(
 
     supervision_time_buckets: List[SupervisionTimeBucket] = []
 
-    should_drop_non_state_custodial_authority_periods = \
-        only_state_custodial_authority_in_supervision_population(state_code)
+    should_drop_federal_and_other_country = \
+        filter_out_federal_and_other_country_supervision_periods(state_code)
 
-    supervision_periods = prepare_supervision_periods_for_calculations(
-        supervision_periods,
-        drop_non_state_custodial_authority_periods=should_drop_non_state_custodial_authority_periods)
+    supervision_periods = prepare_supervision_periods_for_calculations(supervision_periods,
+                                                                       should_drop_federal_and_other_country)
 
     should_collapse_transfers_with_different_pfi = \
         should_collapse_transfers_different_purpose_for_incarceration(state_code)
@@ -237,6 +237,7 @@ def find_supervision_time_buckets(
                 supervision_period_to_agent_associations,
                 judicial_district_code
             )
+
             if supervision_termination_bucket:
                 supervision_time_buckets.append(supervision_termination_bucket)
 
@@ -1235,6 +1236,9 @@ BUCKET_TYPES_FOR_METRIC: Dict[SupervisionMetricType, List[Type[SupervisionTimeBu
     SupervisionMetricType.SUPERVISION_COMPLIANCE: [NonRevocationReturnSupervisionTimeBucket],
     SupervisionMetricType.SUPERVISION_POPULATION: [
         NonRevocationReturnSupervisionTimeBucket, RevocationReturnSupervisionTimeBucket
+    ],
+    SupervisionMetricType.SUPERVISION_OUT_OF_STATE_POPULATION: [
+            NonRevocationReturnSupervisionTimeBucket, RevocationReturnSupervisionTimeBucket
     ],
     SupervisionMetricType.SUPERVISION_REVOCATION: [RevocationReturnSupervisionTimeBucket],
     SupervisionMetricType.SUPERVISION_REVOCATION_ANALYSIS: [RevocationReturnSupervisionTimeBucket],

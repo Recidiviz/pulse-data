@@ -35,7 +35,8 @@ from recidiviz.common.constants.state.state_supervision import StateSupervisionT
 from recidiviz.common.constants.state.state_supervision_contact import StateSupervisionContactLocation, \
     StateSupervisionContactType, StateSupervisionContactReason, StateSupervisionContactStatus
 from recidiviz.common.constants.state.state_supervision_period import StateSupervisionPeriodAdmissionReason, \
-    StateSupervisionPeriodTerminationReason, StateSupervisionPeriodSupervisionType, StateSupervisionLevel
+    StateSupervisionPeriodTerminationReason, StateSupervisionPeriodSupervisionType, StateSupervisionLevel, \
+    FEDERAL_CUSTODIAL_AUTHORITY, OTHER_COUNTRY_CUSTODIAL_AUTHORITY
 from recidiviz.common.constants.state.state_supervision_violation import StateSupervisionViolationType
 from recidiviz.common.constants.state.state_supervision_violation_response import \
     StateSupervisionViolationResponseDecision, StateSupervisionViolationResponseType
@@ -50,8 +51,7 @@ from recidiviz.ingest.direct.regions.us_id.us_id_constants import INTERSTATE_FAC
     LIMITED_SUPERVISION_UNIT_NAME, DISTRICT_0, UNKNOWN, IDOC_CUSTODIAL_AUTHORITY, CURRENT_FACILITY_NAME, \
     CURRENT_LOCATION_NAME, CURRENT_LIVING_UNIT_CODE, CURRENT_LIVING_UNIT_NAME, CURRENT_LOCATION_CODE, \
     CONTACT_TYPES_TO_BECOME_LOCATIONS, CONTACT_RESULT_ARREST, UNKNOWN_EMPLOYEE_SDESC, FEDERAL_CUSTODY_LOCATION_NAME, \
-    DEPORTED_LOCATION_NAME, NEXT_LOCATION_NAME, PREVIOUS_LOCATION_NAME, FEDERAL_CUSTODIAL_AUTHORITY, \
-    OTHER_COUNTRY_CUSTODIAL_AUTHORITY, HISTORY_FACILITY_TYPE, NEXT_FACILITY_TYPE
+    DEPORTED_LOCATION_NAME, NEXT_LOCATION_NAME, PREVIOUS_LOCATION_NAME, HISTORY_FACILITY_TYPE, NEXT_FACILITY_TYPE
 from recidiviz.ingest.direct.regions.us_id.us_id_enum_helpers import incarceration_admission_reason_mapper, \
     incarceration_release_reason_mapper, supervision_admission_reason_mapper, supervision_termination_reason_mapper, \
     is_jail_facility, purpose_for_incarceration_mapper, supervision_period_supervision_type_mapper

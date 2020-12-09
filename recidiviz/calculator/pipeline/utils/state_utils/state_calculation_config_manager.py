@@ -19,9 +19,11 @@
 import sys
 from datetime import date
 import logging
-from typing import List, Optional, Tuple, Callable, Dict, Any
+from typing import List, Optional, Tuple, Callable, Union,  Dict, Any
 
 from recidiviz.calculator.pipeline.supervision.supervision_case_compliance import SupervisionCaseCompliance
+from recidiviz.calculator.pipeline.supervision.supervision_time_bucket import \
+    NonRevocationReturnSupervisionTimeBucket, RevocationReturnSupervisionTimeBucket
 from recidiviz.calculator.pipeline.utils.calculator_utils import safe_list_index
 from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_revocation_identification import \
     us_id_filter_supervision_periods_for_revocation_identification, us_id_get_pre_revocation_supervision_type, \
@@ -30,7 +32,7 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_supervision_com
     us_id_case_compliance_on_date
 from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_supervision_type_identification import \
     us_id_get_pre_incarceration_supervision_type, us_id_get_post_incarceration_supervision_type, \
-    us_id_get_supervision_period_admission_override
+    us_id_get_supervision_period_admission_override, us_id_supervision_period_is_out_of_state
 from recidiviz.calculator.pipeline.utils.state_utils.us_mo import us_mo_violation_utils
 from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_supervision_type_identification import \
     us_nd_get_post_incarceration_supervision_type
@@ -120,18 +122,6 @@ def investigation_periods_in_supervision_population(_state_code: str) -> bool:
     return False
 
 
-def only_state_custodial_authority_in_supervision_population(state_code: str) -> bool:
-    """Whether or not only supervision periods that are under the state DOC's custodial authority should be counted in
-    the supervision calculations.
-
-        - US_ID: True
-        - US_MO: False
-        - US_ND: False
-        - US_PA: False
-    """
-    return state_code.upper() == 'US_ID'
-
-
 def should_collapse_transfers_different_purpose_for_incarceration(state_code: str) -> bool:
     """Whether or not incarceration periods that are connected by a TRANSFER release and a TRANSFER admission should
     be collapsed into one period if they have different specialized_purpose_for_incarceration values.
@@ -143,6 +133,17 @@ def should_collapse_transfers_different_purpose_for_incarceration(state_code: st
         - US_PA: True
     """
     return state_code.upper() != 'US_ID'
+
+
+def filter_out_federal_and_other_country_supervision_periods(state_code: str) -> bool:
+    """Whether or not only to filter supervision periods whose custodial authority is out of the country or in federal
+    prison.
+        - US_ID: True
+        - US_MO: False
+        - US_ND: False
+        - US_PA: False
+    """
+    return state_code.upper() == 'US_ID'
 
 
 def include_decisions_on_follow_up_responses(state_code: str) -> bool:
@@ -597,3 +598,14 @@ def state_specific_incarceration_admission_reason_override(
                 supervision_type_at_admission == StateSupervisionPeriodSupervisionType.INVESTIGATION:
             return StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION
     return admission_reason
+
+
+def supervision_period_is_out_of_state(supervision_time_bucket: Union[NonRevocationReturnSupervisionTimeBucket,
+                                                                      RevocationReturnSupervisionTimeBucket]) -> bool:
+    """ Returns whether the given supervision time bucket should be considered a supervision period that is being
+    served out of state.
+    """
+    if supervision_time_bucket.state_code != "US_ID":
+        return False
+
+    return us_id_supervision_period_is_out_of_state(supervision_time_bucket)
