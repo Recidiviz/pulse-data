@@ -28,7 +28,7 @@ from typing import Dict, List, Tuple, Any, Optional, Type
 
 from recidiviz.calculator.pipeline.supervision.supervision_time_bucket import \
     SupervisionTimeBucket, RevocationReturnSupervisionTimeBucket, ProjectedSupervisionCompletionBucket, \
-    NonRevocationReturnSupervisionTimeBucket, SupervisionTerminationBucket
+    NonRevocationReturnSupervisionTimeBucket, SupervisionTerminationBucket, SupervisionStartBucket
 from recidiviz.calculator.pipeline.utils.calculator_utils import \
     augmented_combo_for_calculations, relevant_metric_periods, \
     augment_combination, include_in_historical_metrics, \
@@ -37,7 +37,7 @@ from recidiviz.calculator.pipeline.supervision.metrics import \
     SupervisionMetricType, SupervisionSuccessMetric, SupervisionMetric, SupervisionPopulationMetric, \
     SupervisionRevocationMetric, SupervisionTerminationMetric, SupervisionCaseComplianceMetric, \
     SuccessfulSupervisionSentenceDaysServedMetric, SupervisionRevocationAnalysisMetric, \
-    SupervisionRevocationViolationTypeAnalysisMetric
+    SupervisionRevocationViolationTypeAnalysisMetric, SupervisionStartMetric
 from recidiviz.calculator.pipeline.utils.metric_utils import MetricMethodologyType
 from recidiviz.calculator.pipeline.utils.person_utils import PersonMetadata
 from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_manager import \
@@ -134,6 +134,20 @@ def map_supervision_combinations(person: StatePerson,
                     SupervisionMetricType.SUPERVISION_TERMINATION, include_metric_period_output)
 
                 metrics.extend(termination_metrics)
+        elif isinstance(supervision_time_bucket, SupervisionStartBucket):
+            if metric_inclusions.get(SupervisionMetricType.SUPERVISION_START):
+                characteristic_combo_termination = characteristics_dict(
+                    person, supervision_time_bucket, SupervisionStartMetric, person_metadata)
+
+                start_metrics = map_metric_combinations(
+                    characteristic_combo_termination, supervision_time_bucket,
+                    calculation_month_upper_bound, calculation_month_lower_bound,
+                    supervision_time_buckets, periods_and_buckets,
+                    SupervisionMetricType.SUPERVISION_START,
+                    # The SupervisionStartMetric metric is explicitly a daily metric
+                    include_metric_period_output=False)
+
+                metrics.extend(start_metrics)
         elif isinstance(supervision_time_bucket,
                         (NonRevocationReturnSupervisionTimeBucket, RevocationReturnSupervisionTimeBucket)):
             if metric_inclusions.get(SupervisionMetricType.SUPERVISION_POPULATION):
@@ -294,9 +308,10 @@ def map_metric_combinations(
     if include_in_historical_metrics(
             supervision_time_bucket.year, supervision_time_bucket.month,
             calculation_month_upper_bound, calculation_month_lower_bound):
-        # SupervisionPopulationMetrics and SupervisionCaseComplianceMetrics are point-in-time metrics, all
-        # other SupervisionMetrics are metrics based on the month of the event
+        # The following are all point-in-time metrics, all other SupervisionMetrics are metrics based on the month of
+        # the event
         is_daily_metric = metric_type in (SupervisionMetricType.SUPERVISION_POPULATION,
+                                          SupervisionMetricType.SUPERVISION_START,
                                           SupervisionMetricType.SUPERVISION_COMPLIANCE)
 
         metrics.extend(combination_supervision_monthly_metrics(
@@ -476,6 +491,13 @@ def combination_supervision_monthly_metrics(
             if isinstance(bucket, SupervisionTerminationBucket)
             and bucket.year == bucket_year and
             bucket.month == bucket_month
+        ]
+    elif metric_type == SupervisionMetricType.SUPERVISION_START:
+        # Get all other supervision time buckets for the same day as this one
+        buckets_in_period = [
+            bucket for bucket in all_supervision_time_buckets
+            if isinstance(bucket, SupervisionStartBucket)
+            and bucket.bucket_date == supervision_time_bucket.bucket_date
         ]
     elif metric_type in (SupervisionMetricType.SUPERVISION_REVOCATION_ANALYSIS,
                          SupervisionMetricType.SUPERVISION_REVOCATION_VIOLATION_TYPE_ANALYSIS):
@@ -667,7 +689,8 @@ def include_supervision_in_count(combo: Dict[str, Any],
                        SupervisionMetricType.SUPERVISION_REVOCATION_VIOLATION_TYPE_ANALYSIS):
         return id(supervision_time_bucket) == id(revocation_buckets[-1])
 
-    if metric_type in (SupervisionMetricType.SUPERVISION_SUCCESS,
+    if metric_type in (SupervisionMetricType.SUPERVISION_START,
+                       SupervisionMetricType.SUPERVISION_SUCCESS,
                        SupervisionMetricType.SUPERVISION_TERMINATION,
                        SupervisionMetricType.SUPERVISION_COMPLIANCE):
         return id(supervision_time_bucket) == id(relevant_buckets[-1])

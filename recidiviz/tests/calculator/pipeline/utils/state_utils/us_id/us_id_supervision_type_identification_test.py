@@ -24,10 +24,13 @@ from freezegun import freeze_time
 from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_supervision_type_identification import \
     us_id_get_pre_incarceration_supervision_type, \
     us_id_get_most_recent_supervision_period_supervision_type_before_upper_bound_day, \
-    INCARCERATION_SUPERVISION_TYPE_DAYS_LIMIT, us_id_get_post_incarceration_supervision_type
+    SUPERVISION_TYPE_LOOKBACK_DAYS_LIMIT, us_id_get_post_incarceration_supervision_type, \
+    us_id_get_supervision_period_admission_override
+from recidiviz.calculator.pipeline.utils.supervision_period_index import SupervisionPeriodIndex
 from recidiviz.common.constants.state.state_incarceration_period import StateIncarcerationPeriodAdmissionReason, \
     StateIncarcerationPeriodReleaseReason
-from recidiviz.common.constants.state.state_supervision_period import StateSupervisionPeriodSupervisionType
+from recidiviz.common.constants.state.state_supervision_period import StateSupervisionPeriodSupervisionType, \
+    StateSupervisionPeriodAdmissionReason, StateSupervisionPeriodTerminationReason
 from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod, StateSupervisionPeriod, \
     StateSupervisionSentence
 
@@ -47,10 +50,10 @@ class UsIdGetPreIncarcerationSupervisionTypeTest(unittest.TestCase):
             supervision_period_id=1,
             start_date=
             incarceration_period.admission_date -
-            relativedelta(days=INCARCERATION_SUPERVISION_TYPE_DAYS_LIMIT + 100),
+            relativedelta(days=SUPERVISION_TYPE_LOOKBACK_DAYS_LIMIT + 100),
             termination_date=
             incarceration_period.admission_date -
-            relativedelta(days=INCARCERATION_SUPERVISION_TYPE_DAYS_LIMIT - 1),
+            relativedelta(days=SUPERVISION_TYPE_LOOKBACK_DAYS_LIMIT - 1),
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE
         )
 
@@ -102,10 +105,10 @@ class UsIdGetPreIncarcerationSupervisionTypeTest(unittest.TestCase):
             supervision_period_id=1,
             start_date=
             incarceration_period.admission_date -
-            relativedelta(days=INCARCERATION_SUPERVISION_TYPE_DAYS_LIMIT + 100),
+            relativedelta(days=SUPERVISION_TYPE_LOOKBACK_DAYS_LIMIT + 100),
             termination_date=
             incarceration_period.admission_date -
-            relativedelta(days=INCARCERATION_SUPERVISION_TYPE_DAYS_LIMIT + 10),
+            relativedelta(days=SUPERVISION_TYPE_LOOKBACK_DAYS_LIMIT + 10),
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE
         )
 
@@ -166,7 +169,7 @@ class UsIdGetPostIncarcerationSupervisionTypeTest(unittest.TestCase):
             supervision_period_id=1,
             start_date=
             incarceration_period.release_date +
-            relativedelta(days=(INCARCERATION_SUPERVISION_TYPE_DAYS_LIMIT + 100)),
+            relativedelta(days=(SUPERVISION_TYPE_LOOKBACK_DAYS_LIMIT + 100)),
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE
         )
 
@@ -195,10 +198,10 @@ class UsIdGetPostIncarcerationSupervisionTypeTest(unittest.TestCase):
             supervision_period_id=1,
             start_date=
             incarceration_period.admission_date -
-            relativedelta(days=INCARCERATION_SUPERVISION_TYPE_DAYS_LIMIT + 100),
+            relativedelta(days=SUPERVISION_TYPE_LOOKBACK_DAYS_LIMIT + 100),
             termination_date=
             incarceration_period.admission_date -
-            relativedelta(days=INCARCERATION_SUPERVISION_TYPE_DAYS_LIMIT + 10),
+            relativedelta(days=SUPERVISION_TYPE_LOOKBACK_DAYS_LIMIT + 10),
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE
         )
 
@@ -381,3 +384,114 @@ class UsIdGetMostRecentSupervisionPeriodSupervisionTypeBeforeUpperBoundDayTest(u
                 supervision_periods=[])
 
         self.assertEqual(supervision_period_supervision_type, None)
+
+
+class UsIdGetSupervisionPeriodAdmissionOverrideTest(unittest.TestCase):
+    """Unittests for the us_id_get_supervision_period_admission_override."""
+
+    def setUp(self) -> None:
+        self.upper_bound_date = date(2018, 10, 10)
+
+    def test_usId_getSupervisionPeriodAdmissionOverride_precededByInvestigation_overrideReason(self):
+        supervision_period_previous = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=1,
+            start_date=self.upper_bound_date - relativedelta(days=100),
+            termination_date=self.upper_bound_date - relativedelta(days=10),
+            termination_reason=StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE,
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.INVESTIGATION)
+        supervision_period = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=2,
+            admission_reason=StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE,
+            start_date=supervision_period_previous.termination_date,
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE)
+        idx = SupervisionPeriodIndex(supervision_periods=[supervision_period, supervision_period_previous])
+        found_admission_reason = us_id_get_supervision_period_admission_override(
+            supervision_period=supervision_period, supervision_period_index=idx)
+        self.assertEqual(StateSupervisionPeriodAdmissionReason.COURT_SENTENCE, found_admission_reason)
+
+    def testUsIdGetSupervisionPeriodAdmissionOverride_investigationTooFarBack(self):
+        supervision_period_previous = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=1,
+            start_date=self.upper_bound_date - relativedelta(days=100),
+            termination_date=self.upper_bound_date - relativedelta(days=10),
+            termination_reason=StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE,
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.INVESTIGATION)
+        supervision_period = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=2,
+            admission_reason=StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE,
+            start_date=supervision_period_previous.termination_date + relativedelta(
+                days=SUPERVISION_TYPE_LOOKBACK_DAYS_LIMIT + 1),
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE)
+        idx = SupervisionPeriodIndex(supervision_periods=[supervision_period, supervision_period_previous])
+        found_admission_reason = us_id_get_supervision_period_admission_override(
+            supervision_period=supervision_period, supervision_period_index=idx)
+        self.assertEqual(supervision_period.admission_reason, found_admission_reason)
+
+    def testUsIdGetSupervisionPeriodAdmissionOverride_notPrecededByInvestigation(self):
+        supervision_period_previous = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=1,
+            start_date=self.upper_bound_date - relativedelta(days=100),
+            termination_date=self.upper_bound_date - relativedelta(days=10),
+            termination_reason=StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE,
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE)
+        supervision_period = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=2,
+            admission_reason=StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE,
+            start_date=supervision_period_previous.termination_date,
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE)
+        idx = SupervisionPeriodIndex(supervision_periods=[supervision_period, supervision_period_previous])
+        found_admission_reason = us_id_get_supervision_period_admission_override(
+            supervision_period=supervision_period, supervision_period_index=idx)
+        self.assertEqual(supervision_period.admission_reason, found_admission_reason)
+
+    def testUsIdGetSupervisionPeriodAdmissionReasonOverride_ignoreNullSupervisionType(self):
+        supervision_period_previous = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=1,
+            start_date=self.upper_bound_date - relativedelta(days=100),
+            termination_date=self.upper_bound_date - relativedelta(days=10),
+            termination_reason=StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE,
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.INVESTIGATION)
+        supervision_period_one_day = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=2,
+            admission_reason=StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE,
+            start_date=supervision_period_previous.termination_date,
+            termination_date=supervision_period_previous.termination_date + relativedelta(days=10))
+        supervision_period_ongoing = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=3,
+            admission_reason=StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE,
+            start_date=supervision_period_one_day.termination_date,
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE)
+
+        idx = SupervisionPeriodIndex(supervision_periods=[
+            supervision_period_previous, supervision_period_ongoing, supervision_period_one_day])
+        found_admission_reason_for_ongoing = us_id_get_supervision_period_admission_override(
+            supervision_period=supervision_period_ongoing, supervision_period_index=idx)
+        self.assertEqual(StateSupervisionPeriodAdmissionReason.COURT_SENTENCE, found_admission_reason_for_ongoing)
+
+    def testUsIdGetSupervisionPeriodAdmissionReasonOverride_multiplePeriodsStartOnInvestigationEnd(self):
+        supervision_period_previous = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=1,
+            start_date=self.upper_bound_date - relativedelta(days=100),
+            termination_date=self.upper_bound_date - relativedelta(days=10),
+            termination_reason=StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE,
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.INVESTIGATION)
+        supervision_period_one_day = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=2,
+            admission_reason=StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE,
+            start_date=supervision_period_previous.termination_date,
+            termination_date=supervision_period_previous.termination_date,
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.INFORMAL_PROBATION)
+        supervision_period_ongoing = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=3,
+            admission_reason=StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE,
+            start_date=supervision_period_one_day.termination_date,
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE)
+
+        idx = SupervisionPeriodIndex(supervision_periods=[
+            supervision_period_previous, supervision_period_ongoing, supervision_period_one_day])
+        found_admission_reason_for_one_day = us_id_get_supervision_period_admission_override(
+            supervision_period=supervision_period_one_day, supervision_period_index=idx)
+        self.assertEqual(StateSupervisionPeriodAdmissionReason.COURT_SENTENCE, found_admission_reason_for_one_day)
+        found_admission_reason_for_ongoing = us_id_get_supervision_period_admission_override(
+            supervision_period=supervision_period_ongoing, supervision_period_index=idx)
+        self.assertEqual(supervision_period_ongoing.admission_reason, found_admission_reason_for_ongoing)

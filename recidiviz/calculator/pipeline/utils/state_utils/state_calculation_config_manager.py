@@ -29,11 +29,13 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_revocation_iden
 from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_supervision_compliance import \
     us_id_case_compliance_on_date
 from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_supervision_type_identification import \
-    us_id_get_pre_incarceration_supervision_type, us_id_get_post_incarceration_supervision_type
+    us_id_get_pre_incarceration_supervision_type, us_id_get_post_incarceration_supervision_type, \
+    us_id_get_supervision_period_admission_override
 from recidiviz.calculator.pipeline.utils.state_utils.us_mo import us_mo_violation_utils
 from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_supervision_type_identification import \
     us_nd_get_post_incarceration_supervision_type
 from recidiviz.calculator.pipeline.utils.state_utils.us_pa import us_pa_violation_utils
+from recidiviz.calculator.pipeline.utils.supervision_period_index import SupervisionPeriodIndex
 from recidiviz.calculator.pipeline.utils.supervision_period_utils import \
     get_relevant_supervision_periods_before_admission_date
 from recidiviz.calculator.pipeline.utils.supervision_type_identification import get_month_supervision_type_default, \
@@ -532,6 +534,16 @@ def revoked_supervision_periods_if_revocation_occurred(
     return admission_is_revocation, revoked_periods
 
 
+def state_specific_supervision_admission_reason_override(
+        state_code: str,
+        supervision_period: StateSupervisionPeriod,
+        supervision_period_index: SupervisionPeriodIndex):
+    if state_code == 'US_ID':
+        return us_id_get_supervision_period_admission_override(
+            supervision_period=supervision_period, supervision_period_index=supervision_period_index)
+    return supervision_period.admission_reason
+
+
 def state_specific_violation_response_pre_processing_function(state_code: str) -> \
         Optional[Callable[[List[StateSupervisionViolationResponse]], List[StateSupervisionViolationResponse]]]:
     """Returns a callable to be used to prepare StateSupervisionViolationResponses for calculations, if applicable for
@@ -543,10 +555,10 @@ def state_specific_violation_response_pre_processing_function(state_code: str) -
     return None
 
 
-def state_specific_admission_reason_override(state_code: str, admission_reason: StateIncarcerationPeriodAdmissionReason,
-                                             supervision_type_at_admission:
-                                             Optional[StateSupervisionPeriodSupervisionType])\
-        -> StateIncarcerationPeriodAdmissionReason:
+def state_specific_incarceration_admission_reason_override(
+        state_code: str,
+        admission_reason: StateIncarcerationPeriodAdmissionReason, supervision_type_at_admission:
+        Optional[StateSupervisionPeriodSupervisionType]) -> StateIncarcerationPeriodAdmissionReason:
     """ Returns a (potentially) updated admission reason to be used in calculations, given the provided |state_code|,
     |admission_reason|, and |supervision_type_at_admission|.
     """

@@ -19,6 +19,7 @@
 """Tests for supervision/pipeline.py"""
 import unittest
 
+from dateutil.relativedelta import relativedelta
 from more_itertools import one
 from typing import Set, Optional, Dict, List, Any, Collection
 from unittest import mock
@@ -42,7 +43,7 @@ from recidiviz.calculator.pipeline.supervision.metrics import \
     SupervisionRevocationViolationTypeAnalysisMetric, SupervisionPopulationMetric, \
     SupervisionRevocationAnalysisMetric, \
     SupervisionTerminationMetric, SupervisionSuccessMetric, \
-    SuccessfulSupervisionSentenceDaysServedMetric, SupervisionCaseComplianceMetric
+    SuccessfulSupervisionSentenceDaysServedMetric, SupervisionCaseComplianceMetric, SupervisionStartMetric
 from recidiviz.calculator.pipeline.supervision.supervision_case_compliance import SupervisionCaseCompliance
 from recidiviz.calculator.pipeline.supervision.supervision_time_bucket import \
     NonRevocationReturnSupervisionTimeBucket, \
@@ -413,13 +414,12 @@ class TestSupervisionPipeline(unittest.TestCase):
         expected_metric_types = {
             SupervisionMetricType.SUPERVISION_POPULATION,
             SupervisionMetricType.SUPERVISION_SUCCESS,
+            SupervisionMetricType.SUPERVISION_START,
             SupervisionMetricType.SUPERVISION_TERMINATION,
             SupervisionMetricType.SUPERVISION_SUCCESSFUL_SENTENCE_DAYS_SERVED
         }
 
-        self.run_test_pipeline(dataset,
-                               data_dict,
-                               expected_metric_types)
+        self.run_test_pipeline(dataset, data_dict, expected_metric_types)
 
     @freeze_time('2017-01-31')
     def testSupervisionPipelineWithPersonIdFilterSet(self):
@@ -436,7 +436,8 @@ class TestSupervisionPipeline(unittest.TestCase):
         expected_metric_types = {
             SupervisionMetricType.SUPERVISION_POPULATION,
             SupervisionMetricType.SUPERVISION_SUCCESS,
-            SupervisionMetricType.SUPERVISION_TERMINATION
+            SupervisionMetricType.SUPERVISION_TERMINATION,
+            SupervisionMetricType.SUPERVISION_START,
         }
 
         self.run_test_pipeline(dataset,
@@ -723,7 +724,8 @@ class TestSupervisionPipeline(unittest.TestCase):
             SupervisionMetricType.SUPERVISION_REVOCATION,
             SupervisionMetricType.SUPERVISION_REVOCATION_ANALYSIS,
             SupervisionMetricType.SUPERVISION_REVOCATION_VIOLATION_TYPE_ANALYSIS,
-            SupervisionMetricType.SUPERVISION_TERMINATION
+            SupervisionMetricType.SUPERVISION_TERMINATION,
+            SupervisionMetricType.SUPERVISION_START,
         }
 
         self.run_test_pipeline(dataset,
@@ -1012,7 +1014,8 @@ class TestSupervisionPipeline(unittest.TestCase):
             SupervisionMetricType.SUPERVISION_REVOCATION,
             SupervisionMetricType.SUPERVISION_REVOCATION_ANALYSIS,
             SupervisionMetricType.SUPERVISION_REVOCATION_VIOLATION_TYPE_ANALYSIS,
-            SupervisionMetricType.SUPERVISION_TERMINATION
+            SupervisionMetricType.SUPERVISION_TERMINATION,
+            SupervisionMetricType.SUPERVISION_START,
         }
 
         expected_violation_types = {
@@ -1273,7 +1276,8 @@ class TestSupervisionPipeline(unittest.TestCase):
         expected_metric_types = {
             SupervisionMetricType.SUPERVISION_POPULATION,
             SupervisionMetricType.SUPERVISION_REVOCATION_ANALYSIS,
-            SupervisionMetricType.SUPERVISION_TERMINATION
+            SupervisionMetricType.SUPERVISION_TERMINATION,
+            SupervisionMetricType.SUPERVISION_START,
         }
 
         metric_types_filter = {
@@ -1516,6 +1520,7 @@ class TestSupervisionPipeline(unittest.TestCase):
             SupervisionMetricType.SUPERVISION_REVOCATION,
             SupervisionMetricType.SUPERVISION_REVOCATION_ANALYSIS,
             SupervisionMetricType.SUPERVISION_TERMINATION,
+            SupervisionMetricType.SUPERVISION_START,
             SupervisionMetricType.SUPERVISION_SUCCESSFUL_SENTENCE_DAYS_SERVED
         }
 
@@ -1691,7 +1696,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             assessment_type=assessment.assessment_type,
             supervising_officer_external_id='OFFICER0009',
             supervising_district_external_id='10',
-            judicial_district_code=judicial_district_code
+            judicial_district_code=judicial_district_code,
         ))
 
         expected_buckets.append(SupervisionTerminationBucket(
@@ -1707,6 +1712,12 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             judicial_district_code=judicial_district_code,
             supervision_level=supervision_period.supervision_level,
             supervision_level_raw_text=supervision_period.supervision_level_raw_text,
+        ))
+        expected_buckets.append(identifier_test.create_start_bucket_from_period(
+            supervision_period,
+            supervising_officer_external_id='OFFICER0009',
+            supervising_district_external_id='10',
+            judicial_district_code=judicial_district_code,
         ))
 
         correct_output = [(fake_person.person_id, (fake_person, expected_buckets))]
@@ -1861,6 +1872,10 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 most_severe_violation_type_subtype=StateSupervisionViolationType.MISDEMEANOR.value,
                 response_count=1
             ),
+            identifier_test.create_start_bucket_from_period(
+                supervision_period,
+                supervising_officer_external_id='OFFICER0009',
+                supervising_district_external_id='10'),
             RevocationReturnSupervisionTimeBucket(
                 state_code=supervision_period.state_code,
                 year=2015, month=5,
@@ -2010,13 +2025,29 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         expected_buckets: List[SupervisionTimeBucket] = identifier_test.expected_non_revocation_return_time_buckets(
             supervision_period,
             supervision_period_supervision_type,
-            end_date=violation_report.response_date,
+            end_date=supervision_period.start_date + relativedelta(days=1),
             assessment_score=assessment.assessment_score,
             assessment_level=assessment.assessment_level,
             assessment_type=assessment.assessment_type,
             supervising_officer_external_id='OFFICER0009',
             supervising_district_external_id='10',
         )
+        expected_buckets.append(
+            identifier_test.create_start_bucket_from_period(
+                supervision_period,
+                supervising_officer_external_id='OFFICER0009',
+                supervising_district_external_id='10',
+            ))
+        expected_buckets.extend(identifier_test.expected_non_revocation_return_time_buckets(
+            attr.evolve(supervision_period, start_date = supervision_period.start_date + relativedelta(days=1)),
+            supervision_period_supervision_type,
+            end_date=violation_report.response_date,
+            assessment_score=assessment.assessment_score,
+            assessment_level=assessment.assessment_level,
+            assessment_type=assessment.assessment_type,
+            supervising_officer_external_id='OFFICER0009',
+            supervising_district_external_id='10',
+        ))
 
         expected_buckets.extend(identifier_test.expected_non_revocation_return_time_buckets(
             attr.evolve(supervision_period, start_date=violation_report.response_date),
@@ -2174,7 +2205,11 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 supervising_district_external_id='10',
                 supervision_level=supervision_period.supervision_level,
                 supervision_level_raw_text=supervision_period.supervision_level_raw_text
-            )
+            ),
+            identifier_test.create_start_bucket_from_period(
+                supervision_period,
+                supervising_officer_external_id='OFFICER0009',
+                supervising_district_external_id='10')
         ])
 
         correct_output = [(fake_person.person_id, (fake_person, expected_buckets))]
@@ -2269,7 +2304,11 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 supervising_district_external_id='10',
                 supervision_level=supervision_period.supervision_level,
                 supervision_level_raw_text=supervision_period.supervision_level_raw_text
-            )
+            ),
+            identifier_test.create_start_bucket_from_period(
+                supervision_period,
+                supervising_officer_external_id='OFFICER0009',
+                supervising_district_external_id='10')
         ])
 
         correct_output = [(fake_person.person_id, (fake_person, expected_buckets))]
@@ -2532,6 +2571,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
     def testProduceSupervisionMetrics(self):
         metric_value_to_metric_type = {
             SupervisionMetricType.SUPERVISION_TERMINATION: SupervisionTerminationMetric,
+            SupervisionMetricType.SUPERVISION_START: SupervisionStartMetric,
             SupervisionMetricType.SUPERVISION_COMPLIANCE: SupervisionCaseComplianceMetric,
             SupervisionMetricType.SUPERVISION_POPULATION: SupervisionPopulationMetric,
             SupervisionMetricType.SUPERVISION_REVOCATION: SupervisionRevocationMetric,
