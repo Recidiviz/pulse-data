@@ -31,8 +31,8 @@ class YAMLDict:
     def __init__(self, yaml: YAMLDictType):
         self.yaml = yaml
 
-    @staticmethod
-    def _assert_type(field: str, value: Any, value_type: Type[T]) -> Optional[T]:
+    @classmethod
+    def _assert_type(cls, field: str, value: Any, value_type: Type[T]) -> Optional[T]:
         if value is not None and not isinstance(value, value_type):
             raise ValueError(f"Invalid {field}, expected {value_type} but received: {repr(value)}")
         return value
@@ -55,15 +55,24 @@ class YAMLDict:
             return None
         return YAMLDict(yaml)
 
-    def pop_dicts(self, field: str) -> List['YAMLDict']:
+    @classmethod
+    def _transform_dicts(cls, field: str, yamls: List) -> List['YAMLDict']:
         dicts = []
-        yamls = self.pop(field, list)
         for yaml in yamls:
-            yaml = self._assert_type(field, yaml, dict)
+            yaml = cls._assert_type(field, yaml, dict)
             if yaml is None:
                 raise ValueError(f"Received entry in list that is None: {yamls}")
             dicts.append(YAMLDict(yaml))
         return dicts
+
+    def pop_dicts(self, field: str) -> List['YAMLDict']:
+        return self._transform_dicts(field, self.pop(field, list))
+
+    def pop_dicts_optional(self, field: str) -> Optional[List['YAMLDict']]:
+        yamls = self.pop_optional(field, list)
+        if not yamls:
+            return None
+        return self._transform_dicts(field, yamls)
 
     def __len__(self) -> int:
         return len(self.yaml)
