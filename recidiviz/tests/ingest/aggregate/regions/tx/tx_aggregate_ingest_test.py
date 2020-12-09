@@ -70,6 +70,8 @@ def parsed_pdf_concat(request):
 @pytest.mark.usefixtures("parsed_pdf_before_1996")
 @pytest.mark.usefixtures("parsed_pdf_1996")
 @pytest.mark.usefixtures("parsed_pdf_concat")
+@pytest.mark.skip("TODO(#4865): This test fails on master for some, possibly due to underlying Java issues related to "
+                  "Apache Beam and Tabula.")
 class TestTxAggregateIngest(TestCase):
     """Test that tx_aggregate_ingest correctly parses the TX PDF."""
 
