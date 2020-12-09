@@ -5,15 +5,22 @@ publish_date: '2020-10-05'
 tables:
     - file: 'table.csv'
       date_range:
-        dynamic:
-          columns:
-            Date: 'DATE'
-          type: 'SNAPSHOT'
+        fixed:
+          snapshot:
+            date: '2020-09-01'
       system: 'CORRECTIONS'
       metric:
         population:
           population_type: 'PRISON'
           measurement_type: 'INSTANT'
+      dimension_columns:
+        - column_name: 'Type'
+          dimension_name: 'FAKE_TYPE'
+          mapping_overrides:
+            B_1: 'B'
+            B_2: 'B'
+        - column_name: 'Type'
+          dimension_name: 'FAKE_SUBTYPE'
       value_column:
         column_name: 'Population'
       location:

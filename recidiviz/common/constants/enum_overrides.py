@@ -17,8 +17,7 @@
 """Contains logic related to EnumOverrides."""
 
 from collections import defaultdict
-from typing import Callable, Set
-from typing import Dict, Optional
+from typing import Callable, Dict, Optional, Set, Type, Union
 
 import attr
 
@@ -27,6 +26,7 @@ from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 
 EnumMapper = Callable[[str], Optional[EntityEnum]]
 EnumIgnorePredicate = Callable[[str], bool]
+EntityEnumType = Union[Type[EntityEnum], EntityEnumMeta]
 
 # pylint doesn't support custom decorators, so these attributes can't be subscripted.
 # https://github.com/PyCQA/pylint/issues/1694
@@ -36,19 +36,19 @@ class EnumOverrides:
     """Contains scraper-specific mappings from string keys to EntityEnum values. EnumOverrides objects should be
     created using EnumOverrides.Builder.
     """
-    _str_mappings_dict: Dict[EntityEnumMeta, Dict[str, EntityEnum]] = attr.ib()
-    _mappers_dict: Dict[EntityEnumMeta, Set['EnumMapper']] = attr.ib()
-    _ignores: Dict[EntityEnumMeta, Set[str]] = attr.ib()
-    _ignore_predicates_dict: Dict[EntityEnumMeta, Set[EnumIgnorePredicate]] = attr.ib()
+    _str_mappings_dict: Dict[EntityEnumType, Dict[str, EntityEnum]] = attr.ib()
+    _mappers_dict: Dict[EntityEnumType, Set['EnumMapper']] = attr.ib()
+    _ignores: Dict[EntityEnumType, Set[str]] = attr.ib()
+    _ignore_predicates_dict: Dict[EntityEnumType, Set[EnumIgnorePredicate]] = attr.ib()
 
-    def should_ignore(self, label: str, enum_class: EntityEnumMeta) -> bool:
+    def should_ignore(self, label: str, enum_class: EntityEnumType) -> bool:
         label = normalize(label, remove_punctuation=True)
         predicate_calls = (predicate(label) for predicate in self._ignore_predicates_dict[enum_class])
         return label in self._ignores[enum_class] or any(predicate_calls)
 
     def parse(self,
               label: str,
-              enum_class: EntityEnumMeta) -> Optional[EntityEnum]:
+              enum_class: EntityEnumType) -> Optional[EntityEnum]:
         label = normalize(label, remove_punctuation=True)
         if self.should_ignore(label, enum_class):
             return None
@@ -81,10 +81,10 @@ class EnumOverrides:
         """Builder for EnumOverrides objects."""
 
         def __init__(self) -> None:
-            self._str_mappings_dict: Dict[EntityEnumMeta, Dict[str, EntityEnum]] = defaultdict(dict)
-            self._mappers_dict: Dict[EntityEnumMeta, Set[EnumMapper]] = defaultdict(set)
-            self._ignores: Dict[EntityEnumMeta, Set[str]] = defaultdict(set)
-            self._ignore_predicates_dict: Dict[EntityEnumMeta, Set[EnumIgnorePredicate]] = defaultdict(set)
+            self._str_mappings_dict: Dict[EntityEnumType, Dict[str, EntityEnum]] = defaultdict(dict)
+            self._mappers_dict: Dict[EntityEnumType, Set[EnumMapper]] = defaultdict(set)
+            self._ignores: Dict[EntityEnumType, Set[str]] = defaultdict(set)
+            self._ignore_predicates_dict: Dict[EntityEnumType, Set[EnumIgnorePredicate]] = defaultdict(set)
 
         def build(self) -> 'EnumOverrides':
             return EnumOverrides(self._str_mappings_dict,
@@ -94,8 +94,8 @@ class EnumOverrides:
 
         def add_mapper(self,
                        mapper: EnumMapper,
-                       mapped_cls: EntityEnumMeta,
-                       from_field: EntityEnumMeta = None) -> 'EnumOverrides.Builder':
+                       mapped_cls: EntityEnumType,
+                       from_field: Optional[EntityEnumType] = None) -> 'EnumOverrides.Builder':
             """Adds a |mapper| which maps field values to enums within the |mapped_cls|. |mapper| must be a
             Callable which, given a string value, returns an enum of class |mapped_cls| or None.
 
@@ -114,7 +114,7 @@ class EnumOverrides:
         def add(self,
                 label: str,
                 mapped_enum: EntityEnum,
-                from_field: EntityEnumMeta = None) -> 'EnumOverrides.Builder':
+                from_field: Optional[EntityEnumType] = None) -> 'EnumOverrides.Builder':
             """Adds a mapping from |label| to |mapped_enum|. As |label| must be a string, the provided field value must
             match the string exactly to constitute a match.
 
@@ -130,12 +130,12 @@ class EnumOverrides:
 
         def ignore_with_predicate(self,
                                   predicate: EnumIgnorePredicate,
-                                  from_field: EntityEnumMeta) -> 'EnumOverrides.Builder':
+                                  from_field: EntityEnumType) -> 'EnumOverrides.Builder':
             """Marks strings matching |predicate| as ignored values for |from_field| enum class."""
             self._ignore_predicates_dict[from_field].add(predicate)
             return self
 
-        def ignore(self, label: str, from_field: EntityEnumMeta) -> 'EnumOverrides.Builder':
+        def ignore(self, label: str, from_field: EntityEnumType) -> 'EnumOverrides.Builder':
             """Marks strings matching |label| as ignored values for |from_field| enum class."""
             label = normalize(label, remove_punctuation=True)
             self._ignores[from_field].add(label)

@@ -20,11 +20,13 @@ import datetime
 import decimal
 import os
 import unittest
-from typing import Optional
+from typing import Dict, Optional
 
 from dateutil.relativedelta import relativedelta
 from sqlalchemy import sql
 
+from recidiviz.common.constants.enum_overrides import EnumOverrides
+from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta, EnumParsingError
 from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.persistence.database.base_schema import JusticeCountsBase
 from recidiviz.persistence.database.schema.justice_counts import schema
@@ -36,6 +38,55 @@ from recidiviz.tools.postgres import local_postgres_helpers
 
 def manifest_filepath(report_id: str):
     return os.path.join(os.path.dirname(__file__), 'fixtures', report_id, 'manifest.yaml')
+
+
+class FakeType(manual_upload.Dimension, EntityEnum, metaclass=EntityEnumMeta):
+    A = 'A'
+    B = 'B'
+    C = 'C'
+
+    @classmethod
+    def get(cls, dimension_cell_value: str, enum_overrides: Optional[EnumOverrides] = None) -> 'FakeType':
+        return manual_upload.parse_entity_enum(cls, dimension_cell_value, enum_overrides)
+
+    @classmethod
+    def dimension_identifier(cls) -> str:
+        return 'global/fake_type'
+
+    @property
+    def dimension_value(self) -> str:
+        return self.value
+
+    @classmethod
+    def _get_default_map(cls) -> Dict[str, 'FakeType']:
+        return {
+            'A': cls.A,
+            'B': cls.B,
+            'C': cls.C,
+        }
+
+class FakeSubtype(manual_upload.Dimension, EntityEnum, metaclass=EntityEnumMeta):
+    B_1 = 'B_1'
+    B_2 = 'B_2'
+
+    @classmethod
+    def get(cls, dimension_cell_value: str, enum_overrides: Optional[EnumOverrides] = None) -> 'FakeSubtype':
+        return manual_upload.parse_entity_enum(cls, dimension_cell_value, enum_overrides)
+
+    @classmethod
+    def dimension_identifier(cls) -> str:
+        return 'global/fake_subtype'
+
+    @property
+    def dimension_value(self) -> str:
+        return self.value
+
+    @classmethod
+    def _get_default_map(cls) -> Dict[str, 'FakeSubtype']:
+        return {
+            'B 1': cls.B_1,
+            'B 2': cls.B_2,
+        }
 
 
 class ManualUploadTest(unittest.TestCase):
@@ -79,9 +130,9 @@ class ManualUploadTest(unittest.TestCase):
         [table_definition] = session.query(schema.ReportTableDefinition).all()
         self.assertEqual(schema.System.CORRECTIONS, table_definition.system)
         self.assertEqual(schema.MetricType.POPULATION, table_definition.metric_type)
-        self.assertEqual(['metric/population/type', 'global/location/state'], table_definition.filtered_dimensions)
-        self.assertEqual(['PRISON', 'US_CO'], table_definition.filtered_dimension_values)
-        self.assertEqual(['global/raw/facility'], table_definition.aggregated_dimensions)
+        self.assertEqual(['global/location/state', 'metric/population/type'], table_definition.filtered_dimensions)
+        self.assertEqual(['US_CO', 'PRISON'], table_definition.filtered_dimension_values)
+        self.assertEqual(['global/facility/raw'], table_definition.aggregated_dimensions)
 
         tables = session.query(schema.ReportTableInstance).order_by(schema.ReportTableInstance.time_window_start).all()
         # Ensure all the tables have the correct source and definition
@@ -172,8 +223,8 @@ class ManualUploadTest(unittest.TestCase):
 
         [facility_totals_definition, facility_demographics_definition] = session.query(schema.ReportTableDefinition) \
             .order_by(sql.func.array_length(schema.ReportTableDefinition.aggregated_dimensions, 1)).all()
-        self.assertEqual(['global/raw/facility'], facility_totals_definition.aggregated_dimensions)
-        self.assertEqual(['global/raw/facility', 'global/raw/race', 'global/raw/gender'],
+        self.assertEqual(['global/facility/raw'], facility_totals_definition.aggregated_dimensions)
+        self.assertEqual(['global/facility/raw', 'global/gender/raw', 'global/race/raw'],
                          facility_demographics_definition.aggregated_dimensions)
 
         [facility_totals_table] = session.query(schema.ReportTableInstance) \
@@ -188,8 +239,8 @@ class ManualUploadTest(unittest.TestCase):
             .filter(schema.Cell.report_table_instance == facility_demographics_table).all()])
         # There are 180 cells in the `facility_with_demographics` csv
         self.assertEqual(180, len(facility_demographics))
-        self.assertEqual((('CMCF', 'Asian', 'Female'), 0), facility_demographics[0])
-        self.assertEqual((('Youthful Offender Facility', 'White', 'Male'), 2), facility_demographics[-1])
+        self.assertEqual((('CMCF', 'Female', 'Asian'), 0), facility_demographics[0])
+        self.assertEqual((('Youthful Offender Facility', 'Male', 'White'), 2), facility_demographics[-1])
 
         facility_totals = {cell.aggregated_dimension_values[0]: int(cell.value) for cell in
                            session.query(schema.Cell)
@@ -344,3 +395,56 @@ class ManualUploadTest(unittest.TestCase):
             (datetime.date(2020, 9, 1), datetime.date(2020, 10, 1), decimal.Decimal(16673)),
         ]
         self.assertEqual(EXPECTED, results)
+
+    def test_ingestSubtypeNotStrict_isPersisted(self):
+        # Act
+        manual_upload.ingest(self.fs, test_utils.prepare_files(self.fs, manifest_filepath('report5_subtype')))
+
+        # Assert
+        session = SessionFactory.for_schema_base(JusticeCountsBase)
+
+        [table_definition] = session.query(schema.ReportTableDefinition).all()
+        self.assertEqual(['global/fake_subtype', 'global/fake_subtype/raw', 'global/fake_type', 'global/fake_type/raw'],
+                         table_definition.aggregated_dimensions)
+
+        cells = session.query(schema.Cell).all()
+        self.assertEqual([
+            ([None, 'A', 'A', 'A'], decimal.Decimal(111)),
+            (['B_1', 'B_1', 'B', 'B_1'], decimal.Decimal(222)),
+            (['B_2', 'B_2', 'B', 'B_2'], decimal.Decimal(333)),
+            ([None, 'C', 'C', 'C'], decimal.Decimal(444)),
+        ], [(cell.aggregated_dimension_values, cell.value) for cell in cells])
+
+    def test_ingestSubtypeStrict_isNotPersisted(self):
+        # Act
+        with self.assertRaises(EnumParsingError):
+            manual_upload.ingest(self.fs, test_utils.prepare_files(self.fs, manifest_filepath('report5_subtype_fail')))
+
+    def test_ingestAdditionalFilters_isPersisted(self):
+        # Act
+        manual_upload.ingest(self.fs, test_utils.prepare_files(self.fs, manifest_filepath('report6_filters')))
+
+        # Assert
+        session = SessionFactory.for_schema_base(JusticeCountsBase)
+
+        [table_definition] = session.query(schema.ReportTableDefinition).all()
+        self.assertEqual(['global/facility/raw', 'global/location/state', 'metric/population/type'],
+                          table_definition.filtered_dimensions)
+        self.assertEqual(['MSP', 'US_CO', 'PRISON'], table_definition.filtered_dimension_values)
+        self.assertEqual(['global/gender/raw', 'global/race/raw'], table_definition.aggregated_dimensions)
+
+        cells = session.query(schema.Cell).all()
+        self.assertEqual([
+            (['Male', 'Black'], decimal.Decimal(1370)),
+            (['Female', 'Black'], decimal.Decimal(0)),
+            (['Male', 'White'], decimal.Decimal(638)),
+            (['Female', 'White'], decimal.Decimal(0)),
+            (['Male', 'Hispanic'], decimal.Decimal(15)),
+            (['Female', 'Hispanic'], decimal.Decimal(0)),
+            (['Male', 'Native American'], decimal.Decimal(0)),
+            (['Female', 'Native American'], decimal.Decimal(0)),
+            (['Male', 'Asian'], decimal.Decimal(4)),
+            (['Female', 'Asian'], decimal.Decimal(0)),
+            (['Male', 'Data Unavailable'], decimal.Decimal(0)),
+            (['Female', 'Data Unavailable'], decimal.Decimal(0)),
+        ], [(cell.aggregated_dimension_values, cell.value) for cell in cells])

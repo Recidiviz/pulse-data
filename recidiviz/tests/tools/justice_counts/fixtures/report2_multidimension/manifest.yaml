@@ -12,6 +12,12 @@ tables:
       metric:
         population:
           population_type: 'PRISON'
+          measurement_type: 'INSTANT'
+      dimension_columns:
+        - column_name: 'Facility'
+          dimension_name: 'FACILITY'
+      value_column:
+        column_name: 'Population'
       location:
         state: 'US_MS'
       methodology: 'Unknown'
@@ -24,6 +30,16 @@ tables:
       metric:
         population:
           population_type: 'PRISON'
+          measurement_type: 'INSTANT'
+      dimension_columns:
+        - column_name: 'Facility'
+          dimension_name: 'FACILITY'
+        - column_name: 'Race'
+          dimension_name: 'RACE'
+        - column_name: 'Sex'
+          dimension_name: 'GENDER'
+      value_column:
+        column_name: 'Population'
       location:
         state: 'US_MS'
       methodology: 'Unknown'
