@@ -33,7 +33,8 @@ from recidiviz.calculator.pipeline.supervision.metrics import \
     SupervisionMetric, SupervisionPopulationMetric, \
     SupervisionRevocationMetric, SupervisionSuccessMetric, \
     SupervisionRevocationAnalysisMetric, SupervisionRevocationViolationTypeAnalysisMetric, \
-    SuccessfulSupervisionSentenceDaysServedMetric, SupervisionCaseComplianceMetric, SupervisionTerminationMetric
+    SuccessfulSupervisionSentenceDaysServedMetric, SupervisionCaseComplianceMetric, SupervisionTerminationMetric, \
+    SupervisionStartMetric
 from recidiviz.calculator.pipeline.supervision.metrics import \
     SupervisionMetricType
 from recidiviz.calculator.pipeline.supervision.supervision_time_bucket import \
@@ -211,12 +212,16 @@ class ProduceSupervisionMetrics(beam.DoFn):
 
         metric_type = dict_metric_key.pop('metric_type')
 
-        if metric_type == SupervisionMetricType.SUPERVISION_TERMINATION:
+        if metric_type == SupervisionMetricType.SUPERVISION_START:
+            dict_metric_key['count'] = 1
+
+            supervision_metric = SupervisionStartMetric.build_from_metric_key_group(
+                dict_metric_key, pipeline_job_id)
+        elif metric_type == SupervisionMetricType.SUPERVISION_TERMINATION:
             dict_metric_key['count'] = 1
 
             supervision_metric = SupervisionTerminationMetric.build_from_metric_key_group(
-                dict_metric_key, pipeline_job_id
-            )
+                dict_metric_key, pipeline_job_id)
         elif metric_type == SupervisionMetricType.SUPERVISION_POPULATION:
             dict_metric_key['count'] = 1
 
@@ -587,20 +592,19 @@ def run(apache_beam_pipeline_options: PipelineOptions,
 
         # Convert the metrics into a format that's writable to BQ
         writable_metrics = (supervision_metrics | 'Convert to dict to be written to BQ' >>
-                            beam.ParDo(
-                                RecidivizMetricWritableDict()).with_outputs(
+                            beam.ParDo(RecidivizMetricWritableDict()).with_outputs(
                                     SupervisionMetricType.SUPERVISION_COMPLIANCE.value,
                                     SupervisionMetricType.SUPERVISION_POPULATION.value,
                                     SupervisionMetricType.SUPERVISION_REVOCATION.value,
                                     SupervisionMetricType.SUPERVISION_REVOCATION_ANALYSIS.value,
                                     SupervisionMetricType.SUPERVISION_REVOCATION_VIOLATION_TYPE_ANALYSIS.value,
+                                    SupervisionMetricType.SUPERVISION_START.value,
                                     SupervisionMetricType.SUPERVISION_SUCCESS.value,
                                     SupervisionMetricType.SUPERVISION_SUCCESSFUL_SENTENCE_DAYS_SERVED.value,
                                     SupervisionMetricType.SUPERVISION_TERMINATION.value
                                 )
                             )
 
-        # Write the metrics to the output tables in BigQuery
         terminations_table_id = DATAFLOW_METRICS_TO_TABLES[SupervisionTerminationMetric]
         compliance_table_id = DATAFLOW_METRICS_TO_TABLES[SupervisionCaseComplianceMetric]
         populations_table_id = DATAFLOW_METRICS_TO_TABLES[SupervisionPopulationMetric]
@@ -610,6 +614,7 @@ def run(apache_beam_pipeline_options: PipelineOptions,
             DATAFLOW_METRICS_TO_TABLES[SupervisionRevocationViolationTypeAnalysisMetric]
         successes_table_id = DATAFLOW_METRICS_TO_TABLES[SupervisionSuccessMetric]
         successful_sentence_lengths_table_id = DATAFLOW_METRICS_TO_TABLES[SuccessfulSupervisionSentenceDaysServedMetric]
+        supervision_starts_table_id = DATAFLOW_METRICS_TO_TABLES[SupervisionStartMetric]
 
         _ = (writable_metrics.SUPERVISION_POPULATION
              | f"Write population metrics to BQ table: {populations_table_id}" >>
@@ -666,5 +671,12 @@ def run(apache_beam_pipeline_options: PipelineOptions,
              | f"Write compliance metrics to BQ table: {compliance_table_id}" >>
              WriteAppendToBigQuery(
                  output_table=compliance_table_id,
+                 output_dataset=output,
+             ))
+
+        _ = (writable_metrics.SUPERVISION_START
+             | f"Write start metrics to BQ table: {supervision_starts_table_id}" >>
+             WriteAppendToBigQuery(
+                 output_table=supervision_starts_table_id,
                  output_dataset=output,
              ))

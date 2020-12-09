@@ -29,7 +29,7 @@ from recidiviz.calculator.pipeline.supervision.supervision_case_compliance impor
 from recidiviz.calculator.pipeline.supervision.supervision_time_bucket import \
     SupervisionTimeBucket, RevocationReturnSupervisionTimeBucket, \
     NonRevocationReturnSupervisionTimeBucket, \
-    ProjectedSupervisionCompletionBucket, SupervisionTerminationBucket
+    ProjectedSupervisionCompletionBucket, SupervisionTerminationBucket, SupervisionStartBucket
 from recidiviz.calculator.pipeline.utils import assessment_utils
 from recidiviz.calculator.pipeline.utils.execution_utils import list_of_dicts_to_dict_with_keys
 from recidiviz.calculator.pipeline.utils.calculator_utils import identify_most_severe_response_decision
@@ -46,7 +46,7 @@ from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_ma
     get_case_compliance_on_date, include_decisions_on_follow_up_responses, \
     second_assessment_on_supervision_is_more_reliable, get_supervision_district_from_supervision_period, \
     revoked_supervision_periods_if_revocation_occurred, \
-    state_specific_violation_response_pre_processing_function
+    state_specific_violation_response_pre_processing_function, state_specific_supervision_admission_reason_override
 from recidiviz.calculator.pipeline.utils.supervision_period_index import SupervisionPeriodIndex
 from recidiviz.calculator.pipeline.utils.supervision_period_utils import prepare_supervision_periods_for_calculations
 from recidiviz.calculator.pipeline.utils.supervision_type_identification import \
@@ -236,9 +236,16 @@ def find_supervision_time_buckets(
                 supervision_period_to_agent_associations,
                 judicial_district_code
             )
-
             if supervision_termination_bucket:
                 supervision_time_buckets.append(supervision_termination_bucket)
+
+            supervision_start_bucket = find_supervision_start_bucket(
+                supervision_period,
+                supervision_period_index,
+                supervision_period_to_agent_associations,
+                judicial_district_code)
+            if supervision_start_bucket:
+                supervision_time_buckets.append(supervision_start_bucket)
 
     supervision_time_buckets = supervision_time_buckets + find_revocation_return_buckets(
         supervision_sentences,
@@ -463,6 +470,46 @@ def on_supervision_on_date(
             incarceration_period_index=incarceration_period_index)
 
     return supervision_period_counts_towards_supervision_population_on_date
+
+
+def find_supervision_start_bucket(
+        supervision_period: StateSupervisionPeriod,
+        supervision_period_index: SupervisionPeriodIndex,
+        supervision_period_to_agent_associations: Dict[int, Dict[Any, Any]],
+        judicial_district_code: Optional[str] = None
+) -> Optional[SupervisionTimeBucket]:
+    """Identifies an instance of supervision start, assuming the provided |supervision_period| has a valid start
+    date, and returns all relevant info as a SupervisionStartBucket.
+    """
+
+    # Do not create start metrics if no start date
+    if supervision_period.start_date is None:
+        return None
+
+    start_date = supervision_period.start_date
+    supervising_officer_external_id, supervising_district_external_id = \
+        _get_supervising_officer_and_district(supervision_period, supervision_period_to_agent_associations)
+
+    state_code = supervision_period.state_code
+    admission_reason = state_specific_supervision_admission_reason_override(
+        state_code=state_code,
+        supervision_period=supervision_period,
+        supervision_period_index=supervision_period_index)
+
+    return SupervisionStartBucket(
+        state_code=supervision_period.state_code,
+        admission_reason=admission_reason,
+        bucket_date=start_date,
+        year=start_date.year,
+        month=start_date.month,
+        supervision_type=supervision_period.supervision_period_supervision_type,
+        case_type=_identify_most_severe_case_type(supervision_period),
+        supervision_level=supervision_period.supervision_level,
+        supervision_level_raw_text=supervision_period.supervision_level_raw_text,
+        supervising_officer_external_id=supervising_officer_external_id,
+        supervising_district_external_id=supervising_district_external_id,
+        judicial_district_code=judicial_district_code,
+    )
 
 
 def find_supervision_termination_bucket(
@@ -1144,7 +1191,6 @@ def _expand_dual_supervision_buckets(supervision_time_buckets: List[SupervisionT
 
 # Each SupervisionMetricType with a list of the SupervisionTimeBuckets that contribute to that metric
 BUCKET_TYPES_FOR_METRIC: Dict[SupervisionMetricType, List[Type[SupervisionTimeBucket]]] = {
-    SupervisionMetricType.SUPERVISION_TERMINATION: [SupervisionTerminationBucket],
     SupervisionMetricType.SUPERVISION_COMPLIANCE: [NonRevocationReturnSupervisionTimeBucket],
     SupervisionMetricType.SUPERVISION_POPULATION: [
         NonRevocationReturnSupervisionTimeBucket, RevocationReturnSupervisionTimeBucket
@@ -1152,8 +1198,10 @@ BUCKET_TYPES_FOR_METRIC: Dict[SupervisionMetricType, List[Type[SupervisionTimeBu
     SupervisionMetricType.SUPERVISION_REVOCATION: [RevocationReturnSupervisionTimeBucket],
     SupervisionMetricType.SUPERVISION_REVOCATION_ANALYSIS: [RevocationReturnSupervisionTimeBucket],
     SupervisionMetricType.SUPERVISION_REVOCATION_VIOLATION_TYPE_ANALYSIS: [RevocationReturnSupervisionTimeBucket],
+    SupervisionMetricType.SUPERVISION_START: [SupervisionStartBucket],
     SupervisionMetricType.SUPERVISION_SUCCESS: [ProjectedSupervisionCompletionBucket],
     SupervisionMetricType.SUPERVISION_SUCCESSFUL_SENTENCE_DAYS_SERVED: [ProjectedSupervisionCompletionBucket],
+    SupervisionMetricType.SUPERVISION_TERMINATION: [SupervisionTerminationBucket],
 }
 
 
@@ -1267,7 +1315,7 @@ def find_assessment_score_change(state_code: str,
         # assessment to the most recent assessment.
         if assessments_in_period and len(assessments_in_period) >= min_assessments:
             # Mypy complains that assessment_date might be None, even though that has already been filtered above.
-            assessments_in_period.sort(key=lambda b: b.assessment_date) # type: ignore[arg-type,return-value]
+            assessments_in_period.sort(key=lambda b: b.assessment_date)  # type: ignore[arg-type,return-value]
 
             first_reliable_assessment = assessments_in_period[index_of_first_reliable_assessment]
             last_assessment = assessments_in_period[-1]

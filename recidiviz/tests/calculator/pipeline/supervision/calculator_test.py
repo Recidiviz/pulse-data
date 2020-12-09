@@ -30,7 +30,8 @@ from recidiviz.calculator.pipeline.supervision.metrics import \
 from recidiviz.calculator.pipeline.supervision.supervision_case_compliance import SupervisionCaseCompliance
 from recidiviz.calculator.pipeline.supervision.supervision_time_bucket import \
     NonRevocationReturnSupervisionTimeBucket, SupervisionTimeBucket, \
-    RevocationReturnSupervisionTimeBucket, ProjectedSupervisionCompletionBucket, SupervisionTerminationBucket
+    RevocationReturnSupervisionTimeBucket, ProjectedSupervisionCompletionBucket, SupervisionTerminationBucket, \
+    SupervisionStartBucket
 from recidiviz.calculator.pipeline.utils import calculator_utils
 from recidiviz.calculator.pipeline.utils.metric_utils import \
     MetricMethodologyType
@@ -42,7 +43,8 @@ from recidiviz.common.constants.state.state_assessment import \
 from recidiviz.common.constants.state.state_case_type import \
     StateSupervisionCaseType
 from recidiviz.common.constants.state.state_supervision_period import \
-    StateSupervisionPeriodTerminationReason, StateSupervisionPeriodSupervisionType, StateSupervisionLevel
+    StateSupervisionPeriodTerminationReason, StateSupervisionPeriodSupervisionType, StateSupervisionLevel, \
+    StateSupervisionPeriodAdmissionReason
 from recidiviz.common.constants.state.state_supervision_violation import \
     StateSupervisionViolationType as ViolationType, \
     StateSupervisionViolationType
@@ -1406,6 +1408,41 @@ class TestMapSupervisionCombinations(unittest.TestCase):
                    if combo_has_enum_value_for_key(
                        _combination, 'metric_type', SupervisionMetricType.SUPERVISION_SUCCESSFUL_SENTENCE_DAYS_SERVED))
 
+    def test_map_supervision_combinations_start_bucket(self):
+        """Tests the map_supervision_combinations when there are SupervisionStartBuckets sent to the calculator."""
+        person = StatePerson.new_with_defaults(person_id=12345, birthdate=date(1984, 8, 31), gender=Gender.FEMALE)
+        race = StatePersonRace.new_with_defaults(state_code='US_XX', race=Race.WHITE)
+        person.races = [race]
+        ethnicity = StatePersonEthnicity.new_with_defaults(state_code='US_XX', ethnicity=Ethnicity.NOT_HISPANIC)
+        person.ethnicities = [ethnicity]
+
+        start_bucket = SupervisionStartBucket(
+            state_code='US_XX',
+            year=2000,
+            month=1,
+            bucket_date=date(2000, 1, 13),
+            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+            assessment_score=11,
+            assessment_type=StateAssessmentType.LSIR,
+            admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
+        )
+
+        supervision_time_buckets = [start_bucket]
+
+        supervision_combinations = calculator.map_supervision_combinations(
+            person,
+            supervision_time_buckets,
+            ALL_METRICS_INCLUSIONS_DICT,
+            calculation_end_month='2000-01',
+            calculation_month_count=-1,
+            person_metadata=_DEFAULT_PERSON_METADATA
+        )
+
+        expected_combinations_count = expected_metric_combos_count(supervision_time_buckets)
+
+        self.assertEqual(expected_combinations_count, len(supervision_combinations))
+        assert all(value == 1 for _combination, value in supervision_combinations)
+
     def test_map_supervision_combinations_termination_bucket(self):
         """Tests the map_supervision_combinations when there are SupervisionTerminationBuckets sent to the
         calculator."""
@@ -2717,6 +2754,10 @@ def expected_metric_combos_count(
         bucket for bucket in supervision_time_buckets if isinstance(bucket, SupervisionTerminationBucket)
     ]
 
+    start_buckets = [
+        bucket for bucket in supervision_time_buckets if isinstance(bucket, SupervisionStartBucket)
+    ]
+
     # Count number of buckets and number of buckets in the same month
     num_projected_completion_sentence_length_buckets = len(successful_completion_sentence_length_buckets)
     num_duplicated_projected_completion_sentence_length_months = _duplicated_months(
@@ -2736,6 +2777,9 @@ def expected_metric_combos_count(
 
     num_termination_buckets = len(termination_buckets)
     num_duplicated_termination_buckets = _duplicated_months(termination_buckets)
+
+    num_start_buckets = len(start_buckets)
+    num_duplicated_start_buckets = _duplicated_months(start_buckets)
 
     revocation_violation_type_analysis_dimension_multiplier = 1
     num_violation_types = 0
@@ -2764,6 +2808,7 @@ def expected_metric_combos_count(
     # Person-level metrics for the metric types that limit to only person-output
     supervision_population_combos = (num_population_buckets +
                                      (num_population_buckets - num_duplicated_population_buckets))
+    supervision_start_combos = (num_start_buckets + (num_start_buckets - num_duplicated_start_buckets))
     supervision_compliance_combos = (num_compliance_buckets +
                                      (num_compliance_buckets - num_duplicated_compliance_buckets))
     supervision_revocation_combos = (num_revocation_buckets +
@@ -2795,6 +2840,7 @@ def expected_metric_combos_count(
     if include_all_metrics:
         return int(supervision_population_combos +
                    supervision_revocation_combos +
+                   supervision_start_combos +
                    supervision_success_combos +
                    supervision_successful_sentence_length_combos +
                    supervision_termination_combos +
@@ -2807,6 +2853,8 @@ def expected_metric_combos_count(
             return int(supervision_termination_combos)
         if metric_to_include == SupervisionMetricType.SUPERVISION_COMPLIANCE:
             return int(supervision_compliance_combos)
+        if metric_to_include == SupervisionMetricType.SUPERVISION_START:
+            return int(supervision_start_combos)
         if metric_to_include == SupervisionMetricType.SUPERVISION_SUCCESS:
             return int(supervision_success_combos)
         if metric_to_include == SupervisionMetricType.SUPERVISION_SUCCESSFUL_SENTENCE_DAYS_SERVED:

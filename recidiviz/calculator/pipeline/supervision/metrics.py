@@ -27,7 +27,8 @@ from recidiviz.common.attr_mixins import BuildableAttr
 from recidiviz.common.constants.state.state_case_type import \
     StateSupervisionCaseType
 from recidiviz.common.constants.state.state_supervision_period import \
-    StateSupervisionPeriodTerminationReason, StateSupervisionPeriodSupervisionType, StateSupervisionLevel
+    StateSupervisionPeriodTerminationReason, StateSupervisionPeriodSupervisionType, StateSupervisionLevel, \
+    StateSupervisionPeriodAdmissionReason
 from recidiviz.common.constants.state.state_supervision_violation import \
     StateSupervisionViolationType
 from recidiviz.common.constants.state.state_supervision_violation_response \
@@ -43,6 +44,7 @@ class SupervisionMetricType(RecidivizMetricType):
     SUPERVISION_REVOCATION = 'SUPERVISION_REVOCATION'
     SUPERVISION_REVOCATION_ANALYSIS = 'SUPERVISION_REVOCATION_ANALYSIS'
     SUPERVISION_REVOCATION_VIOLATION_TYPE_ANALYSIS = 'SUPERVISION_REVOCATION_VIOLATION_TYPE_ANALYSIS'
+    SUPERVISION_START = 'SUPERVISION_START'
     SUPERVISION_SUCCESS = 'SUPERVISION_SUCCESS'
     SUPERVISION_SUCCESSFUL_SENTENCE_DAYS_SERVED = 'SUPERVISION_SUCCESSFUL_SENTENCE_DAYS_SERVED'
     SUPERVISION_TERMINATION = 'SUPERVISION_TERMINATION'
@@ -386,6 +388,39 @@ class SupervisionTerminationMetric(SupervisionMetric, PersonLevelMetric, Violati
         supervision_metric = cast(
             SupervisionTerminationMetric,
             SupervisionTerminationMetric.build_from_dictionary(metric_key))
+
+        return supervision_metric
+
+
+@attr.s
+class SupervisionStartMetric(SupervisionMetric, PersonLevelMetric):
+    """Subclass of SupervisionMetric that contains information about the start of supervision."""
+
+    # Required characteristics
+
+    # The type of SupervisionMetric
+    metric_type: SupervisionMetricType = attr.ib(init=False, default=SupervisionMetricType.SUPERVISION_START)
+
+    # Optional characteristics
+
+    # The reason the supervision was started
+    admission_reason: Optional[StateSupervisionPeriodAdmissionReason] = attr.ib(default=None)
+
+    # The date the supervision was started
+    start_date: Optional[date] = attr.ib(default=None)
+
+    @staticmethod
+    def build_from_metric_key_group(metric_key: Dict[str, Any], job_id: str) -> \
+            Optional['SupervisionStartMetric']:
+        """Builds a SupervisionStartMetric object from the given arguments."""
+
+        if not metric_key:
+            raise ValueError("The metric_key is empty.")
+
+        metric_key['job_id'] = job_id
+        metric_key['created_on'] = date.today()
+
+        supervision_metric = cast(SupervisionStartMetric, SupervisionStartMetric.build_from_dictionary(metric_key))
 
         return supervision_metric
 
