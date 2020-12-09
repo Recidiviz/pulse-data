@@ -17,15 +17,17 @@
 """Tests for us_id_supervision_type_identification.py"""
 import unittest
 from datetime import date
+from typing import Optional
 
 from dateutil.relativedelta import relativedelta
 from freezegun import freeze_time
 
+from recidiviz.calculator.pipeline.supervision.supervision_time_bucket import RevocationReturnSupervisionTimeBucket
 from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_supervision_type_identification import \
     us_id_get_pre_incarceration_supervision_type, \
     us_id_get_most_recent_supervision_period_supervision_type_before_upper_bound_day, \
     SUPERVISION_TYPE_LOOKBACK_DAYS_LIMIT, us_id_get_post_incarceration_supervision_type, \
-    us_id_get_supervision_period_admission_override
+    us_id_supervision_period_is_out_of_state, us_id_get_supervision_period_admission_override
 from recidiviz.calculator.pipeline.utils.supervision_period_index import SupervisionPeriodIndex
 from recidiviz.common.constants.state.state_incarceration_period import StateIncarcerationPeriodAdmissionReason, \
     StateIncarcerationPeriodReleaseReason
@@ -385,7 +387,6 @@ class UsIdGetMostRecentSupervisionPeriodSupervisionTypeBeforeUpperBoundDayTest(u
 
         self.assertEqual(supervision_period_supervision_type, None)
 
-
 class UsIdGetSupervisionPeriodAdmissionOverrideTest(unittest.TestCase):
     """Unittests for the us_id_get_supervision_period_admission_override."""
 
@@ -495,3 +496,37 @@ class UsIdGetSupervisionPeriodAdmissionOverrideTest(unittest.TestCase):
         found_admission_reason_for_ongoing = us_id_get_supervision_period_admission_override(
             supervision_period=supervision_period_ongoing, supervision_period_index=idx)
         self.assertEqual(supervision_period_ongoing.admission_reason, found_admission_reason_for_ongoing)
+
+
+class TestSupervisionPeriodIsOutOfState(unittest.TestCase):
+    """Tests the state-specific supervision_period_is_out_of_state function."""
+
+    def test_supervision_period_is_out_of_state_with_identifier_interstate(self):
+        self.assertTrue(us_id_supervision_period_is_out_of_state(self.create_time_bucket(
+            "INTERSTATE PROBATION - remainder of identifier")))
+
+    def test_supervision_period_is_out_of_state_with_identifier_parole(self):
+        self.assertTrue(us_id_supervision_period_is_out_of_state(self.create_time_bucket(
+            "PAROLE COMMISSION OFFICE - remainder of identifier")))
+
+    def test_supervision_period_is_out_of_state_with_partial_identifier(self):
+        self.assertFalse(us_id_supervision_period_is_out_of_state(self.create_time_bucket(
+            "INTERSTATE - remainder of identifier")))
+
+    def test_supervision_period_is_out_of_state_with_incorrect_identifier(self):
+        self.assertFalse(us_id_supervision_period_is_out_of_state(self.create_time_bucket("Invalid")))
+
+    def test_supervision_period_is_out_of_state_with_empty_identifier(self):
+        self.assertFalse(us_id_supervision_period_is_out_of_state(self.create_time_bucket(None)))
+
+    @staticmethod
+    def create_time_bucket(supervising_district_external_id: Optional[str]):
+        return RevocationReturnSupervisionTimeBucket(
+            state_code="US_ID",
+            year=2010,
+            month=1,
+            bucket_date=date(2010, 1, 1),
+            is_on_supervision_last_day_of_month=False,
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervising_district_external_id=supervising_district_external_id
+        )

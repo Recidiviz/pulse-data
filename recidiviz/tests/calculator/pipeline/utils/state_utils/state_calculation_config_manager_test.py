@@ -16,13 +16,14 @@
 # =============================================================================
 """Tests the functions in the state_calculation_config_manager file."""
 from datetime import date
-from typing import List
+from typing import List, Optional
 
 import unittest
 import attr
 
 from dateutil.relativedelta import relativedelta
 
+from recidiviz.calculator.pipeline.supervision.supervision_time_bucket import RevocationReturnSupervisionTimeBucket
 from recidiviz.calculator.pipeline.utils.state_utils import state_calculation_config_manager
 from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_manager import \
     get_supervising_officer_and_location_info_from_supervision_period
@@ -385,3 +386,39 @@ class TestGetSupervisingOfficerAndLocationInfoFromSupervisionPeriod(unittest.Tes
         self.assertEqual('agent_external_id_1', supervising_officer_external_id)
         self.assertEqual('04C', level_1_supervision_location)
         self.assertEqual(None, level_2_supervision_location)
+
+
+class TestSupervisionPeriodIsOutOfState(unittest.TestCase):
+    """Tests the state-specific supervision_period_is_out_of_state function."""
+
+    def test_supervision_period_is_out_of_state_us_id_with_identifier(self):
+        self.assertTrue(state_calculation_config_manager.supervision_period_is_out_of_state(
+            self.create_time_bucket("US_ID", "INTERSTATE PROBATION - remainder of identifier")))
+
+    def test_supervision_period_is_out_of_state_us_id_with_incorrect_identifier(self):
+        self.assertFalse(state_calculation_config_manager.supervision_period_is_out_of_state(
+            self.create_time_bucket("US_ID", "Incorrect - remainder of identifier")))
+
+    def test_supervision_period_is_out_of_state_us_id_with_empty_identifier(self):
+        self.assertFalse(state_calculation_config_manager.supervision_period_is_out_of_state(
+            self.create_time_bucket("US_ID", None)))
+
+    def test_supervision_period_is_out_of_state_us_mo_with_identifier(self):
+        self.assertFalse(state_calculation_config_manager.supervision_period_is_out_of_state(
+            self.create_time_bucket("US_MO", "INTERSTATE PROBATION - remainder of identifier")))
+
+    def test_supervision_period_is_out_of_state_us_mo_with_incorrect_identifier(self):
+        self.assertFalse(state_calculation_config_manager.supervision_period_is_out_of_state(
+            self.create_time_bucket("US_MO", "Incorrect - remainder of identifier")))
+
+    @staticmethod
+    def create_time_bucket(state_code: str, supervising_district_external_id: Optional[str]):
+        return RevocationReturnSupervisionTimeBucket(
+            state_code=state_code,
+            year=2010,
+            month=1,
+            bucket_date=date(2010, 1, 1),
+            is_on_supervision_last_day_of_month=False,
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervising_district_external_id=supervising_district_external_id
+        )
