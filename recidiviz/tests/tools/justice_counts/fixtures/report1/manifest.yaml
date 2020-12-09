@@ -12,6 +12,12 @@ tables:
       metric:
         population:
           population_type: 'PRISON'
+          measurement_type: 'INSTANT'
+      dimension_columns:
+        - column_name: 'Facility'
+          dimension_name: 'FACILITY'
+      value_column:
+        column_name: 'Population'
       location:
         state: 'US_CO'
       methodology: 'Unknown'
@@ -24,6 +30,12 @@ tables:
       metric:
         population:
           population_type: 'PRISON'
+          measurement_type: 'INSTANT'
+      dimension_columns:
+        - column_name: 'Facility'
+          dimension_name: 'FACILITY'
+      value_column:
+        column_name: 'Population'
       location:
         state: 'US_CO'
       methodology: 'Unknown'
@@ -36,6 +48,12 @@ tables:
       metric:
         population:
           population_type: 'PRISON'
+          measurement_type: 'INSTANT'
+      dimension_columns:
+        - column_name: 'Facility'
+          dimension_name: 'FACILITY'
+      value_column:
+        column_name: 'Population'
       location:
         state: 'US_CO'
       methodology: 'Unknown'
