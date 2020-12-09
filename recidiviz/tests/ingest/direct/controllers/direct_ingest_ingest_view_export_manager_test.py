@@ -17,7 +17,7 @@
 """Tests for direct_ingest_ingest_view_export_manager.py."""
 import datetime
 import unittest
-from typing import List
+from typing import List, Optional, Dict
 
 import attr
 import mock
@@ -27,6 +27,7 @@ from google.cloud.bigquery import ScalarQueryParameter
 from mock import patch
 from more_itertools import one
 
+from recidiviz.big_query.big_query_view import BigQueryViewBuilder
 from recidiviz.big_query.big_query_view_collector import BigQueryViewCollector
 from recidiviz.ingest.direct.controllers.direct_ingest_big_query_view_types import DirectIngestPreProcessedIngestView
 from recidiviz.ingest.direct.controllers.direct_ingest_ingest_view_export_manager import \
@@ -54,7 +55,42 @@ _DATE_3 = datetime.datetime(year=2021, month=7, day=20)
 _DATE_4 = datetime.datetime(year=2022, month=7, day=20)
 
 
-class _ViewCollector(BigQueryViewCollector[DirectIngestPreProcessedIngestView]):
+class _FakeDirectIngestViewBuilder(BigQueryViewBuilder[DirectIngestPreProcessedIngestView]):
+    """Fake BQ View Builder for tests."""
+    def __init__(self, tag: str, is_detect_row_deletion_view: bool = False):
+        self.tag = tag
+        self.is_detect_row_deletion_view = is_detect_row_deletion_view
+
+    def build(self,
+              *,
+              dataset_overrides: Optional[Dict[str, str]] = None  # pylint: disable=unused-argument
+              ) -> DirectIngestPreProcessedIngestView:
+        region_config = DirectIngestRegionRawFileConfig(
+            region_code='us_xx',
+            yaml_config_file_path=fixtures.as_filepath('us_xx_raw_data_files.yaml', subdir='fixtures'),
+        )
+
+        query = 'select * from {file_tag_first} JOIN {tagFullHistoricalExport} USING (COL_1)'
+        primary_key_tables_for_entity_deletion = \
+            [] if not self.is_detect_row_deletion_view else ['tagFullHistoricalExport']
+        return DirectIngestPreProcessedIngestView(
+            ingest_view_name=self.tag,
+            view_query_template=query,
+            region_raw_table_config=region_config,
+            order_by_cols='colA, colC',
+            is_detect_row_deletion_view=self.is_detect_row_deletion_view,
+            primary_key_tables_for_entity_deletion=primary_key_tables_for_entity_deletion,
+        )
+
+    def build_and_print(self) -> None:
+        self.build()
+
+    @property
+    def file_tag(self):
+        return self.tag
+
+
+class _ViewCollector(BigQueryViewCollector[_FakeDirectIngestViewBuilder]):
     """Fake ViewCollector for tests."""
     def __init__(self,
                  region: Region,
@@ -64,29 +100,13 @@ class _ViewCollector(BigQueryViewCollector[DirectIngestPreProcessedIngestView]):
         self.controller_file_tags = controller_file_tags
         self.is_detect_row_deletion_view = is_detect_row_deletion_view
 
-    def collect_views(self) -> List[DirectIngestPreProcessedIngestView]:
-
-        region_config = DirectIngestRegionRawFileConfig(
-            region_code='us_xx',
-            yaml_config_file_path=fixtures.as_filepath('us_xx_raw_data_files.yaml', subdir='fixtures'),
-        )
-
-        query = 'select * from {file_tag_first} JOIN {tagFullHistoricalExport} USING (COL_1)'
-        primary_key_tables_for_entity_deletion = \
-            [] if not self.is_detect_row_deletion_view else ['tagFullHistoricalExport']
-        views = [
-            DirectIngestPreProcessedIngestView(
-                ingest_view_name=tag,
-                view_query_template=query,
-                region_raw_table_config=region_config,
-                order_by_cols='colA, colC',
-                is_detect_row_deletion_view=self.is_detect_row_deletion_view,
-                primary_key_tables_for_entity_deletion=primary_key_tables_for_entity_deletion,
-            )
+    def collect_view_builders(self) -> List[_FakeDirectIngestViewBuilder]:
+        builders = [
+            _FakeDirectIngestViewBuilder(tag=tag, is_detect_row_deletion_view=self.is_detect_row_deletion_view)
             for tag in self.controller_file_tags
         ]
 
-        return views
+        return builders
 
 
 class DirectIngestIngestViewExportManagerTest(unittest.TestCase):

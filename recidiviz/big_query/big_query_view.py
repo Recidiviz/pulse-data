@@ -171,6 +171,9 @@ class BigQueryViewBuilder(Generic[BigQueryViewType]):
         pass
 
 
+BigQueryViewBuilderType = TypeVar('BigQueryViewBuilderType', bound=BigQueryViewBuilder)
+
+
 class SimpleBigQueryViewBuilder(BigQueryViewBuilder):
     """Class that builds a BigQueryView. Can be instantiated as a top-level variable, unlike a BigQueryView, whose
     constructor requires that a project_id has been properly set in the metadata package - something that often happens

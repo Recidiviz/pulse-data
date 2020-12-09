@@ -541,6 +541,10 @@ class DirectIngestPreProcessedIngestViewBuilder(BigQueryViewBuilder[DirectIngest
         self.primary_key_tables_for_entity_deletion = primary_key_tables_for_entity_deletion or []
         self.materialize_raw_data_table_views = materialize_raw_data_table_views
 
+    @property
+    def file_tag(self):
+        return self.ingest_view_name
+
     # pylint: disable=unused-argument
     def build(self, *, dataset_overrides: Optional[Dict[str, str]] = None) -> DirectIngestPreProcessedIngestView:
         """Builds an instance of a DirectIngestPreProcessedIngestView with the provided args."""
