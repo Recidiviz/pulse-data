@@ -37,12 +37,13 @@ from recidiviz.calculator.pipeline.supervision.metrics import \
     SupervisionMetricType, SupervisionSuccessMetric, SupervisionMetric, SupervisionPopulationMetric, \
     SupervisionRevocationMetric, SupervisionTerminationMetric, SupervisionCaseComplianceMetric, \
     SuccessfulSupervisionSentenceDaysServedMetric, SupervisionRevocationAnalysisMetric, \
-    SupervisionRevocationViolationTypeAnalysisMetric, SupervisionStartMetric
+    SupervisionRevocationViolationTypeAnalysisMetric, SupervisionStartMetric, SupervisionOutOfStatePopulationMetric
 from recidiviz.calculator.pipeline.utils.metric_utils import MetricMethodologyType
 from recidiviz.calculator.pipeline.utils.person_utils import PersonMetadata
 from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_manager import \
-    supervision_types_mutually_exclusive_for_state
+    supervision_types_mutually_exclusive_for_state, supervision_period_is_out_of_state
 from recidiviz.persistence.entity.state.entities import StatePerson
+
 
 
 def map_supervision_combinations(person: StatePerson,
@@ -150,7 +151,23 @@ def map_supervision_combinations(person: StatePerson,
                 metrics.extend(start_metrics)
         elif isinstance(supervision_time_bucket,
                         (NonRevocationReturnSupervisionTimeBucket, RevocationReturnSupervisionTimeBucket)):
-            if metric_inclusions.get(SupervisionMetricType.SUPERVISION_POPULATION):
+            # If the individuals under supervision are serving their supervision in another state, they should be
+            # counted as a part of the SupervisionOutOfStatePopulationMetric.
+            if supervision_period_is_out_of_state(supervision_time_bucket) and \
+               metric_inclusions.get(SupervisionMetricType.SUPERVISION_OUT_OF_STATE_POPULATION):
+                characteristic_combo_population = characteristics_dict(
+                    person, supervision_time_bucket, SupervisionOutOfStatePopulationMetric, person_metadata)
+
+                out_of_state_population_metrics = map_metric_combinations(
+                    characteristic_combo_population, supervision_time_bucket,
+                    calculation_month_upper_bound, calculation_month_lower_bound,
+                    supervision_time_buckets, periods_and_buckets,
+                    SupervisionMetricType.SUPERVISION_OUT_OF_STATE_POPULATION,
+                    # The SupervisionPopulationOutOfStateMetric metric is explicitly a daily metric
+                    include_metric_period_output=False)
+
+                metrics.extend(out_of_state_population_metrics)
+            elif metric_inclusions.get(SupervisionMetricType.SUPERVISION_POPULATION):
                 characteristic_combo_population = characteristics_dict(
                     person, supervision_time_bucket, SupervisionPopulationMetric, person_metadata)
 
@@ -312,7 +329,8 @@ def map_metric_combinations(
         # the event
         is_daily_metric = metric_type in (SupervisionMetricType.SUPERVISION_POPULATION,
                                           SupervisionMetricType.SUPERVISION_START,
-                                          SupervisionMetricType.SUPERVISION_COMPLIANCE)
+                                          SupervisionMetricType.SUPERVISION_COMPLIANCE,
+                                          SupervisionMetricType.SUPERVISION_OUT_OF_STATE_POPULATION)
 
         metrics.extend(combination_supervision_monthly_metrics(
             characteristic_combo, supervision_time_bucket,
@@ -460,7 +478,8 @@ def combination_supervision_monthly_metrics(
 
     buckets_in_period: List[SupervisionTimeBucket] = []
 
-    if metric_type == SupervisionMetricType.SUPERVISION_POPULATION:
+    if metric_type in (SupervisionMetricType.SUPERVISION_POPULATION,
+                       SupervisionMetricType.SUPERVISION_OUT_OF_STATE_POPULATION):
         # Get all other supervision time buckets for the same day as this one
         buckets_in_period = [
             bucket for bucket in all_supervision_time_buckets
@@ -629,11 +648,11 @@ def include_supervision_in_count(combo: Dict[str, Any],
     metric, or the combo is for the person-level output, then the person-based count should take into account all
     buckets in the period.
 
-    If the metric is of type SUPERVISION_POPULATION, and there are buckets that represent revocation in that period,
-    then this bucket is included only if it is the last instance of revocation for the period. However, if none of the
-    buckets represent revocation, then this bucket is included if it is the last bucket in the period. If the metric is
-    of type SUPERVISION_REVOCATION, SUPERVISION_SUCCESS, or SUPERVISION_TERMINATION, then this bucket is included only
-    if it is the last bucket in the period.
+    If the metric is of type SUPERVISION_POPULATION or SUPERVISION_OUT_OF_STATE_POPULATION, and there are buckets that
+    represent revocation in that period, then this bucket is included only if it is the last instance of revocation for
+    the period. However, if none of the buckets represent revocation, then this bucket is included if it is the last
+    bucket in the period. If the metric is of type SUPERVISION_REVOCATION, SUPERVISION_SUCCESS, or
+    SUPERVISION_TERMINATION, then this bucket is included only if it is the last bucket in the period.
 
     If the metric is of type SUPERVISION_SUCCESSFUL_SENTENCE_DAYS_SERVED, then a bucket for this month is only included
     if all supervision sentences that were projected to complete in this period finished successfully and were not
@@ -666,7 +685,8 @@ def include_supervision_in_count(combo: Dict[str, Any],
     # Sort by the revocation admission date
     revocation_buckets.sort(key=lambda b: b.bucket_date)
 
-    if metric_type == SupervisionMetricType.SUPERVISION_POPULATION:
+    if metric_type in (SupervisionMetricType.SUPERVISION_POPULATION,
+                       SupervisionMetricType.SUPERVISION_OUT_OF_STATE_POPULATION):
         if revocation_buckets:
             # If there are SupervisionTimeBuckets that are of type RevocationReturnSupervisionTimeBucket, then we want
             # to include that bucket in the counts over any NonRevocationReturnSupervisionTimeBucket. This ensures that
@@ -724,9 +744,9 @@ def _person_combo_value(combo: Dict[str, Any],
     """Determines what the value should be for a person-based metric given the combo, the supervision_time_bucket,
     the buckets in the period, and the type of metric this combo will be contributing to.
 
-    All values will be 1 for the SUPERVISION_POPULATION, SUPERVISION_REVOCATION, and SUPERVISION_TERMINATION metrics,
-    because the presence of a SupervisionTimeBucket for a given time bucket implies that the person should be counted
-    in the metric.
+    All values will be 1 for the SUPERVISION_POPULATION, SUPERVISION_OUT_OF_STATE_POPULATION,
+    SUPERVISION_REVOCATION, and SUPERVISION_TERMINATION metrics, because the presence of a SupervisionTimeBucket for a
+    given time bucket implies that the person should be counted in the metric.
 
     The value for SUPERVISION_SUCCESSFUL_SENTENCE_DAYS_SERVED metrics will be the sentence_days_served value on the
     given supervision_time_bucket.

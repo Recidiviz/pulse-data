@@ -30,7 +30,7 @@ from apache_beam.typehints import with_input_types, with_output_types
 from recidiviz.calculator.dataflow_output_storage_config import DATAFLOW_METRICS_TO_TABLES
 from recidiviz.calculator.pipeline.supervision import identifier, calculator
 from recidiviz.calculator.pipeline.supervision.metrics import \
-    SupervisionMetric, SupervisionPopulationMetric, \
+    SupervisionMetric, SupervisionPopulationMetric, SupervisionOutOfStatePopulationMetric, \
     SupervisionRevocationMetric, SupervisionSuccessMetric, \
     SupervisionRevocationAnalysisMetric, SupervisionRevocationViolationTypeAnalysisMetric, \
     SuccessfulSupervisionSentenceDaysServedMetric, SupervisionCaseComplianceMetric, SupervisionTerminationMetric, \
@@ -261,6 +261,11 @@ class ProduceSupervisionMetrics(beam.DoFn):
             dict_metric_key['count'] = 1
 
             supervision_metric = SupervisionCaseComplianceMetric.build_from_metric_key_group(
+                dict_metric_key, pipeline_job_id)
+        elif metric_type == SupervisionMetricType.SUPERVISION_OUT_OF_STATE_POPULATION:
+            dict_metric_key['count'] = 1
+
+            supervision_metric = SupervisionOutOfStatePopulationMetric.build_from_metric_key_group(
                 dict_metric_key, pipeline_job_id)
         else:
             logging.error("Unexpected metric of type: %s", metric_type)
@@ -601,7 +606,8 @@ def run(apache_beam_pipeline_options: PipelineOptions,
                                     SupervisionMetricType.SUPERVISION_START.value,
                                     SupervisionMetricType.SUPERVISION_SUCCESS.value,
                                     SupervisionMetricType.SUPERVISION_SUCCESSFUL_SENTENCE_DAYS_SERVED.value,
-                                    SupervisionMetricType.SUPERVISION_TERMINATION.value
+                                    SupervisionMetricType.SUPERVISION_TERMINATION.value,
+                                    SupervisionMetricType.SUPERVISION_OUT_OF_STATE_POPULATION.value,
                                 )
                             )
 
@@ -615,11 +621,19 @@ def run(apache_beam_pipeline_options: PipelineOptions,
         successes_table_id = DATAFLOW_METRICS_TO_TABLES[SupervisionSuccessMetric]
         successful_sentence_lengths_table_id = DATAFLOW_METRICS_TO_TABLES[SuccessfulSupervisionSentenceDaysServedMetric]
         supervision_starts_table_id = DATAFLOW_METRICS_TO_TABLES[SupervisionStartMetric]
+        out_of_state_populations_table_id = DATAFLOW_METRICS_TO_TABLES[SupervisionOutOfStatePopulationMetric]
 
         _ = (writable_metrics.SUPERVISION_POPULATION
              | f"Write population metrics to BQ table: {populations_table_id}" >>
              WriteAppendToBigQuery(
                  output_table=populations_table_id,
+                 output_dataset=output,
+             ))
+
+        _ = (writable_metrics.SUPERVISION_OUT_OF_STATE_POPULATION
+             | f"Write out of state population metrics to BQ table: {out_of_state_populations_table_id}" >>
+             WriteAppendToBigQuery(
+                 output_table=out_of_state_populations_table_id,
                  output_dataset=output,
              ))
 

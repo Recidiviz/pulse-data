@@ -21,6 +21,8 @@ from typing import List, Optional
 
 from dateutil.relativedelta import relativedelta
 
+from recidiviz.common.constants.state.state_supervision_period import FEDERAL_CUSTODIAL_AUTHORITY,\
+    OTHER_COUNTRY_CUSTODIAL_AUTHORITY
 from recidiviz.persistence.entity.entity_utils import is_placeholder
 from recidiviz.persistence.entity.state.entities import StateSupervisionPeriod
 
@@ -28,18 +30,14 @@ from recidiviz.persistence.entity.state.entities import StateSupervisionPeriod
 # period to attribute the revocation to
 SUPERVISION_PERIOD_PROXIMITY_MONTH_LIMIT = 24
 
-# The suffix appended to the state_code that represents the custodial authority of that state's Department of
-# Corrections
-STATE_DOC_CUSTODIAL_AUTHORITY_SUFFIX = '_DOC'
-
 
 def prepare_supervision_periods_for_calculations(supervision_periods: List[StateSupervisionPeriod],
-                                                 drop_non_state_custodial_authority_periods: bool) -> \
+                                                 drop_federal_and_other_country_supervision_periods: bool) -> \
         List[StateSupervisionPeriod]:
     supervision_periods = _drop_placeholder_periods(supervision_periods)
 
-    if drop_non_state_custodial_authority_periods:
-        supervision_periods = _drop_non_state_custodial_authority_periods(supervision_periods)
+    if drop_federal_and_other_country_supervision_periods:
+        supervision_periods = _drop_other_country_and_federal_supervision_periods(supervision_periods)
 
     return supervision_periods
 
@@ -70,13 +68,12 @@ def _set_unset_start_dates(supervision_periods: List[StateSupervisionPeriod]) ->
     return updated_periods
 
 
-def _drop_non_state_custodial_authority_periods(supervision_periods: List[StateSupervisionPeriod]) -> \
+def _drop_other_country_and_federal_supervision_periods(supervision_periods: List[StateSupervisionPeriod]) -> \
         List[StateSupervisionPeriod]:
-    """Drops all supervision periods where the custodial_authority is not the state DOC of the state_code on the
-    supervision_period."""
+    """Drop all supervision periods whose custodial authority ."""
     return [
         period for period in supervision_periods
-        if period.custodial_authority == (period.state_code + STATE_DOC_CUSTODIAL_AUTHORITY_SUFFIX)
+        if period.custodial_authority not in (FEDERAL_CUSTODIAL_AUTHORITY, OTHER_COUNTRY_CUSTODIAL_AUTHORITY)
     ]
 
 

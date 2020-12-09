@@ -26,7 +26,7 @@ from recidiviz.calculator.pipeline.program.program_event import \
 from recidiviz.calculator.pipeline.utils import assessment_utils
 from recidiviz.calculator.pipeline.utils.execution_utils import list_of_dicts_to_dict_with_keys
 from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_manager import \
-    only_state_custodial_authority_in_supervision_population, \
+    filter_out_federal_and_other_country_supervision_periods, \
     get_supervising_officer_and_location_info_from_supervision_period
 from recidiviz.calculator.pipeline.utils.supervision_period_utils import prepare_supervision_periods_for_calculations
 from recidiviz.common.constants.state.state_assessment import \
@@ -71,12 +71,12 @@ def find_program_events(
 
     state_code = get_single_state_code(program_assignments)
 
-    should_drop_non_state_custodial_authority_periods = \
-        only_state_custodial_authority_in_supervision_population(state_code)
+    should_drop_federal_and_other_country = \
+        filter_out_federal_and_other_country_supervision_periods(state_code)
 
     supervision_periods = prepare_supervision_periods_for_calculations(
         supervision_periods,
-        drop_non_state_custodial_authority_periods=should_drop_non_state_custodial_authority_periods)
+        drop_federal_and_other_country_supervision_periods=should_drop_federal_and_other_country)
 
     for program_assignment in program_assignments:
         program_referrals = find_program_referrals(

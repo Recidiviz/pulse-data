@@ -18,10 +18,12 @@
 import itertools
 from collections import defaultdict
 from datetime import date
-from typing import Optional, List, Dict, Set
+from typing import Optional, List, Dict, Set, Union
 
 from dateutil.relativedelta import relativedelta
 
+from recidiviz.calculator.pipeline.supervision.supervision_time_bucket import \
+    NonRevocationReturnSupervisionTimeBucket, RevocationReturnSupervisionTimeBucket
 from recidiviz.calculator.pipeline.utils.supervision_period_index import SupervisionPeriodIndex
 from recidiviz.calculator.pipeline.utils.supervision_type_identification import _get_most_relevant_supervision_type
 from recidiviz.common.common_utils import date_spans_overlap_exclusive
@@ -35,6 +37,8 @@ from recidiviz.persistence.entity.state.entities import StateIncarcerationSenten
 # limit the search for a pre or post-incarceration supervision type to 30 days prior to admission or 30 days following
 # release.
 SUPERVISION_TYPE_LOOKBACK_DAYS_LIMIT = 30
+
+_OUT_OF_STATE_EXTERNAL_ID_IDENTIFIERS: List[str] = ["INTERSTATE PROBATION", "PAROLE COMMISSION OFFICE"]
 
 
 def us_id_get_pre_incarceration_supervision_type(
@@ -154,6 +158,17 @@ def _get_supervision_periods_from_sentences(incarceration_sentences: List[StateI
                 supervision_period_ids.add(supervision_period_id)
 
     return supervision_periods
+
+
+def us_id_supervision_period_is_out_of_state(supervision_time_bucket: Union[NonRevocationReturnSupervisionTimeBucket,
+                                                                            RevocationReturnSupervisionTimeBucket]) \
+        -> bool:
+    """ Returns whether the given supervision time bucket should be considered a supervision period that is being
+    served out of state.
+    """
+    # TODO(#4713): Rely on level_2_supervising_district_external_id, once it is populated.
+    external_id = supervision_time_bucket.supervising_district_external_id
+    return external_id is not None and external_id.startswith(tuple(_OUT_OF_STATE_EXTERNAL_ID_IDENTIFIERS))
 
 
 def us_id_get_supervision_period_admission_override(
