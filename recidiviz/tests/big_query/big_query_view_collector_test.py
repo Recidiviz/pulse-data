@@ -22,10 +22,11 @@ import unittest
 from mock import patch
 
 import recidiviz
-from recidiviz.big_query.big_query_view import BigQueryView
 from recidiviz.big_query.big_query_view_collector import BigQueryViewCollector
-from recidiviz.ingest.direct.controllers.direct_ingest_big_query_view_types import DirectIngestPreProcessedIngestView
+from recidiviz.ingest.direct.controllers.direct_ingest_big_query_view_types import \
+    DirectIngestPreProcessedIngestViewBuilder
 from recidiviz.tests.big_query import test_views
+from recidiviz.tests.big_query.fake_big_query_view_builder import FakeBigQueryViewBuilder
 from recidiviz.tests.big_query.test_views.good_view_1 import GOOD_VIEW_1
 from recidiviz.tests.big_query.test_views.good_view_2 import GOOD_VIEW_2
 
@@ -44,34 +45,35 @@ class BigQueryViewCollectorTest(unittest.TestCase):
     def tearDown(self):
         self.metadata_patcher.stop()
 
-    def test_collect_views(self):
-        views = BigQueryViewCollector.collect_and_build_views_in_dir(
-            BigQueryView, VIEWS_DIR_RELATIVE_PATH, view_file_prefix_filter='good_')
+    def test_collect_view_builders(self):
+        builders = BigQueryViewCollector.collect_view_builders_in_dir(
+            FakeBigQueryViewBuilder, VIEWS_DIR_RELATIVE_PATH, view_file_prefix_filter='good_')
+        views = [builder.build() for builder in builders]
         self.assertCountEqual([GOOD_VIEW_1, GOOD_VIEW_2], views)
 
     def test_collect_views_too_narrow_view_type(self):
         with self.assertRaises(ValueError):
             # One of the views is only a BigQueryView, not a DirectIngestPreProcessedIngestView
-            _ = BigQueryViewCollector.collect_and_build_views_in_dir(
-                DirectIngestPreProcessedIngestView, VIEWS_DIR_RELATIVE_PATH, view_file_prefix_filter='good_')
+            _ = BigQueryViewCollector.collect_view_builders_in_dir(
+                DirectIngestPreProcessedIngestViewBuilder, VIEWS_DIR_RELATIVE_PATH, view_file_prefix_filter='good_')
 
     def test_collect_views_narrow_view_type_ok(self):
-        views = BigQueryViewCollector.collect_and_build_views_in_dir(
-            DirectIngestPreProcessedIngestView, VIEWS_DIR_RELATIVE_PATH, view_file_prefix_filter='good_view_2')
+        builders = BigQueryViewCollector.collect_view_builders_in_dir(
+            FakeBigQueryViewBuilder, VIEWS_DIR_RELATIVE_PATH, view_file_prefix_filter='good_view_2')
 
-        self.assertCountEqual([GOOD_VIEW_2], views)
+        self.assertCountEqual([GOOD_VIEW_2], [b.build() for b in builders])
 
     def test_file_no_builder_raises(self):
         with self.assertRaises(ValueError):
-            _ = BigQueryViewCollector.collect_and_build_views_in_dir(
-                BigQueryView, VIEWS_DIR_RELATIVE_PATH, view_file_prefix_filter='bad_view_no_builder')
+            _ = BigQueryViewCollector.collect_view_builders_in_dir(
+                FakeBigQueryViewBuilder, VIEWS_DIR_RELATIVE_PATH, view_file_prefix_filter='bad_view_no_builder')
 
     def test_file_builder_wrong_name_raises(self):
         with self.assertRaises(ValueError):
-            _ = BigQueryViewCollector.collect_and_build_views_in_dir(
-                BigQueryView, VIEWS_DIR_RELATIVE_PATH, view_file_prefix_filter='bad_view_builder_wrong_name')
+            _ = BigQueryViewCollector.collect_view_builders_in_dir(
+                FakeBigQueryViewBuilder, VIEWS_DIR_RELATIVE_PATH, view_file_prefix_filter='bad_view_builder_wrong_name')
 
     def test_file_builder_wrong_type_raises(self):
         with self.assertRaises(ValueError):
-            _ = BigQueryViewCollector.collect_and_build_views_in_dir(
-                BigQueryView, VIEWS_DIR_RELATIVE_PATH, view_file_prefix_filter='bad_view_builder_wrong_type')
+            _ = BigQueryViewCollector.collect_view_builders_in_dir(
+                FakeBigQueryViewBuilder, VIEWS_DIR_RELATIVE_PATH, view_file_prefix_filter='bad_view_builder_wrong_type')
