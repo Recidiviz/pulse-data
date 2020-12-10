@@ -865,17 +865,54 @@ class UsNdController(CsvGcsfsDirectIngestController):
             # 0 means no calculated level, 5 means not classified yet
             StateSupervisionLevel.EXTERNAL_UNKNOWN: ['0', '5'],
 
-            StateSupervisionPeriodTerminationReason.ABSCONSION: ['13'],
-            StateSupervisionPeriodTerminationReason.DEATH: ['11'],
-            StateSupervisionPeriodTerminationReason.DISCHARGE:
-                ['1', '2', '5', '8', '12', '15', '16', '17'],
-            StateSupervisionPeriodTerminationReason.EXPIRATION: ['4', '7', '19', '20'],
-            StateSupervisionPeriodTerminationReason.EXTERNAL_UNKNOWN: ['14'],
+            StateSupervisionPeriodTerminationReason.ABSCONSION: [
+                '13'  # Terminated - Absconded (Active Petition To Revoke)
+            ],
+            StateSupervisionPeriodTerminationReason.DEATH: [
+                '11'  # "Terminated - Death
+            ],
+            StateSupervisionPeriodTerminationReason.DISCHARGE: [
+                '1',  # Terminated - Dismissal (Deferred Imp.)
+                '2',  # Terminated - Early Dismissal (Deferred Imp.)
+                '5',  # Terminated - Termination-Positive (Susp. Sent)"
+                '8',  # Terminated - Released from Community Placement
+                '12',  # Terminated - Returned to Original State-Voluntary
+                '15',  # Terminated - Released from Custody
+                '16',  # Terminated - CCC
+                '17'  # Terminated - Returned to Original State-Violation
+            ],
+            StateSupervisionPeriodTerminationReason.EXPIRATION: [
+                '4',  # Terminated - Expiration (Susp. Sentence)
+                '7',  # Terminated - Expiration (Parole)
+                '19',  # Terminated - Expiration (IC Parole)
+                '20'  # Terminated - Expiration (IC Probation)
+            ],
+            StateSupervisionPeriodTerminationReason.EXTERNAL_UNKNOWN: [
+                '14'  # Terminated - Other
+            ],
             # TODO(#2891): Ensure that all of these codes are migrated to to new admission and release reasons
             # when we migrate these periods to a supervision_period_supervision_type of INVESTIGATION
-            StateSupervisionPeriodTerminationReason.INVESTIGATION: ['21', '22', '23', '24', '25', '26', '27', '28'],
-            StateSupervisionPeriodTerminationReason.REVOCATION: ['9', '10', '18'],
-            StateSupervisionPeriodTerminationReason.SUSPENSION: ['3', '6'],
+            StateSupervisionPeriodTerminationReason.INVESTIGATION: [
+                '21',  # Guilty
+                '22',  # Guilty of Lesser Charge
+                '23',  # Not Guilty
+                '24',  # Dismissed
+                '25',  # Mistrial
+                '26',  # Deferred Prosecution
+                '27',  # Post-Conviction Supervision
+                '28',  # Closed with Active FTA
+                '29',  # Early Termination
+                '30'  # No Conditions Imposed
+            ],
+            StateSupervisionPeriodTerminationReason.REVOCATION: [
+                '9',  # Terminated - Revocation
+                '10',  # Terminated - Revocation with Continuation
+                '18'  # Terminated - Returned to Custody from CPP
+            ],
+            StateSupervisionPeriodTerminationReason.SUSPENSION: [
+                '3',  # Terminated - Termination (Deferred Imp.)
+                '6'  # Terminated - Termination-Negative (Susp. Sent)
+            ],
 
             StateProgramAssignmentParticipationStatus.PENDING: ['Submitted', 'Pending Coordinator'],
 
