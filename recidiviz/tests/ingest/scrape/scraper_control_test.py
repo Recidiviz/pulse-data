@@ -28,6 +28,7 @@ from recidiviz.ingest.scrape import (constants, scrape_phase, scraper_control,
 from recidiviz.ingest.scrape.base_scraper import BaseScraper
 from recidiviz.persistence import batch_persistence
 from recidiviz.tests.utils.fake_region import fake_region
+from recidiviz.tests.utils.thread_pool import SerialExecutor
 
 
 def create_test_client():
@@ -41,7 +42,7 @@ def create_test_client():
 
 
 def _MockSupported(timezone=None, stripes=None):
-    del stripes #this is added to match the mocking arguments
+    del stripes  # this is added to match the mocking arguments
     if not timezone:
         regions = ['us_ut', 'us_wy']
     elif timezone == pytz.timezone('America/New_York'):
@@ -51,6 +52,7 @@ def _MockSupported(timezone=None, stripes=None):
     return regions
 
 
+@patch("concurrent.futures.ThreadPoolExecutor", SerialExecutor)
 @patch('recidiviz.utils.metadata.project_id', Mock(return_value='test-project'))
 @patch('recidiviz.utils.metadata.project_number', Mock(return_value='123456789'))
 class TestScraperStart(unittest.TestCase):
@@ -291,6 +293,7 @@ class TestScraperStart(unittest.TestCase):
         mock_supported.assert_called_with(stripes=[], timezone=None)
 
 
+@patch("concurrent.futures.ThreadPoolExecutor", SerialExecutor)
 @patch('recidiviz.utils.metadata.project_id', Mock(return_value='test-project'))
 @patch('recidiviz.utils.metadata.project_number', Mock(return_value='123456789'))
 class TestScraperStop(unittest.TestCase):
@@ -380,7 +383,8 @@ class TestScraperStop(unittest.TestCase):
             [call(ScrapeKey('us_ca', constants.ScrapeType.BACKGROUND)),
              call(ScrapeKey('us_ca', constants.ScrapeType.SNAPSHOT)),
              call(ScrapeKey('us_ut', constants.ScrapeType.BACKGROUND)),
-             call(ScrapeKey('us_ut', constants.ScrapeType.SNAPSHOT))])
+             call(ScrapeKey('us_ut', constants.ScrapeType.SNAPSHOT))],
+            any_order=True)
         mock_scraper.stop_scrape.assert_not_called()
         mock_supported.assert_called_with(stripes=[], timezone=None)
         mock_task_manager.return_value.create_scraper_phase_task.\
