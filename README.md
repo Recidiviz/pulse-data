@@ -200,6 +200,26 @@ Finally, run `pytest`. If no tests fail, you are ready to develop!
 
 Using this Docker container, you can edit your local repository files and use `git` as usual within your local shell environment, but execute code and run tests within the Docker container's shell environment.
 
+#### Google Cloud
+Recidiviz interacts with Google Cloud services using [`google-cloud-*` Python client libraries](https://cloud.google.com/python/docs/reference).
+During development, you may find it useful to verify the integration with these services.
+First, [install the Google Cloud SDK](https://cloud.google.com/sdk/docs/install), then login to the SDK:
+```bash
+gcloud auth login # Gets credentials to interact with services via the CLI
+gcloud auth application-default login # Gets credentials which will be automatically read by our client libraries
+```
+
+Lastly, in a test script, use the [`local_project_id_override` helper](https://github.com/Recidiviz/pulse-data/blob/c6972e132a6e68453e2d0baeb617b1f446a3e94f/recidiviz/utils/metadata.py#L69) to override configuration used by our client library wrappers:
+```python
+from recidiviz.utils.metadata import local_project_id_override
+from recidiviz.utils.environment import GCP_PROJECT_STAGING
+
+# Override configuration used by our client libraries
+with local_project_id_override(GCP_PROJECT_STAGING):
+    # Google Cloud Client libraries will use `recidiviz-staging` in this context
+```
+
+Now the code run in the above context will interact directly with our staging services. Use conservatively & exercise caution!
 
 #### Adding secrets
 Recidiviz depends on sensitive information to run. This data is stored in Cloud Datastore, which should be added
