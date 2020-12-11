@@ -83,6 +83,12 @@ MOST_RECENT_JOB_ID_BY_METRIC_AND_STATE_CODE_QUERY_TEMPLATE = \
             UNION ALL
             (SELECT DISTINCT job_id, year, month, metric_period_months, state_code, metric_type
             FROM `{project_id}.{metrics_dataset}.program_participation_metrics`)
+            UNION ALL
+            (SELECT DISTINCT job_id, year, month, metric_period_months, state_code, metric_type
+            FROM `{project_id}.{metrics_dataset}.supervision_out_of_state_population_metrics`) 
+            UNION ALL
+            (SELECT DISTINCT job_id, year, month, metric_period_months, state_code, metric_type
+            FROM `{project_id}.{metrics_dataset}.supervision_start_metrics`)
         )
     )
     WHERE recency_rank = 1
