@@ -18,29 +18,32 @@
 from typing import List
 
 from recidiviz.big_query.big_query_view import BigQueryViewBuilder
+from recidiviz.calculator.query.state.views.po_report.absconsion_reports_by_person_by_month import \
+    ABSCONSION_REPORTS_BY_PERSON_BY_MONTH_VIEW_BUILDER
 from recidiviz.calculator.query.state.views.po_report.officer_supervision_district_association import \
     OFFICER_SUPERVISION_DISTRICT_ASSOCIATION_VIEW_BUILDER
 from recidiviz.calculator.query.state.views.po_report.po_monthly_report_data import PO_MONTHLY_REPORT_DATA_VIEW_BUILDER
-from recidiviz.calculator.query.state.views.po_report.revocations_by_officer_by_month import \
-    REVOCATIONS_BY_OFFICER_BY_MONTH_VIEW_BUILDER
-from recidiviz.calculator.query.state.views.po_report.supervision_absconsion_terminations_by_officer_by_month import \
-    SUPERVISION_ABSCONSION_TERMINATIONS_BY_OFFICER_BY_MONTH_VIEW_BUILDER
-from recidiviz.calculator.query.state.views.po_report.supervision_compliance_by_officer_by_month import \
-    SUPERVISION_COMPLIANCE_BY_OFFICER_BY_MONTH_VIEW_BUILDER
-from recidiviz.calculator.query.state.views.po_report.supervision_discharges_by_officer_by_month import \
-    SUPERVISION_DISCHARGES_BY_OFFICER_BY_MONTH_VIEW_BUILDER
-from recidiviz.calculator.query.state.views.po_report.supervision_early_discharge_requests_by_officer_by_month import \
-    SUPERVISION_EARLY_DISCHARGE_REQUESTS_BY_OFFICER_BY_MONTH_VIEW_BUILDER
+from recidiviz.calculator.query.state.views.po_report.report_data_by_person_by_month import \
+    REPORT_DATA_BY_PERSON_BY_MONTH_VIEW_BUILDER
+from recidiviz.calculator.query.state.views.po_report.revocation_reports_by_person_by_month import \
+    REVOCATION_REPORTS_BY_PERSON_BY_MONTH_VIEW_BUILDER
+from recidiviz.calculator.query.state.views.po_report.supervision_compliance_by_person_by_month import \
+    SUPERVISION_COMPLIANCE_BY_PERSON_BY_MONTH_VIEW_BUILDER
+from recidiviz.calculator.query.state.views.po_report.successful_supervision_completions_by_person_by_month import \
+    SUCCESSFUL_SUPERVISION_COMPLETIONS_BY_PERSON_BY_MONTH_VIEW_BUILDER
+from recidiviz.calculator.query.state.views.po_report.supervision_earned_discharge_requests_by_person_by_month import \
+    SUPERVISION_EARNED_DISCHARGE_REQUESTS_BY_PERSON_BY_MONTH_VIEW_BUILDER
 
 # NOTE: These views must be listed in order of dependency. For example, if view Y depends on view X, then view X should
 # appear in the list before view Y.
 PO_REPORT_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
     OFFICER_SUPERVISION_DISTRICT_ASSOCIATION_VIEW_BUILDER,
-    REVOCATIONS_BY_OFFICER_BY_MONTH_VIEW_BUILDER,
-    SUPERVISION_DISCHARGES_BY_OFFICER_BY_MONTH_VIEW_BUILDER,
-    SUPERVISION_ABSCONSION_TERMINATIONS_BY_OFFICER_BY_MONTH_VIEW_BUILDER,
-    SUPERVISION_COMPLIANCE_BY_OFFICER_BY_MONTH_VIEW_BUILDER,
-    SUPERVISION_EARLY_DISCHARGE_REQUESTS_BY_OFFICER_BY_MONTH_VIEW_BUILDER,
+    ABSCONSION_REPORTS_BY_PERSON_BY_MONTH_VIEW_BUILDER,
+    REVOCATION_REPORTS_BY_PERSON_BY_MONTH_VIEW_BUILDER,
+    SUCCESSFUL_SUPERVISION_COMPLETIONS_BY_PERSON_BY_MONTH_VIEW_BUILDER,
+    SUPERVISION_COMPLIANCE_BY_PERSON_BY_MONTH_VIEW_BUILDER,
+    SUPERVISION_EARNED_DISCHARGE_REQUESTS_BY_PERSON_BY_MONTH_VIEW_BUILDER,
+    REPORT_DATA_BY_PERSON_BY_MONTH_VIEW_BUILDER,
     # PO_MONTHLY_REPORT_DATA_VIEW_BUILDER must be last in this list because it relies on the materialized versions of
     # all of the other PO Report views
     PO_MONTHLY_REPORT_DATA_VIEW_BUILDER
