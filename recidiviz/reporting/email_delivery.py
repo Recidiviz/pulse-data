@@ -28,9 +28,10 @@ and conform to the following:
 
 import logging
 from typing import Dict, Tuple, Optional, List
-from google.cloud import storage
 
+from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 import recidiviz.reporting.email_reporting_utils as utils
+from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.reporting.sendgrid_client_wrapper import SendGridClientWrapper
 
 EMAIL_SUBJECT = "Your monthly Recidiviz report"
@@ -122,24 +123,28 @@ def retrieve_html_files(batch_id: str) -> Dict[str, str]:
     Raises:
         Passes through exceptions from Storage and raises its own if there are no results in this batch.
     """
-    storage_client = storage.Client()
 
     html_bucket = utils.get_html_bucket_name()
     try:
-        blobs = storage_client.list_blobs(html_bucket, prefix=batch_id)
+        gcs_file_system = GcsfsFactory.build()
+        paths = [
+            path
+            for path in gcs_file_system.ls_with_blob_prefix(html_bucket, blob_prefix=batch_id)
+            if isinstance(path, GcsfsFilePath)
+        ]
     except Exception:
         logging.error("Unable to list files in html folder. Bucket = %s, folder = %s", html_bucket, batch_id)
         raise
 
     files = {}
-    for blob in blobs:
+    for path in paths:
         try:
-            body = utils.load_string_from_storage(html_bucket, blob.name)
+            body = gcs_file_system.download_as_string(path)
         except Exception:
-            logging.error("Unable to load html file %s from bucket %s", blob.name, html_bucket)
+            logging.error("Unable to load html file %s from bucket %s", path.blob_name, html_bucket)
             raise
         else:
-            email_address = email_from_blob_name(blob.name)
+            email_address = email_from_blob_name(path.blob_name)
             files[email_address] = body
 
     if len(files) == 0:

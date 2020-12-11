@@ -31,6 +31,8 @@ from recidiviz.cloud_storage.content_types import FileContentsHandle
 from recidiviz.cloud_storage.gcsfs_path import GcsfsPath, \
     GcsfsFilePath, GcsfsDirectoryPath, GcsfsBucketPath
 
+class GCSBlobDoesNotExistError(ValueError):
+    pass
 
 class GcsfsFileContentsHandle(FileContentsHandle[str]):
     def __init__(self, local_file_path: str):
@@ -92,6 +94,13 @@ class GCSFileSystem:
     @abc.abstractmethod
     def get_metadata(self, path: GcsfsFilePath) -> Optional[Dict[str, str]]:
         """Returns the metadata for the object at the given path if it exists in the fs, None otherwise."""
+
+    @abc.abstractmethod
+    def download_as_string(self, path: GcsfsFilePath, encoding: str = "utf-8") -> str:
+        """
+        Downloads object contents from the given path to a string,
+        decoding it from the specified `encoding` (default UTF-8)
+        """
 
     @abc.abstractmethod
     def download_to_temp_file(self, path: GcsfsFilePath) -> Optional[GcsfsFileContentsHandle]:
@@ -157,27 +166,45 @@ class GCSFileSystemImpl(GCSFileSystem):
 
         raise ValueError(f'Unexpected path type [{type(path)}]')
 
+    def _get_blob(self, path: GcsfsFilePath) -> storage.Blob:
+        try:
+            bucket = self.storage_client.get_bucket(path.bucket_name)
+            blob = bucket.get_blob(path.blob_name)
+        except NotFound as error:
+            logging.warning("Blob at [%s] does not exist - might have already been deleted", path.uri())
+
+            raise GCSBlobDoesNotExistError(f'Blob at [{path.uri()}] does not exist') from error
+        else:
+            if not blob:
+                logging.warning("Blob at [%s] does not exist - might have already been deleted", path.uri())
+
+                raise GCSBlobDoesNotExistError(f'Blob at [{path.uri()}] does not exist')
+
+            return blob
+
     @retry.Retry(predicate=retry_predicate)
     def get_file_size(self, path: GcsfsFilePath) -> Optional[int]:
-        bucket = self.storage_client.get_bucket(path.bucket_name)
-        blob = bucket.get_blob(path.blob_name)
-        return blob.size if blob else None
+        try:
+            blob = self._get_blob(path)
+            return blob.size
+        except GCSBlobDoesNotExistError:
+            return None
 
     @retry.Retry(predicate=retry_predicate)
     def get_metadata(self, path: GcsfsFilePath) -> Optional[Dict[str, str]]:
-        bucket = self.storage_client.get_bucket(path.bucket_name)
-        blob = bucket.get_blob(path.blob_name)
-        return blob.metadata if blob else None
+        try:
+            blob = self._get_blob(path)
+            return blob.metadata
+        except GCSBlobDoesNotExistError:
+            return None
 
     @retry.Retry(predicate=retry_predicate)
     def copy(self,
              src_path: GcsfsFilePath,
              dst_path: GcsfsPath) -> None:
         src_bucket = self.storage_client.get_bucket(src_path.bucket_name)
-        src_blob = src_bucket.get_blob(src_path.blob_name)
-        if not src_blob:
-            raise ValueError(
-                f'Blob at path [{src_path.abs_path()}] does not exist')
+        src_blob = self._get_blob(src_path)
+
         dst_bucket = self.storage_client.get_bucket(dst_path.bucket_name)
 
         if isinstance(dst_path, GcsfsFilePath):
@@ -196,29 +223,20 @@ class GCSFileSystemImpl(GCSFileSystem):
         if not isinstance(path, GcsfsFilePath):
             raise ValueError(f'Unexpected path type [{type(path)}]')
 
-        bucket = self.storage_client.get_bucket(path.bucket_name)
-        blob = bucket.get_blob(path.blob_name)
+        try:
+            blob = self._get_blob(path)
 
-        if not blob:
-            logging.warning("Path [%s] already does not exist, returning.",
-                            path.abs_path())
+            blob.delete(self.storage_client)
+        except GCSBlobDoesNotExistError:
             return
-
-        blob.delete(self.storage_client)
 
     @retry.Retry(predicate=retry_predicate)
     def download_to_temp_file(self, path: GcsfsFilePath) -> Optional[GcsfsFileContentsHandle]:
-        bucket = self.storage_client.get_bucket(path.bucket_name)
-        blob = bucket.get_blob(path.blob_name)
-        if not blob:
-            logging.info(
-                "File path [%s] no longer exists - might have already "
-                "been processed or deleted", path.abs_path())
-            return None
-
         temp_file_path = generate_random_temp_path()
 
         try:
+            blob = self._get_blob(path)
+
             logging.info(
                 "Started download of file [{%s}] to local file [%s].",
                 path.abs_path(), temp_file_path)
@@ -227,11 +245,14 @@ class GCSFileSystemImpl(GCSFileSystem):
                 "Completed download of file [{%s}] to local file [%s].",
                 path.abs_path(), temp_file_path)
             return GcsfsFileContentsHandle(temp_file_path)
-        except NotFound:
-            logging.info(
-                "File path [%s] no longer exists - might have already "
-                "been processed or deleted", path.abs_path())
+        except GCSBlobDoesNotExistError:
             return None
+
+    @retry.Retry(predicate=retry_predicate)
+    def download_as_string(self, path: GcsfsFilePath, encoding: str = "utf-8") -> str:
+        blob = self._get_blob(path)
+
+        return blob.download_as_bytes().decode(encoding)
 
     @retry.Retry(predicate=retry_predicate)
     def upload_from_string(self, path: GcsfsFilePath,

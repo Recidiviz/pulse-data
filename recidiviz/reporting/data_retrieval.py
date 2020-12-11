@@ -25,6 +25,8 @@ import json
 import logging
 from typing import List, Optional
 
+from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
+from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 import recidiviz.reporting.email_generation as email_generation
 import recidiviz.reporting.email_reporting_utils as utils
 from recidiviz.reporting.context.available_context import get_report_context
@@ -100,9 +102,11 @@ def retrieve_data(state_code: str, report_type: str, batch_id: str) -> List:
     """
     data_bucket = utils.get_data_storage_bucket_name()
     data_filename = ''
+    gcs_file_system = GcsfsFactory.build()
     try:
         data_filename = utils.get_data_filename(state_code, report_type)
-        file_contents_string = utils.load_string_from_storage(data_bucket, data_filename)
+        path = GcsfsFilePath.from_absolute_path(f'gs://{data_bucket}/{data_filename}')
+        file_contents = gcs_file_system.download_as_string(path)
     except BaseException:
         logging.info("Unable to load data file %s/%s", data_bucket, data_filename)
         raise
@@ -111,12 +115,13 @@ def retrieve_data(state_code: str, report_type: str, batch_id: str) -> List:
     archive_filename = ''
     try:
         archive_filename = utils.get_data_archive_filename(batch_id)
-        utils.upload_string_to_storage(archive_bucket, archive_filename, file_contents_string, "text/json")
+        archive_path = GcsfsFilePath.from_absolute_path(f'gs://{archive_bucket}/{archive_filename}')
+        gcs_file_system.upload_from_string(path=archive_path, contents=file_contents, content_type="text/json")
     except Exception:
         logging.error("Unable to archive the data file to %s/%s", archive_bucket, archive_filename)
         raise
 
-    json_list = file_contents_string.splitlines()
+    json_list = file_contents.splitlines()
 
     recipient_data: List[dict] = []
     for json_str in json_list:
