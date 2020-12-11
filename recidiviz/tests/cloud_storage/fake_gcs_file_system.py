@@ -23,7 +23,8 @@ from typing import Union, Dict, Optional, List, Set
 
 import attr
 
-from recidiviz.cloud_storage.gcs_file_system import GCSFileSystem, GcsfsFileContentsHandle, generate_random_temp_path
+from recidiviz.cloud_storage.gcs_file_system import GCSFileSystem, GcsfsFileContentsHandle, generate_random_temp_path, \
+    GCSBlobDoesNotExistError
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath, GcsfsDirectoryPath, GcsfsBucketPath, GcsfsPath
 
 
@@ -113,10 +114,19 @@ class FakeGCSFileSystem(GCSFileSystem):
 
         return GcsfsFileContentsHandle(self.real_absolute_path_for_path(path))
 
+    def download_as_string(self, path: GcsfsFilePath, encoding: str = 'utf-8') -> str:
+        """ Downloads file contents into memory, returning the contents as a string,
+        or raising if the path no-longer exists in the GCS file system """
+        if not self.exists(path):
+            raise GCSBlobDoesNotExistError()
+
+        with open(self.real_absolute_path_for_path(path), 'r', encoding=encoding) as f:
+            return f.read()
+
     def upload_from_string(self,
                            path: GcsfsFilePath,
                            contents: str,
-                           _content_type: str):
+                           content_type: str):
         temp_path = generate_random_temp_path()
         with open(temp_path, 'w') as f:
             f.write(contents)
