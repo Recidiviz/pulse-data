@@ -16,7 +16,7 @@
 # =============================================================================
 """Data to populate the monthly PO report email."""
 # pylint: disable=trailing-whitespace,line-too-long
-
+from recidiviz.calculator.query import bq_utils
 from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.calculator.query.state.dataset_config import PO_REPORT_DATASET
@@ -35,38 +35,51 @@ PO_MONTHLY_REPORT_DATA_DESCRIPTION = """
 PO_MONTHLY_REPORT_DATA_QUERY_TEMPLATE = \
     """
     /*{description}*/
-    WITH report_data AS (
+    WITH report_data_per_officer AS (
       SELECT
         state_code, year, month,
-        officer_external_id, district,
-        pos_discharges,
-        pos_discharges_district_average,
-        pos_discharges_state_average,
-        earned_discharges,
-        earned_discharges_district_average,
-        earned_discharges_state_average,
-        technical_revocations,
-        technical_revocations_district_average,
-        technical_revocations_state_average,
-        absconsions,
-        absconsions_district_average,
-        absconsions_state_average,
-        crime_revocations,
-        crime_revocations_district_average,
-        crime_revocations_state_average,
-        assessments,
-        assessment_percent,
-        facetoface,
-        facetoface_percent,
-      FROM `{project_id}.{po_report_dataset}.supervision_discharges_by_officer_by_month_materialized`
-      FULL OUTER JOIN `{project_id}.{po_report_dataset}.supervision_compliance_by_officer_by_month_materialized`
-        USING (state_code, year, month, district, officer_external_id)
-      FULL OUTER JOIN `{project_id}.{po_report_dataset}.supervision_absconsion_terminations_by_officer_by_month_materialized`
-        USING (state_code, year, month, district, officer_external_id)
-      FULL OUTER JOIN `{project_id}.{po_report_dataset}.revocations_by_officer_by_month_materialized`
-        USING (state_code, year, month, district, officer_external_id)
-      FULL OUTER JOIN `{project_id}.{po_report_dataset}.supervision_early_discharge_requests_by_officer_by_month_materialized`
-        USING (state_code, year, month, district, officer_external_id)
+        officer_external_id,
+        COUNT(DISTINCT IF(successful_completion_date IS NOT NULL, person_id, NULL)) AS pos_discharges,
+        COUNT(DISTINCT IF(earned_discharge_date IS NOT NULL, person_id, NULL)) AS earned_discharges,
+        COUNT(DISTINCT IF(revocation_violation_type IN ('TECHNICAL'), person_id, NULL)) AS technical_revocations,
+        COUNT(DISTINCT IF(revocation_violation_type IN ('NEW_CRIME'), person_id, NULL)) AS crime_revocations,
+        COUNT(DISTINCT IF(absconsion_report_date IS NOT NULL, person_id, NULL)) AS absconsions,
+        SUM(assessment_count) AS assessments,
+        COUNT(DISTINCT IF(assessment_up_to_date, person_id, NULL)) AS assessments_up_to_date,
+        SUM(face_to_face_count) AS facetoface,
+        COUNT(DISTINCT IF(face_to_face_frequency_sufficient, person_id, NULL)) AS facetoface_frequencies_sufficient
+      FROM `{project_id}.{po_report_dataset}.report_data_by_person_by_month`
+      GROUP BY state_code, year, month, officer_external_id
+    ),
+    compliance_caseloads AS (
+      SELECT
+        state_code, year, month, supervising_officer_external_id AS officer_external_id,
+        COUNT(DISTINCT IF(assessment_up_to_date IS NOT NULL, person_id, NULL)) AS assessment_compliance_caseload_count,
+        COUNT(DISTINCT IF(face_to_face_frequency_sufficient IS NOT NULL, person_id, NULL)) AS facetoface_compliance_caseload_count
+      FROM `{project_id}.{metrics_dataset}.supervision_case_compliance_metrics`
+      {filter_to_most_recent_job_id_for_metric}
+      WHERE methodology = 'PERSON'
+        AND person_id IS NOT NULL
+        AND supervising_officer_external_id IS NOT NULL
+        AND metric_period_months = 0
+        AND date_of_evaluation = LAST_DAY(DATE(year, month, 1), MONTH)
+        AND year >= EXTRACT(YEAR FROM DATE_SUB(CURRENT_DATE('US/Pacific'), INTERVAL 3 YEAR))
+      GROUP BY state_code, year, month, officer_external_id
+    ),
+    averages_by_state_and_district AS (
+      SELECT 
+        state_code, year, month,
+        district,
+        AVG(pos_discharges) AS avg_pos_discharges,
+        AVG(earned_discharges) AS avg_earned_discharges,
+        AVG(technical_revocations) AS avg_technical_revocations,
+        AVG(crime_revocations) AS avg_crime_revocations,
+        AVG(absconsions) AS avg_absconsions
+      FROM `{project_id}.{po_report_dataset}.officer_supervision_district_association_materialized`
+      LEFT JOIN report_data_per_officer
+        USING (state_code, year, month, officer_external_id),
+      {district_dimension}
+      GROUP BY state_code, year, month, district
     ),
     agents AS (
       SELECT 
@@ -83,42 +96,54 @@ PO_MONTHLY_REPORT_DATA_QUERY_TEMPLATE = \
       month as review_month,
       report_month.pos_discharges,
       IFNULL(last_month.pos_discharges, 0) AS pos_discharges_last_month,
-      report_month.pos_discharges_district_average,
-      report_month.pos_discharges_state_average,
+      district_avg.avg_pos_discharges AS pos_discharges_district_average,
+      state_avg.avg_pos_discharges AS pos_discharges_state_average,
       report_month.earned_discharges,
       IFNULL(last_month.earned_discharges, 0) AS earned_discharges_last_month,
-      report_month.earned_discharges_district_average,
-      report_month.earned_discharges_state_average,
+      district_avg.avg_earned_discharges AS earned_discharges_district_average,
+      state_avg.avg_earned_discharges AS earned_discharges_state_average,
       report_month.technical_revocations,
       IFNULL(last_month.technical_revocations, 0) AS technical_revocations_last_month,
-      report_month.technical_revocations_district_average,
-      report_month.technical_revocations_state_average,
-      report_month.absconsions,
-      IFNULL(last_month.absconsions, 0) AS absconsions_last_month,
-      report_month.absconsions_district_average,
-      report_month.absconsions_state_average,
+      district_avg.avg_technical_revocations AS technical_revocations_district_average,
+      state_avg.avg_technical_revocations AS technical_revocations_state_average,
       report_month.crime_revocations,
       IFNULL(last_month.crime_revocations, 0) AS crime_revocations_last_month,
-      report_month.crime_revocations_district_average,
-      report_month.crime_revocations_state_average,
+      district_avg.avg_crime_revocations AS crime_revocations_district_average,
+      state_avg.avg_crime_revocations AS crime_revocations_state_average,
+      report_month.absconsions,
+      IFNULL(last_month.absconsions, 0) AS absconsions_last_month,
+      district_avg.avg_absconsions AS absconsions_district_average,
+      state_avg.avg_absconsions AS absconsions_state_average,
       report_month.assessments,
-      report_month.assessment_percent,
+      IEEE_DIVIDE(report_month.assessments_up_to_date, assessment_compliance_caseload_count) * 100 AS assessment_percent,
       report_month.facetoface,
-      report_month.facetoface_percent
+      IEEE_DIVIDE(report_month.facetoface_frequencies_sufficient, facetoface_compliance_caseload_count) * 100 as facetoface_percent
     FROM `{project_id}.{static_reference_dataset}.po_report_recipients`
-    LEFT JOIN report_data report_month
-      USING (state_code, officer_external_id, district)
-    LEFT JOIN agents
+    LEFT JOIN report_data_per_officer report_month
       USING (state_code, officer_external_id)
+    LEFT JOIN (
+      SELECT * FROM averages_by_state_and_district
+      WHERE district != 'ALL'
+    ) district_avg
+      USING (state_code, year, month, district)
+    LEFT JOIN (
+      SELECT * EXCEPT (district) FROM averages_by_state_and_district
+      WHERE district = 'ALL'
+    ) state_avg
+      USING (state_code, year, month)
+    LEFT JOIN compliance_caseloads
+      USING (state_code, year, month, officer_external_id)
     LEFT JOIN (
       SELECT
         * EXCEPT (year, month),
         -- Project this year/month data onto the next month to calculate the MoM change
         EXTRACT(YEAR FROM DATE_ADD(DATE(year, month, 1), INTERVAL 1 MONTH)) AS year,
         EXTRACT(MONTH FROM DATE_ADD(DATE(year, month, 1), INTERVAL 1 MONTH)) AS month,
-      FROM report_data
+      FROM report_data_per_officer
     ) last_month
-      USING (state_code, year, month, officer_external_id, district)
+      USING (state_code, year, month, officer_external_id)
+    LEFT JOIN agents
+      USING (state_code, officer_external_id)
     -- Only include output for the month before the current month
     WHERE DATE(year, month, 1) = DATE_SUB(DATE(EXTRACT(YEAR FROM CURRENT_DATE()), EXTRACT(MONTH FROM CURRENT_DATE()), 1), INTERVAL 1 MONTH)
     ORDER BY review_month, email_address
@@ -130,10 +155,14 @@ PO_MONTHLY_REPORT_DATA_VIEW_BUILDER = MetricBigQueryViewBuilder(
     should_materialize=True,
     view_query_template=PO_MONTHLY_REPORT_DATA_QUERY_TEMPLATE,
     dimensions=['state_code', 'review_month', 'officer_external_id', 'district'],
+    district_dimension=bq_utils.unnest_district(district_column='district'),
     description=PO_MONTHLY_REPORT_DATA_DESCRIPTION,
     po_report_dataset=PO_REPORT_DATASET,
+    metrics_dataset=dataset_config.DATAFLOW_METRICS_DATASET,
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
-    static_reference_dataset=dataset_config.STATIC_REFERENCE_TABLES_DATASET
+    static_reference_dataset=dataset_config.STATIC_REFERENCE_TABLES_DATASET,
+    filter_to_most_recent_job_id_for_metric=bq_utils.filter_to_most_recent_job_id_for_metric(
+        reference_dataset=dataset_config.REFERENCE_VIEWS_DATASET)
 )
 
 if __name__ == '__main__':
