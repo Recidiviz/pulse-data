@@ -41,7 +41,10 @@ def violation_reports_query(state_dataset: str, reference_views_dataset: str) ->
         -- Find the overlapping supervision periods for this violation report
         ON period.person_id = violation.person_id
             AND period.state_code = violation.state_code
-            AND violation.response_date >= period.start_date
+            -- The supervision_period's start_date is exclusive to avoid duplicates when the response_date falls on the
+            -- termination_date and start_date of two adjacent periods. There's a very small number of cases this misses,
+            -- like when a supervision_period starts and ends on the violation report's response_date.
+            AND violation.response_date > period.start_date
             AND violation.response_date <= COALESCE(period.termination_date, '9999-12-31')
       LEFT JOIN `{{project_id}}.{reference_views_dataset}.supervision_period_to_agent_association` agent
         ON period.supervision_period_id = agent.supervision_period_id
