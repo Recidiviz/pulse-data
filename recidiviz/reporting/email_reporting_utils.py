@@ -17,14 +17,11 @@
 
 """ Utilities and constants shared across python modules in this package
 """
-import logging
 import os
 import re
 from typing import Optional
 
 from datetime import datetime
-
-from google.cloud import storage
 
 from recidiviz.utils import metadata
 from recidiviz.utils import secrets
@@ -128,58 +125,6 @@ def get_html_filename(batch_id: str, email_address: str) -> str:
 # TODO(#3260): Make this general-purpose to work for any report type's chart
 def get_chart_topic() -> str:
     return f'projects/{get_project_id()}/topics/report_po_comparison_chart'
-
-
-def load_string_from_storage(bucket_name: str, filename: str) -> str:
-    """Load object from Cloud Storage and return as string.
-
-    Args:
-        bucket_name: The identifier of the Cloud Storage bucket
-        filename: The identifier of the object within the bucket
-
-    Returns:
-        String form of the object decoded using UTF-8
-
-    Raises:
-        All errors.  Callers are expected to handle.
-    """
-    storage_client = storage.Client()
-
-    logging.info("Downloading %s/%s...", bucket_name, filename)
-
-    bucket = storage_client.get_bucket(bucket_name)
-    blob = bucket.blob(filename)
-    contents = blob.download_as_string().decode("utf-8")
-
-    logging.debug("Downloaded %s/%s.", bucket_name, filename)
-
-    return contents
-
-
-def upload_string_to_storage(bucket_name: str, filename: str, contents: str, content_type: str = 'text/plain') -> None:
-    """Upload a string into Cloud Storage.
-
-    Creates a new object in the given bucket with the given filename.
-
-    Args:
-        bucket_name: The identifier of the Cloud Storage bucket
-        filename: The identifier of the object within the bucket
-        contents: A string to put in the object
-        content_type: Optional parameter if the content is something other than plain text
-
-    Raises:
-        All errors.  Callers are expected to handle.
-    """
-    storage_client = storage.Client()
-
-    logging.info("Uploading %s/%s...", bucket_name, filename)
-
-    bucket = storage_client.bucket(bucket_name)
-    blob = bucket.blob(filename)
-    blob.upload_from_string(contents, content_type=content_type)
-
-    logging.info("Uploaded %s/%s.", bucket_name, filename)
-
 
 def generate_batch_id() -> str:
     """Create a new batch id.

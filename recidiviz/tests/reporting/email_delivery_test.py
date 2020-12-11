@@ -15,11 +15,12 @@
 # =============================================================================
 
 """Tests for reporting/email_delivery.py."""
-import collections
 from unittest import TestCase
 from unittest.mock import patch, MagicMock, Mock
 
+from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.reporting import email_delivery
+from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 
 
 class EmailDeliveryTest(TestCase):
@@ -133,34 +134,34 @@ class EmailDeliveryTest(TestCase):
         self.mock_sendgrid_client.send_message.assert_not_called()
 
     @patch('recidiviz.utils.metadata.project_id', Mock(return_value='test-project'))
-    @patch('recidiviz.reporting.email_delivery.storage')
-    def test_retrieve_html_files(self, mock_cloud_storage: MagicMock) -> None:
-        """Test that retrieve_html_files calls the Google storage client with the correct arguments.
-        TODO(#4456): Update this test when updated to use DirectIngestGCSFileSystem
-        """
-        Blob = collections.namedtuple('Blob', ['name'])
-        blob_name = f'{self.batch_id}/{self.to_address}.html'
-        mock_cloud_storage.Client.return_value = mock_cloud_storage
-        mock_cloud_storage.list_blobs.return_value = [Blob(blob_name)]
-        self.mock_utils.get_html_bucket_name.return_value = 'bucket-name'
-        self.mock_utils.load_string_from_storage.return_value = '<html>'
-
-        files = email_delivery.retrieve_html_files(self.batch_id)
-
-        mock_cloud_storage.list_blobs.assert_called_with('bucket-name', prefix=self.batch_id)
-        self.mock_utils.load_string_from_storage.assert_called_once_with('bucket-name', blob_name)
-        self.assertEqual(files, {f'{self.to_address}': '<html>'})
-
-    @patch('recidiviz.utils.metadata.project_id', Mock(return_value='test-project'))
-    @patch('recidiviz.reporting.email_delivery.storage')
-    def test_retrieve_html_files_fails(self, mock_cloud_storage: MagicMock) -> None:
-        """Test that retrieve_html_files calls the Google storage client with the correct arguments.
-        TODO(#4456): Update this test when updated to use DirectIngestGCSFileSystem
+    @patch('recidiviz.reporting.email_delivery.GcsfsFactory.build')
+    def test_retrieve_html_files(self, mock_gcs_factory: MagicMock) -> None:
+        """Test that retrieve_html_files returns html files for the current batch
         """
         bucket_name = 'bucket-name'
         self.mock_utils.get_html_bucket_name.return_value = bucket_name
-        mock_cloud_storage.Client.return_value = mock_cloud_storage
-        mock_cloud_storage.list_blobs.return_value = []
+
+        email_path = GcsfsFilePath.from_absolute_path(f'gs://{bucket_name}/{self.batch_id}/{self.to_address}.html')
+        other_path = GcsfsFilePath.from_absolute_path(f'gs://{bucket_name}/excluded/exclude.json')
+
+        fake_gcsfs = FakeGCSFileSystem()
+        fake_gcsfs.upload_from_string(path=email_path, contents='<html>', content_type='text/html')
+        fake_gcsfs.upload_from_string(path=other_path, contents='{}', content_type='text/json')
+
+        mock_gcs_factory.return_value = fake_gcsfs
+
+        files = email_delivery.retrieve_html_files(self.batch_id)
+
+        self.assertEqual(files, {f'{self.to_address}': '<html>'})
+
+    @patch('recidiviz.utils.metadata.project_id', Mock(return_value='test-project'))
+    @patch('recidiviz.reporting.email_delivery.GcsfsFactory.build')
+    def test_retrieve_html_files_fails(self, mock_gcs_factory: MagicMock) -> None:
+        """Test that retrieve_html_files raises an IndexError when there are no files to retrieve
+        """
+        bucket_name = 'bucket-name'
+        self.mock_utils.get_html_bucket_name.return_value = bucket_name
+        mock_gcs_factory.return_value = FakeGCSFileSystem()
 
         with self.assertRaises(IndexError):
             email_delivery.retrieve_html_files(self.batch_id)

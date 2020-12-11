@@ -27,6 +27,8 @@ from string import Template
 
 from google.cloud import pubsub_v1
 
+from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
+from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 import recidiviz.reporting.email_reporting_utils as utils
 from recidiviz.reporting.context.report_context import ReportContext
 
@@ -60,7 +62,9 @@ def generate(report_context: ReportContext) -> None:
     try:
         html_filename = utils.get_html_filename(prepared_data[utils.KEY_BATCH_ID],
                                                 prepared_data[utils.KEY_EMAIL_ADDRESS])
-        utils.upload_string_to_storage(html_bucket, html_filename, final_email, "text/html")
+        gcs_file_system = GcsfsFactory.build()
+        html_path = GcsfsFilePath.from_absolute_path(f'gs://{html_bucket}/{html_filename}')
+        gcs_file_system.upload_from_string(path=html_path, contents=final_email, content_type="text/html")
     except Exception:
         logging.error("Error while attempting upload of %s/%s", html_bucket, html_filename)
         raise
