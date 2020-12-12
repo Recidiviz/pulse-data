@@ -37,7 +37,8 @@ from recidiviz.calculator.pipeline.supervision.metrics import \
     SupervisionMetricType, SupervisionSuccessMetric, SupervisionMetric, SupervisionPopulationMetric, \
     SupervisionRevocationMetric, SupervisionTerminationMetric, SupervisionCaseComplianceMetric, \
     SuccessfulSupervisionSentenceDaysServedMetric, SupervisionRevocationAnalysisMetric, \
-    SupervisionRevocationViolationTypeAnalysisMetric, SupervisionStartMetric, SupervisionOutOfStatePopulationMetric
+    SupervisionRevocationViolationTypeAnalysisMetric, SupervisionDowngradeMetric, SupervisionStartMetric, \
+    SupervisionOutOfStatePopulationMetric
 from recidiviz.calculator.pipeline.utils.metric_utils import MetricMethodologyType
 from recidiviz.calculator.pipeline.utils.person_utils import PersonMetadata
 from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_manager import \
@@ -196,6 +197,24 @@ def map_supervision_combinations(person: StatePerson,
                     include_metric_period_output=False)
 
                 metrics.extend(compliance_metrics)
+
+            if (metric_inclusions.get(SupervisionMetricType.SUPERVISION_DOWNGRADE)
+                    and isinstance(supervision_time_bucket, NonRevocationReturnSupervisionTimeBucket)
+                    and supervision_time_bucket.supervision_level_downgrade_occurred):
+                characteristic_combo_supervision_downgrade = characteristics_dict(
+                    person, supervision_time_bucket, SupervisionDowngradeMetric, person_metadata)
+
+                supervision_downgrade_count = map_metric_combinations(
+                    characteristic_combo_supervision_downgrade,
+                    supervision_time_bucket,
+                    calculation_month_upper_bound,
+                    calculation_month_lower_bound,
+                    supervision_time_buckets,
+                    periods_and_buckets,
+                    SupervisionMetricType.SUPERVISION_DOWNGRADE,
+                    include_metric_period_output)
+
+                metrics.extend(supervision_downgrade_count)
 
             if isinstance(supervision_time_bucket, RevocationReturnSupervisionTimeBucket):
                 if metric_inclusions.get(SupervisionMetricType.SUPERVISION_REVOCATION):
