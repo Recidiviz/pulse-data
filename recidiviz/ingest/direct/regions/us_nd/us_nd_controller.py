@@ -136,16 +136,6 @@ class UsNdController(CsvGcsfsDirectIngestController):
                 self._add_supervising_officer,
                 self._add_case_type_external_id
             ],
-            # TODO(#3444): Clean up before launching SQL preprocessing in production
-            'docstars_offendercasestable': [
-                self._concatenate_docstars_length_periods,
-                self._add_terminating_officer_to_supervision_periods,
-                self._record_revocation,
-                gen_set_agent_type(StateAgentType.JUDGE),
-                self._hydrate_supervision_period_sentence_shared_date_fields,
-                gen_normalize_county_codes_posthook(
-                    self.region.region_code, 'TB_CTY', StateSupervisionPeriod, normalized_county_code),
-            ],
             'docstars_offendercasestable_with_officers': [
                 self._concatenate_docstars_length_periods,
                 self._add_officer_to_supervision_periods,
@@ -201,16 +191,10 @@ class UsNdController(CsvGcsfsDirectIngestController):
         if not environment.in_gae_production() and not environment.in_gae_staging():
             tags.append('elite_offense_in_custody_and_pos_report_data')
 
-        # Docstars - supervision-focused
-        tags.append('docstars_offenders')
-
-        # TODO(#3444): Clean up before launching SQL preprocessing in production
-        if environment.in_gae_production():
-            tags.append('docstars_offendercasestable')
-        else:
-            tags.append('docstars_offendercasestable_with_officers')
-
         tags += [
+            # Docstars - supervision-focused
+            'docstars_offenders',
+            'docstars_offendercasestable_with_officers',
             'docstars_offensestable',
             'docstars_ftr_episode',
             'docstars_lsi_chronology',
