@@ -516,3 +516,62 @@ class TestSupervisionPeriodsByTerminationMonth(unittest.TestCase):
         }
 
         self.assertEqual(expected_output, supervision_period_index.supervision_periods_by_termination_month)
+
+
+class TestGetMostRecentPreviousSupervisionPeriod(unittest.TestCase):
+    """Tests get_most_recent_previous_supervision_period."""
+
+    def test_get_most_recent_previous_supervision_period_valid(self):
+        supervision_period_1 = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=111,
+            start_date=date(2000, 1, 1),
+            termination_date=date(2000, 10, 1),
+            admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE
+        )
+        supervision_period_2 = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=111,
+            start_date=date(2000, 10, 1),
+            termination_date=date(2000, 11, 1),
+            admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE
+        )
+
+        supervision_periods = [supervision_period_1, supervision_period_2]
+
+        supervision_period_index = SupervisionPeriodIndex(supervision_periods=supervision_periods)
+
+        self.assertEqual(supervision_period_1,
+                         supervision_period_index.get_most_recent_previous_supervision_period(supervision_period_2))
+
+    def test_get_most_recent_previous_supervision_period_first_in_list(self):
+        supervision_period_1 = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=111,
+            start_date=date(2000, 1, 1),
+            termination_date=date(2000, 10, 1),
+            admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE
+        )
+        supervision_period_2 = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=111,
+            start_date=date(2010, 10, 1),
+            termination_date=date(2010, 11, 1),
+            admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE
+        )
+
+        supervision_periods = [supervision_period_1, supervision_period_2]
+
+        supervision_period_index = SupervisionPeriodIndex(supervision_periods=supervision_periods)
+
+        self.assertIsNone(supervision_period_index.get_most_recent_previous_supervision_period(supervision_period_1))
+
+    def test_get_most_recent_previous_supervision_period_single_period_in_list(self):
+        supervision_period = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=111,
+            start_date=date(2000, 1, 1),
+            termination_date=date(2000, 10, 1),
+            admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE
+        )
+
+        supervision_periods = [supervision_period]
+
+        supervision_period_index = SupervisionPeriodIndex(supervision_periods=supervision_periods)
+
+        self.assertIsNone(supervision_period_index.get_most_recent_previous_supervision_period(supervision_period))

@@ -49,6 +49,7 @@ class SupervisionMetricType(RecidivizMetricType):
     SUPERVISION_SUCCESS = 'SUPERVISION_SUCCESS'
     SUPERVISION_SUCCESSFUL_SENTENCE_DAYS_SERVED = 'SUPERVISION_SUCCESSFUL_SENTENCE_DAYS_SERVED'
     SUPERVISION_TERMINATION = 'SUPERVISION_TERMINATION'
+    SUPERVISION_DOWNGRADE = 'SUPERVISION_DOWNGRADE'
 
 
 @attr.s
@@ -494,5 +495,42 @@ class SupervisionCaseComplianceMetric(SupervisionPopulationMetric):
 
         supervision_metric = cast(SupervisionCaseComplianceMetric,
                                   SupervisionCaseComplianceMetric.build_from_dictionary(metric_key))
+
+        return supervision_metric
+
+
+@attr.s
+class SupervisionDowngradeMetric(SupervisionMetric, PersonLevelMetric):
+    """
+    Subclass of SupervisionMetric for people whose supervision level has been downgraded.
+
+    Note: This metric only identifies supervision level downgrades for states where a new supervision period is created
+    if the supervision level changes.
+    """
+
+    # The type of SupervisionMetric
+    metric_type: SupervisionMetricType = attr.ib(init=False, default=SupervisionMetricType.SUPERVISION_DOWNGRADE)
+
+    # The date on which the downgrade in supervision level took place
+    date_of_downgrade: date = attr.ib(default=None)
+
+    # The previous supervision level, prior to the downgrade
+    previous_supervision_level: StateSupervisionLevel = attr.ib(default=None)
+
+    # The new supervision level, after the downgrade
+    supervision_level: StateSupervisionLevel = attr.ib(default=None)
+
+    @staticmethod
+    def build_from_metric_key_group(metric_key: Dict[str, Any], job_id: str) -> Optional['SupervisionDowngradeMetric']:
+        """Builds a SupervisionDowngradeMetric object from the given arguments."""
+
+        if not metric_key:
+            raise ValueError("The metric_key is empty.")
+
+        metric_key['job_id'] = job_id
+        metric_key['created_on'] = date.today()
+
+        supervision_metric = cast(SupervisionDowngradeMetric,
+                                  SupervisionDowngradeMetric.build_from_dictionary(metric_key))
 
         return supervision_metric

@@ -26,7 +26,7 @@ from recidiviz.calculator.pipeline.supervision import calculator
 from recidiviz.calculator.pipeline.supervision.metrics import \
     SupervisionMetricType, SupervisionRevocationMetric, SupervisionCaseComplianceMetric, SupervisionPopulationMetric, \
     SupervisionRevocationAnalysisMetric, SupervisionRevocationViolationTypeAnalysisMetric, SupervisionSuccessMetric, \
-    SuccessfulSupervisionSentenceDaysServedMetric, SupervisionTerminationMetric
+    SuccessfulSupervisionSentenceDaysServedMetric, SupervisionTerminationMetric, SupervisionDowngradeMetric
 from recidiviz.calculator.pipeline.supervision.supervision_case_compliance import SupervisionCaseCompliance
 from recidiviz.calculator.pipeline.supervision.supervision_time_bucket import \
     NonRevocationReturnSupervisionTimeBucket, SupervisionTimeBucket, \
@@ -2539,6 +2539,58 @@ class TestMapSupervisionCombinations(unittest.TestCase):
 
         self.assertEqual(expected_combinations_count, len(supervision_combinations))
 
+    def test_map_supervision_downgrade_metrics(self):
+        """Tests the map_supervision_combinations function when there are supervision downgrade metrics to be
+         generated."""
+        person = StatePerson.new_with_defaults(person_id=12345,
+                                               birthdate=date(1984, 8, 31),
+                                               gender=Gender.FEMALE)
+
+        race = StatePersonRace.new_with_defaults(state_code='US_MO', race=Race.WHITE)
+
+        person.races = [race]
+
+        ethnicity = StatePersonEthnicity.new_with_defaults(
+            state_code='US_MO',
+            ethnicity=Ethnicity.NOT_HISPANIC)
+
+        person.ethnicities = [ethnicity]
+
+        supervision_time_buckets = [
+            NonRevocationReturnSupervisionTimeBucket(
+                state_code='US_MO', year=2018, month=3,
+                bucket_date=date(2018, 3, 31),
+                is_on_supervision_last_day_of_month=True,
+                supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+                case_type=StateSupervisionCaseType.GENERAL,
+                supervision_level=StateSupervisionLevel.HIGH,
+                supervision_level_raw_text='HIGH'
+            ),
+            NonRevocationReturnSupervisionTimeBucket(
+                state_code='US_MO', year=2018, month=4,
+                bucket_date=date(2018, 4, 1),
+                is_on_supervision_last_day_of_month=False,
+                supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+                case_type=StateSupervisionCaseType.GENERAL,
+                supervision_level=StateSupervisionLevel.MINIMUM,
+                supervision_level_raw_text='MINIMUM',
+                supervision_level_downgrade_occurred=True,
+                previous_supervision_level=StateSupervisionLevel.HIGH
+            ),
+        ]
+
+        supervision_combinations = calculator.map_supervision_combinations(
+            person, supervision_time_buckets, ALL_METRICS_INCLUSIONS_DICT,
+            calculation_end_month='2018-04',
+            calculation_month_count=-1,
+            person_metadata=_DEFAULT_PERSON_METADATA
+        )
+
+        expected_combinations_count = expected_metric_combos_count(supervision_time_buckets)
+
+        self.assertEqual(expected_combinations_count, len(supervision_combinations))
+        assert all(value == 1 for _combination, value in supervision_combinations)
+
 
 class TestCharacteristicCombinations(unittest.TestCase):
     """Tests the characteristic_combinations function."""
@@ -2812,6 +2864,51 @@ class TestCharacteristicCombinations(unittest.TestCase):
 
         self.assertEqual(expected_output, characteristics_dict)
 
+    def test_characteristic_combinations_supervision_downgrade(self):
+        supervision_time_buckets = [
+            NonRevocationReturnSupervisionTimeBucket(
+                state_code='US_MO', year=2018, month=3,
+                bucket_date=date(2018, 3, 31),
+                is_on_supervision_last_day_of_month=True,
+                supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+                case_type=StateSupervisionCaseType.GENERAL,
+                supervision_level=StateSupervisionLevel.HIGH,
+                supervision_level_raw_text='HIGH'
+            ),
+            NonRevocationReturnSupervisionTimeBucket(
+                state_code='US_MO', year=2018, month=4,
+                bucket_date=date(2018, 4, 1),
+                is_on_supervision_last_day_of_month=False,
+                supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+                case_type=StateSupervisionCaseType.GENERAL,
+                supervision_level=StateSupervisionLevel.MINIMUM,
+                supervision_level_raw_text='MINIMUM',
+                previous_supervision_level=StateSupervisionLevel.HIGH
+            ),
+        ]
+
+        characteristics_dict = calculator.characteristics_dict(
+            self.person, supervision_time_buckets[1], metric_class=SupervisionDowngradeMetric,
+            person_metadata=_DEFAULT_PERSON_METADATA
+        )
+
+        expected_output = {
+            'date_of_downgrade': date(2018, 4, 1),
+            'supervision_type': StateSupervisionPeriodSupervisionType.PAROLE,
+            'age_bucket': '30-34',
+            'gender': Gender.FEMALE,
+            'race': [Race.WHITE, Race.BLACK],
+            'ethnicity': [Ethnicity.NOT_HISPANIC],
+            'person_id': 12345,
+            'prioritized_race_or_ethnicity': _DEFAULT_PERSON_METADATA.prioritized_race_or_ethnicity,
+            'previous_supervision_level': StateSupervisionLevel.HIGH,
+            'supervision_level':  StateSupervisionLevel.MINIMUM,
+            'supervision_level_raw_text': 'MINIMUM',
+            'case_type': StateSupervisionCaseType.GENERAL,
+        }
+
+        self.assertEqual(expected_output, characteristics_dict)
+
 
 def expected_metric_combos_count(
         supervision_time_buckets: List[SupervisionTimeBucket],
@@ -2875,6 +2972,11 @@ def expected_metric_combos_count(
         bucket for bucket in supervision_time_buckets if isinstance(bucket, SupervisionStartBucket)
     ]
 
+    supervision_downgrade_buckets = [
+        bucket for bucket in supervision_time_buckets if isinstance(bucket, NonRevocationReturnSupervisionTimeBucket)
+        and bucket.supervision_level_downgrade_occurred
+    ]
+
     # Count number of buckets and number of buckets in the same month
     num_projected_completion_sentence_length_buckets = len(successful_completion_sentence_length_buckets)
     num_duplicated_projected_completion_sentence_length_months = _duplicated_months(
@@ -2900,6 +3002,8 @@ def expected_metric_combos_count(
 
     num_start_buckets = len(start_buckets)
     num_duplicated_start_buckets = _duplicated_months(start_buckets)
+
+    num_supervision_downgrade_buckets = len(supervision_downgrade_buckets)
 
     revocation_violation_type_analysis_dimension_multiplier = 1
     num_violation_types = 0
@@ -2940,6 +3044,7 @@ def expected_metric_combos_count(
     supervision_success_combos = (num_projected_completion_buckets +
                                   (num_projected_completion_buckets - num_duplicated_projected_completion_months)*(
                                       num_relevant_periods + 1))
+    supervision_downgrade_combos = num_supervision_downgrade_buckets
 
     if duplicated_months_mixed_success:
         # Only add event-based counts for each successful completion bucket
@@ -2970,7 +3075,8 @@ def expected_metric_combos_count(
                    supervision_revocation_analysis_combos +
                    revocation_violation_type_analysis_combos +
                    supervision_compliance_combos +
-                   supervision_out_of_state_population_combos)
+                   supervision_out_of_state_population_combos +
+                   supervision_downgrade_combos)
 
     if metric_to_include:
         if metric_to_include == SupervisionMetricType.SUPERVISION_TERMINATION:
@@ -2993,6 +3099,8 @@ def expected_metric_combos_count(
             return int(supervision_population_combos)
         if metric_to_include == SupervisionMetricType.SUPERVISION_OUT_OF_STATE_POPULATION:
             return int(supervision_out_of_state_population_combos)
+        if metric_to_include == SupervisionMetricType.SUPERVISION_DOWNGRADE:
+            return int(supervision_downgrade_combos)
 
     return 0
 

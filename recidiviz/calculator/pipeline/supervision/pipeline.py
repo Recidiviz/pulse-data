@@ -34,7 +34,7 @@ from recidiviz.calculator.pipeline.supervision.metrics import \
     SupervisionRevocationMetric, SupervisionSuccessMetric, \
     SupervisionRevocationAnalysisMetric, SupervisionRevocationViolationTypeAnalysisMetric, \
     SuccessfulSupervisionSentenceDaysServedMetric, SupervisionCaseComplianceMetric, SupervisionTerminationMetric, \
-    SupervisionStartMetric
+    SupervisionStartMetric, SupervisionDowngradeMetric
 from recidiviz.calculator.pipeline.supervision.metrics import \
     SupervisionMetricType
 from recidiviz.calculator.pipeline.supervision.supervision_time_bucket import \
@@ -266,6 +266,9 @@ class ProduceSupervisionMetrics(beam.DoFn):
             dict_metric_key['count'] = 1
 
             supervision_metric = SupervisionOutOfStatePopulationMetric.build_from_metric_key_group(
+                dict_metric_key, pipeline_job_id)
+        elif metric_type == SupervisionMetricType.SUPERVISION_DOWNGRADE:
+            supervision_metric = SupervisionDowngradeMetric.build_from_metric_key_group(
                 dict_metric_key, pipeline_job_id)
         else:
             logging.error("Unexpected metric of type: %s", metric_type)
@@ -608,6 +611,7 @@ def run(apache_beam_pipeline_options: PipelineOptions,
                                     SupervisionMetricType.SUPERVISION_SUCCESSFUL_SENTENCE_DAYS_SERVED.value,
                                     SupervisionMetricType.SUPERVISION_TERMINATION.value,
                                     SupervisionMetricType.SUPERVISION_OUT_OF_STATE_POPULATION.value,
+                                    SupervisionMetricType.SUPERVISION_DOWNGRADE.value,
                                 )
                             )
 
@@ -622,6 +626,7 @@ def run(apache_beam_pipeline_options: PipelineOptions,
         successful_sentence_lengths_table_id = DATAFLOW_METRICS_TO_TABLES[SuccessfulSupervisionSentenceDaysServedMetric]
         supervision_starts_table_id = DATAFLOW_METRICS_TO_TABLES[SupervisionStartMetric]
         out_of_state_populations_table_id = DATAFLOW_METRICS_TO_TABLES[SupervisionOutOfStatePopulationMetric]
+        supervision_downgrade_table_id = DATAFLOW_METRICS_TO_TABLES[SupervisionDowngradeMetric]
 
         _ = (writable_metrics.SUPERVISION_POPULATION
              | f"Write population metrics to BQ table: {populations_table_id}" >>
@@ -692,5 +697,12 @@ def run(apache_beam_pipeline_options: PipelineOptions,
              | f"Write start metrics to BQ table: {supervision_starts_table_id}" >>
              WriteAppendToBigQuery(
                  output_table=supervision_starts_table_id,
+                 output_dataset=output,
+             ))
+
+        _ = (writable_metrics.SUPERVISION_DOWNGRADE
+             | f"Write downgrade metrics to BQ table: {supervision_downgrade_table_id}" >>
+             WriteAppendToBigQuery(
+                 output_table=supervision_downgrade_table_id,
                  output_dataset=output,
              ))
