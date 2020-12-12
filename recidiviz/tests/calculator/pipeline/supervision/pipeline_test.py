@@ -44,7 +44,7 @@ from recidiviz.calculator.pipeline.supervision.metrics import \
     SupervisionRevocationAnalysisMetric, \
     SupervisionTerminationMetric, SupervisionSuccessMetric, \
     SuccessfulSupervisionSentenceDaysServedMetric, SupervisionCaseComplianceMetric, SupervisionStartMetric, \
-    SupervisionOutOfStatePopulationMetric
+    SupervisionOutOfStatePopulationMetric, SupervisionDowngradeMetric
 from recidiviz.calculator.pipeline.supervision.supervision_case_compliance import SupervisionCaseCompliance
 from recidiviz.calculator.pipeline.supervision.supervision_time_bucket import \
     NonRevocationReturnSupervisionTimeBucket, \
@@ -2595,7 +2595,8 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             SupervisionMetricType.SUPERVISION_SUCCESS: SupervisionSuccessMetric,
             SupervisionMetricType.SUPERVISION_SUCCESSFUL_SENTENCE_DAYS_SERVED:
                 SuccessfulSupervisionSentenceDaysServedMetric,
-            SupervisionMetricType.SUPERVISION_OUT_OF_STATE_POPULATION: SupervisionOutOfStatePopulationMetric
+            SupervisionMetricType.SUPERVISION_OUT_OF_STATE_POPULATION: SupervisionOutOfStatePopulationMetric,
+            SupervisionMetricType.SUPERVISION_DOWNGRADE: SupervisionDowngradeMetric,
         }
 
         for metric_type in SupervisionMetricType:

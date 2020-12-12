@@ -137,6 +137,22 @@ class ViolationTypeSeverityBucket(BuildableAttr):
 
 
 @attr.s(frozen=True)
+class SupervisionDowngradeBucket(BuildableAttr):
+    """
+    Base class for including whether a supervision level downgrade took place on a SupervisionTimeBucket.
+
+    Note: This bucket only identifies supervision level downgrades for states where a new supervision period is created
+    if the supervision level changes.
+    """
+
+    # Whether a supervision level downgrade has taken place.
+    supervision_level_downgrade_occurred: bool = attr.ib(default=False)
+
+    # The supervision level of the previous supervision period.
+    previous_supervision_level: Optional[StateSupervisionLevel] = attr.ib(default=None)
+
+
+@attr.s(frozen=True)
 class RevocationReturnSupervisionTimeBucket(SupervisionTimeBucket, ViolationTypeSeverityBucket):
     """Models a SupervisionTimeBucket where the person was incarcerated for a revocation."""
 
@@ -176,7 +192,8 @@ class RevocationReturnSupervisionTimeBucket(SupervisionTimeBucket, ViolationType
 
 
 @attr.s(frozen=True)
-class NonRevocationReturnSupervisionTimeBucket(SupervisionTimeBucket, ViolationTypeSeverityBucket):
+class NonRevocationReturnSupervisionTimeBucket(SupervisionTimeBucket, ViolationTypeSeverityBucket,
+                                               SupervisionDowngradeBucket):
     """Models a SupervisionTimeBucket where the person was not incarcerated for a revocation."""
 
     # TODO(#3600): This field should be removed because the daily output makes this unnecessary
@@ -189,6 +206,10 @@ class NonRevocationReturnSupervisionTimeBucket(SupervisionTimeBucket, ViolationT
 
     @property
     def date_of_supervision(self):
+        return self.bucket_date
+
+    @property
+    def date_of_downgrade(self):
         return self.bucket_date
 
 

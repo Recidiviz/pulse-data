@@ -6502,6 +6502,141 @@ class TestFindTimeBucketsForSupervisionPeriod(unittest.TestCase):
 
         self.assertCountEqual(supervision_time_buckets, expected_buckets)
 
+    def test_find_time_buckets_for_supervision_period_with_a_supervision_downgrade(self):
+        """Tests the find_time_buckets_for_supervision_period function
+        when a supervision level downgrade has taken place."""
+
+        supervision_periods = [
+            StateSupervisionPeriod.new_with_defaults(
+                supervision_period_id=111,
+                external_id='sp1',
+                state_code='US_ND',
+                start_date=date(2018, 1, 5),
+                termination_date=date(2018, 3, 19),
+                supervision_type=StateSupervisionType.PROBATION,
+                supervision_level=StateSupervisionLevel.HIGH
+            ),
+            StateSupervisionPeriod.new_with_defaults(
+                supervision_period_id=123,
+                external_id='sp2',
+                state_code='US_ND',
+                start_date=date(2018, 3, 19),
+                termination_date=date(2018, 4, 30),
+                supervision_type=StateSupervisionType.PROBATION,
+                supervision_level=StateSupervisionLevel.MEDIUM
+            ),
+        ]
+
+        supervision_sentence = \
+            StateSupervisionSentence.new_with_defaults(
+                supervision_sentence_id=111,
+                start_date=date(2017, 1, 1),
+                external_id='ss1',
+                supervision_type=StateSupervisionType.PROBATION,
+                completion_date=date(2018, 4, 30),
+                status=StateSentenceStatus.COMPLETED,
+                supervision_periods=supervision_periods
+            )
+
+        incarceration_period_index = IncarcerationPeriodIndex(incarceration_periods=[])
+        supervision_period_index = SupervisionPeriodIndex(supervision_periods=supervision_periods)
+
+        assessments = []
+        violation_responses = []
+        supervision_contacts = []
+        incarceration_sentences = []
+
+        supervision_time_buckets = \
+            identifier.find_time_buckets_for_supervision_period(
+                [supervision_sentence],
+                incarceration_sentences,
+                supervision_periods[1],
+                supervision_period_index,
+                incarceration_period_index,
+                assessments,
+                violation_responses,
+                supervision_contacts,
+                DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS
+            )
+
+        supervision_period_supervision_type = StateSupervisionPeriodSupervisionType.PROBATION
+
+        expected_buckets = expected_non_revocation_return_time_buckets(
+            supervision_periods[1],
+            supervision_period_supervision_type,
+            supervision_downgrade_date=date(2018, 3, 19),
+            supervision_downgrade_occurred=True,
+            previous_supervision_level=StateSupervisionLevel.HIGH
+        )
+
+        self.assertCountEqual(supervision_time_buckets, expected_buckets)
+
+    def test_find_time_buckets_for_supervision_period_without_a_supervision_downgrade_out_of_time_frame(self):
+        """Tests the find_time_buckets_for_supervision_period function
+        when a supervision level downgrade has taken place."""
+
+        supervision_periods = [
+            StateSupervisionPeriod.new_with_defaults(
+                supervision_period_id=111,
+                external_id='sp1',
+                state_code='US_ND',
+                start_date=date(2010, 1, 5),
+                termination_date=date(2010, 3, 19),
+                supervision_type=StateSupervisionType.PROBATION,
+                supervision_level=StateSupervisionLevel.HIGH
+            ),
+            StateSupervisionPeriod.new_with_defaults(
+                supervision_period_id=123,
+                external_id='sp2',
+                state_code='US_ND',
+                start_date=date(2018, 3, 19),
+                termination_date=date(2018, 4, 30),
+                supervision_type=StateSupervisionType.PROBATION,
+                supervision_level=StateSupervisionLevel.MEDIUM
+            ),
+        ]
+
+        supervision_sentence = \
+            StateSupervisionSentence.new_with_defaults(
+                supervision_sentence_id=111,
+                start_date=date(2017, 1, 1),
+                external_id='ss1',
+                supervision_type=StateSupervisionType.PROBATION,
+                completion_date=date(2018, 4, 30),
+                status=StateSentenceStatus.COMPLETED,
+                supervision_periods=supervision_periods
+            )
+
+        incarceration_period_index = IncarcerationPeriodIndex(incarceration_periods=[])
+        supervision_period_index = SupervisionPeriodIndex(supervision_periods=supervision_periods)
+
+        assessments = []
+        violation_responses = []
+        supervision_contacts = []
+        incarceration_sentences = []
+
+        supervision_time_buckets = \
+            identifier.find_time_buckets_for_supervision_period(
+                [supervision_sentence],
+                incarceration_sentences,
+                supervision_periods[1],
+                supervision_period_index,
+                incarceration_period_index,
+                assessments,
+                violation_responses,
+                supervision_contacts,
+                DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS
+            )
+
+        supervision_period_supervision_type = StateSupervisionPeriodSupervisionType.PROBATION
+
+        expected_buckets = expected_non_revocation_return_time_buckets(
+            supervision_periods[1],
+            supervision_period_supervision_type,
+        )
+
+        self.assertCountEqual(supervision_time_buckets, expected_buckets)
+
 
 class TestClassifySupervisionSuccess(unittest.TestCase):
     """Tests the classify_supervision_success function."""
@@ -9355,7 +9490,10 @@ def expected_non_revocation_return_time_buckets(
         level_1_supervision_location_external_id: Optional[str] = None,
         level_2_supervision_location_external_id: Optional[str] = None,
         case_compliances: Dict[date, SupervisionCaseCompliance] = None,
-        judicial_district_code: Optional[str] = None
+        judicial_district_code: Optional[str] = None,
+        supervision_downgrade_date: Optional[date] = None,
+        supervision_downgrade_occurred: Optional[bool] = False,
+        previous_supervision_level: Optional[StateSupervisionLevel] = None,
 ) -> \
         List[NonRevocationReturnSupervisionTimeBucket]:
     """Returns the expected NonRevocationReturnSupervisionTimeBuckets based on the provided |supervision_period|
@@ -9385,6 +9523,11 @@ def expected_non_revocation_return_time_buckets(
 
             case_compliance = case_compliances.get(day_on_supervision)
 
+            downgrade_occurred = supervision_downgrade_occurred if \
+                (supervision_downgrade_occurred is not None and supervision_downgrade_date \
+                    and supervision_downgrade_date == day_on_supervision) else False
+            previous_level = previous_supervision_level if downgrade_occurred else None
+
             bucket = NonRevocationReturnSupervisionTimeBucket(
                 state_code=supervision_period.state_code,
                 year=day_on_supervision.year,
@@ -9407,12 +9550,24 @@ def expected_non_revocation_return_time_buckets(
                 supervision_level_raw_text=supervision_period.supervision_level_raw_text,
                 is_on_supervision_last_day_of_month=is_on_supervision_last_day_of_month,
                 case_compliance=case_compliance,
-                judicial_district_code=judicial_district_code
+                judicial_district_code=judicial_district_code,
+                supervision_level_downgrade_occurred=downgrade_occurred,
+                previous_supervision_level=previous_level
             )
 
             expected_buckets.append(bucket)
 
     return expected_buckets
+
+
+class TestSupervisionLevelDowngradeOccurred(unittest.TestCase):
+    """Tests the _supervision_level_downgrade_occurred function."""
+
+    def test_supervision_level_downgrade_occurred_covers_all_supervision_levels(self):
+        """Ensures that all values in StateSupervisionLevel are covered by _supervision_level_downgrade_occurred."""
+
+        for level in StateSupervisionLevel:
+            identifier._supervision_level_downgrade_occurred(level, StateSupervisionLevel.MAXIMUM)
 
 
 class TestFindAssessmentScoreChange(unittest.TestCase):
