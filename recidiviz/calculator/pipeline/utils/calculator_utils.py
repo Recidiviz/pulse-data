@@ -397,7 +397,7 @@ def characteristics_dict_builder(
         'recidivism_rate',
         'successful_completion_count',
         'projected_completion_count',
-        'average_days_served',
+        'average_days_served'
     ])
 
     # Add attributes from the event that are relevant to the metric_class

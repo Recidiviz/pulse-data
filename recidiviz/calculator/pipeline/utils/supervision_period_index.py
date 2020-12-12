@@ -113,6 +113,27 @@ class SupervisionPeriodIndex:
 
         return supervision_periods_by_termination_month
 
+    def get_most_recent_previous_supervision_period(self, current_supervision_period: StateSupervisionPeriod) \
+            -> Optional[StateSupervisionPeriod]:
+        """ Given a current supervision period, return the most recent previous supervision period, if present."""
+        if not current_supervision_period.supervision_period_id:
+            raise ValueError("Current supervision period must have a supervision period id.")
+
+        current_supervision_period_index: Optional[int] = self.supervision_periods.index(current_supervision_period)
+
+        if current_supervision_period_index is None:
+            raise ValueError("Current supervision period was not located in supervision period index.")
+
+        # `supervision_periods` sorts supervision periods from least recent to most recent, so if the current
+        # supervision period is first in the list, that means there is no most recent previous supervision
+        # period.
+        if current_supervision_period_index == 0:
+            return None
+
+        most_recent_previous_supervision_period = self.supervision_periods[current_supervision_period_index - 1]
+
+        return most_recent_previous_supervision_period
+
 
 def _is_official_supervision_admission(admission_reason: Optional[StateSupervisionPeriodAdmissionReason]) -> bool:
     """Returns whether or not the |admission_reason| is considered an official start of supervision."""
