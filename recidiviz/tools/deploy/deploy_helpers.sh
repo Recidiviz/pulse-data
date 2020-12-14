@@ -112,22 +112,6 @@ function pre_deploy_configure_infrastructure {
 
         echo "Deploying prod-ready calculation pipelines to templates in ${PROJECT}."
         run_cmd pipenv run python -m recidiviz.tools.deploy.deploy_pipeline_templates --project_id ${PROJECT} --templates_to_deploy production
-
-        # Automatically adding the DAG and templates to the airflow GCS storage bucket
-        echo "Copying pipeline configurations to DAG bucket in ${PROJECT} GCS."
-        if [[ ${PROJECT} == 'recidiviz-staging' ]]; then
-            run_cmd gsutil cp recidiviz/calculator/pipeline/production_calculation_pipeline_templates.yaml gs://us-west3-calculation-pipeli-0fb68009-bucket/dags/
-            run_cmd gsutil cp recidiviz/cloud_functions/cloud_function_utils.py gs://us-west3-calculation-pipeli-0fb68009-bucket/dags/
-            run_cmd gsutil cp recidiviz/airflow/dag/* gs://us-west3-calculation-pipeli-0fb68009-bucket/dags/
-            run_cmd gsutil cp recidiviz/airflow/airflow.cfg gs://us-west3-calculation-pipeli-0fb68009-bucket
-        fi
-
-        if [[ ${PROJECT} == 'recidiviz-123' ]]; then
-          run_cmd gsutil cp recidiviz/calculator/pipeline/production_calculation_pipeline_templates.yaml gs://us-west3-calculation-pipeli-c49818a8-bucket/dags/
-          run_cmd gsutil cp recidiviz/cloud_functions/cloud_function_utils.py gs://us-west3-calculation-pipeli-c49818a8-bucket/dags/
-          run_cmd gsutil cp recidiviz/airflow/dag/* gs://us-west3-calculation-pipeli-c49818a8-bucket/dags/
-          run_cmd gsutil cp recidiviz/airflow/airflow.cfg gs://us-west3-calculation-pipeli-c49818a8-bucket/dags/
-        fi
     else
         echo "Skipping pipeline template deploy for debug build."
     fi

@@ -192,21 +192,24 @@ def trigger_daily_calculation_pipeline_dag(data, _context) -> None:
     """This function is triggered by a Pub/Sub event, triggers an Airflow DAG where all
     the daily calculation pipelines run simultaneously.
     """
-    gcp_project_id = os.environ.get(GCP_PROJECT_ID_KEY, '')
-    project_id = gcp_project_id + '-airflow'
+    project_id = os.environ.get(GCP_PROJECT_ID_KEY, '')
     if not project_id:
         logging.error('No project id set for call to run the calculation pipelines, returning.')
         return
 
-    webserver_id = os.environ.get('WEBSERVER_ID')
-    if not webserver_id:
-        logging.error("The environment variable 'WEBSERVER_ID' is not set")
+    iap_client_id = os.environ.get('IAP_CLIENT_ID')
+    if not iap_client_id:
+        logging.error('The environment variable \'IAP_CLIENT_ID\' is not set.')
+
+    airflow_uri = os.environ.get('AIRFLOW_URI')
+    if not airflow_uri:
+        logging.error("The environment variable 'AIRFLOW_URI' is not set")
         return
     # The name of the DAG you wish to trigger
-    dag_name = '{}_calculation_pipeline_dag'.format(gcp_project_id)
-    webserver_url = 'https://{}.appspot.com/api/experimental/dags/{}/dag_runs'.format(webserver_id, dag_name)
+    dag_name = '{}_calculation_pipeline_dag'.format(project_id)
+    webserver_url = '{}/api/experimental/dags/{}/dag_runs'.format(airflow_uri, dag_name)
 
-    monitor_response = make_iap_request(webserver_url, IAP_CLIENT_ID[project_id], method='POST', json={"conf": data})
+    monitor_response = make_iap_request(webserver_url, iap_client_id, method='POST', json={"conf": data})
     logging.info("The monitoring Airflow response is %s", monitor_response)
 
 
