@@ -63,6 +63,7 @@ from recidiviz.validation.views.state.overlapping_supervision_periods import \
     OVERLAPPING_SUPERVISION_PERIODS_VIEW_BUILDER
 from recidiviz.validation.views.state.po_report_avgs_per_district_state import \
     PO_REPORT_AVGS_PER_DISTRICT_STATE_VIEW_BUILDER
+from recidiviz.validation.views.state.po_report_clients import PO_REPORT_CLIENTS_VIEW_BUILDER
 from recidiviz.validation.views.state.po_report_distinct_by_officer_month import \
     PO_REPORT_DISTINCT_BY_OFFICER_MONTH_VIEW_BUILDER
 from recidiviz.validation.views.state.po_report_missing_fields import PO_REPORT_MISSING_FIELDS_VIEW_BUILDER
@@ -126,6 +127,7 @@ VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE: Dict[str, Sequence[BigQueryViewBuilder]] = {
         OVERLAPPING_SUPERVISION_PERIODS_VIEW_BUILDER,
         PO_REPORT_DISTINCT_BY_OFFICER_MONTH_VIEW_BUILDER,
         PO_REPORT_MISSING_FIELDS_VIEW_BUILDER,
+        PO_REPORT_CLIENTS_VIEW_BUILDER,
         RECIDIVISM_RELEASE_COHORT_PERSON_LEVEL_EXTERNAL_COMPARISON_VIEW_BUILDER,
         RECIDIVISM_PERSON_LEVEL_EXTERNAL_COMPARISON_MATCHING_PEOPLE_VIEW_BUILDER,
         REVOCATION_MATRIX_COMPARISON_REVOCATION_CELL_VS_CASELOAD_VIEW_BUILDER,
