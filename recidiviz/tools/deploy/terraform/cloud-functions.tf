@@ -33,7 +33,6 @@ data "google_secret_manager_secret_version" "po_report_cdn_static_ip" {
 
 locals {
   repo_url      = "https://source.developers.google.com/projects/${var.project_id}/repos/github_Recidiviz_pulse-data/revisions/${var.git_hash}/paths/recidiviz/cloud_functions"
-  is_production = (var.project_id == "recidiviz-123")
 }
 
 
@@ -216,7 +215,11 @@ resource "google_cloudfunctions_function" "trigger_daily_calculation_pipeline_da
 
   entry_point = "trigger_daily_calculation_pipeline_dag"
   environment_variables = {
-    "WEBSERVER_ID" = local.is_production ? "p03ca791d5f21b85cp-tp" : "jef8828f38bc9738ap-tp"
+    # This is an output variable from the composer environment, relevant docs:
+    # https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/composer_environment#config.0.airflow_uri
+    "AIRFLOW_URI" = google_composer_environment.default.config.0.airflow_uri
+    # Gets the IAP client id to use when talking to airflow from our custom python source.
+    "IAP_CLIENT_ID" = data.external.composer_iap_client_id.result.iap_client_id
   }
 
   source_repository {

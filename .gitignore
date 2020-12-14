@@ -138,3 +138,5 @@ secrets.yaml # keep in case any developers still have them
 *.tfstate
 *.tfstate.*
 *.tfvars
+# Used to store temporary files
+**/.tfout/*

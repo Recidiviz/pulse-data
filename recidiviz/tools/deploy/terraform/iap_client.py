@@ -14,21 +14,30 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
+"""Gets the IAP client id for a given airflow instance"""
 
-variable "project_id" {
-  type = string
-}
+import json
+import sys
+import urllib.parse
 
-variable "region" {
-  type    = string
-  default = "us-central1"
-}
+import requests
 
-variable "zone" {
-  type    = string
-  default = "us-central1-a"
-}
 
-variable "git_hash" {
-  type = string
-}
+def get_iap_client_id(airflow_uri: str) -> str:
+    redirect_response = requests.get(airflow_uri, allow_redirects=False)
+    redirect_location = redirect_response.headers['location']
+
+    # Extract the client_id query parameter from the redirect.
+    parsed = urllib.parse.urlparse(redirect_location)
+    query_string = urllib.parse.parse_qs(parsed.query)
+    return query_string['client_id'][0]
+
+
+def main() -> None:
+    json_input = json.load(sys.stdin)
+    client_id = get_iap_client_id(json_input['airflow_uri'])
+    json.dump({'iap_client_id': client_id}, sys.stdout)
+
+
+if __name__ == '__main__':
+    main()
