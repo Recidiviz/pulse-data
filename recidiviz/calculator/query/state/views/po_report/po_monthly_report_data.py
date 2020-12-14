@@ -40,14 +40,38 @@ PO_MONTHLY_REPORT_DATA_QUERY_TEMPLATE = \
         state_code, year, month,
         officer_external_id,
         COUNT(DISTINCT IF(successful_completion_date IS NOT NULL, person_id, NULL)) AS pos_discharges,
+        ARRAY_AGG(
+          IF(successful_completion_date IS NOT NULL, STRUCT(person_id, full_name, successful_completion_date), NULL) 
+          IGNORE NULLS
+        ) AS pos_discharges_clients,
         COUNT(DISTINCT IF(earned_discharge_date IS NOT NULL, person_id, NULL)) AS earned_discharges,
+        ARRAY_AGG(
+          IF(earned_discharge_date IS NOT NULL, STRUCT(person_id, full_name, earned_discharge_date), NULL)
+          IGNORE NULLS
+        ) AS earned_discharges_clients,
         COUNT(DISTINCT IF(revocation_violation_type IN ('TECHNICAL'), person_id, NULL)) AS technical_revocations,
         COUNT(DISTINCT IF(revocation_violation_type IN ('NEW_CRIME'), person_id, NULL)) AS crime_revocations,
+        ARRAY_AGG(
+          IF(revocation_report_date IS NOT NULL, STRUCT(person_id, full_name, revocation_violation_type, revocation_report_date), NULL) 
+          IGNORE NULLS
+        ) AS revocations_clients,        
         COUNT(DISTINCT IF(absconsion_report_date IS NOT NULL, person_id, NULL)) AS absconsions,
+        ARRAY_AGG(
+          IF(absconsion_report_date IS NOT NULL, STRUCT(person_id, full_name, absconsion_report_date), NULL) 
+          IGNORE NULLS
+        ) AS absconsions_clients,        
         SUM(assessment_count) AS assessments,
         COUNT(DISTINCT IF(assessment_up_to_date, person_id, NULL)) AS assessments_up_to_date,
+        ARRAY_AGG(
+          IF(assessment_up_to_date IS FALSE, STRUCT(person_id, full_name), NULL) 
+          IGNORE NULLS
+        ) AS assessments_out_of_date_clients,        
         SUM(face_to_face_count) AS facetoface,
-        COUNT(DISTINCT IF(face_to_face_frequency_sufficient, person_id, NULL)) AS facetoface_frequencies_sufficient
+        COUNT(DISTINCT IF(face_to_face_frequency_sufficient, person_id, NULL)) AS facetoface_frequencies_sufficient,
+        ARRAY_AGG(
+          IF(face_to_face_frequency_sufficient IS FALSE, STRUCT(person_id, full_name), NULL) 
+          IGNORE NULLS
+        ) AS facetoface_out_of_date_clients
       FROM `{project_id}.{po_report_dataset}.report_data_by_person_by_month`
       GROUP BY state_code, year, month, officer_external_id
     ),
@@ -94,14 +118,17 @@ PO_MONTHLY_REPORT_DATA_QUERY_TEMPLATE = \
       email_address,
       agents.officer_given_name,
       month as review_month,
+      report_month.pos_discharges_clients,
       report_month.pos_discharges,
       IFNULL(last_month.pos_discharges, 0) AS pos_discharges_last_month,
       district_avg.avg_pos_discharges AS pos_discharges_district_average,
       state_avg.avg_pos_discharges AS pos_discharges_state_average,
+      report_month.earned_discharges_clients,
       report_month.earned_discharges,
       IFNULL(last_month.earned_discharges, 0) AS earned_discharges_last_month,
       district_avg.avg_earned_discharges AS earned_discharges_district_average,
       state_avg.avg_earned_discharges AS earned_discharges_state_average,
+      report_month.revocations_clients,
       report_month.technical_revocations,
       IFNULL(last_month.technical_revocations, 0) AS technical_revocations_last_month,
       district_avg.avg_technical_revocations AS technical_revocations_district_average,
@@ -110,12 +137,15 @@ PO_MONTHLY_REPORT_DATA_QUERY_TEMPLATE = \
       IFNULL(last_month.crime_revocations, 0) AS crime_revocations_last_month,
       district_avg.avg_crime_revocations AS crime_revocations_district_average,
       state_avg.avg_crime_revocations AS crime_revocations_state_average,
+      report_month.absconsions_clients,
       report_month.absconsions,
       IFNULL(last_month.absconsions, 0) AS absconsions_last_month,
       district_avg.avg_absconsions AS absconsions_district_average,
       state_avg.avg_absconsions AS absconsions_state_average,
+      report_month.assessments_out_of_date_clients,
       report_month.assessments,
       IEEE_DIVIDE(report_month.assessments_up_to_date, assessment_compliance_caseload_count) * 100 AS assessment_percent,
+      report_month.facetoface_out_of_date_clients,
       report_month.facetoface,
       IEEE_DIVIDE(report_month.facetoface_frequencies_sufficient, facetoface_compliance_caseload_count) * 100 as facetoface_percent
     FROM `{project_id}.{static_reference_dataset}.po_report_recipients`
