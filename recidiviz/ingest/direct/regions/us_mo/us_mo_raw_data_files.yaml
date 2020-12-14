@@ -27,6 +27,11 @@ raw_files:
     primary_key_cols:
       - E04
       - FOCLIST
+  # Regional and District Administrator Roster
+  - file_tag: LANTERN_DA_RA_LIST
+    primary_key_cols:
+      - REGION
+      - DISTRICT
     # Status Descriptions. Column prefix: FH.
   - file_tag: LBAKRCOD_TAK146
     primary_key_cols:
