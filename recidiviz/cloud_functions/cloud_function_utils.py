@@ -41,9 +41,6 @@ IAP_CLIENT_ID = {
                           'googleusercontent.com'),
     'recidiviz-123': ('688733534196-uol4tvqcb345md66joje9gfgm26ufqj6.apps.'
                       'googleusercontent.com'),
-    'recidiviz-staging-airflow': ('17428640429-55a16miqmvtdq0damq39t1iht8vmo981.apps.'
-                                  'googleusercontent.com'),
-    'recidiviz-123-airflow': '236713977790-80cjalk1vgpk7niv38eb23r3gs0ls8mn.apps.googleusercontent.com'
 }
 
 GCP_PROJECT_ID_KEY = 'GCP_PROJECT'
