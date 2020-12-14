@@ -23,7 +23,6 @@ from recidiviz.calculator.query.state import dataset_config as state_dataset_con
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.validation.views import dataset_config
-from recidiviz.validation.views.state.po_report_missing_fields import PO_REPORT_MISSING_FIELDS_VIEW_BUILDER
 
 PO_REPORT_DISTINCT_BY_OFFICER_MONTH_VIEW_NAME = 'po_report_distinct_by_officer_month'
 
@@ -51,4 +50,4 @@ PO_REPORT_DISTINCT_BY_OFFICER_MONTH_VIEW_BUILDER = SimpleBigQueryViewBuilder(
 
 if __name__ == '__main__':
     with local_project_id_override(GCP_PROJECT_STAGING):
-        PO_REPORT_MISSING_FIELDS_VIEW_BUILDER.build_and_print()
+        PO_REPORT_DISTINCT_BY_OFFICER_MONTH_VIEW_BUILDER.build_and_print()
