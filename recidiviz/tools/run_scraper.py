@@ -37,6 +37,7 @@ import types
 from collections import deque
 from datetime import datetime
 from functools import partial
+from typing import Set, cast
 
 from recidiviz.ingest.scrape import constants, scraper as scraper_module
 from recidiviz.ingest.scrape.ingest_utils import validate_regions
@@ -48,7 +49,7 @@ from recidiviz.utils import regions
 
 
 # This function acts as a bound method to the scraper instance.
-def add_task(queue, _self, task_name, request):
+def add_task(queue, _self, task_name, request) -> None:
     """Overwritten version of `add_task` which adds the task to an in-memory
     queue.
     """
@@ -69,14 +70,15 @@ def start_scrape(queue, self, scrape_type):
                           next_task=self.get_initial_task()))
 
 
-def run_scraper(args):
+def run_scraper(args) -> None:
     use_in_memory_sqlite_database(JailsBase)
 
     region_codes = validate_regions(args.region.split(','))
     if not region_codes:
         sys.exit(1)
     failed_regions = []
-    for region_code in region_codes:
+    valid_region_codes = cast(Set[str], region_codes)
+    for region_code in valid_region_codes:
         logging.info('***')
         logging.info('***')
         logging.info("Starting scraper for region: [%s]", region_code)
@@ -95,7 +97,7 @@ def run_scraper(args):
                      failed_regions)
 
 
-def run_scraper_for_region(region, args):
+def run_scraper_for_region(region, args) -> None:
     """Runs the scraper for the given region
 
     Creates and manages an in-memory FIFO queue to replicate production.
@@ -105,7 +107,7 @@ def run_scraper_for_region(region, args):
     scraper_module.ScraperCloudTaskManager = lambda: None  # type: ignore
     scraper = region.get_ingestor()
     scraper.BATCH_WRITES = False
-    task_queue = deque()
+    task_queue: deque = deque()
 
     # We use this to bind the method to the instance.
     scraper.add_task = types.MethodType(
@@ -142,7 +144,7 @@ def run_scraper_for_region(region, args):
     logging.info("Completed the test run!")
 
 
-def _create_parser():
+def _create_parser() -> argparse.ArgumentParser:
     """Creates the CLI argument parser."""
     parser = argparse.ArgumentParser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -178,7 +180,7 @@ def _create_parser():
     return parser
 
 
-def _configure_logging(level):
+def _configure_logging(level) -> None:
     root = logging.getLogger()
     root.setLevel(level)
 

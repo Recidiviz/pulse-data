@@ -80,7 +80,7 @@ class UploadRawDataFilesToBqController:
             file_tag: str,
             normalized_file_name: str,
             processed_time: datetime.datetime,
-            file_exists_in_metadata: bool):
+            file_exists_in_metadata: bool) -> None:
         """Marks the provided |normalized_file_name| as processed in the raw_file_metadata table."""
         # TODO(#3020): Fill in lower_bound_inclusive once we're not just receiving historical refreshes.
         if not file_exists_in_metadata:
@@ -104,8 +104,7 @@ class UploadRawDataFilesToBqController:
                 file_id=file_id,
                 processed_time=processed_time)
 
-
-    def _append_df_to_table(self, dataset: str, table_name: str, df: pd.DataFrame):
+    def _append_df_to_table(self, dataset: str, table_name: str, df: pd.DataFrame) -> None:
         """Uploads the provided |df| into the relevant append-only BQ table. If the table does not already exist in BQ,
         it will be created.
         """
@@ -143,7 +142,6 @@ class UploadRawDataFilesToBqController:
             schema.append({'name': name, 'type': typ_str, 'mode': mode})
         return schema
 
-
     def _get_dataframe_from_csv_with_extra_cols(self, file_id: int, local_file_path: str) -> pd.DataFrame:
         """Parses the provided |local_file_path| into a dataframe. Adds file_id and update_time columns to the dataframe
         before returning.
@@ -170,7 +168,7 @@ class UploadRawDataFilesToBqController:
 
         return df
 
-    def _upload_raw_data_file_to_bq(self, local_file_path: str):
+    def _upload_raw_data_file_to_bq(self, local_file_path: str) -> None:
         """Attempts to upload the given |local_file_path| to all relevant tables in BQ."""
         logging.info('\n\n\n ============== Beginning processing for file %s ================ \n\n\n', local_file_path)
         _, file_name = os.path.split(local_file_path)
@@ -215,7 +213,7 @@ class UploadRawDataFilesToBqController:
             processed_time=datetime.datetime.now(),
             file_exists_in_metadata=file_in_metadata)
 
-    def do_upload(self):
+    def do_upload(self) -> None:
         """Loops through all provided raw data files, attempting to upload their contents to BQ."""
         local_file_paths = _get_all_file_paths(self.paths)
 

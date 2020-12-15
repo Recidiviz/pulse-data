@@ -128,7 +128,7 @@ class MoveFilesFromUnspecifiedToRawController:
             lower_bound_date=self.start_date_bound
         )
 
-    def _write_move_to_log_file(self):
+    def _write_move_to_log_file(self) -> None:
         self.move_list.sort()
         with open(self.log_output_path, 'w') as f:
             if self.dry_run:
@@ -138,7 +138,7 @@ class MoveFilesFromUnspecifiedToRawController:
 
             f.writelines(template.format(original_path, new_path) for original_path, new_path in self.move_list)
 
-    def _move_files_for_date(self, subdir_path_str: str):
+    def _move_files_for_date(self, subdir_path_str: str) -> None:
         """Function that loops through each subdirectory and moves files in each subdirectory using the from path
         and to path specified."""
 
@@ -181,7 +181,7 @@ class MoveFilesFromUnspecifiedToRawController:
         self.move_progress.finish()
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 

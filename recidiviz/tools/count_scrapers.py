@@ -43,7 +43,7 @@ def get_parent_class(region: regions.Region) -> type:
     return inspect.getmro(region.get_ingestor_class())[1]
 
 
-def count_scrapers_by_vendor():
+def count_scrapers_by_vendor() -> None:
     """Prints the number of scrapers of each parent class overall and for
     IOB target states."""
     scraper_module.ScraperCloudTaskManager = lambda: None  # type: ignore
