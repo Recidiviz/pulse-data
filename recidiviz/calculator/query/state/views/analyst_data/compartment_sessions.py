@@ -45,7 +45,8 @@ COMPARTMENT_SESSIONS_QUERY_TEMPLATE = \
         compartment_level_2,
         last_day_of_data,
         MIN(start_date) AS start_date,
-        MAX(end_date) AS end_date
+        --this is done to ensure we take a null end date if present instead of the max
+        CASE WHEN MAX(CASE WHEN end_date IS NULL THEN 1 ELSE 0 END) = 0 THEN MAX(end_date) END AS end_date
     FROM `{project_id}.{analyst_dataset}.compartment_sub_sessions_materialized` sub_sessions
     GROUP BY 1,2,3,4,5,6
     ORDER BY 1,2,3,4,5,6

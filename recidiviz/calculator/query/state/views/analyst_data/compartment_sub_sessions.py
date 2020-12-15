@@ -33,13 +33,17 @@ COMPARTMENT_SUB_SESSIONS_QUERY_TEMPLATE = \
     /*{description}*/
     WITH population_cte AS
     /*
-    Union together incarceration and supervision population metrics. There are cases in each of these individual dataflow
-    metrics where we have the same person on the same day with different values for supervision types or specialized purpose for incarceration. 
-    This deduplication is handled further down in the query. 
+    Union together incarceration and supervision population metrics (both in state and out of state). There are cases in 
+    each of these individual dataflow metrics where we have the same person on the same day with different values for 
+    supervision types or specialized purpose for incarceration. This deduplication is handled further down in the query. 
     
-    Create a field that identifies the compartment_level_1 (incarceration vs supervision) and compartment_level_2, which for incarceration can 
-    be 'GENERAL','PAROLE_BOARD_HOLD' or 'TREATMENT_IN_PRISON', and for supervision can be 'PAROLE', 'PROBATION', or 'DUAL'.
-    Records that are not in one of these compartments are left null and populated later in the query.
+    Create a field that identifies the compartment_level_1 (incarceration vs supervision) and compartment_level_2, which 
+    for incarceration can  be 'GENERAL','PAROLE_BOARD_HOLD' or 'TREATMENT_IN_PRISON', and for supervision can be 
+    'PAROLE', 'PROBATION', or 'DUAL'.Records that are not in one of these compartments are left null and populated later
+    in the query.
+    
+    The field "metric_source" is pulled from dataflow metric as to distinguish the population metric data sources. This 
+    is done because SUPERVISION can come from either SUPERVISION_POPULATION and SUPERVISION_OUT_OF_STATE_POPULATION.
     
     Compartment location is defined as facility for incarceration and judicial district for supervision periods.
     */
@@ -48,6 +52,7 @@ COMPARTMENT_SUB_SESSIONS_QUERY_TEMPLATE = \
         DISTINCT
         person_id,
         date_of_stay AS date,
+        metric_type AS metric_source,
         created_on,
         state_code,
         age_bucket,
@@ -71,6 +76,7 @@ COMPARTMENT_SUB_SESSIONS_QUERY_TEMPLATE = \
         DISTINCT
         person_id,
         date_of_supervision AS date,
+        metric_type AS metric_source,
         created_on,       
         state_code,
         age_bucket,
@@ -87,13 +93,34 @@ COMPARTMENT_SUB_SESSIONS_QUERY_TEMPLATE = \
     WHERE metric_period_months = 0
         AND methodology = 'EVENT'
         AND state_code in ('US_ND','US_ID')
+    UNION ALL
+    SELECT 
+        DISTINCT
+        person_id,
+        date_of_supervision AS date,
+        metric_type AS metric_source,
+        created_on,       
+        state_code,
+        age_bucket,
+        gender,
+        prioritized_race_or_ethnicity,
+        'SUPERVISION' as compartment_level_1,
+        CASE WHEN supervision_type in ('PAROLE', 'PROBATION','DUAL') THEN supervision_type END AS compartment_level_2,
+        CONCAT(COALESCE(level_1_supervision_location_external_id,'EXTERNAL_UNKNOWN'),'|', COALESCE(level_2_supervision_location_external_id,'EXTERNAL_UNKNOWN'))
+    FROM `{project_id}.{metrics_dataset}.supervision_out_of_state_population_metrics` 
+    INNER JOIN
+        `{project_id}.{reference_views_dataset}.most_recent_job_id_by_metric_and_state_code_materialized`
+    USING (state_code, year, month, metric_period_months, metric_type, job_id)
+    WHERE metric_period_months = 0
+        AND methodology = 'EVENT'
+        AND state_code in ('US_ND','US_ID')  
     )
     ,
     last_day_of_data_cte AS
     (
     SELECT 
         state_code,
-        compartment_level_1,
+        metric_source,
         MAX(created_on) AS last_day_of_data
     FROM population_cte
     GROUP BY 1,2
@@ -115,6 +142,7 @@ COMPARTMENT_SUB_SESSIONS_QUERY_TEMPLATE = \
         a.age_bucket,
         a.gender,
         a.prioritized_race_or_ethnicity,
+        a.metric_source,
         a.compartment_level_1,
         COALESCE(a.compartment_level_2, b.compartment_level_2) compartment_level_2,
         a.compartment_location
@@ -122,13 +150,13 @@ COMPARTMENT_SUB_SESSIONS_QUERY_TEMPLATE = \
         LEFT JOIN  population_cte b 
     ON a.person_id = b.person_id
         AND a.date = b.date
-        AND a.compartment_level_1 = b.compartment_level_1
+        AND a.metric_source = b.metric_source
         AND b.compartment_level_2 IS NOT NULL
     )
     ,
     dedup_step_2_cte AS 
     /* 
-    Creates dual supervision category and also dedups to a single person on a single day within compartment_level_1. 
+    Creates dual supervision category and also dedups to a single person on a single day within metric_source. 
     This is done by classifying any cases where a person has more than one supervision level_2 on the same day as 
     being "DUAL" and then deduplicating so that there is only one record on that person/day.
     */
@@ -140,6 +168,7 @@ COMPARTMENT_SUB_SESSIONS_QUERY_TEMPLATE = \
         age_bucket,
         gender,
         prioritized_race_or_ethnicity,
+        metric_source,
         compartment_level_1,
         CASE WHEN cnt > 1 AND compartment_level_1 = 'SUPERVISION' THEN 'DUAL' ELSE compartment_level_2 END AS compartment_level_2,
         compartment_location
@@ -147,8 +176,8 @@ COMPARTMENT_SUB_SESSIONS_QUERY_TEMPLATE = \
         (
         SELECT 
             *, 
-            COUNT(DISTINCT(compartment_level_2)) OVER(PARTITION BY person_id, date, compartment_level_1) AS cnt,
-            ROW_NUMBER() OVER(PARTITION BY person_id, date, compartment_level_1) AS rn
+            COUNT(DISTINCT(compartment_level_2)) OVER(PARTITION BY person_id, date, compartment_level_1, metric_source) AS cnt,
+            ROW_NUMBER() OVER(PARTITION BY person_id, date, compartment_level_1, metric_source) AS rn
         FROM dedup_step_1_cte
         )
     WHERE rn = 1
@@ -156,7 +185,8 @@ COMPARTMENT_SUB_SESSIONS_QUERY_TEMPLATE = \
     ,
     dedup_step_3_cte AS 
     /*
-    Dedup across compartment_level_1 (incarceration or supervision), prioritizing incarceration
+    Dedup across metric_source (INCARCERATION_POPULATION, SUPERVISION_POPULATION, SUPERVISION_OUT_OF_STATE_POPULATION),
+    prioritizing in that order.
     */
     (
     SELECT
@@ -166,6 +196,7 @@ COMPARTMENT_SUB_SESSIONS_QUERY_TEMPLATE = \
         age_bucket,
         gender,
         prioritized_race_or_ethnicity,
+        metric_source,
         compartment_level_1,
         compartment_level_2,
         compartment_location
@@ -174,7 +205,9 @@ COMPARTMENT_SUB_SESSIONS_QUERY_TEMPLATE = \
         SELECT 
             *,
             ROW_NUMBER() OVER(PARTITION BY person_id, date ORDER BY 
-              CASE WHEN compartment_level_1 = 'INCARCERATION' THEN 1 WHEN compartment_level_1 = 'SUPERVISION' THEN 2 END ASC) AS rn
+                CASE WHEN metric_source = 'INCARCERATION_POPULATION' THEN 1 
+                    WHEN metric_source = 'SUPERVISION_POPULATION'  THEN 2 
+                    WHEN metric_source = 'SUPERVISION_OUT_OF_STATE_POPULATION' THEN 3 END ASC) AS rn
         FROM  dedup_step_2_cte
         )
     WHERE rn = 1
@@ -194,6 +227,7 @@ COMPARTMENT_SUB_SESSIONS_QUERY_TEMPLATE = \
         person_id,
         date,
         state_code,
+        metric_source,
         compartment_level_1,
         COALESCE(
             LAST_VALUE(compartment_level_2 IGNORE NULLS) OVER(PARTITION BY person_id, compartment_level_1, group_continuous_dates ORDER BY date ASC), 
@@ -215,14 +249,15 @@ COMPARTMENT_SUB_SESSIONS_QUERY_TEMPLATE = \
     ,
     sessionized_cte AS 
     /*
-    Aggregate across distinct sessions (continuous dates within compartment and person_id) and get the range of dates 
-    that define the session.
+    Aggregate across distinct sub-sessions (continuous dates within metric_source, compartment, location, and person_id)
+    and get the range of dates that define the session.
     */
     (
     SELECT
         group_continuous_dates_in_compartment,
         person_id,
         state_code,
+        metric_source,
         compartment_level_1,
         compartment_level_2,
         compartment_location,
@@ -235,12 +270,12 @@ COMPARTMENT_SUB_SESSIONS_QUERY_TEMPLATE = \
         dates, but now restricted to continuous dates within a compartment
         */
         SELECT *,
-            DATE_SUB(DATE, INTERVAL ROW_NUMBER() OVER(PARTITION BY person_id, compartment_level_1, compartment_level_2, compartment_location
+            DATE_SUB(DATE, INTERVAL ROW_NUMBER() OVER(PARTITION BY person_id, metric_source, compartment_level_1, compartment_level_2, compartment_location
                 ORDER BY date ASC) DAY) AS group_continuous_dates_in_compartment
         FROM filled_missing_pop_types_cte
         ORDER BY date ASC
         )
-    GROUP BY 1,2,3,4,5,6
+    GROUP BY 1,2,3,4,5,6,7
     ORDER BY MIN(DATE) ASC
     )
     ,
@@ -252,6 +287,7 @@ COMPARTMENT_SUB_SESSIONS_QUERY_TEMPLATE = \
     SELECT 
         s.person_id,
         s.state_code,
+        s.metric_source,
         s.compartment_level_1,
         s.compartment_level_2,
         s.compartment_location,
@@ -261,7 +297,7 @@ COMPARTMENT_SUB_SESSIONS_QUERY_TEMPLATE = \
     FROM sessionized_cte s
     LEFT JOIN last_day_of_data_cte l
         ON s.state_code = l.state_code
-        AND s.compartment_level_1 = l.compartment_level_1
+        AND s.metric_source = l.metric_source
     )
     ,
     release_compartment_cte AS
@@ -275,7 +311,8 @@ COMPARTMENT_SUB_SESSIONS_QUERY_TEMPLATE = \
     SELECT 
         person_id,
         state_code,
-        'RELEASE' as compartment_level_1,
+        'INFERRED' AS metric_source,
+        'RELEASE' AS compartment_level_1,
         'RELEASE' AS compartment_level_2,
         CAST(NULL AS STRING) AS compartment_location,
         start_date,
@@ -404,6 +441,7 @@ COMPARTMENT_SUB_SESSIONS_QUERY_TEMPLATE = \
         sessions.person_id,
         ROW_NUMBER() OVER(PARTITION BY sessions.person_id ORDER BY sessions.start_date ASC) AS sub_session_id,
         sessions.state_code,
+        sessions.metric_source,
         sessions.compartment_level_1,
         sessions.compartment_level_2,
         sessions.compartment_location,
@@ -449,6 +487,7 @@ COMPARTMENT_SUB_SESSIONS_QUERY_TEMPLATE = \
         state_code,
         start_date,
         end_date,
+        metric_source,
         compartment_level_1,
         compartment_level_2,
         compartment_location,
