@@ -183,7 +183,7 @@ class MoveFilesToDeprecatedController:
                         result.append(from_path)
         return result
 
-    def _write_move_to_log_file(self):
+    def _write_move_to_log_file(self) -> None:
         self.move_list.sort()
         with open(self.log_output_path, 'w') as f:
             if self.dry_run:
@@ -193,7 +193,7 @@ class MoveFilesToDeprecatedController:
 
             f.writelines(template.format(original_path, new_path) for original_path, new_path in self.move_list)
 
-    def _move_files_for_date(self, from_uri: str):
+    def _move_files_for_date(self, from_uri: str) -> None:
         """Function that loops through each list of files to move and moves them to the deprecated folder
         in accordance with the date they were received and the date they were deprecated."""
         curr_gcsfs_file_path = GcsfsFilePath.from_absolute_path(from_uri)
@@ -221,7 +221,7 @@ class MoveFilesToDeprecatedController:
         self.move_progress.finish()
 
 
-def main():
+def main() -> None:
     """Runs the move_state_files_to_deprecated script."""
     parser = argparse.ArgumentParser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)

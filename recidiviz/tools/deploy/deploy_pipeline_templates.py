@@ -26,6 +26,7 @@ import argparse
 import logging
 import os
 import sys
+from typing import List, Tuple
 
 import yaml
 
@@ -45,7 +46,7 @@ TEMPLATE_PATHS = {
 }
 
 
-def deploy_pipeline_templates(template_yaml_path: str, project_id: str):
+def deploy_pipeline_templates(template_yaml_path: str, project_id: str) -> None:
     """Deploys all pipelines listed in the file at the template_yaml_path to templates in the given project."""
     logging.info("Deploying pipeline templates at %s to %s", template_yaml_path, project_id)
 
@@ -54,7 +55,7 @@ def deploy_pipeline_templates(template_yaml_path: str, project_id: str):
 
         if pipeline_config_yaml:
             pipeline_config_yaml_all_pipelines = pipeline_config_yaml['daily_pipelines'] + \
-                                                pipeline_config_yaml['historical_pipelines']
+                pipeline_config_yaml['historical_pipelines']
             for pipeline_yaml_dict in pipeline_config_yaml_all_pipelines:
                 argv = ['--project', project_id,
                         '--save_as_template',
@@ -81,7 +82,7 @@ def deploy_pipeline_templates(template_yaml_path: str, project_id: str):
             logging.info("Empty pipeline yaml dict at: %s", yaml_file)
 
 
-def parse_arguments(argv):
+def parse_arguments(argv: List[str]) -> Tuple[argparse.Namespace, List[str]]:
     """Parses the arguments needed to deploy the pipeline templates."""
     parser = argparse.ArgumentParser()
 
@@ -100,7 +101,7 @@ def parse_arguments(argv):
     return parser.parse_known_args(argv)
 
 
-def deploy_pipeline_templates_to_project():
+def deploy_pipeline_templates_to_project() -> None:
     """Deploys either prod or staging pipelines to the project given by the --project_id argument."""
     known_args, _ = parse_arguments(sys.argv)
 

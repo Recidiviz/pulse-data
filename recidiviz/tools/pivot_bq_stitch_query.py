@@ -39,7 +39,7 @@ RACES = ['ASIAN', 'BLACK', 'NATIVE_AMERICAN', 'LATINO', 'WHITE', 'OTHER',
          'UNKNOWN_RACE']
 
 
-def main():
+def main() -> None:
     """Script to create query logic for pivoting tables"""
     for gender in GENDERS:
         print(PIVOT_TEMPLATE_JUST_GENDER.format(gender=_to_db_gender(gender),
@@ -64,7 +64,7 @@ def main():
             print('UNION ALL')
 
 
-def print_pivot_query(gender, race):
+def print_pivot_query(gender: str, race: str) -> None:
     print(
         PIVOT_TEMPLATE.format(
             gender=_to_db_gender(gender),
@@ -74,13 +74,13 @@ def print_pivot_query(gender, race):
     )
 
 
-def print_unpivot_query(gender, race):
+def print_unpivot_query(gender: str, race: str) -> None:
     column_name = gender.lower() + '_' + race.lower()
     print(UNPIVOT_TEMPLATE.format(
         column_name=column_name, gender=gender, race=race))
 
 
-def _to_db_race(race):
+def _to_db_race(race: str) -> str:
     if race == 'NATIVE_AMERICAN':
         return 'AMERICAN_INDIAN_ALASKAN_NATIVE'
     if race == 'LATINO':
@@ -90,13 +90,13 @@ def _to_db_race(race):
     return race
 
 
-def _to_db_gender(gender):
+def _to_db_gender(gender: str) -> str:
     if gender == 'UNKNOWN_GENDER':
         return 'EXTERNAL_UNKNOWN'
     return gender
 
 
-def _to_column_name(gender, race):
+def _to_column_name(gender: str, race: str) -> str:
     return gender.lower() + '_' + race.lower()
 
 

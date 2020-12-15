@@ -138,9 +138,9 @@ def get_modified_files(commit_range: str) -> FrozenSet[str]:
 def format_failure(failure: Tuple[FrozenSet[str], FrozenSet[str]]) -> str:
     return \
         'Failure:\n\tModified file(s):\n{}\n\tWithout modifying file(s):\n{}' \
-            .format(
-                '\n'.join(map(lambda file: '\t\t' + file, failure[0])),
-                '\n'.join(map(lambda file: '\t\t' + file, failure[1])))
+        .format(
+            '\n'.join(map(lambda file: '\t\t' + file, failure[0])),
+            '\n'.join(map(lambda file: '\t\t' + file, failure[1])))
 
 
 SKIP_COMMIT_REGEX = r'\[skip validation.*\]'
@@ -165,7 +165,7 @@ def get_assertions_to_skip(commit_range: str) -> FrozenSet[str]:
     return frozenset(sets_to_skip)
 
 
-def main(commit_range: str):
+def main(commit_range: str) -> None:
     assertions_to_skip = get_assertions_to_skip(commit_range)
 
     failures = check_assertions(get_modified_files(commit_range), assertions_to_skip)

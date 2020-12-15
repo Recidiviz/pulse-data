@@ -73,7 +73,7 @@ def generate_region_deletion_commands(state_code: str) -> List[str]:
     return commands
 
 
-def main(state_code: str):
+def main(state_code: str) -> None:
     print(f'RUN THE FOLLOWING COMMANDS IN ORDER TO DELETE ALL DATA FOR REGION [{state_code}]')
     print('********************************************************************************')
 

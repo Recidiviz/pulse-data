@@ -118,7 +118,7 @@ class MoveFilesFromProdIngestToRawController:
     def _get_files_to_move(self) -> List[str]:
         return gsutil_ls('gs://'f'{self.region_ingest_bucket_dir_path.bucket_name}/*.csv')
 
-    def _write_move_to_log_file(self):
+    def _write_move_to_log_file(self) -> None:
         self.move_list.sort()
         with open(self.log_output_path, 'w') as f:
             if self.dry_run:
@@ -128,7 +128,7 @@ class MoveFilesFromProdIngestToRawController:
 
             f.writelines(template.format(original_path, new_path) for original_path, new_path in self.move_list)
 
-    def _move_files(self, from_uri: str):
+    def _move_files(self, from_uri: str) -> None:
         curr_gcsfs_file_path = GcsfsFilePath.from_absolute_path(from_uri)
         previous_date_format = filename_parts_from_path(curr_gcsfs_file_path).date_str
         new_date_format = date.fromisoformat(previous_date_format).strftime("%Y/%m/%d/")
@@ -161,7 +161,7 @@ class MoveFilesFromProdIngestToRawController:
         self.move_progress.finish()
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
