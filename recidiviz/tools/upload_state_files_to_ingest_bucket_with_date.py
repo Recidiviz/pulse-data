@@ -116,7 +116,7 @@ class UploadStateFilesToIngestBucketController:
 
         return result
 
-    def upload_files(self, paths_to_upload: List[str], thread_pool: ThreadPool):
+    def upload_files(self, paths_to_upload: List[str], thread_pool: ThreadPool) -> None:
         msg_prefix = 'DRY_RUN: ' if self.dry_run else ''
         self.move_progress = Bar(f"{msg_prefix}Moving files...", max=len(paths_to_upload))
         thread_pool.map(self._upload_file, paths_to_upload)
@@ -161,7 +161,7 @@ class UploadStateFilesToIngestBucketController:
         else:
             logging.info("Upload complete! See results in [%s].", self.log_output_path)
 
-    def write_copies_to_log_file(self):
+    def write_copies_to_log_file(self) -> None:
         self.copies_list.sort()
         with open(self.log_output_path, 'w') as f:
             if self.dry_run:
@@ -172,7 +172,7 @@ class UploadStateFilesToIngestBucketController:
             f.writelines(template.format(original_path, new_path) for original_path, new_path in self.copies_list)
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 

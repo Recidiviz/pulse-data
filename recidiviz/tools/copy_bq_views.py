@@ -27,6 +27,7 @@ python -m recidiviz.tools.copy_bq_views \
 import argparse
 import logging
 import sys
+from typing import List, Tuple
 
 from google.cloud import bigquery
 
@@ -37,7 +38,7 @@ from recidiviz.big_query.big_query_view import BigQueryView
 def copy_bq_views(source_project_id: str,
                   source_dataset_id: str,
                   destination_project_id: str,
-                  destination_dataset_id: str):
+                  destination_dataset_id: str) -> None:
     """Copies all views from the source_project_id.source_dataset_id to the
     destination_project_id.destination_dataset_id."""
 
@@ -69,7 +70,7 @@ def copy_bq_views(source_project_id: str,
                                     destination_dataset_ref=destination_dataset)
 
 
-def parse_arguments(argv):
+def parse_arguments(argv: List[str]) -> Tuple[argparse.Namespace, List[str]]:
     """Parses the required arguments."""
     parser = argparse.ArgumentParser()
 

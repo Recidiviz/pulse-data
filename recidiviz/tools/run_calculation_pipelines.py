@@ -57,9 +57,10 @@ You must also include any arguments required by the given pipeline.
 """
 from __future__ import absolute_import
 
+import argparse
 import logging
 import sys
-import argparse
+from typing import List, Tuple
 
 from recidiviz.calculator.pipeline.incarceration import \
     pipeline as incarceration_pipeline
@@ -79,7 +80,7 @@ PIPELINE_MODULES = {
 }
 
 
-def parse_arguments(argv):
+def parse_arguments(argv: List[str]) -> Tuple[argparse.Namespace, List[str]]:
     """Parses the arguments needed to run pipelines."""
     parser = argparse.ArgumentParser()
 
@@ -103,7 +104,7 @@ def get_pipeline_module(pipeline: str):
     raise ValueError(f"Unexpected pipeline {pipeline}")
 
 
-def run_calculation_pipelines():
+def run_calculation_pipelines() -> None:
     """Runs the pipeline designated by the given --pipeline argument."""
     # We drop argv[0] because it's the script name
     known_args, remaining_args = parse_arguments(sys.argv[1:])
@@ -113,7 +114,7 @@ def run_calculation_pipelines():
     run_pipeline(pipeline_module, remaining_args)
 
 
-def run_pipeline(pipeline_module, argv):
+def run_pipeline(pipeline_module, argv: List[str]) -> None:
     """Runs the given pipeline_module with the arguments contained in argv."""
     known_args, remaining_args = pipeline_module.get_arg_parser().parse_known_args(argv)
     apache_beam_pipeline_options = get_apache_beam_pipeline_options_from_args(remaining_args)

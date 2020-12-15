@@ -122,7 +122,7 @@ class MoveFilesFromStorageController:
             f'move_result_{region}_{self.project_id}_start_bound_{self.start_date_bound}_end_bound_'
             f'{self.end_date_bound}_dry_run_{self.dry_run}_{datetime.datetime.now().isoformat()}.txt')
 
-    def run_move(self):
+    def run_move(self) -> None:
         """Main method of script - executes move, or runs a dry run of a move."""
         if self.dry_run:
             logging.info("Running in DRY RUN mode for region [%s]", self.region)
@@ -201,7 +201,7 @@ class MoveFilesFromStorageController:
 
         return [f for sublist in collect_files_res for f in sublist]
 
-    def move_files(self, files_to_move: List[str], thread_pool: ThreadPool):
+    def move_files(self, files_to_move: List[str], thread_pool: ThreadPool) -> None:
         """Moves files at the given paths to the ingest directory, changing the prefix to 'unprocessed' as necessary.
 
         For the given list of file paths:
@@ -225,11 +225,11 @@ class MoveFilesFromStorageController:
             raise ValueError('Progress bar should not be None')
         self.move_progress.finish()
 
-    def queue_console_url(self, queue_name: str):
+    def queue_console_url(self, queue_name: str) -> str:
         """Returns the url to the GAE console page for a queue with a given name."""
         return f'https://console.cloud.google.com/cloudtasks/queue/{queue_name}?project={self.project_id}'
 
-    def do_post_request(self, url: str):
+    def do_post_request(self, url: str) -> None:
         """Executes a googleapis.com curl POST request with the given url. """
         res = subprocess.Popen(self.CURL_POST_REQUEST_TEMPLATE.format(url), shell=True, stdout=subprocess.PIPE)
         stdout, _stderr = res.communicate()
@@ -237,17 +237,17 @@ class MoveFilesFromStorageController:
         if 'error' in response:
             raise ValueError(response['error'])
 
-    def pause_queue(self, queue_name: str):
+    def pause_queue(self, queue_name: str) -> None:
         """Posts a request to pause the queue with the given name."""
         logging.info("Pausing [%s] in [%s]", queue_name, self.project_id)
         self.do_post_request(self.PAUSE_QUEUE_URL.format(self.project_id, queue_name))
 
-    def purge_queue(self, queue_name: str):
+    def purge_queue(self, queue_name: str) -> None:
         """Posts a request to purge the queue with the given name."""
         logging.info("Purging [%s] in [%s]", queue_name, self.project_id)
         self.do_post_request(self.PURGE_QUEUE_URL.format(self.project_id, queue_name))
 
-    def pause_and_purge_queues(self):
+    def pause_and_purge_queues(self) -> None:
         """Pauses and purges Direct Ingest queues for the specified project."""
         for queue_name in self.QUEUES_TO_PAUSE:
             self.pause_queue(queue_name)
@@ -269,7 +269,7 @@ class MoveFilesFromStorageController:
                 self.collect_progress.next()
         return result
 
-    def move_file(self, original_file_path: str):
+    def move_file(self, original_file_path: str) -> None:
         """Moves a file at the given path into the ingest directory, updating the name to always have an prefix of
         'unprocessed'. Logs the file move, which will later be written to a log file.
 
@@ -302,7 +302,7 @@ class MoveFilesFromStorageController:
 
         return os.path.join('gs://', self.ingest_bucket.abs_path(), file_name)
 
-    def write_moves_to_log_file(self):
+    def write_moves_to_log_file(self) -> None:
         self.moves_list.sort()
         with open(self.log_output_path, 'w') as f:
             if self.dry_run:
@@ -313,7 +313,7 @@ class MoveFilesFromStorageController:
             f.writelines(template.format(original_path, new_path) for original_path, new_path in self.moves_list)
 
 
-def main():
+def main() -> None:
     """Runs the move_state_files_to_storage script."""
     parser = argparse.ArgumentParser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)

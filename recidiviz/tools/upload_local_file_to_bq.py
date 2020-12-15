@@ -45,7 +45,7 @@ def main(*,
          chunksize: int,
          ignore_quotes: bool,
          encoding: str,
-         overwrite_if_exists: bool):
+         overwrite_if_exists: bool) -> None:
     """Reads and uploads data in the |local_filepath| to BigQuery based on the input args.."""
     # Set maximum display options
     pd.options.display.max_columns = 999

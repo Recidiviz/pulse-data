@@ -120,7 +120,7 @@ class CopyFilesFromProdToStagingController:
             lower_bound_date=self.start_date_bound
         )
 
-    def _write_copies_to_log_file(self):
+    def _write_copies_to_log_file(self) -> None:
         self.copy_list.sort()
         with open(self.log_output_path, 'w') as f:
             if self.dry_run:
@@ -130,7 +130,7 @@ class CopyFilesFromProdToStagingController:
 
             f.writelines(template.format(original_path, new_path) for original_path, new_path in self.copy_list)
 
-    def _copy_files_for_date(self, subdir_path_str: str):
+    def _copy_files_for_date(self, subdir_path_str: str) -> None:
         dir_path = GcsfsDirectoryPath.from_absolute_path(subdir_path_str.rstrip('/'))
 
         from_path = f'gs://{self.prod_region_storage_dir_path.bucket_name}/{dir_path.relative_path}*'
@@ -151,7 +151,7 @@ class CopyFilesFromProdToStagingController:
         self.copy_progress.finish()
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
