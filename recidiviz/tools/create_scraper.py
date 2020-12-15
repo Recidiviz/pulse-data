@@ -32,7 +32,7 @@ import argparse
 import os
 from datetime import datetime
 from string import Template
-from typing import Optional
+from typing import Dict, Optional
 
 import us
 
@@ -44,7 +44,7 @@ from recidiviz.common.errors import FipsMergingError
 from recidiviz.utils import regions
 
 
-def main():
+def main() -> None:
     """Main entry point for create_scraper."""
     parser = _create_parser()
     args = parser.parse_args()
@@ -97,20 +97,20 @@ def _create_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def _create_scraper_files(subs, vendor: Optional[str]):
+def _create_scraper_files(subs: Dict[str, str], vendor: Optional[str]) -> None:
     """Creates __init__.py, region_name_scraper.py, and region_name.yaml files
     in recidiviz/ingest/scrape/regions/region_name
     """
 
-    def create_scraper(template):
+    def create_scraper(template: str) -> None:
         target = os.path.join(target_dir, subs['region'] + '_scraper.py')
         _populate_file(template, target, subs)
 
-    def create_extractor_yaml(template):
+    def create_extractor_yaml(template: str) -> None:
         target = os.path.join(target_dir, subs['region'] + '.yaml')
         _populate_file(template, target, subs)
 
-    def create_manifest_yaml(template):
+    def create_manifest_yaml(template: str) -> None:
         target = os.path.join(target_dir, 'manifest.yaml')
         _populate_file(template, target, subs)
 
@@ -142,8 +142,8 @@ def _create_scraper_files(subs, vendor: Optional[str]):
         create_extractor_yaml(yaml_template)
 
 
-def _create_test_files(subs, vendor: Optional[str]):
-    def create_test(template):
+def _create_test_files(subs: Dict[str, str], vendor: Optional[str]) -> None:
+    def create_test(template: str) -> None:
         test_target_file_name = subs['region'] + '_scraper_test.py'
         test_target = os.path.join(target_test_dir, test_target_file_name)
         _populate_file(template, test_target, subs)
@@ -165,16 +165,16 @@ def _create_test_files(subs, vendor: Optional[str]):
     create_test(test_template)
 
 
-def _populate_file(template_path, target_path, substitutions):
-    with open(template_path) as template:
-        template = Template(template.read())
+def _populate_file(template_path: str, target_path: str, substitutions: Dict[str, str]) -> None:
+    with open(template_path) as template_file:
+        template = Template(template_file.read())
         contents = template.substitute(substitutions)
 
     with open(target_path, 'w') as target:
         target.write(contents)
 
 
-def _get_state(state_arg) -> us.states:
+def _get_state(state_arg: str) -> us.states:
     state = us.states.lookup(state_arg)
     if state is None:
         raise ValueError("Couldn't parse state '%s'" % state_arg)

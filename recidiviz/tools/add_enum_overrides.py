@@ -26,7 +26,8 @@ import argparse
 import logging
 import pandas as pd
 
-def add_enum_override(scraper_name: str, from_field: str, enum_string: str, action: str, mapped_enum: str):
+
+def add_enum_override(scraper_name: str, from_field: str, enum_string: str, action: str, mapped_enum: str) -> None:
     """Add one enum mapping to a single scraper file."""
     logging.info(scraper_name)
     scraper_file = f"recidiviz/ingest/scrape/regions/{scraper_name}/{scraper_name}_scraper.py"
@@ -57,13 +58,15 @@ def add_enum_override(scraper_name: str, from_field: str, enum_string: str, acti
     with open(scraper_file, 'w') as file:
         file.writelines(lines)
 
-def main(df):
+
+def main(df: pd.DataFrame) -> None:
     for _, (scraper_name, from_field, enum_string, action, mapped_enum, everyone) in df.iterrows():
         if everyone:
             logging.warning("Update the default map for %s to map '%s' to %s.",
                             from_field, enum_string, mapped_enum)
         else:
             add_enum_override(scraper_name, from_field, enum_string, action, mapped_enum)
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()

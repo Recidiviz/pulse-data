@@ -61,7 +61,7 @@ def to_datetime(date_str: str) -> datetime.datetime:
     return datetime.datetime.strptime(date_str, '%Y-%m-%d %H:%M')
 
 
-def _get_table(*, project_id: str, client, dataset: str, table_name: str) -> Optional[Table]:
+def _get_table(*, project_id: str, client: bigquery.Client, dataset: str, table_name: str) -> Optional[Table]:
     """Returns a Table object found in BQ from the provided |project_id|, |dataset|, and |table_name|."""
     table_id = f'{project_id}.{dataset}.{table_name}'
     table = Table.from_string(table_id)
@@ -103,7 +103,7 @@ class _IngestMetadataRow:
     datetimes_contained_upper_bound_inclusive: Optional[datetime.datetime] = attr.ib()
 
 
-def get_table_name_for_type(metadata_type: MetadataType):
+def get_table_name_for_type(metadata_type: MetadataType) -> str:
     if metadata_type == MetadataType.RAW:
         return 'raw_file_metadata'
     if metadata_type == MetadataType.INGEST:
@@ -118,7 +118,7 @@ def _add_row_to_metadata(
         client: bigquery.Client,
         project_id: str,
         dry_run: bool,
-        file_tag: str):
+        file_tag: str) -> None:
     table_name = get_table_name_for_type(metadata_type=metadata_type)
 
     table = _get_table(
@@ -150,7 +150,7 @@ def add_row_to_raw_metadata(
         normalized_file_name: str,
         processed_time: Optional[datetime.datetime] = None,
         datetimes_contained_lower_bound_inclusive: Optional[datetime.datetime] = None,
-        datetimes_contained_upper_bound_inclusive: Optional[datetime.datetime] = None):
+        datetimes_contained_upper_bound_inclusive: Optional[datetime.datetime] = None) -> None:
     """Adds a row to the raw_file_metadata table with the input args."""
     row = _RawMetadataRow(region_code=region_code,
                           file_id=file_id,
@@ -182,7 +182,7 @@ def add_row_to_ingest_metadata(
         processed_time: Optional[datetime.datetime] = None,
         is_invalidated: Optional[bool] = None,
         datetimes_contained_lower_bound_exclusive: Optional[datetime.datetime] = None,
-        datetimes_contained_upper_bound_inclusive: Optional[datetime.datetime] = None):
+        datetimes_contained_upper_bound_inclusive: Optional[datetime.datetime] = None) -> None:
     row = _IngestMetadataRow(
         region_code=region_code,
         file_id=file_id,
@@ -209,7 +209,7 @@ def mark_existing_metadata_row_as_processed(
         dry_run: bool,
         client: bigquery.Client,
         file_id: int,
-        processed_time: datetime.datetime):
+        processed_time: datetime.datetime) -> None:
     table_name = get_table_name_for_type(metadata_type)
     _mark_existing_metadata_row_as_processed_helper(
         table_name=table_name,
@@ -227,12 +227,12 @@ def _mark_existing_metadata_row_as_processed_helper(
         dry_run: bool,
         client: bigquery.Client,
         file_id: int,
-        processed_time: datetime.datetime):
+        processed_time: datetime.datetime) -> None:
     query = f"""
-        UPDATE 
-            `{project_id}.direct_ingest_processing_metadata.{table_name}` 
-        SET 
-            processed_time = DATETIME "{processed_time}" 
+        UPDATE
+            `{project_id}.direct_ingest_processing_metadata.{table_name}`
+        SET
+            processed_time = DATETIME "{processed_time}"
         WHERE
             file_id = {file_id}
     """
