@@ -563,7 +563,13 @@ class TableConverter:
                         self._dimension_values_for_dimension_cell(column_name, row[column_name]))
             dimension_values = tuple(dimension_values_list)
 
-            value = decimal.Decimal(row[self.value_column].item())
+            raw_value = row[self.value_column]
+            if isinstance(raw_value, str):
+                raw_value = raw_value.replace(',', '')
+            else:
+                raw_value = raw_value.item()
+
+            value = decimal.Decimal(raw_value)
             data_points.append((dimension_values, value))
         return data_points
 
