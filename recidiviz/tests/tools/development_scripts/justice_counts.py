@@ -21,7 +21,6 @@ python -m recidiviz.tests.tools.development_scripts.justice_counts \
     --manifest-file recidiviz/tests/tools/justice_counts/fixtures/report1.yaml
 """
 
-
 import argparse
 import logging
 
@@ -33,7 +32,7 @@ from recidiviz.tools.justice_counts import manual_upload
 from recidiviz.tools.postgres import local_postgres_helpers
 
 
-def _create_parser():
+def _create_parser() -> argparse.ArgumentParser:
     """Creates the CLI argument parser."""
     parser = argparse.ArgumentParser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -45,12 +44,27 @@ def _create_parser():
         '--log', required=False, default='INFO', type=logging.getLevelName,
         help="Set the logging level"
     )
+    parser.add_argument(
+        '--clean-up-db', required=False, default=False, type=bool,
+        help="Automatically cleans up tmp-pgsql-db at end of run"
+    )
     return parser
 
 
-def _configure_logging(level):
+def _configure_logging(level) -> None:
     root = logging.getLogger()
     root.setLevel(level)
+
+
+def _cleanup_run(tmp_postgres_db_dir, clean_up_db):
+    if clean_up_db:
+        local_postgres_helpers.stop_and_clear_on_disk_postgresql_database(tmp_postgres_db_dir)
+        logging.info("Db automatically cleaned up")
+    else:
+        # Don't cleanup the database so that user can query the data afterward.
+        logging.info("For future cleanup, the postgres data directory is at %s.", tmp_postgres_db_dir)
+        logging.info("To query the data, connect to the local database with "
+                     "`psql --dbname=recidiviz_test_db`")
 
 
 if __name__ == '__main__':
@@ -64,8 +78,7 @@ if __name__ == '__main__':
     local_postgres_helpers.use_on_disk_postgresql_database(JusticeCountsBase)
 
     fs = FakeGCSFileSystem()
-    manual_upload.ingest(fs, test_utils.prepare_files(fs, arguments.manifest_file))
-
-    # Don't cleanup the database so that user can query the data afterward.
-    logging.info("To query the data, connect to the local database with `psql --dbname=recidiviz_test_db`")
-    logging.info("For future cleanup, the postgres data directory is at %s.", tmp_db_dir)
+    try:
+        manual_upload.ingest(fs, test_utils.prepare_files(fs, arguments.manifest_file))
+    finally:
+        _cleanup_run(tmp_db_dir, arguments.clean_up_db)
