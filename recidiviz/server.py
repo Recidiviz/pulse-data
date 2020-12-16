@@ -33,7 +33,6 @@ from recidiviz.backup.backup_manager import backup_manager_blueprint
 from recidiviz.calculator.calculation_data_storage_manager import calculation_data_storage_manager_blueprint
 from recidiviz.calculator.pipeline.utils.dataflow_monitor_manager import dataflow_monitor_blueprint
 from recidiviz.cloud_functions.cloud_functions import cloud_functions_blueprint
-from recidiviz.cloud_functions.covid.covid_ingest_endpoint import covid_blueprint
 from recidiviz.ingest.aggregate.scrape_aggregate_reports import scrape_aggregate_reports_blueprint
 from recidiviz.ingest.aggregate.single_count import store_single_count_blueprint
 from recidiviz.ingest.direct.direct_ingest_control import direct_ingest_control
@@ -62,7 +61,6 @@ app.register_blueprint(direct_ingest_control, url_prefix='/direct')
 app.register_blueprint(actions, url_prefix='/ingest')
 app.register_blueprint(infer_release_blueprint, url_prefix='/infer_release')
 app.register_blueprint(cloud_functions_blueprint, url_prefix='/cloud_function')
-app.register_blueprint(covid_blueprint, url_prefix='/covid')
 app.register_blueprint(batch_blueprint, url_prefix='/batch')
 app.register_blueprint(
     scrape_aggregate_reports_blueprint, url_prefix='/scrape_aggregate_reports')
