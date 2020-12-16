@@ -448,3 +448,26 @@ class ManualUploadTest(unittest.TestCase):
             (['Male', 'Data Unavailable'], decimal.Decimal(0)),
             (['Female', 'Data Unavailable'], decimal.Decimal(0)),
         ], [(cell.aggregated_dimension_values, cell.value) for cell in cells])
+
+    def test_supportCommaNumbers_isPersisted(self):
+        # Act
+        manual_upload.ingest(self.fs, test_utils.prepare_files(self.fs, manifest_filepath('report6_commas')))
+
+        # Assert
+        session = SessionFactory.for_schema_base(JusticeCountsBase)
+
+        cells = session.query(schema.Cell).all()
+        self.assertEqual([
+            (['Male', 'Black'], decimal.Decimal(1370)),
+            (['Female', 'Black'], decimal.Decimal(0)),
+            (['Male', 'White'], decimal.Decimal(6384123)),
+            (['Female', 'White'], decimal.Decimal(0)),
+            (['Male', 'Hispanic'], decimal.Decimal(15)),
+            (['Female', 'Hispanic'], decimal.Decimal(0)),
+            (['Male', 'Native American'], decimal.Decimal(0)),
+            (['Female', 'Native American'], decimal.Decimal(0)),
+            (['Male', 'Asian'], decimal.Decimal(4)),
+            (['Female', 'Asian'], decimal.Decimal(0)),
+            (['Male', 'Data Unavailable'], decimal.Decimal(0)),
+            (['Female', 'Data Unavailable'], decimal.Decimal(0)),
+        ], [(cell.aggregated_dimension_values, cell.value) for cell in cells])
