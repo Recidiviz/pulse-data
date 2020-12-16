@@ -21,7 +21,6 @@ Its results are split by state and by whether it is a placeholder object.
 """
 from typing import List
 
-from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.big_query.big_query_view_collector import BigQueryViewCollector
 from recidiviz.ingest.views.dataset_config import VIEWS_DATASET
 from recidiviz.ingest.views.metadata_helpers import (
@@ -29,6 +28,7 @@ from recidiviz.ingest.views.metadata_helpers import (
     get_enum_property_names,
     get_non_enum_property_names,
 )
+from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
 from recidiviz.persistence.database.schema_utils import get_state_database_entity_with_name
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -82,24 +82,26 @@ STATE_PERSON_ENTITY_NAME = 'StatePerson'
 STATE_PERSON_TABLE_NAME = 'state_person'
 
 
-class StatePersonBigQueryViewCollector(BigQueryViewCollector[SimpleBigQueryViewBuilder]):
-    def collect_view_builders(self) -> List[SimpleBigQueryViewBuilder]:
+class StatePersonBigQueryViewCollector(BigQueryViewCollector[MetricBigQueryViewBuilder]):
+    def collect_view_builders(self) -> List[MetricBigQueryViewBuilder]:
         entity = get_state_database_entity_with_name(STATE_PERSON_ENTITY_NAME)
         builders = [
-            SimpleBigQueryViewBuilder(
+            MetricBigQueryViewBuilder(
                 dataset_id=VIEWS_DATASET,
                 view_id=f'ingest_state_metadata__state_person__{col}',
                 view_query_template=STATE_PERSON_ENUM_QUERY_TEMPLATE,
+                dimensions=['state_code', col],
                 table_name=STATE_PERSON_TABLE_NAME,
                 column_name=col,
             )
             for col in get_enum_property_names(entity) if col not in METADATA_EXCLUDED_PROPERTIES
         ]
         builders.extend([
-            SimpleBigQueryViewBuilder(
+            MetricBigQueryViewBuilder(
                 dataset_id=VIEWS_DATASET,
                 view_id=f'ingest_state_metadata__state_person__{col}',
                 view_query_template=STATE_PERSON_NON_ENUM_QUERY_TEMPLATE,
+                dimensions=['state_code', col],
                 table_name=STATE_PERSON_TABLE_NAME,
                 column_name=col,
             )

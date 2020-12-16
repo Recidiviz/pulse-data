@@ -25,10 +25,10 @@ from recidiviz.ingest.views.non_enum_counter import StateTableNonEnumCounterBigQ
 from recidiviz.ingest.views.state_person_counter import StatePersonBigQueryViewCollector
 
 
+INGEST_METADATA_BUILDERS = StateTableEnumCounterBigQueryViewCollector().collect_view_builders() + \
+    StateTableNonEnumCounterBigQueryViewCollector().collect_view_builders() + \
+    StatePersonBigQueryViewCollector().collect_view_builders()
+
 VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE: Dict[str, Sequence[BigQueryViewBuilder]] = {
-    VIEWS_DATASET: (
-        StateTableEnumCounterBigQueryViewCollector().collect_view_builders() +
-        StateTableNonEnumCounterBigQueryViewCollector().collect_view_builders() +
-        StatePersonBigQueryViewCollector().collect_view_builders()
-    ),
+    VIEWS_DATASET: INGEST_METADATA_BUILDERS,
 }

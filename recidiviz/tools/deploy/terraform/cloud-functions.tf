@@ -47,7 +47,7 @@ resource "google_cloudfunctions_function" "direct-ingest-states" {
 
   event_trigger {
     event_type = "google.storage.object.finalize"
-    resource = "${var.project_id}-direct-ingest-state-${replace(lower(each.key), "_", "-")}"
+    resource   = "${var.project_id}-direct-ingest-state-${replace(lower(each.key), "_", "-")}"
   }
 
   entry_point           = "handle_state_direct_ingest_file"
@@ -73,7 +73,7 @@ resource "google_cloudfunctions_function" "direct-ingest-states-upload-testing" 
 
   event_trigger {
     event_type = "google.storage.object.finalize"
-    resource = "${var.project_id}-direct-ingest-state-${replace(lower(each.key), "_", "-")}-upload-testing"
+    resource   = "${var.project_id}-direct-ingest-state-${replace(lower(each.key), "_", "-")}-upload-testing"
   }
 
   entry_point           = "normalize_raw_file_path"
@@ -92,6 +92,11 @@ resource "google_cloudfunctions_function" "export_metric_view_data" {
   runtime = "python37"
   labels = {
     "deployment-tool" = "terraform"
+  }
+
+  event_trigger {
+    event_type = "google.pubsub.topic.publish"
+    resource   = "projects/${var.project_id}/topics/v1.export.view.data"
   }
 
   entry_point           = "export_metric_view_data"
@@ -210,7 +215,7 @@ resource "google_cloudfunctions_function" "trigger_daily_calculation_pipeline_da
 
   event_trigger {
     event_type = "google.pubsub.topic.publish"
-    resource = "projects/${var.project_id}/topics/v1.calculator.trigger_daily_pipelines"
+    resource   = "projects/${var.project_id}/topics/v1.calculator.trigger_daily_pipelines"
   }
 
   entry_point = "trigger_daily_calculation_pipeline_dag"
@@ -238,14 +243,14 @@ resource "google_cloudfunctions_function" "trigger_calculation_pipeline_historic
 
   event_trigger {
     event_type = "google.pubsub.topic.publish"
-    resource = "projects/${var.project_id}/topics/v1.calculator.historical_incarceration_us_nd"
+    resource   = "projects/${var.project_id}/topics/v1.calculator.historical_incarceration_us_nd"
   }
 
 
-  entry_point           = "start_and_monitor_calculation_pipeline"
+  entry_point = "start_and_monitor_calculation_pipeline"
   environment_variables = {
-    "TEMPLATE_NAME" = "us-nd-incarceration-population-240"
-    "JOB_NAME" = "us-nd-incarceration-population-240"
+    "TEMPLATE_NAME"                    = "us-nd-incarceration-population-240"
+    "JOB_NAME"                         = "us-nd-incarceration-population-240"
     "ON_DATAFLOW_JOB_COMPLETION_TOPIC" = "v1.do.nothing"
   }
 
@@ -266,14 +271,14 @@ resource "google_cloudfunctions_function" "trigger_calculation_pipeline_historic
 
   event_trigger {
     event_type = "google.pubsub.topic.publish"
-    resource = "projects/${var.project_id}/topics/v1.calculator.historical_supervision_us_nd"
+    resource   = "projects/${var.project_id}/topics/v1.calculator.historical_supervision_us_nd"
   }
 
 
-  entry_point           = "start_and_monitor_calculation_pipeline"
+  entry_point = "start_and_monitor_calculation_pipeline"
   environment_variables = {
-    "TEMPLATE_NAME" = "us-nd-supervision-population-240"
-    "JOB_NAME" = "us-nd-supervision-population-240"
+    "TEMPLATE_NAME"                    = "us-nd-supervision-population-240"
+    "JOB_NAME"                         = "us-nd-supervision-population-240"
     "ON_DATAFLOW_JOB_COMPLETION_TOPIC" = "v1.do.nothing"
   }
 
