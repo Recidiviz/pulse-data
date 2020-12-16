@@ -16,7 +16,7 @@
 # =============================================================================
 
 # Due to terraform limitations, we have to init terraform with:
-# `terraform init -backend-config "bucket=<project-id>-tf-state"`
+# `terraform init -backend-config "bucket=<project-id>-tf-state" ./recidiviz/tools/deploy/terraform`
 # See https://github.com/hashicorp/terraform/issues/13022 for more.
 terraform {
   backend "gcs" {}
