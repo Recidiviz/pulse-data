@@ -121,11 +121,14 @@ def can_start_on_disk_postgresql_database() -> bool:
 
 @environment.local_only
 def start_on_disk_postgresql_database() -> str:
-    """Starts and initializes a local postgres database for use in tests. Should be called in the setUpClass function so
+    """Starts and initializes a local postgres database for use in tests.
+    Clears all postgres instances in the tmp folder. Should be called in the setUpClass function so
     this only runs once per test class.
 
     Returns the directory where the database data lives.
     """
+    # Clears the tmp directory of all postgres directories
+    _clear_all_on_disk_postgresql_databases()
 
     # Create the directory to use for the postgres database, if it does not already exist.
     temp_db_data_dir = tempfile.mkdtemp(prefix='postgres')
@@ -158,19 +161,29 @@ def start_on_disk_postgresql_database() -> str:
     return temp_db_data_dir
 
 
+def _clear_all_on_disk_postgresql_databases() -> None:
+    tmp_dir = tempfile.gettempdir()
+    tmp_directory_dirs = [name for name in os.listdir(tmp_dir) if os.path.isdir(os.path.join(tmp_dir, name))]
+    postgres_dirs = [os.path.join(tmp_dir, name) for name in tmp_directory_dirs if name.startswith('postgres')]
+    for postgres_dir in postgres_dirs:
+        stop_and_clear_on_disk_postgresql_database(postgres_dir, assert_success=False)
+
+
 @environment.local_only
-def stop_and_clear_on_disk_postgresql_database(temp_db_data_dir: str) -> None:
+def stop_and_clear_on_disk_postgresql_database(temp_db_data_dir: str, assert_success: bool = True) -> None:
     """Stops the postgres server and performs rm -rf of the PG data directory.
     Should be called in the tearDownClass function so this only runs once per test class.
     """
-    _stop_on_disk_postgresql_database(temp_db_data_dir=temp_db_data_dir)
+    _stop_on_disk_postgresql_database(temp_db_data_dir=temp_db_data_dir, assert_success=assert_success)
     shutil.rmtree(temp_db_data_dir)
 
 
-def _stop_on_disk_postgresql_database(temp_db_data_dir: str) -> None:
+def _stop_on_disk_postgresql_database(temp_db_data_dir: str, assert_success: bool = True) -> None:
     # If the current user is root then the database is owned by a separate OS test user. Run as them to stop the server.
     password_record = pwd.getpwnam(LINUX_TEST_DB_OWNER_NAME) if _is_root_user() else None
-    _run_command(f'pg_ctl -D {temp_db_data_dir} -l /tmp/postgres stop', as_user=password_record)
+    _run_command(f'pg_ctl -D {temp_db_data_dir} -l /tmp/postgres stop',
+                 as_user=password_record,
+                 assert_success=assert_success)
 
 
 @environment.local_only
