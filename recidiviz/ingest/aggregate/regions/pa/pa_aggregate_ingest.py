@@ -58,14 +58,13 @@ def _parse_tab_1(filename: str) -> pd.DataFrame:
 
     # Parse everything directly to allow us to correctly map "N/A" and "N/R"
     keep_default_na = False
-    df = pd.read_excel(filename, sheet_name=0, header=1,
-                       keep_default_na=keep_default_na)
+    df = pd.read_excel(filename, sheet_name=0, header=1, keep_default_na=keep_default_na, engine='openpyxl')
 
     # Drop "F/T" and "P/T" line
     df = df[1:]
 
     # Drop Totals footer
-    df = df[:-9]
+    df = df[:-10]
 
     df.columns = df.columns.map(lambda name: name.rstrip(' '))
     df = aggregate_ingest_utils.rename_columns_and_select(
@@ -85,7 +84,7 @@ def _parse_tab_1(filename: str) -> pd.DataFrame:
 
 
 def _report_date_tab_1(filename):
-    df = pd.read_excel(filename, sheet_name=0, header=None)
+    df = pd.read_excel(filename, sheet_name=0, header=None, engine='openpyxl')
 
     # The first cell contains the date
     year = int(df[0][0].replace(' Statistics', ''))
@@ -94,10 +93,10 @@ def _report_date_tab_1(filename):
 
 
 def _parse_tab_2(filename: str):
-    df = pd.read_excel(filename, sheet_name=1, header=1)
+    df = pd.read_excel(filename, sheet_name=1, header=1, engine='openpyxl')
 
     # Drop Totals footer
-    df = df[:-4]
+    df = df[:-5]
 
     # Set index/columns with correct names
     df = df.rename({df.columns[0]: 'county_name'}, axis='columns')
