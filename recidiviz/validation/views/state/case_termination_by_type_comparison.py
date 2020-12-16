@@ -14,9 +14,14 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
+"""
+This view looks at case termination by type and compares the different ways of
+computing them.
 
-"""A view which provides a comparison of total case termination counts per month for views that count terminations
-  by type."""
+The PO monthly reports look at violations whereas case_terminations_by_type_by_month
+look at terminations, so we want to confirm that (when computed) we see more
+violations than terminations.
+"""
 
 # pylint: disable=trailing-whitespace
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
@@ -31,6 +36,9 @@ CASE_TERMINATIONS_BY_TYPE_COMPARISON_VIEW_NAME = 'case_termination_by_type_compa
 
 CASE_TERMINATIONS_BY_TYPE_COMPARISON_DESCRIPTION = """Supervision case termination count comparison per month"""
 
+# TODO(#4948): This validation currently ignores rows that are NULL. We should later fix this
+# to ensure that the only rows that are NULL are the ones that we expect (i.e. ones that don't
+# feed into the table just yet).
 CASE_TERMINATIONS_BY_TYPE_COMPARISON_QUERY_TEMPLATE = \
     """
     /*{description}*/
@@ -39,31 +47,34 @@ CASE_TERMINATIONS_BY_TYPE_COMPARISON_QUERY_TEMPLATE = \
         state_code as region_code, year, month,
         SUM(absconsion) as absconsion_count, SUM(discharge) as discharge_count
       FROM `{project_id}.{view_dataset}.case_terminations_by_type_by_month`
-      WHERE district != 'ALL' AND supervision_type = 'ALL'
+      WHERE (district != 'ALL' OR district IS NULL) AND supervision_type = 'ALL'
       GROUP BY region_code, year, month
     ),
-    absconsions_by_officer as (
-      SELECT state_code as region_code, year, month, SUM(absconsions) as absconsion_count
-      FROM `{project_id}.{po_report_dataset}.supervision_absconsion_terminations_by_officer_by_month_materialized`
-      GROUP BY region_code, year, month
-    ),
-    discharges_by_officer as (
-      SELECT state_code as region_code, year, month, SUM(pos_discharges) as discharge_count
-      FROM `{project_id}.{po_report_dataset}.supervision_discharges_by_officer_by_month_materialized`
-      WHERE district != 'ALL' AND officer_external_id != 'ALL'
+    from_po_report as (
+      SELECT state_code as region_code, year, month,
+      COUNT(DISTINCT IF(successful_completion_date IS NOT NULL, person_id, NULL)) as discharge_count,
+      COUNT(DISTINCT IF(absconsion_report_date IS NOT NULL, person_id, NULL)) as absconsion_count
+      FROM `{project_id}.{po_report_dataset}.report_data_by_person_by_month`
       GROUP BY region_code, year, month
     )
     SELECT region_code, year, month,
        by_month.absconsion_count as absconsions_by_month,
-       absconsions_by_officer.absconsion_count as absconsions_by_officer,
+       from_po_report.absconsion_count as absconsions_from_po_report,
 
        by_month.discharge_count as discharges_by_month,
-       discharges_by_officer.discharge_count as discharges_by_officer
+       from_po_report.discharge_count as discharges_from_po_report
     FROM by_month
-    FULL OUTER JOIN absconsions_by_officer USING (region_code, year, month)
-    FULL OUTER JOIN discharges_by_officer USING (region_code, year, month)
-    WHERE by_month.absconsion_count != absconsions_by_officer.absconsion_count
-      OR by_month.discharge_count != discharges_by_officer.discharge_count
+    FULL OUTER JOIN from_po_report USING (region_code, year, month)
+    /*
+    The by_month table counts terminations and the from_po_report table counts violations.
+    There should always be more violations than terminations, so validate that we don't see any
+    instances where that isn't the case.
+
+    We are not coalescing when the relevant counts are NULL because as of right now we are not
+    computing these metrics across all states.
+    */
+    WHERE by_month.absconsion_count > from_po_report.absconsion_count
+      OR by_month.discharge_count > from_po_report.discharge_count
     ORDER BY region_code, year, month
 """
 
