@@ -47,6 +47,16 @@ default_args = {
 }
 
 
+def trigger_export_operator(export_name: str) -> PubSubPublishOperator:
+    # TODO(#4593) Migrate to IAPHTTPOperator
+    return PubSubPublishOperator(
+        task_id=f'trigger_{export_name.lower()}_bq_metric_export',
+        project=project_id,
+        topic='v1.export.view.data',
+        messages=[{'data': b64encode(bytes(export_name, 'utf-8')).decode()}],
+    )
+
+
 def pipelines_by_state(pipelines) -> Dict[str, List[str]]:  # type: ignore
     pipes_by_state = collections.defaultdict(list)
     for pipe in pipelines:
@@ -64,15 +74,7 @@ with models.DAG(dag_id="{}_calculation_pipeline_dag".format(project_id),
         pipeline_yaml_dicts = yaml.full_load(f)
         if pipeline_yaml_dicts:
             pipeline_dict = pipelines_by_state(pipeline_yaml_dicts['daily_pipelines'])
-            # TODO(#4593) Migrate to IAPHTTPOperator
-            covid_export = PubSubPublishOperator(
-                task_id='trigger_COVID_bq_metric_export',
-                project=project_id,
-                topic='v1.export.view.data',
-                messages=[
-                    {'data': b64encode(b'COVID_DASHBOARD').decode()}
-                ],
-            )
+            covid_export = trigger_export_operator('COVID_DASHBOARD')
             dataflow_default_args = {
                 'project': project_id,
                 'region': 'us-west1',
@@ -80,15 +82,7 @@ with models.DAG(dag_id="{}_calculation_pipeline_dag".format(project_id),
                 'tempLocation': 'gs://{}-dataflow-templates/staging/'.format(project_id)
             }
             for state_code, state_pipelines in pipeline_dict.items():
-                # TODO(#4593) Migrate to IAPHTTPOperator
-                state_export = PubSubPublishOperator(
-                    task_id='trigger_{}_bq_metric_export'.format(state_code),
-                    project=project_id,
-                    topic='v1.export.view.data',
-                    messages=[
-                        {'data': b64encode(bytes(state_code, 'utf-8')).decode()}
-                    ],
-                )
+                state_export = trigger_export_operator(state_code)
                 for pipeline_to_run in state_pipelines:
                     calculation_pipeline = RecidivizDataflowTemplateOperator(
                         task_id=pipeline_to_run,
@@ -100,3 +94,5 @@ with models.DAG(dag_id="{}_calculation_pipeline_dag".format(project_id),
                     # is published saying the pipelines are done.
                     calculation_pipeline >> state_export
                     calculation_pipeline >> covid_export
+
+            ingest_metadata_export = trigger_export_operator('INGEST_METADATA')
