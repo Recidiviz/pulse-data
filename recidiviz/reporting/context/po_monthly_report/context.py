@@ -25,10 +25,13 @@ decrease the usage of measures such as revocations.
 import os
 import copy
 import json
-from typing import List
+from typing import List, Dict
+
+from jinja2 import Template
 
 from recidiviz.reporting.context.context_utils import singular_or_plural, month_number_to_name, \
-    round_float_value_to_int, round_float_value_to_number_of_digits, format_greeting
+    round_float_value_to_int, round_float_value_to_number_of_digits, format_greeting, format_name, format_date, \
+    format_violation_type, align_columns
 import recidiviz.reporting.email_reporting_utils as utils
 from recidiviz.reporting.context.report_context import ReportContext
 
@@ -69,7 +72,16 @@ _ALL_LAST_MONTH_METRICS = [
     "absconsions_last_month",
 ]
 
-_ALL_REQUIRED_RECIPIENT_DATA_FIELDS = _ALL_METRICS_FOR_DISPLAY + _ALL_LAST_MONTH_METRICS + [
+_ALL_CLIENT_FIELDS = [
+    "pos_discharges_clients",
+    "earned_discharges_clients",
+    "revocations_clients",
+    "absconsions_clients",
+    "assessments_out_of_date_clients",
+    "facetoface_out_of_date_clients",
+]
+
+_ALL_REQUIRED_RECIPIENT_DATA_FIELDS = _ALL_METRICS_FOR_DISPLAY + _ALL_LAST_MONTH_METRICS + _ALL_CLIENT_FIELDS + [
     "officer_external_id",
     "state_code",
     "district",
@@ -89,8 +101,15 @@ class PoMonthlyReportContext(ReportContext):
     def __init__(self, state_code: str, recipient_data: dict):
         self._validate_recipient_data_has_expected_fields(recipient_data)
         super().__init__(state_code, recipient_data)
+        self.attachment_content: list = []
         with open(self.get_properties_filepath()) as properties_file:
             self.properties = json.loads(properties_file.read())
+
+        with open(self.get_attachment_filepath()) as attachment_file:
+            self.attachment_template = Template(attachment_file.read())
+
+    def get_attachment_filepath(self) -> str:
+        return os.path.join(os.path.dirname(__file__), 'attachment.txt.jinja2')
 
     @staticmethod
     def _validate_recipient_data_has_expected_fields(recipient_data: dict) -> None:
@@ -130,8 +149,16 @@ class PoMonthlyReportContext(ReportContext):
         self._round_float_values_to_ints(['assessment_percent', 'facetoface_percent'])
         self._round_float_values_to_number_of_digits(_AVERAGE_METRICS_FOR_DISPLAY,
                                                      number_of_digits=_AVERAGE_VALUES_SIGNIFICANT_DIGITS)
+        self._prepare_attachment_content()
 
         return self.prepared_data
+
+    def _prepare_attachment_content(self) -> None:
+        if not self._should_generate_attachment():
+            self.prepared_data['attachment_content'] = None
+            return
+
+        self.prepared_data['attachment_content'] = self.attachment_template.render(self._prepare_attachment_data())
 
     @staticmethod
     def _metric_improved(metric_key: str, metric_value: float, comparison_value: float) -> bool:
@@ -329,3 +356,63 @@ class PoMonthlyReportContext(ReportContext):
         if change_value == 0 or int_value == 0:
             self.prepared_data[color_key] = gray
             self.prepared_data[base_key] = self.properties["same"]
+
+    def _should_generate_attachment_section(self, clients_key: str) -> bool:
+        return clients_key in self.recipient_data and self.recipient_data[clients_key]
+
+    def _should_generate_attachment(self) -> bool:
+        return any(
+            self._should_generate_attachment_section(clients_key)
+            for clients_key in _ALL_CLIENT_FIELDS
+        )
+
+    def _prepare_attachment_clients_tables(self) -> Dict[str, List[List[str]]]:
+        """
+            Prepares "tables" (2 dimensional arrays) of client details to inline into the email
+            Returns: a dictionary, keyed by client "type", and its corresponding table
+        """
+        clients_by_type: Dict[str, List[List[str]]] = {}
+
+        for clients_key in _ALL_CLIENT_FIELDS:
+            clients_by_type[clients_key] = []
+
+            if not self._should_generate_attachment_section(clients_key):
+                continue
+
+            for client in self.recipient_data[clients_key]:
+                base_columns = [f"[{client['person_external_id']}]", format_name(client['full_name'])]
+                additional_columns = []
+
+                if clients_key == "pos_discharges_clients":
+                    additional_columns = [
+                        f'Supervision completed on {format_date(client["successful_completion_date"])}'
+                    ]
+                elif clients_key == "earned_discharges_clients":
+                    additional_columns = [
+                        f'Discharge granted on {format_date(client["earned_discharge_date"])}'
+                    ]
+                elif clients_key == "absconsions_clients":
+                    additional_columns = [
+                        f'Absconsion reported on {format_date(client["absconsion_report_date"])}'
+                     ]
+                elif clients_key == "revocations_clients":
+                    additional_columns = [
+                        f'{format_violation_type(client["revocation_violation_type"])}',
+                        f'Revocation recommendation staffed on {format_date(client["revocation_report_date"])}'
+                    ]
+
+                clients_by_type[clients_key].append(base_columns + additional_columns)
+
+        return clients_by_type
+
+    def _prepare_attachment_data(self) -> Dict:
+        prepared_on_date = format_date(self.get_batch_id(), current_format='%Y%m%d%H%M%S')
+
+        return {
+            "prepared_on_date": prepared_on_date,
+            "officer_given_name": format_name(self.recipient_data['officer_given_name']),
+            "clients": {
+                clients_key: align_columns(clients)
+                for clients_key, clients in self._prepare_attachment_clients_tables().items()
+            },
+        }

@@ -30,7 +30,7 @@ from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath, GcsfsDirectoryPath
 
 class FakeGCSFileSystemDelegate:
     @abc.abstractmethod
-    def on_file_added(self, path: GcsfsFilePath):
+    def on_file_added(self, path: GcsfsFilePath) -> None:
         """Will be called whenever a new file path is successfully added to the file system."""
 
 @attr.s(frozen=True)
@@ -44,7 +44,7 @@ class FakeGCSFileSystemEntry:
 class FakeGCSFileSystem(GCSFileSystem):
     """Test-only implementation of the GCSFileSystem."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.mutex = threading.Lock()
         # Maps the absolute GCS path to an entry, which gives us the schematized path and where the file is in the
         # local filesystem. E.g. {
@@ -57,7 +57,7 @@ class FakeGCSFileSystem(GCSFileSystem):
         self.uploaded_paths: Set[Union[GcsfsFilePath, GcsfsDirectoryPath]] = set()
 
     @property
-    def all_paths(self):
+    def all_paths(self) -> List[Union[GcsfsFilePath, GcsfsDirectoryPath]]:
         return [entry.gcs_path for _abs_gcs_path, entry in self.files.items()]
 
     def test_set_delegate(self, delegate: FakeGCSFileSystemDelegate) -> None:
@@ -66,7 +66,7 @@ class FakeGCSFileSystem(GCSFileSystem):
     def test_add_path(self,
                       path: Union[GcsfsFilePath, GcsfsDirectoryPath],
                       local_path: Optional[str],
-                      fail_handle_file_call=False) -> None:
+                      fail_handle_file_call: bool = False) -> None:
         if not isinstance(path, (GcsfsFilePath, GcsfsDirectoryPath)):
             raise ValueError(f'Path has unexpected type {type(path)}')
 
@@ -78,7 +78,7 @@ class FakeGCSFileSystem(GCSFileSystem):
 
         self._add_entry(FakeGCSFileSystemEntry(path, local_path), fail_handle_file_call)
 
-    def _add_entry(self, entry: FakeGCSFileSystemEntry, fail_handle_file_call=False) -> None:
+    def _add_entry(self, entry: FakeGCSFileSystemEntry, fail_handle_file_call: bool = False) -> None:
         with self.mutex:
             self.files[entry.gcs_path.abs_path()] = entry
 
@@ -126,7 +126,7 @@ class FakeGCSFileSystem(GCSFileSystem):
     def upload_from_string(self,
                            path: GcsfsFilePath,
                            contents: str,
-                           content_type: str):
+                           content_type: str) -> None:
         temp_path = generate_random_temp_path()
         with open(temp_path, 'w') as f:
             f.write(contents)
@@ -137,7 +137,7 @@ class FakeGCSFileSystem(GCSFileSystem):
     def upload_from_contents_handle(self,
                                     path: GcsfsFilePath,
                                     contents_handle: GcsfsFileContentsHandle,
-                                    _content_type: str):
+                                    _content_type: str) -> None:
         temp_path = generate_random_temp_path()
         shutil.copyfile(contents_handle.local_file_path, temp_path)
         self._add_entry(FakeGCSFileSystemEntry(path, temp_path))
