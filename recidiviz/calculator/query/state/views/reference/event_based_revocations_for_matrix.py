@@ -18,7 +18,7 @@
 # pylint: disable=trailing-whitespace, line-too-long
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query import bq_utils
-from recidiviz.calculator.query.state import dataset_config
+from recidiviz.calculator.query.state import dataset_config, state_specific_query_strings
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -48,8 +48,10 @@ EVENT_BASED_REVOCATIONS_FOR_MATRIX_QUERY_TEMPLATE = \
         supervision_type,
         supervision_level,
         case_type,
-        supervising_district_external_id AS district,
-        supervising_officer_external_id AS officer
+        IFNULL(supervising_district_external_id, 'EXTERNAL_UNKNOWN') AS district,
+        IFNULL(supervising_officer_external_id, 'EXTERNAL_UNKNOWN') AS officer,
+        {state_specific_officer_recommendation},
+        violation_history_description AS violation_record
     FROM `{project_id}.{metrics_dataset}.supervision_revocation_analysis_metrics` 
     {filter_to_most_recent_job_id_for_metric}
     WHERE methodology = 'EVENT'
@@ -67,7 +69,8 @@ EVENT_BASED_REVOCATIONS_FOR_MATRIX_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     metrics_dataset=dataset_config.DATAFLOW_METRICS_DATASET,
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
     filter_to_most_recent_job_id_for_metric=bq_utils.filter_to_most_recent_job_id_for_metric(
-        reference_dataset=dataset_config.REFERENCE_VIEWS_DATASET)
+        reference_dataset=dataset_config.REFERENCE_VIEWS_DATASET),
+    state_specific_officer_recommendation=state_specific_query_strings.state_specific_officer_recommendation()
 )
 
 if __name__ == '__main__':

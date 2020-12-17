@@ -40,7 +40,7 @@ SUPERVISION_TERMINATION_BY_TYPE_BY_MONTH_QUERY_TEMPLATE = \
         SUM(successful_termination) AS successful_termination,
         SUM(projected_completion_count - successful_termination) AS revocation_termination,
         supervision_type,
-        district
+        IFNULL(district, 'EXTERNAL_UNKNOWN') as district
     FROM (
       SELECT 
         state_code, year as projected_year, month as projected_month,

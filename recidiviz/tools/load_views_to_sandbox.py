@@ -54,6 +54,16 @@ def _dataset_overrides_for_all_view_datasets(view_dataset_override_prefix: str,
     return dataset_overrides
 
 
+def load_views_to_sandbox(sandbox_dataset_prefix: str, dataflow_dataset_override: Optional[str] = None) -> None:
+    """Loads all views into sandbox datasets prefixed with the sandbox_dataset_prefix."""
+    sandbox_dataset_overrides = \
+        _dataset_overrides_for_all_view_datasets(view_dataset_override_prefix=sandbox_dataset_prefix,
+                                                 dataflow_dataset_override=dataflow_dataset_override)
+
+    create_dataset_and_update_all_views(dataset_overrides=sandbox_dataset_overrides,
+                                        materialized_views_only=False)
+
+
 def parse_arguments(argv: List[str]) -> Tuple[argparse.Namespace, List[str]]:
     """Parses the required arguments."""
     parser = argparse.ArgumentParser()
@@ -87,9 +97,4 @@ if __name__ == '__main__':
     with local_project_id_override(known_args.project_id):
         logging.info("Prefixing all view datasets with [%s_].", known_args.sandbox_dataset_prefix)
 
-        sandbox_dataset_overrides = \
-            _dataset_overrides_for_all_view_datasets(view_dataset_override_prefix=known_args.sandbox_dataset_prefix,
-                                                     dataflow_dataset_override=known_args.dataflow_dataset_override)
-
-        create_dataset_and_update_all_views(dataset_overrides=sandbox_dataset_overrides,
-                                            materialized_views_only=False)
+        load_views_to_sandbox(known_args.sandbox_dataset_prefix, known_args.dataflow_dataset_override)

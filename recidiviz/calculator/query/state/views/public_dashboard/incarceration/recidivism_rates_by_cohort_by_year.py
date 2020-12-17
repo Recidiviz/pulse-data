@@ -59,7 +59,7 @@ RECIDIVISM_RATES_BY_COHORT_BY_YEAR_VIEW_QUERY_TEMPLATE = \
     
     SELECT
       *,
-      IEEE_DIVIDE(recidivated_releases, releases) as recidivism_rate
+      ROUND(IEEE_DIVIDE(recidivated_releases, releases), 2) as recidivism_rate
     FROM
       recidivism_numbers
     ORDER BY state_code, release_cohort, followup_years, gender, age_bucket, race_or_ethnicity

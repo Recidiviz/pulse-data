@@ -33,26 +33,23 @@ REVOCATIONS_MATRIX_FILTERED_CASELOAD_QUERY_TEMPLATE = \
     /*{description}*/
     SELECT
       state_code,
-      person_external_id AS state_id,
-      supervising_officer_external_id AS officer,
-      {state_specific_officer_recommendation},
-      violation_history_description AS violation_record,
-      supervising_district_external_id AS district,
+      IFNULL(person_external_id, 'UNKNOWN') AS state_id,
+      officer,
+      officer_recommendation,
+      violation_record,
+      district,
       supervision_type,
-      {state_specific_supervision_level},
-      case_type AS charge_category,
-      assessment_score_bucket AS risk_level,
-      {most_severe_violation_type_subtype_grouping},
-      IF(response_count > 8, 8, response_count) AS reported_violations,
+      supervision_level,
+      charge_category,
+      risk_level,
+      violation_type,
+      reported_violations,
       metric_period_months
-    FROM `{project_id}.{metrics_dataset}.supervision_revocation_analysis_metrics`
-    {filter_to_most_recent_job_id_for_metric}
-    WHERE methodology = 'PERSON'
-      AND revocation_type = 'REINCARCERATION'
-      AND person_external_id IS NOT NULL
-      AND month IS NOT NULL
-      AND year = EXTRACT(YEAR FROM CURRENT_DATE('US/Pacific'))
-      AND month = EXTRACT(MONTH FROM CURRENT_DATE('US/Pacific'))
+    FROM `{project_id}.{reference_views_dataset}.revocations_matrix_by_person` 
+    WHERE district != 'ALL'
+    AND supervision_type != 'ALL'
+    AND charge_category != 'ALL'
+    AND supervision_level != 'ALL'
     ORDER BY state_code, metric_period_months, violation_record
     """
 
@@ -61,7 +58,7 @@ REVOCATIONS_MATRIX_FILTERED_CASELOAD_VIEW_BUILDER = MetricBigQueryViewBuilder(
     view_id=REVOCATIONS_MATRIX_FILTERED_CASELOAD_VIEW_NAME,
     view_query_template=REVOCATIONS_MATRIX_FILTERED_CASELOAD_QUERY_TEMPLATE,
     dimensions=['state_code', 'metric_period_months', 'district', 'supervision_type', 'supervision_level',
-                'charge_category', 'risk_level', 'violation_type', 'reported_violations'],
+                'charge_category', 'risk_level', 'violation_type', 'reported_violations', 'state_id', 'officer'],
     description=REVOCATIONS_MATRIX_FILTERED_CASELOAD_DESCRIPTION,
     metrics_dataset=dataset_config.DATAFLOW_METRICS_DATASET,
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
