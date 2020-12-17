@@ -39,23 +39,23 @@ PO_REPORT_CLIENTS_QUERY_TEMPLATE = \
       state_code as region_code, review_month, email_address, 'pos_discharges_clients-mismatch'
     FROM `{project_id}.{po_report_dataset}.po_monthly_report_data_materialized`
     WHERE ARRAY_LENGTH(pos_discharges_clients) != pos_discharges
-    
+
     UNION ALL
-    
+
     SELECT DISTINCT
       state_code as region_code, review_month, email_address, 'earned_discharges_clients-mismatch'
     FROM `{project_id}.{po_report_dataset}.po_monthly_report_data_materialized`
     WHERE ARRAY_LENGTH(earned_discharges_clients) != earned_discharges
-    
+
     UNION ALL
-    
+
     SELECT DISTINCT
       state_code as region_code, review_month, email_address, 'revocations_clients-mismatch'
     FROM `{project_id}.{po_report_dataset}.po_monthly_report_data_materialized`
     WHERE ARRAY_LENGTH(revocations_clients) != (crime_revocations + technical_revocations)
-    
+
     UNION ALL
-    
+
     SELECT DISTINCT
       state_code as region_code, review_month, email_address, 'absconsions_clients-mismatch'
     FROM `{project_id}.{po_report_dataset}.po_monthly_report_data_materialized`
