@@ -154,6 +154,88 @@ class PopulationType(Dimension, EntityEnum, metaclass=EntityEnumMeta):
             'PRISON': cls.PRISON,
         }
 
+class AdmissionType(Dimension, EntityEnum, metaclass=EntityEnumMeta):
+    """Dimension that represents the type of incarceration admission"""
+
+    # Admissions due to a new sentence from the community.
+    NEW_COMMITMENT = 'NEW_COMMITMENT'
+
+    # Admissions of persons from supervision (e.g. revocation, dunk, etc.)
+    FROM_SUPERVISION = 'FROM_SUPERVISION'
+
+    # Any other admissions (e.g. in CT this is used for pre-trial admissions)
+    OTHER = 'OTHER'
+
+    @classmethod
+    def get(cls, dimension_cell_value: str, enum_overrides: Optional[EnumOverrides] = None) -> 'AdmissionType':
+        return parse_entity_enum(cls, dimension_cell_value, enum_overrides)
+
+    @classmethod
+    def dimension_identifier(cls) -> str:
+        return 'metric/admission/type'
+
+    @property
+    def dimension_value(self) -> str:
+        return self.value
+
+    @classmethod
+    def _get_default_map(cls) -> Dict[str, 'AdmissionType']:
+        return {
+            'NEW COMMITMENT': cls.NEW_COMMITMENT,
+            'FROM SUPERVISION': cls.FROM_SUPERVISION,
+        }
+
+class SupervisionViolationType(Dimension, EntityEnum, metaclass=EntityEnumMeta):
+    NEW_CRIME = 'NEW_CRIME'
+    TECHNICAL = 'TECHNICAL'
+
+    @classmethod
+    def get(
+        cls, dimension_cell_value: str, enum_overrides: Optional[EnumOverrides] = None
+    ) -> 'SupervisionViolationType':
+        return parse_entity_enum(cls, dimension_cell_value, enum_overrides)
+
+    @classmethod
+    def dimension_identifier(cls) -> str:
+        return 'metric/supervision_violation/type'
+
+    @property
+    def dimension_value(self) -> str:
+        return self.value
+
+    @classmethod
+    def _get_default_map(cls) -> Dict[str, 'SupervisionViolationType']:
+        return {
+            'NEW CRIME': cls.NEW_CRIME,
+            'TECHNICAL': cls.TECHNICAL,
+        }
+
+class SupervisionType(Dimension, EntityEnum, metaclass=EntityEnumMeta):
+    PAROLE = 'PAROLE'
+    PROBATION = 'PROBATION'
+
+    # Some jurisdictions have other types of supervision (e.g. DUI home confinement)
+    OTHER = 'OTHER'
+
+    @classmethod
+    def get(cls, dimension_cell_value: str, enum_overrides: Optional[EnumOverrides] = None) -> 'SupervisionType':
+        return parse_entity_enum(cls, dimension_cell_value, enum_overrides)
+
+    @classmethod
+    def dimension_identifier(cls) -> str:
+        return 'metric/supervision/type'
+
+    @property
+    def dimension_value(self) -> str:
+        return self.value
+
+    @classmethod
+    def _get_default_map(cls) -> Dict[str, 'SupervisionType']:
+        return {
+            'PAROLE': cls.PAROLE,
+            'PROBATION': cls.PROBATION,
+        }
+
 def assert_no_overrides(dimension_cls: Type[Dimension], enum_overrides: Optional[EnumOverrides]) -> None:
     if enum_overrides is not None:
         raise ValueError(f'Overrides not supported for {dimension_cls} but received {enum_overrides}')
@@ -177,7 +259,9 @@ class Country(Dimension, enum.Enum):
 
 # TODO(#4472): Pull this out to a common place and add all states.
 class State(Dimension, enum.Enum):
+    US_AL = 'US_AL'
     US_CO = 'US_CO'
+    US_MI = 'US_MI'
     US_MS = 'US_MS'
     US_TN = 'US_TN'
 
@@ -373,10 +457,22 @@ class Metric:
         """The metric type that this corresponds to in the schema."""
 
 
-def _convert_optional_population_type(value: Optional[str]) -> Optional[PopulationType]:
-    return None if value is None else PopulationType(value)
+def _convert_optional(dimension_type: Type[EntityEnumT], value: Optional[str]) -> Optional[EntityEnumT]:
+    return None if value is None else dimension_type(value)
 
-# TODO(#4483): Add implementations for other metrics
+# `attr` requires converters to be named functions, so we create one for each type.
+def _convert_optional_population_type(value: Optional[str]) -> Optional[PopulationType]:
+    return _convert_optional(PopulationType, value)
+
+def _convert_optional_admission_type(value: Optional[str]) -> Optional[AdmissionType]:
+    return _convert_optional(AdmissionType, value)
+
+def _convert_optional_supervision_type(value: Optional[str]) -> Optional[SupervisionType]:
+    return _convert_optional(SupervisionType, value)
+
+def _convert_optional_supervision_violation_type(value: Optional[str]) -> Optional[SupervisionViolationType]:
+    return _convert_optional(SupervisionViolationType, value)
+
 @attr.s(frozen=True)
 class Population(Metric):
     measurement_type: schema.MeasurementType = attr.ib(converter=schema.MeasurementType)
@@ -398,6 +494,50 @@ class Population(Metric):
     def get_metric_type(cls) -> schema.MetricType:
         return schema.MetricType.POPULATION
 
+@attr.s(frozen=True)
+class Admissions(Metric):
+    """Metric for recording admissions.
+
+    Currently this is intended to only be used for *incarceration* admissions. If needed in the future, it could be
+    expanded to be used for other admissions as well.
+    """
+    measurement_type: schema.MeasurementType = attr.ib(converter=schema.MeasurementType)
+
+    admission_type: Optional[AdmissionType] = attr.ib(converter=_convert_optional_admission_type, default=None)
+    supervision_type: Optional[SupervisionType] = attr.ib(converter=_convert_optional_supervision_type, default=None)
+    supervision_violation_type: Optional[SupervisionViolationType] = attr.ib(
+        converter=_convert_optional_supervision_violation_type, default=None)
+
+    def __attrs_post_init__(self) -> None:
+        if self.admission_type != AdmissionType.FROM_SUPERVISION:
+            if self.supervision_type is not None:
+                raise ValueError(
+                    "'supervision_type' may only be set on admissions if 'admission_type' is 'FROM_SUPERVISION'")
+            if self.supervision_violation_type is not None:
+                raise ValueError("'supervision_violation_type' may only be set on admissions if 'admission_type' is "
+                                 "'FROM_SUPERVISION'")
+
+    def get_measurement_type(self) -> schema.MeasurementType:
+        return self.measurement_type
+
+    @classmethod
+    def get_metric_type(cls) -> schema.MetricType:
+        return schema.MetricType.ADMISSIONS
+
+    @property
+    def filters(self) -> List[Dimension]:
+        filters: List[Dimension] = []
+        if self.admission_type is not None:
+            filters.append(self.admission_type)
+        if self.supervision_type is not None:
+            filters.append(self.supervision_type)
+        if self.supervision_violation_type is not None:
+            filters.append(self.supervision_violation_type)
+        return filters
+
+    @property
+    def required_aggregated_dimensions(self) -> List[Type[Dimension]]:
+        return []
 
 class DateRangeProducer:
     """Produces DateRanges for a given table, splitting the table as needed.
@@ -476,7 +616,7 @@ class ColumnDimensionMapping:
                 raise ValueError(f"Overrides can only be specified for EntityEnum dimensions, not {dimension_cls}")
             overrides_builder = EnumOverrides.Builder()
             for value, mapping in mapping_overrides.items():
-                mapped = dimension_cls.get(mapping)
+                mapped = dimension_cls(mapping)
                 if mapped is None:
                     raise ValueError(f"Unable to parse override value '{mapping}' as {dimension_cls}")
                 overrides_builder.add(value, mapped)
@@ -872,8 +1012,10 @@ def _parse_metric(metric_input: YAMLDict) -> Metric:
         metric_args = metric_input.pop(metric_type, dict)
         if metric_type == 'population':
             return Population(**metric_args)
-    raise ValueError(f"Invalid metric, expected a dictionary with a single key that is one of ('population') but "
-                     f"received: {repr(metric_input)}")
+        if metric_type == 'admissions':
+            return Admissions(**metric_args)
+    raise ValueError(f"Invalid metric, expected a dictionary with a single key that is one of ('admissions', "
+                     f"'population') but received: {repr(metric_input)}")
 
 
 # Only three layers of dictionary nesting is currently supported by the table parsing logic but we use the recursive

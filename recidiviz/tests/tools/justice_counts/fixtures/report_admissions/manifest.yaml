@@ -1,0 +1,57 @@
+source: 'Alabama Department of Corrections'
+report_type: 'Monthly Statistical Report'
+report_instance: 'September 2020'
+publish_date: '2020-11-20'
+tables:
+  - file: 'by_type.csv'
+    date_range:
+      fixed:
+        range:
+          lower_bound_inclusive_date: '2020-09-01'
+          upper_bound_exclusive_date: '2020-10-01'
+    system: 'CORRECTIONS'
+    metric:
+      admissions:
+        measurement_type: 'DELTA'
+    dimension_columns:
+      - column_name: 'Admission Type'
+        dimension_name: 'ADMISSION_TYPE'
+        mapping_overrides:
+          NEW COMMITMENTS: 'NEW_COMMITMENT'
+          OTHER: 'OTHER'
+          PAROLE RE ADMISSIONS: 'FROM_SUPERVISION'
+          PROBATION REVOCATIONS: 'FROM_SUPERVISION'
+          RETURNED ESCAPEES: 'OTHER'
+          SPLIT SENTENCE: 'NEW_COMMITMENT'
+      - column_name: 'Admission Type'
+        dimension_name: 'SUPERVISION_TYPE'
+        strict: False
+        mapping_overrides:
+          PAROLE RE ADMISSIONS: 'PAROLE'
+          PROBATION REVOCATIONS: 'PROBATION'
+    value_column:
+      column_name: 'Total'
+    location:
+      state: 'US_AL'
+    methodology: 'Only a subset of re-admissions are defined as revocations by ADOC.
+
+ADOC Jurisdictional Population: Defines an inmate sentenced by the court to the Alabama Department of Corrections. ADOC Jurisdictional Population includes all inmates serving time within ADOC facilities / programs, as well as in the custody of other correctional authorities, such as county jails, other State DOCs, Community Correction Programs, Federal Prisons, and Privately Leased Facilities.
+
+Parole revocations includes all re-admissions (dunks, revocations, other).'
+  - file: 'total.csv'
+    date_range:
+      fixed:
+        range:
+          lower_bound_inclusive_date: '2020-09-01'
+          upper_bound_exclusive_date: '2020-10-01'
+    system: 'CORRECTIONS'
+    metric:
+      admissions:
+        measurement_type: 'DELTA'
+    value_column:
+      column_name: 'Total'
+    location:
+      state: 'US_AL'
+    methodology: 'Only a subset of re-admissions are defined as revocations by ADOC.
+
+ADOC Jurisdictional Population: Defines an inmate sentenced by the court to the Alabama Department of Corrections. ADOC Jurisdictional Population includes all inmates serving time within ADOC facilities / programs, as well as in the custody of other correctional authorities, such as county jails, other State DOCs, Community Correction Programs, Federal Prisons, and Privately Leased Facilities.'

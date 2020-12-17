@@ -1,0 +1,33 @@
+source: 'Michigan Department of Corrections'
+report_type: 'Statistical Report'
+report_instance: '2018'
+publish_date: '2019-11-27'
+tables:
+  - file: 'data.csv'
+    date_range:
+      dynamic:
+        type: 'RANGE'
+        # TODO(#4934): Use YEAR instead
+        converter: 'CUSTOM'
+        columns:
+          Start: 'MONTH'
+          End: 'MONTH'
+    system: 'CORRECTIONS'
+    metric:
+      admissions:
+        measurement_type: 'DELTA'
+        admission_type: 'FROM_SUPERVISION'
+        supervision_type: 'PAROLE'
+    dimension_columns:
+      - column_name: 'Gender'
+        dimension_name: 'GENDER'
+      - column_name: 'Type'
+        dimension_name: 'SUPERVISION_VIOLATION_TYPE'
+        mapping_overrides:
+          New Sentence Returns: 'NEW_CRIME'
+          Technical Violator Returns: 'TECHNICAL'
+    value_column:
+      column_name: 'Value'
+    location:
+      state: 'US_MI'
+    methodology: ''
