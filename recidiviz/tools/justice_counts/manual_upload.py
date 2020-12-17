@@ -356,6 +356,13 @@ class Metric:
         parole or probation. In that case filters would contain PopulationType.PRISON.
         """
 
+    @property
+    @abstractmethod
+    def required_aggregated_dimensions(self) -> List[Type[Dimension]]:
+        """
+        Dimension types that are required to be aggregated to make this a valid metric
+        """
+
     @abstractmethod
     def get_measurement_type(self) -> schema.MeasurementType:
         """How the metric over a given time window was reduced to a single point."""
@@ -366,16 +373,23 @@ class Metric:
         """The metric type that this corresponds to in the schema."""
 
 
+def _convert_optional_population_type(value: Optional[str]) -> Optional[PopulationType]:
+    return None if value is None else PopulationType(value)
+
 # TODO(#4483): Add implementations for other metrics
 @attr.s(frozen=True)
 class Population(Metric):
     measurement_type: schema.MeasurementType = attr.ib(converter=schema.MeasurementType)
 
-    population_type: PopulationType = attr.ib(converter=PopulationType)
+    population_type: Optional[PopulationType] = attr.ib(converter=_convert_optional_population_type, default=None)
 
     @property
     def filters(self) -> List[Dimension]:
-        return [self.population_type]
+        return [self.population_type] if self.population_type is not None else []
+
+    @property
+    def required_aggregated_dimensions(self) -> List[Type[Dimension]]:
+        return [PopulationType] if self.population_type is None else []
 
     def get_measurement_type(self) -> schema.MeasurementType:
         return self.measurement_type
@@ -383,6 +397,7 @@ class Population(Metric):
     @classmethod
     def get_metric_type(cls) -> schema.MetricType:
         return schema.MetricType.POPULATION
+
 
 class DateRangeProducer:
     """Produces DateRanges for a given table, splitting the table as needed.
@@ -609,8 +624,19 @@ class Table:
                 raise ValueError(f"Multiple rows in table with identical dimensions: {dimension_values}")
             row_dimension_values.add(dimension_values)
 
+    def _validate_metric(self) -> None:
+        for dimension_metric in self.metric.required_aggregated_dimensions:
+            if dimension_metric not in self.dimensions:
+                raise AttributeError(f"metric and dimension column not specified for {dimension_metric}, "
+                                     "make sure you have one or the other.")
+        for dimension in self.metric.filters:
+            if type(dimension) in self.dimensions:
+                raise AttributeError(f"metric and dimension column specified for {type(dimension)},  "
+                                     "make sure you have one or the other.")
+
     def __attrs_post_init__(self) -> None:
         # Validate consistency between `dimensions` and `data`.
+        self._validate_metric()
         dimension_identifiers = {dimension.dimension_identifier() for dimension in self.dimensions}
         if len(dimension_identifiers) != len(self.dimensions):
             raise ValueError(f"Duplicate dimensions in table: {self.dimensions}")

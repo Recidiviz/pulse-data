@@ -22,6 +22,7 @@ import os
 import unittest
 from typing import Dict, Optional
 
+import pytest
 from dateutil.relativedelta import relativedelta
 from sqlalchemy import sql
 
@@ -457,7 +458,8 @@ class ManualUploadTest(unittest.TestCase):
         session = SessionFactory.for_schema_base(JusticeCountsBase)
 
         cells = session.query(schema.Cell).all()
-        self.assertEqual([
+
+        assertion_values = [
             (['Male', 'Black'], decimal.Decimal(1370)),
             (['Female', 'Black'], decimal.Decimal(0)),
             (['Male', 'White'], decimal.Decimal(6384123)),
@@ -470,4 +472,42 @@ class ManualUploadTest(unittest.TestCase):
             (['Female', 'Asian'], decimal.Decimal(0)),
             (['Male', 'Data Unavailable'], decimal.Decimal(0)),
             (['Female', 'Data Unavailable'], decimal.Decimal(0)),
+        ]
+        actual_values = [(cell.aggregated_dimension_values, cell.value) for cell in cells]
+
+        for assertion_value in assertion_values:
+            self.assertIn(assertion_value, actual_values)
+
+    def test_ingestReport_populationTypeDimension(self):
+        # Act
+        manual_upload.ingest(self.fs, test_utils.prepare_files(self.fs, manifest_filepath('report7_population_types')))
+
+        # Assert
+        session = SessionFactory.for_schema_base(JusticeCountsBase)
+
+        cells = session.query(schema.Cell).all()
+        self.assertEqual([
+            (['PRISON', 'Inmates'], decimal.Decimal(1489)),
+            (['PAROLE', 'Parolees'], decimal.Decimal(5592)),
+            (['PROBATION', 'Probationeers'], decimal.Decimal(200784)),
         ], [(cell.aggregated_dimension_values, cell.value) for cell in cells])
+
+    def test_raiseError_noPopulationTypeDimensionOrMetric(self):
+        # Act
+        with pytest.raises(AttributeError) as exception_info:
+            manual_upload.ingest(self.fs,
+                                 test_utils.prepare_files(self.fs,
+                                                          manifest_filepath('report8_no_population_types_fail')))
+
+        # Assert
+        assert "metric and dimension column not specified" in str(exception_info.value)
+
+    def test_raiseError_hasBothPopulationTypeDimensionAndMetric(self):
+        # Act
+        with pytest.raises(AttributeError) as exception_info:
+            manual_upload.ingest(self.fs,
+                                 test_utils.prepare_files(self.fs,
+                                                          manifest_filepath('report9_both_population_types_fail')))
+
+        # Assert
+        assert "metric and dimension column specified" in str(exception_info.value)
