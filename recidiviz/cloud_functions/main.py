@@ -19,7 +19,6 @@
 from base64 import b64decode
 import logging
 import os
-import traceback
 
 from flask import Request
 # Mypy errors "Cannot find implementation or library stub for module named 'xxxx'" ignored here because cloud functions
@@ -33,7 +32,6 @@ from cloud_function_utils import (  # type: ignore[import]
     trigger_dataflow_job_from_template,
     build_query_param_string
 )
-from covid import covid_ingest  # type: ignore[import]
 
 _STATE_AGGREGATE_CLOUD_FUNCTION_URL = (
     'http://{}.appspot.com/cloud_function/state_aggregate?bucket={}&state={}'
@@ -256,45 +254,6 @@ def start_and_monitor_calculation_pipeline(_event, _context) -> None:
 
     monitor_response = make_iap_request(url, IAP_CLIENT_ID[project_id])
     logging.info("The monitoring Dataflow response is %s", monitor_response)
-
-
-def handle_covid_ingest_on_upload(_data, _context) -> None:
-    """Ingests and aggregates the currently available COVID data into an output
-    file stored in a GCP bucket.
-
-    This function is triggered when a new source file is uploaded to the input
-    GCP bucket, as defined in the handle-covid-source-upload cloud function on
-    GCP.
-    """
-    _ingest_and_aggregate_covid_data()
-
-
-def handle_covid_ingest_on_trigger(_request: Request) -> None:
-    """Ingests and aggregates the currently available COVID data into an output
-    file stored in a GCP bucket.
-
-    This function is triggered by call to a URL endpoint defined in the
-    execute-covid-aggregation cloud function on GCP. This URL is intended to be
-    called by an App Engine endpoint defined in covid.covid_ingest_endpoint.
-
-    (Note that this does not follow the same pattern as most of the other App
-    Engine-Cloud Function interactions in this file, which delegate in the
-    other direction. Keeping the logic in the cloud function here is intended to
-    enable quicker redeploys when the ingest data formats change.)
-    """
-    _ingest_and_aggregate_covid_data()
-
-
-def _ingest_and_aggregate_covid_data() -> None:
-    """Calls main COVID ingest function"""
-    # TODO(https://issuetracker.google.com/issues/155215191): zdg2102
-    #  remove this try-except wrapper once GCP cloud function
-    try:
-        logging.info('COVID ingest cloud function triggered')
-        covid_ingest.ingest_and_aggregate_latest_data()
-        logging.info('COVID ingest cloud function completed')
-    except Exception as e:
-        raise RuntimeError('Stack trace: {}'.format(traceback.format_exc())) from e
 
 
 def handle_start_new_batch_email_reporting(request: Request) -> None:
