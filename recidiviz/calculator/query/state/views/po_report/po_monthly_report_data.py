@@ -41,35 +41,36 @@ PO_MONTHLY_REPORT_DATA_QUERY_TEMPLATE = \
         officer_external_id,
         COUNT(DISTINCT IF(successful_completion_date IS NOT NULL, person_id, NULL)) AS pos_discharges,
         ARRAY_AGG(
-          IF(successful_completion_date IS NOT NULL, STRUCT(person_id, full_name, successful_completion_date), NULL) 
+          IF(successful_completion_date IS NOT NULL, STRUCT(person_external_id, full_name, successful_completion_date), NULL) 
           IGNORE NULLS
         ) AS pos_discharges_clients,
         COUNT(DISTINCT IF(earned_discharge_date IS NOT NULL, person_id, NULL)) AS earned_discharges,
         ARRAY_AGG(
-          IF(earned_discharge_date IS NOT NULL, STRUCT(person_id, full_name, earned_discharge_date), NULL)
+          IF(earned_discharge_date IS NOT NULL, STRUCT(person_external_id, full_name, earned_discharge_date), NULL)
           IGNORE NULLS
         ) AS earned_discharges_clients,
         COUNT(DISTINCT IF(revocation_violation_type IN ('TECHNICAL'), person_id, NULL)) AS technical_revocations,
         COUNT(DISTINCT IF(revocation_violation_type IN ('NEW_CRIME'), person_id, NULL)) AS crime_revocations,
         ARRAY_AGG(
-          IF(revocation_report_date IS NOT NULL, STRUCT(person_id, full_name, revocation_violation_type, revocation_report_date), NULL) 
+          IF(revocation_report_date IS NOT NULL, 
+          STRUCT(person_external_id, full_name, revocation_violation_type, revocation_report_date), NULL) 
           IGNORE NULLS
         ) AS revocations_clients,        
         COUNT(DISTINCT IF(absconsion_report_date IS NOT NULL, person_id, NULL)) AS absconsions,
         ARRAY_AGG(
-          IF(absconsion_report_date IS NOT NULL, STRUCT(person_id, full_name, absconsion_report_date), NULL) 
+          IF(absconsion_report_date IS NOT NULL, STRUCT(person_external_id, full_name, absconsion_report_date), NULL) 
           IGNORE NULLS
         ) AS absconsions_clients,        
         SUM(assessment_count) AS assessments,
         COUNT(DISTINCT IF(assessment_up_to_date, person_id, NULL)) AS assessments_up_to_date,
         ARRAY_AGG(
-          IF(assessment_up_to_date IS FALSE, STRUCT(person_id, full_name), NULL) 
+          IF(assessment_up_to_date IS FALSE, STRUCT(person_external_id, full_name), NULL) 
           IGNORE NULLS
         ) AS assessments_out_of_date_clients,        
         SUM(face_to_face_count) AS facetoface,
         COUNT(DISTINCT IF(face_to_face_frequency_sufficient, person_id, NULL)) AS facetoface_frequencies_sufficient,
         ARRAY_AGG(
-          IF(face_to_face_frequency_sufficient IS FALSE, STRUCT(person_id, full_name), NULL) 
+          IF(face_to_face_frequency_sufficient IS FALSE, STRUCT(person_external_id, full_name), NULL) 
           IGNORE NULLS
         ) AS facetoface_out_of_date_clients
       FROM `{project_id}.{po_report_dataset}.report_data_by_person_by_month`

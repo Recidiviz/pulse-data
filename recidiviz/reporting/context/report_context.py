@@ -19,6 +19,7 @@
 
 from abc import ABC, abstractmethod
 
+import recidiviz.reporting.email_reporting_utils as utils
 
 class ReportContext(ABC):
     """Defines the context for generation and delivery of a single email report to a single recipient,
@@ -42,6 +43,14 @@ class ReportContext(ABC):
     @abstractmethod
     def get_html_template_filepath(self) -> str:
         """Returns the filepath to the context's html template"""
+
+    def get_batch_id(self) -> str:
+        """Returns the batch_id for the report context"""
+        return self.recipient_data[utils.KEY_BATCH_ID]
+
+    def get_email_address(self) -> str:
+        """Returns the email_address to use to generate the filenames for email delivery."""
+        return self.recipient_data[utils.KEY_EMAIL_ADDRESS]
 
     def get_prepared_data(self) -> dict:
         """Execute report-specific rules that process the recipient data before templating, returning the prepared,

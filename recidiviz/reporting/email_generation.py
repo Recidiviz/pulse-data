@@ -34,9 +34,11 @@ from recidiviz.reporting.context.report_context import ReportContext
 
 
 def generate(report_context: ReportContext) -> None:
-    """Generates an email for the identified recipient.
+    """Generates and uploads the HTML file and the file attachment for the identified recipient's email.
 
     Receives the full user data, applies it to the HTML template and stores the result in Cloud Storage.
+
+    Uploads the attachment content to Cloud Storage as a .txt file.
 
     Args:
         report_context: The context for a single recipient
@@ -44,10 +46,34 @@ def generate(report_context: ReportContext) -> None:
     prepared_data = report_context.get_prepared_data()
     check_for_required_keys(prepared_data)
 
+    html_template_path = report_context.get_html_template_filepath()
+    html_content = generate_html_content(html_template_path, prepared_data)
+    attachment_content = prepared_data['attachment_content']
+
+    html_path = utils.get_html_filepath(
+            prepared_data[utils.KEY_BATCH_ID],
+            prepared_data[utils.KEY_EMAIL_ADDRESS],
+    )
+    upload_file_contents_to_gcs(file_path=html_path, file_contents=html_content, content_type='text/html')
+
+    if attachment_content:
+        attachment_path = utils.get_attachment_filepath(
+            prepared_data[utils.KEY_BATCH_ID],
+            prepared_data[utils.KEY_EMAIL_ADDRESS],
+        )
+
+        upload_file_contents_to_gcs(file_path=attachment_path,
+                                    file_contents=attachment_content,
+                                    content_type='text/plain')
+
+
+def generate_html_content(html_template_path: str, prepared_data: dict) -> str:
+    """Generates the HTML file for the identified recipient's email."""
     try:
-        with open(report_context.get_html_template_filepath()) as html_template:
+        with open(html_template_path) as html_template:
             template = Template(html_template.read())
-            final_email = template.substitute(prepared_data)
+            html_content = template.substitute(prepared_data)
+        return html_content
     except KeyError as err:
         logging.error("Attribute required for HTML template missing from recipient data: "
                       "batch id = %s, email address = %s, attribute = %s",
@@ -57,16 +83,22 @@ def generate(report_context: ReportContext) -> None:
         logging.error("Unexpected error during templating. Recipient data = %s", prepared_data)
         raise
 
-    html_bucket = utils.get_html_bucket_name()
-    html_filename = ''
+
+def upload_file_contents_to_gcs(file_path: GcsfsFilePath,
+                                file_contents: str,
+                                content_type: str) -> None:
+    """Uploads a file's content to Cloud Storage.
+
+    Args:
+        file_path: The GCS path to write to
+        file_contents: The content to upload to the Cloud Storage file path.
+        content_type: The content type for the file that will be uploaded to Cloud Storage.
+    """
     try:
-        html_filename = utils.get_html_filename(prepared_data[utils.KEY_BATCH_ID],
-                                                prepared_data[utils.KEY_EMAIL_ADDRESS])
         gcs_file_system = GcsfsFactory.build()
-        html_path = GcsfsFilePath.from_absolute_path(f'gs://{html_bucket}/{html_filename}')
-        gcs_file_system.upload_from_string(path=html_path, contents=final_email, content_type="text/html")
+        gcs_file_system.upload_from_string(path=file_path, contents=file_contents, content_type=content_type)
     except Exception:
-        logging.error("Error while attempting upload of %s/%s", html_bucket, html_filename)
+        logging.error("Error while attempting upload of %s", file_path)
         raise
 
 

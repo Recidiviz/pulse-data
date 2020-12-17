@@ -35,22 +35,16 @@ class SendGridClientWrapperTest(TestCase):
         self.success_response = HttpResponse(202)
         self.client_patcher = patch('recidiviz.reporting.sendgrid_client_wrapper.SendGridAPIClient')
         self.secrets_patcher = patch('recidiviz.reporting.sendgrid_client_wrapper.secrets').start()
-        self.mail_patcher = patch('recidiviz.reporting.sendgrid_client_wrapper.Mail')
-        self.email_patcher = patch('recidiviz.reporting.sendgrid_client_wrapper.Email')
-        self.cc_patcher = patch('recidiviz.reporting.sendgrid_client_wrapper.Cc')
+        self.mail_helpers_patcher = patch('recidiviz.reporting.sendgrid_client_wrapper.mail_helpers')
+        self.mock_mail_helpers = self.mail_helpers_patcher.start()
         self.mock_client = self.client_patcher.start().return_value
-        self.mock_mail = self.mail_patcher.start()
-        self.mock_email = self.email_patcher.start()
-        self.mock_cc = self.cc_patcher.start()
         self.secrets_patcher.get_secret.return_value = 'secret'
         self.wrapper = SendGridClientWrapper()
 
     def tearDown(self) -> None:
         self.client_patcher.stop()
         self.secrets_patcher.stop()
-        self.mail_patcher.stop()
-        self.email_patcher.stop()
-        self.cc_patcher.stop()
+        self.mail_helpers_patcher.stop()
 
     def test_send_message(self) -> None:
         """Test that send_message sends the return from create_message client's send method and that the Mail helper
@@ -60,8 +54,8 @@ class SendGridClientWrapperTest(TestCase):
         mail_message = 'message'
         subject = 'Your monthly Recidiviz Report'
         html_content = '<html></html>'
-        self.mock_email.return_value = from_email
-        self.mock_mail.return_value = mail_message
+        self.mock_mail_helpers.Email.return_value = from_email
+        self.mock_mail_helpers.Mail.return_value = mail_message
         self.mock_client.send.return_value = self.success_response
         with self.assertLogs(level='INFO'):
             response = self.wrapper.send_message(to_email=to_email,
@@ -71,12 +65,12 @@ class SendGridClientWrapperTest(TestCase):
                                                  from_email_name='Recidiviz')
             self.assertTrue(response)
 
-        self.mock_cc.assert_not_called()
-        self.mock_email.assert_called_with('dev@recidiviz.org', 'Recidiviz')
-        self.mock_mail.assert_called_with(to_emails=to_email,
-                                          from_email=from_email,
-                                          subject=subject,
-                                          html_content=html_content)
+        self.mock_mail_helpers.CC.assert_not_called()
+        self.mock_mail_helpers.Email.assert_called_with('dev@recidiviz.org', 'Recidiviz')
+        self.mock_mail_helpers.Mail.assert_called_with(to_emails=to_email,
+                                                       from_email=from_email,
+                                                       subject=subject,
+                                                       html_content=html_content)
         self.mock_client.send.assert_called_with(mail_message)
 
     def test_send_message_with_cc(self) -> None:
@@ -85,10 +79,10 @@ class SendGridClientWrapperTest(TestCase):
 
         mail_message = collections.namedtuple('Mail', [])
         mock_message = MagicMock(return_value=mail_message())
-        self.mock_mail.return_value = mock_message
+        self.mock_mail_helpers.Mail.return_value = mock_message
 
         mock_parent = Mock()
-        mock_parent.attach_mock(self.mock_cc, 'Cc')
+        mock_parent.attach_mock(self.mock_mail_helpers.Cc, 'Cc')
         cc_addresses = ['cc_address@one.org', 'cc_address@two.org']
         expected_calls = [call.Cc(email=cc_address) for cc_address in cc_addresses]
 
@@ -116,7 +110,7 @@ class SendGridClientWrapperTest(TestCase):
 
     def test_send_message_with_redirect_address(self) -> None:
         """Given a redirect_address, test that _create_message is called with the correct to_email and subject line."""
-        self.mock_email.return_value = '<Recidiviz> dev@recidiviz.org'
+        self.mock_mail_helpers.Email.return_value = '<Recidiviz> dev@recidiviz.org'
         self.mock_client.send.return_value = self.success_response
         redirect_address = 'redirect@email.org'
         to_email = 'test@test.org'
@@ -129,7 +123,33 @@ class SendGridClientWrapperTest(TestCase):
                                       from_email_name='Recidiviz',
                                       redirect_address=redirect_address)
 
-        self.mock_mail.assert_called_with(to_emails=redirect_address,
-                                          from_email='<Recidiviz> dev@recidiviz.org',
-                                          subject=f'[{to_email}] {subject}',
-                                          html_content='<html></html>')
+        self.mock_mail_helpers.Mail.assert_called_with(to_emails=redirect_address,
+                                                       from_email='<Recidiviz> dev@recidiviz.org',
+                                                       subject=f'[{to_email}] {subject}',
+                                                       html_content='<html></html>')
+
+    def test_send_message_with_text_attachment_content(self) -> None:
+        """Given text_attachment_content, test that an attachment is created and attached to the outgoing message."""
+        file_content = "Fake email attachment content"
+        self.wrapper.send_message(to_email='test@test.org',
+                                  from_email='dev@recidiviz.org',
+                                  subject='Your monthly Recidiviz Report',
+                                  html_content='<html></html>',
+                                  from_email_name='Recidiviz',
+                                  text_attachment_content=file_content)
+        self.mock_mail_helpers.Attachment.assert_called_with(
+            file_content=self.mock_mail_helpers.FileContent("Fake email attachment content"),
+            file_name=self.mock_mail_helpers.FileName("Recidiviz Monthly Report - Client Details.txt"),
+            file_type=self.mock_mail_helpers.FileType('text/plain'),
+            disposition=self.mock_mail_helpers.Disposition('attachment')
+        )
+
+    def test_send_message_with_text_attachment_content_none(self) -> None:
+        """Given no text_attachment_content, assert that an attachment is not created."""
+        self.wrapper.send_message(to_email='test@test.org',
+                                  from_email='dev@recidiviz.org',
+                                  subject='Your monthly Recidiviz Report',
+                                  html_content='<html></html>',
+                                  from_email_name='Recidiviz',
+                                  text_attachment_content=None)
+        self.mock_mail_helpers.Attachment.assert_not_called()

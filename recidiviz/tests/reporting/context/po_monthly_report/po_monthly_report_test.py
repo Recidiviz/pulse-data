@@ -18,6 +18,7 @@
 """Tests for po_monthly_report/context.py."""
 
 import os
+import textwrap
 from copy import deepcopy
 from unittest import TestCase
 from unittest.mock import patch
@@ -39,6 +40,8 @@ class PoMonthlyReportContextTests(TestCase):
     def setUp(self) -> None:
         with open(os.path.join(os.path.dirname(__file__), FIXTURE_FILE)) as fixture_file:
             self.recipient_data = json.loads(fixture_file.read())
+            self.recipient_data['batch_id'] = '20201105123033'
+
         project_id = 'RECIDIVIZ_TEST'
         cdn_static_ip = '123.456.7.8'
         test_secrets = {
@@ -96,6 +99,79 @@ class PoMonthlyReportContextTests(TestCase):
         self.assertEqual("", actual["congratulations_text"])
         self.assertEqual("none", actual["display_congratulations"])
 
+    def test_attachment_content(self) -> None:
+        """Given client details for every section, it returns a formatted string to be used as the email attachment."""
+        recipient_data = deepcopy(self.recipient_data)
+
+        recipient_data["pos_discharges_clients"] = [{"person_external_id": 123, "full_name": "ROSS, BOB",
+                                                     "successful_completion_date": '2020-12-01'}]
+        recipient_data["earned_discharges_clients"] = [{"person_external_id": 321, "full_name": "POLLOCK, JACKSON",
+                                                        "earned_discharge_date": '2020-12-05'}]
+        recipient_data["revocations_clients"] = [{ "person_external_id": 456, "full_name": "MUNCH, EDVARD",
+                                                   "revocation_violation_type": "NEW_CRIME",
+                                                   "revocation_report_date": '2020-12-06' },
+                                                 { "person_external_id": 111, "full_name": "MIRO, JOAN",
+                                                   "revocation_violation_type": "TECHNICAL",
+                                                   "revocation_report_date": '2020-12-10' }]
+        recipient_data["absconsions_clients"] = [{"person_external_id": 789, "full_name": "DALI, SALVADOR",
+                                                  "absconsion_report_date": '2020-12-11'}]
+        recipient_data["assessments_out_of_date_clients"] = [{"person_external_id": 987, "full_name": "KAHLO, FRIDA"}]
+        recipient_data["facetoface_out_of_date_clients"] = [{"person_external_id": 654, "full_name": "DEGAS, EDGAR"}]
+
+        context = PoMonthlyReportContext('US_VA', recipient_data)
+        actual = context.get_prepared_data()
+        expected = textwrap.dedent("""\
+            MONTHLY RECIDIVIZ REPORT
+            Prepared on 11/05/2020, for Christopher
+            
+            // Successful Case Completion //
+            [123]     Ross, Bob     Supervision completed on 12/01/2020    
+            
+            // Early Discharge //
+            [321]     Pollock, Jackson     Discharge granted on 12/05/2020    
+            
+            // Revocations //
+            [456]     Munch, Edvard     New Crime          Revocation recommendation staffed on 12/06/2020    
+            [111]     Miro, Joan        Technical Only     Revocation recommendation staffed on 12/10/2020    
+            
+            // Absconsions //
+            [789]     Dali, Salvador     Absconsion reported on 12/11/2020    
+            
+            // Out of Date Risk Assessments //
+            [987]     Kahlo, Frida    
+            
+            // Out of Date Face to Face Contacts //
+            [654]     Degas, Edgar    
+            
+            Please send questions or data issues to feedback@recidiviz.org""")
+
+        self.assertEqual(expected, actual['attachment_content'])
+
+
+    def test_attachment_content_missing_sections(self) -> None:
+        """Given client details for just one section, it returns a formatted string to be used as the email attachment
+        """
+        recipient_data = deepcopy(self.recipient_data)
+        recipient_data["revocations_clients"] = [{"person_external_id": 456, "full_name": "MUNCH, EDVARD",
+                                                  "revocation_violation_type": "NEW_CRIME",
+                                                  "revocation_report_date": '2020-12-06'},
+                                                 {"person_external_id": 111, "full_name": "MIRO, JOAN",
+                                                  "revocation_violation_type": "TECHNICAL",
+                                                  "revocation_report_date": '2020-12-10'}]
+        context = PoMonthlyReportContext('US_VA', recipient_data)
+        actual = context.get_prepared_data()
+        expected = textwrap.dedent("""\
+            MONTHLY RECIDIVIZ REPORT
+            Prepared on 11/05/2020, for Christopher
+            
+            // Revocations //
+            [456]     Munch, Edvard     New Crime          Revocation recommendation staffed on 12/06/2020    
+            [111]     Miro, Joan        Technical Only     Revocation recommendation staffed on 12/10/2020    
+            
+            Please send questions or data issues to feedback@recidiviz.org""")
+
+        self.assertEqual(expected, actual['attachment_content'])
+
     def test_prepare_for_generation(self) -> None:
         context = PoMonthlyReportContext('US_VA', self.recipient_data)
         actual = context.get_prepared_data()
@@ -107,6 +183,9 @@ class PoMonthlyReportContextTests(TestCase):
         expected["static_image_path"] = "http://123.456.7.8/US_VA/po_monthly_report/static"
         expected["review_month"] = "May"
         expected["greeting"] = "Hey there, Christopher!"
+
+        # No client data returns None for attachment_content
+        expected["attachment_content"] = None
 
         # [improved] More pos_discharges than district and state average
         # [improved] Higher district average than state average

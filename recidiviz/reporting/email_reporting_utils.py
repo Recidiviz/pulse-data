@@ -23,6 +23,7 @@ from typing import Optional
 
 from datetime import datetime
 
+from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.utils import metadata
 from recidiviz.utils import secrets
 
@@ -88,7 +89,7 @@ def get_data_archive_bucket_name() -> str:
     return f'{get_project_id()}-report-data-archive'
 
 
-def get_html_bucket_name() -> str:
+def get_email_content_bucket_name() -> str:
     return f'{get_project_id()}-report-html'
 
 
@@ -118,8 +119,34 @@ def get_data_archive_filename(batch_id: str) -> str:
     return f'{batch_id}.json'
 
 
+def get_html_folder(batch_id: str) -> str:
+    return f'{batch_id}/html'
+
+
 def get_html_filename(batch_id: str, email_address: str) -> str:
-    return f'{batch_id}/{email_address}.html'
+    file_path = get_html_filepath(batch_id, email_address)
+    return file_path.blob_name
+
+
+def get_html_filepath(batch_id: str, email_address: str) -> GcsfsFilePath:
+    bucket = get_email_content_bucket_name()
+    folder = get_html_folder(batch_id)
+    return GcsfsFilePath.from_absolute_path(f'gs://{bucket}/{folder}/{email_address}.html')
+
+
+def get_attachment_filename(batch_id: str, email_address: str) -> str:
+    file_path = get_attachment_filepath(batch_id, email_address)
+    return file_path.blob_name
+
+
+def get_attachment_filepath(batch_id: str, email_address: str) -> GcsfsFilePath:
+    bucket = get_email_content_bucket_name()
+    folder = get_attachments_folder(batch_id)
+    return GcsfsFilePath.from_absolute_path(f'gs://{bucket}/{folder}/{email_address}.txt')
+
+
+def get_attachments_folder(batch_id: str) -> str:
+    return f'{batch_id}/attachments'
 
 
 # TODO(#3260): Make this general-purpose to work for any report type's chart
