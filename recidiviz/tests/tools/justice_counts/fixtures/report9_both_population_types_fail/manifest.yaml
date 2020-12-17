@@ -1,0 +1,27 @@
+source: 'Colorado Department of Corrections'
+report_type: 'Dashboard Measures'
+report_instance: '2020-10-05'
+publish_date: '2020-10-05'
+tables:
+  - file: 'table.csv'
+    methodology: 'SNAPSHOT'
+    date_range:
+      fixed:
+        snapshot:
+          date: '2020-09-01'
+    system: 'CORRECTIONS'
+    location:
+      state: 'US_MS'
+    metric:
+      population:
+        measurement_type: 'INSTANT'
+        population_type: 'PRISON'
+    value_column:
+      column_name: 'Population'
+    dimension_columns:
+      - column_name: 'Population Type'
+        dimension_name: 'POPULATION_TYPE'
+        mapping_overrides:
+          INMATES: 'PRISON'
+          PAROLEES: 'PAROLE'
+          PROBATIONEERS: 'PROBATION'
