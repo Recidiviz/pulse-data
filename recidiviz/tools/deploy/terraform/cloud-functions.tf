@@ -15,9 +15,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 
-# The execute-covid-aggregation is not included because it will eventually
-# be deprecated. See #4464.
-
 # TODO(#4690): The direct-ingest-county cloud function is not included because its entry
 # point is `direct_ingest_county`, which no longer exists in our codebase!!
 # If we get approval to delete it, we will remove this comment. Otherwise,
@@ -115,27 +112,6 @@ resource "google_cloudfunctions_function" "export_metric_view_data" {
   timeouts {}
 }
 
-
-resource "google_cloudfunctions_function" "handle-covid-source-upload" {
-  name    = "handle-covid-source-upload"
-  runtime = "python37"
-  labels = {
-    "deployment-tool" = "terraform"
-  }
-
-  available_memory_mb = 2048
-
-  entry_point           = "handle_covid_ingest_on_upload"
-  environment_variables = {}
-
-  source_repository {
-    url = local.repo_url
-  }
-
-  timeout = 500
-
-  timeouts {}
-}
 
 resource "google_cloudfunctions_function" "parse-state-aggregate" {
   name    = "parse-state-aggregate"
