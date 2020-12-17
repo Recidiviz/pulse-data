@@ -179,6 +179,89 @@ class DirectIngestIngestViewExportManager:
         query = f'(\n{main_query}\n) EXCEPT DISTINCT (\n{filter_query}\n);'
         return query
 
+    @staticmethod
+    def _get_upper_bound_intermediate_table_name(ingest_view_export_args: GcsfsIngestViewExportArgs) -> str:
+        """Returns name of the intermediate table that will store data for the view query with a date bound equal to the
+        upper_bound_datetime_to_export in the args.
+        """
+        return f'{ingest_view_export_args.ingest_view_name}_' \
+            f'{ingest_view_export_args.upper_bound_datetime_to_export.strftime(TABLE_NAME_DATE_FORMAT)}_' \
+            f'upper_bound'
+
+    @staticmethod
+    def _get_lower_bound_intermediate_table_name(ingest_view_export_args: GcsfsIngestViewExportArgs) -> str:
+        """Returns name of the intermediate table that will store data for the view query with a date bound equal to the
+        upper_bound_datetime_prev in the args.
+
+        Throws if the args have a null upper_bound_datetime_prev.
+        """
+        if not ingest_view_export_args.upper_bound_datetime_prev:
+            raise ValueError(f'Expected nonnull upper_bound_datetime_prev for args: {ingest_view_export_args}')
+        return f'{ingest_view_export_args.ingest_view_name}_' \
+            f'{ingest_view_export_args.upper_bound_datetime_prev.strftime(TABLE_NAME_DATE_FORMAT)}_' \
+            f'lower_bound'
+
+    def _get_export_query_for_args(self, ingest_view_export_args: GcsfsIngestViewExportArgs) -> str:
+        """Returns a query to export the ingest view with date bounds specified in the provided args. This query will
+        only work if the intermediate tables have been exported via the
+        _load_individual_date_queries_into_intermediate_tables function.
+        """
+        ingest_view = self.ingest_views_by_tag[ingest_view_export_args.ingest_view_name]
+        export_query = SELECT_SUBQUERY.format(
+            project_id=self.big_query_client.project_id,
+            dataset_id=ingest_view.dataset_id,
+            table_name=self._get_upper_bound_intermediate_table_name(ingest_view_export_args))
+
+        if ingest_view_export_args.upper_bound_datetime_prev:
+
+            upper_bound_prev_query = SELECT_SUBQUERY.format(
+                project_id=self.big_query_client.project_id,
+                dataset_id=ingest_view.dataset_id,
+                table_name=self._get_lower_bound_intermediate_table_name(ingest_view_export_args))
+            export_query = DirectIngestIngestViewExportManager.create_date_diff_query(
+                upper_bound_query=export_query,
+                upper_bound_prev_query=upper_bound_prev_query,
+                do_reverse_date_diff=ingest_view.do_reverse_date_diff)
+
+        return DirectIngestPreProcessedIngestView.add_order_by_suffix(
+            query=export_query, order_by_cols=ingest_view.order_by_cols)
+
+    def _load_individual_date_queries_into_intermediate_tables(
+            self, ingest_view_export_args: GcsfsIngestViewExportArgs) -> None:
+        """Loads query results from the upper and lower bound queries for this export job into intermediate tables."""
+
+        ingest_view = self.ingest_views_by_tag[ingest_view_export_args.ingest_view_name]
+
+        single_date_table_export_jobs = []
+
+        upper_bound_table_job = self._generate_export_job_for_date(
+            table_name=self._get_upper_bound_intermediate_table_name(ingest_view_export_args),
+            ingest_view=ingest_view,
+            date_bound=ingest_view_export_args.upper_bound_datetime_to_export)
+        single_date_table_export_jobs.append(upper_bound_table_job)
+
+        if ingest_view_export_args.upper_bound_datetime_prev:
+            lower_bound_table_job = self._generate_export_job_for_date(
+                table_name=self._get_lower_bound_intermediate_table_name(ingest_view_export_args),
+                ingest_view=ingest_view,
+                date_bound=ingest_view_export_args.upper_bound_datetime_prev)
+            single_date_table_export_jobs.append(lower_bound_table_job)
+
+        # Wait for completion of all async date queries
+        for export_job in single_date_table_export_jobs:
+            export_job.result()
+
+    def _delete_intermediate_tables(self, ingest_view_export_args: GcsfsIngestViewExportArgs) -> None:
+        ingest_view = self.ingest_views_by_tag[ingest_view_export_args.ingest_view_name]
+
+        single_date_table_ids = [self._get_upper_bound_intermediate_table_name(ingest_view_export_args)]
+        if ingest_view_export_args.upper_bound_datetime_prev:
+            single_date_table_ids.append(self._get_lower_bound_intermediate_table_name(ingest_view_export_args))
+
+        for table_id in single_date_table_ids:
+            self.big_query_client.delete_table(dataset_id=ingest_view.dataset_id, table_id=table_id)
+            logging.info('Deleted intermediate table [%s]', table_id)
+
     def export_view_for_args(self, ingest_view_export_args: GcsfsIngestViewExportArgs) -> bool:
         """Performs an Cloud Storage export of a single ingest view with date bounds specified in the provided args. If
         the provided args contain an upper and lower bound date, the exported view contains only the delta between the
@@ -219,59 +302,17 @@ class DirectIngestIngestViewExportManager:
             self.file_metadata_manager.mark_ingest_view_exported(metadata)
             return True
 
-        single_date_table_ids = []
-        single_date_table_export_jobs = []
-
-        upper_bound_table_name = \
-            f'{ingest_view_export_args.ingest_view_name}_' \
-            f'{ingest_view_export_args.upper_bound_datetime_to_export.strftime(TABLE_NAME_DATE_FORMAT)}_' \
-            f'upper_bound'
-        export_job = self._generate_export_job_for_date(
-            table_name=upper_bound_table_name,
-            ingest_view=ingest_view,
-            date_bound=ingest_view_export_args.upper_bound_datetime_to_export)
-        single_date_table_ids.append(upper_bound_table_name)
-        single_date_table_export_jobs.append(export_job)
-
-        query = SELECT_SUBQUERY.format(
-            project_id=self.big_query_client.project_id,
-            dataset_id=ingest_view.dataset_id,
-            table_name=upper_bound_table_name)
-
-        if ingest_view_export_args.upper_bound_datetime_prev:
-            lower_bound_table_name = \
-                f'{ingest_view_export_args.ingest_view_name}_' \
-                f'{ingest_view_export_args.upper_bound_datetime_prev.strftime(TABLE_NAME_DATE_FORMAT)}_' \
-                f'lower_bound'
-            export_job = self._generate_export_job_for_date(
-                table_name=lower_bound_table_name,
-                ingest_view=ingest_view,
-                date_bound=ingest_view_export_args.upper_bound_datetime_prev)
-            single_date_table_export_jobs.append(export_job)
-            single_date_table_ids.append(lower_bound_table_name)
-
-            upper_bound_prev_query = SELECT_SUBQUERY.format(
-                project_id=self.big_query_client.project_id,
-                dataset_id=ingest_view.dataset_id,
-                table_name=lower_bound_table_name)
-            query = DirectIngestIngestViewExportManager.create_date_diff_query(
-                upper_bound_query=query,
-                upper_bound_prev_query=upper_bound_prev_query,
-                do_reverse_date_diff=ingest_view.do_reverse_date_diff)
-
-        query = DirectIngestPreProcessedIngestView.add_order_by_suffix(
-            query=query, order_by_cols=ingest_view.order_by_cols)
-
-        # Wait for completion of all async date queries
-        for query_job in single_date_table_export_jobs:
-            query_job.result()
+        logging.info('Start loading results of individual date queries into intermediate tables.')
+        self._load_individual_date_queries_into_intermediate_tables(ingest_view_export_args)
         logging.info('Completed loading results of individual date queries into intermediate tables.')
 
-        logging.info('Generated final export query [%s]', str(query))
+        export_query = self._get_export_query_for_args(ingest_view_export_args)
+
+        logging.info('Generated final export query [%s]', str(export_query))
 
         export_configs = [
             ExportQueryConfig(
-                query=query,
+                query=export_query,
                 query_parameters=[],
                 intermediate_dataset_id=ingest_view.dataset_id,
                 intermediate_table_name=f'{ingest_view_export_args.ingest_view_name}_latest_export',
@@ -284,9 +325,9 @@ class DirectIngestIngestViewExportManager:
         self.big_query_client.export_query_results_to_cloud_storage(export_configs=export_configs)
         logging.info('Export to cloud storage complete.')
 
-        for table_id in single_date_table_ids:
-            self.big_query_client.delete_table(dataset_id=ingest_view.dataset_id, table_id=table_id)
-            logging.info('Deleted intermediate table [%s]', table_id)
+        logging.info('Deleting intermediate tables.')
+        self._delete_intermediate_tables(ingest_view_export_args)
+        logging.info('Done deleting intermediate tables.')
 
         self.file_metadata_manager.mark_ingest_view_exported(metadata)
 
