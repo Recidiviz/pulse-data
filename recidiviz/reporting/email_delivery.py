@@ -25,7 +25,7 @@ and conform to the following:
 3) Each file name is [email address].html
 4) The contents of the file are ready to be sent with no further modification
 """
-
+import re
 import logging
 from typing import Dict, Tuple, Optional, List
 
@@ -74,19 +74,28 @@ def deliver(batch_id: str,
                       "Exiting.")
         raise
 
-    files = retrieve_html_files(batch_id)
+    content_bucket = utils.get_email_content_bucket_name()
+    html_files = load_files_from_storage(content_bucket, utils.get_html_folder(batch_id))
+    attachment_files = load_files_from_storage(content_bucket, utils.get_attachments_folder(batch_id))
+
+    if len(html_files.items()) == 0:
+        msg = f"No files found for batch {batch_id} in the bucket {content_bucket}"
+        logging.error(msg)
+        raise IndexError(msg)
+
     success_count = 0
     fail_count = 0
     sendgrid = SendGridClientWrapper()
 
-    for recipient_email_address in files:
+    for recipient_email_address in html_files:
         sent_successfully = sendgrid.send_message(to_email=recipient_email_address,
                                                   from_email=from_email_address,
                                                   from_email_name=from_email_name,
                                                   subject=EMAIL_SUBJECT,
-                                                  html_content=files[recipient_email_address],
+                                                  html_content=html_files[recipient_email_address],
                                                   redirect_address=redirect_address,
-                                                  cc_addresses=cc_addresses)
+                                                  cc_addresses=cc_addresses,
+                                                  text_attachment_content=attachment_files.get(recipient_email_address))
 
         if sent_successfully:
             success_count = success_count + 1
@@ -97,43 +106,41 @@ def deliver(batch_id: str,
     return success_count, fail_count
 
 
-def email_from_blob_name(blob_name: str) -> str:
+def email_from_file_name(file_name: str) -> str:
     """Extract the email address from a blob name.
 
     Args:
-        blob_name: Assumes that the blob name is of the form [folder names]/[email address].html
+        file_name: Assumes that the file name is of the form of [email address].html
     """
-    a = blob_name.rsplit("/", 1)
-    email_address = a[1].replace(".html", "")
-    return email_address
+    return re.sub(r'(.html|.txt)$', '', file_name)
 
 
-def retrieve_html_files(batch_id: str) -> Dict[str, str]:
-    """Loads the HTML files for this batch from Storage.
+def load_files_from_storage(bucket_name: str, batch_id: str) -> Dict[str, str]:
+    """Loads the files for this batch and bucket name from Cloud Storage.
 
     This function is guaranteed to either return a dictionary with 1 or more results or throw an exception if there is
     a problem loading any of the files.
 
     Args:
+        bucket_name: The bucket name to find the batch_id files
         batch_id: The identifier for this batch
 
     Returns:
-        A dict whose keys are the email addresses of recipients and values are strings of the email body to send.
+        A dict whose keys are the email addresses of recipients and values are strings of the email body or file
+        attachment content to send.
 
     Raises:
         Passes through exceptions from Storage and raises its own if there are no results in this batch.
     """
-
-    html_bucket = utils.get_html_bucket_name()
     try:
         gcs_file_system = GcsfsFactory.build()
         paths = [
             path
-            for path in gcs_file_system.ls_with_blob_prefix(html_bucket, blob_prefix=batch_id)
+            for path in gcs_file_system.ls_with_blob_prefix(bucket_name, blob_prefix=batch_id)
             if isinstance(path, GcsfsFilePath)
         ]
     except Exception:
-        logging.error("Unable to list files in html folder. Bucket = %s, folder = %s", html_bucket, batch_id)
+        logging.error("Unable to list files in folder. Bucket = %s, batch_id = %s", bucket_name, batch_id)
         raise
 
     files = {}
@@ -141,15 +148,10 @@ def retrieve_html_files(batch_id: str) -> Dict[str, str]:
         try:
             body = gcs_file_system.download_as_string(path)
         except Exception:
-            logging.error("Unable to load html file %s from bucket %s", path.blob_name, html_bucket)
+            logging.error("Unable to load file %s from bucket %s", path.blob_name, bucket_name)
             raise
         else:
-            email_address = email_from_blob_name(path.blob_name)
+            email_address = email_from_file_name(path.file_name)
             files[email_address] = body
-
-    if len(files) == 0:
-        msg = f"No html files found for batch {batch_id} in the bucket {html_bucket}"
-        logging.error(msg)
-        raise IndexError(msg)
 
     return files

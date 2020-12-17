@@ -18,7 +18,7 @@
 # pylint: disable=trailing-whitespace,line-too-long
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
-from recidiviz.calculator.query.state import dataset_config
+from recidiviz.calculator.query.state import dataset_config, state_specific_query_strings
 from recidiviz.calculator.query.state.dataset_config import PO_REPORT_DATASET
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -34,7 +34,8 @@ REPORT_DATA_BY_PERSON_BY_MONTH_QUERY_TEMPLATE = \
     """
     /*{description}*/
     SELECT
-      state_code, year, month, person_id,
+      person.state_code, year, month, person.person_id,
+      person_external_id.external_id AS person_external_id,
       CONCAT(
         REPLACE(JSON_EXTRACT(person.full_name, '$.surname'), '"', ''),
         ', ',
@@ -67,6 +68,10 @@ REPORT_DATA_BY_PERSON_BY_MONTH_QUERY_TEMPLATE = \
     
     JOIN `{project_id}.{state_dataset}.state_person` person
       USING (person_id, state_code)
+    
+    JOIN `{project_id}.{state_dataset}.state_person_external_id` person_external_id
+      ON person.person_id = person_external_id.person_id
+      AND {state_specific_external_id_type} = person_external_id.id_type 
     """
 
 REPORT_DATA_BY_PERSON_BY_MONTH_VIEW_BUILDER = SimpleBigQueryViewBuilder(
@@ -77,6 +82,8 @@ REPORT_DATA_BY_PERSON_BY_MONTH_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     description=REPORT_DATA_BY_PERSON_BY_MONTH_DESCRIPTION,
     po_report_dataset=PO_REPORT_DATASET,
     state_dataset=dataset_config.STATE_BASE_DATASET,
+    state_specific_external_id_type=state_specific_query_strings.state_specific_external_id_type(
+        state_code_table_prefix='person')
 )
 
 if __name__ == '__main__':

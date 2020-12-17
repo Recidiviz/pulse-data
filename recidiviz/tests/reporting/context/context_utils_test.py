@@ -16,12 +16,12 @@
 # =============================================================================
 
 """Tests for context_utils.py."""
-
+import textwrap
 from copy import copy
+from datetime import datetime
 from unittest import TestCase
 
-from recidiviz.reporting.context.context_utils import singular_or_plural
-
+from recidiviz.reporting.context.context_utils import singular_or_plural, format_date, align_columns
 
 _PREPARED_DATA: dict = {
     'singular_value': '1',
@@ -59,3 +59,22 @@ class ContextUtilsTest(TestCase):
         singular_or_plural(prepared_data, 'zero_value', 'final_text', SINGULAR_TEXT, PLURAL_TEXT)
         actual = prepared_data['final_text']
         self.assertEqual(expected, actual)
+
+    def test_format_date(self):
+        date = datetime.strptime('20201205112344', '%Y%m%d%H%M%S')
+        actual = format_date('20201205112344', current_format='%Y%m%d%H%M%S')
+        self.assertEqual(datetime.strftime(date, '%m/%d/%Y'), actual)
+
+    def test_align_columns(self):
+        columns = [
+            ["few char", "many characters", "a little"],
+            ["1", "2", "3"],
+            ["a longer one", "few char", "many"]
+        ]
+
+        expected = textwrap.dedent("""\
+            few char         many characters     a little    
+            1                2                   3           
+            a longer one     few char            many        """)
+
+        self.assertEqual(expected, align_columns(columns))
