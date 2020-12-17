@@ -1,0 +1,40 @@
+MONTHLY RECIDIVIZ REPORT
+Prepared on {{ prepared_on_date }}, for {{ officer_given_name }}
+
+{% if clients['pos_discharges_clients'] -%}
+// Successful Case Completion //
+{{ clients['pos_discharges_clients'] }}
+
+{% endif -%}
+
+{% if clients['earned_discharges_clients'] -%}
+// Early Discharge //
+{{ clients['earned_discharges_clients'] }}
+
+{% endif -%}
+
+{% if clients['revocations_clients'] -%}
+// Revocations //
+{{ clients['revocations_clients'] }}
+
+{% endif -%}
+
+{% if clients['absconsions_clients'] -%}
+// Absconsions //
+{{ clients['absconsions_clients'] }}
+
+{% endif -%}
+
+{% if clients['assessments_out_of_date_clients'] -%}
+// Out of Date Risk Assessments //
+{{ clients['assessments_out_of_date_clients'] }}
+
+{% endif -%}
+
+{% if clients['facetoface_out_of_date_clients'] -%}
+// Out of Date Face to Face Contacts //
+{{ clients['facetoface_out_of_date_clients'] }}
+
+{% endif -%}
+
+Please send questions or data issues to feedback@recidiviz.org

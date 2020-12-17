@@ -30,6 +30,11 @@ class EmailReportingUtilsTests(TestCase):
 
     def setUp(self) -> None:
         self.eru = utils
+        self.project_id_patcher = patch('recidiviz.utils.metadata.project_id')
+        self.project_id_patcher.start().return_value = 'fake-project'
+
+    def tearDown(self):
+        self.project_id_patcher.stop()
 
     @patch('os.environ.get')
     def test_get_env_var_happy_path(self, mock_environ_get: MagicMock) -> None:
@@ -75,9 +80,9 @@ class EmailReportingUtilsTests(TestCase):
         self.assertEqual(expected, actual)
 
     @patch('recidiviz.utils.metadata.project_id', Mock(return_value=_MOCK_PROJECT_ID))
-    def test_get_html_bucket_name(self) -> None:
+    def test_get_email_content_bucket_name_html(self) -> None:
         expected = f'{_MOCK_PROJECT_ID}-report-html'
-        actual = self.eru.get_html_bucket_name()
+        actual = self.eru.get_email_content_bucket_name()
         self.assertEqual(expected, actual)
 
     @patch('recidiviz.utils.secrets.get_secret')
@@ -102,9 +107,15 @@ class EmailReportingUtilsTests(TestCase):
         actual = self.eru.get_data_archive_filename('batch-1')
         self.assertEqual(expected, actual)
 
-    def test_get_html_filename(self) -> None:
-        expected = 'batch-1/boards@canada.ca.html'
+    def test_get_email_html_filename(self) -> None:
+        expected = 'batch-1/html/boards@canada.ca.html'
+
         actual = self.eru.get_html_filename('batch-1', 'boards@canada.ca')
+        self.assertEqual(expected, actual)
+
+    def test_get_email_attachment_filename(self) -> None:
+        expected = 'batch-1/attachments/boards@canada.ca.txt'
+        actual = self.eru.get_attachment_filename('batch-1', 'boards@canada.ca')
         self.assertEqual(expected, actual)
 
     def test_format_test_address_valid(self) -> None:
