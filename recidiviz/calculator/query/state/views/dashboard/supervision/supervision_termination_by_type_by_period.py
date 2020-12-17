@@ -48,7 +48,7 @@ SUPERVISION_TERMINATION_BY_TYPE_BY_PERIOD_QUERY_TEMPLATE = \
         MIN(successful_completion_count) as successful_termination,
         MAX(projected_completion_count) as projected_completion_count,
         supervision_type,
-        district
+        IFNULL(district, 'EXTERNAL_UNKNOWN') as district,
       FROM `{project_id}.{metrics_dataset}.supervision_success_metrics`
       {filter_to_most_recent_job_id_for_metric},
       {district_dimension},

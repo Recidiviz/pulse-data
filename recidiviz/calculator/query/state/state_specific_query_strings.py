@@ -35,6 +35,7 @@ def state_specific_judicial_district_groupings(judicial_district_column: str) ->
 def state_specific_race_or_ethnicity_groupings(race_or_ethnicity_column: str = 'race_or_ethnicity') -> str:
     return f"""CASE WHEN state_code = 'US_ND' AND ({race_or_ethnicity_column} IS NULL OR {race_or_ethnicity_column} IN
               ('EXTERNAL_UNKNOWN', 'ASIAN', 'NATIVE_HAWAIIAN_PACIFIC_ISLANDER')) THEN 'OTHER'
+              WHEN {race_or_ethnicity_column} IS NULL THEN 'EXTERNAL_UNKNOWN'
               ELSE {race_or_ethnicity_column} END AS race_or_ethnicity"""
 
 
@@ -45,14 +46,15 @@ def state_specific_assessment_bucket(output_column_name: str = 'assessment_score
 
 
 def state_specific_most_severe_violation_type_subtype_grouping() -> str:
-    return """CASE WHEN state_code = 'US_MO' AND most_severe_violation_type = 'TECHNICAL' THEN
+    return """CASE
+                WHEN most_severe_violation_type IS NULL THEN 'NO_VIOLATION_TYPE'
+                WHEN state_code = 'US_MO' AND most_severe_violation_type = 'TECHNICAL' THEN
                 CASE WHEN most_severe_violation_type_subtype = 'SUBSTANCE_ABUSE' THEN most_severe_violation_type_subtype
                      WHEN most_severe_violation_type_subtype = 'LAW_CITATION' THEN 'MISDEMEANOR'
                      ELSE most_severe_violation_type END
                 WHEN state_code = 'US_PA' THEN
                     CASE WHEN most_severe_violation_type = 'TECHNICAL' THEN most_severe_violation_type_subtype
                          ELSE most_severe_violation_type END
-                WHEN most_severe_violation_type IS NULL THEN 'NO_VIOLATIONS'
                 ELSE most_severe_violation_type
             END AS violation_type"""
 

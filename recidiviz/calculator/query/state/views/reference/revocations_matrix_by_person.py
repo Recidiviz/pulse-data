@@ -53,7 +53,11 @@ REVOCATIONS_MATRIX_BY_PERSON_QUERY_TEMPLATE = \
             case_type,
             district,
             officer,
-            ROW_NUMBER() OVER (PARTITION BY state_code, metric_period_months, person_id ORDER BY revocation_admission_date DESC) as ranking
+            officer_recommendation,
+            violation_record,
+            ROW_NUMBER() OVER (PARTITION BY state_code, metric_period_months, person_id
+                               ORDER BY revocation_admission_date DESC,
+                               supervision_type, supervision_level, case_type, district, officer) as ranking
         FROM `{project_id}.{reference_views_dataset}.event_based_revocations_for_matrix`,
         {metric_period_dimension}
         WHERE {metric_period_condition}
@@ -71,10 +75,12 @@ REVOCATIONS_MATRIX_BY_PERSON_QUERY_TEMPLATE = \
         officer,
         person_id,
         person_external_id,
-        gender,
+        IFNULL(gender, 'EXTERNAL_UNKNOWN') as gender,
         age_bucket,
         {state_specific_assessment_bucket},
-        prioritized_race_or_ethnicity,
+        IFNULL(prioritized_race_or_ethnicity, 'EXTERNAL_UNKNOWN') AS prioritized_race_or_ethnicity,
+        officer_recommendation,
+        violation_record
     FROM revocations,
     {district_dimension},
     {supervision_type_dimension},
@@ -82,7 +88,7 @@ REVOCATIONS_MATRIX_BY_PERSON_QUERY_TEMPLATE = \
     {charge_category_dimension}
     WHERE ranking = 1
       AND supervision_type IN ('ALL', 'DUAL', 'PAROLE', 'PROBATION')
-      AND district IS NOT NULL
+      AND district != 'EXTERNAL_UNKNOWN'
     """
 
 REVOCATIONS_MATRIX_BY_PERSON_VIEW_BUILDER = SimpleBigQueryViewBuilder(

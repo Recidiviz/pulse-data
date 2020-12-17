@@ -65,7 +65,7 @@ SUPERVISION_SUCCESS_BY_MONTH_VIEW_QUERY_TEMPLATE = \
     
     SELECT
         *,
-        IEEE_DIVIDE(successful_termination_count, projected_completion_count) as success_rate
+        ROUND(IEEE_DIVIDE(successful_termination_count, projected_completion_count), 2) as success_rate
     FROM success_counts
     ORDER BY state_code, projected_year, projected_month, supervision_type
     """
@@ -74,7 +74,7 @@ SUPERVISION_SUCCESS_BY_MONTH_VIEW_BUILDER = MetricBigQueryViewBuilder(
     dataset_id=dataset_config.PUBLIC_DASHBOARD_VIEWS_DATASET,
     view_id=SUPERVISION_SUCCESS_BY_MONTH_VIEW_NAME,
     view_query_template=SUPERVISION_SUCCESS_BY_MONTH_VIEW_QUERY_TEMPLATE,
-    dimensions=['state_code', 'supervision_type', 'projected_year', 'projected_month'],
+    dimensions=['state_code', 'supervision_type', 'projected_year', 'projected_month', 'district'],
     description=SUPERVISION_SUCCESS_BY_MONTH_VIEW_DESCRIPTION,
     metrics_dataset=dataset_config.DATAFLOW_METRICS_DATASET,
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
