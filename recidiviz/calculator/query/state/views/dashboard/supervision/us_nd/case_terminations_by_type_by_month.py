@@ -43,8 +43,8 @@ def _get_query_prep_statement(reference_views_dataset: str) -> str:
             supervision_period.termination_reason,
             supervision_period.person_id,
             supervision_type,
-            district,
-            agent.agent_external_id AS officer_external_id
+            IFNULL(district, 'EXTERNAL_UNKNOWN') as district,
+            IFNULL(agent.agent_external_id, 'EXTERNAL_UNKNOWN') AS officer_external_id
           FROM `{{project_id}}.state.state_supervision_period` supervision_period
           LEFT JOIN `{{project_id}}.{reference_views_dataset}.supervision_period_to_agent_association` agent
             USING (supervision_period_id),

@@ -46,8 +46,8 @@ CASE_TERMINATIONS_BY_TYPE_BY_OFFICER_BY_PERIOD_QUERY_TEMPLATE = \
       COUNT(DISTINCT suspension) AS suspension,
       COUNT(DISTINCT other) AS other,
       supervision_type,
-      officer_external_id,
-      district, 
+      IFNULL(officer_external_id, 'EXTERNAL_UNKNOWN') as officer_external_id,
+      IFNULL(district, 'EXTERNAL_UNKNOWN') as district, 
       metric_period_months
     FROM (
       SELECT

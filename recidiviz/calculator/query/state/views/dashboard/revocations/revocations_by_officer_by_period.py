@@ -46,7 +46,7 @@ REVOCATIONS_BY_OFFICER_BY_PERIOD_QUERY_TEMPLATE = \
       IFNULL(SAFE_SUBTRACT(all_violation_types_count, (felony_count + technical_count + absconsion_count)), 0) AS unknown_count,
       total_supervision_count,
       supervision_type,
-      officer_external_id,
+      IFNULL(officer_external_id, 'EXTERNAL_UNKNOWN') as officer_external_id,
       district,
       metric_period_months
     FROM (
