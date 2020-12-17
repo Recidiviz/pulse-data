@@ -511,3 +511,90 @@ class ManualUploadTest(unittest.TestCase):
 
         # Assert
         assert "metric and dimension column specified" in str(exception_info.value)
+
+    def test_admissionMetric_isPersisted(self):
+        # Act
+        manual_upload.ingest(self.fs, test_utils.prepare_files(self.fs, manifest_filepath('report_admissions')))
+
+        # Assert
+        session = SessionFactory.for_schema_base(JusticeCountsBase)
+
+        [type_definition, total_definition] = session.query(schema.ReportTableDefinition) \
+            .order_by(sql.func.array_length(schema.ReportTableDefinition.aggregated_dimensions, 1)).all()
+        self.assertEqual(['metric/admission/type', 'metric/admission/type/raw',
+                          'metric/supervision/type', 'metric/supervision/type/raw'],
+                         type_definition.aggregated_dimensions)
+        self.assertEqual([], total_definition.aggregated_dimensions)
+
+        self.assertEqual(schema.MeasurementType.DELTA, type_definition.measurement_type)
+        self.assertEqual(schema.MeasurementType.DELTA, total_definition.measurement_type)
+
+        [total_table] = session.query(schema.ReportTableInstance) \
+            .filter(schema.ReportTableInstance.report_table_definition == total_definition).all()
+        [type_table] = session.query(schema.ReportTableInstance) \
+            .filter(schema.ReportTableInstance.report_table_definition == type_definition).all()
+
+        raw_type_values = {tuple(cell.aggregated_dimension_values): int(cell.value) for cell in
+                           session.query(schema.Cell)
+                               .filter(schema.Cell.report_table_instance == type_table).all()}
+
+        EXPECTED_TOTALS = {
+            ('FROM_SUPERVISION', 'Probation Revocations', 'PROBATION', 'Probation Revocations'): 244,
+            ('NEW_COMMITMENT', 'New Commitments', None, 'New Commitments'): 125,
+            ('OTHER', 'Other', None, 'Other'): 27,
+            ('FROM_SUPERVISION', 'Parole Re-Admissions', 'PAROLE', 'Parole Re-Admissions'): 128,
+            ('OTHER', 'Returned Escapees', None, 'Returned Escapees'): 53,
+            ('NEW_COMMITMENT', 'Split Sentence', None, 'Split Sentence'): 166,
+        }
+        self.assertEqual(EXPECTED_TOTALS, raw_type_values)
+
+        type_values = {
+            (result[0], result[1]): int(result[2]) for result in
+                session.query(schema.Cell.aggregated_dimension_values[1], schema.Cell.aggregated_dimension_values[3],
+                              sql.func.sum(schema.Cell.value))
+                    .filter(schema.Cell.report_table_instance == type_table)
+                    .group_by(schema.Cell.aggregated_dimension_values[1], schema.Cell.aggregated_dimension_values[3])
+                    .all()}
+        EXPECTED_TOTALS = {
+            ('FROM_SUPERVISION', 'PAROLE'): 128,
+            ('FROM_SUPERVISION', 'PROBATION'): 244,
+            ('NEW_COMMITMENT', None): 291,
+            ('OTHER', None): 80,
+        }
+        self.assertEqual(EXPECTED_TOTALS, type_values)
+
+        [[total_from_types]] = session.query(sql.func.sum(schema.Cell.value)) \
+            .filter(schema.Cell.report_table_instance == type_table).group_by().all()
+        self.assertEqual(decimal.Decimal(743), total_from_types)
+        [[total]] = session.query(schema.Cell.value).filter(schema.Cell.report_table_instance == total_table).all()
+        self.assertEqual(decimal.Decimal(743), total)
+
+        session.close()
+
+    def test_reincarcerationsWithViolationType_arePersisted(self):
+        # Act
+        manual_upload.ingest(self.fs, test_utils.prepare_files(self.fs, manifest_filepath('report8_reincarcerations')))
+
+        # Assert
+        session = SessionFactory.for_schema_base(JusticeCountsBase)
+
+        [table_definition] = session.query(schema.ReportTableDefinition).all()
+        self.assertEqual(['global/location/state', 'metric/admission/type', 'metric/supervision/type'],
+                         table_definition.filtered_dimensions)
+        self.assertEqual(['US_MI', 'FROM_SUPERVISION', 'PAROLE'], table_definition.filtered_dimension_values)
+        self.assertEqual(['global/gender/raw', 'metric/supervision_violation/type',
+                          'metric/supervision_violation/type/raw'], table_definition.aggregated_dimensions)
+
+        self.assertEqual(schema.MeasurementType.DELTA, table_definition.measurement_type)
+
+        violation_type_values = {
+            result[0]: int(result[1]) for result in
+                session.query(schema.Cell.aggregated_dimension_values[2], sql.func.sum(schema.Cell.value))
+                    .group_by(schema.Cell.aggregated_dimension_values[2])
+                    .all()}
+        EXPECTED_TOTALS = {
+            'TECHNICAL': 19_926,
+            'NEW_CRIME': 13_625,
+        }
+        self.assertEqual(EXPECTED_TOTALS, violation_type_values)
+        session.close()
