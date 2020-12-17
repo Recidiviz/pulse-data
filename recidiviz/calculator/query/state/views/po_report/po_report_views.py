@@ -31,6 +31,8 @@ from recidiviz.calculator.query.state.views.po_report.supervision_compliance_by_
     SUPERVISION_COMPLIANCE_BY_PERSON_BY_MONTH_VIEW_BUILDER
 from recidiviz.calculator.query.state.views.po_report.successful_supervision_completions_by_person_by_month import \
     SUCCESSFUL_SUPERVISION_COMPLETIONS_BY_PERSON_BY_MONTH_VIEW_BUILDER
+from recidiviz.calculator.query.state.views.po_report.supervision_downgrades_by_person_by_month import \
+    SUPERVISION_DOWNGRADES_BY_PERSON_BY_MONTH_VIEW_BUILDER
 from recidiviz.calculator.query.state.views.po_report.supervision_earned_discharge_requests_by_person_by_month import \
     SUPERVISION_EARNED_DISCHARGE_REQUESTS_BY_PERSON_BY_MONTH_VIEW_BUILDER
 
@@ -42,6 +44,7 @@ PO_REPORT_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
     REVOCATION_REPORTS_BY_PERSON_BY_MONTH_VIEW_BUILDER,
     SUCCESSFUL_SUPERVISION_COMPLETIONS_BY_PERSON_BY_MONTH_VIEW_BUILDER,
     SUPERVISION_COMPLIANCE_BY_PERSON_BY_MONTH_VIEW_BUILDER,
+    SUPERVISION_DOWNGRADES_BY_PERSON_BY_MONTH_VIEW_BUILDER,
     SUPERVISION_EARNED_DISCHARGE_REQUESTS_BY_PERSON_BY_MONTH_VIEW_BUILDER,
     REPORT_DATA_BY_PERSON_BY_MONTH_VIEW_BUILDER,
     # PO_MONTHLY_REPORT_DATA_VIEW_BUILDER must be last in this list because it relies on the materialized versions of

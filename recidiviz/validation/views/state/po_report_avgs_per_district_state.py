@@ -43,12 +43,21 @@ PO_REPORT_AVGS_PER_DISTRICT_STATE_QUERY_TEMPLATE = \
     UNION ALL
 
     SELECT DISTINCT
+      state_code as region_code, review_month, t1.email_address, 'supervision_downgrades_district_average-mismatch'
+    FROM `{project_id}.{po_report_dataset}.po_monthly_report_data_materialized` t1
+    LEFT JOIN `{project_id}.{po_report_dataset}.po_monthly_report_data_materialized` t2
+      USING (state_code, review_month, district)
+    WHERE t1.supervision_downgrades_district_average != t2.supervision_downgrades_district_average
+
+    UNION ALL
+
+    SELECT DISTINCT
       state_code as region_code, review_month, t1.email_address, 'earned_discharges_district_average-mismatch'
     FROM `{project_id}.{po_report_dataset}.po_monthly_report_data_materialized` t1
     LEFT JOIN `{project_id}.{po_report_dataset}.po_monthly_report_data_materialized` t2
       USING (state_code, review_month, district)
     WHERE t1.earned_discharges_district_average != t2.earned_discharges_district_average
-    
+
     UNION ALL
 
     SELECT DISTINCT
@@ -57,7 +66,7 @@ PO_REPORT_AVGS_PER_DISTRICT_STATE_QUERY_TEMPLATE = \
     LEFT JOIN `{project_id}.{po_report_dataset}.po_monthly_report_data_materialized` t2
       USING (state_code, review_month, district)
     WHERE t1.technical_revocations_district_average != t2.technical_revocations_district_average
-    
+
     UNION ALL
 
     SELECT DISTINCT
@@ -66,7 +75,7 @@ PO_REPORT_AVGS_PER_DISTRICT_STATE_QUERY_TEMPLATE = \
     LEFT JOIN `{project_id}.{po_report_dataset}.po_monthly_report_data_materialized` t2
       USING (state_code, review_month, district)
     WHERE t1.crime_revocations_district_average != t2.crime_revocations_district_average
-    
+
     UNION ALL
 
     SELECT DISTINCT
@@ -88,12 +97,21 @@ PO_REPORT_AVGS_PER_DISTRICT_STATE_QUERY_TEMPLATE = \
     UNION ALL
 
     SELECT DISTINCT
+      state_code as region_code, review_month, t1.email_address, 'supervision_downgrades_state_average-mismatch'
+    FROM `{project_id}.{po_report_dataset}.po_monthly_report_data_materialized` t1
+    LEFT JOIN `{project_id}.{po_report_dataset}.po_monthly_report_data_materialized` t2
+      USING (state_code, review_month, district)
+    WHERE t1.supervision_downgrades_state_average != t2.supervision_downgrades_state_average
+
+    UNION ALL
+
+    SELECT DISTINCT
       state_code as region_code, review_month, t1.email_address, 'earned_discharges_state_average-mismatch'
     FROM `{project_id}.{po_report_dataset}.po_monthly_report_data_materialized` t1
     LEFT JOIN `{project_id}.{po_report_dataset}.po_monthly_report_data_materialized` t2
       USING (state_code, review_month)
     WHERE t1.earned_discharges_state_average != t2.earned_discharges_state_average
-    
+
     UNION ALL
 
     SELECT DISTINCT
@@ -102,7 +120,7 @@ PO_REPORT_AVGS_PER_DISTRICT_STATE_QUERY_TEMPLATE = \
     LEFT JOIN `{project_id}.{po_report_dataset}.po_monthly_report_data_materialized` t2
       USING (state_code, review_month)
     WHERE t1.technical_revocations_state_average != t2.technical_revocations_state_average
-    
+
     UNION ALL
 
     SELECT DISTINCT
@@ -111,7 +129,7 @@ PO_REPORT_AVGS_PER_DISTRICT_STATE_QUERY_TEMPLATE = \
     LEFT JOIN `{project_id}.{po_report_dataset}.po_monthly_report_data_materialized` t2
       USING (state_code, review_month)
     WHERE t1.crime_revocations_state_average != t2.crime_revocations_state_average
-    
+
     UNION ALL
 
     SELECT DISTINCT
