@@ -26,7 +26,7 @@ from recidiviz.utils.metadata import local_project_id_override
 REPORT_DATA_BY_PERSON_BY_MONTH_VIEW_NAME = 'report_data_by_person_by_month'
 
 REPORT_DATA_BY_PERSON_BY_MONTH_DESCRIPTION = """
- Person-level data regarding early discharges, successful supervision completions, reported recommendations for 
+ Person-level data regarding early discharges, successful supervision completions, reported recommendations for
  absconsions and revocations, and case compliance statuses.
  """
 
@@ -39,10 +39,13 @@ REPORT_DATA_BY_PERSON_BY_MONTH_QUERY_TEMPLATE = \
       CONCAT(
         REPLACE(JSON_EXTRACT(person.full_name, '$.surname'), '"', ''),
         ', ',
-        REPLACE(JSON_EXTRACT(person.full_name, '$.given_names'), '"', '') 
+        REPLACE(JSON_EXTRACT(person.full_name, '$.given_names'), '"', '')
       ) AS full_name,
       officer_external_id,
       successful_completion_date,
+      latest_supervision_downgrade_date,
+      previous_supervision_level,
+      supervision_level,
       violation_type AS revocation_violation_type,
       revocation_report_date,
       absconsion_report_date,
@@ -51,21 +54,24 @@ REPORT_DATA_BY_PERSON_BY_MONTH_QUERY_TEMPLATE = \
       assessment_up_to_date,
       IFNULL(face_to_face_count, 0) AS face_to_face_count,
       face_to_face_frequency_sufficient
-        
+
     FROM `{project_id}.{po_report_dataset}.successful_supervision_completions_by_person_by_month` completions
-    
+
+    FULL OUTER JOIN `{project_id}.{po_report_dataset}.supervision_downgrade_by_person_by_month` downgrades
+      USING (state_code, year, month, person_id, officer_external_id)
+
     FULL OUTER JOIN `{project_id}.{po_report_dataset}.supervision_compliance_by_person_by_month` compliance
       USING (state_code, year, month, person_id, officer_external_id)
-        
+
     FULL OUTER JOIN `{project_id}.{po_report_dataset}.revocation_reports_by_person_by_month` revocations
       USING (state_code, year, month, person_id, officer_external_id)
-    
+
     FULL OUTER JOIN `{project_id}.{po_report_dataset}.absconsion_reports_by_person_by_month` absconsions
       USING (state_code, year, month, person_id, officer_external_id)
-    
+
     FULL OUTER JOIN `{project_id}.{po_report_dataset}.supervision_earned_discharge_requests_by_person_by_month` earned_discharges
       USING (state_code, year, month, person_id, officer_external_id)
-    
+
     JOIN `{project_id}.{state_dataset}.state_person` person
       USING (person_id, state_code)
     
