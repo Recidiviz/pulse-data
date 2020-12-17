@@ -1,0 +1,26 @@
+source: 'Colorado Department of Corrections'
+report_type: 'Dashboard Measures'
+report_instance: '2020-10-05'
+publish_date: '2020-10-05'
+tables:
+    - file: 'table.csv'
+      date_range:
+        fixed:
+          snapshot:
+            date: '2020-09-01'
+      system: 'CORRECTIONS'
+      metric:
+        population:
+          measurement_type: 'INSTANT'
+      additional_filters:
+        FACILITY: 'MSP'
+      dimension_columns:
+        - column_name: 'Race'
+          dimension_name: 'RACE'
+        - column_name: 'Sex'
+          dimension_name: 'GENDER'
+      value_column:
+        column_name: 'Population'
+      location:
+        state: 'US_CO'
+      methodology: 'Unknown'
