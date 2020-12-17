@@ -26,7 +26,8 @@ from recidiviz.utils.metadata import local_project_id_override
 US_ID_PPO_METRICS_SUCCESSFUL_SUPERVISION_TERMINATIONS_VIEW_NAME = 'us_id_ppo_metrics_successful_supervision_terminations'
 
 US_ID_PPO_METRICS_SUCCESSFUL_SUPERVISION_TERMINATIONS_VIEW_DESCRIPTION = \
-    """View capturing sucessful supervision terminations, captured by transition from SUPERVISION compartment to RELEASE outflow"""
+    """View capturing successful supervision terminations, captured by transition from SUPERVISION compartment to 
+    RELEASE outflow and with DISCHARGED/EXPIRATION/COMMUTED/PARDONED end reason."""
 
 US_ID_PPO_METRICS_SUCCESSFUL_SUPERVISION_TERMINATIONS_QUERY_TEMPLATE = \
     """
@@ -43,10 +44,9 @@ US_ID_PPO_METRICS_SUCCESSFUL_SUPERVISION_TERMINATIONS_QUERY_TEMPLATE = \
         session_length_days,  
         compartment_level_2 as supervision_type,
     FROM `{project_id}.{analyst_dataset}.compartment_sessions_materialized`
-    -- TODO(#4875): check release reason condition to filter out non-releases
     WHERE compartment_level_1 = 'SUPERVISION'
         AND outflow_to_level_1 = 'RELEASE'
-        
+        AND end_reason in ('DISCHARGE', 'EXPIRATION', 'COMMUTED', 'PARDONED')  
     """
 
 US_ID_PPO_METRICS_SUCCESSFUL_SUPERVISION_TERMINATIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
