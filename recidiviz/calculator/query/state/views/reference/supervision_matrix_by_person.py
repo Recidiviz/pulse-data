@@ -47,7 +47,7 @@ SUPERVISION_MATRIX_BY_PERSON_QUERY_TEMPLATE = \
             supervision_type,
             supervision_level,
             case_type,
-            supervising_district_external_id AS district,
+            IFNULL(supervising_district_external_id, 'EXTERNAL_UNKNOWN') AS district,
             supervising_officer_external_id AS officer,
             date_of_supervision,
             FALSE AS is_revocation
@@ -60,7 +60,7 @@ SUPERVISION_MATRIX_BY_PERSON_QUERY_TEMPLATE = \
             AND year >= EXTRACT(YEAR FROM DATE_SUB(CURRENT_DATE(), INTERVAL 3 YEAR))
     ), revocations_matrix AS (
         SELECT
-            * EXCEPT(revocation_admission_date),
+            * EXCEPT(revocation_admission_date, officer_recommendation, violation_record),
             revocation_admission_date AS date_of_supervision,
             TRUE as is_revocation
         FROM `{project_id}.{reference_views_dataset}.event_based_revocations_for_matrix`
@@ -71,7 +71,9 @@ SUPERVISION_MATRIX_BY_PERSON_QUERY_TEMPLATE = \
     ), person_based_supervision AS (
       SELECT
         *,
-        ROW_NUMBER() OVER (PARTITION BY state_code, metric_period_months, person_id ORDER BY is_revocation DESC, date_of_supervision DESC) as ranking
+        ROW_NUMBER() OVER (PARTITION BY state_code, metric_period_months, person_id
+                           ORDER BY is_revocation DESC, date_of_supervision DESC,
+                                    supervision_type, supervision_level, case_type, district, officer) as ranking
       FROM revocations_and_supervisions,
       {metric_period_dimension}
       WHERE {metric_period_condition}
@@ -86,9 +88,10 @@ SUPERVISION_MATRIX_BY_PERSON_QUERY_TEMPLATE = \
         {state_specific_supervision_level},
         charge_category, district, officer,
         person_id, person_external_id,
-        gender, age_bucket,
+        IFNULL(gender, 'EXTERNAL_UNKNOWN') AS gender,
+        age_bucket,
         {state_specific_assessment_bucket},
-        prioritized_race_or_ethnicity
+        IFNULL(prioritized_race_or_ethnicity, 'EXTERNAL_UNKNOWN') AS prioritized_race_or_ethnicity,
     FROM person_based_supervision,
     {district_dimension},
     {supervision_type_dimension},
@@ -96,7 +99,7 @@ SUPERVISION_MATRIX_BY_PERSON_QUERY_TEMPLATE = \
     {charge_category_dimension}
     WHERE ranking = 1
       AND supervision_type IN ('ALL', 'DUAL', 'PAROLE', 'PROBATION')
-      AND district IS NOT NULL
+      AND district != 'EXTERNAL_UNKNOWN'
     """
 
 SUPERVISION_MATRIX_BY_PERSON_VIEW_BUILDER = SimpleBigQueryViewBuilder(

@@ -40,9 +40,9 @@ AVERAGE_CHANGE_LSIR_SCORE_MONTH_QUERY_TEMPLATE = \
     /*{description}*/
     SELECT
       state_code, termination_year, termination_month,
-      IFNULL(AVG(assessment_score_change), 0.0) AS average_change,
+      ROUND(IFNULL(AVG(assessment_score_change), 0), 2) AS average_change,
       supervision_type,
-      district
+      IFNULL(district, 'EXTERNAL_UNKNOWN') as district
     FROM (
       SELECT
         state_code, year as termination_year, month as termination_month,
@@ -51,7 +51,7 @@ AVERAGE_CHANGE_LSIR_SCORE_MONTH_QUERY_TEMPLATE = \
         district,
         -- Use the most recent termination per person/year/month/supervision/district
         ROW_NUMBER() OVER (PARTITION BY state_code, year, month, supervision_type, district, person_id
-                           ORDER BY termination_date DESC) AS supervision_rank
+                           ORDER BY termination_date DESC, assessment_score_change) AS supervision_rank
       FROM `{project_id}.{metrics_dataset}.supervision_termination_metrics`
       {filter_to_most_recent_job_id_for_metric},
       {district_dimension},
