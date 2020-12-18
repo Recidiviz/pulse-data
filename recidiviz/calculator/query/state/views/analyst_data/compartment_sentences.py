@@ -51,8 +51,9 @@ COMPARTMENT_SENTENCES_QUERY_TEMPLATE = \
         DATE(NULL) AS parole_eligibility_date,
         classification_type,
         description,
+        ncic_code,
         FALSE AS life_sentence,
-        'SUPERVISION' AS data_source
+        'SUPERVISION' AS data_source,
     FROM `{project_id}.{base_dataset}.state_supervision_sentence` AS sss
     LEFT JOIN `{project_id}.{base_dataset}.state_charge_supervision_sentence_association`
         USING (supervision_sentence_id)
@@ -74,6 +75,7 @@ COMPARTMENT_SENTENCES_QUERY_TEMPLATE = \
       parole_eligibility_date,
       classification_type,
       description,
+      ncic_code,
       COALESCE(sis.is_life, FALSE) AS life_sentence,
       'INCARCERATION' AS data_source
     FROM `{project_id}.{base_dataset}.state_incarceration_sentence` AS sis
@@ -118,6 +120,7 @@ COMPARTMENT_SENTENCES_QUERY_TEMPLATE = \
         COUNT(1) as offense_count,
         ARRAY_AGG(COALESCE(classification_type, 'MISSING')) classification_type,
         ARRAY_AGG(COALESCE(description, 'MISSING')) description,
+        ARRAY_AGG(COALESCE(ncic_code, 'MISSING')) ncic_code,
         LOGICAL_OR(life_sentence) AS life_sentence,
     FROM unioned_sentences_cte
     WHERE start_date IS NOT NULL
@@ -197,6 +200,7 @@ COMPARTMENT_SENTENCES_QUERY_TEMPLATE = \
         offense_count,
         classification_type,
         description,
+        ncic_code,
         CASE WHEN completion_date < last_day_of_data THEN sentence_length_days END AS sentence_length_days,
         min_projected_sentence_length,
         max_projected_sentence_length
