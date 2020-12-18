@@ -16,18 +16,21 @@
 # =============================================================================
 """Ingest metadata view configuration."""
 
-from typing import Dict, Sequence
+from typing import Dict, List, Sequence, cast
 
 from recidiviz.big_query.big_query_view import BigQueryViewBuilder
 from recidiviz.ingest.views.dataset_config import VIEWS_DATASET
+from recidiviz.ingest.views.column_enumerator import COLUMN_ENUMERATOR_VIEW_BUILDER
 from recidiviz.ingest.views.enum_counter import StateTableEnumCounterBigQueryViewCollector
 from recidiviz.ingest.views.non_enum_counter import StateTableNonEnumCounterBigQueryViewCollector
 from recidiviz.ingest.views.state_person_counter import StatePersonBigQueryViewCollector
 
 
-INGEST_METADATA_BUILDERS = StateTableEnumCounterBigQueryViewCollector().collect_view_builders() + \
-    StateTableNonEnumCounterBigQueryViewCollector().collect_view_builders() + \
-    StatePersonBigQueryViewCollector().collect_view_builders()
+INGEST_METADATA_BUILDERS = cast(List[BigQueryViewBuilder],
+                                StateTableEnumCounterBigQueryViewCollector().collect_view_builders()) + \
+    cast(List[BigQueryViewBuilder], StateTableNonEnumCounterBigQueryViewCollector().collect_view_builders()) + \
+    cast(List[BigQueryViewBuilder], StatePersonBigQueryViewCollector().collect_view_builders()) + \
+    [COLUMN_ENUMERATOR_VIEW_BUILDER]
 
 VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE: Dict[str, Sequence[BigQueryViewBuilder]] = {
     VIEWS_DATASET: INGEST_METADATA_BUILDERS,
