@@ -21,12 +21,12 @@ from unittest import mock
 from google.cloud import bigquery
 
 from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath
-from recidiviz.metrics.export.metric_export_config import ExportMetricDatasetConfig, ExportMetricBigQueryViewConfig
+from recidiviz.metrics.export.export_config import ExportViewCollectionConfig, ExportMetricBigQueryViewConfig
 from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
 
 
-class TestExportMetricDatasetConfig(unittest.TestCase):
-    """Tests the functionality of the ExportMetricDatasetConfig class."""
+class TestExportViewCollectionConfig(unittest.TestCase):
+    """Tests the functionality of the ExportViewCollectionConfig class."""
 
     def setUp(self):
         self.mock_project_id = 'fake-recidiviz-project'
@@ -51,18 +51,16 @@ class TestExportMetricDatasetConfig(unittest.TestCase):
 
     def test_matches_filter(self):
         """Tests matches_filter function to ensure that state codes and export names correctly match"""
-        state_dataset_export_config = ExportMetricDatasetConfig(
-            dataset_id='dataset_id',
-            metric_view_builders_to_export=self.views_for_dataset,
+        state_dataset_export_config = ExportViewCollectionConfig(
+            view_builders_to_export=self.views_for_dataset,
             output_directory_uri_template="gs://{project_id}-bucket",
             state_code_filter='US_XX',
             export_name=None
         )
         self.assertTrue(state_dataset_export_config.matches_filter('US_XX'))
 
-        dataset_export_config = ExportMetricDatasetConfig(
-            dataset_id='dataset_id',
-            metric_view_builders_to_export=self.views_for_dataset,
+        dataset_export_config = ExportViewCollectionConfig(
+            view_builders_to_export=self.views_for_dataset,
             output_directory_uri_template="gs://{project_id}-bucket",
             state_code_filter=None,
             export_name='VALID_EXPORT_NAME'
@@ -72,18 +70,16 @@ class TestExportMetricDatasetConfig(unittest.TestCase):
 
     def test_matches_filter_case_insensitive(self):
         """Tests matches_filter function with different cases to ensure state codes and export names correctly match"""
-        state_dataset_export_config = ExportMetricDatasetConfig(
-            dataset_id='dataset_id',
-            metric_view_builders_to_export=self.views_for_dataset,
+        state_dataset_export_config = ExportViewCollectionConfig(
+            view_builders_to_export=self.views_for_dataset,
             output_directory_uri_template="gs://{project_id}-bucket",
             state_code_filter='US_XX',
             export_name=None
         )
         self.assertTrue(state_dataset_export_config.matches_filter('US_xx'))
 
-        dataset_export_config = ExportMetricDatasetConfig(
-            dataset_id='dataset_id',
-            metric_view_builders_to_export=self.views_for_dataset,
+        dataset_export_config = ExportViewCollectionConfig(
+            view_builders_to_export=self.views_for_dataset,
             output_directory_uri_template="gs://{project_id}-bucket",
             state_code_filter=None,
             export_name='VALID_EXPORT_NAME'
@@ -91,11 +87,10 @@ class TestExportMetricDatasetConfig(unittest.TestCase):
         self.assertTrue(dataset_export_config.matches_filter('valid_export_name'))
 
     def test_metric_export_state_agnostic(self):
-        """Tests the export_configs_for_views_to_export function on the ExportMetricDatasetConfig class when the
+        """Tests the export_configs_for_views_to_export function on the ExportViewCollectionConfig class when the
         export is state-agnostic."""
-        state_agnostic_dataset_export_config = ExportMetricDatasetConfig(
-            dataset_id='dataset_id',
-            metric_view_builders_to_export=self.views_for_dataset,
+        state_agnostic_dataset_export_config = ExportViewCollectionConfig(
+            view_builders_to_export=self.views_for_dataset,
             output_directory_uri_template="gs://{project_id}-bucket-without-state-codes",
             state_code_filter=None,
             export_name=None
@@ -121,11 +116,10 @@ class TestExportMetricDatasetConfig(unittest.TestCase):
         self.assertEqual(expected_view_export_configs, view_configs_to_export)
 
     def test_metric_export_state_specific(self):
-        """Tests the export_configs_for_views_to_export function on the ExportMetricDatasetConfig class when the
+        """Tests the export_configs_for_views_to_export function on the ExportViewCollectionConfig class when the
         export is state-specific."""
-        specific_state_dataset_export_config = ExportMetricDatasetConfig(
-            dataset_id='dataset_id',
-            metric_view_builders_to_export=self.views_for_dataset,
+        specific_state_dataset_export_config = ExportViewCollectionConfig(
+            view_builders_to_export=self.views_for_dataset,
             output_directory_uri_template="gs://{project_id}-bucket",
             state_code_filter='US_XX',
             export_name=None
@@ -149,11 +143,10 @@ class TestExportMetricDatasetConfig(unittest.TestCase):
         self.assertEqual(expected_view_export_configs, view_configs_to_export)
 
     def test_metric_export_lantern_dashboard(self):
-        """Tests the export_configs_for_views_to_export function on the ExportMetricDatasetConfig class when the
+        """Tests the export_configs_for_views_to_export function on the ExportViewCollectionConfig class when the
             export is state-agnostic."""
-        lantern_dashboard_dataset_export_config = ExportMetricDatasetConfig(
-            dataset_id='dataset_id',
-            metric_view_builders_to_export=self.views_for_dataset,
+        lantern_dashboard_dataset_export_config = ExportViewCollectionConfig(
+            view_builders_to_export=self.views_for_dataset,
             output_directory_uri_template="gs://{project_id}-bucket-without-state-codes",
             state_code_filter=None,
             export_name="TEST_EXPORT"
@@ -179,11 +172,10 @@ class TestExportMetricDatasetConfig(unittest.TestCase):
         self.assertEqual(expected_view_export_configs, view_configs_to_export)
 
     def test_metric_export_lantern_dashboard_with_state(self):
-        """Tests the export_configs_for_views_to_export function on the ExportMetricDatasetConfig class when the
+        """Tests the export_configs_for_views_to_export function on the ExportViewCollectionConfig class when the
             export is state-specific."""
-        lantern_dashboard_with_state_dataset_export_config = ExportMetricDatasetConfig(
-            dataset_id='dataset_id',
-            metric_view_builders_to_export=self.views_for_dataset,
+        lantern_dashboard_with_state_dataset_export_config = ExportViewCollectionConfig(
+            view_builders_to_export=self.views_for_dataset,
             output_directory_uri_template="gs://{project_id}-bucket",
             state_code_filter="US_XX",
             export_name="TEST_EXPORT"

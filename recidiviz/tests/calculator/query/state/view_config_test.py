@@ -21,8 +21,7 @@ import unittest
 from mock import patch
 
 from recidiviz.calculator.query.state import view_config
-from recidiviz.big_query.big_query_view import BigQueryView
-from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
+from recidiviz.big_query.big_query_view import BigQueryView, BigQueryViewBuilder
 from recidiviz.persistence.database.base_schema import JailsBase
 from recidiviz.tests.utils import fakes
 
@@ -41,13 +40,13 @@ class ViewExportConfigTest(unittest.TestCase):
         self.metadata_patcher.stop()
         fakes.teardown_in_memory_sqlite_databases()
 
-    def test_METRIC_DATASET_EXPORT_CONFIGS_types(self):
-        """Make sure that all view_builders in the metric_view_builders_to_export attribute of
-        METRIC_DATASET_EXPORT_CONFIGS are of type MetricBigQueryViewBuilder, and that running view_builder.build()
+    def test_VIEW_COLLECTION_EXPORT_CONFIGS_types(self):
+        """Make sure that all view_builders in the view_builders_to_export attribute of
+        VIEW_COLLECTION_EXPORT_CONFIGS are of type BigQueryViewBuilder, and that running view_builder.build()
         produces a BigQueryView."""
-        for dataset_export_config in view_config.METRIC_DATASET_EXPORT_CONFIGS:
-            for view_builder in dataset_export_config.metric_view_builders_to_export:
-                self.assertIsInstance(view_builder, MetricBigQueryViewBuilder)
+        for dataset_export_config in view_config.VIEW_COLLECTION_EXPORT_CONFIGS:
+            for view_builder in dataset_export_config.view_builders_to_export:
+                self.assertIsInstance(view_builder, BigQueryViewBuilder)
 
                 view = view_builder.build()
                 self.assertIsInstance(view, BigQueryView)
