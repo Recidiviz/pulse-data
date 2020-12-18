@@ -123,6 +123,13 @@ function pre_deploy_configure_infrastructure {
     fi
 }
 
+function check_running_in_pipenv_shell {
+    if [[ -z $(printenv PIPENV_ACTIVE) ]]; then
+        echo_error "Must be running inside the pipenv shell to deploy."
+        exit 1
+    fi
+}
+
 function check_docker_installed {
     if [[ -z $(which docker) ]]; then
         echo_error "Docker not installed. Please follow instructions in repo README to install."
@@ -185,6 +192,9 @@ function check_for_too_many_deployed_versions {
 
 function verify_can_deploy {
     PROJECT_ID=$1
+
+    echo "Checking script is executing in a pipenv shell"
+    run_cmd check_running_in_pipenv_shell
 
     echo "Checking Docker is installed"
     run_cmd check_docker_installed
