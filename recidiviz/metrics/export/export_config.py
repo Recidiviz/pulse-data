@@ -15,10 +15,11 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Config classes for exporting metric views to Google Cloud Storage."""
-from typing import List, Optional, Sequence
+from typing import Optional, Sequence
 
 import attr
 
+from recidiviz.big_query.big_query_view import BigQueryViewBuilder
 from recidiviz.big_query.export.export_query_config import ExportBigQueryViewConfig
 from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath
 from recidiviz.metrics.metric_big_query_view import MetricBigQueryView, MetricBigQueryViewBuilder
@@ -29,15 +30,12 @@ class ExportMetricBigQueryViewConfig(ExportBigQueryViewConfig[MetricBigQueryView
 
 
 @attr.s(frozen=True)
-class ExportMetricDatasetConfig:
+class ExportViewCollectionConfig:
     """Stores information necessary for exporting metric data from a list of views in a dataset to a Google Cloud
     Storage Bucket."""
 
-    # The dataset_id where the views live
-    dataset_id: str = attr.ib()
-
-    # The list of metric views to be exported
-    metric_view_builders_to_export: List[MetricBigQueryViewBuilder] = attr.ib()
+    # The list of views to be exported
+    view_builders_to_export: Sequence[BigQueryViewBuilder] = attr.ib()
 
     # A string template defining the output URI path for the destination directory of the export
     output_directory_uri_template: str = attr.ib()
@@ -57,9 +55,9 @@ class ExportMetricDatasetConfig:
             return True
         return False
 
-    def export_configs_for_views_to_export(self, project_id: str) -> Sequence[ExportMetricBigQueryViewConfig]:
-        """Builds a list of ExportMetricBigQueryViewConfigs that define how all metric views in
-        metric_view_builders_to_export should be exported to Google Cloud Storage."""
+    def export_configs_for_views_to_export(self, project_id: str) -> Sequence[ExportBigQueryViewConfig]:
+        """Builds a list of ExportBigQueryViewConfig that define how all views in
+        view_builders_to_export should be exported to Google Cloud Storage."""
         view_filter_clause = (f" WHERE state_code = '{self.state_code_filter}'"
                               if self.state_code_filter else None)
 
@@ -72,14 +70,19 @@ class ExportMetricDatasetConfig:
             intermediate_table_name += f"_{self.state_code_filter}"
             output_directory += f"/{self.state_code_filter}"
 
-        return [
-            ExportMetricBigQueryViewConfig(
-                view=view,
-                view_filter_clause=view_filter_clause,
-                intermediate_table_name=intermediate_table_name.format(
-                    export_view_name=view.view_id
-                ),
-                output_directory=GcsfsDirectoryPath.from_absolute_path(output_directory),
+        configs = []
+        for vb in self.view_builders_to_export:
+            view = vb.build()
+            constructor = ExportMetricBigQueryViewConfig if isinstance(
+                vb, MetricBigQueryViewBuilder) else ExportBigQueryViewConfig
+            configs.append(
+                constructor(
+                    view=view,
+                    view_filter_clause=view_filter_clause,
+                    intermediate_table_name=intermediate_table_name.format(
+                        export_view_name=view.view_id
+                    ),
+                    output_directory=GcsfsDirectoryPath.from_absolute_path(output_directory),
+                )
             )
-            for view in [vb.build() for vb in self.metric_view_builders_to_export]
-        ]
+        return configs

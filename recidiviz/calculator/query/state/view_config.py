@@ -34,9 +34,8 @@ from recidiviz.calculator.query.state.views.po_report.po_monthly_report_data imp
 from recidiviz.calculator.query.state.views.analyst_data.analyst_data_views import ANALYST_DATA_VIEW_BUILDERS
 from recidiviz.calculator.query.state.views.population_projection.population_projection_views import \
     POPULATION_PROJECTION_VIEW_BUILDERS
-from recidiviz.ingest.views.dataset_config import VIEWS_DATASET as INGEST_METADATA_VIEWS_DATASET
 from recidiviz.ingest.views.view_config import INGEST_METADATA_BUILDERS
-from recidiviz.metrics.export.metric_export_config import ExportMetricDatasetConfig
+from recidiviz.metrics.export.export_config import ExportViewCollectionConfig
 
 
 VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE: Dict[str, Sequence[BigQueryViewBuilder]] = {
@@ -58,45 +57,40 @@ PUBLIC_DASHBOARD_VIEWS_OUTPUT_DIRECTORY_URI = "gs://{project_id}-public-dashboar
 INGEST_METADATA_OUTPUT_DIRECTORY_URI = "gs://{project_id}-ingest-metadata"
 
 
-# The configurations for exporting metric views from various datasets to GCS buckets
-METRIC_DATASET_EXPORT_CONFIGS: List[ExportMetricDatasetConfig] = [
+# The configurations for exporting BigQuery views from various datasets to GCS buckets
+VIEW_COLLECTION_EXPORT_CONFIGS: List[ExportViewCollectionConfig] = [
     # PO Report views for US_ID
-    ExportMetricDatasetConfig(
-        dataset_id=PO_REPORT_DATASET,
-        metric_view_builders_to_export=[PO_MONTHLY_REPORT_DATA_VIEW_BUILDER],
+    ExportViewCollectionConfig(
+        view_builders_to_export=[PO_MONTHLY_REPORT_DATA_VIEW_BUILDER],
         output_directory_uri_template=PO_REPORT_OUTPUT_DIRECTORY_URI,
         state_code_filter='US_ID',
         export_name='PO_MONTHLY'
     ),
     # Public Dashboard views for US_ND
-    ExportMetricDatasetConfig(
-        dataset_id=PUBLIC_DASHBOARD_VIEWS_DATASET,
-        metric_view_builders_to_export=PUBLIC_DASHBOARD_VIEW_BUILDERS,
+    ExportViewCollectionConfig(
+        view_builders_to_export=PUBLIC_DASHBOARD_VIEW_BUILDERS,
         output_directory_uri_template=PUBLIC_DASHBOARD_VIEWS_OUTPUT_DIRECTORY_URI,
         state_code_filter='US_ND',
         export_name='PUBLIC_DASHBOARD'
     ),
     # COVID Dashboard views (not state-specific)
-    ExportMetricDatasetConfig(
-        dataset_id=COVID_DASHBOARD_DATASET,
-        metric_view_builders_to_export=COVID_DASHBOARD_VIEW_BUILDERS,
+    ExportViewCollectionConfig(
+        view_builders_to_export=COVID_DASHBOARD_VIEW_BUILDERS,
         output_directory_uri_template=COVID_DASHBOARD_OUTPUT_DIRECTORY_URI,
         state_code_filter=None,
         export_name='COVID_DASHBOARD'
     ),
     # Ingest metadata views for admin panel
-    ExportMetricDatasetConfig(
-        dataset_id=INGEST_METADATA_VIEWS_DATASET,
-        metric_view_builders_to_export=INGEST_METADATA_BUILDERS,
+    ExportViewCollectionConfig(
+        view_builders_to_export=INGEST_METADATA_BUILDERS,
         output_directory_uri_template=INGEST_METADATA_OUTPUT_DIRECTORY_URI,
         state_code_filter=None,
         export_name='INGEST_METADATA',
     ),
 ] + [
     # Lantern Dashboard views for all relevant states
-    ExportMetricDatasetConfig(
-        dataset_id=DASHBOARD_VIEWS_DATASET,
-        metric_view_builders_to_export=LANTERN_DASHBOARD_VIEW_BUILDERS,
+    ExportViewCollectionConfig(
+        view_builders_to_export=LANTERN_DASHBOARD_VIEW_BUILDERS,
         output_directory_uri_template=DASHBOARD_VIEWS_OUTPUT_DIRECTORY_URI,
         state_code_filter=state_code,
         export_name='LANTERN'
@@ -104,9 +98,8 @@ METRIC_DATASET_EXPORT_CONFIGS: List[ExportMetricDatasetConfig] = [
     for state_code in ['US_MO', 'US_PA']
 ] + [
     # Core Dashboard views for all relevant states
-    ExportMetricDatasetConfig(
-        dataset_id=DASHBOARD_VIEWS_DATASET,
-        metric_view_builders_to_export=CORE_DASHBOARD_VIEW_BUILDERS,
+    ExportViewCollectionConfig(
+        view_builders_to_export=CORE_DASHBOARD_VIEW_BUILDERS,
         output_directory_uri_template=DASHBOARD_VIEWS_OUTPUT_DIRECTORY_URI,
         state_code_filter=state_code,
         export_name='CORE',

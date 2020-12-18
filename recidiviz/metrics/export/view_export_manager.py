@@ -38,6 +38,7 @@ from recidiviz.big_query.view_update_manager import BigQueryViewNamespace
 from recidiviz.calculator.query.state import view_config
 from recidiviz.big_query.export.composite_big_query_view_exporter import CompositeBigQueryViewExporter
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
+from recidiviz.metrics.export.export_config import ExportMetricBigQueryViewConfig
 from recidiviz.metrics.export.optimized_metric_big_query_view_exporter import OptimizedMetricBigQueryViewExporter
 from recidiviz.metrics.export.optimized_metric_big_query_view_export_validator import \
     OptimizedMetricBigQueryViewExportValidator
@@ -100,7 +101,7 @@ def metric_view_data_export() -> Tuple[str, HTTPStatus]:
 
 
 def export_view_data_to_cloud_storage(export_job_filter: Optional[str] = None,
-                                      view_exporter: BigQueryViewExporter = None) -> None:
+                                      override_view_exporter: BigQueryViewExporter = None) -> None:
     """Exports data in BigQuery metric views to cloud storage buckets.
 
     Optionally takes in a BigQueryViewExporter for performing the export operation. If none is provided, this defaults
@@ -111,7 +112,7 @@ def export_view_data_to_cloud_storage(export_job_filter: Optional[str] = None,
     view_update_manager.create_dataset_and_update_views_for_view_builders(BigQueryViewNamespace.STATE,
                                                                           view_builders_for_views_to_update)
 
-    if not view_exporter:
+    if override_view_exporter is None:
         bq_client = BigQueryClientImpl()
         gcsfs_client = GcsfsFactory.build()
 
@@ -122,7 +123,7 @@ def export_view_data_to_cloud_storage(export_job_filter: Optional[str] = None,
             bq_client, OptimizedMetricBigQueryViewExportValidator(gcsfs_client))
         delegates = [json_exporter, optimized_exporter]
 
-        view_exporter = CompositeBigQueryViewExporter(
+        metric_exporter = CompositeBigQueryViewExporter(
             bq_client,
             gcsfs_client,
             delegates
@@ -131,9 +132,9 @@ def export_view_data_to_cloud_storage(export_job_filter: Optional[str] = None,
     project_id = metadata.project_id()
 
     # If the state code is set to COVID then it will match when the state_filter is None in
-    # view_config.METRIC_DATASET_EXPORT_CONFIGS
+    # view_config.VIEW_COLLECTION_EXPORT_CONFIGS
     matched_export_config = False
-    for dataset_export_config in view_config.METRIC_DATASET_EXPORT_CONFIGS:
+    for dataset_export_config in view_config.VIEW_COLLECTION_EXPORT_CONFIGS:
         if not dataset_export_config.matches_filter(export_job_filter):
             logging.info("Skipped metric export for config [%s] with filter [%s]", dataset_export_config,
                          export_job_filter)
@@ -148,9 +149,20 @@ def export_view_data_to_cloud_storage(export_job_filter: Optional[str] = None,
         # The export will error if the validations fail for the set of view_export_configs. We want to log this failure
         # as a warning, but not block on the rest of the exports.
         try:
-            view_exporter.export_and_validate(view_export_configs)
+            if override_view_exporter is not None:
+                override_view_exporter.export_and_validate(view_export_configs)
+            else:
+                metric_configs = [
+                    conf for conf in view_export_configs if isinstance(
+                        conf, ExportMetricBigQueryViewConfig)]
+                nonmetric_configs = [
+                    conf for conf in view_export_configs if not isinstance(
+                        conf, ExportMetricBigQueryViewConfig)]
+
+                metric_exporter.export_and_validate(metric_configs)
+                json_exporter.export_and_validate(nonmetric_configs)
         except ViewExportValidationError:
-            warning_message = f"Export validation failed from {dataset_export_config.dataset_id}"
+            warning_message = f"Export validation failed for {dataset_export_config.export_name}"
 
             if dataset_export_config.state_code_filter is not None:
                 warning_message += f" for state: {dataset_export_config.state_code_filter}"
@@ -189,8 +201,8 @@ def parse_arguments(argv: List[str]) -> Tuple[argparse.Namespace, List[str]]:
     parser.add_argument('--export_job_filter',
                         dest='export_job_filter',
                         type=str,
-                        choices=([c.state_code_filter for c in view_config.METRIC_DATASET_EXPORT_CONFIGS] +
-                                 [c.export_name for c in view_config.METRIC_DATASET_EXPORT_CONFIGS]),
+                        choices=([c.state_code_filter for c in view_config.VIEW_COLLECTION_EXPORT_CONFIGS] +
+                                 [c.export_name for c in view_config.VIEW_COLLECTION_EXPORT_CONFIGS]),
                         required=False)
 
     return parser.parse_known_args(argv)
