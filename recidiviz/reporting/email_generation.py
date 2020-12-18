@@ -23,8 +23,6 @@ Generates the HTML for email reports and stores it for later delivery.
 import json
 import logging
 
-from string import Template
-
 from google.cloud import pubsub_v1
 
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
@@ -43,11 +41,10 @@ def generate(report_context: ReportContext) -> None:
     Args:
         report_context: The context for a single recipient
     """
-    prepared_data = report_context.get_prepared_data()
-    check_for_required_keys(prepared_data)
 
-    html_template_path = report_context.get_html_template_filepath()
-    html_content = generate_html_content(html_template_path, prepared_data)
+    prepared_data = report_context.get_prepared_data()
+
+    html_content = generate_html_content(report_context)
     attachment_content = prepared_data['attachment_content']
 
     html_path = utils.get_html_filepath(
@@ -67,20 +64,17 @@ def generate(report_context: ReportContext) -> None:
                                     content_type='text/plain')
 
 
-def generate_html_content(html_template_path: str, prepared_data: dict) -> str:
+def generate_html_content(report_context: ReportContext) -> str:
     """Generates the HTML file for the identified recipient's email."""
     try:
-        with open(html_template_path) as html_template:
-            template = Template(html_template.read())
-            html_content = template.substitute(prepared_data)
-        return html_content
+        return report_context.render_html()
     except KeyError as err:
         logging.error("Attribute required for HTML template missing from recipient data: "
                       "batch id = %s, email address = %s, attribute = %s",
-                      prepared_data[utils.KEY_BATCH_ID], prepared_data[utils.KEY_EMAIL_ADDRESS], err)
+                      report_context.get_batch_id(), report_context.get_email_address(), err)
         raise
     except Exception:
-        logging.error("Unexpected error during templating. Recipient data = %s", prepared_data)
+        logging.error("Unexpected error during templating. Recipient = %s", report_context.get_email_address())
         raise
 
 
@@ -100,20 +94,6 @@ def upload_file_contents_to_gcs(file_path: GcsfsFilePath,
     except Exception:
         logging.error("Error while attempting upload of %s", file_path)
         raise
-
-
-def check_for_required_keys(recipient_data: dict) -> None:
-    """Checks recipient_data for required information and raises errors.
-
-    Raises errors if email address, state id, or batch id are missing from recipient_data. This module cannot
-    function without them so callers should allow the raised errors to propagate up the stack.
-    """
-    keys = [utils.KEY_EMAIL_ADDRESS, utils.KEY_STATE_CODE, utils.KEY_BATCH_ID]
-
-    for key in keys:
-        if key not in recipient_data:
-            raise KeyError(f"Unable to generate email due to missing key {key}. "
-                           f"Recipient data = {json.dumps(recipient_data)}")
 
 
 def start_chart_generation(report_context: ReportContext) -> None:

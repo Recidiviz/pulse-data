@@ -26,6 +26,7 @@ from unittest.mock import patch
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.reporting.context.po_monthly_report.context import PoMonthlyReportContext
 from recidiviz.reporting.email_generation import generate
+from recidiviz.reporting.recipient import Recipient
 from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 
 FIXTURE_FILE = 'po_monthly_report_data_fixture.json'
@@ -48,12 +49,12 @@ class EmailGenerationTests(TestCase):
         self.mock_gcs_file_system.return_value = self.gcs_file_system
 
         with open(os.path.join(f"{os.path.dirname(__file__)}/context/po_monthly_report", FIXTURE_FILE)) as fixture_file:
-            self.recipient_data = json.loads(fixture_file.read())
+            self.recipient = Recipient.from_report_json(json.loads(fixture_file.read()))
 
         self.state_code = "US_ID"
-        self.mock_batch_id = 1
-        self.recipient_data["batch_id"] = self.mock_batch_id
-        self.report_context = PoMonthlyReportContext(self.state_code, self.recipient_data)
+        self.mock_batch_id = '1'
+        self.recipient.data["batch_id"] = self.mock_batch_id
+        self.report_context = PoMonthlyReportContext(self.state_code, self.recipient)
 
     def tearDown(self) -> None:
         self.get_secret_patcher.stop()
@@ -70,7 +71,7 @@ class EmailGenerationTests(TestCase):
             prepared_html = html_template.substitute(prepared_data)
         generate(self.report_context)
         bucket_name = 'recidiviz-test-report-html'
-        bucket_filepath = f'{self.mock_batch_id}/html/{self.recipient_data["email_address"]}.html'
+        bucket_filepath = f'{self.mock_batch_id}/html/{self.recipient.email_address}.html'
         path = GcsfsFilePath.from_absolute_path(f'gs://{bucket_name}/{bucket_filepath}')
         self.assertEqual(self.gcs_file_system.download_as_string(path), prepared_html)
 
@@ -79,8 +80,13 @@ class EmailGenerationTests(TestCase):
          if the recipient data is missing a key needed for the HTML template."""
 
         with self.assertRaises(KeyError):
-            self.recipient_data.pop('officer_given_name')
-            report_context = PoMonthlyReportContext(self.state_code, self.recipient_data)
+            recipient = Recipient.from_report_json({
+                "email_address": "letter@kenny.ca",
+                "state_code": "US_ID",
+                "district": "DISTRICT OFFICE 3",
+            })
+
+            report_context = PoMonthlyReportContext(self.state_code, recipient)
             generate(report_context)
 
         self.assertEqual(self.gcs_file_system.all_paths, [])
