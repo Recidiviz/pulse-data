@@ -34,6 +34,7 @@ from recidiviz.reporting.context.context_utils import singular_or_plural, month_
     format_violation_type, align_columns
 import recidiviz.reporting.email_reporting_utils as utils
 from recidiviz.reporting.context.report_context import ReportContext
+from recidiviz.reporting.recipient import Recipient
 
 _AVERAGE_VALUES_SIGNIFICANT_DIGITS = 3
 
@@ -98,10 +99,9 @@ _ALL_REQUIRED_RECIPIENT_DATA_FIELDS = _ALL_METRICS_FOR_DISPLAY + _ALL_LAST_MONTH
 class PoMonthlyReportContext(ReportContext):
     """Report context for the PO Monthly Report."""
 
-    def __init__(self, state_code: str, recipient_data: dict):
-        self._validate_recipient_data_has_expected_fields(recipient_data)
-        super().__init__(state_code, recipient_data)
-        self.attachment_content: list = []
+    def __init__(self, state_code: str, recipient: Recipient):
+        super().__init__(state_code, recipient)
+        self.recipient_data = recipient.data
         with open(self.get_properties_filepath()) as properties_file:
             self.properties = json.loads(properties_file.read())
 
@@ -111,11 +111,8 @@ class PoMonthlyReportContext(ReportContext):
     def get_attachment_filepath(self) -> str:
         return os.path.join(os.path.dirname(__file__), 'attachment.txt.jinja2')
 
-    @staticmethod
-    def _validate_recipient_data_has_expected_fields(recipient_data: dict) -> None:
-        for expected_key in _ALL_REQUIRED_RECIPIENT_DATA_FIELDS:
-            if expected_key not in recipient_data.keys():
-                raise KeyError(f"Expected key [{expected_key}] not found in recipient_data.")
+    def get_required_recipient_data_fields(self) -> List[str]:
+        return _ALL_REQUIRED_RECIPIENT_DATA_FIELDS
 
     def get_report_type(self) -> str:
         return "po_monthly_report"

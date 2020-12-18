@@ -118,7 +118,7 @@ class FakeGCSFileSystem(GCSFileSystem):
         """ Downloads file contents into memory, returning the contents as a string,
         or raising if the path no-longer exists in the GCS file system """
         if not self.exists(path):
-            raise GCSBlobDoesNotExistError()
+            raise GCSBlobDoesNotExistError(f"Could not find blob at {path}")
 
         with open(self.real_absolute_path_for_path(path), 'r', encoding=encoding) as f:
             return f.read()

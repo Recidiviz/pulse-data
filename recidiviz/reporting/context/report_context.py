@@ -18,19 +18,40 @@
 """Abstract base class that encapsulates report-specific context."""
 
 from abc import ABC, abstractmethod
+from string import Template
+from typing import List
+
+from recidiviz.reporting.recipient import Recipient
 
 import recidiviz.reporting.email_reporting_utils as utils
+
 
 class ReportContext(ABC):
     """Defines the context for generation and delivery of a single email report to a single recipient,
     for a particular report type."""
 
-    def __init__(self, state_code: str, recipient_data: dict):
+    def __init__(self, state_code: str, recipient: Recipient):
         self.state_code = state_code
-        self.recipient_data = recipient_data
+        self.recipient = recipient
         self.prepared_data: dict = {}
 
         self.properties: dict = {}
+
+        self._validate_recipient_has_expected_fields(recipient)
+
+    @abstractmethod
+    def get_required_recipient_data_fields(self) -> List[str]:
+        """ Specifies keys that must exist within `recipient` in order for the class to be instantiated """
+
+    def _validate_recipient_has_expected_fields(self, recipient: Recipient) -> None:
+        missing_keys = [
+            expected_key
+            for expected_key in self.get_required_recipient_data_fields()
+            if expected_key not in recipient.data.keys()
+        ]
+
+        if missing_keys:
+            raise KeyError(f"Missing key(s) [{missing_keys}] not found in recipient.", recipient)
 
     @abstractmethod
     def get_report_type(self) -> str:
@@ -46,11 +67,11 @@ class ReportContext(ABC):
 
     def get_batch_id(self) -> str:
         """Returns the batch_id for the report context"""
-        return self.recipient_data[utils.KEY_BATCH_ID]
+        return self.recipient.data[utils.KEY_BATCH_ID]
 
     def get_email_address(self) -> str:
         """Returns the email_address to use to generate the filenames for email delivery."""
-        return self.recipient_data[utils.KEY_EMAIL_ADDRESS]
+        return self.recipient.email_address
 
     def get_prepared_data(self) -> dict:
         """Execute report-specific rules that process the recipient data before templating, returning the prepared,
@@ -63,6 +84,16 @@ class ReportContext(ABC):
             return self.prepared_data
 
         return self.prepare_for_generation()
+
+    def render_html(self) -> str:
+        """Interpolates the report's prepared data into the template
+         Returns: Interpolated template """
+        prepared_data = self.get_prepared_data()
+
+        with open(self.get_html_template_filepath()) as html_template:
+            template = Template(html_template.read())
+            return template.substitute(prepared_data)
+
 
     @abstractmethod
     def prepare_for_generation(self) -> dict:
