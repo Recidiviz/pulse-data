@@ -41,7 +41,7 @@ from recidiviz.ingest.scrape.infer_release import infer_release_blueprint
 from recidiviz.ingest.scrape.scraper_control import scraper_control
 from recidiviz.ingest.scrape.scraper_status import scraper_status
 from recidiviz.ingest.scrape.worker import worker
-from recidiviz.metrics.export.metric_view_export_manager import export_blueprint
+from recidiviz.metrics.export.view_export_manager import export_blueprint
 from recidiviz.persistence.actions import actions
 from recidiviz.persistence.batch_persistence import batch_blueprint
 from recidiviz.persistence.database.bq_refresh.cloud_sql_to_bq_refresh_manager import cloud_sql_to_bq_blueprint
