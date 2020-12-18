@@ -62,7 +62,8 @@ COMPARTMENT_SUB_SESSIONS_QUERY_TEMPLATE = \
         CASE WHEN state_code = 'US_ID' AND specialized_purpose_for_incarceration IN ('GENERAL','PAROLE_BOARD_HOLD','TREATMENT_IN_PRISON')
           THEN specialized_purpose_for_incarceration 
           ELSE 'GENERAL' END AS compartment_level_2,
-        facility AS compartment_location
+        facility AS compartment_location,
+        CAST(NULL AS STRING) AS assessment_score_bucket
     FROM
         `{project_id}.{metrics_dataset}.incarceration_population_metrics`
     INNER JOIN
@@ -84,7 +85,8 @@ COMPARTMENT_SUB_SESSIONS_QUERY_TEMPLATE = \
         prioritized_race_or_ethnicity,
         'SUPERVISION' as compartment_level_1,
         CASE WHEN supervision_type in ('PAROLE', 'PROBATION','DUAL') THEN supervision_type END AS compartment_level_2,
-        CONCAT(COALESCE(level_1_supervision_location_external_id,'EXTERNAL_UNKNOWN'),'|', COALESCE(level_2_supervision_location_external_id,'EXTERNAL_UNKNOWN'))
+        CONCAT(COALESCE(level_1_supervision_location_external_id,'EXTERNAL_UNKNOWN'),'|', COALESCE(level_2_supervision_location_external_id,'EXTERNAL_UNKNOWN')),
+        assessment_score_bucket
     FROM
         `{project_id}.{metrics_dataset}.supervision_population_metrics`
     INNER JOIN
@@ -106,7 +108,8 @@ COMPARTMENT_SUB_SESSIONS_QUERY_TEMPLATE = \
         prioritized_race_or_ethnicity,
         'SUPERVISION' as compartment_level_1,
         CASE WHEN supervision_type in ('PAROLE', 'PROBATION','DUAL') THEN supervision_type END AS compartment_level_2,
-        CONCAT(COALESCE(level_1_supervision_location_external_id,'EXTERNAL_UNKNOWN'),'|', COALESCE(level_2_supervision_location_external_id,'EXTERNAL_UNKNOWN'))
+        CONCAT(COALESCE(level_1_supervision_location_external_id,'EXTERNAL_UNKNOWN'),'|', COALESCE(level_2_supervision_location_external_id,'EXTERNAL_UNKNOWN')),
+        assessment_score_bucket
     FROM `{project_id}.{metrics_dataset}.supervision_out_of_state_population_metrics` 
     INNER JOIN
         `{project_id}.{reference_views_dataset}.most_recent_job_id_by_metric_and_state_code_materialized`
@@ -145,7 +148,8 @@ COMPARTMENT_SUB_SESSIONS_QUERY_TEMPLATE = \
         a.metric_source,
         a.compartment_level_1,
         COALESCE(a.compartment_level_2, b.compartment_level_2) compartment_level_2,
-        a.compartment_location
+        a.compartment_location,
+        a.assessment_score_bucket
     FROM population_cte a 
         LEFT JOIN  population_cte b 
     ON a.person_id = b.person_id
@@ -171,7 +175,8 @@ COMPARTMENT_SUB_SESSIONS_QUERY_TEMPLATE = \
         metric_source,
         compartment_level_1,
         CASE WHEN cnt > 1 AND compartment_level_1 = 'SUPERVISION' THEN 'DUAL' ELSE compartment_level_2 END AS compartment_level_2,
-        compartment_location
+        compartment_location,
+        assessment_score_bucket
     FROM
         (
         SELECT 
@@ -199,7 +204,8 @@ COMPARTMENT_SUB_SESSIONS_QUERY_TEMPLATE = \
         metric_source,
         compartment_level_1,
         compartment_level_2,
-        compartment_location
+        compartment_location,
+        assessment_score_bucket
     FROM 
         (
         SELECT 
@@ -349,42 +355,68 @@ COMPARTMENT_SUB_SESSIONS_QUERY_TEMPLATE = \
     SELECT * FROM release_compartment_cte
     )
     ,
-    admissions_metric_cte AS
-    /*
-    Pull in admissions and revocation admissions reasons to join to the sessions view. The unioning together of
-    admissions and revocations is the same logic used in dashboard views. 
+    start_metric_cte AS
+     /*
+    Combines three sources of admission / start metrics - (1) incarceration admissions, (2) revocation admisisons, and 
+    (3) supervision starts. Each of these 3 metrics is deduped individually, limiting 1 admission type on each day. 
+    No deduplication is done across the metrics because the join condition requires that the admission type joins to 
+    to the relevant compartment (supervision vs incarceration). In theory, there could be dups if a person has a 
+    new admission and a revocation admission on the same day, but that hasn't happen in the data, at this point.    
     */
     (
     SELECT 
-        DISTINCT 
-        state_code,
         person_id,
-        admission_date,
-        'NEW_ADMISSION' AS admission_type,
-         CAST(NULL AS STRING) AS revocation_violation_type,
+        admission_date AS start_date,
+        state_code,
+        admission_reason AS start_reason,
+        admission_reason AS start_sub_reason,
+        'INCARCERATION' as compartment_level_1,
+        --There are no cases of multiple admission reasons occurring on the same date as we are sub-setting for 
+        --"NEW_ADMISSION", therefore there is no 'order by' in the window function below
+        ROW_NUMBER() OVER(PARTITION BY person_id, admission_date) AS rn
     FROM `{project_id}.{metrics_dataset}.incarceration_admission_metrics`
     INNER JOIN
         `{project_id}.{reference_views_dataset}.most_recent_job_id_by_metric_and_state_code_materialized`
         USING (state_code, year, month, metric_period_months, metric_type, job_id)
     WHERE methodology = 'EVENT'
         AND metric_period_months = 1
-        AND admission_reason = 'NEW_ADMISSION'
+        AND admission_reason = 'NEW_ADMISSION' 
     UNION ALL 
     SELECT 
-        DISTINCT
-        state_code,
         person_id,
-        revocation_admission_date as admission_date,
-        'REVOCATION' AS admission_type,
-        CASE WHEN source_violation_type IN ('ABSCONDED', 'ESCAPED', 'FELONY', 'MISDEMEANOR', 'LAW') then 'NON_TECHNICAL'
-            WHEN source_violation_type is NULL THEN 'UNKNOWN_REVOCATION'
-            ELSE source_violation_type END as revocation_violation_type
+        revocation_admission_date as start_date,
+        state_code,
+        'REVOCATION' AS start_reason,
+         COALESCE(source_violation_type, 'UNKNOWN_REVOCATION') AS start_sub_reason,
+        'INCARCERATION' as compartment_level_1,
+        --This is very rare (2 cases) where a person has more that one revocation (with different reasons) on the same day. In both cases one of the 
+        --records has a null reason, so here I dedup prioritizing the non-null one.
+        ROW_NUMBER() OVER(PARTITION BY person_id, revocation_admission_date ORDER BY IF(source_violation_type IS NULL, 1, 0)) AS rn
     FROM `{project_id}.{metrics_dataset}.supervision_revocation_metrics` 
     INNER JOIN
         `{project_id}.{reference_views_dataset}.most_recent_job_id_by_metric_and_state_code_materialized`
     USING (state_code, year, month, metric_period_months, metric_type, job_id)
     WHERE methodology = 'EVENT'
         AND metric_period_months = 1
+    UNION ALL
+    SELECT 
+        person_id,
+        start_date,
+        state_code,
+        admission_reason AS start_reason,
+        admission_reason AS start_sub_reason,
+        'SUPERVISION' as compartment_level_1,
+         ROW_NUMBER() OVER(PARTITION BY person_id, start_date ORDER BY priority ASC) AS rn
+    FROM `{project_id}.{metrics_dataset}.supervision_start_metrics` m
+    INNER JOIN
+        `{project_id}.{reference_views_dataset}.most_recent_job_id_by_metric_and_state_code_materialized`
+    USING (state_code, year, month, metric_period_months, metric_type, job_id)
+    --The main logic here is to de-prioritize transfers when they are concurrent with another reason
+    LEFT JOIN `static_reference_tables.admission_start_reason_dedup_priority` d
+      ON d.data_source = 'SUPERVISION'
+      AND d.start_reason = m.admission_reason
+    WHERE methodology = 'EVENT'
+        AND metric_period_months = 0
     )
     ,
     release_metric_cte AS
@@ -434,7 +466,7 @@ COMPARTMENT_SUB_SESSIONS_QUERY_TEMPLATE = \
     (
     /*
     Final view that includes a sub_session_id, which is created based on the order of an individual's sessions. This view
-    is also joined back to the admissions_metric_cte table to pull in the admission reason and supervision type associated with 
+    is also joined back to the start metric table to pull in the start reason and start sub reason associated with 
     the start of the session. 
     */
     SELECT 
@@ -445,8 +477,8 @@ COMPARTMENT_SUB_SESSIONS_QUERY_TEMPLATE = \
         sessions.compartment_level_1,
         sessions.compartment_level_2,
         sessions.compartment_location,
-        admissions.admission_type,
-        admissions.revocation_violation_type,
+        starts.start_reason,
+        starts.start_sub_reason,
         releases.end_reason,
         sessions.start_date,
         sessions.end_date,
@@ -454,6 +486,7 @@ COMPARTMENT_SUB_SESSIONS_QUERY_TEMPLATE = \
         start_of_session.gender,
         start_of_session.age_bucket,
         start_of_session.prioritized_race_or_ethnicity,
+        start_of_session.assessment_score_bucket,
         LAG(sessions.compartment_level_1) OVER(PARTITION BY sessions.person_id ORDER BY sessions.start_date ASC) AS inflow_from_level_1,
         LAG(sessions.compartment_level_2) OVER(PARTITION BY sessions.person_id ORDER BY sessions.start_date ASC) AS inflow_from_level_2,
         LEAD(sessions.compartment_level_1) OVER(PARTITION BY sessions.person_id ORDER BY sessions.start_date ASC) AS outflow_to_level_1,
@@ -464,9 +497,11 @@ COMPARTMENT_SUB_SESSIONS_QUERY_TEMPLATE = \
     LEFT JOIN dedup_step_3_cte AS start_of_session
         ON sessions.person_id = start_of_session.person_id
         AND sessions.start_date = start_of_session.date
-    LEFT JOIN admissions_metric_cte admissions
-        ON admissions.person_id = sessions.person_id
-        AND admissions.admission_date = sessions.start_date
+    LEFT JOIN start_metric_cte starts
+        ON starts.person_id = sessions.person_id
+        AND starts.start_date = sessions.start_date
+        AND starts.compartment_level_1 = sessions.compartment_level_1
+        AND starts.rn = 1
     LEFT JOIN release_metric_cte releases
         -- The release date will be a day after the session end date as the population metrics count a person towards 
         -- population based on full days within that compartment
@@ -491,13 +526,14 @@ COMPARTMENT_SUB_SESSIONS_QUERY_TEMPLATE = \
         compartment_level_1,
         compartment_level_2,
         compartment_location,
-        admission_type,
-        revocation_violation_type,
+        start_reason,
+        start_sub_reason,
         end_reason,
         release_date,
         gender,
         age_bucket,
         prioritized_race_or_ethnicity,
+        assessment_score_bucket,
         inflow_from_level_1,
         inflow_from_level_2,
         outflow_to_level_1,
