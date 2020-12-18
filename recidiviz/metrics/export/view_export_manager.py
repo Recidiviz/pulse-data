@@ -110,7 +110,8 @@ def export_view_data_to_cloud_storage(export_job_filter: Optional[str] = None,
     """
     view_builders_for_views_to_update = view_config.VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE
     view_update_manager.create_dataset_and_update_views_for_view_builders(BigQueryViewNamespace.STATE,
-                                                                          view_builders_for_views_to_update)
+                                                                          view_builders_for_views_to_update,
+                                                                          materialized_views_only=True)
 
     if override_view_exporter is None:
         bq_client = BigQueryClientImpl()
