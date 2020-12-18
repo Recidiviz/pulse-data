@@ -19,18 +19,19 @@
 
 from recidiviz.reporting.context.po_monthly_report.context import PoMonthlyReportContext
 from recidiviz.reporting.context.report_context import ReportContext
+from recidiviz.reporting.recipient import Recipient
 
 
-def get_report_context(state_code: str, report_type: str, recipient_data: dict) -> ReportContext:
+def get_report_context(state_code: str, report_type: str, recipient: Recipient) -> ReportContext:
     """Returns the appropriate report context for the given parameters, choosing the correct ReportContext
     implementation.
 
     Args:
         state_code: State identifier for the recipient
         report_type: The type of report to be sent to the recipient
-        recipient_data: The retrieved data for this recipient
+        recipient: The retrieved data for this recipient
     """
     if report_type == "po_monthly_report":
-        return PoMonthlyReportContext(state_code, recipient_data)
+        return PoMonthlyReportContext(state_code, recipient)
 
     raise KeyError(f"Unrecognized report type: {report_type}")

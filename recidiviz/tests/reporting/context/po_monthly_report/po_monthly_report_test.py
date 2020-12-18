@@ -24,6 +24,7 @@ from unittest import TestCase
 from unittest.mock import patch
 import json
 
+from recidiviz.reporting.recipient import Recipient
 from recidiviz.tests.ingest.fixtures import as_string_from_relative_path
 from recidiviz.reporting.context.po_monthly_report.context import PoMonthlyReportContext
 
@@ -39,8 +40,8 @@ class PoMonthlyReportContextTests(TestCase):
 
     def setUp(self) -> None:
         with open(os.path.join(os.path.dirname(__file__), FIXTURE_FILE)) as fixture_file:
-            self.recipient_data = json.loads(fixture_file.read())
-            self.recipient_data['batch_id'] = '20201105123033'
+            self.recipient = Recipient.from_report_json(json.loads(fixture_file.read()))
+            self.recipient.data['batch_id'] = '20201105123033'
 
         project_id = 'RECIDIVIZ_TEST'
         cdn_static_ip = '123.456.7.8'
@@ -59,29 +60,24 @@ class PoMonthlyReportContextTests(TestCase):
         self.project_id_patcher.stop()
 
     def test_get_report_type(self) -> None:
-        context = PoMonthlyReportContext('us_va', self.recipient_data)
+        context = PoMonthlyReportContext('us_va', self.recipient)
         self.assertEqual('po_monthly_report', context.get_report_type())
 
     def test_congratulations_text_only_improved_from_last_month(self) -> None:
         """Test that the congratulations text looks correct if only the goals were met for the last month."""
-        recipient_data = deepcopy(self.recipient_data)
-        recipient_data["pos_discharges_state_average"] = "6"
-        recipient_data["pos_discharges_district_average"] = "6"
-        recipient_data["earned_discharges"] = "0"
-        recipient_data["technical_revocations"] = "3"
-        recipient_data["crime_revocations"] = "4"
-        context = PoMonthlyReportContext('US_VA', recipient_data)
+        recipient_data = {"pos_discharges_state_average": "6", "pos_discharges_district_average": "6",
+                          "earned_discharges": "0", "technical_revocations": "3", "crime_revocations": "4"}
+        recipient = self.recipient.create_derived_recipient(recipient_data)
+        context = PoMonthlyReportContext('US_ID', recipient)
         actual = context.get_prepared_data()
         self.assertEqual("You improved from last month for 1 metric.", actual["congratulations_text"])
 
     def test_congratulations_text_only_outperformed_region_averages(self) -> None:
         """Test that the congratulations text looks correct if only the region averages were outperformed."""
-        recipient_data = deepcopy(self.recipient_data)
-        recipient_data["pos_discharges"] = "0"
-        recipient_data["earned_discharges"] = "2"
-        recipient_data["technical_revocations"] = "3"
-        recipient_data["crime_revocations"] = "4"
-        context = PoMonthlyReportContext('US_VA', recipient_data)
+        recipient_data = {"pos_discharges": "0", "earned_discharges": "2", "technical_revocations": "3",
+                          "crime_revocations": "4"}
+        recipient = self.recipient.create_derived_recipient(recipient_data)
+        context = PoMonthlyReportContext('US_ID', recipient)
         actual = context.get_prepared_data()
         self.assertEqual("You out-performed other officers like you for 1 metric.", actual["congratulations_text"])
 
@@ -89,36 +85,34 @@ class PoMonthlyReportContextTests(TestCase):
         """Test that the congratulations text is an empty string and the display is none if neither
             metric goals were met
         """
-        recipient_data = deepcopy(self.recipient_data)
-        recipient_data["pos_discharges"] = "0"
-        recipient_data["earned_discharges"] = "0"
-        recipient_data["technical_revocations"] = "3"
-        recipient_data["crime_revocations"] = "4"
-        context = PoMonthlyReportContext('US_VA', recipient_data)
+        recipient_data = {"pos_discharges": "0", "earned_discharges": "0", "technical_revocations": "3",
+                          "crime_revocations": "4"}
+        recipient = self.recipient.create_derived_recipient(recipient_data)
+        context = PoMonthlyReportContext('US_ID', recipient)
         actual = context.get_prepared_data()
         self.assertEqual("", actual["congratulations_text"])
         self.assertEqual("none", actual["display_congratulations"])
 
     def test_attachment_content(self) -> None:
         """Given client details for every section, it returns a formatted string to be used as the email attachment."""
-        recipient_data = deepcopy(self.recipient_data)
-
-        recipient_data["pos_discharges_clients"] = [{"person_external_id": 123, "full_name": "ROSS, BOB",
-                                                     "successful_completion_date": '2020-12-01'}]
-        recipient_data["earned_discharges_clients"] = [{"person_external_id": 321, "full_name": "POLLOCK, JACKSON",
-                                                        "earned_discharge_date": '2020-12-05'}]
-        recipient_data["revocations_clients"] = [{ "person_external_id": 456, "full_name": "MUNCH, EDVARD",
+        recipient_data = {"pos_discharges_clients": [{"person_external_id": 123, "full_name": "ROSS, BOB",
+                                                      "successful_completion_date": '2020-12-01'}],
+                          "earned_discharges_clients": [{"person_external_id": 321, "full_name": "POLLOCK, JACKSON",
+                                                         "earned_discharge_date": '2020-12-05'}],
+                          "revocations_clients": [{"person_external_id": 456, "full_name": "MUNCH, EDVARD",
                                                    "revocation_violation_type": "NEW_CRIME",
-                                                   "revocation_report_date": '2020-12-06' },
-                                                 { "person_external_id": 111, "full_name": "MIRO, JOAN",
+                                                   "revocation_report_date": '2020-12-06'},
+                                                  {"person_external_id": 111, "full_name": "MIRO, JOAN",
                                                    "revocation_violation_type": "TECHNICAL",
-                                                   "revocation_report_date": '2020-12-10' }]
-        recipient_data["absconsions_clients"] = [{"person_external_id": 789, "full_name": "DALI, SALVADOR",
-                                                  "absconsion_report_date": '2020-12-11'}]
-        recipient_data["assessments_out_of_date_clients"] = [{"person_external_id": 987, "full_name": "KAHLO, FRIDA"}]
-        recipient_data["facetoface_out_of_date_clients"] = [{"person_external_id": 654, "full_name": "DEGAS, EDGAR"}]
+                                                   "revocation_report_date": '2020-12-10'}],
+                          "absconsions_clients": [{"person_external_id": 789, "full_name": "DALI, SALVADOR",
+                                                   "absconsion_report_date": '2020-12-11'}],
+                          "assessments_out_of_date_clients": [{"person_external_id": 987, "full_name": "KAHLO, FRIDA"}],
+                          "facetoface_out_of_date_clients": [{"person_external_id": 654, "full_name": "DEGAS, EDGAR"}]}
 
-        context = PoMonthlyReportContext('US_VA', recipient_data)
+        recipient = self.recipient.create_derived_recipient(recipient_data)
+
+        context = PoMonthlyReportContext('US_ID', recipient)
         actual = context.get_prepared_data()
         expected = textwrap.dedent("""\
             MONTHLY RECIDIVIZ REPORT
@@ -147,18 +141,17 @@ class PoMonthlyReportContextTests(TestCase):
 
         self.assertEqual(expected, actual['attachment_content'])
 
-
     def test_attachment_content_missing_sections(self) -> None:
         """Given client details for just one section, it returns a formatted string to be used as the email attachment
         """
-        recipient_data = deepcopy(self.recipient_data)
-        recipient_data["revocations_clients"] = [{"person_external_id": 456, "full_name": "MUNCH, EDVARD",
-                                                  "revocation_violation_type": "NEW_CRIME",
-                                                  "revocation_report_date": '2020-12-06'},
-                                                 {"person_external_id": 111, "full_name": "MIRO, JOAN",
-                                                  "revocation_violation_type": "TECHNICAL",
-                                                  "revocation_report_date": '2020-12-10'}]
-        context = PoMonthlyReportContext('US_VA', recipient_data)
+        recipient_data = {"revocations_clients": [{"person_external_id": 456, "full_name": "MUNCH, EDVARD",
+                                                   "revocation_violation_type": "NEW_CRIME",
+                                                   "revocation_report_date": '2020-12-06'},
+                                                  {"person_external_id": 111, "full_name": "MIRO, JOAN",
+                                                   "revocation_violation_type": "TECHNICAL",
+                                                   "revocation_report_date": '2020-12-10'}]}
+        recipient = self.recipient.create_derived_recipient(recipient_data)
+        context = PoMonthlyReportContext('US_ID', recipient)
         actual = context.get_prepared_data()
         expected = textwrap.dedent("""\
             MONTHLY RECIDIVIZ REPORT
@@ -173,14 +166,14 @@ class PoMonthlyReportContextTests(TestCase):
         self.assertEqual(expected, actual['attachment_content'])
 
     def test_prepare_for_generation(self) -> None:
-        context = PoMonthlyReportContext('US_VA', self.recipient_data)
+        context = PoMonthlyReportContext('US_ID', self.recipient)
         actual = context.get_prepared_data()
         red = "#A43939"
         gray = "#7D9897"
         default_color = "#00413E"
 
-        expected = deepcopy(self.recipient_data)
-        expected["static_image_path"] = "http://123.456.7.8/US_VA/po_monthly_report/static"
+        expected = deepcopy(self.recipient.data)
+        expected["static_image_path"] = "http://123.456.7.8/US_ID/po_monthly_report/static"
         expected["review_month"] = "May"
         expected["greeting"] = "Hey there, Christopher!"
 

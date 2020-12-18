@@ -30,6 +30,7 @@ from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 import recidiviz.reporting.email_generation as email_generation
 import recidiviz.reporting.email_reporting_utils as utils
 from recidiviz.reporting.context.available_context import get_report_context
+from recidiviz.reporting.recipient import Recipient
 from recidiviz.reporting.region_codes import InvalidRegionCodeException, REGION_CODES
 
 
@@ -57,31 +58,31 @@ def start(state_code: str,
     logging.info("New batch started for %s (region: %s) and %s. Batch id = %s",
                  state_code, region_code, report_type, batch_id)
 
-    recipient_data = retrieve_data(state_code, report_type, batch_id)
+    recipients: List[Recipient] = retrieve_data(state_code, report_type, batch_id)
 
     if region_code is not None and region_code not in REGION_CODES:
         raise InvalidRegionCodeException()
 
-    for recipient in recipient_data:
-        if test_address:
-            recipient_email_address = recipient[utils.KEY_EMAIL_ADDRESS]
-            formatted_test_address = utils.format_test_address(test_address, recipient_email_address)
-            # Override the recipient's address with the test address
-            recipient[utils.KEY_EMAIL_ADDRESS] = formatted_test_address
-            logging.info("Generating email for [%s] with test address: %s", recipient_email_address,
-                         formatted_test_address)
+    if test_address:
+        logging.info("Overriding batch emails with test address: %s", test_address)
+        recipients = [
+            recipient.create_derived_recipient({
+                "email_address": utils.format_test_address(test_address, recipient.email_address)
+            })
+            for recipient in recipients
+        ]
 
-        if region_code is not None and recipient[utils.KEY_DISTRICT] != REGION_CODES[region_code]:
+    for recipient in recipients:
+        if region_code is not None and recipient.district != REGION_CODES[region_code]:
             continue
 
-        recipient[utils.KEY_BATCH_ID] = batch_id
         report_context = get_report_context(state_code, report_type, recipient)
         email_generation.generate(report_context)
 
     return batch_id
 
 
-def retrieve_data(state_code: str, report_type: str, batch_id: str) -> List:
+def retrieve_data(state_code: str, report_type: str, batch_id: str) -> List[Recipient]:
     """Retrieves the data for email generation of the given report type for the given state.
 
     Get the data from Cloud Storage and return it in a list of dictionaries. Saves the data file into an archive
@@ -134,4 +135,10 @@ def retrieve_data(state_code: str, report_type: str, batch_id: str) -> List:
             recipient_data.append(item)
 
     logging.info("Retrieved %s recipients from data file %s", len(recipient_data), data_filename)
-    return recipient_data
+    return [
+        Recipient.from_report_json({
+            **recipient,
+            utils.KEY_BATCH_ID: batch_id,
+        })
+        for recipient in recipient_data
+    ]
