@@ -51,11 +51,7 @@ function exit_on_fail {
 # order of operations can be tricky to get right.
 function run_cmd {
     # Runs the full array of arguments passed to `run_cmd` as a command, piping output to stdout so we can indent it.
-    start_time=`date +%s`
     $@ 2>&1 | indent_output
-    end_time=`date +%s`
-    diff=$((end_time - start_time))
-    echo "[$@]: $diff seconds elapsed" | indent_output
 
     exit_on_fail
 }
