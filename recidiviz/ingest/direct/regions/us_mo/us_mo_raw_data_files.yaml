@@ -84,8 +84,8 @@ raw_files:
       - CE_DOC
       - CE_CYC
       - CE_HF
-      - CE_EH
-      - CE_PON
+    # We always sort periods with null ('0') dates as the most recent row
+    supplemental_order_by_clause: "CASE WHEN CE_EH = '0' then 0 ELSE 1 END, CE_EH DESC"
     # Supervision Type Assessments. Column prefix: DN.
   - file_tag: LBAKRDTA_TAK039
     primary_key_cols:
