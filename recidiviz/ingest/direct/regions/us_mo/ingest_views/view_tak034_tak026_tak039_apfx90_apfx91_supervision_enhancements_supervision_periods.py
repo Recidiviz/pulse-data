@@ -87,11 +87,19 @@ WITH field_assignments_ce AS (
             SUBSTR(CE_PLN, 1,2) AS LOC_ACRO_TWO_LETTER
         FROM
             {{LBAKRDTA_TAK034}}
+        -- We discard field assignments prior to 2000 due to unreliable data with a large number of overlapping periods
+        WHERE 
+            CE_HF >= '20000101'        
     ),
     field_assignments_with_unique_date_spans as (
         -- Where there are multiple rows for the same period, pick the one with the most recent update date.
         -- Also filter out 0-day periods.
-        SELECT * EXCEPT(rn)
+        SELECT * EXCEPT(rn),
+        LEAD(FLD_ASSN_BEG_DT)
+                OVER (
+                    PARTITION BY DOC, CYC 
+                    ORDER BY FLD_ASSN_BEG_DT, CASE WHEN FLD_ASSN_END_DT = '0' THEN 1 ELSE 0 END, FLD_ASSN_END_DT)
+            AS NEXT_FLD_ASSN_BEG_DT
         FROM (
           SELECT 
             *,
@@ -103,7 +111,13 @@ WITH field_assignments_ce AS (
     ),
     augmented_field_assignments AS (
         SELECT
-            field_assignments_with_unique_date_spans.*,
+            field_assignments_with_unique_date_spans.* REPLACE (
+                -- Close open spans that are followed by new periods
+                CASE 
+                    WHEN FLD_ASSN_END_DT = '0' and NEXT_FLD_ASSN_BEG_DT IS NOT NULL THEN NEXT_FLD_ASSN_BEG_DT
+                    ELSE FLD_ASSN_END_DT END
+                AS FLD_ASSN_END_DT
+            ),
             CASE
                 WHEN (LOC_ACRO_TWO_LETTER IN ('EC', 'EP', '07', '08') OR LOC_ACRO = 'ERA') THEN 'EASTERN'
                 WHEN LOC_ACRO_TWO_LETTER IN ('03', '11', '16', '17', '18', '26', '38') THEN 'NORTHEAST'
@@ -121,8 +135,7 @@ WITH field_assignments_ce AS (
                 PARTITION BY DOC, CYC
                 ORDER BY
                     FLD_ASSN_BEG_DT,
-                    FLD_ASSN_END_DT,
-                    CAST(CE_OR0 AS INT64) ASC
+                    FLD_ASSN_END_DT
             ) AS FIELD_ASSIGNMENT_SEQ_NUM
         FROM field_assignments_with_unique_date_spans
     ),

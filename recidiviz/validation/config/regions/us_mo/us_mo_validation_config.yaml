@@ -17,6 +17,5 @@ num_allowed_rows_overrides:
     num_allowed_rows_override: 174
     override_reason: In MO we rely on a table where they build incarceration period spans for us; some older rows have issues with overlap.
   - validation_name: overlapping_supervision_periods
-    num_allowed_rows_override: 30000
-    override_reason: TODO(#4043) - Before we launch SQL preprocessing in MO to production, we should make sure these
-      overlapping periods no longer exist.
+    num_allowed_rows_override: 150
+    override_reason: Older raw data from MO contains overlapping period information that we do not correct.
