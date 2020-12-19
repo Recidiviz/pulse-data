@@ -1,9 +1,12 @@
 # Excluding region codes is only supported in the State and Operations schemas.
 production:
-  region_codes_to_exclude: # CREATE A TO-DO TASK FOR EVERY REGION CODE ADDED HERE TO UN-PAUSE THE EXPORT
+  # CREATE A TO-DO TASK FOR EVERY REGION CODE ADDED HERE TO UN-PAUSE THE EXPORT
+  region_codes_to_exclude:
     - US_ND # TODO(#3444): Unpause export once ingest run is complete
 staging:
-  region_codes_to_exclude: [] # CREATE A TO-DO TASK FOR EVERY REGION CODE ADDED HERE TO UN-PAUSE THE EXPORT
+  # CREATE A TO-DO TASK FOR EVERY REGION CODE ADDED HERE TO UN-PAUSE THE EXPORT
+  region_codes_to_exclude:
+    - US_MO # TODO(#4042): Unpause export once ingest run is complete
 state_history_tables_to_include:
   - state_person_history
 county_columns_to_exclude:
