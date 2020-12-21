@@ -16,13 +16,15 @@
 # =============================================================================
 """Tests for types defined in direct_ingest_big_query_view_types_test.py"""
 import unittest
+import attr
 
 from mock import patch
 
 from recidiviz.ingest.direct.controllers.direct_ingest_big_query_view_types import \
     DirectIngestRawDataTableLatestView, RAW_DATA_LATEST_VIEW_QUERY_TEMPLATE, \
     DirectIngestRawDataTableUpToDateView, RAW_DATA_UP_TO_DATE_VIEW_QUERY_TEMPLATE, DirectIngestPreProcessedIngestView, \
-    RAW_DATA_LATEST_HISTORICAL_FILE_VIEW_QUERY_TEMPLATE, RAW_DATA_UP_TO_DATE_HISTORICAL_FILE_VIEW_QUERY_TEMPLATE
+    RAW_DATA_LATEST_HISTORICAL_FILE_VIEW_QUERY_TEMPLATE, RAW_DATA_UP_TO_DATE_HISTORICAL_FILE_VIEW_QUERY_TEMPLATE, \
+    RawTableViewType, DestinationTableType
 from recidiviz.ingest.direct.controllers.direct_ingest_raw_file_import_manager import DirectIngestRawFileConfig, \
     DirectIngestRegionRawFileConfig
 from recidiviz.tests.ingest import fixtures
@@ -32,6 +34,14 @@ class DirectIngestBigQueryViewTypesTest(unittest.TestCase):
     """Tests for types defined in direct_ingest_big_query_view_types_test.py"""
 
     PROJECT_ID = 'recidiviz-456'
+
+    DEFAULT_LATEST_CONFIG = DirectIngestPreProcessedIngestView.QueryStructureConfig(
+        raw_table_view_type=RawTableViewType.LATEST
+    )
+
+    DEFAULT_PARAMETERIZED_CONFIG = DirectIngestPreProcessedIngestView.QueryStructureConfig(
+        raw_table_view_type=RawTableViewType.PARAMETERIZED
+    )
 
     def setUp(self) -> None:
         self.metadata_patcher = patch('recidiviz.utils.metadata.project_id')
@@ -228,53 +238,58 @@ file_tag_second_generated_view AS (
 )
 SELECT * FROM file_tag_first_generated_view
 LEFT OUTER JOIN file_tag_second_generated_view
-USING (col1) 
+USING (col1)
 ORDER BY col1, col2;"""
 
-        self.assertEqual(expected_view_query, view.view_query)
+        self.assertEqual(expected_view_query, view.expanded_view_query(config=self.DEFAULT_LATEST_CONFIG))
 
-        expected_parametrized_view_query = """WITH
+        expected_parameterized_view_query = """WITH
 file_tag_first_generated_view AS (
     WITH rows_with_recency_rank AS (
-        SELECT 
-            * EXCEPT (file_id, update_datetime), 
+        SELECT
+            * EXCEPT (file_id, update_datetime),
             ROW_NUMBER() OVER (PARTITION BY col_name_1a, col_name_1b
                                ORDER BY update_datetime DESC) AS recency_rank
-        FROM 
+        FROM
             `recidiviz-456.us_xx_raw_data.file_tag_first`
-        WHERE 
+        WHERE
             update_datetime <= @my_update_timestamp_param_name
     )
 
-    SELECT * 
+    SELECT *
     EXCEPT (recency_rank)
     FROM rows_with_recency_rank
     WHERE recency_rank = 1
 ),
 file_tag_second_generated_view AS (
     WITH rows_with_recency_rank AS (
-        SELECT 
-            * EXCEPT (file_id, update_datetime), 
+        SELECT
+            * EXCEPT (file_id, update_datetime),
             ROW_NUMBER() OVER (PARTITION BY col_name_2a
                                ORDER BY update_datetime DESC) AS recency_rank
-        FROM 
+        FROM
             `recidiviz-456.us_xx_raw_data.file_tag_second`
-        WHERE 
+        WHERE
             update_datetime <= @my_update_timestamp_param_name
     )
 
-    SELECT * 
+    SELECT *
     EXCEPT (recency_rank)
     FROM rows_with_recency_rank
     WHERE recency_rank = 1
 )
 SELECT * FROM file_tag_first_generated_view
 LEFT OUTER JOIN file_tag_second_generated_view
-USING (col1) 
+USING (col1)
 ORDER BY col1, col2;"""
 
-        self.assertEqual(expected_parametrized_view_query,
-                         view.date_parametrized_view_query('my_update_timestamp_param_name'))
+        self.assertEqual(expected_parameterized_view_query,
+                         view.expanded_view_query(
+                             config=DirectIngestPreProcessedIngestView.QueryStructureConfig(
+                                raw_table_view_type=RawTableViewType.PARAMETERIZED,
+                                param_name_override='my_update_timestamp_param_name'
+                             )
+                         ))
 
     def test_direct_ingest_preprocessed_view_detect_row_deletion_no_historical_table(self) -> None:
         region_config = DirectIngestRegionRawFileConfig(
@@ -286,17 +301,19 @@ ORDER BY col1, col2;"""
 LEFT OUTER JOIN {file_tag_second}
 USING (col1);"""
 
-        for materialize_raw_data_table_views in {True, False}:
-            with self.assertRaises(ValueError):
-                DirectIngestPreProcessedIngestView(
-                    ingest_view_name='ingest_view_tag',
-                    view_query_template=view_query_template,
-                    region_raw_table_config=region_config,
-                    order_by_cols='col1, col2',
-                    is_detect_row_deletion_view=True,
-                    primary_key_tables_for_entity_deletion=['file_tag_second'],
-                    materialize_raw_data_table_views=materialize_raw_data_table_views
-                )
+        with self.assertRaises(ValueError) as e:
+            DirectIngestPreProcessedIngestView(
+                ingest_view_name='ingest_view_tag',
+                view_query_template=view_query_template,
+                region_raw_table_config=region_config,
+                order_by_cols='col1, col2',
+                is_detect_row_deletion_view=True,
+                primary_key_tables_for_entity_deletion=['file_tag_second'],
+            )
+        self.assertTrue(str(e.exception).startswith(
+            'Ingest view ingest_view_tag is marked as `is_detect_row_deletion_view` and has table file_tag_second '
+            'specified in `primary_key_tables_for_entity_deletion`; however the raw data file is not marked as always '
+            'being exported as historically.'))
 
     def test_direct_ingest_preprocessed_view_detect_row_deletion_no_pk_tables_specified(self) -> None:
         region_config = DirectIngestRegionRawFileConfig(
@@ -308,17 +325,19 @@ USING (col1);"""
         LEFT OUTER JOIN {tagFullHistoricalExport}
         USING (col1);"""
 
-        for materialize_raw_data_table_views in {True, False}:
-            with self.assertRaises(ValueError):
-                DirectIngestPreProcessedIngestView(
-                    ingest_view_name='ingest_view_tag',
-                    view_query_template=view_query_template,
-                    region_raw_table_config=region_config,
-                    order_by_cols='col1, col2',
-                    is_detect_row_deletion_view=True,
-                    primary_key_tables_for_entity_deletion=[],
-                    materialize_raw_data_table_views=materialize_raw_data_table_views
-                )
+        with self.assertRaises(ValueError) as e:
+            DirectIngestPreProcessedIngestView(
+                ingest_view_name='ingest_view_tag',
+                view_query_template=view_query_template,
+                region_raw_table_config=region_config,
+                order_by_cols='col1, col2',
+                is_detect_row_deletion_view=True,
+                primary_key_tables_for_entity_deletion=[],
+            )
+
+        self.assertTrue(str(e.exception).startswith(
+            'Ingest view ingest_view_tag was marked as `is_detect_row_deletion_view`; however no '
+            '`primary_key_tables_for_entity_deletion` were defined.'))
 
     def test_direct_ingest_preprocessed_view_detect_row_deletion_unknown_pk_table_specified(self) -> None:
         region_config = DirectIngestRegionRawFileConfig(
@@ -330,17 +349,19 @@ USING (col1);"""
         LEFT OUTER JOIN {tagFullHistoricalExport}
         USING (col1);"""
 
-        for materialize_raw_data_table_views in {True, False}:
-            with self.assertRaises(ValueError):
-                DirectIngestPreProcessedIngestView(
-                    ingest_view_name='ingest_view_tag',
-                    view_query_template=view_query_template,
-                    region_raw_table_config=region_config,
-                    order_by_cols='col1, col2',
-                    is_detect_row_deletion_view=True,
-                    primary_key_tables_for_entity_deletion=['tagFullHistoricalExport', 'unknown'],
-                    materialize_raw_data_table_views=materialize_raw_data_table_views
-                )
+        with self.assertRaises(ValueError) as e:
+            DirectIngestPreProcessedIngestView(
+                ingest_view_name='ingest_view_tag',
+                view_query_template=view_query_template,
+                region_raw_table_config=region_config,
+                order_by_cols='col1, col2',
+                is_detect_row_deletion_view=True,
+                primary_key_tables_for_entity_deletion=['tagFullHistoricalExport', 'unknown'],
+            )
+
+        self.assertTrue(str(e.exception).startswith(
+            'Ingest view ingest_view_tag has specified unknown in `primary_key_tables_for_entity_deletion`, but that '
+            'raw file tag was not found as a dependency.'))
 
     def test_direct_ingest_preprocessed_view_detect_row_deletion(self) -> None:
         region_config = DirectIngestRegionRawFileConfig(
@@ -373,36 +394,36 @@ tagFullHistoricalExport_generated_view AS (
 )
 SELECT * FROM file_tag_first_generated_view
 LEFT OUTER JOIN tagFullHistoricalExport_generated_view
-USING (col1) 
+USING (col1)
 ORDER BY col1, col2;"""
 
-        self.assertEqual(expected_view_query, view.view_query)
+        self.assertEqual(expected_view_query, view.expanded_view_query(config=self.DEFAULT_LATEST_CONFIG))
 
-        expected_parametrized_view_query = """WITH
+        expected_parameterized_view_query = """WITH
 file_tag_first_generated_view AS (
     WITH rows_with_recency_rank AS (
-        SELECT 
-            * EXCEPT (file_id, update_datetime), 
+        SELECT
+            * EXCEPT (file_id, update_datetime),
             ROW_NUMBER() OVER (PARTITION BY col_name_1a, col_name_1b
                                ORDER BY update_datetime DESC) AS recency_rank
-        FROM 
+        FROM
             `recidiviz-456.us_xx_raw_data.file_tag_first`
-        WHERE 
+        WHERE
             update_datetime <= @my_update_timestamp_param_name
     )
 
-    SELECT * 
+    SELECT *
     EXCEPT (recency_rank)
     FROM rows_with_recency_rank
     WHERE recency_rank = 1
 ),
 tagFullHistoricalExport_generated_view AS (
     WITH max_update_datetime AS (
-        SELECT 
+        SELECT
             MAX(update_datetime) AS update_datetime
         FROM
             `recidiviz-456.us_xx_raw_data.tagFullHistoricalExport`
-        WHERE 
+        WHERE
             update_datetime <= @my_update_timestamp_param_name
     ),
     max_file_id AS (
@@ -410,31 +431,35 @@ tagFullHistoricalExport_generated_view AS (
             MAX(file_id) AS file_id
         FROM
             `recidiviz-456.us_xx_raw_data.tagFullHistoricalExport`
-        WHERE 
+        WHERE
             update_datetime = (SELECT update_datetime FROM max_update_datetime)
     ),
     rows_with_recency_rank AS (
-        SELECT 
-            * EXCEPT (file_id, update_datetime), 
+        SELECT
+            * EXCEPT (file_id, update_datetime),
             ROW_NUMBER() OVER (PARTITION BY COL_1
                                ORDER BY update_datetime DESC) AS recency_rank
-        FROM 
+        FROM
             `recidiviz-456.us_xx_raw_data.tagFullHistoricalExport`
-        WHERE 
+        WHERE
             file_id = (SELECT file_id FROM max_file_id)
     )
-    SELECT * 
+    SELECT *
     EXCEPT (recency_rank)
     FROM rows_with_recency_rank
     WHERE recency_rank = 1
 )
 SELECT * FROM file_tag_first_generated_view
 LEFT OUTER JOIN tagFullHistoricalExport_generated_view
-USING (col1) 
+USING (col1)
 ORDER BY col1, col2;"""
 
-        self.assertEqual(expected_parametrized_view_query,
-                         view.date_parametrized_view_query('my_update_timestamp_param_name'))
+        self.assertEqual(expected_parameterized_view_query,
+                         view.expanded_view_query(
+                             config=DirectIngestPreProcessedIngestView.QueryStructureConfig(
+                                 raw_table_view_type=RawTableViewType.PARAMETERIZED,
+                                 param_name_override='my_update_timestamp_param_name'
+                             )))
 
     def test_direct_ingest_preprocessed_view_with_reference_table(self) -> None:
         region_config = DirectIngestRegionRawFileConfig(
@@ -464,35 +489,40 @@ file_tag_first_generated_view AS (
 )
 SELECT * FROM file_tag_first_generated_view
 LEFT OUTER JOIN `recidiviz-456.reference_tables.my_table`
-USING (col1) 
+USING (col1)
 ORDER BY col1, col2;"""
 
-        self.assertEqual(expected_view_query, view.view_query)
+        self.assertEqual(expected_view_query, view.expanded_view_query(config=self.DEFAULT_LATEST_CONFIG))
 
-        expected_date_parametrized_view_query = """WITH
+        expected_date_parameterized_view_query = """WITH
 file_tag_first_generated_view AS (
     WITH rows_with_recency_rank AS (
-        SELECT 
-            * EXCEPT (file_id, update_datetime), 
+        SELECT
+            * EXCEPT (file_id, update_datetime),
             ROW_NUMBER() OVER (PARTITION BY col_name_1a, col_name_1b
                                ORDER BY update_datetime DESC) AS recency_rank
-        FROM 
+        FROM
             `recidiviz-456.us_xx_raw_data.file_tag_first`
-        WHERE 
+        WHERE
             update_datetime <= @my_param
     )
 
-    SELECT * 
+    SELECT *
     EXCEPT (recency_rank)
     FROM rows_with_recency_rank
     WHERE recency_rank = 1
 )
 SELECT * FROM file_tag_first_generated_view
 LEFT OUTER JOIN `recidiviz-456.reference_tables.my_table`
-USING (col1) 
+USING (col1)
 ORDER BY col1, col2;"""
 
-        self.assertEqual(expected_date_parametrized_view_query, view.date_parametrized_view_query('my_param'))
+        self.assertEqual(expected_date_parameterized_view_query,
+                         view.expanded_view_query(
+                             config=DirectIngestPreProcessedIngestView.QueryStructureConfig(
+                                 raw_table_view_type=RawTableViewType.PARAMETERIZED,
+                                 param_name_override='my_param'
+                             )))
 
     def test_direct_ingest_preprocessed_view_same_table_multiple_places(self) -> None:
         region_config = DirectIngestRegionRawFileConfig(
@@ -522,10 +552,10 @@ file_tag_first_generated_view AS (
 )
 SELECT * FROM file_tag_first_generated_view
 LEFT OUTER JOIN file_tag_first_generated_view
-USING (col1) 
+USING (col1)
 ORDER BY col1, col2;"""
 
-        self.assertEqual(expected_view_query, view.view_query)
+        self.assertEqual(expected_view_query, view.expanded_view_query(config=self.DEFAULT_LATEST_CONFIG))
 
     def test_direct_ingest_preprocessed_view_with_subqueries(self) -> None:
         region_config = DirectIngestRegionRawFileConfig(
@@ -561,42 +591,42 @@ file_tag_second_generated_view AS (
 foo AS (SELECT * FROM bar)
 SELECT * FROM file_tag_first_generated_view
 LEFT OUTER JOIN file_tag_second_generated_view
-USING (col1) 
+USING (col1)
 ORDER BY col1, col2;"""
 
-        self.assertEqual(expected_view_query, view.view_query)
+        self.assertEqual(expected_view_query, view.expanded_view_query(config=self.DEFAULT_LATEST_CONFIG))
 
-        expected_parametrized_view_query = """WITH
+        expected_parameterized_view_query = """WITH
 file_tag_first_generated_view AS (
     WITH rows_with_recency_rank AS (
-        SELECT 
-            * EXCEPT (file_id, update_datetime), 
+        SELECT
+            * EXCEPT (file_id, update_datetime),
             ROW_NUMBER() OVER (PARTITION BY col_name_1a, col_name_1b
                                ORDER BY update_datetime DESC) AS recency_rank
-        FROM 
+        FROM
             `recidiviz-456.us_xx_raw_data.file_tag_first`
-        WHERE 
+        WHERE
             update_datetime <= @update_timestamp
     )
 
-    SELECT * 
+    SELECT *
     EXCEPT (recency_rank)
     FROM rows_with_recency_rank
     WHERE recency_rank = 1
 ),
 file_tag_second_generated_view AS (
     WITH rows_with_recency_rank AS (
-        SELECT 
-            * EXCEPT (file_id, update_datetime), 
+        SELECT
+            * EXCEPT (file_id, update_datetime),
             ROW_NUMBER() OVER (PARTITION BY col_name_2a
                                ORDER BY update_datetime DESC) AS recency_rank
-        FROM 
+        FROM
             `recidiviz-456.us_xx_raw_data.file_tag_second`
-        WHERE 
+        WHERE
             update_datetime <= @update_timestamp
     )
 
-    SELECT * 
+    SELECT *
     EXCEPT (recency_rank)
     FROM rows_with_recency_rank
     WHERE recency_rank = 1
@@ -604,10 +634,11 @@ file_tag_second_generated_view AS (
 foo AS (SELECT * FROM bar)
 SELECT * FROM file_tag_first_generated_view
 LEFT OUTER JOIN file_tag_second_generated_view
-USING (col1) 
+USING (col1)
 ORDER BY col1, col2;"""
 
-        self.assertEqual(expected_parametrized_view_query, view.date_parametrized_view_query())
+        self.assertEqual(expected_parameterized_view_query,
+                         view.expanded_view_query(config=self.DEFAULT_PARAMETERIZED_CONFIG))
 
         # Also check that appending whitespace before the WITH prefix produces the same results
         view_query_template = '\n ' + view_query_template
@@ -624,8 +655,9 @@ ORDER BY col1, col2;"""
         self.assertEqual(['file_tag_first', 'file_tag_second'],
                          [c.file_tag for c in view.raw_table_dependency_configs])
 
-        self.assertEqual(expected_view_query, view.view_query)
-        self.assertEqual(expected_parametrized_view_query, view.date_parametrized_view_query())
+        self.assertEqual(expected_view_query, view.expanded_view_query(config=self.DEFAULT_LATEST_CONFIG))
+        self.assertEqual(expected_parameterized_view_query,
+                         view.expanded_view_query(config=self.DEFAULT_PARAMETERIZED_CONFIG))
 
     def test_direct_ingest_preprocessed_view_throws_for_unexpected_tag(self) -> None:
         region_config = DirectIngestRegionRawFileConfig(
@@ -678,54 +710,64 @@ CREATE TEMP TABLE file_tag_second_generated_view AS (
 );
 SELECT * FROM file_tag_first_generated_view
 LEFT OUTER JOIN file_tag_second_generated_view
-USING (col1) 
+USING (col1)
 ORDER BY col1, col2;"""
 
-        self.assertEqual(expected_view_query, view.view_query)
+        self.assertEqual(
+            expected_view_query,
+            view.expanded_view_query(
+                config=DirectIngestPreProcessedIngestView.QueryStructureConfig(
+                    raw_table_view_type=RawTableViewType.LATEST,
+                )))
 
-        expected_parametrized_view_query = """CREATE TEMP TABLE file_tag_first_generated_view AS (
+        expected_parameterized_view_query = """CREATE TEMP TABLE file_tag_first_generated_view AS (
     WITH rows_with_recency_rank AS (
-        SELECT 
-            * EXCEPT (file_id, update_datetime), 
+        SELECT
+            * EXCEPT (file_id, update_datetime),
             ROW_NUMBER() OVER (PARTITION BY col_name_1a, col_name_1b
                                ORDER BY update_datetime DESC) AS recency_rank
-        FROM 
+        FROM
             `recidiviz-456.us_xx_raw_data.file_tag_first`
-        WHERE 
+        WHERE
             update_datetime <= @my_update_timestamp_param_name
     )
 
-    SELECT * 
+    SELECT *
     EXCEPT (recency_rank)
     FROM rows_with_recency_rank
     WHERE recency_rank = 1
 );
 CREATE TEMP TABLE file_tag_second_generated_view AS (
     WITH rows_with_recency_rank AS (
-        SELECT 
-            * EXCEPT (file_id, update_datetime), 
+        SELECT
+            * EXCEPT (file_id, update_datetime),
             ROW_NUMBER() OVER (PARTITION BY col_name_2a
                                ORDER BY update_datetime DESC) AS recency_rank
-        FROM 
+        FROM
             `recidiviz-456.us_xx_raw_data.file_tag_second`
-        WHERE 
+        WHERE
             update_datetime <= @my_update_timestamp_param_name
     )
 
-    SELECT * 
+    SELECT *
     EXCEPT (recency_rank)
     FROM rows_with_recency_rank
     WHERE recency_rank = 1
 );
 SELECT * FROM file_tag_first_generated_view
 LEFT OUTER JOIN file_tag_second_generated_view
-USING (col1) 
+USING (col1)
 ORDER BY col1, col2;"""
 
-        self.assertEqual(expected_parametrized_view_query,
-                         view.date_parametrized_view_query('my_update_timestamp_param_name'))
+        self.assertEqual(
+            expected_parameterized_view_query,
+            view.expanded_view_query(
+                config=DirectIngestPreProcessedIngestView.QueryStructureConfig(
+                    raw_table_view_type=RawTableViewType.PARAMETERIZED,
+                    param_name_override='my_update_timestamp_param_name',
+                )))
 
-    def test_direct_ingest_preprocessed_view_other_materialized_subquery_materialize_flag_is_false(self) -> None:
+    def test_direct_ingest_preprocessed_view_other_materialized_subquery_fails(self) -> None:
         region_config = DirectIngestRegionRawFileConfig(
             region_code='us_xx',
             yaml_config_file_path=fixtures.as_filepath('us_xx_raw_data_files.yaml'),
@@ -744,19 +786,22 @@ SELECT * FROM my_subquery;"""
                 is_detect_row_deletion_view=False,
                 primary_key_tables_for_entity_deletion=[],
             )
-        self.assertEqual(str(e.exception),
-                         'Found CREATE TEMP TABLE clause in this query - you must set '
-                         '|materialize_raw_data_table_views| to True to include a temp table subquery in your view.')
 
-    def test_direct_ingest_preprocessed_view_other_materialized_subquery(self) -> None:
+        self.assertEqual(
+            str(e.exception),
+            'Found CREATE TEMP TABLE clause in this query - ingest views cannot contain CREATE clauses.')
+
+    def test_direct_ingest_preprocessed_view_materialized_raw_table_views(self) -> None:
         region_config = DirectIngestRegionRawFileConfig(
             region_code='us_xx',
             yaml_config_file_path=fixtures.as_filepath('us_xx_raw_data_files.yaml'),
         )
 
-        view_query_template = """
-CREATE TEMP TABLE my_subquery AS (SELECT * FROM {file_tag_first});
-SELECT * FROM my_subquery;"""
+        view_query_template = """WITH
+foo AS (SELECT * FROM bar)
+SELECT * FROM {file_tag_first}
+LEFT OUTER JOIN {file_tag_second}
+USING (col1);"""
 
         view = DirectIngestPreProcessedIngestView(
             ingest_view_name='ingest_view_tag',
@@ -767,37 +812,365 @@ SELECT * FROM my_subquery;"""
             primary_key_tables_for_entity_deletion=[],
             materialize_raw_data_table_views=True
         )
+
+        self.assertEqual(['file_tag_first', 'file_tag_second'],
+                         [c.file_tag for c in view.raw_table_dependency_configs])
+
         expected_view_query = """CREATE TEMP TABLE file_tag_first_generated_view AS (
     SELECT * FROM `recidiviz-456.us_xx_raw_data_up_to_date_views.file_tag_first_latest`
 );
-
-CREATE TEMP TABLE my_subquery AS (SELECT * FROM file_tag_first_generated_view);
-SELECT * FROM my_subquery 
+CREATE TEMP TABLE file_tag_second_generated_view AS (
+    SELECT * FROM `recidiviz-456.us_xx_raw_data_up_to_date_views.file_tag_second_latest`
+);
+WITH
+foo AS (SELECT * FROM bar)
+SELECT * FROM file_tag_first_generated_view
+LEFT OUTER JOIN file_tag_second_generated_view
+USING (col1)
 ORDER BY col1, col2;"""
 
-        self.assertEqual(expected_view_query, view.view_query)
+        self.assertEqual(expected_view_query, view.expanded_view_query(config=self.DEFAULT_LATEST_CONFIG))
 
-        expected_parametrized_view_query = """CREATE TEMP TABLE file_tag_first_generated_view AS (
+        expected_parameterized_view_query = """CREATE TEMP TABLE file_tag_first_generated_view AS (
     WITH rows_with_recency_rank AS (
-        SELECT 
-            * EXCEPT (file_id, update_datetime), 
+        SELECT
+            * EXCEPT (file_id, update_datetime),
             ROW_NUMBER() OVER (PARTITION BY col_name_1a, col_name_1b
                                ORDER BY update_datetime DESC) AS recency_rank
-        FROM 
+        FROM
             `recidiviz-456.us_xx_raw_data.file_tag_first`
-        WHERE 
-            update_datetime <= @my_update_timestamp_param_name
+        WHERE
+            update_datetime <= @update_timestamp
     )
 
-    SELECT * 
+    SELECT *
     EXCEPT (recency_rank)
     FROM rows_with_recency_rank
     WHERE recency_rank = 1
 );
+CREATE TEMP TABLE file_tag_second_generated_view AS (
+    WITH rows_with_recency_rank AS (
+        SELECT
+            * EXCEPT (file_id, update_datetime),
+            ROW_NUMBER() OVER (PARTITION BY col_name_2a
+                               ORDER BY update_datetime DESC) AS recency_rank
+        FROM
+            `recidiviz-456.us_xx_raw_data.file_tag_second`
+        WHERE
+            update_datetime <= @update_timestamp
+    )
 
-CREATE TEMP TABLE my_subquery AS (SELECT * FROM file_tag_first_generated_view);
-SELECT * FROM my_subquery 
+    SELECT *
+    EXCEPT (recency_rank)
+    FROM rows_with_recency_rank
+    WHERE recency_rank = 1
+);
+WITH
+foo AS (SELECT * FROM bar)
+SELECT * FROM file_tag_first_generated_view
+LEFT OUTER JOIN file_tag_second_generated_view
+USING (col1)
 ORDER BY col1, col2;"""
 
-        self.assertEqual(expected_parametrized_view_query,
-                         view.date_parametrized_view_query('my_update_timestamp_param_name'))
+        self.assertEqual(expected_parameterized_view_query,
+                         view.expanded_view_query(config=self.DEFAULT_PARAMETERIZED_CONFIG))
+
+        # Also check that appending whitespace before the WITH prefix produces the same results
+        view_query_template = '\n ' + view_query_template
+
+        view = DirectIngestPreProcessedIngestView(
+            ingest_view_name='ingest_view_tag',
+            view_query_template=view_query_template,
+            region_raw_table_config=region_config,
+            order_by_cols='col1, col2',
+            is_detect_row_deletion_view=False,
+            primary_key_tables_for_entity_deletion=[],
+            materialize_raw_data_table_views=True
+        )
+
+        self.assertEqual(['file_tag_first', 'file_tag_second'],
+                         [c.file_tag for c in view.raw_table_dependency_configs])
+
+        self.assertEqual(expected_view_query, view.expanded_view_query(config=self.DEFAULT_LATEST_CONFIG))
+        self.assertEqual(expected_parameterized_view_query,
+                         view.expanded_view_query(config=self.DEFAULT_PARAMETERIZED_CONFIG))
+
+    def test_direct_ingest_preprocessed_view_materialized_raw_table_views_temp_output_table(self) -> None:
+        region_config = DirectIngestRegionRawFileConfig(
+            region_code='us_xx',
+            yaml_config_file_path=fixtures.as_filepath('us_xx_raw_data_files.yaml'),
+        )
+
+        view_query_template = """WITH
+foo AS (SELECT * FROM bar)
+SELECT * FROM {file_tag_first}
+LEFT OUTER JOIN {file_tag_second}
+USING (col1);"""
+
+        view = DirectIngestPreProcessedIngestView(
+            ingest_view_name='ingest_view_tag',
+            view_query_template=view_query_template,
+            region_raw_table_config=region_config,
+            order_by_cols='col1, col2',
+            is_detect_row_deletion_view=False,
+            primary_key_tables_for_entity_deletion=[],
+            materialize_raw_data_table_views=True
+        )
+
+        self.assertEqual(['file_tag_first', 'file_tag_second'],
+                         [c.file_tag for c in view.raw_table_dependency_configs])
+
+        expected_view_query = """CREATE TEMP TABLE file_tag_first_generated_view AS (
+    SELECT * FROM `recidiviz-456.us_xx_raw_data_up_to_date_views.file_tag_first_latest`
+);
+CREATE TEMP TABLE file_tag_second_generated_view AS (
+    SELECT * FROM `recidiviz-456.us_xx_raw_data_up_to_date_views.file_tag_second_latest`
+);
+CREATE TEMP TABLE my_destination_table AS (
+
+WITH
+foo AS (SELECT * FROM bar)
+SELECT * FROM file_tag_first_generated_view
+LEFT OUTER JOIN file_tag_second_generated_view
+USING (col1)
+ORDER BY col1, col2
+
+);"""
+
+        latest_config = attr.evolve(self.DEFAULT_LATEST_CONFIG,
+                                    destination_table_id='my_destination_table',
+                                    destination_table_type=DestinationTableType.TEMPORARY,)
+        self.assertEqual(expected_view_query, view.expanded_view_query(config=latest_config))
+
+        expected_parameterized_view_query = """CREATE TEMP TABLE file_tag_first_generated_view AS (
+    WITH rows_with_recency_rank AS (
+        SELECT
+            * EXCEPT (file_id, update_datetime),
+            ROW_NUMBER() OVER (PARTITION BY col_name_1a, col_name_1b
+                               ORDER BY update_datetime DESC) AS recency_rank
+        FROM
+            `recidiviz-456.us_xx_raw_data.file_tag_first`
+        WHERE
+            update_datetime <= @update_timestamp
+    )
+
+    SELECT *
+    EXCEPT (recency_rank)
+    FROM rows_with_recency_rank
+    WHERE recency_rank = 1
+);
+CREATE TEMP TABLE file_tag_second_generated_view AS (
+    WITH rows_with_recency_rank AS (
+        SELECT
+            * EXCEPT (file_id, update_datetime),
+            ROW_NUMBER() OVER (PARTITION BY col_name_2a
+                               ORDER BY update_datetime DESC) AS recency_rank
+        FROM
+            `recidiviz-456.us_xx_raw_data.file_tag_second`
+        WHERE
+            update_datetime <= @update_timestamp
+    )
+
+    SELECT *
+    EXCEPT (recency_rank)
+    FROM rows_with_recency_rank
+    WHERE recency_rank = 1
+);
+CREATE TEMP TABLE my_destination_table AS (
+
+WITH
+foo AS (SELECT * FROM bar)
+SELECT * FROM file_tag_first_generated_view
+LEFT OUTER JOIN file_tag_second_generated_view
+USING (col1)
+ORDER BY col1, col2
+
+);"""
+
+        parametrized_config = attr.evolve(self.DEFAULT_PARAMETERIZED_CONFIG,
+                                          destination_table_id='my_destination_table',
+                                          destination_table_type=DestinationTableType.TEMPORARY)
+        self.assertEqual(expected_parameterized_view_query,
+                         view.expanded_view_query(config=parametrized_config))
+
+    def test_direct_ingest_preprocessed_view_materialized_raw_table_views_permanent_expiring_output_table(self) -> None:
+        region_config = DirectIngestRegionRawFileConfig(
+            region_code='us_xx',
+            yaml_config_file_path=fixtures.as_filepath('us_xx_raw_data_files.yaml'),
+        )
+
+        view_query_template = """WITH
+foo AS (SELECT * FROM bar)
+SELECT * FROM {file_tag_first}
+LEFT OUTER JOIN {file_tag_second}
+USING (col1);"""
+
+        view = DirectIngestPreProcessedIngestView(
+            ingest_view_name='ingest_view_tag',
+            view_query_template=view_query_template,
+            region_raw_table_config=region_config,
+            order_by_cols='col1, col2',
+            is_detect_row_deletion_view=False,
+            primary_key_tables_for_entity_deletion=[],
+        )
+
+        self.assertEqual(['file_tag_first', 'file_tag_second'],
+                         [c.file_tag for c in view.raw_table_dependency_configs])
+
+        expected_view_query = """DELETE TABLE IF EXISTS `recidiviz-456.my_destination_dataset.my_destination_table`;
+CREATE TABLE `recidiviz-456.my_destination_dataset.my_destination_table`
+OPTIONS(
+  -- Data in this table will be deleted after 24 hours
+  expiration_timestamp=TIMESTAMP_ADD(CURRENT_TIMESTAMP(), INTERVAL 1 DAY)
+) AS (
+
+WITH
+file_tag_first_generated_view AS (
+    SELECT * FROM `recidiviz-456.us_xx_raw_data_up_to_date_views.file_tag_first_latest`
+),
+file_tag_second_generated_view AS (
+    SELECT * FROM `recidiviz-456.us_xx_raw_data_up_to_date_views.file_tag_second_latest`
+),
+foo AS (SELECT * FROM bar)
+SELECT * FROM file_tag_first_generated_view
+LEFT OUTER JOIN file_tag_second_generated_view
+USING (col1)
+ORDER BY col1, col2
+
+);"""
+
+        latest_config = attr.evolve(self.DEFAULT_LATEST_CONFIG,
+                                    destination_dataset_id='my_destination_dataset',
+                                    destination_table_id='my_destination_table',
+                                    destination_table_type=DestinationTableType.PERMANENT_EXPIRING)
+        self.assertEqual(expected_view_query, view.expanded_view_query(config=latest_config))
+
+        expected_parameterized_view_query = \
+            """DELETE TABLE IF EXISTS `recidiviz-456.my_destination_dataset.my_destination_table`;
+CREATE TABLE `recidiviz-456.my_destination_dataset.my_destination_table`
+OPTIONS(
+  -- Data in this table will be deleted after 24 hours
+  expiration_timestamp=TIMESTAMP_ADD(CURRENT_TIMESTAMP(), INTERVAL 1 DAY)
+) AS (
+
+WITH
+file_tag_first_generated_view AS (
+    WITH rows_with_recency_rank AS (
+        SELECT
+            * EXCEPT (file_id, update_datetime),
+            ROW_NUMBER() OVER (PARTITION BY col_name_1a, col_name_1b
+                               ORDER BY update_datetime DESC) AS recency_rank
+        FROM
+            `recidiviz-456.us_xx_raw_data.file_tag_first`
+        WHERE
+            update_datetime <= @update_timestamp
+    )
+
+    SELECT *
+    EXCEPT (recency_rank)
+    FROM rows_with_recency_rank
+    WHERE recency_rank = 1
+),
+file_tag_second_generated_view AS (
+    WITH rows_with_recency_rank AS (
+        SELECT
+            * EXCEPT (file_id, update_datetime),
+            ROW_NUMBER() OVER (PARTITION BY col_name_2a
+                               ORDER BY update_datetime DESC) AS recency_rank
+        FROM
+            `recidiviz-456.us_xx_raw_data.file_tag_second`
+        WHERE
+            update_datetime <= @update_timestamp
+    )
+
+    SELECT *
+    EXCEPT (recency_rank)
+    FROM rows_with_recency_rank
+    WHERE recency_rank = 1
+),
+foo AS (SELECT * FROM bar)
+SELECT * FROM file_tag_first_generated_view
+LEFT OUTER JOIN file_tag_second_generated_view
+USING (col1)
+ORDER BY col1, col2
+
+);"""
+
+        parametrized_config = attr.evolve(self.DEFAULT_PARAMETERIZED_CONFIG,
+                                          destination_dataset_id='my_destination_dataset',
+                                          destination_table_id='my_destination_table',
+                                          destination_table_type=DestinationTableType.PERMANENT_EXPIRING)
+        self.assertEqual(expected_parameterized_view_query,
+                         view.expanded_view_query(config=parametrized_config))
+
+    def test_query_structure_config_destination_table_type_dataset_id_validations(self) -> None:
+        has_destination_dataset_types = {DestinationTableType.PERMANENT_EXPIRING}
+
+        # Must have dataset id
+        for _ in RawTableViewType:
+            for destination_table_type in has_destination_dataset_types:
+                with self.assertRaises(ValueError) as e:
+
+                    _ = DirectIngestPreProcessedIngestView.QueryStructureConfig(
+                        raw_table_view_type=RawTableViewType.LATEST,
+                        destination_table_type=destination_table_type
+                    )
+
+                self.assertEqual(
+                    str(e.exception),
+                    f'Found null destination_dataset_id [None] with destination_table_type '
+                    f'[{destination_table_type.name}]')
+
+        has_no_destination_dataset_types = set(DestinationTableType).difference(has_destination_dataset_types)
+        # Should not have dataset id
+        for _ in RawTableViewType:
+            for destination_table_type in has_no_destination_dataset_types:
+                with self.assertRaises(ValueError) as e:
+                    _ = DirectIngestPreProcessedIngestView.QueryStructureConfig(
+                        raw_table_view_type=RawTableViewType.LATEST,
+                        destination_dataset_id='some_dataset',
+                        destination_table_type=destination_table_type
+                    )
+
+                self.assertEqual(
+                    str(e.exception),
+                    f'Found nonnull destination_dataset_id [some_dataset] with destination_table_type '
+                    f'[{destination_table_type.name}]')
+
+    def test_query_structure_config_destination_table_type_table_id_validations(self) -> None:
+        # Must have table id
+        for _ in RawTableViewType:
+            with self.assertRaises(ValueError) as e:
+
+                _ = DirectIngestPreProcessedIngestView.QueryStructureConfig(
+                    raw_table_view_type=RawTableViewType.LATEST,
+                    destination_table_type=DestinationTableType.PERMANENT_EXPIRING,
+                    destination_dataset_id='some_dataset',
+                )
+
+            self.assertEqual(
+                str(e.exception),
+                'Found null destination_table_id [None] with destination_table_type [PERMANENT_EXPIRING]')
+
+            with self.assertRaises(ValueError) as e:
+                _ = DirectIngestPreProcessedIngestView.QueryStructureConfig(
+                    raw_table_view_type=RawTableViewType.LATEST,
+                    destination_table_type=DestinationTableType.TEMPORARY,
+                )
+
+            self.assertEqual(
+                str(e.exception),
+                'Found null destination_table_id [None] with destination_table_type [TEMPORARY]')
+
+        # Should not have table id
+        for _ in RawTableViewType:
+            with self.assertRaises(ValueError) as e:
+                _ = DirectIngestPreProcessedIngestView.QueryStructureConfig(
+                    raw_table_view_type=RawTableViewType.LATEST,
+                    destination_table_id='some_table',
+                    destination_table_type=DestinationTableType.NONE
+                )
+
+            self.assertEqual(
+                str(e.exception),
+                'Found nonnull destination_table_id [some_table] with destination_table_type [NONE]')

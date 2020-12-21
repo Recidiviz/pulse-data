@@ -18,7 +18,10 @@
 """Defines subclasses of BigQueryView used in the direct ingest flow."""
 import re
 import string
+from enum import Enum, auto
 from typing import List, Optional, Dict
+
+import attr
 
 from recidiviz.big_query.big_query_view import BigQueryView, BigQueryViewBuilder
 from recidiviz.ingest.direct.controllers.direct_ingest_raw_file_import_manager import DirectIngestRawFileConfig, \
@@ -31,17 +34,17 @@ UPDATE_DATETIME_PARAM_NAME = "update_timestamp"
 # before a certain date.
 RAW_DATA_UP_TO_DATE_VIEW_QUERY_TEMPLATE = f"""
 WITH rows_with_recency_rank AS (
-    SELECT 
-        * {{except_clause}}, {{datetime_cols_clause}}
+    SELECT
+        * {{except_clause}},{{datetime_cols_clause}}
         ROW_NUMBER() OVER (PARTITION BY {{raw_table_primary_key_str}}
                            ORDER BY update_datetime DESC{{supplemental_order_by_clause}}) AS recency_rank
-    FROM 
+    FROM
         `{{project_id}}.{{raw_table_dataset_id}}.{{raw_table_name}}`
-    WHERE 
+    WHERE
         update_datetime <= @{UPDATE_DATETIME_PARAM_NAME}
 )
 
-SELECT * 
+SELECT *
 EXCEPT (recency_rank)
 FROM rows_with_recency_rank
 WHERE recency_rank = 1
@@ -49,11 +52,11 @@ WHERE recency_rank = 1
 
 RAW_DATA_UP_TO_DATE_HISTORICAL_FILE_VIEW_QUERY_TEMPLATE = f"""
 WITH max_update_datetime AS (
-    SELECT 
+    SELECT
         MAX(update_datetime) AS update_datetime
     FROM
         `{{project_id}}.{{raw_table_dataset_id}}.{{raw_table_name}}`
-    WHERE 
+    WHERE
         update_datetime <= @{UPDATE_DATETIME_PARAM_NAME}
 ),
 max_file_id AS (
@@ -61,20 +64,20 @@ max_file_id AS (
         MAX(file_id) AS file_id
     FROM
         `{{project_id}}.{{raw_table_dataset_id}}.{{raw_table_name}}`
-    WHERE 
+    WHERE
         update_datetime = (SELECT update_datetime FROM max_update_datetime)
 ),
 rows_with_recency_rank AS (
-    SELECT 
-        * {{except_clause}}, {{datetime_cols_clause}}
+    SELECT
+        * {{except_clause}},{{datetime_cols_clause}}
         ROW_NUMBER() OVER (PARTITION BY {{raw_table_primary_key_str}}
                            ORDER BY update_datetime DESC{{supplemental_order_by_clause}}) AS recency_rank
-    FROM 
+    FROM
         `{{project_id}}.{{raw_table_dataset_id}}.{{raw_table_name}}`
-    WHERE 
+    WHERE
         file_id = (SELECT file_id FROM max_file_id)
 )
-SELECT * 
+SELECT *
 EXCEPT (recency_rank)
 FROM rows_with_recency_rank
 WHERE recency_rank = 1
@@ -85,14 +88,14 @@ WHERE recency_rank = 1
 RAW_DATA_LATEST_VIEW_QUERY_TEMPLATE = """
 WITH rows_with_recency_rank AS (
     SELECT 
-        * {except_clause}, {datetime_cols_clause}
+        * {except_clause},{datetime_cols_clause}
         ROW_NUMBER() OVER (PARTITION BY {raw_table_primary_key_str}
                            ORDER BY update_datetime DESC{supplemental_order_by_clause}) AS recency_rank
     FROM 
         `{project_id}.{raw_table_dataset_id}.{raw_table_name}`
 )
 
-SELECT * 
+SELECT *
 EXCEPT (recency_rank)
 FROM rows_with_recency_rank
 WHERE recency_rank = 1
@@ -115,7 +118,7 @@ max_file_id AS (
 ),
 rows_with_recency_rank AS (
     SELECT 
-        * {except_clause}, {datetime_cols_clause}
+        * {except_clause},{datetime_cols_clause}
         ROW_NUMBER() OVER (PARTITION BY {raw_table_primary_key_str}
                            ORDER BY update_datetime DESC{supplemental_order_by_clause}) AS recency_rank
     FROM 
@@ -123,7 +126,7 @@ rows_with_recency_rank AS (
     WHERE 
         file_id = (SELECT file_id FROM max_file_id)
 )
-SELECT * 
+SELECT *
 EXCEPT (recency_rank)
 FROM rows_with_recency_rank
 WHERE recency_rank = 1
@@ -140,6 +143,28 @@ DATETIME_COL_NORMALIZATION_TEMPLATE = """
         ) AS {col_name},"""
 
 CREATE_TEMP_TABLE_REGEX = re.compile(r'CREATE\s+((TEMP|TEMPORARY)\s+)TABLE')
+
+
+DESTINATION_TABLE_QUERY_FORMAT = """{raw_materialized_tables_clause}
+DELETE TABLE IF EXISTS `{{project_id}}.{dataset_id}.{table_id}`;
+CREATE TABLE `{{project_id}}.{dataset_id}.{table_id}`
+OPTIONS(
+  -- Data in this table will be deleted after 24 hours
+  expiration_timestamp=TIMESTAMP_ADD(CURRENT_TIMESTAMP(), INTERVAL 1 DAY)
+) AS (
+
+{select_query_clause}
+
+);
+"""
+
+DESTINATION_TEMP_TABLE_QUERY_FORMAT = """{raw_materialized_tables_clause}
+CREATE TEMP TABLE {table_id} AS (
+
+{select_query_clause}
+
+);
+"""
 
 
 class DirectIngestRawDataTableBigQueryView(BigQueryView):
@@ -241,10 +266,84 @@ class DirectIngestRawDataTableUpToDateView(DirectIngestRawDataTableBigQueryView)
                          raw_file_config=raw_file_config)
 
 
+class RawTableViewType(Enum):
+    # Raw table view subqueries will take form of non-parametrized queries that return the latest version of each raw
+    # table. This type will produce a query that can run in the BigQuery UI and that can be used easily for debugging.
+    LATEST = auto()
+
+    # Raw table views will take the form of parameterized queries that return the the version of the raw table up to the
+    # a max update date parameter. By default, this parameter name will be UPDATE_DATETIME_PARAM_NAME.
+    PARAMETERIZED = auto()
+
+
+class DestinationTableType(Enum):
+    # The query will be structured to end with a SELECT statement. This can be used for queries that may be run in the
+    # BigQuery UI.
+    NONE = auto()
+
+    # The query will be structured to write the results of the SELECT statement to a temporary table in the script (via
+    # a CREATE TEMP TABLE statement). Should be used if the results of this view query will be used as part of a larger
+    # script.
+    TEMPORARY = auto()
+
+    # The query will be structured to write the results of the SELECT statement to an output table with a 24 hour
+    # expiration (via a CREATE TABLE statement). Initialization will throw if this is set without nonnull
+    # destination_table_id and destination_dataset_id.
+    PERMANENT_EXPIRING = auto()
+
+
 class DirectIngestPreProcessedIngestView(BigQueryView):
     """Class for holding direct ingest pre-processing SQL queries, that can be used to export files for import into our
     Postgres DB.
     """
+
+    @attr.s
+    class QueryStructureConfig:
+        """Configuration for how to structure the expanded view query with hydrated raw table views."""
+
+        # Specifies the structure of the raw table view subqueries
+        raw_table_view_type: RawTableViewType = attr.ib()
+
+        # For queries with a |raw_table_view_type| of PARAMETRIZED, this may be to set to specify a custom name for the
+        # max update date parameter. If it is not set, the parameter name will be the default
+        # UPDATE_DATETIME_PARAM_NAME.
+        param_name_override: Optional[str] = attr.ib(default=None)
+
+        # Specifies whether the query should be structured to write results to a destination table and the type of that
+        # table.
+        destination_table_type: DestinationTableType = attr.ib(default=DestinationTableType.NONE)
+
+        # The destination dataset id for queries with destination_table_type PERMANENT_EXPIRING.
+        destination_dataset_id: Optional[str] = attr.ib(default=None)
+
+        # The destination table id for queries with destination_table_types other than NONE.
+        destination_table_id: Optional[str] = attr.ib(default=None)
+
+        @property
+        def parameterize_raw_data_table_views(self) -> bool:
+            return self.raw_table_view_type == RawTableViewType.PARAMETERIZED
+
+        def __attrs_post_init__(self) -> None:
+            if not self.parameterize_raw_data_table_views and self.param_name_override:
+                raise ValueError(f'Found nonnull param_name_override [{self.param_name_override}] which should only be '
+                                 f'set if parameterize_raw_data_table_views is True.')
+
+            if self.destination_dataset_id and self.destination_table_type != DestinationTableType.PERMANENT_EXPIRING:
+                raise ValueError(f'Found nonnull destination_dataset_id [{self.destination_dataset_id}] with '
+                                 f'destination_table_type [{self.destination_table_type.name}]')
+
+            if not self.destination_dataset_id and \
+                    self.destination_table_type == DestinationTableType.PERMANENT_EXPIRING:
+                raise ValueError(f'Found null destination_dataset_id [{self.destination_dataset_id}] with '
+                                 f'destination_table_type [{self.destination_table_type.name}]')
+
+            if self.destination_table_id and self.destination_table_type == DestinationTableType.NONE:
+                raise ValueError(f'Found nonnull destination_table_id [{self.destination_table_id}] with '
+                                 f'destination_table_type [{self.destination_table_type.name}]')
+
+            if not self.destination_table_id and self.destination_table_type != DestinationTableType.NONE:
+                raise ValueError(f'Found null destination_table_id [{self.destination_table_id}] with '
+                                 f'destination_table_type [{self.destination_table_type.name}]')
 
     WITH_PREFIX = 'WITH'
     SUBQUERY_INDENT = '    '
@@ -274,44 +373,46 @@ class DirectIngestPreProcessedIngestView(BigQueryView):
                 as separate, materialized CREATE TEMP TABLE statements. Should be used for queries that are too complex
                 to run otherwise (i.e. they produce a 'too many subqueries' error). This will slow down your query by a
                 factor of 4-5.
+                IMPORTANT NOTE: When this is True, the view query will become a "script" which means it cannot be used
+                in the # Python BigQuery API for a query that sets a destination table
+                (bigquery.QueryJobConfig#destination is not None).
         """
         DirectIngestPreProcessedIngestView._validate_order_by(
             ingest_view_name=ingest_view_name, view_query_template=view_query_template)
 
-        region_code = region_raw_table_config.region_code
-        self._order_by_cols = order_by_cols
-        raw_table_dependency_configs = self._get_raw_table_dependency_configs(view_query_template,
-                                                                              region_raw_table_config)
+        self._region_code = region_raw_table_config.region_code
+        self._raw_table_dependency_configs = self._get_raw_table_dependency_configs(view_query_template,
+                                                                                    region_raw_table_config)
 
         latest_view_query = self._format_expanded_view_query(
-            region_code=region_code,
-            raw_table_dependency_configs=raw_table_dependency_configs,
+            region_code=self._region_code,
+            raw_table_dependency_configs=self._raw_table_dependency_configs,
             view_query_template=view_query_template,
             order_by_cols=order_by_cols,
-            parametrize_query=False,
-            materialize_raw_data_table_views=materialize_raw_data_table_views)
+            materialize_raw_data_table_views=materialize_raw_data_table_views,
+            config=DirectIngestPreProcessedIngestView.QueryStructureConfig(
+                raw_table_view_type=RawTableViewType.LATEST
+            )
+        )
 
-        dataset_id = f'{region_code.lower()}_ingest_views'
+        dataset_id = f'{self._region_code.lower()}_ingest_views'
         super().__init__(dataset_id=dataset_id,
                          view_id=ingest_view_name,
                          view_query_template=latest_view_query)
 
-        self._raw_table_dependency_configs = raw_table_dependency_configs
-        date_parametrized_view_query = self._format_expanded_view_query(
-            region_code=region_code,
-            raw_table_dependency_configs=raw_table_dependency_configs,
-            view_query_template=view_query_template,
-            order_by_cols=order_by_cols,
-            parametrize_query=True,
-            materialize_raw_data_table_views=materialize_raw_data_table_views)
-        self._date_parametrized_view_query = date_parametrized_view_query.format(**self.
-                                                                                 _query_format_args_with_project_id())
+        self._view_query_template = view_query_template
+        self._order_by_cols = order_by_cols
         self._is_detect_row_deletion_view = is_detect_row_deletion_view
+        self._materialize_raw_data_table_views = materialize_raw_data_table_views
         if self._is_detect_row_deletion_view:
             self._validate_can_detect_row_deletion(
-                raw_configs=raw_table_dependency_configs,
+                raw_configs=self._raw_table_dependency_configs,
                 ingest_view_name=ingest_view_name,
                 primary_key_tables_for_entity_deletion=primary_key_tables_for_entity_deletion)
+
+        if re.search(CREATE_TEMP_TABLE_REGEX, view_query_template):
+            raise ValueError(
+                'Found CREATE TEMP TABLE clause in this query - ingest views cannot contain CREATE clauses.')
 
     @property
     def file_tag(self) -> str:
@@ -322,11 +423,6 @@ class DirectIngestPreProcessedIngestView(BigQueryView):
     def raw_table_dependency_configs(self) -> List[DirectIngestRawFileConfig]:
         """Configs for any raw tables that this view's query depends on."""
         return self._raw_table_dependency_configs
-
-    @property
-    def latest_view_query(self) -> str:
-        """Non-parametrized query on the latest version of each raw table."""
-        return self.view_query
 
     @property
     def do_reverse_date_diff(self) -> bool:
@@ -359,15 +455,25 @@ class DirectIngestPreProcessedIngestView(BigQueryView):
         """
         return self._order_by_cols
 
-    def date_parametrized_view_query(self, param_name: Optional[str] = None) -> str:
-        """Parametrized query on the version of each raw table on a given date. If provided, the parameter name for the
-        max update date will have the provided |param_name|, otherwise the parameter name will be the default
-        UPDATE_DATETIME_PARAM_NAME.
-        """
-        if not param_name:
-            return self._date_parametrized_view_query
+    @property
+    def materialize_raw_data_table_views(self) -> bool:
+        # TODO(#4925): This is only exposed as a property for temporary gating, remove this property once debug query
+        #   printing is supported for materialized raw data table views.
+        return self._materialize_raw_data_table_views
 
-        return self._date_parametrized_view_query.replace(f'@{UPDATE_DATETIME_PARAM_NAME}', f'@{param_name}')
+    def expanded_view_query(self,
+                            config: 'DirectIngestPreProcessedIngestView.QueryStructureConfig') -> str:
+        """Formats this view's template according to the provided config, with expanded subqueries for each raw table
+        dependency."""
+        query = self._format_expanded_view_query(
+            region_code=self._region_code,
+            raw_table_dependency_configs=self._raw_table_dependency_configs,
+            view_query_template=self._view_query_template,
+            order_by_cols=self._order_by_cols,
+            materialize_raw_data_table_views=self._materialize_raw_data_table_views,
+            config=config
+        )
+        return query.format(**self._query_format_args_with_project_id())
 
     @staticmethod
     def _table_subbquery_name(raw_table_config: DirectIngestRawFileConfig) -> str:
@@ -378,8 +484,130 @@ class DirectIngestPreProcessedIngestView(BigQueryView):
     def add_order_by_suffix(query: str, order_by_cols: Optional[str]) -> str:
         if order_by_cols:
             query = query.rstrip().rstrip(';')
-            query = f'{query} \nORDER BY {order_by_cols};'
+            query = f'{query}\nORDER BY {order_by_cols};'
         return query
+
+    @classmethod
+    def _raw_table_subquery_clause(cls,
+                                   *,
+                                   region_code: str,
+                                   raw_table_dependency_configs: List[DirectIngestRawFileConfig],
+                                   parametrize_query: bool,
+                                   materialize_raw_data_table_views: bool) -> str:
+        """Returns the portion of the script that generates the raw table view queries, either as a list of
+        `CREATE TEMP TABLE` statements or a list of WITH subqueries.
+        """
+        table_subquery_strs = []
+        for raw_table_config in raw_table_dependency_configs:
+            table_subquery_strs.append(cls._get_table_subquery_str(region_code, raw_table_config, parametrize_query))
+
+        if materialize_raw_data_table_views:
+            temp_table_query_strs = [f'CREATE TEMP TABLE {table_subquery_str};'
+                                     for table_subquery_str in table_subquery_strs]
+            table_subquery_clause = '\n'.join(temp_table_query_strs)
+            return f'{table_subquery_clause}'
+
+        table_subquery_clause = ',\n'.join(table_subquery_strs)
+        return f'{cls.WITH_PREFIX}\n{table_subquery_clause}'
+
+    @classmethod
+    def _get_raw_materialized_tables_clause(
+            cls,
+            region_code: str,
+            raw_table_dependency_configs: List[DirectIngestRawFileConfig],
+            materialize_raw_data_table_views: bool,
+            config: 'DirectIngestPreProcessedIngestView.QueryStructureConfig') -> Optional[str]:
+        """Returns the clause with all the temporary raw data tables that must be created before the final SELECT/CREATE
+        statement.
+        """
+
+        if not materialize_raw_data_table_views:
+            return None
+
+        return cls._raw_table_subquery_clause(
+            region_code=region_code,
+            raw_table_dependency_configs=raw_table_dependency_configs,
+            parametrize_query=config.parameterize_raw_data_table_views,
+            materialize_raw_data_table_views=materialize_raw_data_table_views
+        )
+
+    @classmethod
+    def _get_select_query_clause(
+            cls,
+            region_code: str,
+            raw_table_dependency_configs: List[DirectIngestRawFileConfig],
+            view_query_template: str,
+            order_by_cols: Optional[str],
+            materialize_raw_data_table_views: bool,
+            config: 'DirectIngestPreProcessedIngestView.QueryStructureConfig'
+    ) -> str:
+        """Returns the final SELECT statement that produces the results for this ingest view query. It will either
+        pull in raw table data as WITH subqueries or reference materialized temporary tables with raw table data.
+        """
+        view_query_template = view_query_template.strip()
+        if materialize_raw_data_table_views:
+            # The template references raw table views that will be prepended to the query script.
+            select_query_clause = view_query_template
+
+        else:
+            raw_table_subquery_clause = cls._raw_table_subquery_clause(
+                region_code=region_code,
+                raw_table_dependency_configs=raw_table_dependency_configs,
+                parametrize_query=config.parameterize_raw_data_table_views,
+                materialize_raw_data_table_views=materialize_raw_data_table_views
+            )
+
+            if view_query_template.startswith(cls.WITH_PREFIX):
+                view_query_template = view_query_template[len(cls.WITH_PREFIX):].lstrip()
+                raw_table_subquery_clause = raw_table_subquery_clause + ','
+
+            select_query_clause = f'{raw_table_subquery_clause}\n{view_query_template}'
+        select_query_clause = cls.add_order_by_suffix(query=select_query_clause, order_by_cols=order_by_cols)
+        select_query_clause = select_query_clause.rstrip().rstrip(';')
+        return select_query_clause
+
+    @classmethod
+    def _get_full_query_template(cls,
+                                 region_code: str,
+                                 raw_table_dependency_configs: List[DirectIngestRawFileConfig],
+                                 view_query_template: str,
+                                 order_by_cols: Optional[str],
+                                 materialize_raw_data_table_views: bool,
+                                 config: 'DirectIngestPreProcessedIngestView.QueryStructureConfig') -> str:
+        """Returns the full, formatted ingest view query template that can be injected with format args."""
+        raw_materialized_tables_clause = cls._get_raw_materialized_tables_clause(
+            region_code=region_code,
+            raw_table_dependency_configs=raw_table_dependency_configs,
+            materialize_raw_data_table_views=materialize_raw_data_table_views,
+            config=config
+        ) or ""
+
+        select_query_clause = cls._get_select_query_clause(
+            region_code=region_code,
+            raw_table_dependency_configs=raw_table_dependency_configs,
+            view_query_template=view_query_template,
+            order_by_cols=order_by_cols,
+            materialize_raw_data_table_views=materialize_raw_data_table_views,
+            config=config
+        )
+
+        if config.destination_table_type == DestinationTableType.PERMANENT_EXPIRING:
+            return DESTINATION_TABLE_QUERY_FORMAT.format(
+                raw_materialized_tables_clause=raw_materialized_tables_clause,
+                dataset_id=config.destination_dataset_id,
+                table_id=config.destination_table_id,
+                select_query_clause=select_query_clause
+            )
+        if config.destination_table_type == DestinationTableType.TEMPORARY:
+            return DESTINATION_TEMP_TABLE_QUERY_FORMAT.format(
+                raw_materialized_tables_clause=raw_materialized_tables_clause,
+                table_id=config.destination_table_id,
+                select_query_clause=select_query_clause
+            )
+        if config.destination_table_type == DestinationTableType.NONE:
+            return f"{raw_materialized_tables_clause}\n{select_query_clause};"
+
+        raise ValueError(f'Unsupported destination_table_type: [{config.destination_table_type.name}]')
 
     @classmethod
     def _format_expanded_view_query(cls,
@@ -387,39 +615,32 @@ class DirectIngestPreProcessedIngestView(BigQueryView):
                                     raw_table_dependency_configs: List[DirectIngestRawFileConfig],
                                     view_query_template: str,
                                     order_by_cols: Optional[str],
-                                    parametrize_query: bool,
-                                    materialize_raw_data_table_views: bool) -> str:
-        """Formats the given template with expanded subqueries for each raw table dependency."""
-        table_subquery_strs = []
+                                    materialize_raw_data_table_views: bool,
+                                    config: 'DirectIngestPreProcessedIngestView.QueryStructureConfig') -> str:
+        """Formats the given template with expanded subqueries for each raw table dependency according to the given
+        config. Does not hydrate the project_id so the result of this function can be passed as a template to the
+        superclass constructor.
+        """
+        full_query_template = cls._get_full_query_template(
+            region_code=region_code,
+            raw_table_dependency_configs=raw_table_dependency_configs,
+            view_query_template=view_query_template,
+            order_by_cols=order_by_cols,
+            materialize_raw_data_table_views=materialize_raw_data_table_views,
+            config=config
+        )
+
         format_args = {}
         for raw_table_config in raw_table_dependency_configs:
-            table_subquery_strs.append(cls._get_table_subquery_str(region_code, raw_table_config, parametrize_query))
             format_args[raw_table_config.file_tag] = cls._table_subbquery_name(raw_table_config)
 
-        if materialize_raw_data_table_views:
-            temp_table_query_strs = [f'CREATE TEMP TABLE {table_subquery_str};'
-                                     for table_subquery_str in table_subquery_strs]
-            table_subquery_clause = '\n'.join(temp_table_query_strs)
-            view_query_template = f'{table_subquery_clause}\n{view_query_template}'
-        else:
-            if re.search(CREATE_TEMP_TABLE_REGEX, view_query_template):
-                raise ValueError(
-                    'Found CREATE TEMP TABLE clause in this query - you must set |materialize_raw_data_table_views| '
-                    'to True to include a temp table subquery in your view.')
-
-            table_subquery_clause = ',\n'.join(table_subquery_strs)
-
-            view_query_template = view_query_template.strip()
-            if view_query_template.startswith(cls.WITH_PREFIX):
-                view_query_template = view_query_template[len(cls.WITH_PREFIX):].lstrip()
-                table_subquery_clause = table_subquery_clause + ','
-
-            view_query_template = f'{cls.WITH_PREFIX}\n{table_subquery_clause}\n{view_query_template}'
-
-        view_query_template = cls.add_order_by_suffix(query=view_query_template, order_by_cols=order_by_cols)
-
         # We don't want to inject the project_id outside of the BigQueryView initializer
-        return cls._format_view_query_without_project_id(view_query_template, **format_args)
+        query = cls._format_view_query_without_project_id(full_query_template, **format_args)
+
+        if config.param_name_override:
+            query = query.replace(f'@{UPDATE_DATETIME_PARAM_NAME}', f'@{config.param_name_override}')
+
+        return query.strip()
 
     @classmethod
     def _get_table_subquery_str(cls,
@@ -542,11 +763,13 @@ class DirectIngestPreProcessedIngestViewBuilder(BigQueryViewBuilder[DirectIngest
         self.materialize_raw_data_table_views = materialize_raw_data_table_views
 
     @property
-    def file_tag(self):
+    def file_tag(self) -> str:
         return self.ingest_view_name
 
     # pylint: disable=unused-argument
-    def build(self, *, dataset_overrides: Optional[Dict[str, str]] = None) -> DirectIngestPreProcessedIngestView:
+    def build(self,
+              *,
+              dataset_overrides: Optional[Dict[str, str]] = None) -> DirectIngestPreProcessedIngestView:
         """Builds an instance of a DirectIngestPreProcessedIngestView with the provided args."""
         return DirectIngestPreProcessedIngestView(
             ingest_view_name=self.ingest_view_name,
@@ -562,6 +785,14 @@ class DirectIngestPreProcessedIngestViewBuilder(BigQueryViewBuilder[DirectIngest
         """For local testing, prints out the parametrized and latest versions of the view's query."""
         view = self.build()
         print('****************************** PARAMETRIZED ******************************')
-        print(view.date_parametrized_view_query())
+        print(view.expanded_view_query(
+            config=DirectIngestPreProcessedIngestView.QueryStructureConfig(
+                raw_table_view_type=RawTableViewType.PARAMETERIZED,
+            )
+        ))
         print('********************************* LATEST *********************************')
-        print(view.latest_view_query)
+        print(view.expanded_view_query(
+            config=DirectIngestPreProcessedIngestView.QueryStructureConfig(
+                raw_table_view_type=RawTableViewType.LATEST,
+            )
+        ))
