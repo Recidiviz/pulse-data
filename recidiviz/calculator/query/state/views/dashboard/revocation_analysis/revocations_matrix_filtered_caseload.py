@@ -37,7 +37,13 @@ REVOCATIONS_MATRIX_FILTERED_CASELOAD_QUERY_TEMPLATE = \
       officer,
       officer_recommendation,
       violation_record,
-      district,
+      CASE
+        WHEN state_code = 'US_MO' THEN level_1_supervision_location
+        WHEN state_code = 'US_PA' THEN level_2_supervision_location
+        ELSE level_1_supervision_location
+      END AS district,
+      level_1_supervision_location,
+      level_2_supervision_location,
       supervision_type,
       supervision_level,
       charge_category,
@@ -46,18 +52,30 @@ REVOCATIONS_MATRIX_FILTERED_CASELOAD_QUERY_TEMPLATE = \
       reported_violations,
       metric_period_months
     FROM `{project_id}.{reference_views_dataset}.revocations_matrix_by_person` 
-    WHERE district != 'ALL'
+    WHERE CASE
+        -- TODO(#4524): Once the front end supports the file size increase of multi-district breakdowns and we stop 
+        -- filtering out hydrated level_1_supervision_location breakdown rows, we can remove this PA special case.
+        WHEN state_code = 'US_PA' THEN true
+        ELSE level_1_supervision_location != 'ALL'
+    END
+    AND CASE
+        -- TODO(#3829): MO does not have level 2 values ingested, so level_2_supervision_location values are only
+        -- 'ALL'. Once we do start ingesting MO region information, this query size will temporarily increase until
+        -- we update this query to remove the MO special case.
+        WHEN state_code = 'US_MO' THEN true
+        ELSE level_2_supervision_location != 'ALL'
+    END 
     AND supervision_type != 'ALL'
     AND charge_category != 'ALL'
     AND supervision_level != 'ALL'
-    ORDER BY state_code, metric_period_months, violation_record
     """
 
 REVOCATIONS_MATRIX_FILTERED_CASELOAD_VIEW_BUILDER = MetricBigQueryViewBuilder(
     dataset_id=dataset_config.DASHBOARD_VIEWS_DATASET,
     view_id=REVOCATIONS_MATRIX_FILTERED_CASELOAD_VIEW_NAME,
     view_query_template=REVOCATIONS_MATRIX_FILTERED_CASELOAD_QUERY_TEMPLATE,
-    dimensions=['state_code', 'metric_period_months', 'district', 'supervision_type', 'supervision_level',
+    dimensions=['state_code', 'metric_period_months', 'district', 'level_1_supervision_location',
+                'level_2_supervision_location', 'supervision_type', 'supervision_level',
                 'charge_category', 'risk_level', 'violation_type', 'reported_violations', 'state_id', 'officer'],
     description=REVOCATIONS_MATRIX_FILTERED_CASELOAD_DESCRIPTION,
     metrics_dataset=dataset_config.DATAFLOW_METRICS_DATASET,
