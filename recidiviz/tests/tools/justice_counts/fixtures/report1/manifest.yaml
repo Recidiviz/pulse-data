@@ -6,8 +6,9 @@ tables:
     - file: 'ManualData-Prison_US_CO_DashboardMeasures_Aug20.csv'
       date_range:
         fixed:
-          snapshot:
-            date: '2020-08-31'
+          type: 'SNAPSHOT'
+          input:
+            - '2020-08-31'
       system: 'CORRECTIONS'
       metric:
         population:
@@ -24,8 +25,9 @@ tables:
     - file: 'ManualData-Prison_US_CO_DashboardMeasures_Jul20.csv'
       date_range:
         fixed:
-          snapshot:
-            date: '2020-07-31'
+          type: 'SNAPSHOT'
+          input:
+            - '2020-07-31'
       system: 'CORRECTIONS'
       metric:
         population:
@@ -42,8 +44,9 @@ tables:
     - file: 'ManualData-Prison_US_CO_DashboardMeasures_Jun20.csv'
       date_range:
         fixed:
-          snapshot:
-            date: '2020-06-30'
+          type: 'SNAPSHOT'
+          input:
+            - '2020-06-30'
       system: 'CORRECTIONS'
       metric:
         population:

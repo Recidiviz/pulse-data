@@ -84,6 +84,11 @@ def first_day_of_next_month(date: datetime.date) -> datetime.date:
     return next_month_date.replace(day=1)
 
 
+def first_day_of_next_year(date: datetime.date) -> datetime.date:
+    """Returns the date corresponding to the first day of the first month of the next year for the given date."""
+    return first_day_of_next_month(date.replace(month=12))
+
+
 @attr.s
 class DateRange:
     """Object representing a range of dates."""
@@ -102,6 +107,17 @@ class DateRange:
             month_date = first_day_of_next_month(month_date)
 
         return months_range_overlaps
+
+    @classmethod
+    def for_year_of_date(cls, date: datetime.date) -> 'DateRange':
+        return cls.for_year(date.year)
+
+    @classmethod
+    def for_year(cls, year: int) -> 'DateRange':
+        start_of_year = datetime.date(year, 1, 1)
+        start_of_next_year = first_day_of_next_year(start_of_year)
+
+        return cls(lower_bound_inclusive_date=start_of_year, upper_bound_exclusive_date=start_of_next_year)
 
     @classmethod
     def for_month_of_date(cls, date: datetime.date) -> 'DateRange':

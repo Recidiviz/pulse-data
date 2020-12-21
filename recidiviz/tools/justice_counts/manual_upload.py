@@ -360,6 +360,7 @@ def parse_dimension_name(dimension_name: str) -> Type[Dimension]:
             return dimension
     raise KeyError(f"No dimension exists for name: {dimension_name}")
 
+
 # Ingest Models
 # TODO(#4472): Pull these out into the ingest directory, alongside existing ingest_info.
 
@@ -370,6 +371,7 @@ def parse_dimension_name(dimension_name: str) -> Type[Dimension]:
 class DateFormatType(enum.Enum):
     DATE = 'DATE'
     MONTH = 'MONTH'
+    YEAR = 'YEAR'
 
 
 DateFormatParserType = Callable[[str], datetime.date]
@@ -377,7 +379,8 @@ DateFormatParserType = Callable[[str], datetime.date]
 
 DATE_FORMAT_PARSERS: Dict[DateFormatType, DateFormatParserType] = {
     DateFormatType.DATE: datetime.date.fromisoformat,
-    DateFormatType.MONTH: lambda text: datetime.datetime.strptime(text, "%Y-%m").date()
+    DateFormatType.MONTH: lambda text: datetime.datetime.strptime(text, "%Y-%m").date(),
+    DateFormatType.YEAR: lambda text: datetime.datetime.strptime(text, "%Y").date()
 }
 
 
@@ -403,11 +406,19 @@ class RangeType(enum.Enum):
 
     CUSTOM = 'CUSTOM'
     MONTH = 'MONTH'
+    YEAR = 'YEAR'
 
 
 RANGE_CONVERTERS: Dict[RangeType, DateRangeConverterType] = {
     RangeType.CUSTOM: DateRange,
     RangeType.MONTH: DateRange.for_month_of_date,
+    RangeType.YEAR: DateRange.for_year_of_date
+}
+
+RANGE_CONVERTER_FORMAT_TYPES: Dict[RangeType, DateFormatType] = {
+    RangeType.CUSTOM: DateFormatType.DATE,
+    RangeType.MONTH: DateFormatType.MONTH,
+    RangeType.YEAR: DateFormatType.YEAR
 }
 
 
@@ -427,6 +438,12 @@ SNAPSHOT_CONVERTERS: Dict[SnapshotType, DateRangeConverterType] = {
     SnapshotType.DAY: DateRange.for_day,
     SnapshotType.FIRST_DAY_OF_MONTH: lambda date: DateRange.for_day(first_day_of_month(date)),
     SnapshotType.LAST_DAY_OF_MONTH: lambda date: DateRange.for_day(last_day_of_month(date)),
+}
+
+SNAPSHOT_CONVERTER_FORMAT_TYPES: Dict[SnapshotType, DateFormatType] = {
+    SnapshotType.DAY: DateFormatType.DATE,
+    SnapshotType.FIRST_DAY_OF_MONTH: DateFormatType.MONTH,
+    SnapshotType.LAST_DAY_OF_MONTH: DateFormatType.MONTH
 }
 
 
@@ -902,7 +919,9 @@ def _parse_location(location_input: YAMLDict) -> Location:
     raise ValueError(f"Invalid location, expected a dictionary with a single key that is one of ('country', 'state', "
                      f"'county') but received: {repr(location_input)}")
 
-def _get_converter(range_type_input: str, range_converter_input: Optional[str] = None) -> DateRangeConverterType:
+
+def _get_converter(range_type_input: str, range_converter_input: Optional[str] = None) \
+        -> DateRangeConverterType:
     range_type = MeasurementWindowType(range_type_input)
     if range_type is MeasurementWindowType.SNAPSHOT:
         return SNAPSHOT_CONVERTERS[SnapshotType.get_or_default(range_converter_input)]
@@ -910,18 +929,36 @@ def _get_converter(range_type_input: str, range_converter_input: Optional[str] =
         return RANGE_CONVERTERS[RangeType.get_or_default(range_converter_input)]
     raise ValueError(f"Enum case not handled for {range_type} when building converter.")
 
+
+def _get_date_formatter(range_type_input: str, range_converter_input: Optional[str] = None) -> DateFormatParserType:
+    measurement_window_type = MeasurementWindowType(range_type_input)
+    if measurement_window_type is MeasurementWindowType.SNAPSHOT:
+        snapshot_type = SnapshotType.get_or_default(range_converter_input)
+        format_type = SNAPSHOT_CONVERTER_FORMAT_TYPES[snapshot_type]
+        return DATE_FORMAT_PARSERS[format_type]
+    if measurement_window_type is MeasurementWindowType.RANGE:
+        range_type = RangeType.get_or_default(range_converter_input)
+        format_type = RANGE_CONVERTER_FORMAT_TYPES[range_type]
+        return DATE_FORMAT_PARSERS[format_type]
+    raise ValueError(f"Enum case not handled for {measurement_window_type} when getting date formatter.")
+
+
 # TODO(#4480): Generalize these parsing methods, instead of creating one for each class. If value is a dict, pop it,
 # find all implementing classes of `key`, find matching class, pass inner dict as parameters to matching class.
 def _parse_date_range(range_input: YAMLDict) -> DateRange:
     """Expects a dict with a single entry that is a dict, e.g. `{'snapshot': {'date': '2020-11-01'}}`"""
-    if len(range_input) == 1:
-        [[range_type, range_args]] = range_input.get().items()
-        converter = _get_converter(range_type.upper())
-        if isinstance(range_args, dict):
-            parsed_args = {key: datetime.date.fromisoformat(value) for key, value in range_args.items()}
-            return converter(**parsed_args)  # type: ignore[call-arg]
-    raise ValueError(f"Invalid date range, expected a dictionary with a single key that is one of but received: "
-                        f"{repr(range_input)}")
+
+    range_args = range_input.pop('input', list)
+    range_type = range_input.pop('type', str)
+    range_converter = range_input.pop_optional('converter', str)
+    date_formatter = _get_date_formatter(range_type.upper(), range_converter)
+
+    if len(range_input) > 0:
+        raise ValueError(f"Received unexpected parameters for date_range: {range_input}")
+
+    converter = _get_converter(range_type.upper(), range_converter)
+    parsed_args = [date_formatter(value) for value in range_args]
+    return converter(*parsed_args)  # type: ignore[call-arg]
 
 
 def _parse_dynamic_date_range_producer(range_input: YAMLDict) -> DynamicDateRangeProducer:
