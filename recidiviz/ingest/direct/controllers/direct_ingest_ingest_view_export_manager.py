@@ -26,11 +26,11 @@ from google.cloud import bigquery
 from recidiviz.big_query.big_query_client import BigQueryClient
 from recidiviz.big_query.big_query_view_collector import BigQueryViewCollector
 from recidiviz.big_query.export.export_query_config import ExportQueryConfig
+from recidiviz.cloud_storage.gcs_file_system import GCSFileSystem
 from recidiviz.ingest.direct.controllers.direct_ingest_big_query_view_types import DirectIngestPreProcessedIngestView, \
-    DirectIngestPreProcessedIngestViewBuilder
+    DirectIngestPreProcessedIngestViewBuilder, RawTableViewType, DestinationTableType
 from recidiviz.ingest.direct.controllers.direct_ingest_file_metadata_manager import DirectIngestFileMetadataManager
-from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import DirectIngestGCSFileSystem, \
-    to_normalized_unprocessed_file_name
+from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import to_normalized_unprocessed_file_name
 from recidiviz.ingest.direct.controllers.direct_ingest_view_collector import DirectIngestPreProcessedIngestViewCollector
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import GcsfsIngestViewExportArgs, \
     GcsfsDirectIngestFileType
@@ -82,7 +82,7 @@ class DirectIngestIngestViewExportManager:
     def __init__(self,
                  *,
                  region: Region,
-                 fs: DirectIngestGCSFileSystem,
+                 fs: GCSFileSystem,
                  ingest_directory_path: GcsfsDirectoryPath,
                  big_query_client: BigQueryClient,
                  file_metadata_manager: DirectIngestFileMetadataManager,
@@ -158,13 +158,18 @@ class DirectIngestIngestViewExportManager:
         results of that query into the provided |table_name|. Returns the potentially in progress QueryJob to the
         caller.
         """
-        query, query_params = self._generate_query_and_params_for_date(ingest_view, date_bound)
-        query_job = self.big_query_client.create_table_from_query_async(
-            dataset_id=ingest_view.dataset_id,
-            table_id=table_name,
-            query=query,
-            query_parameters=query_params,
-            overwrite=True)
+        query, query_params = self._generate_export_query_and_params_for_date(
+            ingest_view=ingest_view,
+            destination_table_type=DestinationTableType.PERMANENT_EXPIRING,
+            destination_table_id=table_name,
+            update_timestamp=date_bound,
+        )
+
+        logging.info('Generated bound query with params \nquery: [%s]\nparams: [%s]', query, query_params)
+
+        query_job = self.big_query_client.run_query_async(
+            query_str=query,
+            query_parameters=query_params)
         return query_job
 
     @staticmethod
@@ -334,10 +339,10 @@ class DirectIngestIngestViewExportManager:
         return True
 
     @classmethod
-    def print_debug_query_for_args(cls,
-                                   ingest_views_by_tag: Dict[str, DirectIngestPreProcessedIngestView],
-                                   ingest_view_export_args: GcsfsIngestViewExportArgs):
-        """Prints a version of the export query for the provided args that can be run in the BigQuery UI."""
+    def debug_query_for_args(cls,
+                             ingest_views_by_tag: Dict[str, DirectIngestPreProcessedIngestView],
+                             ingest_view_export_args: GcsfsIngestViewExportArgs) -> str:
+        """Returns a version of the export query for the provided args that can be run in the BigQuery UI."""
         query, query_params = cls._debug_generate_unified_query(
             ingest_views_by_tag[ingest_view_export_args.ingest_view_name],
             ingest_view_export_args)
@@ -348,10 +353,11 @@ class DirectIngestIngestViewExportManager:
                 f'@{param.name}',
                 f'DATETIME({dt.year}, {dt.month}, {dt.day}, {dt.hour}, {dt.minute}, {dt.second})')
 
-        print(query)
+        return query
 
-    @staticmethod
+    @classmethod
     def _debug_generate_unified_query(
+            cls,
             ingest_view: DirectIngestPreProcessedIngestView,
             ingest_view_export_args: GcsfsIngestViewExportArgs
     ) -> Tuple[str, List[bigquery.ScalarQueryParameter]]:
@@ -366,39 +372,71 @@ class DirectIngestIngestViewExportManager:
         `EXCEPT DISTINCT` function.
         """
 
-        query_params = [
-            bigquery.ScalarQueryParameter(UPPER_BOUND_TIMESTAMP_PARAM_NAME,
-                                          bigquery.enums.SqlTypeNames.DATETIME.value,
-                                          ingest_view_export_args.upper_bound_datetime_to_export)
-        ]
-        query = ingest_view.date_parametrized_view_query(UPPER_BOUND_TIMESTAMP_PARAM_NAME)
+        if ingest_view.materialize_raw_data_table_views:
+            raise ValueError('TODO(#4925): Debug queries for raw table materialized queries not yet supported.')
+
+        upper_bound_table_id = cls._get_upper_bound_intermediate_table_name(ingest_view_export_args)
+        query, query_params = cls._generate_export_query_and_params_for_date(
+            ingest_view=ingest_view,
+            destination_table_type=DestinationTableType.TEMPORARY,
+            destination_table_id=upper_bound_table_id,
+            update_timestamp=ingest_view_export_args.upper_bound_datetime_to_export,
+            param_name=UPPER_BOUND_TIMESTAMP_PARAM_NAME
+        )
+
         if ingest_view_export_args.upper_bound_datetime_prev:
-            query_params.append(
-                bigquery.ScalarQueryParameter(LOWER_BOUND_TIMESTAMP_PARAM_NAME,
-                                              bigquery.enums.SqlTypeNames.DATETIME.value,
-                                              ingest_view_export_args.upper_bound_datetime_prev)
+            lower_bound_table_id = cls._get_lower_bound_intermediate_table_name(ingest_view_export_args)
+            lower_bound_query, lower_bound_query_params = cls._generate_export_query_and_params_for_date(
+                ingest_view=ingest_view,
+                destination_table_type=DestinationTableType.TEMPORARY,
+                destination_table_id=lower_bound_table_id,
+                update_timestamp=ingest_view_export_args.upper_bound_datetime_prev,
+                param_name=LOWER_BOUND_TIMESTAMP_PARAM_NAME
             )
-            query = DirectIngestIngestViewExportManager.create_date_diff_query(
-                upper_bound_query=query,
-                upper_bound_prev_query=ingest_view.date_parametrized_view_query(LOWER_BOUND_TIMESTAMP_PARAM_NAME),
+
+            query_params.extend(lower_bound_query_params)
+
+            diff_query = DirectIngestIngestViewExportManager.create_date_diff_query(
+                upper_bound_query=f'SELECT * FROM {upper_bound_table_id}',
+                upper_bound_prev_query=f'SELECT * FROM {lower_bound_table_id}',
                 do_reverse_date_diff=ingest_view.do_reverse_date_diff)
-            query = DirectIngestPreProcessedIngestView.add_order_by_suffix(
-                query=query, order_by_cols=ingest_view.order_by_cols)
+            diff_query = DirectIngestPreProcessedIngestView.add_order_by_suffix(
+                query=diff_query, order_by_cols=ingest_view.order_by_cols)
+
+            query = f'{query}\n{lower_bound_query}\n{diff_query}'
         return query, query_params
 
     @staticmethod
-    def _generate_query_and_params_for_date(
+    def _generate_export_query_and_params_for_date(
+            *,
             ingest_view: DirectIngestPreProcessedIngestView,
-            update_timestamp: datetime.datetime
+            update_timestamp: datetime.datetime,
+            destination_table_type: DestinationTableType,
+            destination_table_id: str,
+            param_name: str = UPDATE_TIMESTAMP_PARAM_NAME,
     ) -> Tuple[str, List[bigquery.ScalarQueryParameter]]:
         """Generates a single query for the provided |ingest view| that is date bounded by |update_timestamp|."""
         query_params = [
-            bigquery.ScalarQueryParameter(UPDATE_TIMESTAMP_PARAM_NAME,
+            bigquery.ScalarQueryParameter(param_name,
                                           bigquery.enums.SqlTypeNames.DATETIME.value,
                                           update_timestamp)
         ]
-        query = ingest_view.date_parametrized_view_query(UPDATE_TIMESTAMP_PARAM_NAME)
-        logging.info('Generated bound query with params \nquery: [%s]\nparams: [%s]', query, query_params)
+
+        if destination_table_type == DestinationTableType.TEMPORARY:
+            destination_dataset_id = None
+        elif destination_table_type == DestinationTableType.PERMANENT_EXPIRING:
+            destination_dataset_id = ingest_view.dataset_id
+        else:
+            raise ValueError(f'Unexpected destination_table_type [{destination_table_type.name}]')
+
+        query = ingest_view.expanded_view_query(
+            config=DirectIngestPreProcessedIngestView.QueryStructureConfig(
+                raw_table_view_type=RawTableViewType.PARAMETERIZED,
+                param_name_override=param_name,
+                destination_table_type=destination_table_type,
+                destination_dataset_id=destination_dataset_id,
+                destination_table_id=destination_table_id,
+            ))
         return query, query_params
 
     def _generate_output_path(self,
@@ -478,7 +516,7 @@ if __name__ == '__main__':
             builder.file_tag: builder.build()
             for builder in view_collector_.collect_view_builders()}
 
-        DirectIngestIngestViewExportManager.print_debug_query_for_args(
+        debug_query = DirectIngestIngestViewExportManager.debug_query_for_args(
             views_by_tag_,
             GcsfsIngestViewExportArgs(
                 ingest_view_name=ingest_view_name_,
@@ -486,3 +524,4 @@ if __name__ == '__main__':
                 upper_bound_datetime_to_export=upper_bound_datetime_to_export_
             )
         )
+        print(debug_query)

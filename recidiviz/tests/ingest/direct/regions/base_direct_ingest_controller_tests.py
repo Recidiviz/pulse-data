@@ -25,7 +25,7 @@ import unittest
 from typing import Type, Optional
 
 from freezegun import freeze_time
-from mock import patch, Mock
+from mock import patch
 from sqlalchemy.ext.declarative import DeclarativeMeta
 
 from recidiviz import IngestInfo
@@ -43,8 +43,6 @@ from recidiviz.tests.utils.test_utils import print_visible_header_label
 from recidiviz.tools.postgres import local_postgres_helpers
 
 
-@patch('recidiviz.utils.metadata.project_id',
-       Mock(return_value='recidiviz-staging'))
 @freeze_time('2019-09-27')
 class BaseDirectIngestControllerTests(unittest.TestCase):
     """Class with basic functionality for tests of all region-specific
@@ -76,6 +74,10 @@ class BaseDirectIngestControllerTests(unittest.TestCase):
     def setUp(self) -> None:
         self.maxDiff = 250000
 
+        self.metadata_patcher = patch('recidiviz.utils.metadata.project_id')
+        self.mock_project_id_fn = self.metadata_patcher.start()
+        self.mock_project_id_fn.return_value = 'recidiviz-staging'
+
         local_postgres_helpers.use_on_disk_postgresql_database(self.schema_base())
         local_postgres_helpers.use_on_disk_postgresql_database(OperationsBase)
 
@@ -88,6 +90,7 @@ class BaseDirectIngestControllerTests(unittest.TestCase):
     def tearDown(self) -> None:
         local_postgres_helpers.teardown_on_disk_postgresql_database(OperationsBase)
         local_postgres_helpers.teardown_on_disk_postgresql_database(self.schema_base())
+        self.metadata_patcher.stop()
 
     @classmethod
     def tearDownClass(cls) -> None:

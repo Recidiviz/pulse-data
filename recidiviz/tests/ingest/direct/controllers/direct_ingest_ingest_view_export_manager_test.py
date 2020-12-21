@@ -55,11 +55,142 @@ _DATE_3 = datetime.datetime(year=2021, month=7, day=20)
 _DATE_4 = datetime.datetime(year=2022, month=7, day=20)
 
 
+_DATE_2_UPPER_BOUND_CREATE_TABLE_SCRIPT = \
+    """DELETE TABLE IF EXISTS `recidiviz-456.us_xx_ingest_views.ingest_view_2020_07_20_00_00_00_upper_bound`;
+CREATE TABLE `recidiviz-456.us_xx_ingest_views.ingest_view_2020_07_20_00_00_00_upper_bound`
+OPTIONS(
+  -- Data in this table will be deleted after 24 hours
+  expiration_timestamp=TIMESTAMP_ADD(CURRENT_TIMESTAMP(), INTERVAL 1 DAY)
+) AS (
+
+WITH
+file_tag_first_generated_view AS (
+    WITH rows_with_recency_rank AS (
+        SELECT
+            * EXCEPT (file_id, update_datetime),
+            ROW_NUMBER() OVER (PARTITION BY col_name_1a, col_name_1b
+                               ORDER BY update_datetime DESC) AS recency_rank
+        FROM
+            `recidiviz-456.us_xx_raw_data.file_tag_first`
+        WHERE
+            update_datetime <= @update_timestamp
+    )
+
+    SELECT *
+    EXCEPT (recency_rank)
+    FROM rows_with_recency_rank
+    WHERE recency_rank = 1
+),
+tagFullHistoricalExport_generated_view AS (
+    WITH max_update_datetime AS (
+        SELECT
+            MAX(update_datetime) AS update_datetime
+        FROM
+            `recidiviz-456.us_xx_raw_data.tagFullHistoricalExport`
+        WHERE
+            update_datetime <= @update_timestamp
+    ),
+    max_file_id AS (
+        SELECT
+            MAX(file_id) AS file_id
+        FROM
+            `recidiviz-456.us_xx_raw_data.tagFullHistoricalExport`
+        WHERE
+            update_datetime = (SELECT update_datetime FROM max_update_datetime)
+    ),
+    rows_with_recency_rank AS (
+        SELECT
+            * EXCEPT (file_id, update_datetime),
+            ROW_NUMBER() OVER (PARTITION BY COL_1
+                               ORDER BY update_datetime DESC) AS recency_rank
+        FROM
+            `recidiviz-456.us_xx_raw_data.tagFullHistoricalExport`
+        WHERE
+            file_id = (SELECT file_id FROM max_file_id)
+    )
+    SELECT *
+    EXCEPT (recency_rank)
+    FROM rows_with_recency_rank
+    WHERE recency_rank = 1
+)
+select * from file_tag_first_generated_view JOIN tagFullHistoricalExport_generated_view USING (COL_1)
+ORDER BY colA, colC
+
+);"""
+
+
+_DATE_2_UPPER_BOUND_MATERIALIZED_RAW_TABLE_CREATE_TABLE_SCRIPT = \
+    """CREATE TEMP TABLE file_tag_first_generated_view AS (
+    WITH rows_with_recency_rank AS (
+        SELECT
+            * EXCEPT (file_id, update_datetime),
+            ROW_NUMBER() OVER (PARTITION BY col_name_1a, col_name_1b
+                               ORDER BY update_datetime DESC) AS recency_rank
+        FROM
+            `recidiviz-456.us_xx_raw_data.file_tag_first`
+        WHERE
+            update_datetime <= @update_timestamp
+    )
+
+    SELECT *
+    EXCEPT (recency_rank)
+    FROM rows_with_recency_rank
+    WHERE recency_rank = 1
+);
+CREATE TEMP TABLE tagFullHistoricalExport_generated_view AS (
+    WITH max_update_datetime AS (
+        SELECT
+            MAX(update_datetime) AS update_datetime
+        FROM
+            `recidiviz-456.us_xx_raw_data.tagFullHistoricalExport`
+        WHERE
+            update_datetime <= @update_timestamp
+    ),
+    max_file_id AS (
+        SELECT
+            MAX(file_id) AS file_id
+        FROM
+            `recidiviz-456.us_xx_raw_data.tagFullHistoricalExport`
+        WHERE
+            update_datetime = (SELECT update_datetime FROM max_update_datetime)
+    ),
+    rows_with_recency_rank AS (
+        SELECT
+            * EXCEPT (file_id, update_datetime),
+            ROW_NUMBER() OVER (PARTITION BY COL_1
+                               ORDER BY update_datetime DESC) AS recency_rank
+        FROM
+            `recidiviz-456.us_xx_raw_data.tagFullHistoricalExport`
+        WHERE
+            file_id = (SELECT file_id FROM max_file_id)
+    )
+    SELECT *
+    EXCEPT (recency_rank)
+    FROM rows_with_recency_rank
+    WHERE recency_rank = 1
+);
+DELETE TABLE IF EXISTS `recidiviz-456.us_xx_ingest_views.ingest_view_2020_07_20_00_00_00_upper_bound`;
+CREATE TABLE `recidiviz-456.us_xx_ingest_views.ingest_view_2020_07_20_00_00_00_upper_bound`
+OPTIONS(
+  -- Data in this table will be deleted after 24 hours
+  expiration_timestamp=TIMESTAMP_ADD(CURRENT_TIMESTAMP(), INTERVAL 1 DAY)
+) AS (
+
+select * from file_tag_first_generated_view JOIN tagFullHistoricalExport_generated_view USING (COL_1)
+ORDER BY colA, colC
+
+);"""
+
+
 class _FakeDirectIngestViewBuilder(BigQueryViewBuilder[DirectIngestPreProcessedIngestView]):
     """Fake BQ View Builder for tests."""
-    def __init__(self, tag: str, is_detect_row_deletion_view: bool = False):
+    def __init__(self,
+                 tag: str,
+                 is_detect_row_deletion_view: bool = False,
+                 materialize_raw_data_table_views: bool = False):
         self.tag = tag
         self.is_detect_row_deletion_view = is_detect_row_deletion_view
+        self.materialize_raw_data_table_views = materialize_raw_data_table_views
 
     def build(self,
               *,
@@ -80,13 +211,14 @@ class _FakeDirectIngestViewBuilder(BigQueryViewBuilder[DirectIngestPreProcessedI
             order_by_cols='colA, colC',
             is_detect_row_deletion_view=self.is_detect_row_deletion_view,
             primary_key_tables_for_entity_deletion=primary_key_tables_for_entity_deletion,
+            materialize_raw_data_table_views=self.materialize_raw_data_table_views
         )
 
     def build_and_print(self) -> None:
         self.build()
 
     @property
-    def file_tag(self):
+    def file_tag(self) -> str:
         return self.tag
 
 
@@ -95,14 +227,18 @@ class _ViewCollector(BigQueryViewCollector[_FakeDirectIngestViewBuilder]):
     def __init__(self,
                  region: Region,
                  controller_file_tags: List[str],
-                 is_detect_row_deletion_view: bool):
+                 is_detect_row_deletion_view: bool,
+                 materialize_raw_data_table_views: bool):
         self.region = region
         self.controller_file_tags = controller_file_tags
         self.is_detect_row_deletion_view = is_detect_row_deletion_view
+        self.materialize_raw_data_table_views = materialize_raw_data_table_views
 
     def collect_view_builders(self) -> List[_FakeDirectIngestViewBuilder]:
         builders = [
-            _FakeDirectIngestViewBuilder(tag=tag, is_detect_row_deletion_view=self.is_detect_row_deletion_view)
+            _FakeDirectIngestViewBuilder(
+                tag=tag, is_detect_row_deletion_view=self.is_detect_row_deletion_view,
+                materialize_raw_data_table_views=self.materialize_raw_data_table_views)
             for tag in self.controller_file_tags
         ]
 
@@ -115,12 +251,14 @@ class DirectIngestIngestViewExportManagerTest(unittest.TestCase):
     def setUp(self) -> None:
         self.metadata_patcher = patch('recidiviz.utils.metadata.project_id')
         self.mock_project_id_fn = self.metadata_patcher.start()
-        self.mock_project_id_fn.return_value = 'recidiviz-456'
+        self.mock_project_id = 'recidiviz-456'
+        self.mock_project_id_fn.return_value = self.mock_project_id
 
         fakes.use_in_memory_sqlite_database(OperationsBase)
         self.client_patcher = patch('recidiviz.big_query.big_query_client.BigQueryClient')
         self.mock_client = self.client_patcher.start().return_value
-        project_id_mock = mock.PropertyMock(return_value='recidiviz-456')
+
+        project_id_mock = mock.PropertyMock(return_value=self.mock_project_id)
         type(self.mock_client).project_id = project_id_mock
 
     def tearDown(self) -> None:
@@ -138,7 +276,10 @@ class DirectIngestIngestViewExportManagerTest(unittest.TestCase):
                            are_raw_data_bq_imports_enabled_in_env=True,
                            are_ingest_view_exports_enabled_in_env=ingest_view_exports_enabled)
 
-    def create_export_manager(self, region, is_detect_row_deletion_view=False):
+    def create_export_manager(self,
+                              region: Region,
+                              is_detect_row_deletion_view: bool = False,
+                              materialize_raw_data_table_views: bool = False):
         metadata_manager = PostgresDirectIngestFileMetadataManager(region.region_code)
         return DirectIngestIngestViewExportManager(
             region=region,
@@ -146,10 +287,12 @@ class DirectIngestIngestViewExportManagerTest(unittest.TestCase):
             ingest_directory_path=GcsfsDirectoryPath.from_absolute_path('ingest_bucket'),
             big_query_client=self.mock_client,
             file_metadata_manager=metadata_manager,
-            view_collector=_ViewCollector(
+            view_collector=_ViewCollector(  # type: ignore[arg-type]
                 region,
                 controller_file_tags=['ingest_view'],
-                is_detect_row_deletion_view=is_detect_row_deletion_view))
+                is_detect_row_deletion_view=is_detect_row_deletion_view,
+                materialize_raw_data_table_views=materialize_raw_data_table_views
+            ))
 
     @staticmethod
     def generate_query_params_for_date(date_param):
@@ -163,7 +306,7 @@ class DirectIngestIngestViewExportManagerTest(unittest.TestCase):
         normalized_expected_query = expected_query.replace('\n', '')
         self.assertEqual(normalized_expected_query, normalized_exported_query)
 
-    def test_exportViewForArgs_ingestViewExportsDisabled(self):
+    def test_exportViewForArgs_ingestViewExportsDisabled(self) -> None:
         # Arrange
         region = self.create_fake_region(ingest_view_exports_enabled=False)
         export_manager = self.create_export_manager(region)
@@ -177,11 +320,11 @@ class DirectIngestIngestViewExportManagerTest(unittest.TestCase):
             export_manager.export_view_for_args(export_args)
 
         # Assert
-        self.mock_client.create_table_from_query_async.assert_not_called()
+        self.mock_client.run_query_async.assert_not_called()
         self.mock_client.export_query_results_to_cloud_storage.assert_not_called()
         self.mock_client.delete_table.assert_not_called()
 
-    def test_exportViewForArgs_noExistingMetadata(self):
+    def test_exportViewForArgs_noExistingMetadata(self) -> None:
         # Arrange
         region = self.create_fake_region()
         export_manager = self.create_export_manager(region)
@@ -195,11 +338,11 @@ class DirectIngestIngestViewExportManagerTest(unittest.TestCase):
             export_manager.export_view_for_args(export_args)
 
         # Assert
-        self.mock_client.create_table_from_query_async.assert_not_called()
+        self.mock_client.run_query_async.assert_not_called()
         self.mock_client.export_query_results_to_cloud_storage.assert_not_called()
         self.mock_client.delete_table.assert_not_called()
 
-    def test_exportViewForArgs_alreadyExported(self):
+    def test_exportViewForArgs_alreadyExported(self) -> None:
         # Arrange
         region = self.create_fake_region()
         export_manager = self.create_export_manager(region)
@@ -230,7 +373,7 @@ class DirectIngestIngestViewExportManagerTest(unittest.TestCase):
         export_manager.export_view_for_args(export_args)
 
         # Assert
-        self.mock_client.create_table_from_query_async.assert_not_called()
+        self.mock_client.run_query_async.assert_not_called()
         self.mock_client.export_query_results_to_cloud_storage.assert_not_called()
         self.mock_client.delete_table.assert_not_called()
         assert_session = SessionFactory.for_schema_base(OperationsBase)
@@ -238,7 +381,7 @@ class DirectIngestIngestViewExportManagerTest(unittest.TestCase):
         self.assertEqual(expected_metadata, found_metadata)
         assert_session.close()
 
-    def test_exportViewForArgs_noLowerBound(self):
+    def test_exportViewForArgs_noLowerBound(self) -> None:
         # Arrange
         region = self.create_fake_region()
         export_manager = self.create_export_manager(region)
@@ -271,16 +414,15 @@ class DirectIngestIngestViewExportManagerTest(unittest.TestCase):
             export_manager.export_view_for_args(export_args)
 
         # Assert
-        self.mock_client.create_table_from_query_async.assert_has_calls([
+        expected_upper_bound_query = _DATE_2_UPPER_BOUND_CREATE_TABLE_SCRIPT
+
+        self.mock_client.run_query_async.assert_has_calls([
             mock.call(
-                dataset_id='us_xx_ingest_views',
-                overwrite=True,
-                query=mock.ANY,
-                query_parameters=[self.generate_query_params_for_date(export_args.upper_bound_datetime_to_export)],
-                table_id='ingest_view_2020_07_20_00_00_00_upper_bound'),
+                query_str=expected_upper_bound_query,
+                query_parameters=[self.generate_query_params_for_date(export_args.upper_bound_datetime_to_export)]),
         ])
         expected_query = \
-            'SELECT * FROM `recidiviz-456.us_xx_ingest_views.ingest_view_2020_07_20_00_00_00_upper_bound` ' \
+            'SELECT * FROM `recidiviz-456.us_xx_ingest_views.ingest_view_2020_07_20_00_00_00_upper_bound`' \
             'ORDER BY colA, colC;'
         self.assert_exported_to_gcs_with_query(expected_query)
         self.mock_client.delete_table.assert_has_calls([
@@ -290,7 +432,7 @@ class DirectIngestIngestViewExportManagerTest(unittest.TestCase):
         self.assertEqual(expected_metadata, found_metadata)
         assert_session.close()
 
-    def test_exportViewForArgs(self):
+    def test_exportViewForArgs(self) -> None:
         # Arrange
         region = self.create_fake_region()
         export_manager = self.create_export_manager(region)
@@ -322,24 +464,22 @@ class DirectIngestIngestViewExportManagerTest(unittest.TestCase):
             export_manager.export_view_for_args(export_args)
 
         # Assert
-        self.mock_client.create_table_from_query_async.assert_has_calls([
+        expected_upper_bound_query = _DATE_2_UPPER_BOUND_CREATE_TABLE_SCRIPT
+        expected_lower_bound_query = expected_upper_bound_query.replace('2020_07_20_00_00_00_upper_bound',
+                                                                        '2019_07_20_00_00_00_lower_bound')
+
+        self.mock_client.run_query_async.assert_has_calls([
             mock.call(
-                dataset_id='us_xx_ingest_views',
-                overwrite=True,
-                query=mock.ANY,
-                query_parameters=[self.generate_query_params_for_date(export_args.upper_bound_datetime_to_export)],
-                table_id='ingest_view_2020_07_20_00_00_00_upper_bound'),
+                query_str=expected_upper_bound_query,
+                query_parameters=[self.generate_query_params_for_date(export_args.upper_bound_datetime_to_export)]),
             mock.call(
-                dataset_id='us_xx_ingest_views',
-                overwrite=True,
-                query=mock.ANY,
-                query_parameters=[self.generate_query_params_for_date(export_args.upper_bound_datetime_prev)],
-                table_id='ingest_view_2019_07_20_00_00_00_lower_bound'),
+                query_str=expected_lower_bound_query,
+                query_parameters=[self.generate_query_params_for_date(export_args.upper_bound_datetime_prev)]),
         ])
         expected_query = \
             '(SELECT * FROM `recidiviz-456.us_xx_ingest_views.ingest_view_2020_07_20_00_00_00_upper_bound`) ' \
             'EXCEPT DISTINCT ' \
-            '(SELECT * FROM `recidiviz-456.us_xx_ingest_views.ingest_view_2019_07_20_00_00_00_lower_bound`) ' \
+            '(SELECT * FROM `recidiviz-456.us_xx_ingest_views.ingest_view_2019_07_20_00_00_00_lower_bound`)' \
             'ORDER BY colA, colC;'
         self.assert_exported_to_gcs_with_query(expected_query)
         self.mock_client.delete_table.assert_has_calls([
@@ -352,7 +492,69 @@ class DirectIngestIngestViewExportManagerTest(unittest.TestCase):
         self.assertEqual(expected_metadata, found_metadata)
         assert_session.close()
 
-    def test_exportViewForArgs_detectRowDeletionView_noLowerBound(self):
+    def test_exportViewForArgsMaterializedViews(self) -> None:
+        # Arrange
+        region = self.create_fake_region()
+
+        export_manager = self.create_export_manager(region, materialize_raw_data_table_views=True)
+
+        export_args = GcsfsIngestViewExportArgs(
+            ingest_view_name='ingest_view',
+            upper_bound_datetime_prev=_DATE_1,
+            upper_bound_datetime_to_export=_DATE_2)
+
+        session = SessionFactory.for_schema_base(OperationsBase)
+        metadata = schema.DirectIngestIngestFileMetadata(
+            file_id=_ID,
+            region_code=region.region_code,
+            file_tag=export_args.ingest_view_name,
+            normalized_file_name='normalized_file_name',
+            is_invalidated=False,
+            is_file_split=False,
+            job_creation_time=_DATE_1,
+            export_time=None,
+            datetimes_contained_lower_bound_exclusive=export_args.upper_bound_datetime_prev,
+            datetimes_contained_upper_bound_inclusive=export_args.upper_bound_datetime_to_export
+        )
+        expected_metadata = attr.evolve(self.to_entity(metadata), export_time=_DATE_4)
+        session.add(metadata)
+        session.commit()
+        session.close()
+
+        # Act
+        with freeze_time(_DATE_4.isoformat()):
+            export_manager.export_view_for_args(export_args)
+
+        # Assert
+        expected_upper_bound_query = _DATE_2_UPPER_BOUND_MATERIALIZED_RAW_TABLE_CREATE_TABLE_SCRIPT
+        expected_lower_bound_query = expected_upper_bound_query.replace('2020_07_20_00_00_00_upper_bound',
+                                                                        '2019_07_20_00_00_00_lower_bound')
+
+        self.mock_client.run_query_async.assert_has_calls([
+            mock.call(
+                query_str=expected_upper_bound_query,
+                query_parameters=[self.generate_query_params_for_date(export_args.upper_bound_datetime_to_export)]),
+            mock.call(
+                query_str=expected_lower_bound_query,
+                query_parameters=[self.generate_query_params_for_date(export_args.upper_bound_datetime_prev)]),
+        ])
+        expected_query = \
+            '(SELECT * FROM `recidiviz-456.us_xx_ingest_views.ingest_view_2020_07_20_00_00_00_upper_bound`) ' \
+            'EXCEPT DISTINCT ' \
+            '(SELECT * FROM `recidiviz-456.us_xx_ingest_views.ingest_view_2019_07_20_00_00_00_lower_bound`)' \
+            'ORDER BY colA, colC;'
+        self.assert_exported_to_gcs_with_query(expected_query)
+        self.mock_client.delete_table.assert_has_calls([
+            mock.call(dataset_id='us_xx_ingest_views', table_id='ingest_view_2020_07_20_00_00_00_upper_bound'),
+            mock.call(dataset_id='us_xx_ingest_views', table_id='ingest_view_2019_07_20_00_00_00_lower_bound'),
+        ])
+
+        assert_session = SessionFactory.for_schema_base(OperationsBase)
+        found_metadata = self.to_entity(one(assert_session.query(schema.DirectIngestIngestFileMetadata).all()))
+        self.assertEqual(expected_metadata, found_metadata)
+        assert_session.close()
+
+    def test_exportViewForArgs_detectRowDeletionView_noLowerBound(self) -> None:
         # Arrange
         region = self.create_fake_region()
         export_manager = self.create_export_manager(region, is_detect_row_deletion_view=True)
@@ -385,7 +587,7 @@ class DirectIngestIngestViewExportManagerTest(unittest.TestCase):
             export_manager.export_view_for_args(export_args)
 
         # Assert
-        self.mock_client.create_table_from_query_async.assert_not_called()
+        self.mock_client.run_query_async.assert_not_called()
         self.mock_client.export_query_results_to_cloud_storage.assert_not_called()
         self.mock_client.delete_table.assert_not_called()
 
@@ -394,7 +596,7 @@ class DirectIngestIngestViewExportManagerTest(unittest.TestCase):
         self.assertEqual(expected_metadata, found_metadata)
         assert_session.close()
 
-    def test_exportViewForArgs_detectRowDeletionView(self):
+    def test_exportViewForArgs_detectRowDeletionView(self) -> None:
         # Arrange
         region = self.create_fake_region()
         export_manager = self.create_export_manager(region, is_detect_row_deletion_view=True)
@@ -425,26 +627,24 @@ class DirectIngestIngestViewExportManagerTest(unittest.TestCase):
         with freeze_time(_DATE_4.isoformat()):
             export_manager.export_view_for_args(export_args)
 
+        expected_upper_bound_query = _DATE_2_UPPER_BOUND_CREATE_TABLE_SCRIPT
+        expected_lower_bound_query = expected_upper_bound_query.replace('2020_07_20_00_00_00_upper_bound',
+                                                                        '2019_07_20_00_00_00_lower_bound')
+
         # Assert
-        self.mock_client.create_table_from_query_async.assert_has_calls([
+        self.mock_client.run_query_async.assert_has_calls([
             mock.call(
-                dataset_id='us_xx_ingest_views',
-                overwrite=True,
-                query=mock.ANY,
-                query_parameters=[self.generate_query_params_for_date(export_args.upper_bound_datetime_to_export)],
-                table_id='ingest_view_2020_07_20_00_00_00_upper_bound'),
+                query_str=expected_upper_bound_query,
+                query_parameters=[self.generate_query_params_for_date(export_args.upper_bound_datetime_to_export)]),
             mock.call(
-                dataset_id='us_xx_ingest_views',
-                overwrite=True,
-                query=mock.ANY,
-                query_parameters=[self.generate_query_params_for_date(export_args.upper_bound_datetime_prev)],
-                table_id='ingest_view_2019_07_20_00_00_00_lower_bound'),
+                query_str=expected_lower_bound_query,
+                query_parameters=[self.generate_query_params_for_date(export_args.upper_bound_datetime_prev)]),
         ])
         # Lower bound is the first part of the subquery, not upper bound.
         expected_query = \
             '(SELECT * FROM `recidiviz-456.us_xx_ingest_views.ingest_view_2019_07_20_00_00_00_lower_bound`) ' \
             'EXCEPT DISTINCT ' \
-            '(SELECT * FROM `recidiviz-456.us_xx_ingest_views.ingest_view_2020_07_20_00_00_00_upper_bound`) ' \
+            '(SELECT * FROM `recidiviz-456.us_xx_ingest_views.ingest_view_2020_07_20_00_00_00_upper_bound`)' \
             'ORDER BY colA, colC;'
         self.assert_exported_to_gcs_with_query(expected_query)
         self.mock_client.delete_table.assert_has_calls([
@@ -456,3 +656,140 @@ class DirectIngestIngestViewExportManagerTest(unittest.TestCase):
         found_metadata = self.to_entity(one(assert_session.query(schema.DirectIngestIngestFileMetadata).all()))
         self.assertEqual(expected_metadata, found_metadata)
         assert_session.close()
+
+    def test_debugQueryForArgs(self) -> None:
+        # Arrange
+        region = self.create_fake_region()
+        export_manager = self.create_export_manager(region)
+        export_args = GcsfsIngestViewExportArgs(
+            ingest_view_name='ingest_view',
+            upper_bound_datetime_prev=_DATE_1,
+            upper_bound_datetime_to_export=_DATE_2)
+
+        # Act
+        with freeze_time(_DATE_4.isoformat()):
+            debug_query = DirectIngestIngestViewExportManager.debug_query_for_args(
+                export_manager.ingest_views_by_tag, export_args)
+
+        expected_debug_query = \
+            """CREATE TEMP TABLE ingest_view_2020_07_20_00_00_00_upper_bound AS (
+
+WITH
+file_tag_first_generated_view AS (
+    WITH rows_with_recency_rank AS (
+        SELECT
+            * EXCEPT (file_id, update_datetime),
+            ROW_NUMBER() OVER (PARTITION BY col_name_1a, col_name_1b
+                               ORDER BY update_datetime DESC) AS recency_rank
+        FROM
+            `recidiviz-456.us_xx_raw_data.file_tag_first`
+        WHERE
+            update_datetime <= DATETIME(2020, 7, 20, 0, 0, 0)
+    )
+
+    SELECT *
+    EXCEPT (recency_rank)
+    FROM rows_with_recency_rank
+    WHERE recency_rank = 1
+),
+tagFullHistoricalExport_generated_view AS (
+    WITH max_update_datetime AS (
+        SELECT
+            MAX(update_datetime) AS update_datetime
+        FROM
+            `recidiviz-456.us_xx_raw_data.tagFullHistoricalExport`
+        WHERE
+            update_datetime <= DATETIME(2020, 7, 20, 0, 0, 0)
+    ),
+    max_file_id AS (
+        SELECT
+            MAX(file_id) AS file_id
+        FROM
+            `recidiviz-456.us_xx_raw_data.tagFullHistoricalExport`
+        WHERE
+            update_datetime = (SELECT update_datetime FROM max_update_datetime)
+    ),
+    rows_with_recency_rank AS (
+        SELECT
+            * EXCEPT (file_id, update_datetime),
+            ROW_NUMBER() OVER (PARTITION BY COL_1
+                               ORDER BY update_datetime DESC) AS recency_rank
+        FROM
+            `recidiviz-456.us_xx_raw_data.tagFullHistoricalExport`
+        WHERE
+            file_id = (SELECT file_id FROM max_file_id)
+    )
+    SELECT *
+    EXCEPT (recency_rank)
+    FROM rows_with_recency_rank
+    WHERE recency_rank = 1
+)
+select * from file_tag_first_generated_view JOIN tagFullHistoricalExport_generated_view USING (COL_1)
+ORDER BY colA, colC
+
+);
+CREATE TEMP TABLE ingest_view_2019_07_20_00_00_00_lower_bound AS (
+
+WITH
+file_tag_first_generated_view AS (
+    WITH rows_with_recency_rank AS (
+        SELECT
+            * EXCEPT (file_id, update_datetime),
+            ROW_NUMBER() OVER (PARTITION BY col_name_1a, col_name_1b
+                               ORDER BY update_datetime DESC) AS recency_rank
+        FROM
+            `recidiviz-456.us_xx_raw_data.file_tag_first`
+        WHERE
+            update_datetime <= DATETIME(2019, 7, 20, 0, 0, 0)
+    )
+
+    SELECT *
+    EXCEPT (recency_rank)
+    FROM rows_with_recency_rank
+    WHERE recency_rank = 1
+),
+tagFullHistoricalExport_generated_view AS (
+    WITH max_update_datetime AS (
+        SELECT
+            MAX(update_datetime) AS update_datetime
+        FROM
+            `recidiviz-456.us_xx_raw_data.tagFullHistoricalExport`
+        WHERE
+            update_datetime <= DATETIME(2019, 7, 20, 0, 0, 0)
+    ),
+    max_file_id AS (
+        SELECT
+            MAX(file_id) AS file_id
+        FROM
+            `recidiviz-456.us_xx_raw_data.tagFullHistoricalExport`
+        WHERE
+            update_datetime = (SELECT update_datetime FROM max_update_datetime)
+    ),
+    rows_with_recency_rank AS (
+        SELECT
+            * EXCEPT (file_id, update_datetime),
+            ROW_NUMBER() OVER (PARTITION BY COL_1
+                               ORDER BY update_datetime DESC) AS recency_rank
+        FROM
+            `recidiviz-456.us_xx_raw_data.tagFullHistoricalExport`
+        WHERE
+            file_id = (SELECT file_id FROM max_file_id)
+    )
+    SELECT *
+    EXCEPT (recency_rank)
+    FROM rows_with_recency_rank
+    WHERE recency_rank = 1
+)
+select * from file_tag_first_generated_view JOIN tagFullHistoricalExport_generated_view USING (COL_1)
+ORDER BY colA, colC
+
+);
+(
+SELECT * FROM ingest_view_2020_07_20_00_00_00_upper_bound
+) EXCEPT DISTINCT (
+SELECT * FROM ingest_view_2019_07_20_00_00_00_lower_bound
+)
+ORDER BY colA, colC;"""
+
+        # Assert
+        self.assertEqual(expected_debug_query, debug_query)
