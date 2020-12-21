@@ -6,9 +6,10 @@ tables:
     - file: 'table.csv'
       date_range:
         fixed:
-          type: 'SNAPSHOT'
+          type: 'RANGE'
+          converter: 'YEAR'
           input:
-            - '2020-09-01'
+            - '2019'
       system: 'CORRECTIONS'
       metric:
         population:

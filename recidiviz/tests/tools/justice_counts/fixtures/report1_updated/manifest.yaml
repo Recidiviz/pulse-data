@@ -6,8 +6,9 @@ tables:
     - file: 'ManualData-Prison_US_CO_DashboardMeasures_Jul20.csv'
       date_range:
         fixed:
-          snapshot:
-            date: '2020-07-31'
+          type: 'SNAPSHOT'
+          input:
+            - '2020-07-31'
       system: 'CORRECTIONS'
       metric:
         population:

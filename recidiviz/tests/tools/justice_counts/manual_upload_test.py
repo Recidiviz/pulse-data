@@ -598,3 +598,27 @@ class ManualUploadTest(unittest.TestCase):
         }
         self.assertEqual(EXPECTED_TOTALS, violation_type_values)
         session.close()
+
+    def test_ingestReport_fixed_range_month(self):
+        # Act
+        manual_upload.ingest(self.fs, test_utils.prepare_files(self.fs, manifest_filepath('report6_fixed_month_range')))
+
+        # Assert
+        session = SessionFactory.for_schema_base(JusticeCountsBase)
+
+        report_table = session.query(schema.ReportTableInstance).all()
+        self.assertEqual([
+            (datetime.date(2020, 9, 1), datetime.date(2020, 10, 1)),
+        ], [(row.time_window_start, row.time_window_end) for row in report_table])
+
+    def test_ingestReport_fixed_range_year(self):
+        # Act
+        manual_upload.ingest(self.fs, test_utils.prepare_files(self.fs, manifest_filepath('report6_fixed_year_range')))
+
+        # Assert
+        session = SessionFactory.for_schema_base(JusticeCountsBase)
+
+        report_table = session.query(schema.ReportTableInstance).all()
+        self.assertEqual([
+            (datetime.date(2019, 1, 1), datetime.date(2020, 1, 1)),
+        ], [(row.time_window_start, row.time_window_end) for row in report_table])
