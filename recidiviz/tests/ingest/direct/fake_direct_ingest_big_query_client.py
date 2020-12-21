@@ -121,7 +121,7 @@ class FakeDirectIngestBigQueryClient(BigQueryClient):
 
     def run_query_async(self, query_str: str, query_parameters: List[bigquery.ScalarQueryParameter] = None) \
             -> bigquery.QueryJob:
-        raise ValueError('Must be implemented for use in tests.')
+        return FakeQueryJob()
 
     def paged_read_and_process(self,
                                query_job: bigquery.QueryJob,
