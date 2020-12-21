@@ -6,9 +6,10 @@ tables:
   - file: 'by_type.csv'
     date_range:
       fixed:
-        range:
-          lower_bound_inclusive_date: '2020-09-01'
-          upper_bound_exclusive_date: '2020-10-01'
+        type: 'RANGE'
+        input:
+          - '2020-09-01'
+          - '2020-10-01'
     system: 'CORRECTIONS'
     metric:
       admissions:
@@ -41,9 +42,10 @@ Parole revocations includes all re-admissions (dunks, revocations, other).'
   - file: 'total.csv'
     date_range:
       fixed:
-        range:
-          lower_bound_inclusive_date: '2020-09-01'
-          upper_bound_exclusive_date: '2020-10-01'
+        type: 'RANGE'
+        input:
+          - '2020-09-01'
+          - '2020-10-01'
     system: 'CORRECTIONS'
     metric:
       admissions:

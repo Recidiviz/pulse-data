@@ -106,6 +106,16 @@ class TestDateRange(unittest.TestCase):
                                    upper_bound_exclusive_date=datetime.date(2019, 4, 10)),
                          self.multi_month_range.portion_overlapping_with_month(2019, 4))
 
+    def test_for_year_of_date(self):
+        year_range = DateRange.for_year_of_date(datetime.date(2019, 12, 4))
+        self.assertEqual((datetime.date(2019, 1, 1), datetime.date(2020, 1, 1)),
+                         (year_range.lower_bound_inclusive_date, year_range.upper_bound_exclusive_date))
+
+    def test_for_year_of_date_early_month(self):
+        year_range = DateRange.for_year_of_date(datetime.date(2019, 1, 25))
+        self.assertEqual((datetime.date(2019, 1, 1), datetime.date(2020, 1, 1)),
+                         (year_range.lower_bound_inclusive_date, year_range.upper_bound_exclusive_date))
+
 
 class TestDateRangeDiff(unittest.TestCase):
     """Tests for DateRangeDiff"""
