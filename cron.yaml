@@ -222,6 +222,15 @@ cron:
       max_doublings: 5
       job_age_limit: 9h
 
+  - description: Delete empty datasets in BigQuery
+    url: /calculation_data_storage_manager/delete_empty_datasets
+    schedule: every day 00:00
+    timezone: America/Los_Angeles
+    retry_parameters:
+      min_backoff_seconds: 2.5
+      max_doublings: 5
+      job_age_limit: 9h
+
   - description: Create new long-term backup and delete oldest long-term backup
     url: /backup_manager/update_long_term_backups
     schedule: every monday 15:00
