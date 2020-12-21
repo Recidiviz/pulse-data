@@ -6,8 +6,9 @@ tables:
     - file: 'table.csv'
       date_range:
         fixed:
-          snapshot:
-            date: '2020-09-01'
+          type: 'SNAPSHOT'
+          input:
+            - '2020-09-01'
       system: 'CORRECTIONS'
       metric:
         population:
