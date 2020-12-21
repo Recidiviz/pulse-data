@@ -50,9 +50,10 @@ state_code | year   | base_output.count | sandbox_output.count | duplicate_flag
   US_XX    | 2001   |        4          |          99          |                <-- Value is different in base/sandbox
   US_AA    | 1999   |       null        |          1           |                <-- Dimension combo only in sandbox
 
-This script only looks at the columns in the view that is *deployed*. If you have added a new column to a view, but
-don't expect the values of the other columns to change, then this script should be used to determine that the existing
-columns and values are unchanged.
+If the --allow_schema_changes flag is on, then this script will only compare columns that are in both the deployed
+and sandbox views. If --allow_schema_changes is set to False, then this script will raise an error if the schemas do not
+match. If you have added a new column to a view, but don't expect the values of the other columns to change, then the
+--allow_schema_changes should be used to determine that the existing columns and values are unchanged.
 
 If --check_determinism is set to True, the script instead compares the output of the sandbox views to itself to ensure
 the output of the views are deterministic. In this case, all columns in the local view are compared.
@@ -63,18 +64,20 @@ This can be run on-demand whenever locally with the following command:
         --sandbox_dataset_prefix [SANDBOX_DATASET_PREFIX]
         [--load_sandbox_views]
         [--check_determinism]
+        [--allow_schema_changes]
 """
 import argparse
 import logging
 import sys
 from typing import Tuple, List
 
+from google.cloud import bigquery
 from google.cloud.bigquery import QueryJob
+from more_itertools import peekable
 
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.big_query.view_update_manager import VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE, \
     TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS
-
 from recidiviz.calculator.query.state.views.dashboard.supervision.us_nd.average_change_lsir_score_by_month import \
     AVERAGE_CHANGE_LSIR_SCORE_MONTH_VIEW_BUILDER
 from recidiviz.calculator.query.state.views.dashboard.supervision.us_nd.average_change_lsir_score_by_period import \
@@ -129,7 +132,8 @@ VIEW_BUILDERS_WITH_KNOWN_NOT_DETERMINISTIC_OUTPUT = [
 
 def compare_metric_view_output_to_sandbox(sandbox_dataset_prefix: str,
                                           load_sandbox_views: bool,
-                                          check_determinism: bool) -> None:
+                                          check_determinism: bool,
+                                          allow_schema_changes: bool) -> None:
     """Compares the output of all deployed metric views to the output of the corresponding views in the sandbox
     dataset."""
     if load_sandbox_views:
@@ -160,58 +164,38 @@ def compare_metric_view_output_to_sandbox(sandbox_dataset_prefix: str,
 
             for view_builder in view_builders:
                 # Only compare output of metric views
-                if isinstance(view_builder, MetricBigQueryViewBuilder) and \
-                        view_builder not in VIEW_BUILDERS_WITH_KNOWN_NOT_DETERMINISTIC_OUTPUT:
-                    deployed_view = bq_client.get_table(bq_client.dataset_ref_for_id(base_dataset_id),
-                                                        view_builder.view_id)
-                    base_view_id = (view_builder.build().materialized_view_table_id
-                                    if view_builder.should_materialize else view_builder.view_id)
+                if (not isinstance(view_builder, MetricBigQueryViewBuilder)
+                        or view_builder in VIEW_BUILDERS_WITH_KNOWN_NOT_DETERMINISTIC_OUTPUT):
+                    continue
 
-                    if not base_view_id:
-                        raise ValueError("Unexpected empty base_view_id. view_id or materialized_view_table_id unset"
-                                         f"for {view_builder}.")
+                base_dataset_ref = bq_client.dataset_ref_for_id(base_dataset_id)
+                base_view_id = (view_builder.build().materialized_view_table_id
+                                if view_builder.should_materialize else view_builder.view_id)
 
-                    base_dataset_ref = bq_client.dataset_ref_for_id(view_builder.dataset_id)
+                if not base_view_id:
+                    raise ValueError("Unexpected empty base_view_id. view_id or materialized_view_table_id unset"
+                                     f"for {view_builder}.")
 
-                    if not bq_client.table_exists(base_dataset_ref, base_view_id):
-                        logging.warning("View %s.%s does not exist. Skipping output comparison.",
-                                        base_dataset_ref.dataset_id, base_view_id)
-                        continue
+                if not bq_client.table_exists(base_dataset_ref, base_view_id):
+                    logging.warning("View %s.%s does not exist. Skipping output comparison.",
+                                    base_dataset_ref.dataset_id, base_view_id)
+                    continue
 
-                    if not bq_client.table_exists(bq_client.dataset_ref_for_id(sandbox_dataset_id), base_view_id):
-                        logging.warning("View %s.%s does not exist in sandbox. Skipping output comparison.",
-                                        sandbox_dataset_id, base_view_id)
-                        continue
+                if not bq_client.table_exists(bq_client.dataset_ref_for_id(sandbox_dataset_id), base_view_id):
+                    logging.warning("View %s.%s does not exist in sandbox. Skipping output comparison.",
+                                    sandbox_dataset_id, base_view_id)
+                    continue
+                query_job, output_table_id = _view_output_comparison_job(bq_client,
+                                                                         view_builder,
+                                                                         base_view_id,
+                                                                         base_dataset_id,
+                                                                         sandbox_dataset_id,
+                                                                         sandbox_comparison_output_dataset_id,
+                                                                         check_determinism,
+                                                                         allow_schema_changes)
 
-                    # Only compare deployed columns, unless we're checking for view determinism
-                    columns_to_compare = ([field.name for field in deployed_view.schema]
-                                          if not check_determinism else ['*'])
-                    # Only include dimensions in the deployed view unless we are checking the determinism of the local
-                    # view
-                    metric_dimensions = [dimension for dimension in view_builder.dimensions
-                                         if dimension in columns_to_compare or check_determinism]
-
-                    output_table_id = f"{view_builder.dataset_id}--{base_view_id}"
-                    base_dataset_id_for_query = sandbox_dataset_id if check_determinism else view_builder.dataset_id
-
-                    diff_query = OUTPUT_COMPARISON_TEMPLATE.format(
-                        project_id=bq_client.project_id,
-                        base_dataset_id=base_dataset_id_for_query,
-                        sandbox_dataset_id=sandbox_dataset_id,
-                        view_id=base_view_id,
-                        columns_to_compare=', '.join(columns_to_compare),
-                        dimensions=', '.join(metric_dimensions)
-                    )
-
-                    query_job = bq_client.create_table_from_query_async(
-                        dataset_id=sandbox_comparison_output_dataset_id,
-                        table_id=output_table_id,
-                        query=diff_query,
-                        overwrite=True
-                    )
-
-                    # Add query job to the list of running jobs
-                    query_jobs.append((query_job, output_table_id))
+                # Add query job to the list of running jobs
+                query_jobs.append((query_job, output_table_id))
 
     for query_job, output_table_id in query_jobs:
         # Wait for the insert job to complete before looking for the table
@@ -224,18 +208,88 @@ def compare_metric_view_output_to_sandbox(sandbox_dataset_prefix: str,
             bq_client.delete_table(sandbox_comparison_output_dataset_id, output_table_id)
 
     views_with_different_output = bq_client.list_tables(sandbox_comparison_output_dataset_id)
+    views_with_different_output = peekable(views_with_different_output)
 
-    if not views_with_different_output:
+    logging.info("\n*************** METRIC VIEW OUTPUT RESULTS ***************\n")
+
+    if views_with_different_output:
+        for view in views_with_different_output:
+            base_dataset_id, base_view_id = view.table_id.split('--')
+
+            logging.warning("View output differs for view %s.%s. See %s.%s for diverging rows.",
+                            base_dataset_id, base_view_id, sandbox_comparison_output_dataset_id, view.table_id)
+    else:
         output_message = ("identical between deployed views and sandbox datasets"
                           if not check_determinism else "deterministic")
-        logging.info("View output %s.", output_message)
+        logging.info("View output %s. Deleting dataset %s.", output_message,
+                     sandbox_comparison_output_dataset_ref.dataset_id)
         bq_client.delete_dataset(sandbox_comparison_output_dataset_ref, delete_contents=True)
 
-    for view in views_with_different_output:
-        base_dataset_id, base_view_id = view.table_id.split('--')
 
-        logging.warning("View output differs for view %s.%s. See %s.%s for diverging rows.",
-                        base_dataset_id, base_view_id, sandbox_comparison_output_dataset_id, view.table_id)
+def _view_output_comparison_job(bq_client: BigQueryClientImpl,
+                                view_builder: MetricBigQueryViewBuilder,
+                                base_view_id: str,
+                                base_dataset_id: str,
+                                sandbox_dataset_id: str,
+                                sandbox_comparison_output_dataset_id: str,
+                                check_determinism: bool,
+                                allow_schema_changes: bool) -> \
+        Tuple[bigquery.QueryJob, str]:
+    """Builds and executes the query that compares the base and sandbox views. Returns a tuple with the the QueryJob and
+    the table_id where the output will be written to in the sandbox_comparison_output_dataset_id dataset."""
+    base_dataset_ref = bq_client.dataset_ref_for_id(base_dataset_id)
+    sandbox_dataset_ref = bq_client.dataset_ref_for_id(sandbox_dataset_id)
+    output_table_id = f"{view_builder.dataset_id}--{base_view_id}"
+
+    if check_determinism:
+        # Compare all columns
+        columns_to_compare = ['*']
+    else:
+        # Columns in deployed view
+        deployed_base_view = bq_client.get_table(base_dataset_ref, view_builder.view_id)
+        base_columns_to_compare = set(field.name for field in deployed_base_view.schema)
+
+        # Columns in sandbox view
+        deployed_sandbox_view = bq_client.get_table(sandbox_dataset_ref, view_builder.view_id)
+        sandbox_columns_to_compare = set(field.name for field in deployed_sandbox_view.schema)
+
+        if allow_schema_changes:
+            # Only compare columns in both views
+            shared_columns = base_columns_to_compare.intersection(sandbox_columns_to_compare)
+            columns_to_compare = list(shared_columns)
+        else:
+            if base_columns_to_compare != sandbox_columns_to_compare:
+                raise ValueError(f"Schemas of the {base_dataset_id}.{base_view_id} deployed and"
+                                 f" sandbox views do not match. If this is expected, please run again"
+                                 f"with the --allow_schema_changes flag.")
+            columns_to_compare = list(base_columns_to_compare)
+
+    # Only include dimensions in both views unless we are checking the determinism of the local
+    # view
+    metric_dimensions = [dimension for dimension in view_builder.dimensions
+                         if dimension in columns_to_compare or check_determinism]
+
+    if not check_determinism:
+        # Cast all columns to strings to guard against column types that may have changed
+        columns_to_compare = [f"CAST({col} AS STRING) as {col}" for col in columns_to_compare]
+
+    base_dataset_id_for_query = sandbox_dataset_id if check_determinism else view_builder.dataset_id
+
+    diff_query = OUTPUT_COMPARISON_TEMPLATE.format(
+        project_id=bq_client.project_id,
+        base_dataset_id=base_dataset_id_for_query,
+        sandbox_dataset_id=sandbox_dataset_id,
+        view_id=base_view_id,
+        columns_to_compare=', '.join(columns_to_compare),
+        dimensions=', '.join(metric_dimensions)
+    )
+
+    return bq_client.create_table_from_query_async(
+        dataset_id=sandbox_comparison_output_dataset_id,
+        table_id=output_table_id,
+        query=diff_query,
+        overwrite=True
+    )
 
 
 def parse_arguments(argv: List[str]) -> Tuple[argparse.Namespace, List[str]]:
@@ -270,6 +324,14 @@ def parse_arguments(argv: List[str]) -> Tuple[argparse.Namespace, List[str]]:
                         default=False,
                         required=False)
 
+    parser.add_argument('--allow_schema_changes',
+                        dest='allow_schema_changes',
+                        help='If True, only compares columns that are shared between the deployed and sandbox views.'
+                             'If False, will throw an error if the view schemas do not match.',
+                        type=bool,
+                        default=False,
+                        required=False)
+
     return parser.parse_known_args(argv)
 
 
@@ -280,4 +342,5 @@ if __name__ == '__main__':
     with local_project_id_override(known_args.project_id):
         compare_metric_view_output_to_sandbox(known_args.sandbox_dataset_prefix,
                                               known_args.load_sandbox_views,
-                                              known_args.check_determinism)
+                                              known_args.check_determinism,
+                                              known_args.allow_schema_changes)
