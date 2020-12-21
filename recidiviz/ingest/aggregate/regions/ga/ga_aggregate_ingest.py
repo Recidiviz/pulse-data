@@ -97,7 +97,7 @@ def _parse_table(_: str, filename: str) -> pd.DataFrame:
     # the right half of the page
     use_lattice = True
 
-    if filename.endswith('jun19.pdf'):
+    if filename.endswith('jun_19.pdf'):
         # Tabula can't handle the multiple tables because it thinks the one on
         # the last page has extra columns. This concats them manually.
         *dfs, df4 = tabula.read_pdf(
@@ -108,7 +108,6 @@ def _parse_table(_: str, filename: str) -> pd.DataFrame:
         df4 = df4.iloc[:-1, 1:14]
         df4.columns = range(13)
         df4.iloc[33, 1] = df4.iloc[33, 1].strip(" '")
-        breakpoint()
         dfs.append(df4)
         result = pd.concat(df.iloc[1:] for df in dfs)
         result.columns = column_names
