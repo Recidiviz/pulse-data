@@ -48,7 +48,8 @@ EVENT_BASED_REVOCATIONS_FOR_MATRIX_QUERY_TEMPLATE = \
         supervision_type,
         supervision_level,
         case_type,
-        IFNULL(supervising_district_external_id, 'EXTERNAL_UNKNOWN') AS district,
+        IFNULL(level_1_supervision_location_external_id, 'EXTERNAL_UNKNOWN') AS level_1_supervision_location,
+        IFNULL(level_2_supervision_location_external_id, 'EXTERNAL_UNKNOWN') AS level_2_supervision_location,
         IFNULL(supervising_officer_external_id, 'EXTERNAL_UNKNOWN') AS officer,
         {state_specific_officer_recommendation},
         violation_history_description AS violation_record
