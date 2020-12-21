@@ -110,10 +110,30 @@ def state_specific_facility_exclusion() -> str:
     return """-- Revisit these exclusions when #3657 and #3723 are complete --
       AND (state_code != 'US_ND' OR facility not in ('OOS', 'CPP'))"""
 
+
 def state_specific_external_id_type(state_code_table_prefix: str) -> str:
     return f"""
         CASE 
           WHEN {state_code_table_prefix}.state_code = 'US_ID'
           THEN 'US_ID_DOC'
         END
+    """
+
+
+def state_specific_supervision_location_optimization_filter() -> str:
+    """ State-specific logic for filtering rows based on supervision location values that are unused by the front end.
+    """
+    return """level_1_supervision_location != 'EXTERNAL_UNKNOWN'
+    AND level_2_supervision_location != 'EXTERNAL_UNKNOWN'
+    AND CASE
+        -- TODO(#3829): MO does not have level 2 values ingested, so level_2_supervision_location values are only
+        -- 'EXTERNAL_UNKNOWN'. For scale reasons, we filter for only rows that are aggregated on
+        -- level_2_supervision_location to filter out the "duplicate" rows with 'EXTERNAL_UNKNOWN'.
+        WHEN state_code = 'US_MO' THEN level_2_supervision_location = 'ALL'
+
+        -- TODO(#4524): Un-comment the `OR` clause once we can support the file size increase and have multi-level
+        -- supervision location support on the front end.
+        ELSE level_1_supervision_location = 'ALL' -- OR level_2_supervision_location != 'ALL'
+
+    END
     """

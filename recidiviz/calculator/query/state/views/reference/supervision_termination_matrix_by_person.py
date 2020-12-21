@@ -54,7 +54,8 @@ SUPERVISION_TERMINATION_MATRIX_BY_PERSON_VIEW_QUERY_TEMPLATE = \
             supervision_type,
             supervision_level,
             case_type,
-            IFNULL(supervising_district_external_id, 'EXTERNAL_UNKNOWN') AS district,
+            IFNULL(level_1_supervision_location_external_id, 'EXTERNAL_UNKNOWN') AS level_1_supervision_location,
+            IFNULL(level_2_supervision_location_external_id, 'EXTERNAL_UNKNOWN') AS level_2_supervision_location,
             supervising_officer_external_id AS officer,
             termination_date,
             FALSE AS is_revocation
@@ -81,7 +82,8 @@ SUPERVISION_TERMINATION_MATRIX_BY_PERSON_VIEW_QUERY_TEMPLATE = \
         *,
         ROW_NUMBER() OVER (PARTITION BY state_code, metric_period_months, person_id
                            ORDER BY is_revocation DESC, termination_date DESC,
-                           supervision_type, supervision_level, case_type, district, officer) as ranking
+                           supervision_type, supervision_level, case_type, level_1_supervision_location,
+                           level_2_supervision_location, officer) as ranking
       FROM revocations_and_terminations,
       {metric_period_dimension}
       WHERE {metric_period_condition}
@@ -96,7 +98,8 @@ SUPERVISION_TERMINATION_MATRIX_BY_PERSON_VIEW_QUERY_TEMPLATE = \
         supervision_type,
         {state_specific_supervision_level},
         charge_category,
-        district,
+        level_1_supervision_location,
+        level_2_supervision_location,
         officer,
         person_id,
         person_external_id,
@@ -105,13 +108,14 @@ SUPERVISION_TERMINATION_MATRIX_BY_PERSON_VIEW_QUERY_TEMPLATE = \
         {state_specific_assessment_bucket},
         IFNULL(prioritized_race_or_ethnicity, 'EXTERNAL_UNKNOWN') AS prioritized_race_or_ethnicity,
     FROM person_based_terminations,
-    {district_dimension},
+    {level_1_supervision_location_dimension},
+    {level_2_supervision_location_dimension},
     {supervision_type_dimension},
     {supervision_level_dimension},
     {charge_category_dimension}
     WHERE ranking = 1
       AND supervision_type IN ('ALL', 'DUAL', 'PAROLE', 'PROBATION')
-      AND district != 'EXTERNAL_UNKNOWN'
+      AND {state_specific_supervision_location_optimization_filter}
     """
 
 SUPERVISION_TERMINATION_MATRIX_BY_PERSON_VIEW_BUILDER = SimpleBigQueryViewBuilder(
@@ -126,14 +130,19 @@ SUPERVISION_TERMINATION_MATRIX_BY_PERSON_VIEW_BUILDER = SimpleBigQueryViewBuilde
     state_specific_assessment_bucket=
     state_specific_query_strings.state_specific_assessment_bucket(output_column_name='risk_level'),
     state_specific_supervision_level=state_specific_query_strings.state_specific_supervision_level(),
-    district_dimension=bq_utils.unnest_district('district'),
+    level_1_supervision_location_dimension=
+    bq_utils.unnest_column('level_1_supervision_location', 'level_1_supervision_location'),
+    level_2_supervision_location_dimension=
+    bq_utils.unnest_column('level_2_supervision_location', 'level_2_supervision_location'),
     supervision_type_dimension=bq_utils.unnest_supervision_type(),
     supervision_level_dimension=bq_utils.unnest_column('supervision_level', 'supervision_level'),
     charge_category_dimension=bq_utils.unnest_charge_category(),
     metric_period_dimension=bq_utils.unnest_metric_period_months(),
     metric_period_condition=bq_utils.metric_period_condition(),
     filter_to_most_recent_job_id_for_metric=bq_utils.filter_to_most_recent_job_id_for_metric(
-        reference_dataset=dataset_config.REFERENCE_VIEWS_DATASET)
+        reference_dataset=dataset_config.REFERENCE_VIEWS_DATASET),
+    state_specific_supervision_location_optimization_filter=
+    state_specific_query_strings.state_specific_supervision_location_optimization_filter()
 )
 
 if __name__ == '__main__':

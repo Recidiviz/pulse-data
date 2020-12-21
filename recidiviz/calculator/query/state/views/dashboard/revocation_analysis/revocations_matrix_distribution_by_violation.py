@@ -52,7 +52,8 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_VIOLATION_QUERY_TEMPLATE = \
         supervision_type,
         {state_specific_supervision_level},
         case_type,
-        IFNULL(supervising_district_external_id, 'EXTERNAL_UNKNOWN') as supervising_district_external_id,
+        IFNULL(level_1_supervision_location_external_id, 'EXTERNAL_UNKNOWN') as level_1_supervision_location,
+        IFNULL(level_2_supervision_location_external_id, 'EXTERNAL_UNKNOWN') as level_2_supervision_location,
         IF(response_count > 8, 8, response_count) as reported_violations,
         {most_severe_violation_type_subtype_grouping},
         {violation_count_type_grouping},
@@ -74,7 +75,14 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_VIOLATION_QUERY_TEMPLATE = \
         supervision_type,
         supervision_level,
         charge_category,
-        district,
+        -- TODO(#4709): Remove this field once it is no-longer used on the frontend
+        CASE
+            WHEN state_code = 'US_MO' THEN level_1_supervision_location
+            WHEN state_code = 'US_PA' THEN level_2_supervision_location
+            ELSE level_1_supervision_location
+        END AS district,
+        level_1_supervision_location,
+        level_2_supervision_location,
         reported_violations,
         violation_type,
         -- Shared violation categories --
@@ -90,19 +98,22 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_VIOLATION_QUERY_TEMPLATE = \
         SUM(IF(violation_count_type = 'VIOLATION', count, 0)) AS violation_count
     FROM
     state_specific_violation_count_types,
-    {district_dimension},
+    {level_1_supervision_location_dimension},
+    {level_2_supervision_location_dimension},
     {supervision_type_dimension},
     {supervision_level_dimension},
     {charge_category_dimension}
-    GROUP BY state_code, year, month, metric_period_months, supervision_type, supervision_level, charge_category, district, reported_violations, violation_type
-    ORDER BY state_code, year, month, metric_period_months, supervision_type, supervision_level, district, charge_category, violation_type, reported_violations
+    WHERE {state_specific_supervision_location_optimization_filter}
+    GROUP BY state_code, year, month, metric_period_months, supervision_type, supervision_level, charge_category, 
+        level_1_supervision_location, level_2_supervision_location, reported_violations, violation_type
     """
 
 REVOCATIONS_MATRIX_DISTRIBUTION_BY_VIOLATION_VIEW_BUILDER = MetricBigQueryViewBuilder(
     dataset_id=dataset_config.DASHBOARD_VIEWS_DATASET,
     view_id=REVOCATIONS_MATRIX_DISTRIBUTION_BY_VIOLATION_VIEW_NAME,
     view_query_template=REVOCATIONS_MATRIX_DISTRIBUTION_BY_VIOLATION_QUERY_TEMPLATE,
-    dimensions=['state_code', 'year', 'month', 'metric_period_months', 'district', 'supervision_type',
+    dimensions=['state_code', 'year', 'month', 'metric_period_months', 'district', 'level_1_supervision_location',
+                'level_2_supervision_location', 'supervision_type',
                 'supervision_level', 'violation_type', 'reported_violations', 'charge_category'],
     description=REVOCATIONS_MATRIX_DISTRIBUTION_BY_VIOLATION_DESCRIPTION,
     metrics_dataset=dataset_config.DATAFLOW_METRICS_DATASET,
@@ -112,12 +123,15 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_VIOLATION_VIEW_BUILDER = MetricBigQueryViewBu
     violation_count_type_grouping=state_specific_query_strings.state_specific_violation_count_type_grouping(),
     state_specific_violation_categories=state_specific_query_strings.state_specific_violation_count_type_categories(),
     state_specific_supervision_level=state_specific_query_strings.state_specific_supervision_level(),
-    district_dimension=bq_utils.unnest_district(),
+    level_1_supervision_location_dimension=bq_utils.unnest_column('level_1_supervision_location', 'level_1_supervision_location'),
+    level_2_supervision_location_dimension=bq_utils.unnest_column('level_2_supervision_location', 'level_2_supervision_location'),
     supervision_type_dimension=bq_utils.unnest_supervision_type(),
     supervision_level_dimension=bq_utils.unnest_column('supervision_level', 'supervision_level'),
     charge_category_dimension=bq_utils.unnest_charge_category(),
     filter_to_most_recent_job_id_for_metric=bq_utils.filter_to_most_recent_job_id_for_metric(
-        reference_dataset=dataset_config.REFERENCE_VIEWS_DATASET)
+        reference_dataset=dataset_config.REFERENCE_VIEWS_DATASET),
+    state_specific_supervision_location_optimization_filter=
+    state_specific_query_strings.state_specific_supervision_location_optimization_filter()
 )
 
 if __name__ == '__main__':
