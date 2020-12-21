@@ -15,11 +15,14 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Manages the storage of data produced by calculations."""
+import logging
+import datetime
 from http import HTTPStatus
 from typing import Tuple
 
 import flask
 from google.cloud.bigquery import WriteDisposition
+from more_itertools import peekable
 
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.calculator.dataflow_output_storage_config import DATAFLOW_METRICS_COLD_STORAGE_DATASET, \
@@ -27,6 +30,8 @@ from recidiviz.calculator.dataflow_output_storage_config import DATAFLOW_METRICS
 from recidiviz.calculator.query.state.dataset_config import DATAFLOW_METRICS_DATASET, REFERENCE_VIEWS_DATASET
 from recidiviz.utils.auth import authenticate_request
 
+# Datasets must be at least 12 hours old to be deleted
+DATASET_DELETION_MIN_SECONDS = 12 * 60 * 60
 
 calculation_data_storage_manager_blueprint = flask.Blueprint('calculation_data_storage_manager', __name__)
 
@@ -38,6 +43,32 @@ def prune_old_dataflow_data() -> Tuple[str, HTTPStatus]:
     move_old_dataflow_metrics_to_cold_storage()
 
     return '', HTTPStatus.OK
+
+
+@calculation_data_storage_manager_blueprint.route('/delete_empty_datasets')
+@authenticate_request
+def delete_empty_datasets() -> Tuple[str, HTTPStatus]:
+    """Calls the _delete_empty_datasets function."""
+    _delete_empty_datasets()
+
+    return '', HTTPStatus.OK
+
+
+def _delete_empty_datasets() -> None:
+    """Deletes all empty datasets in BigQuery."""
+    bq_client = BigQueryClientImpl()
+    datasets = bq_client.list_datasets()
+
+    for dataset_resource in datasets:
+        dataset_ref = bq_client.dataset_ref_for_id(dataset_resource.dataset_id)
+        dataset = bq_client.get_dataset(dataset_ref)
+        tables = peekable(bq_client.list_tables(dataset.dataset_id))
+        created_time = dataset.created
+        dataset_age_seconds = (datetime.datetime.now() - created_time).total_seconds()
+
+        if not tables and dataset_age_seconds > DATASET_DELETION_MIN_SECONDS:
+            logging.info("Dataset %s is empty and was not created very recently. Deleting...", dataset_ref.dataset_id)
+            bq_client.delete_dataset(dataset_ref)
 
 
 def move_old_dataflow_metrics_to_cold_storage() -> None:
