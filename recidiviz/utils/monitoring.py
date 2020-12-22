@@ -19,7 +19,7 @@
 import logging
 from contextlib import contextmanager
 from functools import wraps
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 from opencensus.ext.stackdriver import stats_exporter as stackdriver
 from opencensus.stats import stats as stats_module
@@ -98,6 +98,20 @@ def measurements(tags=None):
         mmap.record(tag_map)
 
 
+def exponential_buckets(start: float, factor: float, count: int) -> List[float]:
+    """Creates `count` buckets where `start` is the first bucket's upper boundary, and each subsequent bucket has an
+    upper boundary that is `factor` larger.
+
+    E.g. start=10, factor=2, count=5 would create [0, 10, 20, 40, 80, 160]
+    """
+    buckets = [0.0]
+    next_boundary = start
+    for _ in range(count):
+        buckets.append(next_boundary)
+        next_boundary *= factor
+    return buckets
+
+
 class TagKey:
     ENTITY_TYPE = 'entity_type'
     ERROR = 'error'
@@ -114,3 +128,8 @@ class TagKey:
     CREATE_UPDATE_VIEWS_NAMESPACE = 'create_update_views_namespace'
     CREATE_UPDATE_RAW_DATA_LATEST_VIEWS_FILE_TAG = 'create_update_raw_data_latest_views_file_tag'
     METRIC_VIEW_EXPORT_NAME = 'metric_view_export_name'
+
+    # Code related tags
+    FUNCTION = 'function'
+    MODULE = 'module'
+    RECURSION_DEPTH = 'recursion_depth'

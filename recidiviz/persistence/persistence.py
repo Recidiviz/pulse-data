@@ -51,7 +51,7 @@ from recidiviz.persistence.ingest_info_converter.base_converter import \
     IngestInfoConversionResult
 from recidiviz.persistence.ingest_info_validator import ingest_info_validator
 from recidiviz.persistence.persistence_utils import should_persist
-from recidiviz.utils import monitoring
+from recidiviz.utils import monitoring, trace
 
 m_people = measure.MeasureInt("persistence/num_people",
                               "The number of people persisted", "1")
@@ -305,6 +305,7 @@ def retry_transaction(session: Session, measurements: MeasurementMap,
         session.close()
 
 
+@trace.span
 def write(ingest_info: IngestInfo, metadata: IngestMetadata,
           run_txn_fn: Callable[[Session, MeasurementMap, Callable[[Session], bool],
                                 Optional[int]], bool] = retry_transaction) -> bool:
@@ -357,6 +358,7 @@ def write(ingest_info: IngestInfo, metadata: IngestMetadata,
         if not should_persist():
             return True
 
+        @trace.span
         def match_and_write_people(session: Session) -> bool:
             logging.info("Starting entity matching")
 

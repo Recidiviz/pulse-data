@@ -32,6 +32,7 @@ from recidiviz.persistence.entity_matching.state.state_entity_matcher import \
     StateEntityMatcher
 from recidiviz.persistence.entity_matching.state.\
     state_matching_delegate_factory import StateMatchingDelegateFactory
+from recidiviz.utils import trace
 
 _EMPTY_MATCH_OUTPUT = MatchedEntities(people=[],
                                       orphaned_entities=[],
@@ -39,6 +40,7 @@ _EMPTY_MATCH_OUTPUT = MatchedEntities(people=[],
                                       total_root_entities=0)
 
 
+@trace.span
 def match(session: Session,
           region: str,
           ingested_people: List[EntityPersonType]) -> MatchedEntities:

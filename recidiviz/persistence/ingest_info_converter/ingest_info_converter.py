@@ -24,8 +24,10 @@ from recidiviz.persistence.ingest_info_converter.county.county_converter \
     import CountyConverter
 from recidiviz.persistence.ingest_info_converter.state.state_converter import \
     StateConverter
+from recidiviz.utils import trace
 
 
+@trace.span
 def convert_to_persistence_entities(
         ingest_info: IngestInfo, metadata: IngestMetadata
 ) -> IngestInfoConversionResult:

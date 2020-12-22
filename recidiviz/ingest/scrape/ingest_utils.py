@@ -27,7 +27,7 @@ from recidiviz.common import common_utils
 from recidiviz.common.common_utils import create_synthetic_id, get_external_id
 from recidiviz.ingest.models import ingest_info, ingest_info_pb2
 from recidiviz.ingest.scrape import constants
-from recidiviz.utils import environment, regions
+from recidiviz.utils import environment, regions, trace
 
 
 def lookup_timezone(timezone: Optional[str]) -> Optional[tzinfo]:
@@ -112,6 +112,7 @@ def validate_scrape_types(
     return list(constants.ScrapeType) if all_types else scrape_types_output
 
 
+@trace.span
 def convert_ingest_info_to_proto(ingest_info_py: ingest_info.IngestInfo) \
         -> ingest_info_pb2.IngestInfo:
     """Converts an ingest_info python object to an ingest info proto."""
