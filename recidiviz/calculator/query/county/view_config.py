@@ -15,11 +15,10 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """County-level view configuration."""
-
-from typing import Dict, Sequence
+import itertools
+from typing import Sequence
 
 from recidiviz.big_query.big_query_view import BigQueryViewBuilder
-from recidiviz.calculator.query.county.dataset_config import VIEWS_DATASET
 from recidiviz.calculator.query.county.views.bonds import bond_views
 from recidiviz.calculator.query.county.views.charges import charge_views
 from recidiviz.calculator.query.county.views.population import population_views
@@ -27,11 +26,9 @@ from recidiviz.calculator.query.county.views.vera import vera_views
 
 # NOTE: The views in the STATE_AGGREGATE_VIEW_BUILDERS and the STITCH_VIEW_BUILDERS are not included in this
 # view update list because compiling the views require SQLAlchemy DB connections
-VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE: Dict[str, Sequence[BigQueryViewBuilder]] = {
-    VIEWS_DATASET: (
-        vera_views.VERA_VIEW_BUILDERS +
-        bond_views.BOND_VIEW_BUILDERS +
-        charge_views.CHARGE_VIEW_BUILDERS +
-        population_views.POPULATION_VIEW_BUILDERS
-    )
-}
+VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE: Sequence[BigQueryViewBuilder] = list(itertools.chain.from_iterable((
+    vera_views.VERA_VIEW_BUILDERS,
+    bond_views.BOND_VIEW_BUILDERS,
+    charge_views.CHARGE_VIEW_BUILDERS,
+    population_views.POPULATION_VIEW_BUILDERS
+)))
