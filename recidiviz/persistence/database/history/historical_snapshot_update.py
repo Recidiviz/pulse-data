@@ -37,8 +37,10 @@ from recidiviz.persistence.database.schema.schema_person_type import \
 
 from recidiviz.persistence.database.schema.county import schema as county_schema
 from recidiviz.persistence.database.schema.state import schema as state_schema
+from recidiviz.utils import trace
 
 
+@trace.span
 def update_historical_snapshots(session: Session,
                                 root_people: List[SchemaPersonType],
                                 orphaned_schema_objects: List[DatabaseEntity],

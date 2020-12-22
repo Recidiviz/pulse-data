@@ -47,7 +47,7 @@ from recidiviz.persistence.batch_persistence import batch_blueprint
 from recidiviz.persistence.database.bq_refresh.cloud_sql_to_bq_refresh_manager import cloud_sql_to_bq_blueprint
 from recidiviz.persistence.database.sqlalchemy_engine_manager import SQLAlchemyEngineManager
 from recidiviz.reporting.reporting_endpoint import reporting_endpoint_blueprint
-from recidiviz.utils import (environment, metadata, monitoring, structured_logging)
+from recidiviz.utils import (environment, metadata, monitoring, structured_logging, trace)
 from recidiviz.validation.validation_manager import validation_manager_blueprint
 
 structured_logging.setup()
@@ -82,14 +82,21 @@ if environment.in_gae():
     monitoring.register_stackdriver_exporter()
     trace_exporter = stackdriver_trace.StackdriverExporter(
         project_id=metadata.project_id(), transport=AsyncTransport)
-    trace_sampler = samplers.ProbabilitySampler(rate=0.05) # Default is 1 in 10k, trace 1 in 20 instead
+    trace_sampler = trace.CompositeSampler({
+            '/direct/process_job': samplers.AlwaysOnSampler(),
+            # There are a lot of scraper requests, so they can use the default rate of 1 in 10k.
+            '/scraper/': samplers.ProbabilitySampler(),
+            '/scrape_aggregate_reports/': samplers.ProbabilitySampler()
+        },
+        # For other requests, trace 1 in 20.
+        default_sampler=samplers.ProbabilitySampler(rate=0.05))
 else:
     trace_exporter = file_exporter.FileExporter(file_name='traces')
     trace_sampler = samplers.AlwaysOnSampler()
 
 middleware = FlaskMiddleware(
     app,
-    blacklist_paths=['metadata'],  # Don't trace metadata requests
+    blacklist_paths=['metadata', 'computeMetadata'],  # Don't trace metadata requests
     sampler=trace_sampler,
     exporter=trace_exporter,
     propagator=google_cloud_format.GoogleCloudFormatPropagator())
