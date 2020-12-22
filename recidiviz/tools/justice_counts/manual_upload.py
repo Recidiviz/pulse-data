@@ -1055,10 +1055,24 @@ def _parse_metric(metric_input: YAMLDict) -> Metric:
                      f"'population') but received: {repr(metric_input)}")
 
 
+def _get_table_path(directory_path: GcsfsDirectoryPath,
+                    spreadsheet_name: str, name: Optional[str], file: Optional[str]) -> GcsfsFilePath:
+    if name is not None:
+        table_file_name = f"{spreadsheet_name} - {name}.csv"
+        table_path = GcsfsFilePath.from_directory_and_file_name(directory_path, table_file_name)
+        return table_path
+    if file is not None:
+        return GcsfsFilePath.from_directory_and_file_name(directory_path, file)
+    raise ValueError("Did not receive name parameter for table")
+
 # Only three layers of dictionary nesting is currently supported by the table parsing logic but we use the recursive
 # dictionary type for convenience.
-def _parse_tables(gcs: GCSFileSystem, directory_path: GcsfsDirectoryPath, tables_input: List[YAMLDict]) -> List[Table]:
+def _parse_tables(gcs: GCSFileSystem, manifest_path: GcsfsFilePath, tables_input: List[YAMLDict]) -> List[Table]:
     """Parses the YAML list of dictionaries describing tables into Table objects"""
+    directory_path = GcsfsDirectoryPath.from_file_path(manifest_path)
+
+    # We are assuming that the spreadsheet and the yaml file have the same name
+    spreadsheet_name = manifest_path.file_name.replace('.yaml', '')
     tables = []
     for table_input in tables_input:
         # Parse nested objects separately
@@ -1069,8 +1083,10 @@ def _parse_tables(gcs: GCSFileSystem, directory_path: GcsfsDirectoryPath, tables
         filter_dimensions = \
             _parse_dimensions_from_additional_filters(table_input.pop_dict_optional('additional_filters'))
         metric = _parse_metric(table_input.pop_dict('metric'))
+        table_path = _get_table_path(directory_path, spreadsheet_name,
+                                     name=table_input.pop_optional('name', str),
+                                     file=table_input.pop_optional('file', str))
 
-        table_path = GcsfsFilePath.from_directory_and_file_name(directory_path, table_input.pop('file', str))
         logging.info('Reading table: %s', table_path)
         table_handle = gcs.download_to_temp_file(table_path)
         if table_handle is None:
@@ -1101,10 +1117,9 @@ def _get_report(gcs: GCSFileSystem, manifest_path: GcsfsFilePath) -> Report:
             raise ValueError(f"Expected manifest to contain a top-level dictionary, but received: {loaded_yaml}")
         manifest = YAMLDict(loaded_yaml)
 
-        directory_path = GcsfsDirectoryPath.from_file_path(manifest_path)
         # Parse tables separately
         # TODO(#4479): Also allow for location to be a column in the csv, as is done for dates.
-        tables = _parse_tables(gcs, directory_path, manifest.pop_dicts('tables'))
+        tables = _parse_tables(gcs, manifest_path, manifest.pop_dicts('tables'))
 
         report = Report(
             source_name=manifest.pop('source', str),
