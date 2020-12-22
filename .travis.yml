@@ -6,27 +6,22 @@ services:
 
 env:
   global:
-    # Sets the GH_TOKEN environment variable
     - secure: "UDCpFraLrjyCmWjBqEPitkBUoBmTlKsLNHd7yA261P82vRmOkxCG2dN5x4VDLbpjdG2nU1K/aHrWlbU0khaBRsKWmk/1oSIlqG/Yuf6vGfh4enIq1nHQCDbH3sLRC6HTaf5lqrjQPca7Tww9VjllsDye2OWY049/PP1QZo77FjplWi3dnXOAa0UkQG2BSiRR0R08LZcafGypHcpVKlyE3uMH1tJlKaHRcyH1MD5y8RZK6cmVs1NY4/AZN7hZlcrdLV9KnIIqHorSjww48L+EL3O2pJbZzqPt64d3dgccPIMIwv21/isjmCQ5tQZhYulQzXU3chCuAkjOZLa+I24Jn6hlYkK5JkmEuqWjeAqpTPTFcV70YBuHhTcbNNKDiwXeV7zvzi7ONBTZ1Jie2SyWucUGYPA9B4sU1dnF0yGDtkSUxYYeB1NCQ+Ps3W812g4TU5GW6iou/jb+R61TGOaFS5MCssl45xSA+p/aX2h59YcAsvS/yaU5UhaIyt752ZRMkhgZ9czpz8Mx0hy0kfsl8ujx1g6ZZhbR5vDIjeeweerFxTES54PGfD5+Kw83JDL/U83fMCHMY9vBlFmhhf8kGDD8shWAh2oFpXZt7exliH4y68VGiZNvnW6trQiKlprkDX5XbvlI9FV2r8etXDpXmWpAFO3f2jSYKfpU/N4eQmw="
-
-# Note, this caching design is based off: https://gist.github.com/hc2p/9e284cee3d585eefbc59454e44cc247a
-# We decided to cache the docker image even though the majority of the docker build steps are downloading dependencies
-# from the web. We acknowledge that the time needed to download the cached docker image is nearly the same as the time
-# needed to download the dependencies directly. However, testing has shown that using the cache is still faster than
-# building the image from scratch each time. If this changes, we should stop caching the docker image.
+    - secure: "oSNPJ5LgVty4Ur+6W7o3Sqan1CtU/11T8/vJAzEOu6NdVUUx6cdyOmLXjVOtXVn6+PHqiaXx4SQwk0m6xrb2B4mFVZvSTz03YFRjtHhSI3NJ72bKoqCElxLQx605p6H+XAPcSdTv9oLQvQ38ybcIjHOnJuNnTxcjKJStjdPSj1uDfo/jk5ik/rK3Fqr3WC3JwwbGEkI42fQkysGc1M/2aEIhgdlQNtdQVSCyKWRhhmFN/ZBjmGnFsLB0HNkg+dvR66CFk37agtTTlGBPpW0vpCiU3ACVjiRveAioDWtWdqfZWbsEcKTv/hcjqJ4ePDV+tqGe0BZyTJ8Bw3WEUysPpg+lkkznQ49OdhHgsYvozuKf3tmiRogKhcQb5wefq9abeE5V6HSFEUzp2J0WvbHoYm20zoee6cYvScZClRvb3CDuedmAAiEJ8N2Fw3iw8jIWVcyW1lbKRoDFOHnVPRVmBYgotATygFmugN64JT00y66O7/+LmWY2Xhwbkk1iO5xRwxqC6pVKTP/OiNvaeAXwc0zbBtqmu/IIj91dx0jIPck5ArHcBBU3MnDc+lrwvEtJlNa/+aGrue/6SY7jN8i/huwX1NZ4rhypGYr2nR8Ja8gVOU5nRMmc1o+9/8pkdJvKY1AvirvL4olbe66RhhGqO6M3kUtW/HrJ4s8DH1G0NDE="
+    - secure: "AfVS0ZOg1Q56aJ5mO1/a3hHUKFDkR9eHp/9ckLf8nap/o8uaPcNMk6udS0qiUFzmz+fhT4UWmsPjuSxeN5KMUFh0xeGMQf/4D2oqQURvzJ/wHKxF3WbkHtTCvUhZEkzyK9o+UtuyD/Z7mpaJ0a4a3MFvFMEEpE3me8MruMIXkHoP2Ufl2dgTysE452u6wXCWVUboBwdcLzAK4foqgFqdXWD3US8jXmFVanG4d0Us+8SQ9ChQHd/kgtICZRUdB0FB1qhat0mFZ4aNljhO9TUsz/qMAX/Y2/ftKGGB9Aybl41EPNU78+lrl6u0UAnLbAY7/UhwWWSoXAaRlVm71hRRbEHKfZb38CoBhfCb8xc4UgNTjeownjtm3AnKOsxKJY0VwQ8iSRDNcLPLEEKcrDFi1o3KKAZE93EuoPNC1/2qKkZtjclQWK8YaRr03e11GF1B65luqryiBAdTqN21mQM2YBz9E/mAjtHp176poAb2A5NU+gRaPAv0HUVW/7QiKer7YKjJ8fcSz6YpwFb3kv0mtdLT0MiT7w6FVbnj0Ym6n43jT6w3Ij9Hay3WatSMCVXwU+e1Vq3SfXSFdbslui0e5NTH3X9dFEohAzGT1FtfSD9oCt7m6x/LFzOVUGzKq850X8DZvTzHT5BH65i0Pif0KHfXLUuZ3vXGThCQuFavqGM="
 install:
   # First try to read the most recent docker image from cache
   - mkdir -p ~/docker-images
-  - if [ -f ~/docker-images/recidiviz-image.tgz ]; then docker load -i ~/docker-images/recidiviz-image.tgz; fi
+  - if [ -f ~/docker-images/recidiviz-image.tgz ]; then echo "$DOCKER_PASSWORD" | docker login -u="$DOCKER_USERNAME" --password-stdin && docker load -i ~/docker-images/recidiviz-image.tgz; fi
 
   # Build the new docker image, sharing layers from the cached docker image
   # Specifying `DEV_MODE=True` installs dev dependencies (eg. pytest)
-  - docker build -t recidiviz-image . --cache-from recidiviz-image:latest --build-arg DEV_MODE=True
+  - echo "$DOCKER_PASSWORD" | docker login -u="$DOCKER_USERNAME" --password-stdin && docker build -t recidiviz-image . --cache-from recidiviz-image:latest --build-arg DEV_MODE=True
 
 before_script:
   # Run our docker application so we can `exec` our tests against it. Network set to 'host' to allow us to connect to
   # the Travis postgres server from inside the docker container.
-  - docker run --name recidiviz -d -t recidiviz-image
+  - echo "$DOCKER_PASSWORD" | docker login -u="$DOCKER_USERNAME" --password-stdin && docker run --name recidiviz -d -t recidiviz-image
 
 script:
   # Order test commands with fastest first to ensure we fail fast
@@ -41,7 +36,7 @@ script:
   - docker exec -it recidiviz pipenv run pytest recidiviz --with-emulator
 
   # Cache the newly built docker image for the next Travis run
-  - docker save recidiviz-image | gzip -c > ~/docker-images/recidiviz-image.tgz
+  - echo "$DOCKER_PASSWORD" | docker login -u="$DOCKER_USERNAME" --password-stdin && docker save recidiviz-image | gzip -c > ~/docker-images/recidiviz-image.tgz
 
 after_success:
   - coveralls
