@@ -2,6 +2,8 @@ source: 'Alabama Department of Corrections'
 report_type: 'Monthly Statistical Report'
 report_instance: 'September 2020'
 publish_date: '2020-11-20'
+url: 'http://www.doc.state.al.us/docs/MonthlyRpts/September%202020.pdf'
+assignee: 'Solange Knowles'
 tables:
   - file: 'by_type.csv'
     date_range:

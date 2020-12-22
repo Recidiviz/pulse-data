@@ -126,7 +126,9 @@ class ManualUploadTest(unittest.TestCase):
         self.assertEqual('Dashboard Measures', report.type)
         self.assertEqual('2020-10-05', report.instance)
         self.assertEqual(datetime.date(2020, 10, 5), report.publish_date)
+        self.assertEqual('https://www.colorado.gov/pacific/cdoc/departmental-reports-and-statistics', report.url)
         self.assertEqual(schema.AcquisitionMethod.MANUALLY_ENTERED, report.acquisition_method)
+        self.assertEqual('Solange Knowles', report.acquired_by)
 
         [table_definition] = session.query(schema.ReportTableDefinition).all()
         self.assertEqual(schema.System.CORRECTIONS, table_definition.system)
