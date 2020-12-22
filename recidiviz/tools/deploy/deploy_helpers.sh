@@ -148,10 +148,10 @@ function check_terraform_installed {
         exit 1
     fi
 
-    # Check that we're on version 0.13.x
-    terraform --version | grep "^Terraform v0.13." > /dev/null
+    # Check that we're on version 0.14.x
+    terraform --version | grep "^Terraform v0.14." > /dev/null
     if [[ $? -ne 0 ]]; then
-        echo_error "The installed version of \`terraform\` is not v0.13.x. Please reinstall v0.13 of Terraform."
+        echo_error "The installed version of \`terraform\` is not v0.14.x. Please reinstall v0.14 of Terraform."
         exit 1
     fi
 }
