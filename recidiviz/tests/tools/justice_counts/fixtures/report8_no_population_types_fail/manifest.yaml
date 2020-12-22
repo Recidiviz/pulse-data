@@ -2,6 +2,8 @@ source: 'Colorado Department of Corrections'
 report_type: 'Dashboard Measures'
 report_instance: '2020-10-05'
 publish_date: '2020-10-05'
+url: 'https://www.michigan.gov/corrections/0,4551,7-119-1441---,00.html'
+assignee: 'Solange Knowles'
 tables:
     - name: 'table'
       date_range:

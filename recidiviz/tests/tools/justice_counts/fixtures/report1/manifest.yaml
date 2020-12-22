@@ -2,6 +2,8 @@ source: 'Colorado Department of Corrections'
 report_type: 'Dashboard Measures'
 report_instance: '2020-10-05'
 publish_date: '2020-10-05'
+url: 'https://www.colorado.gov/pacific/cdoc/departmental-reports-and-statistics'
+assignee: 'Solange Knowles'
 tables:
     - name: 'ManualData-Prison_US_CO_DashboardMeasures_Aug20'
       date_range:
