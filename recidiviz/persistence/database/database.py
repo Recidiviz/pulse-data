@@ -30,10 +30,12 @@ from recidiviz.persistence.database.schema.schema_person_type import \
 from recidiviz.persistence.database.schema.county import schema as county_schema
 from recidiviz.common.common_utils import check_all_objs_have_type
 from recidiviz.persistence.errors import PersistenceError
+from recidiviz.utils import trace
 
 _DUMMY_BOOKING_ID = -1
 
 
+@trace.span
 def write_people(session: Session,
                  people: List[SchemaPersonType],
                  metadata: IngestMetadata,
