@@ -36,6 +36,7 @@ import os
 import sys
 from collections import defaultdict
 from typing import Callable, Dict, Iterable, List, Optional, Tuple, Type, TypeVar, Union
+from urllib import parse
 import webbrowser
 
 import attr
@@ -899,8 +900,8 @@ class Report:
 
     # The date the report was published, used to identify updated reports.
     publish_date: datetime.date = attr.ib(converter=datetime.date.fromisoformat)  # type: ignore[misc]
-
-    # TODO(#4481): Add field to store URL the report was pulled from, or other text describing how it was acquired.
+    # The URL for the report on the source's website
+    url: parse.ParseResult = attr.ib(converter=parse.urlparse)
 
 
 # Parsing Layer
@@ -1106,7 +1107,7 @@ def _parse_tables(gcs: GCSFileSystem, manifest_path: GcsfsFilePath, tables_input
     return tables
 
 
-def _get_report(gcs: GCSFileSystem, manifest_path: GcsfsFilePath) -> Report:
+def _get_report_and_acquirer(gcs: GCSFileSystem, manifest_path: GcsfsFilePath) -> Tuple[Report, str]:
     logging.info('Reading report manifest: %s', manifest_path)
     manifest_handle = gcs.download_to_temp_file(manifest_path)
     if manifest_handle is None:
@@ -1126,12 +1127,14 @@ def _get_report(gcs: GCSFileSystem, manifest_path: GcsfsFilePath) -> Report:
             report_type=manifest.pop('report_type', str),
             report_instance=manifest.pop('report_instance', str),
             publish_date=manifest.pop('publish_date', str),
+            url=manifest.pop('url', str),
             tables=tables)
+        acquirer = manifest.pop('assignee', str)
 
         if len(manifest) > 0:
             raise ValueError(f"Received unexpected parameters in manifest: {manifest}")
 
-        return report
+        return report, acquirer
 
 # Persistence Layer
 # TODO(#4478): Refactor this into the persistence layer (including splitting out conversion, validation)
@@ -1139,6 +1142,7 @@ def _get_report(gcs: GCSFileSystem, manifest_path: GcsfsFilePath) -> Report:
 @attr.s(frozen=True)
 class Metadata:
     acquisition_method: schema.AcquisitionMethod = attr.ib()
+    acquired_by: str = attr.ib()
 
 
 def _update_existing_or_create(ingested_entity: schema.JusticeCountsDatabaseEntity, session: Session) \
@@ -1179,7 +1183,9 @@ def _convert_entities(session: Session, ingested_report: Report, report_metadata
         type=ingested_report.report_type,
         instance=ingested_report.report_instance,
         publish_date=ingested_report.publish_date,
+        url=ingested_report.url.geturl(),
         acquisition_method=report_metadata.acquisition_method,
+        acquired_by=report_metadata.acquired_by,
     ), session)
 
     for table in ingested_report.tables:
@@ -1233,9 +1239,10 @@ def _persist_report(report: Report, report_metadata: Metadata) -> None:
 
 def ingest(gcs: GCSFileSystem, manifest_filepath: GcsfsFilePath) -> None:
     logging.info('Fetching report for ingest...')
-    report = _get_report(gcs, manifest_filepath)
+    report, acquirer = _get_report_and_acquirer(gcs, manifest_filepath)
     logging.info('Ingesting report...')
-    _persist_report(report, Metadata(acquisition_method=schema.AcquisitionMethod.MANUALLY_ENTERED))
+    _persist_report(report,
+                    Metadata(acquisition_method=schema.AcquisitionMethod.MANUALLY_ENTERED, acquired_by=acquirer))
     logging.info('Report ingested.')
 
 # TODO(#4127): Everything above should be refactored out of the tools directory so only the script below is left.

@@ -2,6 +2,8 @@ source: 'Mississippi DOC'
 report_type: 'Monthly Fact Sheet'
 report_instance: '2020-09-01'
 publish_date: '2020-09-24'
+url: 'https://www.mdoc.ms.gov/Admin-Finance/MonthlyFacts/2020-9%20Fact%20Sheet.pdf'
+assignee: 'Solange Knowles'
 tables:
     - name: 'facility_totals'
       date_range:
