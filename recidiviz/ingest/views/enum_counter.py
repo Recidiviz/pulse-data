@@ -21,6 +21,7 @@ Its results are split by state and by whether it is a placeholder object.
 """
 from typing import List
 
+from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.big_query.big_query_view_collector import BigQueryViewCollector
 from recidiviz.ingest.views.dataset_config import VIEWS_DATASET
 from recidiviz.ingest.views.metadata_helpers import (
@@ -29,7 +30,6 @@ from recidiviz.ingest.views.metadata_helpers import (
     get_enum_property_names,
     get_state_tables,
 )
-from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -60,8 +60,8 @@ ORDER BY state_code, `{column_name}`;
 """
 
 
-class StateTableEnumCounterBigQueryViewCollector(BigQueryViewCollector[MetricBigQueryViewBuilder]):
-    def collect_view_builders(self) -> List[MetricBigQueryViewBuilder]:
+class StateTableEnumCounterBigQueryViewCollector(BigQueryViewCollector[SimpleBigQueryViewBuilder]):
+    def collect_view_builders(self) -> List[SimpleBigQueryViewBuilder]:
         builders = []
         for entity, table_name in get_state_tables():
             if table_name in METADATA_TABLES_WITH_CUSTOM_COUNTERS:
@@ -73,11 +73,10 @@ class StateTableEnumCounterBigQueryViewCollector(BigQueryViewCollector[MetricBig
                 template = ENUM_COUNTER_WITH_PLACEHOLDERS_STATE_QUERY_TEMPLATE if has_placeholders \
                     else ENUM_COUNTER_STATE_QUERY_TEMPLATE
                 builders.append(
-                    MetricBigQueryViewBuilder(
+                    SimpleBigQueryViewBuilder(
                         dataset_id=VIEWS_DATASET,
                         view_id=f'ingest_state_metadata__{table_name}__{col}',
                         view_query_template=template,
-                        dimensions=['state_code', col],
                         table_name=table_name,
                         column_name=col,
                     )
