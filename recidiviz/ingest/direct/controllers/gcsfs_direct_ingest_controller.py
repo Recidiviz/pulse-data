@@ -47,6 +47,7 @@ from recidiviz.ingest.direct.controllers.postgres_direct_ingest_file_metadata_ma
     PostgresDirectIngestFileMetadataManager
 from recidiviz.ingest.direct.direct_ingest_controller_utils import check_is_region_launched_in_env
 from recidiviz.persistence.entity.operations.entities import DirectIngestIngestFileMetadata
+from recidiviz.utils import trace
 
 
 class GcsfsDirectIngestController(
@@ -153,6 +154,7 @@ class GcsfsDirectIngestController(
             if not self.file_metadata_manager.has_file_been_discovered(path):
                 self.file_metadata_manager.mark_file_as_discovered(path)
 
+    @trace.span
     def handle_new_files(self, can_start_ingest: bool):
         """Searches the ingest directory for new/unprocessed files. Normalizes
         file names and splits files as necessary, schedules the next ingest job
@@ -505,6 +507,7 @@ class GcsfsDirectIngestController(
 
         return self._must_split_contents(parts.file_type, path)
 
+    @trace.span
     def _split_file_if_necessary(self, path: GcsfsFilePath) -> bool:
         """Checks if the given file needs to be split according to this controller's |file_split_line_limit|.
 

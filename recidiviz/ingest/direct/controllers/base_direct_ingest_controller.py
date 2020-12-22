@@ -33,7 +33,7 @@ from recidiviz.ingest.direct.errors import DirectIngestError, \
 from recidiviz.ingest.ingestor import Ingestor
 from recidiviz.ingest.scrape import ingest_utils
 from recidiviz.persistence import persistence
-from recidiviz.utils import regions
+from recidiviz.utils import regions, trace
 
 
 class BaseDirectIngestController(Ingestor, Generic[IngestArgsType, ContentsHandleType]):
@@ -241,6 +241,7 @@ class BaseDirectIngestController(Ingestor, Generic[IngestArgsType, ContentsHandl
 
         return True
 
+    @trace.span
     def _parse_and_persist_contents(self,
                                     args: IngestArgsType,
                                     contents_handle: ContentsHandleType):
