@@ -396,6 +396,7 @@ class UsPaController(CsvGcsfsDirectIngestController):
             'SPC',  # Special Circumstance
         ],
         StateSupervisionViolationType.ABSCONDED: [
+            'H06',  # Failure to report upon release
             'H09',  # Absconding
         ],
         StateSupervisionViolationType.LAW: [
@@ -404,7 +405,6 @@ class UsPaController(CsvGcsfsDirectIngestController):
             'M13',  # Conviction of a summary offense (a minor criminal, not civil offense)
         ],
         StateSupervisionViolationType.TECHNICAL: [
-            'H06',  # Failure to report upon release
             'M04',  # Travel violations
             'H01',  # Changing residence without permission
             'M02',  # A - Failure to report as instructed
