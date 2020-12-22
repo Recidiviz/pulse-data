@@ -15,9 +15,10 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """All views that populate the data in the dashboards."""
-from typing import List
+import itertools
+from typing import Sequence
 
-from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
+from recidiviz.big_query.big_query_view import BigQueryViewBuilder
 from recidiviz.calculator.query.state.views.dashboard.admissions import admissions_views
 from recidiviz.calculator.query.state.views.dashboard.program_evaluation import program_evaluation_views
 from recidiviz.calculator.query.state.views.dashboard.reincarcerations import reincarcerations_views
@@ -26,7 +27,7 @@ from recidiviz.calculator.query.state.views.dashboard.revocations import revocat
 from recidiviz.calculator.query.state.views.dashboard.supervision import supervision_views
 
 
-CORE_DASHBOARD_VIEW_BUILDERS: List[MetricBigQueryViewBuilder] = (
+CORE_DASHBOARD_VIEW_BUILDERS: Sequence[BigQueryViewBuilder] = (
     admissions_views.ADMISSIONS_VIEW_BUILDERS +
     reincarcerations_views.REINCARCERATIONS_VIEW_BUILDERS +
     revocations_views.REVOCATIONS_VIEW_BUILDERS +
@@ -35,11 +36,11 @@ CORE_DASHBOARD_VIEW_BUILDERS: List[MetricBigQueryViewBuilder] = (
 )
 
 
-LANTERN_DASHBOARD_VIEW_BUILDERS: List[MetricBigQueryViewBuilder] = \
+LANTERN_DASHBOARD_VIEW_BUILDERS: Sequence[BigQueryViewBuilder] = \
     revocation_analysis_views.REVOCATION_ANALYSIS_VIEW_BUILDERS
 
 
-DASHBOARD_VIEW_BUILDERS: List[MetricBigQueryViewBuilder] = (
-        CORE_DASHBOARD_VIEW_BUILDERS +
-        LANTERN_DASHBOARD_VIEW_BUILDERS
-)
+DASHBOARD_VIEW_BUILDERS: Sequence[BigQueryViewBuilder] = list(itertools.chain.from_iterable((
+    CORE_DASHBOARD_VIEW_BUILDERS,
+    LANTERN_DASHBOARD_VIEW_BUILDERS
+)))
