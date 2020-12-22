@@ -115,8 +115,12 @@ class Report(JusticeCountsBase):
 
     # The date the report was published.
     publish_date = Column(Date, nullable=False)
+    # The URL for the report on the source's website
+    url = Column(String(255))
     # The method used to acquire the data (e.g. scraped).
     acquisition_method = Column(Enum(AcquisitionMethod), nullable=False)
+    # If manually entered or collected, the person who collected the data.
+    acquired_by = Column(String(255))
     # TODO(#4485): Add a list of projects (e.g. Justice Counts, Spark) for which this data was ingested.
 
     __table_args__ = tuple([

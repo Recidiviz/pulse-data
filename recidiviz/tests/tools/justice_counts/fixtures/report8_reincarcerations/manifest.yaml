@@ -2,6 +2,8 @@ source: 'Michigan Department of Corrections'
 report_type: 'Statistical Report'
 report_instance: '2018'
 publish_date: '2019-11-27'
+url: 'https://www.michigan.gov/corrections/0,4551,7-119-1441---,00.html'
+assignee: 'Solange Knowles'
 tables:
   - file: 'data.csv'
     date_range:
