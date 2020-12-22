@@ -17,7 +17,7 @@
 
 """Tests for validation/validation_manager.py."""
 
-from typing import List
+from typing import List, Set
 from unittest import TestCase
 
 from flask import Flask
@@ -86,14 +86,15 @@ class TestHandleRequest(TestCase):
 
         self._TEST_VALIDATIONS = get_test_validations()
 
-    def tearDown(self):
+    def tearDown(self) -> None:
         self.project_id_patcher.stop()
         self.project_number_patcher.stop()
 
     @patch("recidiviz.validation.validation_manager._emit_failures")
     @patch("recidiviz.validation.validation_manager._run_job")
     @patch("recidiviz.validation.validation_manager._fetch_validation_jobs_to_perform")
-    def test_handle_request_happy_path_no_failures(self, mock_fetch_validations, mock_run_job, mock_emit_failures):
+    def test_handle_request_happy_path_no_failures(
+            self, mock_fetch_validations, mock_run_job, mock_emit_failures) -> None:
         mock_fetch_validations.return_value = self._TEST_VALIDATIONS
         mock_run_job.return_value = DataValidationJobResult(
             validation_job=self._TEST_VALIDATIONS[0], was_successful=True, failure_description=None)
@@ -114,7 +115,7 @@ class TestHandleRequest(TestCase):
     @patch("recidiviz.validation.validation_manager._run_job")
     @patch("recidiviz.validation.validation_manager._fetch_validation_jobs_to_perform")
     def test_handle_request_with_job_failures_and_validation_failures(
-            self, mock_fetch_validations, mock_run_job, mock_emit_failures):
+            self, mock_fetch_validations, mock_run_job, mock_emit_failures) -> None:
         mock_fetch_validations.return_value = self._TEST_VALIDATIONS
         first_failure = DataValidationJobResult(
             validation_job=self._TEST_VALIDATIONS[1], was_successful=False, failure_description='Oh no')
@@ -143,7 +144,8 @@ class TestHandleRequest(TestCase):
     @patch("recidiviz.validation.validation_manager._emit_failures")
     @patch("recidiviz.validation.validation_manager._run_job")
     @patch("recidiviz.validation.validation_manager._fetch_validation_jobs_to_perform")
-    def test_handle_request_happy_path_some_failures(self, mock_fetch_validations, mock_run_job, mock_emit_failures):
+    def test_handle_request_happy_path_some_failures(
+            self, mock_fetch_validations, mock_run_job, mock_emit_failures) -> None:
         mock_fetch_validations.return_value = self._TEST_VALIDATIONS
 
         first_failure = DataValidationJobResult(
@@ -177,7 +179,7 @@ class TestHandleRequest(TestCase):
     def test_handle_request_happy_path_nothing_configured(self,
                                                           mock_fetch_validations,
                                                           mock_run_job,
-                                                          mock_emit_failures):
+                                                          mock_emit_failures) -> None:
         mock_fetch_validations.return_value = []
 
         headers = {'X-Appengine-Cron': 'test-cron'}
@@ -197,7 +199,7 @@ class TestHandleRequest(TestCase):
                                                            mock_fetch_validations,
                                                            mock_run_job,
                                                            mock_emit_failures,
-                                                           mock_update_views):
+                                                           mock_update_views) -> None:
         mock_fetch_validations.return_value = []
 
         headers = {'X-Appengine-Cron': 'test-cron'}
@@ -235,11 +237,11 @@ class TestFetchValidations(TestCase):
         self.mock_project_id_fn = self.metadata_patcher.start()
         self.mock_project_id_fn.return_value = 'recidiviz-456'
 
-    def tearDown(self):
+    def tearDown(self) -> None:
         self.metadata_patcher.stop()
 
     @patch("recidiviz.utils.environment.get_gae_environment", return_value=GaeEnvironment.STAGING.value)
-    def test_cross_product_states_and_checks_staging(self, _mock_get_environment):
+    def test_cross_product_states_and_checks_staging(self, _mock_get_environment) -> None:
         all_validations = get_all_validations()
         all_region_configs = get_validation_region_configs()
         global_config = get_validation_global_config()
@@ -255,7 +257,7 @@ class TestFetchValidations(TestCase):
         self.assertEqual(expected_length, len(result))
 
     @patch("recidiviz.utils.environment.get_gae_environment", return_value=GaeEnvironment.PRODUCTION.value)
-    def test_cross_product_states_and_checks_production(self, _mock_get_environment):
+    def test_cross_product_states_and_checks_production(self, _mock_get_environment) -> None:
         all_validations = get_all_validations()
         region_configs_to_validate = get_validation_region_configs()
         global_config = get_validation_global_config()
@@ -280,15 +282,15 @@ class TestFetchValidations(TestCase):
         result = _fetch_validation_jobs_to_perform()
         self.assertEqual(expected_length, len(result))
 
-    def test_all_validations_no_overlapping_names(self):
+    def test_all_validations_no_overlapping_names(self) -> None:
         all_validations = get_all_validations()
 
-        all_names = set()
+        all_names: Set[str] = set()
         for validation in all_validations:
             self.assertNotIn(validation.validation_name, all_names)
             all_names.add(validation.validation_name)
 
-    def test_configs_all_reference_real_validations(self):
+    def test_configs_all_reference_real_validations(self) -> None:
         validation_names = {validation.validation_name for validation in get_all_validations()}
         region_configs_to_validate = get_validation_region_configs()
         global_config = get_validation_global_config()
@@ -313,10 +315,9 @@ class TestFetchValidations(TestCase):
                              f'Found views referenced in region [{region_code}] config that do not exist in validations'
                              f' list: {global_names_not_in_validations_list}')
 
-    def test_all_views_referenced_by_validations_are_in_view_config(self):
+    def test_all_views_referenced_by_validations_are_in_view_config(self) -> None:
         view_in_config = [view_builder.build()
-                          for view_builder_list in validation_view_config.VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE.values()
-                          for view_builder in view_builder_list]
+                          for view_builder in validation_view_config.VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE]
         views_in_validations = {v.view for v in get_all_validations()}
         validation_views_not_in_view_config = views_in_validations.difference(view_in_config)
 

@@ -36,11 +36,11 @@ class ViewExportConfigTest(unittest.TestCase):
 
         fakes.use_in_memory_sqlite_database(JailsBase)
 
-    def tearDown(self):
+    def tearDown(self) -> None:
         self.metadata_patcher.stop()
         fakes.teardown_in_memory_sqlite_databases()
 
-    def test_VIEW_COLLECTION_EXPORT_CONFIGS_types(self):
+    def test_VIEW_COLLECTION_EXPORT_CONFIGS_types(self) -> None:
         """Make sure that all view_builders in the view_builders_to_export attribute of
         VIEW_COLLECTION_EXPORT_CONFIGS are of type BigQueryViewBuilder, and that running view_builder.build()
         produces a BigQueryView."""
@@ -51,17 +51,8 @@ class ViewExportConfigTest(unittest.TestCase):
                 view = view_builder.build()
                 self.assertIsInstance(view, BigQueryView)
 
-    def test_view_dataset_ids(self):
-        for dataset_id, view_builders in view_config.VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE.items():
-            for view_builder in view_builders:
-                view = view_builder.build()
-                if view.dataset_id != dataset_id:
-                    self.fail(f'{view.view_id} has dataset id {view.dataset_id} that does not match '
-                              f'VIEWS_TO_UPDATE id {dataset_id}')
-
     @staticmethod
-    def test_building_all_views():
+    def test_building_all_views() -> None:
         """Tests that all view_builders in VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE successfully pass validations and build."""
-        for _, view_builders in view_config.VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE.items():
-            for view_builder in view_builders:
-                _ = view_builder.build()
+        for view_builder in view_config.VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE:
+            _ = view_builder.build()
