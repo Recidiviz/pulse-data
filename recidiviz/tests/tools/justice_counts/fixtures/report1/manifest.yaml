@@ -3,7 +3,7 @@ report_type: 'Dashboard Measures'
 report_instance: '2020-10-05'
 publish_date: '2020-10-05'
 tables:
-    - file: 'ManualData-Prison_US_CO_DashboardMeasures_Aug20.csv'
+    - name: 'ManualData-Prison_US_CO_DashboardMeasures_Aug20'
       date_range:
         fixed:
           type: 'SNAPSHOT'
@@ -22,7 +22,7 @@ tables:
       location:
         state: 'US_CO'
       methodology: 'Unknown'
-    - file: 'ManualData-Prison_US_CO_DashboardMeasures_Jul20.csv'
+    - name: 'ManualData-Prison_US_CO_DashboardMeasures_Jul20'
       date_range:
         fixed:
           type: 'SNAPSHOT'
@@ -41,7 +41,7 @@ tables:
       location:
         state: 'US_CO'
       methodology: 'Unknown'
-    - file: 'ManualData-Prison_US_CO_DashboardMeasures_Jun20.csv'
+    - name: 'ManualData-Prison_US_CO_DashboardMeasures_Jun20'
       date_range:
         fixed:
           type: 'SNAPSHOT'
