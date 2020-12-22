@@ -61,7 +61,7 @@ class BigQueryViewNamespace(Enum):
     INGEST_METADATA = 'ingest_metadata'
 
 
-VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE: Dict[BigQueryViewNamespace, Dict[str, Sequence[BigQueryViewBuilder]]] = {
+VIEW_BUILDERS_BY_NAMESPACE: Dict[BigQueryViewNamespace, Sequence[BigQueryViewBuilder]] = {
     BigQueryViewNamespace.COUNTY: COUNTY_VIEW_BUILDERS,
     BigQueryViewNamespace.STATE: STATE_VIEW_BUILDERS,
     BigQueryViewNamespace.VALIDATION: VALIDATION_VIEW_BUILDERS,
@@ -76,7 +76,7 @@ TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS = 24 * 60 * 60 * 1000
 def create_dataset_and_update_all_views(dataset_overrides: Optional[Dict[str, str]] = None,
                                         materialized_views_only: bool = False) -> None:
     """Creates or updates all registered BigQuery views."""
-    for namespace, builders in VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE.items():
+    for namespace, builders in VIEW_BUILDERS_BY_NAMESPACE.items():
         create_dataset_and_update_views_for_view_builders(namespace,
                                                           builders,
                                                           dataset_overrides=dataset_overrides,
@@ -85,7 +85,7 @@ def create_dataset_and_update_all_views(dataset_overrides: Optional[Dict[str, st
 
 def create_dataset_and_update_views_for_view_builders(
         bq_view_namespace: BigQueryViewNamespace,
-        view_builders_to_update: Dict[str, Sequence[BigQueryViewBuilder]],
+        view_builders_to_update: Sequence[BigQueryViewBuilder],
         dataset_overrides: Optional[Dict[str, str]] = None,
         materialized_views_only: bool = False) -> None:
     """Converts the map of dataset_ids to BigQueryViewBuilders lists into a map of dataset_ids to BigQueryViews by
@@ -98,11 +98,10 @@ def create_dataset_and_update_views_for_view_builders(
                      "default table expiration of 24 hours.")
     try:
         views_to_update = []
-        for view_builders in view_builders_to_update.values():
-            for view_builder in view_builders:
-                view = view_builder.build(dataset_overrides=dataset_overrides)
-                if not materialized_views_only or view.materialized_view_table_id is not None:
-                    views_to_update.append(view)
+        for view_builder in view_builders_to_update:
+            view = view_builder.build(dataset_overrides=dataset_overrides)
+            if not materialized_views_only or view.materialized_view_table_id is not None:
+                views_to_update.append(view)
 
         _create_dataset_and_update_views(views_to_update, set_default_table_expiration_for_new_datasets)
     except Exception as e:
@@ -155,7 +154,7 @@ def parse_arguments(argv: List[str]) -> Tuple[argparse.Namespace, List[str]]:
     parser.add_argument('--views_to_update',
                         dest='views_to_update',
                         type=str,
-                        choices=(['all'] + [namespace.value for namespace in VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE]),
+                        choices=(['all'] + [namespace.value for namespace in VIEW_BUILDERS_BY_NAMESPACE]),
                         required=True)
 
     parser.add_argument('--materialized_views_only',
@@ -178,7 +177,7 @@ if __name__ == '__main__':
             create_dataset_and_update_all_views(materialized_views_only=known_args.materialized_views_only)
         else:
             view_namespace_ = BigQueryViewNamespace(known_args.views_to_update)
-            view_builders_ = VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE[view_namespace_]
+            view_builders_ = VIEW_BUILDERS_BY_NAMESPACE[view_namespace_]
             create_dataset_and_update_views_for_view_builders(
                 bq_view_namespace=view_namespace_,
                 view_builders_to_update=view_builders_,

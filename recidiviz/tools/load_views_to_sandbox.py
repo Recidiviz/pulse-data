@@ -29,7 +29,7 @@ import sys
 from typing import List, Tuple, Dict, Optional
 
 from recidiviz.big_query.view_update_manager import create_dataset_and_update_all_views, \
-    VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE
+    VIEW_BUILDERS_BY_NAMESPACE
 from recidiviz.calculator.query.state.dataset_config import DATAFLOW_METRICS_DATASET
 from recidiviz.utils.environment import GCP_PROJECT_STAGING, GCP_PROJECT_PRODUCTION
 from recidiviz.utils.metadata import local_project_id_override
@@ -40,11 +40,11 @@ def _dataset_overrides_for_all_view_datasets(view_dataset_override_prefix: str,
     """Returns a dictionary mapping dataset_ids to the dataset name they should be replaced with for all view datasets
     in view_datasets. If a |dataflow_dataset_override| is provided, will override the DATAFLOW_METRICS_DATASET with
     the provided value."""
-    dataset_overrides = {
-        dataset_name: view_dataset_override_prefix + '_' + dataset_name
-        for builders in VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE.values()
-        for dataset_name in builders.keys()
-    }
+    dataset_overrides = {}
+    for view_builders in VIEW_BUILDERS_BY_NAMESPACE.values():
+        for builder in view_builders:
+            dataset_id = builder.build().dataset_id
+            dataset_overrides[dataset_id] = view_dataset_override_prefix + '_' + dataset_id
 
     if dataflow_dataset_override:
         logging.info("Overriding [%s] dataset with [%s].", DATAFLOW_METRICS_DATASET, dataflow_dataset_override)
