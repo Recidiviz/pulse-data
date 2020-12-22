@@ -3,7 +3,7 @@ report_type: 'Monthly Fact Sheet'
 report_instance: '2020-09-01'
 publish_date: '2020-09-24'
 tables:
-    - file: 'facility_totals.csv'
+    - name: 'facility_totals'
       date_range:
         fixed:
           type: 'SNAPSHOT'
@@ -22,7 +22,7 @@ tables:
       location:
         state: 'US_MS'
       methodology: 'Unknown'
-    - file: 'facility_with_demographics.csv'
+    - name: 'facility_with_demographics'
       date_range:
         fixed:
           type: 'SNAPSHOT'
