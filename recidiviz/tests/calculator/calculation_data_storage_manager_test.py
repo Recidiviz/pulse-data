@@ -114,7 +114,8 @@ class CalculationDataStorageManagerTest(unittest.TestCase):
     @freeze_time('2020-01-02 00:00')
     def test_delete_empty_datasets(self):
         """Test that _delete_empty_datasets deletes a dataset if it has no tables in it."""
-        empty_dataset = MockDataset(self.mock_view_dataset_name, datetime.datetime(2020, 1, 1, 0, 0, 0))
+        empty_dataset = MockDataset(self.mock_view_dataset_name, datetime.datetime(2020, 1, 1, 0, 0, 0,
+                                                                                   tzinfo=datetime.timezone.utc))
 
         self.mock_client.list_datasets.return_value = [bigquery.dataset.DatasetListItem(self.mock_dataset_resource)]
         self.mock_client.dataset_ref_for_id.return_value = self.mock_dataset
@@ -130,7 +131,8 @@ class CalculationDataStorageManagerTest(unittest.TestCase):
     @freeze_time('2020-01-02 00:00')
     def test_delete_empty_datasets_dataset_not_empty(self):
         """Test that _delete_empty_datasets does not delete a dataset if it has tables in it."""
-        non_empty_dataset = MockDataset(self.mock_view_dataset_name, datetime.datetime(2020, 1, 1, 0, 0, 0))
+        non_empty_dataset = MockDataset(self.mock_view_dataset_name, datetime.datetime(2020, 1, 1, 0, 0, 0,
+                                                                                       tzinfo=datetime.timezone.utc))
 
         self.mock_client.list_datasets.return_value = [bigquery.dataset.DatasetListItem(self.mock_dataset_resource)]
         self.mock_client.dataset_ref_for_id.return_value = self.mock_dataset
@@ -147,7 +149,8 @@ class CalculationDataStorageManagerTest(unittest.TestCase):
     def test_delete_empty_datasets_new_dataset(self):
         """Test that _delete_empty_datasets deletes a dataset if it has no tables in it."""
         # Created 30 minutes ago, should not be deleted
-        new_dataset = MockDataset(self.mock_view_dataset_name, datetime.datetime(2020, 1, 1, 0, 0, 0))
+        new_dataset = MockDataset(self.mock_view_dataset_name, datetime.datetime(2020, 1, 1, 0, 0, 0,
+                                                                                 tzinfo=datetime.timezone.utc))
 
         self.mock_client.list_datasets.return_value = [bigquery.dataset.DatasetListItem(self.mock_dataset_resource)]
         self.mock_client.dataset_ref_for_id.return_value = self.mock_dataset

@@ -64,7 +64,7 @@ def _delete_empty_datasets() -> None:
         dataset = bq_client.get_dataset(dataset_ref)
         tables = peekable(bq_client.list_tables(dataset.dataset_id))
         created_time = dataset.created
-        dataset_age_seconds = (datetime.datetime.now() - created_time).total_seconds()
+        dataset_age_seconds = (datetime.datetime.now(datetime.timezone.utc) - created_time).total_seconds()
 
         if not tables and dataset_age_seconds > DATASET_DELETION_MIN_SECONDS:
             logging.info("Dataset %s is empty and was not created very recently. Deleting...", dataset_ref.dataset_id)
