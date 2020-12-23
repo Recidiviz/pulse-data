@@ -56,7 +56,7 @@ _DATE_4 = datetime.datetime(year=2022, month=7, day=20)
 
 
 _DATE_2_UPPER_BOUND_CREATE_TABLE_SCRIPT = \
-    """DELETE TABLE IF EXISTS `recidiviz-456.us_xx_ingest_views.ingest_view_2020_07_20_00_00_00_upper_bound`;
+    """DROP TABLE IF EXISTS `recidiviz-456.us_xx_ingest_views.ingest_view_2020_07_20_00_00_00_upper_bound`;
 CREATE TABLE `recidiviz-456.us_xx_ingest_views.ingest_view_2020_07_20_00_00_00_upper_bound`
 OPTIONS(
   -- Data in this table will be deleted after 24 hours
@@ -169,7 +169,7 @@ CREATE TEMP TABLE tagFullHistoricalExport_generated_view AS (
     FROM rows_with_recency_rank
     WHERE recency_rank = 1
 );
-DELETE TABLE IF EXISTS `recidiviz-456.us_xx_ingest_views.ingest_view_2020_07_20_00_00_00_upper_bound`;
+DROP TABLE IF EXISTS `recidiviz-456.us_xx_ingest_views.ingest_view_2020_07_20_00_00_00_upper_bound`;
 CREATE TABLE `recidiviz-456.us_xx_ingest_views.ingest_view_2020_07_20_00_00_00_upper_bound`
 OPTIONS(
   -- Data in this table will be deleted after 24 hours
