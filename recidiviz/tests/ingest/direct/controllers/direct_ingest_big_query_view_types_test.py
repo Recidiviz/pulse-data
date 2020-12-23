@@ -1017,7 +1017,7 @@ USING (col1);"""
         self.assertEqual(['file_tag_first', 'file_tag_second'],
                          [c.file_tag for c in view.raw_table_dependency_configs])
 
-        expected_view_query = """DELETE TABLE IF EXISTS `recidiviz-456.my_destination_dataset.my_destination_table`;
+        expected_view_query = """DROP TABLE IF EXISTS `recidiviz-456.my_destination_dataset.my_destination_table`;
 CREATE TABLE `recidiviz-456.my_destination_dataset.my_destination_table`
 OPTIONS(
   -- Data in this table will be deleted after 24 hours
@@ -1046,7 +1046,7 @@ ORDER BY col1, col2
         self.assertEqual(expected_view_query, view.expanded_view_query(config=latest_config))
 
         expected_parameterized_view_query = \
-            """DELETE TABLE IF EXISTS `recidiviz-456.my_destination_dataset.my_destination_table`;
+            """DROP TABLE IF EXISTS `recidiviz-456.my_destination_dataset.my_destination_table`;
 CREATE TABLE `recidiviz-456.my_destination_dataset.my_destination_table`
 OPTIONS(
   -- Data in this table will be deleted after 24 hours
