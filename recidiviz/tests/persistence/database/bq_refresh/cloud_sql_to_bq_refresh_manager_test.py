@@ -22,7 +22,7 @@ import unittest
 from unittest import mock
 
 import flask
-from mock import Mock
+from mock import ANY, Mock
 
 from recidiviz.persistence.database.bq_refresh import cloud_sql_to_bq_refresh_manager
 from recidiviz.persistence.database.sqlalchemy_engine_manager import SchemaType
@@ -198,3 +198,46 @@ class CloudSqlToBQExportManagerTest(unittest.TestCase):
             assert_not_called()
         mock_pubsub_helper.publish_message_to_topic.assert_called_with(
             message=message, topic=topic)
+
+    @mock.patch('recidiviz.utils.metadata.project_id', Mock(return_value='test-project'))
+    @mock.patch('recidiviz.utils.metadata.project_number', Mock(return_value='123456789'))
+    @mock.patch(f'{CLOUD_SQL_BQ_EXPORT_MANAGER_PACKAGE_NAME}.BQRefreshCloudTaskManager')
+    def test_create_refresh_bq_tasks_state(self, mock_task_manager):
+        # Arrange
+        mock_table = Mock()
+        mock_table.name = 'test_table'
+        self.mock_bq_refresh_config.for_schema_type.return_value.get_tables_to_export.return_value = [mock_table]
+
+        # Act
+        response = self.mock_flask_client.get(
+            '/create_refresh_bq_tasks/state',
+            headers={'X-Appengine-Inbound-Appid': 'test-project'})
+
+        # Assert
+        assert response.status_code == HTTPStatus.OK
+        self.mock_bq_refresh_config.for_schema_type.assert_called_with(SchemaType.STATE)
+        mock_task_manager.return_value.create_refresh_bq_table_task.assert_called_with(
+            'test_table', SchemaType.STATE)
+        mock_task_manager.return_value.create_bq_refresh_monitor_task.assert_called_with(
+            'v1.calculator.trigger_daily_pipelines', ANY)
+
+    @mock.patch('recidiviz.utils.metadata.project_id', Mock(return_value='test-project'))
+    @mock.patch('recidiviz.utils.metadata.project_number', Mock(return_value='123456789'))
+    @mock.patch(f'{CLOUD_SQL_BQ_EXPORT_MANAGER_PACKAGE_NAME}.BQRefreshCloudTaskManager')
+    def test_create_refresh_bq_tasks_justice_counts(self, mock_task_manager):
+        # Arrange
+        mock_table = Mock()
+        mock_table.name = 'test_table'
+        self.mock_bq_refresh_config.for_schema_type.return_value.get_tables_to_export.return_value = [mock_table]
+
+        # Act
+        response = self.mock_flask_client.get(
+            '/create_refresh_bq_tasks/justice_counts',
+            headers={'X-Appengine-Inbound-Appid': 'test-project'})
+
+        # Assert
+        assert response.status_code == HTTPStatus.OK
+        self.mock_bq_refresh_config.for_schema_type.assert_called_with(SchemaType.JUSTICE_COUNTS)
+        mock_task_manager.return_value.create_refresh_bq_table_task.assert_called_with(
+            'test_table', SchemaType.JUSTICE_COUNTS)
+        assert not mock_task_manager.return_value.create_bq_refresh_monitor_task.called
