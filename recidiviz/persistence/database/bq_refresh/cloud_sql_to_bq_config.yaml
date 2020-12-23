@@ -1,7 +1,8 @@
 # Excluding region codes is only supported in the State and Operations schemas.
 production:
   # CREATE A TO-DO TASK FOR EVERY REGION CODE ADDED HERE TO UN-PAUSE THE EXPORT
-  region_codes_to_exclude: []
+  region_codes_to_exclude:
+    - US_MO # TODO(#4043): Unpause export once ingest run is complete
 staging:
   # CREATE A TO-DO TASK FOR EVERY REGION CODE ADDED HERE TO UN-PAUSE THE EXPORT
   region_codes_to_exclude:
