@@ -49,7 +49,7 @@ SUPERVISION_POPULATION_BY_MONTH_BY_DEMOGRAPHICS_VIEW_QUERY_TEMPLATE = \
         AND methodology = 'EVENT'
         AND date_of_supervision = DATE(year, month, 1)
         -- 20 years worth of monthly population metrics --
-        AND date_of_supervision >= DATE_SUB(CURRENT_DATE(), INTERVAL 240 MONTH)
+        AND date_of_stay >= DATE_SUB(DATE_TRUNC(CURRENT_DATE('US/Pacific'), MONTH), INTERVAL 239 MONTH)
     ), population_with_prioritized_race_or_ethnicity AS (
       SELECT
         * EXCEPT(race_or_ethnicity),
