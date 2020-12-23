@@ -34,39 +34,6 @@ import pandas as pd
 
 
 #RAW DATA
-release_to_incarceration = pd.DataFrame({
-    2011: [0.047, 0.145, 0.23],
-    2012: [0.044, 0.15, 0.234],
-    2013: [0.043, 0.15, 0.224],
-    2014: [0.05, 0.153, 0.234],
-    2015: [0.049, 0.15, 0.231],
-    2016: [0.05, None, None],
-    2017: [0.049, None, None]
-}, index=[i+1 for i in range(3)]).ffill(axis=1)
-release_to_incarceration.loc[3] -= release_to_incarceration.loc[2]
-release_to_incarceration.loc[2] -= release_to_incarceration.loc[1]
-cohort_sizes = {2011: 12263, 2012: 11496, 2013: 11575, 2014: 12021, 2015: 12385, 2016: 12554, 2017: 12415, 2018: 12502}
-
-total_state_responsible_adult_population = pd.Series({
-    2007: 38369,
-    2008: 39158,
-    2009: 38809,
-    2010: 38178,
-    2011: 37983,
-    2012: 37849,
-    2013: 38337,
-    2014: 38871,
-    2015: 38761,
-    2016: 38264,
-    2017: 37762,
-    2018: 37254,
-    2019: 37177,
-    2020: 37254,
-    2021: 37382,
-    2022: 37525,
-    2023: 37656,
-    2024: 37837
-})
 
 mandatory_minimums = {
     'NAR3085': 5,
@@ -116,57 +83,6 @@ mandatory_minimums = {
     'WPN5296': 5,
     'WPN5297': 2,
 }
-
-VA_validation_data = pd.DataFrame(columns=['time_step', 'compartment', 'outflow_to', 'count'])
-VA_validation_data = VA_validation_data.append({
-    'time_step': 2019,
-    'compartment': ['prison', 'jail'],
-    'outflow_to': 'release',
-    'count': 12819
-}, ignore_index=True)
-VA_validation_data = VA_validation_data.append({
-    'time_step': 2016,
-    'compartment': ['prison', 'jail'],
-    'outflow_to': 'release',
-    'count': 12650
-}, ignore_index=True)
-
-
-def add_recidivism_data(historical_data):
-    for year in set(historical_data['time_step']):
-        year_data = historical_data[historical_data['time_step'] == year]
-        total_admissions = len(year_data)
-        recidivism_admissions = get_recidivism_admissions(year)
-        recidivism_fraction = recidivism_admissions / total_admissions
-        for category in set(year_data['simulation_group_name']):
-            r_indices = year_data[year_data['simulation_group_name'] == category].sample(frac=recidivism_fraction).index
-            for index in r_indices:
-                historical_data.loc[index, 'outflow_from'] = 'release'
-
-    return historical_data
-
-
-def get_recidivism_admissions(year):
-    revocations = 0
-    for yr in range(1, 4):
-        cohort = year - yr
-        if cohort < min(cohort_sizes):
-            cohort_size = cohort_sizes[min(cohort_sizes)]
-        elif cohort > max(cohort_sizes):
-            cohort_size = cohort_sizes[max(cohort_sizes)]
-        else:
-            cohort_size = cohort_sizes[cohort]
-
-        if cohort < min(release_to_incarceration.columns):
-            recidivism_rate = release_to_incarceration[min(release_to_incarceration.columns)][yr]
-        elif cohort > max(release_to_incarceration.columns):
-            recidivism_rate = release_to_incarceration[max(release_to_incarceration.columns)][yr]
-        else:
-            recidivism_rate = release_to_incarceration[cohort][yr]
-
-        revocations += recidivism_rate * cohort_size
-
-    return revocations
 
 #you may have to change this path to point to wherever you have the file on your computer
 historical_sentences = pd.read_csv('spark/state/VA/VA_data/processed_va_historical_sentences_v2.csv')
