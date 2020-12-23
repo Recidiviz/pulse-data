@@ -118,6 +118,7 @@ WITH field_assignments_ce AS (
                     ELSE FLD_ASSN_END_DT END
                 AS FLD_ASSN_END_DT
             ),
+            -- TODO(#4054): Use the RECIDIVIZ_REFERENCE_supervision_district_to_region table instead of this clause
             CASE
                 WHEN (LOC_ACRO_TWO_LETTER IN ('EC', 'EP', '07', '08') OR LOC_ACRO = 'ERA') THEN 'EASTERN'
                 WHEN LOC_ACRO_TWO_LETTER IN ('03', '11', '16', '17', '18', '26', '38') THEN 'NORTHEAST'
