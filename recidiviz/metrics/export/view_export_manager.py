@@ -17,7 +17,10 @@
 """Export data from BigQuery metric views to configurable locations.
 
 Run this export locally with the following command:
-    python -m recidiviz.metrics.export.metric_view_export_manager --project_id [PROJECT_ID] --state_code [STATE_CODE]
+    python -m recidiviz.metrics.export.view_export_manager \
+        --project_id [PROJECT_ID] \
+        --export_job_filter [FILTER] \
+        --update_materialized_views [SHOULD_UPDATE]
 """
 import argparse
 import logging
@@ -46,7 +49,7 @@ from recidiviz.utils import metadata, monitoring
 from recidiviz.utils.auth import authenticate_request
 from recidiviz.utils.environment import GCP_PROJECT_STAGING, GCP_PROJECT_PRODUCTION
 from recidiviz.utils.metadata import local_project_id_override
-from recidiviz.utils.params import get_str_param_value
+from recidiviz.utils.params import get_str_param_value, str_to_bool
 
 m_failed_metric_export_validation = measure.MeasureInt(
     "bigquery/metric_view_export_manager/metric_view_export_validation_failure",
@@ -101,17 +104,19 @@ def metric_view_data_export() -> Tuple[str, HTTPStatus]:
 
 
 def export_view_data_to_cloud_storage(export_job_filter: Optional[str] = None,
-                                      override_view_exporter: BigQueryViewExporter = None) -> None:
+                                      override_view_exporter: BigQueryViewExporter = None,
+                                      update_materialized_views: bool = True) -> None:
     """Exports data in BigQuery metric views to cloud storage buckets.
 
     Optionally takes in a BigQueryViewExporter for performing the export operation. If none is provided, this defaults
     to using a CompositeBigQueryViewExporter with delegates of JsonLinesBigQueryViewExporter and
     OptimizedMetricBigQueryViewExporter.
     """
-    view_builders_for_views_to_update = view_config.VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE
-    view_update_manager.create_dataset_and_update_views_for_view_builders(BigQueryViewNamespace.STATE,
-                                                                          view_builders_for_views_to_update,
-                                                                          materialized_views_only=True)
+    if update_materialized_views:
+        view_builders_for_views_to_update = view_config.VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE
+        view_update_manager.create_dataset_and_update_views_for_view_builders(BigQueryViewNamespace.STATE,
+                                                                              view_builders_for_views_to_update,
+                                                                              materialized_views_only=True)
 
     if override_view_exporter is None:
         bq_client = BigQueryClientImpl()
@@ -205,6 +210,12 @@ def parse_arguments(argv: List[str]) -> Tuple[argparse.Namespace, List[str]]:
                         choices=([c.state_code_filter for c in view_config.VIEW_COLLECTION_EXPORT_CONFIGS] +
                                  [c.export_name for c in view_config.VIEW_COLLECTION_EXPORT_CONFIGS]),
                         required=False)
+    parser.add_argument('--update_materialized_views',
+                        default=True,
+                        type=str_to_bool,
+                        help='If True, all materialized views will be refreshed before doing the export. If the '
+                             'materialized tables are already up-to-date, setting this to False will save significant '
+                             'execution time.')
 
     return parser.parse_known_args(argv)
 
@@ -214,4 +225,5 @@ if __name__ == '__main__':
     known_args, _ = parse_arguments(sys.argv)
 
     with local_project_id_override(known_args.project_id):
-        export_view_data_to_cloud_storage(known_args.export_job_filter)
+        export_view_data_to_cloud_storage(export_job_filter=known_args.export_job_filter,
+                                          update_materialized_views=known_args.update_materialized_views)
