@@ -489,10 +489,27 @@ class ManualUploadTest(unittest.TestCase):
 
         cells = session.query(schema.Cell).all()
         self.assertEqual([
-            (['PRISON', 'Inmates'], decimal.Decimal(1489)),
-            (['PAROLE', 'Parolees'], decimal.Decimal(5592)),
-            (['PROBATION', 'Probationeers'], decimal.Decimal(200784)),
+            (['PRISON', 'Inmates', None, 'Inmates'], decimal.Decimal(1489)),
+            (['SUPERVISION', 'Parolees', 'PAROLE', 'Parolees'], decimal.Decimal(5592)),
+            (['SUPERVISION', 'Probationeers', 'PROBATION', 'Probationeers'], decimal.Decimal(200784)),
         ], [(cell.aggregated_dimension_values, cell.value) for cell in cells])
+
+    def test_ingestReport_parolePopulation(self):
+        # Act
+        manual_upload.ingest(self.fs, test_utils.prepare_files(self.fs, manifest_filepath('report_parole_population')))
+
+        # Assert
+        session = SessionFactory.for_schema_base(JusticeCountsBase)
+
+        [table_definition] = session.query(schema.ReportTableDefinition).all()
+        self.assertEqual(['global/location/state', 'metric/population/type', 'metric/supervision/type'],
+                         table_definition.filtered_dimensions)
+        self.assertEqual(['US_MS', 'SUPERVISION', 'PAROLE'], table_definition.filtered_dimension_values)
+        self.assertEqual([], table_definition.aggregated_dimensions)
+
+        [cell] = session.query(schema.Cell).all()
+        self.assertEqual([], cell.aggregated_dimension_values)
+        self.assertEqual(decimal.Decimal(5592), cell.value)
 
     def test_raiseError_noPopulationTypeDimensionOrMetric(self):
         # Act

@@ -5,7 +5,7 @@ publish_date: '2020-10-05'
 url: 'https://www.colorado.gov/pacific/cdoc/departmental-reports-and-statistics'
 assignee: 'Solange Knowles'
 tables:
-  - file: 'table.csv'
+  - name: 'table'
     methodology: 'SNAPSHOT'
     date_range:
       fixed:
@@ -18,13 +18,7 @@ tables:
     metric:
       population:
         measurement_type: 'INSTANT'
-        population_type: 'PRISON'
+        population_type: 'SUPERVISION'
+        supervision_type: 'PAROLE'
     value_column:
       column_name: 'Population'
-    dimension_columns:
-      - column_name: 'Population Type'
-        dimension_name: 'POPULATION_TYPE'
-        mapping_overrides:
-          INMATES: 'PRISON'
-          PAROLEES: 'SUPERVISION'
-          PROBATIONEERS: 'SUPERVISION'
