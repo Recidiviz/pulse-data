@@ -69,7 +69,7 @@ WITH table_rows AS (
 )
 SELECT
   state_code,
-  IF({column_name} IS NULL, 'NULL', 'NOT_NULL') AS {column_name},
+  {column_name},
   COUNT(*) AS total_count,
   IFNULL(SUM(CASE WHEN matching_id IS NULL THEN 1 END), 0) AS placeholder_count
 FROM
