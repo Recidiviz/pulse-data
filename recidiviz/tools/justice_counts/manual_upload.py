@@ -47,6 +47,7 @@ from sqlalchemy.orm.session import Session
 from sqlalchemy.sql.schema import UniqueConstraint
 import yaml
 
+from recidiviz.common.constants import states
 from recidiviz.common.constants.enum_overrides import EnumOverrides
 from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta, EnumParsingError
 from recidiviz.common.date import DateRange, first_day_of_month, last_day_of_month
@@ -256,13 +257,9 @@ class Country(Dimension, enum.Enum):
         return self.value
 
 
-# TODO(#4472): Pull this out to a common place and add all states.
-class State(Dimension, enum.Enum):
-    US_AL = 'US_AL'
-    US_CO = 'US_CO'
-    US_MI = 'US_MI'
-    US_MS = 'US_MS'
-    US_TN = 'US_TN'
+@attr.s(frozen=True)
+class State(Dimension):
+    state_code: states.StateCode = attr.ib(converter=states.StateCode)
 
     @classmethod
     def get(cls, dimension_cell_value: str, enum_overrides: Optional[EnumOverrides] = None) -> 'State':
@@ -275,7 +272,7 @@ class State(Dimension, enum.Enum):
 
     @property
     def dimension_value(self) -> str:
-        return self.value
+        return self.state_code.value
 
 
 class County(Dimension, enum.Enum):
