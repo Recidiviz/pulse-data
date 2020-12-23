@@ -131,9 +131,8 @@ def parse_entity_enum(dimension_cls: Type[EntityEnumT], dimension_cell_value: st
     return entity_enum
 
 class PopulationType(Dimension, EntityEnum, metaclass=EntityEnumMeta):
-    PAROLE = 'PAROLE'
-    PROBATION = 'PROBATION'
     PRISON = 'PRISON'
+    SUPERVISION = 'SUPERVISION'
 
     @classmethod
     def get(cls, dimension_cell_value: str, enum_overrides: Optional[EnumOverrides] = None) -> 'PopulationType':
@@ -150,9 +149,8 @@ class PopulationType(Dimension, EntityEnum, metaclass=EntityEnumMeta):
     @classmethod
     def _get_default_map(cls) -> Dict[str, 'PopulationType']:
         return {
-            'PAROLE': cls.PAROLE,
-            'PROBATION': cls.PROBATION,
             'PRISON': cls.PRISON,
+            'SUPERVISION': cls.SUPERVISION,
         }
 
 class AdmissionType(Dimension, EntityEnum, metaclass=EntityEnumMeta):
@@ -493,13 +491,28 @@ def _convert_optional_supervision_violation_type(value: Optional[str]) -> Option
 
 @attr.s(frozen=True)
 class Population(Metric):
+    """Metric for recording populations.
+
+    Currently this is only used for prison and supervision populations."""
     measurement_type: schema.MeasurementType = attr.ib(converter=schema.MeasurementType)
 
     population_type: Optional[PopulationType] = attr.ib(converter=_convert_optional_population_type, default=None)
+    supervision_type: Optional[SupervisionType] = attr.ib(converter=_convert_optional_supervision_type, default=None)
+
+    def __attrs_post_init__(self) -> None:
+        if self.population_type != PopulationType.SUPERVISION:
+            if self.supervision_type is not None:
+                raise ValueError(
+                    "'supervision_type' may only be set on population if 'population_type' is 'SUPERVISION'")
 
     @property
     def filters(self) -> List[Dimension]:
-        return [self.population_type] if self.population_type is not None else []
+        filters: List[Dimension] = []
+        if self.population_type is not None:
+            filters.append(self.population_type)
+        if self.supervision_type is not None:
+            filters.append(self.supervision_type)
+        return filters
 
     @property
     def required_aggregated_dimensions(self) -> List[Type[Dimension]]:

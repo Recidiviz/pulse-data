@@ -25,5 +25,11 @@ tables:
         dimension_name: 'POPULATION_TYPE'
         mapping_overrides:
           INMATES: 'PRISON'
+          PAROLEES: 'SUPERVISION'
+          PROBATIONEERS: 'SUPERVISION'
+      - column_name: 'Population Type'
+        dimension_name: 'SUPERVISION_TYPE'
+        strict: False
+        mapping_overrides:
           PAROLEES: 'PAROLE'
           PROBATIONEERS: 'PROBATION'
