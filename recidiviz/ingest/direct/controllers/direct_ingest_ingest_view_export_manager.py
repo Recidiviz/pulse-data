@@ -372,16 +372,14 @@ class DirectIngestIngestViewExportManager:
         `EXCEPT DISTINCT` function.
         """
 
-        if ingest_view.materialize_raw_data_table_views:
-            raise ValueError('TODO(#4925): Debug queries for raw table materialized queries not yet supported.')
-
         upper_bound_table_id = cls._get_upper_bound_intermediate_table_name(ingest_view_export_args)
         query, query_params = cls._generate_export_query_and_params_for_date(
             ingest_view=ingest_view,
             destination_table_type=DestinationTableType.TEMPORARY,
             destination_table_id=upper_bound_table_id,
             update_timestamp=ingest_view_export_args.upper_bound_datetime_to_export,
-            param_name=UPPER_BOUND_TIMESTAMP_PARAM_NAME
+            param_name=UPPER_BOUND_TIMESTAMP_PARAM_NAME,
+            raw_table_subquery_name_prefix='upper_' if ingest_view.materialize_raw_data_table_views else ''
         )
 
         if ingest_view_export_args.upper_bound_datetime_prev:
@@ -391,7 +389,8 @@ class DirectIngestIngestViewExportManager:
                 destination_table_type=DestinationTableType.TEMPORARY,
                 destination_table_id=lower_bound_table_id,
                 update_timestamp=ingest_view_export_args.upper_bound_datetime_prev,
-                param_name=LOWER_BOUND_TIMESTAMP_PARAM_NAME
+                param_name=LOWER_BOUND_TIMESTAMP_PARAM_NAME,
+                raw_table_subquery_name_prefix='lower_' if ingest_view.materialize_raw_data_table_views else ''
             )
 
             query_params.extend(lower_bound_query_params)
@@ -414,6 +413,7 @@ class DirectIngestIngestViewExportManager:
             destination_table_type: DestinationTableType,
             destination_table_id: str,
             param_name: str = UPDATE_TIMESTAMP_PARAM_NAME,
+            raw_table_subquery_name_prefix: Optional[str] = None,
     ) -> Tuple[str, List[bigquery.ScalarQueryParameter]]:
         """Generates a single query for the provided |ingest view| that is date bounded by |update_timestamp|."""
         query_params = [
@@ -436,6 +436,7 @@ class DirectIngestIngestViewExportManager:
                 destination_table_type=destination_table_type,
                 destination_dataset_id=destination_dataset_id,
                 destination_table_id=destination_table_id,
+                raw_table_subquery_name_prefix=raw_table_subquery_name_prefix,
             ))
         return query, query_params
 
@@ -504,10 +505,10 @@ class DirectIngestIngestViewExportManager:
 if __name__ == '__main__':
 
     # Update these variables and run to print an export query you can run in the BigQuery UI
-    region_code_: str = 'us_id'
-    ingest_view_name_: str = 'early_discharge_supervision_sentence_deleted_rows'
-    upper_bound_datetime_prev_: datetime.datetime = datetime.datetime(2020, 6, 29)
-    upper_bound_datetime_to_export_: datetime.datetime = datetime.datetime(2020, 8, 6)
+    region_code_: str = 'us_mo'
+    ingest_view_name_: str = 'tak001_offender_identification_v2'
+    upper_bound_datetime_prev_: datetime.datetime = datetime.datetime(2020, 10, 15)
+    upper_bound_datetime_to_export_: datetime.datetime = datetime.datetime(2020, 12, 18)
 
     with local_project_id_override(GCP_PROJECT_STAGING):
         region_ = regions.get_region(region_code_, is_direct_ingest=True)
