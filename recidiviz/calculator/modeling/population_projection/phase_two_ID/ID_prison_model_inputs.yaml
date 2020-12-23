@@ -1,0 +1,45 @@
+---
+user_inputs:
+  start_year: 2020.83333333
+  projection_years: 5
+  run_date: '2020-11-01'
+
+model_architecture:
+    PRETRIAL: null
+    RELEASE: null
+    INCARCERATION - GENERAL: incarcerated
+    INCARCERATION - TREATMENT_IN_PRISON: incarcerated
+    INCARCERATION - PAROLE_BOARD_HOLD: incarcerated
+    INCARCERATION - RE-INCARCERATION: incarcerated
+    SUPERVISION - PAROLE: incarcerated
+    SUPERVISION - PROBATION: incarcerated
+    RELEASE - RELEASE: released
+
+reference_date: 2019.0
+
+time_step: 0.08333333333
+
+disaggregation_axes:
+  - gender
+
+per_ts_costs:
+    INCARCERATION - GENERAL: 0
+    INCARCERATION - TREATMENT_IN_PRISON: 0
+    INCARCERATION - PAROLE_BOARD_HOLD: 0
+    INCARCERATION - RE-INCARCERATION: 0
+    SUPERVISION - PAROLE: 0
+    SUPERVISION - PROBATION: 0
+    RELEASE - RELEASE: 0
+
+micro_simulation: true
+
+big_query_inputs:
+  project_id: recidiviz-staging
+  input_dataset: population_projection_data
+  outflows_data: population_outflows
+  transitions_data: population_transitions_materialized
+  total_population_data: total_population
+  remaining_sentence_data: remaining_sentences_materialized
+  total_jail_population_data: total_jail_population
+  total_out_of_state_supervised_population_data: total_out_of_state_supervision_population
+  state_code: US_ID

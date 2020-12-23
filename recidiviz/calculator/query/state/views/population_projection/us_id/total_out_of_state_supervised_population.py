@@ -14,65 +14,59 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Historical population by compartment and month"""
+"""Historical out of state supervised population by month"""
 # pylint: disable=trailing-whitespace
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-TOTAL_POPULATION_VIEW_NAME = 'total_population'
+TOTAL_OUT_OF_STATE_SUPERVISED_POPULATION_VIEW_NAME = 'total_out_of_state_supervision_population'
 
-TOTAL_POPULATION_VIEW_DESCRIPTION = \
+TOTAL_OUT_OF_STATE_SUPERVISED_POPULATION_VIEW_DESCRIPTION = \
     """"Historical population by compartment and month"""
 
-TOTAL_POPULATION_QUERY_TEMPLATE = \
+TOTAL_OUT_OF_STATE_SUPERVISED_POPULATION_QUERY_TEMPLATE = \
     """
     WITH cte AS
     (
-        SELECT
-          state_code,
-          session_id,
-          CASE WHEN compartment = 'INCARCERATION - GENERAL' AND previously_incarcerated
-            THEN 'INCARCERATION - RE-INCARCERATION'
-            ELSE compartment
-          END AS compartment,
-          gender,
-          start_date,
-          end_date,
-          run_date,
-          COUNT(1) as total_population,
-        FROM `{project_id}.{population_projection_dataset}.population_projection_sessions_materialized`
-        JOIN `{project_id}.{population_projection_dataset}.simulation_run_dates`
-          ON start_date < run_date
-        WHERE
-          state_code = 'US_ID'
-          AND (compartment LIKE '%INCARCERATION%' OR compartment LIKE '%SUPERVISION%')
-        GROUP BY 1,2,3,4,5,6,7
-        ORDER BY 1,2,3,4,5,6,7
-    )
     SELECT
-      cte.compartment,
+      state_code,
+      CASE 
+        WHEN compartment_level_1 = 'SUPERVISION' AND compartment_level_2 = 'DUAL' 
+            THEN 'SUPERVISION - PAROLE'
+        ELSE CONCAT(compartment_level_1, ' - ', COALESCE(compartment_level_2, ''))
+      END AS compartment,
+      start_date,
+      end_date,
+      run_date,
+      COUNT(1) as total_population
+    FROM `{project_id}.{analyst_dataset}.compartment_sub_sessions_materialized`
+    JOIN `{project_id}.{population_projection_dataset}.simulation_run_dates`
+      ON start_date < run_date
+    WHERE state_code = 'US_ID'
+      AND metric_source = 'SUPERVISION_OUT_OF_STATE_POPULATION'
+    GROUP BY 1,2,3,4,5
+    )
+
+    SELECT
       cte.state_code,
-      cte.gender,
+      cte.compartment,
       cte.run_date,
       time_step,
       SUM(cte.total_population) as total_population
     FROM cte,
     UNNEST(GENERATE_DATE_ARRAY('2000-01-01', DATE_TRUNC(CURRENT_DATE, MONTH), INTERVAL 1 MONTH)) AS time_step
-    WHERE
-      state_code = 'US_ID'
-      AND gender IN ('FEMALE', 'MALE')
-      AND time_step BETWEEN cte.start_date AND COALESCE(cte.end_date, '9999-01-01')
-    GROUP BY 1,2,3,4,5
-    ORDER BY 1,2,3,4,5
+    WHERE time_step BETWEEN cte.start_date AND COALESCE(cte.end_date, '9999-01-01')
+    GROUP BY 1,2,3,4
+    ORDER BY 1,2,3,4
     """
 
-TOTAL_POPULATION_VIEW_BUILDER = SimpleBigQueryViewBuilder(
+TOTAL_OUT_OF_STATE_SUPERVISED_POPULATION_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=dataset_config.POPULATION_PROJECTION_DATASET,
-    view_id=TOTAL_POPULATION_VIEW_NAME,
-    view_query_template=TOTAL_POPULATION_QUERY_TEMPLATE,
-    description=TOTAL_POPULATION_VIEW_DESCRIPTION,
+    view_id=TOTAL_OUT_OF_STATE_SUPERVISED_POPULATION_VIEW_NAME,
+    view_query_template=TOTAL_OUT_OF_STATE_SUPERVISED_POPULATION_QUERY_TEMPLATE,
+    description=TOTAL_OUT_OF_STATE_SUPERVISED_POPULATION_VIEW_DESCRIPTION,
     analyst_dataset=dataset_config.ANALYST_VIEWS_DATASET,
     population_projection_dataset=dataset_config.POPULATION_PROJECTION_DATASET,
     should_materialize=False
@@ -80,4 +74,4 @@ TOTAL_POPULATION_VIEW_BUILDER = SimpleBigQueryViewBuilder(
 
 if __name__ == '__main__':
     with local_project_id_override(GCP_PROJECT_STAGING):
-        TOTAL_POPULATION_VIEW_BUILDER.build_and_print()
+        TOTAL_OUT_OF_STATE_SUPERVISED_POPULATION_VIEW_BUILDER.build_and_print()
