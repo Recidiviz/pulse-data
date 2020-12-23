@@ -58,12 +58,13 @@ echo "Updating configuration / infrastructure in preparation for deploy"
 DEBUG_BUILD_NAME='' # A production build is not a debug build
 pre_deploy_configure_infrastructure 'recidiviz-123' "$DEBUG_BUILD_NAME"
 
-GAE_VERSION=$(echo ${GIT_VERSION_TAG} | tr '.' '-') || exit_on_fail
-STAGING_IMAGE_URL=us.gcr.io/recidiviz-staging/appengine/default.${GAE_VERSION}:latest || exit_on_fail
-PROD_IMAGE_URL=us.gcr.io/recidiviz-123/appengine/default.${GAE_VERSION}:latest || exit_on_fail
+STAGING_IMAGE_URL=us.gcr.io/recidiviz-staging/appengine/default:${GIT_VERSION_TAG} || exit_on_fail
+PROD_IMAGE_URL=us.gcr.io/recidiviz-123/appengine/default:${GIT_VERSION_TAG} || exit_on_fail
 
 echo "Starting deploy of main app"
 run_cmd gcloud -q container images add-tag ${STAGING_IMAGE_URL} ${PROD_IMAGE_URL}
+
+GAE_VERSION=$(echo ${GIT_VERSION_TAG} | tr '.' '-') || exit_on_fail
 run_cmd gcloud -q app deploy prod.yaml --project=recidiviz-123 --version=${GAE_VERSION} --image-url=${PROD_IMAGE_URL}
 
 echo "Deploy succeeded - triggering post-deploy jobs."
