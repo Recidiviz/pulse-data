@@ -146,7 +146,7 @@ CREATE_TEMP_TABLE_REGEX = re.compile(r'CREATE\s+((TEMP|TEMPORARY)\s+)TABLE')
 
 
 DESTINATION_TABLE_QUERY_FORMAT = """{raw_materialized_tables_clause}
-DELETE TABLE IF EXISTS `{{project_id}}.{dataset_id}.{table_id}`;
+DROP TABLE IF EXISTS `{{project_id}}.{dataset_id}.{table_id}`;
 CREATE TABLE `{{project_id}}.{dataset_id}.{table_id}`
 OPTIONS(
   -- Data in this table will be deleted after 24 hours
