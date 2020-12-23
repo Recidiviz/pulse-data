@@ -793,3 +793,138 @@ ORDER BY colA, colC;"""
 
         # Assert
         self.assertEqual(expected_debug_query, debug_query)
+
+    def test_debugQueryForArgsMaterializedRawTables(self) -> None:
+        # Arrange
+        region = self.create_fake_region()
+        export_manager = self.create_export_manager(region, materialize_raw_data_table_views=True)
+        export_args = GcsfsIngestViewExportArgs(
+            ingest_view_name='ingest_view',
+            upper_bound_datetime_prev=_DATE_1,
+            upper_bound_datetime_to_export=_DATE_2)
+
+        # Act
+        with freeze_time(_DATE_4.isoformat()):
+            debug_query = DirectIngestIngestViewExportManager.debug_query_for_args(
+                export_manager.ingest_views_by_tag, export_args)
+
+        expected_debug_query = \
+            """CREATE TEMP TABLE upper_file_tag_first_generated_view AS (
+    WITH rows_with_recency_rank AS (
+        SELECT
+            * EXCEPT (file_id, update_datetime),
+            ROW_NUMBER() OVER (PARTITION BY col_name_1a, col_name_1b
+                               ORDER BY update_datetime DESC) AS recency_rank
+        FROM
+            `recidiviz-456.us_xx_raw_data.file_tag_first`
+        WHERE
+            update_datetime <= DATETIME(2020, 7, 20, 0, 0, 0)
+    )
+
+    SELECT *
+    EXCEPT (recency_rank)
+    FROM rows_with_recency_rank
+    WHERE recency_rank = 1
+);
+CREATE TEMP TABLE upper_tagFullHistoricalExport_generated_view AS (
+    WITH max_update_datetime AS (
+        SELECT
+            MAX(update_datetime) AS update_datetime
+        FROM
+            `recidiviz-456.us_xx_raw_data.tagFullHistoricalExport`
+        WHERE
+            update_datetime <= DATETIME(2020, 7, 20, 0, 0, 0)
+    ),
+    max_file_id AS (
+        SELECT
+            MAX(file_id) AS file_id
+        FROM
+            `recidiviz-456.us_xx_raw_data.tagFullHistoricalExport`
+        WHERE
+            update_datetime = (SELECT update_datetime FROM max_update_datetime)
+    ),
+    rows_with_recency_rank AS (
+        SELECT
+            * EXCEPT (file_id, update_datetime),
+            ROW_NUMBER() OVER (PARTITION BY COL_1
+                               ORDER BY update_datetime DESC) AS recency_rank
+        FROM
+            `recidiviz-456.us_xx_raw_data.tagFullHistoricalExport`
+        WHERE
+            file_id = (SELECT file_id FROM max_file_id)
+    )
+    SELECT *
+    EXCEPT (recency_rank)
+    FROM rows_with_recency_rank
+    WHERE recency_rank = 1
+);
+CREATE TEMP TABLE ingest_view_2020_07_20_00_00_00_upper_bound AS (
+
+select * from upper_file_tag_first_generated_view JOIN upper_tagFullHistoricalExport_generated_view USING (COL_1)
+ORDER BY colA, colC
+
+);
+CREATE TEMP TABLE lower_file_tag_first_generated_view AS (
+    WITH rows_with_recency_rank AS (
+        SELECT
+            * EXCEPT (file_id, update_datetime),
+            ROW_NUMBER() OVER (PARTITION BY col_name_1a, col_name_1b
+                               ORDER BY update_datetime DESC) AS recency_rank
+        FROM
+            `recidiviz-456.us_xx_raw_data.file_tag_first`
+        WHERE
+            update_datetime <= DATETIME(2019, 7, 20, 0, 0, 0)
+    )
+
+    SELECT *
+    EXCEPT (recency_rank)
+    FROM rows_with_recency_rank
+    WHERE recency_rank = 1
+);
+CREATE TEMP TABLE lower_tagFullHistoricalExport_generated_view AS (
+    WITH max_update_datetime AS (
+        SELECT
+            MAX(update_datetime) AS update_datetime
+        FROM
+            `recidiviz-456.us_xx_raw_data.tagFullHistoricalExport`
+        WHERE
+            update_datetime <= DATETIME(2019, 7, 20, 0, 0, 0)
+    ),
+    max_file_id AS (
+        SELECT
+            MAX(file_id) AS file_id
+        FROM
+            `recidiviz-456.us_xx_raw_data.tagFullHistoricalExport`
+        WHERE
+            update_datetime = (SELECT update_datetime FROM max_update_datetime)
+    ),
+    rows_with_recency_rank AS (
+        SELECT
+            * EXCEPT (file_id, update_datetime),
+            ROW_NUMBER() OVER (PARTITION BY COL_1
+                               ORDER BY update_datetime DESC) AS recency_rank
+        FROM
+            `recidiviz-456.us_xx_raw_data.tagFullHistoricalExport`
+        WHERE
+            file_id = (SELECT file_id FROM max_file_id)
+    )
+    SELECT *
+    EXCEPT (recency_rank)
+    FROM rows_with_recency_rank
+    WHERE recency_rank = 1
+);
+CREATE TEMP TABLE ingest_view_2019_07_20_00_00_00_lower_bound AS (
+
+select * from lower_file_tag_first_generated_view JOIN lower_tagFullHistoricalExport_generated_view USING (COL_1)
+ORDER BY colA, colC
+
+);
+(
+SELECT * FROM ingest_view_2020_07_20_00_00_00_upper_bound
+) EXCEPT DISTINCT (
+SELECT * FROM ingest_view_2019_07_20_00_00_00_lower_bound
+)
+ORDER BY colA, colC;"""
+
+        # Assert
+        self.assertEqual(expected_debug_query, debug_query)
