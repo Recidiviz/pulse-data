@@ -207,7 +207,7 @@ class CompartmentTransitions(ABC):
 
         self.transition_dfs[state] = pd.DataFrame(self.transition_dfs[state], index=range(1, self.max_sentence + 1))
 
-        self.transition_dfs[state].remaining = self.transition_dfs[state].remaining.apply(lambda x: round(x, 8))
+        self.transition_dfs[state] = self.transition_dfs[state].apply(lambda x: round(x, 8))
 
         # Make sure all transition probabilities are between 0-1
         for compartment in self.transition_dfs[state]:
@@ -410,7 +410,7 @@ class CompartmentTransitions(ABC):
             sub-dicts should have keys 'reduction_size' and 'affected_fraction'
             if `reduction_type` = '*', units is fractional reduction in compartment durations
                 (0.2, 1 --> 10 year sentence becomes 8 years)
-            if `reduction_type` = '+', units of time steps
+            if `reduction_type` = '+', unit is time steps
                 (0.5, 1 --> 10 year sentence becomes 9.5 years)
         """
         # ensure tables haven't been normalized already
@@ -446,9 +446,14 @@ class CompartmentTransitions(ABC):
                 self.transition_dfs[df_name][outflow][int(new_sentence_length) - 1] += shorter_bit
                 self.transition_dfs[df_name][outflow][int(new_sentence_length)] += longer_bit
 
-    def reallocate_outflow(self, outflow: str, new_outflow: str, retroactive: bool = False):
+    def reallocate_outflow(self, reallocation_df: pd.DataFrame, retroactive: bool = False):
         """
-        reallocate outflow from `outflow` to `new_outflow`. If `new_outflow` doesn't exist, create a new column for it.
+        reallocation_df should be a df with columns
+            'outflow': outflow to be reallocated
+            'affected_fraction' : 0 =< float =< 1
+            'new_outflow': outflow_tag
+        If `new_outflow` doesn't exist, create a new column for it. If null, just scale down (BE VERY USING NULL,
+            EASY TO MESS UP NORMALIZATION)
         """
         # ensure tables haven't been normalized already
         if 'remaining' in self.transition_dfs['before']:
@@ -456,6 +461,12 @@ class CompartmentTransitions(ABC):
 
         df_name = self.get_df_name_from_retroactive(retroactive)
 
-        new_outflow_value = self.transition_dfs[df_name].get(new_outflow, 0) + self.transition_dfs[outflow]
-        self.transition_dfs[df_name][new_outflow] = new_outflow_value
-        del self.transition_dfs[df_name][outflow]
+        for _, row in reallocation_df.iterrows():
+            self.transition_dfs[df_name][row.outflow] = list(np.array(self.transition_dfs[df_name][row.outflow])
+                                                             * (1 - row.affected_fraction))
+
+            if not row.isnull().new_outflow:
+                new_outflow_value = list(np.array(self.transition_dfs[df_name].get(row.new_outflow, 0)) +
+                                         np.array(self.transition_dfs[df_name][row.outflow]))
+
+                self.transition_dfs[df_name][row.new_outflow] = new_outflow_value
