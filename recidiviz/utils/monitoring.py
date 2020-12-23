@@ -104,7 +104,7 @@ def exponential_buckets(start: float, factor: float, count: int) -> List[float]:
 
     E.g. start=10, factor=2, count=5 would create [0, 10, 20, 40, 80, 160]
     """
-    buckets = [0.0]
+    buckets = []
     next_boundary = start
     for _ in range(count):
         buckets.append(next_boundary)
