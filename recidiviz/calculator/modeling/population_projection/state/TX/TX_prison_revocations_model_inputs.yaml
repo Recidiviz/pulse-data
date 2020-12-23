@@ -1,0 +1,32 @@
+user_inputs:
+    policy_year: 2021
+    start_year: 2019
+    projection_years: 10
+    speed_run: true
+
+model_architecture:
+    pre-supervision: null
+    probation: incarcerated
+    parole: incarcerated
+    prison_probation_revocations: incarcerated 
+    prison_parole_revocations: incarcerated
+    release: released
+
+reference_date: 2010
+# january
+time_step: 0.083333333 
+# one month
+
+disaggregation_axes: 
+- placeholder_axis
+
+state_data: ../state/TX/preprocessed_data_TX_prison_revocations.csv
+
+per_ts_costs:
+  prison_probation_revocations: 5100
+  prison_parole_revocations: 5100
+  probation: 358
+  parole: 482
+  release: 0
+
+micro_simulation: false
