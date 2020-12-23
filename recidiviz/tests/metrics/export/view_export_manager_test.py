@@ -274,3 +274,16 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
 
         mock_view_update_manager.assert_called()
         mock_view_exporter.export_and_validate.assert_called_with(view_export_configs)
+
+    @mock.patch('recidiviz.big_query.view_update_manager.create_dataset_and_update_views_for_view_builders')
+    @mock.patch('recidiviz.big_query.export.big_query_view_exporter.BigQueryViewExporter')
+    def test_export_dashboard_data_to_cloud_storage_no_materialized_view_upate(
+            self, mock_view_exporter, mock_view_update_manager):
+        """Tests the materialized views are not updated when update_materialized_views is False."""
+
+        view_export_manager.export_view_data_to_cloud_storage(mock_state_code,
+                                                              mock_view_exporter,
+                                                              update_materialized_views=False)
+
+        mock_view_update_manager.assert_not_called()
+        mock_view_exporter.export_and_validate.assert_called()
