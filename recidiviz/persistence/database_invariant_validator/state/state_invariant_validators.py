@@ -25,7 +25,6 @@ from sqlalchemy import func
 from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.database.schema.state.dao import check_not_dirty
 from recidiviz.persistence.database.session import Session
-from recidiviz.utils import environment
 
 
 def state_allows_multiple_ids_same_type(state_code: str) -> bool:
@@ -34,14 +33,6 @@ def state_allows_multiple_ids_same_type(state_code: str) -> bool:
         'US_PA'
     ):
         return True
-
-    if state_code.upper() == 'US_MO':
-        # TODO(#3427): Remove this block once #4639 has landed and we are ready to do a new rerun in staging
-        if environment.in_gae_staging():
-            return True
-        # TODO(#4043): Remove this block when we ship MO SQL preprocessing to production and drop all data for a rerun.
-        if environment.in_gae_production():
-            return True
 
     # By default, states don't allow multiple different ids of the same type
     return False
