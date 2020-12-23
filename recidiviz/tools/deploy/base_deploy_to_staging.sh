@@ -26,7 +26,7 @@ function print_usage {
 
 while getopts "v:pnd:" flag; do
   case "${flag}" in
-    v) VERSION_TAG=$(echo $OPTARG | tr '.' '-') ;;
+    v) VERSION_TAG="$OPTARG" ;;
     p) PROMOTE_FLAGS='--promote' PROMOTE='true';;
     n) PROMOTE_FLAGS='--no-promote' NO_PROMOTE='true';;
     d) DEBUG_BUILD_NAME="$OPTARG" ;;
@@ -66,12 +66,15 @@ echo "Building docker image"
 run_cmd docker build -t recidiviz-image .
 
 if [[ ! -z ${DEBUG_BUILD_NAME} ]]; then
-    VERSION=${VERSION_TAG}-${DEBUG_BUILD_NAME}
+    DOCKER_VERSION=${VERSION_TAG}-${DEBUG_BUILD_NAME}
+    GAE_VERSION=$(echo $VERSION_TAG | tr '.' '-')-${DEBUG_BUILD_NAME}
 else
-    VERSION=${VERSION_TAG}
+    DOCKER_VERSION=${VERSION_TAG}
+    GAE_VERSION=$(echo $VERSION_TAG | tr '.' '-')
 fi
 
-IMAGE_URL=us.gcr.io/recidiviz-staging/appengine/default.${VERSION}:latest || exit_on_fail
+IMAGE_BASE=us.gcr.io/recidiviz-staging/appengine/default
+IMAGE_URL=$IMAGE_BASE:${DOCKER_VERSION} || exit_on_fail
 
 echo "Tagging image url [$IMAGE_URL] as recidiviz-image"
 run_cmd docker tag recidiviz-image ${IMAGE_URL}
@@ -79,17 +82,24 @@ run_cmd docker tag recidiviz-image ${IMAGE_URL}
 echo "Pushing image url [$IMAGE_URL]"
 run_cmd docker push ${IMAGE_URL}
 
+if [[ ! -z ${PROMOTE} ]]; then
+    # Update latest tag to reflect staging as well
+    echo "Updating :latest tag on remote docker image."
+    run_cmd docker tag recidiviz-image $IMAGE_BASE:latest
+    run_cmd docker push $IMAGE_BASE:latest
+fi
+
 echo "Deploying application"
 run_cmd gcloud -q app deploy ${PROMOTE_FLAGS} staging.yaml \
        --project recidiviz-staging \
-       --version ${VERSION} \
+       --version ${GAE_VERSION} \
        --image-url ${IMAGE_URL} \
        --verbosity=debug
 
 if [[ ! -z ${PROMOTE} ]]; then
-    echo "App deployed to \`${VERSION}\`.recidiviz-staging.appspot.com"
+    echo "App deployed to \`${GAE_VERSION}\`.recidiviz-staging.appspot.com"
 else
-    echo "App deployed (but not promoted) to \`${VERSION}\`.recidiviz-staging.appspot.com"
+    echo "App deployed (but not promoted) to \`${GAE_VERSION}\`.recidiviz-staging.appspot.com"
 fi
 
 if [[ ! -z ${PROMOTE} ]]; then
