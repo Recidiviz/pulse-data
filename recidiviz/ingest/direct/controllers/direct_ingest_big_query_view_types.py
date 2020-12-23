@@ -319,6 +319,11 @@ class DirectIngestPreProcessedIngestView(BigQueryView):
         # The destination table id for queries with destination_table_types other than NONE.
         destination_table_id: Optional[str] = attr.ib(default=None)
 
+        # Prefix to apply to all raw table subquery names (or temp table names if raw table subqueries are
+        # materialized). Can be used when multiple temp tables for the same raw table are created in the same script
+        # (e.g. two that each have different date bounds).
+        raw_table_subquery_name_prefix: Optional[str] = attr.ib(default=None)
+
         @property
         def parameterize_raw_data_table_views(self) -> bool:
             return self.raw_table_view_type == RawTableViewType.PARAMETERIZED
@@ -457,8 +462,7 @@ class DirectIngestPreProcessedIngestView(BigQueryView):
 
     @property
     def materialize_raw_data_table_views(self) -> bool:
-        # TODO(#4925): This is only exposed as a property for temporary gating, remove this property once debug query
-        #   printing is supported for materialized raw data table views.
+        """If True, this query will always materialize raw table views into temporary tables."""
         return self._materialize_raw_data_table_views
 
     def expanded_view_query(self,
@@ -476,9 +480,12 @@ class DirectIngestPreProcessedIngestView(BigQueryView):
         return query.format(**self._query_format_args_with_project_id())
 
     @staticmethod
-    def _table_subbquery_name(raw_table_config: DirectIngestRawFileConfig) -> str:
+    def _table_subbquery_name(raw_table_config: DirectIngestRawFileConfig,
+                              prefix: Optional[str]) -> str:
         """The name for the expanded subquery on this raw table."""
-        return f'{raw_table_config.file_tag}_generated_view'
+
+        prefix = prefix or ''
+        return f'{prefix}{raw_table_config.file_tag}_generated_view'
 
     @staticmethod
     def add_order_by_suffix(query: str, order_by_cols: Optional[str]) -> str:
@@ -493,13 +500,15 @@ class DirectIngestPreProcessedIngestView(BigQueryView):
                                    region_code: str,
                                    raw_table_dependency_configs: List[DirectIngestRawFileConfig],
                                    parametrize_query: bool,
+                                   raw_table_subquery_name_prefix: Optional[str],
                                    materialize_raw_data_table_views: bool) -> str:
         """Returns the portion of the script that generates the raw table view queries, either as a list of
         `CREATE TEMP TABLE` statements or a list of WITH subqueries.
         """
         table_subquery_strs = []
         for raw_table_config in raw_table_dependency_configs:
-            table_subquery_strs.append(cls._get_table_subquery_str(region_code, raw_table_config, parametrize_query))
+            table_subquery_strs.append(cls._get_table_subquery_str(
+                region_code, raw_table_config, parametrize_query, raw_table_subquery_name_prefix))
 
         if materialize_raw_data_table_views:
             temp_table_query_strs = [f'CREATE TEMP TABLE {table_subquery_str};'
@@ -528,6 +537,7 @@ class DirectIngestPreProcessedIngestView(BigQueryView):
             region_code=region_code,
             raw_table_dependency_configs=raw_table_dependency_configs,
             parametrize_query=config.parameterize_raw_data_table_views,
+            raw_table_subquery_name_prefix=config.raw_table_subquery_name_prefix,
             materialize_raw_data_table_views=materialize_raw_data_table_views
         )
 
@@ -554,6 +564,7 @@ class DirectIngestPreProcessedIngestView(BigQueryView):
                 region_code=region_code,
                 raw_table_dependency_configs=raw_table_dependency_configs,
                 parametrize_query=config.parameterize_raw_data_table_views,
+                raw_table_subquery_name_prefix=config.raw_table_subquery_name_prefix,
                 materialize_raw_data_table_views=materialize_raw_data_table_views
             )
 
@@ -632,7 +643,8 @@ class DirectIngestPreProcessedIngestView(BigQueryView):
 
         format_args = {}
         for raw_table_config in raw_table_dependency_configs:
-            format_args[raw_table_config.file_tag] = cls._table_subbquery_name(raw_table_config)
+            format_args[raw_table_config.file_tag] = cls._table_subbquery_name(raw_table_config,
+                                                                               config.raw_table_subquery_name_prefix)
 
         # We don't want to inject the project_id outside of the BigQueryView initializer
         query = cls._format_view_query_without_project_id(full_query_template, **format_args)
@@ -646,7 +658,8 @@ class DirectIngestPreProcessedIngestView(BigQueryView):
     def _get_table_subquery_str(cls,
                                 region_code: str,
                                 raw_table_config: DirectIngestRawFileConfig,
-                                parametrize_query: bool) -> str:
+                                parametrize_query: bool,
+                                raw_table_subquery_name_prefix: Optional[str]) -> str:
         """Returns an expanded subquery on this raw table in the form 'subquery_name AS (...)'."""
         date_bounded_query = cls._date_bounded_query_for_raw_table(
             region_code=region_code, raw_table_config=raw_table_config, parametrize_query=parametrize_query)
@@ -655,7 +668,7 @@ class DirectIngestPreProcessedIngestView(BigQueryView):
                                                                                        '\n' + cls.SUBQUERY_INDENT)
 
         indented_date_bounded_query = indented_date_bounded_query.replace(f'\n{cls.SUBQUERY_INDENT}\n', '\n\n')
-        table_subquery_name = cls._table_subbquery_name(raw_table_config)
+        table_subquery_name = cls._table_subbquery_name(raw_table_config, raw_table_subquery_name_prefix)
         return f'{table_subquery_name} AS (\n{indented_date_bounded_query}\n)'
 
     @classmethod
