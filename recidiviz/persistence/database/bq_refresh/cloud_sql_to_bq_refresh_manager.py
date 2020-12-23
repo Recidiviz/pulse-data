@@ -130,62 +130,31 @@ def monitor_refresh_bq_tasks() -> Tuple[str, int]:
     return ('', HTTPStatus.OK)
 
 
-@cloud_sql_to_bq_blueprint.route('/create_jails_refresh_bq_tasks')
+@cloud_sql_to_bq_blueprint.route('/create_refresh_bq_tasks/<schema_arg>')
 @authenticate_request
-def create_all_jails_bq_refresh_tasks() -> Tuple[str, int]:
+def create_all_bq_refresh_tasks_for_schema(schema_arg: str) -> Tuple[str, HTTPStatus]:
     """Creates an export task for each table to be exported.
 
-    A task is created for each table defined in the JailsBase schema.
+    A task is created for each table defined in the schema.
 
     Re-creates all tasks if any task fails to be created.
     """
-    logging.info("Beginning BQ export for jails schema tables.")
+    try:
+        schema_type = SchemaType(schema_arg.upper())
+    except ValueError:
+        return f"Unknown schema type [{schema_arg}]", HTTPStatus.BAD_REQUEST
+
+    logging.info("Beginning BQ export for %s schema tables.", schema_type.value)
 
     task_manager = BQRefreshCloudTaskManager()
 
-    cloud_sql_to_bq_config = CloudSqlToBQConfig.for_schema_type(SchemaType.JAILS)
+    cloud_sql_to_bq_config = CloudSqlToBQConfig.for_schema_type(schema_type)
     for table in cloud_sql_to_bq_config.get_tables_to_export():
-        task_manager.create_refresh_bq_table_task(table.name, SchemaType.JAILS)
-    return ('', HTTPStatus.OK)
+        task_manager.create_refresh_bq_table_task(table.name, schema_type)
 
+    if schema_type is SchemaType.STATE:
+        pub_sub_topic = 'v1.calculator.trigger_daily_pipelines'
+        pub_sub_message = 'State export to BQ complete'
+        task_manager.create_bq_refresh_monitor_task(pub_sub_topic, pub_sub_message)
 
-@cloud_sql_to_bq_blueprint.route('/create_state_refresh_bq_tasks')
-@authenticate_request
-def create_all_state_bq_refresh_tasks() -> Tuple[str, int]:
-    """Creates an export task for each table to be exported.
-
-    A task is created for each table defined in the StateBase schema.
-
-    Re-creates all tasks if any task fails to be created.
-    """
-    logging.info("Beginning BQ export for state schema tables.")
-
-    task_manager = BQRefreshCloudTaskManager()
-
-    cloud_sql_to_bq_config = CloudSqlToBQConfig.for_schema_type(SchemaType.STATE)
-    for table in cloud_sql_to_bq_config.get_tables_to_export():
-        task_manager.create_refresh_bq_table_task(table.name, SchemaType.STATE)
-
-    pub_sub_topic = 'v1.calculator.trigger_daily_pipelines'
-    pub_sub_message = 'State export to BQ complete'
-    task_manager.create_bq_refresh_monitor_task(pub_sub_topic, pub_sub_message)
-    return ('', HTTPStatus.OK)
-
-
-@cloud_sql_to_bq_blueprint.route('/create_operations_refresh_bq_tasks')
-@authenticate_request
-def create_all_operations_bq_refresh_tasks() -> Tuple[str, int]:
-    """Creates an export task for each table to be exported.
-
-    A task is created for each table defined in the OperationsBase schema.
-
-    Re-creates all tasks if any task fails to be created.
-    """
-    logging.info("Beginning BQ export for operations schema tables.")
-
-    task_manager = BQRefreshCloudTaskManager()
-
-    cloud_sql_to_bq_config = CloudSqlToBQConfig.for_schema_type(SchemaType.OPERATIONS)
-    for table in cloud_sql_to_bq_config.get_tables_to_export():
-        task_manager.create_refresh_bq_table_task(table.name, SchemaType.OPERATIONS)
-    return ('', HTTPStatus.OK)
+    return '', HTTPStatus.OK
