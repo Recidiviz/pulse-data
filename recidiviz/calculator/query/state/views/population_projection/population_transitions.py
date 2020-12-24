@@ -28,111 +28,41 @@ POPULATION_TRANSITIONS_VIEW_DESCRIPTION = \
 
 POPULATION_TRANSITIONS_QUERY_TEMPLATE = \
     """
-    WITH cohorts_per_run_date AS (
-      SELECT
-          CASE WHEN compartment = 'INCARCERATION - GENERAL' AND previously_incarcerated
-            THEN 'INCARCERATION - RE-INCARCERATION'
-            ELSE compartment
-          END AS compartment,
-          CASE WHEN outflow_to = 'INCARCERATION - GENERAL' AND previously_incarcerated
-            THEN 'INCARCERATION - RE-INCARCERATION'
-            ELSE outflow_to
-          END AS outflow_to,
-          DATE_TRUNC(start_date, MONTH) as start_month,
-          start_date,
-          end_date,
-          run_dates.run_date,
-          person_id,
-          gender,
-          state_code
-      FROM `{project_id}.{population_projection_dataset}.population_projection_sessions_materialized` sessions
-      JOIN `{project_id}.{population_projection_dataset}.simulation_run_dates` run_dates
-        ON run_dates.run_date > sessions.start_date
-      WHERE (compartment LIKE '%INCARCERATION%' OR compartment LIKE '%SUPERVISION%')
-          -- Only take data from the 15 years prior to the run date to match short-term behavior better
-          AND DATE_DIFF(run_dates.run_date, sessions.start_date, year) <= 15
-          -- Union the rider transitions at the end
-          AND compartment NOT IN ('INCARCERATION - TREATMENT_IN_PRISON', 'INCARCERATION - PAROLE_BOARD_HOLD')
-    ),
-    cohort_sizes_cte AS (
-      -- Collect total cohort size for the outflow fraction denominator
-      SELECT
-          compartment,
-          start_month,
-          run_date,
-          gender,
-          state_code,
-          COUNT(*) as total_population
-      FROM cohorts_per_run_date
-      GROUP BY 1,2,3,4,5
-      ORDER BY 1,2,3,4,5
-    ),
-    outflow_population_cte AS (
-      -- Calculate the total population per cohort that outflows to each compartment at each duration
-      SELECT
-        compartment,
-        gender,
-        state_code,
-        start_month,
-        run_date,
-        -- Prevent data leakage, do not count sessions that ended after the run date
-        CASE WHEN (run_date < end_date) OR (end_date IS NULL) THEN NULL
-          ELSE outflow_to
-        END AS outflow_to,
-
-        CASE WHEN (run_date < end_date) OR (end_date IS NULL) THEN NULL
-          ELSE DATE_DIFF(end_date, start_date, MONTH)
-        END AS compartment_duration,
-
-        COUNT(*) AS outflow_population
-      FROM cohorts_per_run_date sessions
-      GROUP BY compartment, gender, state_code, start_month, run_date, outflow_to, compartment_duration
-    ),
-    cohort_counts AS (
-      SELECT
-        compartment, 
-        gender, 
-        state_code,
-        run_date,
-        COUNT(DISTINCT start_month) as cohort_count
-        FROM outflow_population_cte
-        WHERE start_month < run_date
-        GROUP BY 1,2,3,4
+    WITH cte AS (
+        SELECT
+            sessions.person_id,
+            sessions.state_code,
+            sessions.session_id,
+            CONCAT(sessions.compartment_level_1, ' - ', sessions.compartment_level_2) as compartment,
+            sessions.gender,
+            CASE
+                WHEN sessions.outflow_to_level_1 = 'RELEASE' THEN 'RELEASE - FULL'
+                ELSE CONCAT(sessions.outflow_to_level_1, ' - ', sessions.outflow_to_level_2)
+            END as outflow_to,
+            run_date,
+            CEILING(sessions.session_length_days / 30) as compartment_duration
+        FROM `{project_id}.{analyst_dataset}.compartment_sessions_materialized` sessions
+        JOIN `{project_id}.{population_projection_dataset}.simulation_run_dates` run_date_array
+            ON run_date BETWEEN start_date AND coalesce(end_date, '9999-01-01')
+        WHERE (sessions.compartment_level_1 = 'INCARCERATION' or sessions.compartment_level_1 = 'SUPERVISION')
+            AND sessions.outflow_to_level_2 != 'OTHER'
+            AND sessions.compartment_level_2 != 'OTHER'
+        ORDER BY person_id, session_id
     )
     SELECT
-      compartment,
-      gender,
-      state_code,
-      outflow_to,
-      -- adding 1 here because I noticed 1 length durations were showing as 0, may still be an off-by-one error
-      compartment_duration + 1 as compartment_duration,
-      run_date,
-      -- cte constructed so this only averages over cohorts old enough to have had a chance to see that duration
-      SUM(outflow_population/total_population) / cohort_counts.cohort_count as total_population
-    FROM outflow_population_cte
-    JOIN cohort_sizes_cte
-      USING (compartment, gender, state_code, run_date, start_month)
-    LEFT JOIN cohort_counts
-      USING (compartment, gender, state_code, run_date)
-    WHERE gender in ('MALE', 'FEMALE')
-      -- wasn't sure how to handle this better, so for now 'null' are discarded and reinserted in the model
-      AND outflow_to IS NOT NULL
-      AND state_code = 'US_ID'
-    GROUP BY compartment, gender, state_code, outflow_to, compartment_duration, run_date, cohort_counts.cohort_count
-
-    UNION ALL
-
-    SELECT
-      compartment,
-      gender,
-      state_code,
-      outflow_to,
-      compartment_duration,
-      run_date,
-      total_population
-    FROM `{project_id}.{population_projection_dataset}.us_id_non_bias_full_transitions_materialized`
-
-    ORDER BY compartment, gender, state_code, outflow_to, compartment_duration, run_date
+        run_date,
+        state_code,
+        compartment,
+        compartment_duration,
+        outflow_to,
+        gender,
+        count(1) as total_population
+    FROM cte
+    WHERE compartment_duration is not null
+        AND state_code = 'US_ID'
+        AND gender IN ('FEMALE', 'MALE')
+        AND run_date >= '2017-01-01'
+    GROUP BY 1,2,3,4,5,6 ORDER BY 1,2,3,4,5,6
     """
 
 POPULATION_TRANSITIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
@@ -142,7 +72,7 @@ POPULATION_TRANSITIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     description=POPULATION_TRANSITIONS_VIEW_DESCRIPTION,
     analyst_dataset=dataset_config.ANALYST_VIEWS_DATASET,
     population_projection_dataset=dataset_config.POPULATION_PROJECTION_DATASET,
-    should_materialize=True
+    should_materialize=False
 )
 
 if __name__ == '__main__':

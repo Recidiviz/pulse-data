@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Historical total population by month, compartment, outflow compartment, and model run date"""
-# pylint: disable=trailing-whitespace, line-too-long
+# pylint: disable=trailing-whitespace
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
@@ -32,37 +32,26 @@ POPULATION_OUTFLOWS_QUERY_TEMPLATE = \
         SELECT
             run_date,
             state_code,
-            DATE_TRUNC(start_date, MONTH) AS time_step,
-            -- distinguish shell release compartment from full release compartment
-            CASE
-                WHEN inflow_from = 'RELEASE - RELEASE' THEN 'RELEASE'
-                ELSE inflow_from
-            END AS compartment,
+            DATE_TRUNC(start_date, MONTH) as time_step,
+            COALESCE(inflow_from_level_1, 'PRETRIAL') as compartment,
             session_id,
-            CASE 
-                WHEN compartment = 'INCARCERATION - GENERAL' AND previously_incarcerated THEN 'INCARCERATION - RE-INCARCERATION'
-                ELSE compartment 
-            END AS outflow_to,
+            CONCAT(compartment_level_1, ' - ', COALESCE(compartment_level_2, '')) as outflow_to,
             gender,
             COUNT(1) as total_population,
-        FROM `{project_id}.{population_projection_dataset}.population_projection_sessions_materialized`
+        FROM `{project_id}.{analyst_dataset}.compartment_sessions_materialized`
         JOIN `{project_id}.{population_projection_dataset}.simulation_run_dates` run_date_array
             ON start_date < run_date
             -- Do not count start dates from the edge of the historical look back since those are not true admissions
             AND start_date >= '2000-12-01'
         WHERE state_code = 'US_ID'
+            AND compartment_level_2 != 'OTHER'
         GROUP BY 1,2,3,4,5,6,7
     )
     SELECT
     *
     FROM cte
     WHERE gender IN ('FEMALE', 'MALE')
-        AND CASE
-          WHEN compartment = 'PRETRIAL'
-            THEN outflow_to IN ('INCARCERATION - GENERAL', 'SUPERVISION - PROBATION', 'INCARCERATION - TREATMENT_IN_PRISON')
-          WHEN compartment = 'RELEASE'
-            THEN outflow_to IN ('SUPERVISION - PROBATION', 'SUPERVISION - PAROLE', 'INCARCERATION - TREATMENT_IN_PRISON', 'INCARCERATION - RE-INCARCERATION')
-        END
+        and compartment = 'PRETRIAL' or compartment = 'RELEASE'
     """
 
 POPULATION_OUTFLOWS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
