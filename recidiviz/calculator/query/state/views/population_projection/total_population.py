@@ -33,37 +33,40 @@ TOTAL_POPULATION_QUERY_TEMPLATE = \
         SELECT
           state_code,
           session_id,
-          CASE WHEN compartment = 'INCARCERATION - GENERAL' AND previously_incarcerated
-            THEN 'INCARCERATION - RE-INCARCERATION'
-            ELSE compartment
-          END AS compartment,
+          CONCAT(compartment_level_1, ' - ', compartment_level_2) as compartment,
           gender,
           start_date,
           end_date,
           run_date,
           COUNT(1) as total_population,
-        FROM `{project_id}.{population_projection_dataset}.population_projection_sessions_materialized`
+        FROM `{project_id}.{analyst_dataset}.compartment_sessions_materialized`
         JOIN `{project_id}.{population_projection_dataset}.simulation_run_dates`
           ON start_date < run_date
         WHERE
           state_code = 'US_ID'
-          AND (compartment LIKE '%INCARCERATION%' OR compartment LIKE '%SUPERVISION%')
+          AND (compartment_level_1 = 'INCARCERATION' or compartment_level_1 = 'SUPERVISION')
+          AND compartment_level_2 != 'OTHER'
         GROUP BY 1,2,3,4,5,6,7
         ORDER BY 1,2,3,4,5,6,7
+    ),
+    time_step_array AS (
+        SELECT *
+        FROM
+        UNNEST(GENERATE_DATE_ARRAY('2000-01-01', DATE_TRUNC(CURRENT_DATE, MONTH), INTERVAL 1 MONTH)) AS time_step
     )
     SELECT
       cte.compartment,
       cte.state_code,
       cte.gender,
       cte.run_date,
-      time_step,
+      time_step_array.time_step,
       SUM(cte.total_population) as total_population
-    FROM cte,
-    UNNEST(GENERATE_DATE_ARRAY('2000-01-01', DATE_TRUNC(CURRENT_DATE, MONTH), INTERVAL 1 MONTH)) AS time_step
+    FROM cte
+    CROSS JOIN time_step_array
     WHERE
       state_code = 'US_ID'
-      AND gender IN ('FEMALE', 'MALE')
       AND time_step BETWEEN cte.start_date AND COALESCE(cte.end_date, '9999-01-01')
+      AND gender IN ('FEMALE', 'MALE')
     GROUP BY 1,2,3,4,5
     ORDER BY 1,2,3,4,5
     """

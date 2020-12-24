@@ -15,7 +15,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """outflow calculating object for ShellCompartments"""
-from typing import Optional
 
 from statsmodels.tsa.arima_model import ARIMA
 import pandas as pd
@@ -29,7 +28,7 @@ MAX_THRESHOLD_PCT = 0.5
 class PredictedAdmissions:
     """Predict the new admissions based on the historical trend"""
 
-    def __init__(self, historical_data: pd.DataFrame, constant_admissions: bool, projection_type: Optional[str] = None):
+    def __init__(self, historical_data, constant_admissions):
         """
         historical_data is a DataFrame with columns for each time step and rows for each outflow_to type (jail, prison).
         Columns need to be numeric.
@@ -52,19 +51,6 @@ class PredictedAdmissions:
             self.predict_constant_value = False
         else:
             self.predict_constant_value = True
-
-        if projection_type is None:
-            projection_type = 'middle'
-
-        if self.predict_constant_value and projection_type != 'middle':
-            raise ValueError("Only 'middle' projection_type is supported for constant admissions")
-
-        supported_projection_types = ['min', 'middle', 'max']
-        if projection_type not in supported_projection_types:
-            raise ValueError(f"'{projection_type}' projection_type is not supported. "
-                             f"Expected {', '.join(supported_projection_types)}")
-
-        self.projection_type = projection_type
 
     def _train_arima_models(self):
         # Create a dictionary to store the forecasted and backcasted trained ARIMA model objects
@@ -97,10 +83,8 @@ class PredictedAdmissions:
                     predictions_array, stderr, conf = \
                         self.trained_model_dict[outflow_compartment]['backcast'].forecast(steps=steps_backward)
 
-                    backward_df = pd.DataFrame(index=pred_periods_backward, data={'pred_middle': predictions_array,
-                                                                                  'pred_min': conf[:, 0],
-                                                                                  'pred_max': conf[:, 1],
-                                                                                  'stderr': stderr})
+                    backward_df = pd.DataFrame(index=pred_periods_backward, data={
+                        'pred': predictions_array, 'pred_min': conf[:, 0], 'pred_max': conf[:, 1], 'stderr': stderr})
                 else:
                     backward_df = pd.DataFrame()
 
@@ -108,10 +92,8 @@ class PredictedAdmissions:
                     predictions_array, stderr, conf = \
                         self.trained_model_dict[outflow_compartment]['forecast'].forecast(steps=steps_forward)
 
-                    forward_df = pd.DataFrame(index=pred_periods_forward, data={'pred_middle': predictions_array,
-                                                                                'pred_min': conf[:, 0],
-                                                                                'pred_max': conf[:, 1],
-                                                                                'stderr': stderr})
+                    forward_df = pd.DataFrame(index=pred_periods_forward, data={
+                        'pred': predictions_array, 'pred_min': conf[:, 0], 'pred_max': conf[:, 1], 'stderr': stderr})
                 else:
                     forward_df = pd.DataFrame()
 
@@ -120,12 +102,12 @@ class PredictedAdmissions:
 
             # If using the constant rate assumption, just take the last value
             elif self.predict_constant_value:
-                predictions_df_sub = pd.DataFrame(index=range(start_period, end_period + 1), columns=[
-                    'pred_middle', 'pred_min', 'pred_max', 'stderr']).sort_index()
-                predictions_df_sub.loc[predictions_df_sub.index < int(self.historical_data.columns.min()),
-                                       'pred_middle'] = row.iloc[0]
-                predictions_df_sub.loc[predictions_df_sub.index > int(self.historical_data.columns.max()),
-                                       'pred_middle'] = row.iloc[-1]
+                predictions_df_sub = pd.DataFrame(index=range(start_period, end_period + 1),
+                                                  columns=['pred', 'pred_min', 'pred_max', 'stderr']).sort_index()
+                predictions_df_sub.loc[predictions_df_sub.index < int(self.historical_data.columns.min()), 'pred'] = \
+                    row.iloc[0]
+                predictions_df_sub.loc[predictions_df_sub.index > int(self.historical_data.columns.max()), 'pred'] = \
+                    row.iloc[-1]
                 predictions_df_sub = predictions_df_sub[~predictions_df_sub.index.isin(self.historical_data.columns)]
 
             # Label the dataframe indices
@@ -136,8 +118,8 @@ class PredictedAdmissions:
             min_val_data, max_val_data = row.describe().loc[['min', 'max']].tolist()
             max_allowable_pred = max_val_data * MAX_THRESHOLD_PCT + max_val_data
             min_allowable_pred = min_val_data - min_val_data * MIN_THRESHOLD_PCT
-            predictions_df_sub[['pred_middle', 'pred_min', 'pred_max']] = \
-                predictions_df_sub[['pred_middle', 'pred_min', 'pred_max']].clip(min_allowable_pred, max_allowable_pred)
+            predictions_df_sub.loc[predictions_df_sub.pred > max_allowable_pred, 'pred'] = max_allowable_pred
+            predictions_df_sub.loc[predictions_df_sub.pred < min_allowable_pred, 'pred'] = min_allowable_pred
 
             predictions_df = predictions_df.append(predictions_df_sub)
 
@@ -161,11 +143,11 @@ class PredictedAdmissions:
             return self.historical_data[time_step].to_dict()
 
         if time_step in self.predictions_df.index.get_level_values('time_step').unique():
-            return self.predictions_df.unstack(0).loc[time_step, f'pred_{self.projection_type}'].to_dict()
+            return self.predictions_df.unstack(0).loc[time_step, 'pred'].to_dict()
 
         last_time_step_to_process = int(max(self.historical_data.columns.max(), time_step) + default_steps_forward)
         self._gen_predicted_data(time_step, last_time_step_to_process)
-        return self.predictions_df.unstack(0).loc[time_step, f'pred_{self.projection_type}'].to_dict()
+        return self.predictions_df.unstack(0).loc[time_step, 'pred'].to_dict()
 
     def gen_arima_output_df(self):
         return self.arima_output_df
