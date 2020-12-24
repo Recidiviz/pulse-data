@@ -52,18 +52,6 @@ POPULATION_SCHEMA = [
     {'name': 'date_created', 'type': 'TIMESTAMP', 'mode': 'REQUIRED'}
 ]
 
-MICROSIM_TABLE_NAME = 'microsim_projection_raw'
-MICROSIM_SCHEMA = [
-    {'name': 'simulation_tag', 'type': 'STRING', 'mode': 'REQUIRED'},
-    {'name': 'simulation_date', 'type': 'DATE', 'mode': 'REQUIRED'},
-    {'name': 'simulation_group', 'type': 'STRING', 'mode': 'REQUIRED'},
-    {'name': 'compartment', 'type': 'STRING', 'mode': 'REQUIRED'},
-    {'name': 'total_population', 'type': 'FLOAT', 'mode': 'REQUIRED'},
-    {'name': 'total_population_min', 'type': 'FLOAT', 'mode': 'REQUIRED'},
-    {'name': 'total_population_max', 'type': 'FLOAT', 'mode': 'REQUIRED'},
-    {'name': 'date_created', 'type': 'TIMESTAMP', 'mode': 'REQUIRED'}
-]
-
 
 def upload_spark_results(project_id, simulation_tag, cost_avoidance_df, life_years_df, population_change_df,
                          cost_avoidance_non_cumulative_df):
@@ -88,34 +76,6 @@ def upload_spark_results(project_id, simulation_tag, cost_avoidance_df, life_yea
     store_simulation_results(project_id, POPULATION_TABLE_NAME, POPULATION_SCHEMA, population_table)
 
 
-def upload_ignite_results(project_id, simulation_tag, microsim_population_df):
-    """Reformat the simulation results to match the table schema and upload them to BigQuery"""
-
-    # Set the upload timestamp for all tables
-    upload_time = datetime.datetime.now()
-
-    microsim_population_df = add_simulation_date_column(microsim_population_df)
-
-    # Add metadata columns to the output table
-    microsim_population_df['simulation_tag'] = simulation_tag
-    microsim_population_df['date_created'] = upload_time
-
-    store_simulation_results(project_id, MICROSIM_TABLE_NAME, MICROSIM_SCHEMA, microsim_population_df)
-
-
-def add_simulation_date_column(df):
-    # Convert the fractional year column into the integer year and month columns
-    df['year'] = round(df['year'], 5)
-    df['month'] = (12 * (df['year'] % 1)).round(0).astype(int) + 1
-    df['year'] = df['year'].astype(int)
-    df['day'] = 1
-
-    df['simulation_date'] = pd.to_datetime(df[['year', 'month', 'day']]).dt.date
-
-    df = df.drop(['year', 'month', 'day'], axis=1)
-    return df
-
-
 def format_spark_results(df, value_name, simulation_tag, upload_time):
     """Change the format of the results to match the table schema with 1 row per compartment, year, and month
     `df` the pandas DataFrame to update
@@ -132,7 +92,14 @@ def format_spark_results(df, value_name, simulation_tag, upload_time):
         df = df.reset_index().melt(id_vars='year', var_name='compartment', value_name=value_name)
 
     # Convert the fractional year column into the integer year and month columns
-    df = add_simulation_date_column(df)
+    df['year'] = round(df['year'], 5)
+    df['month'] = (12 * (df['year'] % 1)).round(0).astype(int) + 1
+    df['year'] = df['year'].astype(int)
+    df['day'] = 1
+
+    df['simulation_date'] = pd.to_datetime(df[['year', 'month', 'day']]).dt.date
+
+    df = df.drop(['year', 'month', 'day'], axis=1)
 
     # Add metadata columns to the output table
     df['simulation_tag'] = simulation_tag

@@ -275,16 +275,6 @@ class PopulationSimulation:
             scale_factors_df[subgroup_name] = subgroup_obj.get_scale_factors()
         return scale_factors_df
 
-    def get_data_for_compartment_ts(self, compartment, ts):
-        simulation_population = self.population_projections[
-            (self.population_projections.compartment == compartment) &
-            (self.population_projections.time_step == ts)]
-        historical_population = self.validation_population_data[
-            (self.validation_population_data.compartment == compartment) &
-            (self.validation_population_data.time_step == ts)]
-
-        return simulation_population, historical_population
-
     def gen_total_population_error(self):
         total_population_error = pd.DataFrame(index=self.validation_population_data.time_step.unique(),
                                               columns=self.validation_population_data.compartment.unique())
@@ -294,10 +284,12 @@ class PopulationSimulation:
             for ts in total_population_error.index:
                 if ts < min_projection_ts:
                     continue
-
-                simulation_population, historical_population = self.get_data_for_compartment_ts(compartment, ts)
-                simulation_population = simulation_population.total_population.sum()
-                historical_population = historical_population.total_population.sum()
+                simulation_population = \
+                    self.population_projections[(self.population_projections.compartment == compartment) &
+                                                (self.population_projections.time_step == ts)].total_population.sum()
+                historical_population = self.validation_population_data[
+                        (self.validation_population_data.compartment == compartment) &
+                        (self.validation_population_data.time_step == ts)].total_population.sum()
 
                 if simulation_population == 0:
                     raise ValueError(f"Simulation population total for compartment {compartment} and time step {ts} "
@@ -308,35 +300,5 @@ class PopulationSimulation:
 
                 total_population_error.loc[ts, compartment] = \
                     (simulation_population - historical_population) / historical_population
-
-        return total_population_error.sort_index()
-
-    def gen_full_error(self):
-        min_projection_ts = min(self.population_projections['time_step'])
-        total_population_error = pd.DataFrame(
-            index=pd.MultiIndex.from_product([self.validation_population_data.compartment.unique(),
-                                              range(min_projection_ts,
-                                                    self.validation_population_data.time_step.max() + 1)],
-                                             names=['compartment', 'time_step']),
-            columns=['simulation_population', 'historical_population', 'percent_error']
-        )
-
-        for (compartment, ts) in total_population_error.index:
-
-            simulation_population, historical_population = self.get_data_for_compartment_ts(compartment, ts)
-            simulation_population = simulation_population.total_population.sum()
-            historical_population = historical_population.total_population.sum()
-
-            if simulation_population == 0:
-                raise ValueError(f"Simulation population total for compartment {compartment} and time step {ts} "
-                                 "cannot be 0 for validation")
-            if historical_population == 0:
-                raise ValueError(f"Historical population data for compartment {compartment} and time step {ts} "
-                                 "cannot be 0 for validation")
-
-            total_population_error.loc[(compartment, ts), 'simulation_population'] = simulation_population
-            total_population_error.loc[(compartment, ts), 'historical_population'] = historical_population
-            total_population_error.loc[(compartment, ts), 'percent_error'] = \
-                (simulation_population - historical_population) / historical_population
 
         return total_population_error.sort_index()

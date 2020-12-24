@@ -16,7 +16,7 @@
 # =============================================================================
 """SparkCompartment instance that doesn't track cohorts"""
 
-from typing import Dict, List, Optional
+from typing import Dict, List
 import pandas as pd
 
 from recidiviz.calculator.modeling.population_projection.predicted_admissions import PredictedAdmissions
@@ -27,7 +27,7 @@ class ShellCompartment(SparkCompartment):
     """Simple Spark Compartment that only sends groups to other compartments and does not ingest cohorts"""
 
     def __init__(self, outflows_data: pd.DataFrame, starting_ts: int, policy_ts: int, tag: str, policy_list: list,
-                 constant_admissions: bool, projection_type: Optional[str] = None):
+                 constant_admissions: bool):
 
         super().__init__(outflows_data, starting_ts, policy_ts, tag)
 
@@ -38,8 +38,8 @@ class ShellCompartment(SparkCompartment):
             policy.policy_fn(self)
 
         self.admissions_predictors = {
-            'before': PredictedAdmissions(outflows_data, constant_admissions, projection_type),
-            'after': PredictedAdmissions(self.after_data, constant_admissions, projection_type)
+            'before': PredictedAdmissions(outflows_data, constant_admissions),
+            'after': PredictedAdmissions(self.after_data, constant_admissions)
         }
 
     def initialize_edges(self, edges: List[SparkCompartment]):
