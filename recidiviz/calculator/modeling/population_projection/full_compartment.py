@@ -45,10 +45,11 @@ class FullCompartment(SparkCompartment):
         # Series containing compartment population at the end of each ts in the simulation
         self.end_ts_populations = pd.Series(dtype=float)
 
-    def microsim_initialize(self, total_population: int):
+    def microsim_initialize(self):
         """populate cohort table with single starting cohort of microsim"""
+        starting_size = self.transition_tables.historical_outflows['total_population'].sum()
         self.cohorts.append_ts_end_count(self.cohorts.get_latest_population(), self.current_ts)
-        self.ingest_incoming_cohort({self.tag: total_population})
+        self.ingest_incoming_cohort({self.tag: starting_size})
         self.prepare_for_next_step()
 
     def _generate_outflow_dict(self):

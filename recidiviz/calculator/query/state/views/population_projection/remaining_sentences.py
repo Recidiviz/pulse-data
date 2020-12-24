@@ -29,20 +29,70 @@ REMAINING_SENTENCES_VIEW_DESCRIPTION = \
 
 REMAINING_SENTENCES_QUERY_TEMPLATE = \
     """
-    /* {description} */
+    WITH distribution_cte AS (
+        SELECT
+            run_date,
+            state_code,
+            compartment,
+            outflow_to,
+            total_population/SUM(total_population) OVER(PARTITION BY run_date, compartment) as pct_outflow
+        FROM
+          (
+          SELECT
+            run_date,
+            state_code,
+            compartment,
+            outflow_to,
+            sum(total_population) total_population,
+          FROM `{project_id}.{population_projection_dataset}.population_transitions`
+          WHERE compartment LIKE 'INCARCERATION%'
+          GROUP BY 1,2,3,4
+          ORDER BY 1,2,3,4
+          )
+    ),
+    cte AS (
+        SELECT
+            sessions.person_id,
+            sessions.state_code,
+            sessions.session_id,
+            CONCAT(sessions.compartment_level_1, ' - ', sessions.compartment_level_2) as compartment,
+            sessions.gender,
+            sessions.start_date AS session_start_date,
+            sessions.end_date AS sessions_end_date,
+            sentences.sentence_start_date,
+            sentences.sentence_completion_date,
+            sentences.projected_completion_date_max,
+            sentences.parole_eligibility_date,
+            CASE
+                WHEN sessions.outflow_to_level_1 = 'RELEASE' THEN 'RELEASE - FULL'
+                ELSE CONCAT(sessions.outflow_to_level_1, ' - ', sessions.outflow_to_level_2)
+            END as outflow_to,
+            COALESCE(dist.pct_outflow,1) pct_outflow,
+            run_date_array.run_date,
+            CASE 
+                WHEN sessions.compartment_level_1 = 'INCARCERATION' and not run_date_array.run_date < parole_eligibility_date 
+                    THEN CEILING(DATE_DIFF(projected_completion_date_max, run_date_array.run_date, DAY)/30)
+                WHEN sessions.compartment_level_1 = 'INCARCERATION' and run_date_array.run_date < parole_eligibility_date 
+                    THEN CEILING(DATE_DIFF(parole_eligibility_date, run_date_array.run_date, DAY)/30)
+                WHEN sessions.compartment_level_1 = 'SUPERVISION' 
+                    THEN CEILING(DATE_DIFF(projected_completion_date_max, run_date_array.run_date, DAY)/30)
+            END AS compartment_duration
+        FROM `{project_id}.{analyst_dataset}.compartment_sessions_materialized`  sessions
+        LEFT JOIN `{project_id}.{analyst_dataset}.compartment_sentences_materialized`  sentences
+          ON sentences.person_id = sessions.person_id
+          and sentences.session_id = sessions.session_id
+        JOIN `{project_id}.{population_projection_dataset}.simulation_run_dates` run_date_array
+          ON run_date_array.run_date BETWEEN start_date AND coalesce(end_date, '9999-01-01')
+        LEFT JOIN distribution_cte dist
+          ON dist.run_date = run_date_array.run_date
+          AND dist.compartment = compartment
+          AND dist.state_code = sessions.state_code
+        WHERE (sessions.compartment_level_1 = 'INCARCERATION' or sessions.compartment_level_1 = 'SUPERVISION')
+            AND (sessions.outflow_to_level_1 is not NULL)
+            AND (sessions.compartment_level_2 != 'OTHER')
+            AND (sessions.outflow_to_level_2 != 'OTHER')
 
-    SELECT
-      state_code,
-      run_date,
-      compartment,
-      outflow_to,
-      compartment_duration,
-      gender,
-      total_population
-    FROM `{project_id}.{population_projection_dataset}.supervision_remaining_sentences`
-    
-    UNION ALL
-    
+    )
     SELECT
         state_code,
         run_date,
@@ -50,23 +100,13 @@ REMAINING_SENTENCES_QUERY_TEMPLATE = \
         outflow_to,
         compartment_duration,
         gender,
-        total_population
-    FROM `{project_id}.{population_projection_dataset}.incarceration_remaining_sentences`
-
-    UNION ALL
-
-    SELECT
-        state_code,
-        run_date,
-        compartment,
-        outflow_to,
-        compartment_duration,
-        gender,
-        CAST(ROUND(SUM(total_population)) AS INT64) AS total_population
-    FROM `{project_id}.{population_projection_dataset}.us_id_rider_pbh_remaining_sentences`
-    GROUP BY state_code, run_date, compartment, outflow_to, compartment_duration, gender
-
-    ORDER BY state_code, run_date, compartment, outflow_to, gender, compartment_duration
+        CAST(ROUND(SUM(pct_outflow)) AS INT64) AS total_population
+    FROM cte
+    WHERE state_code = 'US_ID'
+        AND gender IN ('FEMALE', 'MALE')
+        AND compartment_duration > 0
+    GROUP BY 1,2,3,4,5,6
+    ORDER BY 1,2,3,4,5,6
     """
 
 REMAINING_SENTENCES_VIEW_BUILDER = SimpleBigQueryViewBuilder(
@@ -76,7 +116,7 @@ REMAINING_SENTENCES_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     description=REMAINING_SENTENCES_VIEW_DESCRIPTION,
     analyst_dataset=ANALYST_VIEWS_DATASET,
     population_projection_dataset=POPULATION_PROJECTION_DATASET,
-    should_materialize=True
+    should_materialize=False
 )
 
 if __name__ == '__main__':
