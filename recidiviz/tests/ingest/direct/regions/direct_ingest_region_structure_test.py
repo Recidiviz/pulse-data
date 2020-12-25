@@ -22,6 +22,7 @@ from typing import Callable
 
 from mock import patch
 import yaml
+from parameterized import parameterized
 
 from recidiviz.ingest.direct.controllers.direct_ingest_view_collector import DirectIngestPreProcessedIngestViewCollector
 from recidiviz.ingest.direct.controllers.direct_ingest_raw_file_import_manager import \
@@ -29,6 +30,7 @@ from recidiviz.ingest.direct.controllers.direct_ingest_raw_file_import_manager i
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_controller import GcsfsDirectIngestController
 from recidiviz.ingest.direct.direct_ingest_region_utils import get_existing_region_dir_names, \
     get_existing_region_dir_paths
+from recidiviz.utils.environment import GaeEnvironment
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.utils.regions import get_region
 
@@ -124,17 +126,21 @@ class DirectIngestRegionDirStructureTest(unittest.TestCase):
                                 f"Multiple raw file configs defined with the same file_tag [{config.file_tag}]")
                 config_file_tags.add(config.file_tag)
 
-    @staticmethod
-    def test_collect_and_build_ingest_view_builders():
-        with local_project_id_override('project'):
-            for region_code in get_existing_region_dir_names():
-                region = get_region(region_code, is_direct_ingest=True)
+    @parameterized.expand([
+        ('build_prod', 'recidiviz-123', GaeEnvironment.PRODUCTION.value),
+        ('build_staging', 'recidiviz-staging', GaeEnvironment.STAGING.value),
+    ])
+    def test_collect_and_build_ingest_view_builders(self, _name, project_id, environment):
+        with patch("recidiviz.utils.environment.get_gae_environment", return_value=environment):
+            with patch('recidiviz.utils.metadata.project_id', return_value=project_id):
+                for region_code in get_existing_region_dir_names():
+                    region = get_region(region_code, is_direct_ingest=True)
 
-                controller_class = region.get_ingestor_class()
-                if not issubclass(controller_class, GcsfsDirectIngestController):
-                    continue
+                    controller_class = region.get_ingestor_class()
+                    if not issubclass(controller_class, GcsfsDirectIngestController):
+                        continue
 
-                builders = DirectIngestPreProcessedIngestViewCollector(
-                    region, controller_class.get_file_tag_rank_list()).collect_view_builders()
-                for builder in builders:
-                    builder.build()
+                    builders = DirectIngestPreProcessedIngestViewCollector(
+                        region, controller_class.get_file_tag_rank_list()).collect_view_builders()
+                    for builder in builders:
+                        builder.build()
