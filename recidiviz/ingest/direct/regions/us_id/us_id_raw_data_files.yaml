@@ -29,6 +29,9 @@ raw_files:
   - file_tag: agcy_loc
     primary_key_cols:
       - agcy_id
+  - file_tag: agd_typ
+    primary_key_cols:
+      - par_agenda_typ
   - file_tag: applc_usr
     primary_key_cols:
       - usr_id
@@ -379,6 +382,12 @@ raw_files:
     datetime_cols:
       - strt_dt
       - end_dt
+  - file_tag: pardec
+    primary_key_cols:
+      - par_hrg_dec
+  - file_tag: parhrg
+    primary_key_cols:
+      - par_hrg_srl
   - file_tag: per_mr_exceptions
     primary_key_cols:
       - id
