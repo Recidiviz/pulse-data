@@ -122,6 +122,20 @@ def raw_for_dimension_cls(dimension_cls: Type[Dimension]) -> Type[Dimension]:
         'dimension_identifier': classmethod(lambda cls: '/'.join([dimension_cls.dimension_identifier(), 'raw']))
     })
 
+
+def title_to_snake_case(title: str) -> str:
+    return title.replace(' ', '_').lower()
+
+
+def get_synthetic_dimension(column_name: str, source: str) -> Type[Dimension]:
+    column_no_space = column_name.replace(' ', '')
+    synthetic_dimension = type(f"{column_no_space}Raw", (RawDimension,), {
+        'dimension_identifier': classmethod(lambda cls: '/'.join(
+            ['source', title_to_snake_case(source), title_to_snake_case(column_name), 'raw']))
+    })
+    return synthetic_dimension
+
+
 EntityEnumT = TypeVar('EntityEnumT', bound=EntityEnum)
 def parse_entity_enum(dimension_cls: Type[EntityEnumT], dimension_cell_value: str,
                       enum_overrides: Optional[EnumOverrides]) -> EntityEnumT:
@@ -651,6 +665,11 @@ class ColumnDimensionMapping:
             overrides = overrides_builder.build()
         return cls(dimension_cls, overrides, strict if strict is not None else True)
 
+    @classmethod
+    def for_synthetic(cls, column_name: str, source: str) -> 'ColumnDimensionMapping':
+        column_dimension = get_synthetic_dimension(column_name, source)
+        return cls(column_dimension, overrides=None)
+
     def get_raw_dimension_cls(self) -> Optional[Type[Dimension]]:
         # If it is an EntityEnum, it needs to be normalized.
         if issubclass(self.dimension_cls, EntityEnum):
@@ -664,7 +683,6 @@ class DimensionGenerator:
 
     # The column name in the input file
     column_name: str = attr.ib()
-
     dimension_mappings: List[ColumnDimensionMapping] = attr.ib()
 
     def possible_dimensions_for_column(self) -> List[Type[Dimension]]:
@@ -675,6 +693,7 @@ class DimensionGenerator:
             raw_dimension_cls = mapping.get_raw_dimension_cls()
             if raw_dimension_cls is not None:
                 output.append(raw_dimension_cls)
+
         return output
 
     def dimension_values_for_cell(self, dimension_cell_value: str) -> List[Dimension]:
@@ -1016,7 +1035,8 @@ def _parse_dimensions_from_additional_filters(additional_filters_input: Optional
 
 
 def _parse_table_converter(
-        value_column_input: YAMLDict, dimension_columns_input: Optional[List[YAMLDict]]) -> TableConverter:
+        source_name: str, value_column_input: YAMLDict,
+        dimension_columns_input: Optional[List[YAMLDict]]) -> TableConverter:
     """Expects a dict with the value column name and, optionally, a list of dicts describing the dimension columns.
 
     E.g. `value_column_input={'column_name': 'Population'}}
@@ -1026,6 +1046,13 @@ def _parse_table_converter(
     if dimension_columns_input is not None:
         for dimension_column_input in dimension_columns_input:
             column_name = dimension_column_input.pop('column_name', str)
+
+            synthetic_column = dimension_column_input.pop_optional('synthetic', bool)
+            if synthetic_column is True:
+                column_dimension_mappings[column_name].append(ColumnDimensionMapping.for_synthetic(
+                    column_name=column_name, source=source_name))
+                continue
+
             dimension_cls = parse_dimension_name(dimension_column_input.pop('dimension_name', str))
 
             overrides_input = dimension_column_input.pop_dict_optional('mapping_overrides')
@@ -1044,7 +1071,6 @@ def _parse_table_converter(
     dimension_generators = []
     for column_name, mappings in column_dimension_mappings.items():
         dimension_generators.append(DimensionGenerator(column_name=column_name, dimension_mappings=mappings))
-
     value_column = value_column_input.pop('column_name', str)
 
     if len(value_column_input) > 0:
@@ -1078,7 +1104,8 @@ def _get_table_path(directory_path: GcsfsDirectoryPath,
 
 # Only three layers of dictionary nesting is currently supported by the table parsing logic but we use the recursive
 # dictionary type for convenience.
-def _parse_tables(gcs: GCSFileSystem, manifest_path: GcsfsFilePath, tables_input: List[YAMLDict]) -> List[Table]:
+def _parse_tables(gcs: GCSFileSystem, manifest_path: GcsfsFilePath,
+                  source_name: str, tables_input: List[YAMLDict]) -> List[Table]:
     """Parses the YAML list of dictionaries describing tables into Table objects"""
     directory_path = GcsfsDirectoryPath.from_file_path(manifest_path)
 
@@ -1088,7 +1115,8 @@ def _parse_tables(gcs: GCSFileSystem, manifest_path: GcsfsFilePath, tables_input
     for table_input in tables_input:
         # Parse nested objects separately
         date_range_producer = _parse_date_range_producer(table_input.pop_dict('date_range'))
-        table_converter = _parse_table_converter(table_input.pop_dict('value_column'),
+        table_converter = _parse_table_converter(source_name,
+                                                 table_input.pop_dict('value_column'),
                                                  table_input.pop_dicts_optional('dimension_columns'))
         location_dimension: Location = _parse_location(table_input.pop_dict('location'))
         filter_dimensions = \
@@ -1127,13 +1155,13 @@ def _get_report_and_acquirer(gcs: GCSFileSystem, manifest_path: GcsfsFilePath) -
         if not isinstance(loaded_yaml, dict):
             raise ValueError(f"Expected manifest to contain a top-level dictionary, but received: {loaded_yaml}")
         manifest = YAMLDict(loaded_yaml)
-
+        source_name = manifest.pop('source', str)
         # Parse tables separately
         # TODO(#4479): Also allow for location to be a column in the csv, as is done for dates.
-        tables = _parse_tables(gcs, manifest_path, manifest.pop_dicts('tables'))
+        tables = _parse_tables(gcs, manifest_path, source_name, manifest.pop_dicts('tables'))
 
         report = Report(
-            source_name=manifest.pop('source', str),
+            source_name=source_name,
             report_type=manifest.pop('report_type', str),
             report_instance=manifest.pop('report_instance', str),
             publish_date=manifest.pop('publish_date', str),
