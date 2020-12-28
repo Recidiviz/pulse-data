@@ -641,3 +641,22 @@ class ManualUploadTest(unittest.TestCase):
         self.assertEqual([
             (datetime.date(2019, 1, 1), datetime.date(2020, 1, 1)),
         ], [(row.time_window_start, row.time_window_end) for row in report_table])
+
+    def test_ingestReport_synthetic_column(self):
+        # Act
+        manual_upload.ingest(self.fs, test_utils.prepare_files(self.fs, manifest_filepath('report_synthetic_column')))
+
+        # Assert
+        session = SessionFactory.for_schema_base(JusticeCountsBase)
+
+        cells = session.query(schema.Cell).all()
+        self.assertEqual([
+            (['PRISON', 'Inmates', 'test1'], decimal.Decimal(1489)),
+            (['SUPERVISION', 'Parolees', 'test2'], decimal.Decimal(5592)),
+            (['SUPERVISION', 'Probationeers', 'test3'], decimal.Decimal(200784)),
+        ], [(cell.aggregated_dimension_values, cell.value) for cell in cells])
+
+        [table_definition] = session.query(schema.ReportTableDefinition).all()
+        self.assertEqual(['metric/population/type', 'metric/population/type/raw',
+                          'source/colorado_department_of_corrections/population_subtype/raw'],
+                         table_definition.aggregated_dimensions)
