@@ -34,6 +34,7 @@ class TestUsIdIncarcerationAdmissionDateIfRevocationOccurred(unittest.TestCase):
     """Tests the us_id_revoked_supervision_period_if_revocation_occurred function."""
     def test_us_id_revoked_supervision_period_if_revocation_occurred_probation_revocation(self):
         supervision_period = StateSupervisionPeriod.new_with_defaults(
+            state_code='US_ID',
             start_date=date(2017, 1, 1),
             termination_date=date(2017, 5, 17),
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
@@ -62,6 +63,7 @@ class TestUsIdIncarcerationAdmissionDateIfRevocationOccurred(unittest.TestCase):
 
     def test_us_id_revoked_supervision_period_if_revocation_occurred_treatment(self):
         supervision_period = StateSupervisionPeriod.new_with_defaults(
+            state_code='US_ID',
             start_date=date(2017, 1, 1),
             termination_date=date(2017, 5, 17),
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
@@ -90,6 +92,7 @@ class TestUsIdIncarcerationAdmissionDateIfRevocationOccurred(unittest.TestCase):
 
     def test_us_id_not_revoked_supervision_period_if_shock_incarceration(self):
         supervision_period = StateSupervisionPeriod.new_with_defaults(
+            state_code='US_ID',
             start_date=date(2017, 1, 1),
             termination_date=date(2017, 5, 17),
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
@@ -118,6 +121,7 @@ class TestUsIdIncarcerationAdmissionDateIfRevocationOccurred(unittest.TestCase):
 
     def test_us_id_revoked_supervision_period_if_revocation_occurred_parole_board_revocation(self):
         supervision_period = StateSupervisionPeriod.new_with_defaults(
+            state_code='US_ID',
             start_date=date(2017, 1, 1),
             termination_date=date(2017, 5, 17),
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
@@ -156,6 +160,7 @@ class TestUsIdIncarcerationAdmissionDateIfRevocationOccurred(unittest.TestCase):
 
     def test_us_id_revoked_supervision_period_if_revocation_occurred_treatment_transfer_not_revocation(self):
         supervision_period = StateSupervisionPeriod.new_with_defaults(
+            state_code='US_ID',
             start_date=date(2017, 1, 1),
             termination_date=date(2017, 5, 17),
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
@@ -296,6 +301,7 @@ class TestUsIdIncarcerationAdmissionDateIfRevocationOccurred(unittest.TestCase):
 
     def test_us_id_revoked_supervision_period_if_revocation_occurred_investigation_not_revocation(self):
         supervision_period = StateSupervisionPeriod.new_with_defaults(
+            state_code='US_ID',
             start_date=date(2017, 1, 1),
             termination_date=date(2017, 5, 17),
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.INVESTIGATION,

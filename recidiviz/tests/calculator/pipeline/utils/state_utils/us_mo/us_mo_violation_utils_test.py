@@ -43,6 +43,7 @@ class TestUsMoGetViolationTypeSubstringsForViolation(unittest.TestCase):
             state_code=_STATE_CODE,
             supervision_violation_types=[
                 StateSupervisionViolationTypeEntry.new_with_defaults(
+                    state_code=_STATE_CODE,
                     violation_type=StateSupervisionViolationType.FELONY)
             ]
         )
@@ -60,10 +61,12 @@ class TestUsMoGetViolationTypeSubstringsForViolation(unittest.TestCase):
             state_code=_STATE_CODE,
             supervision_violation_types=[
                 StateSupervisionViolationTypeEntry.new_with_defaults(
+                    state_code=_STATE_CODE,
                     violation_type=StateSupervisionViolationType.TECHNICAL)
             ],
             supervision_violated_conditions=[
                 StateSupervisionViolatedConditionEntry.new_with_defaults(
+                    state_code=_STATE_CODE,
                     condition='DRG')
             ]
         )
@@ -81,10 +84,12 @@ class TestUsMoGetViolationTypeSubstringsForViolation(unittest.TestCase):
             state_code=_STATE_CODE,
             supervision_violation_types=[
                 StateSupervisionViolationTypeEntry.new_with_defaults(
+                    state_code=_STATE_CODE,
                     violation_type=StateSupervisionViolationType.TECHNICAL)
             ],
             supervision_violated_conditions=[
                 StateSupervisionViolatedConditionEntry.new_with_defaults(
+                    state_code=_STATE_CODE,
                     condition='LAW_CITATION')
             ]
         )
@@ -102,10 +107,12 @@ class TestUsMoGetViolationTypeSubstringsForViolation(unittest.TestCase):
             state_code=_STATE_CODE,
             supervision_violation_types=[
                 StateSupervisionViolationTypeEntry.new_with_defaults(
+                    state_code=_STATE_CODE,
                     violation_type=StateSupervisionViolationType.TECHNICAL)
             ],
             supervision_violated_conditions=[
                 StateSupervisionViolatedConditionEntry.new_with_defaults(
+                    state_code=_STATE_CODE,
                     condition='EMP')
             ]
         )
@@ -213,7 +220,7 @@ class TestNormalizeViolationsOnResponsesUsMo(unittest.TestCase):
             StateSupervisionViolation.new_with_defaults(
                 state_code='US_MO',
                 supervision_violated_conditions=[
-                    StateSupervisionViolatedConditionEntry.new_with_defaults(condition='LAW'),
+                    StateSupervisionViolatedConditionEntry.new_with_defaults(state_code='US_MO', condition='LAW'),
                 ]
             )
 
@@ -236,7 +243,8 @@ class TestNormalizeViolationsOnResponsesUsMo(unittest.TestCase):
             )
         ])
         self.assertEqual(supervision_violation.supervision_violated_conditions, [
-            StateSupervisionViolatedConditionEntry.new_with_defaults(condition=_LAW_CITATION_SUBTYPE_STR),
+            StateSupervisionViolatedConditionEntry.new_with_defaults(
+                state_code='US_MO', condition=_LAW_CITATION_SUBTYPE_STR),
         ])
 
     def test_normalize_violations_on_responses_us_mo_no_conditions(self) -> None:
@@ -272,7 +280,8 @@ class TestNormalizeViolationsOnResponsesUsMo(unittest.TestCase):
             StateSupervisionViolation.new_with_defaults(
                 state_code='US_MO',
                 supervision_violated_conditions=[
-                    StateSupervisionViolatedConditionEntry.new_with_defaults(condition='LAW'),
+                    StateSupervisionViolatedConditionEntry.new_with_defaults(
+                        state_code='US_MO', condition='LAW'),
                 ]
             )
 
@@ -289,7 +298,7 @@ class TestNormalizeViolationsOnResponsesUsMo(unittest.TestCase):
         # Assert
         self.assertEqual(supervision_violation.supervision_violation_types, [])
         self.assertEqual(supervision_violation.supervision_violated_conditions, [
-            StateSupervisionViolatedConditionEntry.new_with_defaults(condition='LAW'),
+            StateSupervisionViolatedConditionEntry.new_with_defaults(state_code='US_MO', condition='LAW'),
         ])
 
     def test_normalize_violations_on_responses_not_us_mo(self) -> None:
@@ -298,7 +307,7 @@ class TestNormalizeViolationsOnResponsesUsMo(unittest.TestCase):
             StateSupervisionViolation.new_with_defaults(
                 state_code='US_NOT_MO',
                 supervision_violated_conditions=[
-                    StateSupervisionViolatedConditionEntry.new_with_defaults(condition='LAW'),
+                    StateSupervisionViolatedConditionEntry.new_with_defaults(state_code='US_NOT_MO', condition='LAW'),
                 ]
             )
 

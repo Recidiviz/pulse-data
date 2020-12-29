@@ -60,7 +60,8 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
     """Tests the map_incarceration_combinations function."""
 
     def test_map_incarceration_combinations(self):
-        person = StatePerson.new_with_defaults(person_id=12345, birthdate=date(1984, 8, 31), gender=Gender.FEMALE)
+        person = StatePerson.new_with_defaults(
+            state_code='CA', person_id=12345, birthdate=date(1984, 8, 31), gender=Gender.FEMALE)
 
         race = StatePersonRace.new_with_defaults(state_code='CA', race=Race.WHITE)
 
@@ -100,7 +101,7 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
             assert combo.get('year') == 2000
 
     def test_map_incarceration_combinations_all_types(self):
-        person = StatePerson.new_with_defaults(person_id=12345,
+        person = StatePerson.new_with_defaults(state_code='CA', person_id=12345,
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
 
@@ -162,7 +163,8 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
         assert all(value == 1 for _combination, value in incarceration_combinations)
 
     def test_map_incarceration_combinations_two_admissions_same_month(self):
-        person = StatePerson.new_with_defaults(person_id=12345, birthdate=date(1984, 8, 31), gender=Gender.FEMALE)
+        person = StatePerson.new_with_defaults(state_code='CA', person_id=12345, birthdate=date(1984, 8, 31),
+                                               gender=Gender.FEMALE)
 
         race = StatePersonRace.new_with_defaults(state_code='CA', race=Race.WHITE)
 
@@ -204,7 +206,8 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
         assert all(value == 1 for _combination, value in incarceration_combinations)
 
     def test_map_incarceration_combinations_two_releases_same_month(self):
-        person = StatePerson.new_with_defaults(person_id=12345, birthdate=date(1984, 8, 31), gender=Gender.FEMALE)
+        person = StatePerson.new_with_defaults(state_code='CA', person_id=12345, birthdate=date(1984, 8, 31),
+                                               gender=Gender.FEMALE)
 
         race = StatePersonRace.new_with_defaults(state_code='CA', race=Race.WHITE)
 
@@ -245,7 +248,8 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
 
     @freeze_time('2020-01-01')
     def test_map_incarceration_combinations_two_stays_same_month(self):
-        person = StatePerson.new_with_defaults(person_id=12345, birthdate=date(1984, 8, 31), gender=Gender.FEMALE)
+        person = StatePerson.new_with_defaults(state_code='CA', person_id=12345, birthdate=date(1984, 8, 31),
+                                               gender=Gender.FEMALE)
 
         race = StatePersonRace.new_with_defaults(state_code='CA', race=Race.WHITE)
 
@@ -296,7 +300,8 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
 
 
     def test_map_incarceration_combinations_two_stays_same_month_facility(self):
-        person = StatePerson.new_with_defaults(person_id=12345, birthdate=date(1984, 8, 31), gender=Gender.FEMALE)
+        person = StatePerson.new_with_defaults(state_code='CA', person_id=12345, birthdate=date(1984, 8, 31),
+                                               gender=Gender.FEMALE)
 
         race = StatePersonRace.new_with_defaults(state_code='CA', race=Race.WHITE)
 
@@ -346,7 +351,7 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
         assert all(value == 1 for _combination, value in incarceration_combinations)
 
     def test_map_incarceration_combinations_multiple_stays(self):
-        person = StatePerson.new_with_defaults(person_id=12345,
+        person = StatePerson.new_with_defaults(state_code='CA', person_id=12345,
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
 
@@ -402,7 +407,7 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
                    in incarceration_combinations)
 
     def test_map_incarceration_combinations_multiple_stays_one_month(self):
-        person = StatePerson.new_with_defaults(person_id=12345,
+        person = StatePerson.new_with_defaults(state_code='CA', person_id=12345,
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
 
@@ -458,17 +463,17 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
                    in incarceration_combinations)
 
     def test_map_incarceration_combinations_multiple_overlapping_stays(self):
-        person = StatePerson.new_with_defaults(person_id=12345,
+        person = StatePerson.new_with_defaults(state_code='US_ND', person_id=12345,
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
 
-        race = StatePersonRace.new_with_defaults(state_code='CA',
+        race = StatePersonRace.new_with_defaults(state_code='US_ND',
                                                  race=Race.WHITE)
 
         person.races = [race]
 
         ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code='CA',
+            state_code='US_ND',
             ethnicity=Ethnicity.NOT_HISPANIC)
 
         person.ethnicities = [ethnicity]
@@ -515,7 +520,7 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
 
     @freeze_time('2000-3-20')
     def test_map_incarceration_combinations_admission_relevant_periods(self):
-        person = StatePerson.new_with_defaults(person_id=12345,
+        person = StatePerson.new_with_defaults(state_code='CA', person_id=12345,
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
 
@@ -562,7 +567,7 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
 
     @freeze_time('2010-10-20')
     def test_map_incarceration_combinations_release_relevant_periods(self):
-        person = StatePerson.new_with_defaults(person_id=12345,
+        person = StatePerson.new_with_defaults(state_code='CA', person_id=12345,
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
 
@@ -608,7 +613,7 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
 
     @freeze_time('2010-10-20')
     def test_map_incarceration_combinations_relevant_periods(self):
-        person = StatePerson.new_with_defaults(person_id=12345,
+        person = StatePerson.new_with_defaults(state_code='CA', person_id=12345,
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
 
@@ -662,7 +667,7 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
 
     @freeze_time('2010-10-20')
     def test_map_incarceration_combinations_relevant_periods_duplicates(self):
-        person = StatePerson.new_with_defaults(person_id=12345,
+        person = StatePerson.new_with_defaults(state_code='CA', person_id=12345,
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
 
@@ -715,7 +720,7 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
 
     @freeze_time('2010-10-20')
     def test_map_incarceration_combinations_relevant_periods_revocations(self):
-        person = StatePerson.new_with_defaults(person_id=12345,
+        person = StatePerson.new_with_defaults(state_code='CA', person_id=12345,
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
 
@@ -777,7 +782,7 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
 
     @freeze_time('2000-03-30')
     def test_map_incarceration_combinations_calculation_month_count(self):
-        person = StatePerson.new_with_defaults(person_id=12345,
+        person = StatePerson.new_with_defaults(state_code='CA', person_id=12345,
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
 
@@ -822,7 +827,7 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
 
     @freeze_time('2000-03-30')
     def test_map_incarceration_combinations_calculation_month_count_exclude(self):
-        person = StatePerson.new_with_defaults(person_id=12345,
+        person = StatePerson.new_with_defaults(state_code='CA', person_id=12345,
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
 
@@ -860,7 +865,7 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
 
     @freeze_time('2000-03-30')
     def test_map_incarceration_combinations_calculation_month_count_include_one(self):
-        person = StatePerson.new_with_defaults(person_id=12345,
+        person = StatePerson.new_with_defaults(state_code='CA', person_id=12345,
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
 
@@ -912,7 +917,7 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
 
     @freeze_time('2010-12-31')
     def test_map_incarceration_combinations_calculation_month_count_include_monthly(self):
-        person = StatePerson.new_with_defaults(person_id=12345,
+        person = StatePerson.new_with_defaults(state_code='CA', person_id=12345,
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
 
@@ -955,7 +960,7 @@ class TestMapIncarcerationCombinations(unittest.TestCase):
             assert combo.get('year') == 2007
 
     def test_map_incarceration_combinations_includes_statute_output(self):
-        person = StatePerson.new_with_defaults(person_id=12345,
+        person = StatePerson.new_with_defaults(state_code='CA', person_id=12345,
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
 
@@ -1022,7 +1027,7 @@ class TestCharacteristicsDict(unittest.TestCase):
     """Tests the characteristics_dict function."""
 
     def setUp(self) -> None:
-        self.person = StatePerson.new_with_defaults(person_id=12345,
+        self.person = StatePerson.new_with_defaults(state_code='US_MO', person_id=12345,
                                                     birthdate=date(1984, 8, 31),
                                                     gender=Gender.FEMALE)
 

@@ -553,11 +553,13 @@ class TestClassifyIncarcerationEvents(unittest.TestCase):
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD)
 
         incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
+            state_code='US_XX',
             incarceration_sentence_id=123,
             incarceration_periods=[incarceration_period],
             start_date=date(2009, 2, 9),
             charges=[
                 StateCharge.new_with_defaults(
+                    state_code='US_XX',
                     ncic_code='5699',
                     statute='30A123',
                     offense_date=date(2009, 1, 9)
@@ -566,6 +568,7 @@ class TestClassifyIncarcerationEvents(unittest.TestCase):
         )
 
         sentence_group = StateSentenceGroup.new_with_defaults(
+            state_code='US_XX',
             sentence_group_id=123,
             incarceration_sentences=[incarceration_sentence]
         )
@@ -637,6 +640,7 @@ class TestClassifyIncarcerationEvents(unittest.TestCase):
     def testClassifyIncarcerationEvents_NoSentenceGroups(self):
         """Tests the ClassifyIncarcerationEvents DoFn when the person has no sentence groups."""
         fake_person = StatePerson.new_with_defaults(
+            state_code='US_XX',
             person_id=123, gender=Gender.MALE,
             birthdate=date(1970, 1, 1),
             residency_status=ResidencyStatus.PERMANENT)
@@ -671,6 +675,7 @@ class TestCalculateIncarcerationMetricCombinations(unittest.TestCase):
     def testCalculateIncarcerationMetricCombinations(self):
         """Tests the CalculateIncarcerationMetricCombinations DoFn."""
         fake_person = StatePerson.new_with_defaults(
+            state_code='US_XX',
             person_id=123, gender=Gender.MALE,
             birthdate=date(1970, 1, 1),
             residency_status=ResidencyStatus.PERMANENT)
@@ -727,6 +732,7 @@ class TestCalculateIncarcerationMetricCombinations(unittest.TestCase):
         no incarceration_events. This should never happen because any person
         without incarceration events is dropped entirely from the pipeline."""
         fake_person = StatePerson.new_with_defaults(
+            state_code='US_XX',
             person_id=123, gender=Gender.MALE,
             birthdate=date(1970, 1, 1),
             residency_status=ResidencyStatus.PERMANENT)

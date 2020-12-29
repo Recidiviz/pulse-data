@@ -39,6 +39,7 @@ class TestUsPaGetViolationTypeSubstringsForViolation(unittest.TestCase):
             state_code=_STATE_CODE,
             supervision_violation_types=[
                 StateSupervisionViolationTypeEntry.new_with_defaults(
+                    state_code=_STATE_CODE,
                     violation_type=StateSupervisionViolationType.LAW)
             ]
         )
@@ -56,6 +57,7 @@ class TestUsPaGetViolationTypeSubstringsForViolation(unittest.TestCase):
             state_code=_STATE_CODE,
             supervision_violation_types=[
                 StateSupervisionViolationTypeEntry.new_with_defaults(
+                    state_code=_STATE_CODE,
                     violation_type=StateSupervisionViolationType.TECHNICAL,
                     violation_type_raw_text='H12'
                 )
@@ -75,6 +77,7 @@ class TestUsPaGetViolationTypeSubstringsForViolation(unittest.TestCase):
             state_code=_STATE_CODE,
             supervision_violation_types=[
                 StateSupervisionViolationTypeEntry.new_with_defaults(
+                    state_code=_STATE_CODE,
                     violation_type=StateSupervisionViolationType.TECHNICAL,
                     violation_type_raw_text='M16'
                 )
@@ -94,6 +97,7 @@ class TestUsPaGetViolationTypeSubstringsForViolation(unittest.TestCase):
             state_code=_STATE_CODE,
             supervision_violation_types=[
                 StateSupervisionViolationTypeEntry.new_with_defaults(
+                    state_code=_STATE_CODE,
                     violation_type=StateSupervisionViolationType.TECHNICAL,
                     violation_type_raw_text='L05'
                 )
@@ -115,6 +119,7 @@ class TestUsPaGetViolationTypeSubstringsForViolation(unittest.TestCase):
             violation_date=date(2009, 1, 3),
             supervision_violation_types=[
                 StateSupervisionViolationTypeEntry.new_with_defaults(
+                    state_code=_STATE_CODE,
                     violation_type=StateSupervisionViolationType.TECHNICAL,
                     violation_type_raw_text='M05'
                 ),
@@ -136,6 +141,7 @@ class TestUsPaGetViolationTypeSubstringsForViolation(unittest.TestCase):
             violation_date=date(2009, 1, 3),
             supervision_violation_types=[
                 StateSupervisionViolationTypeEntry.new_with_defaults(
+                    state_code=_STATE_CODE,
                     violation_type=StateSupervisionViolationType.TECHNICAL,
                     violation_type_raw_text='H05'
                 ),
@@ -157,6 +163,7 @@ class TestUsPaGetViolationTypeSubstringsForViolation(unittest.TestCase):
             violation_date=date(2009, 1, 3),
             supervision_violation_types=[
                 StateSupervisionViolationTypeEntry.new_with_defaults(
+                    state_code=_STATE_CODE,
                     violation_type=StateSupervisionViolationType.TECHNICAL,
                     # We expect all TECHNICAL violations to have definable raw text values
                     violation_type_raw_text=None
@@ -176,6 +183,7 @@ class TestUsPaGetViolationTypeSubstringsForViolation(unittest.TestCase):
             violation_date=date(2009, 1, 3),
             supervision_violation_types=[
                 StateSupervisionViolationTypeEntry.new_with_defaults(
+                    state_code=_STATE_CODE,
                     violation_type=StateSupervisionViolationType.TECHNICAL,
                     violation_type_raw_text='XL'
                 ),

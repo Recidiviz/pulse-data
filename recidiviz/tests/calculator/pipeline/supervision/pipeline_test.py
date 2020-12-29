@@ -1580,6 +1580,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         fake_person_id = 12345
 
         fake_person = StatePerson.new_with_defaults(
+            state_code='US_XX',
             person_id=fake_person_id, gender=Gender.MALE,
             birthdate=date(1970, 1, 1),
             residency_status=ResidencyStatus.PERMANENT)
@@ -1610,6 +1611,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         )
 
         supervision_sentence = StateSupervisionSentence.new_with_defaults(
+            state_code='US_XX',
             supervision_sentence_id=111,
             external_id='ss1',
             status=StateSentenceStatus.COMPLETED,
@@ -1621,6 +1623,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         )
 
         incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
+            state_code='US_XX',
             incarceration_sentence_id=123,
             incarceration_periods=[incarceration_period]
         )
@@ -1743,6 +1746,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         fake_person_id = 12345
 
         fake_person = StatePerson.new_with_defaults(
+            state_code='US_XX',
             person_id=fake_person_id, gender=Gender.MALE,
             birthdate=date(1970, 1, 1),
             residency_status=ResidencyStatus.PERMANENT)
@@ -1792,6 +1796,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             source_supervision_violation_response=source_supervision_violation_response)
 
         supervision_sentence = StateSupervisionSentence.new_with_defaults(
+            state_code='US_XX',
             supervision_sentence_id=111,
             external_id='ss1',
             start_date=date(2015, 1, 1),
@@ -1925,6 +1930,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         fake_person_id = 12345
 
         fake_person = StatePerson.new_with_defaults(
+            state_code='US_MO',
             person_id=fake_person_id, gender=Gender.MALE,
             birthdate=date(1970, 1, 1),
             residency_status=ResidencyStatus.PERMANENT)
@@ -1977,6 +1983,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         supervision_sentence = \
             FakeUsMoSupervisionSentence.fake_sentence_from_sentence(
                 StateSupervisionSentence.new_with_defaults(
+                    state_code='US_MO',
                     supervision_sentence_id=111,
                     external_id='ss1',
                     start_date=date(2015, 1, 1),
@@ -2132,6 +2139,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         fake_person_id = 12345
 
         fake_person = StatePerson.new_with_defaults(
+            state_code='US_XX',
             person_id=fake_person_id, gender=Gender.MALE,
             birthdate=date(1970, 1, 1),
             residency_status=ResidencyStatus.PERMANENT)
@@ -2151,6 +2159,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
 
         supervision_sentence = \
             StateSupervisionSentence.new_with_defaults(
+                state_code='US_XX',
                 supervision_sentence_id=111,
                 external_id='ss1',
                 start_date=date(2015, 3, 1),
@@ -2244,6 +2253,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         fake_person_id = 12345
 
         fake_person = StatePerson.new_with_defaults(
+            state_code='US_XX',
             person_id=fake_person_id, gender=Gender.MALE,
             birthdate=date(1970, 1, 1),
             residency_status=ResidencyStatus.PERMANENT)
@@ -2263,6 +2273,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
 
         supervision_sentence = \
             StateSupervisionSentence.new_with_defaults(
+                state_code='US_XX',
                 supervision_sentence_id=111,
                 external_id='ss1',
                 start_date=date(2015, 3, 1),
@@ -2345,6 +2356,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         fake_person_id = 12345
 
         fake_person = StatePerson.new_with_defaults(
+            state_code='US_XX',
             person_id=fake_person_id, gender=Gender.MALE,
             birthdate=date(1970, 1, 1),
             residency_status=ResidencyStatus.PERMANENT)
@@ -2421,13 +2433,14 @@ class TestCalculateSupervisionMetricCombinations(unittest.TestCase):
     def testCalculateSupervisionMetricCombinations(self):
         """Tests the CalculateSupervisionMetricCombinations DoFn."""
         fake_person = StatePerson.new_with_defaults(
+            state_code='US_XX',
             person_id=self.fake_person_id, gender=Gender.MALE,
             birthdate=date(1970, 1, 1),
             residency_status=ResidencyStatus.PERMANENT)
 
         supervision_time_buckets = [
             NonRevocationReturnSupervisionTimeBucket(
-                state_code='CA',
+                state_code='US_XX',
                 year=2015, month=3,
                 bucket_date=date(2015, 3, 31),
                 supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
@@ -2476,20 +2489,21 @@ class TestCalculateSupervisionMetricCombinations(unittest.TestCase):
         """Tests the CalculateSupervisionMetricCombinations DoFn where
         revocations are identified."""
         fake_person = StatePerson.new_with_defaults(
+            state_code='US_XX',
             person_id=self.fake_person_id, gender=Gender.MALE,
             birthdate=date(1970, 1, 1),
             residency_status=ResidencyStatus.PERMANENT)
 
         supervision_time_buckets = [
             RevocationReturnSupervisionTimeBucket(
-                state_code='CA', year=2015, month=2,
+                state_code='US_XX', year=2015, month=2,
                 bucket_date=date(2015, 2, 1),
                 supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
                 revocation_type=RevocationType.REINCARCERATION,
                 source_violation_type=ViolationType.TECHNICAL,
                 is_on_supervision_last_day_of_month=False),
             RevocationReturnSupervisionTimeBucket(
-                state_code='CA', year=2015, month=3,
+                state_code='US_XX', year=2015, month=3,
                 bucket_date=date(2015, 3, 1),
                 supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
                 revocation_type=RevocationType.REINCARCERATION,
@@ -2533,6 +2547,7 @@ class TestCalculateSupervisionMetricCombinations(unittest.TestCase):
         no supervision months. This should never happen because any person
         without supervision time is dropped entirely from the pipeline."""
         fake_person = StatePerson.new_with_defaults(
+            state_code='US_XX',
             person_id=self.fake_person_id, gender=Gender.MALE,
             birthdate=date(1970, 1, 1),
             residency_status=ResidencyStatus.PERMANENT)

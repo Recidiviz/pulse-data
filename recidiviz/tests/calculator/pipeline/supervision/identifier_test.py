@@ -269,6 +269,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
 
         supervision_sentence = \
             StateSupervisionSentence.new_with_defaults(
+                state_code='US_XX',
                 supervision_sentence_id=111,
                 start_date=date(2017, 1, 1),
                 external_id='ss1',
@@ -349,6 +350,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
 
         supervision_sentence = \
             StateSupervisionSentence.new_with_defaults(
+                state_code='US_XX',
                 supervision_sentence_id=111,
                 start_date=date(2017, 1, 1),
                 external_id='ss1',
@@ -447,6 +449,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
 
         supervision_sentence = \
             StateSupervisionSentence.new_with_defaults(
+                state_code='US_XX',
                 supervision_sentence_id=111,
                 start_date=date(2017, 1, 1),
                 external_id='ss1',
@@ -545,6 +548,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
 
         supervision_sentence = \
             StateSupervisionSentence.new_with_defaults(
+                state_code='US_XX',
                 supervision_sentence_id=111,
                 start_date=date(2017, 1, 1),
                 external_id='ss1',
@@ -654,6 +658,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
 
         supervision_sentence = \
             StateSupervisionSentence.new_with_defaults(
+                state_code='US_XX',
                 supervision_sentence_id=111,
                 start_date=date(2017, 1, 1),
                 status=StateSentenceStatus.COMPLETED,
@@ -748,6 +753,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
 
         supervision_sentence = FakeUsMoSupervisionSentence.fake_sentence_from_sentence(
             StateSupervisionSentence.new_with_defaults(
+                state_code='US_XX',
                 supervision_sentence_id=111,
                 start_date=date(2017, 1, 1),
                 external_id='ss',
@@ -862,6 +868,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
 
         supervision_sentence = \
             StateSupervisionSentence.new_with_defaults(
+                state_code='US_XX',
                 supervision_sentence_id=111,
                 start_date=date(2017, 1, 1),
                 status=StateSentenceStatus.COMPLETED,
@@ -975,6 +982,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
 
         supervision_sentence = \
             StateSupervisionSentence.new_with_defaults(
+                state_code='US_XX',
                 supervision_sentence_id=111,
                 start_date=date(2017, 1, 1),
                 status=StateSentenceStatus.COMPLETED,
@@ -1109,6 +1117,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
 
         supervision_sentence = \
             StateSupervisionSentence.new_with_defaults(
+                state_code='US_XX',
                 supervision_sentence_id=111,
                 start_date=date(2017, 1, 1),
                 status=StateSentenceStatus.COMPLETED,
@@ -1259,6 +1268,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
 
         supervision_sentence = \
             StateSupervisionSentence.new_with_defaults(
+                state_code='US_XX',
                 supervision_sentence_id=111,
                 start_date=date(2017, 1, 1),
                 status=StateSentenceStatus.COMPLETED,
@@ -1356,6 +1366,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
 
         supervision_sentence = \
             StateSupervisionSentence.new_with_defaults(
+                state_code='US_XX',
                 supervision_sentence_id=111,
                 start_date=date(2017, 1, 1),
                 status=StateSentenceStatus.COMPLETED,
@@ -1426,6 +1437,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
 
         supervision_sentence = \
             StateSupervisionSentence.new_with_defaults(
+                state_code='US_XX',
                 supervision_sentence_id=111,
                 start_date=date(2017, 1, 1),
                 status=StateSentenceStatus.COMPLETED,
@@ -1486,6 +1498,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
 
         supervision_sentence = \
             StateSupervisionSentence.new_with_defaults(
+                state_code='US_XX',
                 supervision_sentence_id=111,
                 start_date=date(2017, 1, 1),
                 status=StateSentenceStatus.COMPLETED,
@@ -1556,6 +1569,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
 
         supervision_sentence = \
             StateSupervisionSentence.new_with_defaults(
+                state_code='US_XX',
                 supervision_sentence_id=111,
                 start_date=date(2017, 1, 1),
                 status=StateSentenceStatus.COMPLETED,
@@ -1697,6 +1711,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
 
         supervision_sentence = \
             StateSupervisionSentence.new_with_defaults(
+                state_code='US_XX',
                 supervision_sentence_id=111,
                 start_date=date(2017, 1, 1),
                 status=StateSentenceStatus.COMPLETED,
@@ -1818,6 +1833,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
 
         supervision_sentence = \
             StateSupervisionSentence.new_with_defaults(
+                state_code='US_XX',
                 supervision_sentence_id=111,
                 start_date=date(2017, 1, 1),
                 external_id='ss1',
@@ -1944,6 +1960,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
 
         supervision_sentence = \
             StateSupervisionSentence.new_with_defaults(
+                state_code='US_XX',
                 supervision_sentence_id=111,
                 start_date=date(2017, 1, 1),
                 external_id='ss',
@@ -2053,6 +2070,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
 
         supervision_sentence = \
             StateSupervisionSentence.new_with_defaults(
+                state_code='US_XX',
                 supervision_sentence_id=111,
                 start_date=date(2017, 1, 1),
                 external_id='ss1',
@@ -2269,6 +2287,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
 
         supervision_sentence = \
             StateSupervisionSentence.new_with_defaults(
+                state_code='US_XX',
                 supervision_sentence_id=111,
                 start_date=date(2017, 1, 1),
                 external_id='ss1',
@@ -2388,6 +2407,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 admission_date=date(2018, 6, 25),
                 admission_reason=StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
                 source_supervision_violation_response=StateSupervisionViolationResponse.new_with_defaults(
+                    state_code='US_ND',
                     supervision_violation_response_id=_DEFAULT_SSVR_ID
                 )
             )
@@ -2501,12 +2521,14 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 admission_date=date(2018, 6, 3),
                 admission_reason=StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
                 source_supervision_violation_response=StateSupervisionViolationResponse.new_with_defaults(
+                    state_code='US_ND',
                     supervision_violation_response_id=_DEFAULT_SSVR_ID
                 )
             )
 
         supervision_sentence = \
             StateSupervisionSentence.new_with_defaults(
+                state_code='US_XX',
                 supervision_sentence_id=111,
                 start_date=date(2017, 1, 1),
                 external_id='ss1',
@@ -2611,12 +2633,14 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 admission_date=date(2019, 1, 5),
                 admission_reason=StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
                 source_supervision_violation_response=StateSupervisionViolationResponse.new_with_defaults(
+                    state_code='US_ND',
                     supervision_violation_response_id=_DEFAULT_SSVR_ID
                 )
             )
 
         supervision_sentence = \
             StateSupervisionSentence.new_with_defaults(
+                state_code='US_ND',
                 supervision_sentence_id=111,
                 start_date=date(2017, 1, 1),
                 external_id='ss1',
@@ -2724,6 +2748,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
 
         supervision_sentence = \
             StateSupervisionSentence.new_with_defaults(
+                state_code='US_XX',
                 supervision_sentence_id=111,
                 start_date=date(2017, 1, 1),
                 external_id='ss1',
@@ -2811,6 +2836,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
 
         supervision_sentence = \
             StateSupervisionSentence.new_with_defaults(
+                state_code='US_XX',
                 supervision_sentence_id=111,
                 start_date=date(2015, 1, 1),
                 external_id='ss1',
@@ -2912,6 +2938,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
 
         supervision_sentence = \
             StateSupervisionSentence.new_with_defaults(
+                state_code='US_XX',
                 supervision_sentence_id=111,
                 start_date=date(2017, 1, 1),
                 external_id='ss1',
@@ -3046,6 +3073,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
 
         first_supervision_sentence = \
             StateSupervisionSentence.new_with_defaults(
+                state_code='US_XX',
                 supervision_sentence_id=111,
                 start_date=date(2017, 1, 1),
                 external_id='ss1',
@@ -3057,6 +3085,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
 
         second_supervision_sentence = \
             StateSupervisionSentence.new_with_defaults(
+                state_code='US_XX',
                 supervision_sentence_id=222,
                 start_date=date(2017, 1, 1),
                 external_id='ss2',
@@ -3191,6 +3220,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
 
         supervision_sentence = \
             StateSupervisionSentence.new_with_defaults(
+                state_code='US_XX',
                 supervision_sentence_id=111,
                 start_date=date(2017, 1, 1),
                 external_id='ss1',
@@ -3277,6 +3307,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         )
 
         supervision_sentence = StateSupervisionSentence.new_with_defaults(
+                state_code='US_XX',
             supervision_sentence_id=111,
             start_date=date(2017, 1, 1),
             external_id='ss1',
@@ -3285,6 +3316,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         )
 
         incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
+                state_code='US_XX',
             incarceration_sentence_id=123,
             external_id='is1',
             start_date=date(2017, 1, 1),
@@ -3389,6 +3421,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         )
 
         supervision_sentence = StateSupervisionSentence.new_with_defaults(
+                state_code='US_XX',
             supervision_sentence_id=111,
             start_date=date(2017, 1, 1),
             external_id='ss1',
@@ -3482,6 +3515,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
 
         supervision_sentence = \
             StateSupervisionSentence.new_with_defaults(
+                state_code='US_XX',
                 supervision_sentence_id=111,
                 start_date=date(2017, 1, 1),
                 external_id='ss1',
@@ -3581,6 +3615,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
 
         supervision_sentence = \
             StateSupervisionSentence.new_with_defaults(
+                state_code='US_XX',
                 supervision_sentence_id=111,
                 start_date=date(2017, 1, 1),
                 external_id='ss1',
@@ -3591,6 +3626,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             )
 
         incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
+                state_code='US_XX',
             incarceration_sentence_id=123,
             external_id='is1',
             start_date=date(2017, 1, 1),
@@ -3675,6 +3711,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         supervision_sentence = \
             FakeUsMoSupervisionSentence.fake_sentence_from_sentence(
                 StateSupervisionSentence.new_with_defaults(
+                    state_code='US_MO',
                     supervision_sentence_id=111,
                     start_date=date(2017, 1, 1),
                     completion_date=date(2018, 5, 19),
@@ -3700,6 +3737,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         incarceration_sentence = \
             FakeUsMoIncarcerationSentence.fake_sentence_from_sentence(
                 StateIncarcerationSentence.new_with_defaults(
+                    state_code='US_MO',
                     incarceration_sentence_id=123,
                     external_id='is1',
                     start_date=date(2017, 1, 1),
@@ -3887,6 +3925,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
 
         supervision_sentence = \
             StateSupervisionSentence.new_with_defaults(
+                state_code='US_ND',
                 supervision_sentence_id=111,
                 start_date=date(2017, 1, 1),
                 external_id='ss1',
@@ -3896,6 +3935,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             )
 
         incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
+                state_code='US_XX',
             incarceration_sentence_id=123,
             external_id='is1',
             start_date=date(2017, 1, 1),
@@ -4016,7 +4056,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             )
 
         assessment = StateAssessment.new_with_defaults(
-            state_code='US_CA',
+            state_code='US_MO',
             assessment_type=StateAssessmentType.ORAS,
             assessment_score=33,
             assessment_level=StateAssessmentLevel.HIGH,
@@ -4075,6 +4115,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
 
         supervision_sentence = \
             StateSupervisionSentence.new_with_defaults(
+                state_code='US_ND',
                 supervision_sentence_id=111,
                 start_date=date(2017, 1, 1),
                 external_id='ss1',
@@ -4160,6 +4201,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             )
 
         incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
+                state_code='US_XX',
             incarceration_sentence_id=123,
             external_id='is1',
             start_date=date(2018, 1, 1),
@@ -4263,9 +4305,11 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             violation_date=date(2018, 4, 20),
             supervision_violation_types=[
                 StateSupervisionViolationTypeEntry.new_with_defaults(
+                    state_code='US_MO',
                     violation_type=StateSupervisionViolationType.TECHNICAL
                 ),
                 StateSupervisionViolationTypeEntry.new_with_defaults(
+                    state_code='US_MO',
                     violation_type=StateSupervisionViolationType.FELONY
                 )
             ]
@@ -4280,6 +4324,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             supervision_violation=supervision_violation,
             supervision_violation_response_decisions=[
                 StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                    state_code='US_MO',
                     decision=StateSupervisionViolationResponseDecision.REVOCATION,
                 ),
             ]
@@ -4292,6 +4337,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             response_type=StateSupervisionViolationResponseType.PERMANENT_DECISION,
             supervision_violation_response_decisions=[
                 StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                    state_code='US_MO',
                     decision=StateSupervisionViolationResponseDecision.REVOCATION,
                     revocation_type=StateSupervisionViolationResponseRevocationType.SHOCK_INCARCERATION,
                 )
@@ -4327,6 +4373,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         supervision_sentence = \
             FakeUsMoSupervisionSentence.fake_sentence_from_sentence(
                 StateSupervisionSentence.new_with_defaults(
+                    state_code='US_MO',
                     supervision_sentence_id=111,
                     start_date=date(2017, 1, 1),
                     external_id='ss1',
@@ -4352,6 +4399,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         incarceration_sentence = \
             FakeUsMoIncarcerationSentence.fake_sentence_from_sentence(
                 StateIncarcerationSentence.new_with_defaults(
+                    state_code='US_MO',
                     incarceration_sentence_id=123,
                     external_id='is1',
                     start_date=date(2018, 5, 25),
@@ -4492,9 +4540,11 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             violation_date=date(2018, 4, 20),
             supervision_violation_types=[
                 StateSupervisionViolationTypeEntry.new_with_defaults(
+                    state_code='US_MO',
                     violation_type=StateSupervisionViolationType.TECHNICAL
                 ),
                 StateSupervisionViolationTypeEntry.new_with_defaults(
+                    state_code='US_MO',
                     violation_type=StateSupervisionViolationType.FELONY
                 )
             ]
@@ -4509,6 +4559,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             supervision_violation=supervision_violation,
             supervision_violation_response_decisions=[
                 StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                    state_code='US_MO',
                     decision=StateSupervisionViolationResponseDecision.REVOCATION,
                 ),
             ]
@@ -4521,6 +4572,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             response_type=StateSupervisionViolationResponseType.PERMANENT_DECISION,
             supervision_violation_response_decisions=[
                 StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                    state_code='US_MO',
                     decision=StateSupervisionViolationResponseDecision.REVOCATION,
                 )
             ],
@@ -4556,6 +4608,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         supervision_sentence = \
             FakeUsMoSupervisionSentence.fake_sentence_from_sentence(
                 StateSupervisionSentence.new_with_defaults(
+                    state_code='US_XX',
                     supervision_sentence_id=111,
                     start_date=date(2017, 1, 1),
                     external_id='ss1',
@@ -4581,6 +4634,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         incarceration_sentence = \
             FakeUsMoIncarcerationSentence.fake_sentence_from_sentence(
                 StateIncarcerationSentence.new_with_defaults(
+                state_code='US_XX',
                     incarceration_sentence_id=123,
                     external_id='is1',
                     start_date=date(2018, 5, 25),
@@ -4729,10 +4783,12 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             is_draft=False,
             supervision_violation_response_decisions=[
                 StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                    state_code='US_MO',
                     decision=StateSupervisionViolationResponseDecision.REVOCATION,
                     revocation_type=StateSupervisionViolationResponseRevocationType.REINCARCERATION
                 ),
                 StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                    state_code='US_MO',
                     decision=StateSupervisionViolationResponseDecision.CONTINUANCE,
                     revocation_type=StateSupervisionViolationResponseRevocationType.SHOCK_INCARCERATION)
             ],
@@ -4746,11 +4802,13 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 state_code='US_MO',
                 supervision_violation_types=[
                     StateSupervisionViolationTypeEntry.new_with_defaults(
+                        state_code='US_MO',
                         violation_type=StateSupervisionViolationType.TECHNICAL
                     )
                 ],
                 supervision_violated_conditions=[
-                    StateSupervisionViolatedConditionEntry.new_with_defaults(condition='DRG')]
+                    StateSupervisionViolatedConditionEntry.new_with_defaults(
+                        state_code='US_MO', condition='DRG')]
             )
 
         violation_report = StateSupervisionViolationResponse.new_with_defaults(
@@ -4762,6 +4820,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             supervision_violation=supervision_violation,
             supervision_violation_response_decisions=[
                 StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                    state_code='US_MO',
                     decision=StateSupervisionViolationResponseDecision.REVOCATION,
                 ),
             ]
@@ -4774,10 +4833,12 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 response_date=date(2018, 2, 23),
                 supervision_violation_response_decisions=[
                     StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                        state_code='US_MO',
                         decision=StateSupervisionViolationResponseDecision.REVOCATION,
                         revocation_type=StateSupervisionViolationResponseRevocationType.REINCARCERATION
                     ),
                     StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                        state_code='US_MO',
                         revocation_type=StateSupervisionViolationResponseRevocationType.SHOCK_INCARCERATION)
                 ],
                 supervision_violation=supervision_violation
@@ -4805,6 +4866,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         supervision_sentence = \
             FakeUsMoSupervisionSentence.fake_sentence_from_sentence(
                 StateSupervisionSentence.new_with_defaults(
+                    state_code='US_XX',
                     supervision_sentence_id=111,
                     start_date=date(2017, 1, 1),
                     external_id='ss1',
@@ -4830,6 +4892,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         incarceration_sentence = \
             FakeUsMoIncarcerationSentence.fake_sentence_from_sentence(
                 StateIncarcerationSentence.new_with_defaults(
+                    state_code='US_XX',
                     incarceration_sentence_id=123,
                     external_id='is1',
                     start_date=date(2018, 5, 25),
@@ -4958,6 +5021,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 violation_date=date(2018, 2, 20),
                 supervision_violated_conditions=[
                     StateSupervisionViolatedConditionEntry.new_with_defaults(
+                        state_code='US_MO',
                         condition='LAW'),
                 ]
             )
@@ -4970,14 +5034,14 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 response_date=date(2018, 2, 20),
                 is_draft=False,
                 supervision_violation_response_decisions=[
-                    StateSupervisionViolationResponseDecisionEntry.
-                    new_with_defaults(
+                    StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                        state_code='US_MO',
                         decision=StateSupervisionViolationResponseDecision.REVOCATION,
                         revocation_type=StateSupervisionViolationResponseRevocationType.
                         REINCARCERATION
                     ),
-                    StateSupervisionViolationResponseDecisionEntry.
-                    new_with_defaults(
+                    StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                        state_code='US_MO',
                         decision=StateSupervisionViolationResponseDecision.CONTINUANCE,
                         revocation_type=StateSupervisionViolationResponseRevocationType.
                         SHOCK_INCARCERATION,
@@ -4993,10 +5057,12 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 response_date=date(2018, 2, 23),
                 supervision_violation_response_decisions=[
                     StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                        state_code='US_MO',
                         decision=StateSupervisionViolationResponseDecision.REVOCATION,
                         revocation_type=StateSupervisionViolationResponseRevocationType.REINCARCERATION
                     ),
                     StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                        state_code='US_MO',
                         revocation_type=StateSupervisionViolationResponseRevocationType.SHOCK_INCARCERATION)
                 ],
                 supervision_violation=supervision_violation
@@ -5015,7 +5081,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             )
 
         assessment = StateAssessment.new_with_defaults(
-            state_code='US_CA',
+            state_code='US_MO',
             assessment_type=StateAssessmentType.ORAS,
             assessment_score=33,
             assessment_date=date(2018, 3, 1)
@@ -5024,6 +5090,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         supervision_sentence = \
             FakeUsMoSupervisionSentence.fake_sentence_from_sentence(
                 StateSupervisionSentence.new_with_defaults(
+                    state_code='US_MO',
                     supervision_sentence_id=111,
                     start_date=date(2017, 1, 1),
                     external_id='ss1',
@@ -5049,6 +5116,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         incarceration_sentence = \
             FakeUsMoIncarcerationSentence.fake_sentence_from_sentence(
                 StateIncarcerationSentence.new_with_defaults(
+                    state_code='US_MO',
                     incarceration_sentence_id=123,
                     external_id='is1',
                     start_date=date(2018, 5, 25),
@@ -5183,10 +5251,12 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             is_draft=False,
             supervision_violation_response_decisions=[
                 StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                    state_code='US_MO',
                     decision=StateSupervisionViolationResponseDecision.REVOCATION,
                     revocation_type=StateSupervisionViolationResponseRevocationType.REINCARCERATION
                 ),
                 StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                    state_code='US_MO',
                     decision=StateSupervisionViolationResponseDecision.CONTINUANCE,
                     revocation_type=StateSupervisionViolationResponseRevocationType.SHOCK_INCARCERATION)
             ],
@@ -5200,12 +5270,15 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 state_code='US_MO',
                 supervision_violation_types=[
                     StateSupervisionViolationTypeEntry.new_with_defaults(
+                        state_code='US_MO',
                         violation_type=StateSupervisionViolationType.TECHNICAL
                     )
                 ],
                 supervision_violated_conditions=[
-                    StateSupervisionViolatedConditionEntry.new_with_defaults(condition='EMP'),
-                    StateSupervisionViolatedConditionEntry.new_with_defaults(condition='ASC')
+                    StateSupervisionViolatedConditionEntry.new_with_defaults(
+                        state_code='US_MO', condition='EMP'),
+                    StateSupervisionViolatedConditionEntry.new_with_defaults(
+                        state_code='US_MO', condition='ASC')
                 ]
             )
 
@@ -5218,6 +5291,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             supervision_violation=supervision_violation,
             supervision_violation_response_decisions=[
                 StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                    state_code='US_MO',
                     decision=StateSupervisionViolationResponseDecision.REVOCATION,
                 ),
             ]
@@ -5230,10 +5304,12 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 response_date=date(2018, 2, 23),
                 supervision_violation_response_decisions=[
                     StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                        state_code='US_MO',
                         decision=StateSupervisionViolationResponseDecision.REVOCATION,
                         revocation_type=StateSupervisionViolationResponseRevocationType.REINCARCERATION
                     ),
                     StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                        state_code='US_MO',
                         revocation_type=StateSupervisionViolationResponseRevocationType.SHOCK_INCARCERATION)
                 ],
                 supervision_violation=supervision_violation
@@ -5261,6 +5337,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         supervision_sentence = \
             FakeUsMoSupervisionSentence.fake_sentence_from_sentence(
                 StateSupervisionSentence.new_with_defaults(
+                    state_code='US_XX',
                     supervision_sentence_id=111,
                     start_date=date(2017, 1, 1),
                     external_id='ss1',
@@ -5286,6 +5363,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         incarceration_sentence = \
             FakeUsMoIncarcerationSentence.fake_sentence_from_sentence(
                 StateIncarcerationSentence.new_with_defaults(
+                    state_code='US_XX',
                     incarceration_sentence_id=123,
                     external_id='is1',
                     start_date=date(2018, 5, 25),
@@ -5838,6 +5916,7 @@ class TestFindTimeBucketsForSupervisionPeriod(unittest.TestCase):
 
         supervision_sentence = \
             StateSupervisionSentence.new_with_defaults(
+                state_code='US_XX',
                 supervision_sentence_id=111,
                 start_date=date(2003, 1, 1),
                 external_id='ss1',
@@ -5905,6 +5984,7 @@ class TestFindTimeBucketsForSupervisionPeriod(unittest.TestCase):
 
         supervision_sentence = \
             StateSupervisionSentence.new_with_defaults(
+                state_code='US_XX',
                 supervision_sentence_id=111,
                 start_date=date(2017, 1, 1),
                 external_id='ss1',
@@ -5968,6 +6048,7 @@ class TestFindTimeBucketsForSupervisionPeriod(unittest.TestCase):
 
         supervision_sentence = \
             StateSupervisionSentence.new_with_defaults(
+                state_code='US_XX',
                 supervision_sentence_id=111,
                 start_date=date(2017, 1, 1),
                 external_id='ss1',
@@ -6040,6 +6121,7 @@ class TestFindTimeBucketsForSupervisionPeriod(unittest.TestCase):
 
         supervision_sentence = \
             StateSupervisionSentence.new_with_defaults(
+                state_code='US_XX',
                 supervision_sentence_id=111,
                 start_date=date(2017, 1, 1),
                 external_id='ss1',
@@ -6110,6 +6192,7 @@ class TestFindTimeBucketsForSupervisionPeriod(unittest.TestCase):
 
         supervision_sentence = \
             StateSupervisionSentence.new_with_defaults(
+                state_code='US_XX',
                 supervision_sentence_id=111,
                 start_date=date(2007, 1, 1),
                 external_id='ss1',
@@ -6176,6 +6259,7 @@ class TestFindTimeBucketsForSupervisionPeriod(unittest.TestCase):
 
         supervision_sentence = \
             StateSupervisionSentence.new_with_defaults(
+                state_code='US_XX',
                 supervision_sentence_id=111,
                 start_date=date(2000, 1, 1),
                 external_id='ss1',
@@ -6243,6 +6327,7 @@ class TestFindTimeBucketsForSupervisionPeriod(unittest.TestCase):
 
         supervision_sentence = \
             StateSupervisionSentence.new_with_defaults(
+                state_code='US_XX',
                 supervision_sentence_id=111,
                 start_date=date(2000, 1, 1),
                 external_id='ss1',
@@ -6306,6 +6391,7 @@ class TestFindTimeBucketsForSupervisionPeriod(unittest.TestCase):
 
         supervision_sentence = \
             StateSupervisionSentence.new_with_defaults(
+                state_code='US_XX',
                 supervision_sentence_id=111,
                 start_date=date(2000, 1, 1),
                 external_id='ss1',
@@ -6384,6 +6470,7 @@ class TestFindTimeBucketsForSupervisionPeriod(unittest.TestCase):
 
         supervision_sentence = \
             StateSupervisionSentence.new_with_defaults(
+                state_code='US_XX',
                 supervision_sentence_id=111,
                 start_date=date(2017, 1, 1),
                 external_id='ss1',
@@ -6460,6 +6547,7 @@ class TestFindTimeBucketsForSupervisionPeriod(unittest.TestCase):
 
         supervision_sentence = \
             StateSupervisionSentence.new_with_defaults(
+                state_code='US_XX',
                 supervision_sentence_id=111,
                 start_date=date(2017, 1, 1),
                 external_id='ss1',
@@ -6529,6 +6617,7 @@ class TestFindTimeBucketsForSupervisionPeriod(unittest.TestCase):
 
         supervision_sentence = \
             StateSupervisionSentence.new_with_defaults(
+                state_code='US_XX',
                 supervision_sentence_id=111,
                 start_date=date(2017, 1, 1),
                 external_id='ss1',
@@ -6598,6 +6687,7 @@ class TestFindTimeBucketsForSupervisionPeriod(unittest.TestCase):
 
         supervision_sentence = \
             StateSupervisionSentence.new_with_defaults(
+                state_code='US_XX',
                 supervision_sentence_id=111,
                 start_date=date(2017, 1, 1),
                 external_id='ss1',
@@ -6661,6 +6751,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
 
         supervision_sentence = \
             StateSupervisionSentence.new_with_defaults(
+                state_code='US_XX',
                 supervision_sentence_id=111,
                 start_date=date(2017, 1, 1),
                 external_id='ss1',
@@ -6723,6 +6814,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
 
         supervision_sentence = \
             StateSupervisionSentence.new_with_defaults(
+                state_code='US_XX',
                 supervision_sentence_id=111,
                 start_date=date(2017, 1, 1),
                 external_id='ss1',
@@ -6789,6 +6881,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
 
         supervision_sentence = \
             StateSupervisionSentence.new_with_defaults(
+                state_code='US_XX',
                 supervision_sentence_id=111,
                 start_date=date(2017, 1, 1),
                 external_id='ss1',
@@ -6856,6 +6949,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
 
         first_supervision_sentence = \
             StateSupervisionSentence.new_with_defaults(
+                state_code='US_XX',
                 supervision_sentence_id=111,
                 start_date=date(2017, 1, 1),
                 external_id='ss1',
@@ -6868,6 +6962,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
 
         second_supervision_sentence = \
             StateSupervisionSentence.new_with_defaults(
+                state_code='US_XX',
                 supervision_sentence_id=111,
                 start_date=date(2017, 1, 1),
                 external_id='ss2',
@@ -6948,6 +7043,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
 
         first_supervision_sentence = \
             StateSupervisionSentence.new_with_defaults(
+                state_code='US_XX',
                 supervision_sentence_id=111,
                 start_date=date(2017, 1, 1),
                 external_id='ss1',
@@ -6960,6 +7056,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
 
         second_supervision_sentence = \
             StateSupervisionSentence.new_with_defaults(
+                state_code='US_XX',
                 supervision_sentence_id=111,
                 start_date=date(2017, 1, 1),
                 external_id='ss2',
@@ -7028,6 +7125,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
 
         supervision_sentence = \
             StateSupervisionSentence.new_with_defaults(
+                state_code='US_XX',
                 supervision_sentence_id=111,
                 start_date=date(2017, 1, 1),
                 external_id='ss',
@@ -7102,6 +7200,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
 
         supervision_sentence = \
             StateSupervisionSentence.new_with_defaults(
+                state_code='US_XX',
                 supervision_sentence_id=111,
                 start_date=date(2017, 1, 1),
                 external_id='ss',
@@ -7174,6 +7273,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
 
         supervision_sentence = \
             StateSupervisionSentence.new_with_defaults(
+                state_code='US_XX',
                 supervision_sentence_id=111,
                 start_date=date(2017, 1, 1),
                 external_id='ss1',
@@ -7228,6 +7328,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
 
         supervision_sentence = \
             StateSupervisionSentence.new_with_defaults(
+                state_code='US_XX',
                 supervision_sentence_id=111,
                 start_date=date(2017, 1, 1),
                 external_id='ss1',
@@ -7265,6 +7366,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
 
         supervision_sentence = \
             StateSupervisionSentence.new_with_defaults(
+                state_code='US_XX',
                 supervision_sentence_id=111,
                 start_date=date(2017, 1, 1),
                 external_id='ss1',
@@ -7301,6 +7403,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
 
         supervision_sentence = \
             StateSupervisionSentence.new_with_defaults(
+                state_code='US_XX',
                 supervision_sentence_id=111,
                 start_date=date(2017, 1, 1),
                 completion_date=date(2016, 10, 3),
@@ -7338,6 +7441,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
 
         supervision_sentence = \
             StateSupervisionSentence.new_with_defaults(
+                state_code='US_ND',
                 supervision_sentence_id=111,
                 start_date=date(2017, 1, 1),
                 external_id='ss1',
@@ -7349,6 +7453,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
             )
 
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+            state_code='US_ND',
             incarceration_period_id=111,
             admission_date=date(2017, 6, 1),
             admission_reason=StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
@@ -7395,7 +7500,7 @@ class TestFindSupervisionTerminationBucket(unittest.TestCase):
             supervision_period_id=111,
             external_id='sp1',
             status=StateSupervisionPeriodStatus.TERMINATED,
-            state_code='US_ND',
+            state_code='US_XX',
             start_date=date(2018, 3, 5),
             termination_date=date(2019, 5, 19),
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
@@ -7403,21 +7508,21 @@ class TestFindSupervisionTerminationBucket(unittest.TestCase):
         )
 
         first_assessment = StateAssessment.new_with_defaults(
-            state_code='US_CA',
+            state_code='US_XX',
             assessment_type=StateAssessmentType.ORAS,
             assessment_score=33,
             assessment_date=date(2018, 3, 10)
         )
 
         first_reassessment = StateAssessment.new_with_defaults(
-            state_code='US_CA',
+            state_code='US_XX',
             assessment_type=StateAssessmentType.ORAS,
             assessment_score=29,
             assessment_date=date(2018, 5, 18)
         )
 
         last_assessment = StateAssessment.new_with_defaults(
-            state_code='US_CA',
+            state_code='US_XX',
             assessment_type=StateAssessmentType.ORAS,
             assessment_score=19,
             assessment_date=date(2019, 5, 10)
@@ -7425,6 +7530,7 @@ class TestFindSupervisionTerminationBucket(unittest.TestCase):
 
         supervision_sentence = \
             StateSupervisionSentence.new_with_defaults(
+                state_code='US_XX',
                 supervision_sentence_id=111,
                 start_date=date(2017, 1, 1),
                 external_id='ss1',
@@ -7486,6 +7592,7 @@ class TestFindSupervisionTerminationBucket(unittest.TestCase):
 
         supervision_sentence = \
             StateSupervisionSentence.new_with_defaults(
+                state_code='US_ND',
                 supervision_sentence_id=111,
                 start_date=date(2017, 1, 1),
                 external_id='ss1',
@@ -7535,7 +7642,7 @@ class TestFindSupervisionTerminationBucket(unittest.TestCase):
             supervision_period_id=111,
             external_id='sp1',
             status=StateSupervisionPeriodStatus.TERMINATED,
-            state_code='US_ND',
+            state_code='US_XX',
             start_date=date(2018, 3, 5),
             termination_date=date(2019, 5, 19),
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
@@ -7543,7 +7650,7 @@ class TestFindSupervisionTerminationBucket(unittest.TestCase):
         )
 
         first_assessment = StateAssessment.new_with_defaults(
-            state_code='US_CA',
+            state_code='US_XX',
             assessment_type=StateAssessmentType.ORAS,
             assessment_score=33,
             assessment_date=date(2018, 3, 10)
@@ -7551,6 +7658,7 @@ class TestFindSupervisionTerminationBucket(unittest.TestCase):
 
         supervision_sentence = \
             StateSupervisionSentence.new_with_defaults(
+                state_code='US_XX',
                 supervision_sentence_id=111,
                 start_date=date(2017, 1, 1),
                 external_id='ss1',
@@ -7607,6 +7715,7 @@ class TestFindSupervisionTerminationBucket(unittest.TestCase):
 
         supervision_sentence = \
             StateSupervisionSentence.new_with_defaults(
+                state_code='US_XX',
                 supervision_sentence_id=111,
                 start_date=date(2017, 1, 1),
                 external_id='ss1',
@@ -7689,6 +7798,7 @@ class TestFindSupervisionTerminationBucket(unittest.TestCase):
 
         supervision_sentence = \
             StateSupervisionSentence.new_with_defaults(
+                state_code='US_XX',
                 supervision_sentence_id=111,
                 start_date=date(2017, 1, 1),
                 external_id='ss1',
@@ -7757,6 +7867,7 @@ class TestFindSupervisionTerminationBucket(unittest.TestCase):
 
         supervision_sentence = \
             StateSupervisionSentence.new_with_defaults(
+                state_code='US_XX',
                 supervision_sentence_id=111,
                 start_date=date(2017, 1, 1),
                 external_id='ss1',
@@ -7803,12 +7914,15 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
             violation_date=date(2009, 1, 3),
             supervision_violation_types=[
                 StateSupervisionViolationTypeEntry.new_with_defaults(
+                    state_code='US_XX',
                     violation_type=StateSupervisionViolationType.TECHNICAL
                 ),
                 StateSupervisionViolationTypeEntry.new_with_defaults(
+                    state_code='US_XX',
                     violation_type=StateSupervisionViolationType.FELONY
                 ),
                 StateSupervisionViolationTypeEntry.new_with_defaults(
+                    state_code='US_XX',
                     violation_type=StateSupervisionViolationType.ABSCONDED
                 )
             ]
@@ -7821,10 +7935,12 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
             response_date=date(2009, 1, 7),
             supervision_violation_response_decisions=[
                 StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                    state_code='US_XX',
                     decision=StateSupervisionViolationResponseDecision.REVOCATION,
                     revocation_type=StateSupervisionViolationResponseRevocationType.REINCARCERATION
                 ),
                 StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                    state_code='US_XX',
                     decision=StateSupervisionViolationResponseDecision.CONTINUANCE,
                     revocation_type=StateSupervisionViolationResponseRevocationType.SHOCK_INCARCERATION,
                 )
@@ -7854,12 +7970,15 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
             violation_date=date(2009, 1, 3),
             supervision_violation_types=[
                 StateSupervisionViolationTypeEntry.new_with_defaults(
+                    state_code='US_XX',
                     violation_type=StateSupervisionViolationType.TECHNICAL
                 ),
                 StateSupervisionViolationTypeEntry.new_with_defaults(
+                    state_code='US_XX',
                     violation_type=StateSupervisionViolationType.FELONY
                 ),
                 StateSupervisionViolationTypeEntry.new_with_defaults(
+                    state_code='US_XX',
                     violation_type=StateSupervisionViolationType.ABSCONDED
                 )
             ]
@@ -7874,6 +7993,7 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
                 # A REVOCATION decision is more severe than TREATMENT_IN_PRISON, but this is not the most
                 # recent response
                 StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                    state_code='US_XX',
                     decision=StateSupervisionViolationResponseDecision.REVOCATION,
                     revocation_type=StateSupervisionViolationResponseRevocationType.REINCARCERATION
                 )
@@ -7888,10 +8008,12 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
             response_date=date(2009, 1, 9),
             supervision_violation_response_decisions=[
                 StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                    state_code='US_XX',
                     decision=StateSupervisionViolationResponseDecision.TREATMENT_IN_PRISON,
                     revocation_type=StateSupervisionViolationResponseRevocationType.TREATMENT_IN_PRISON,
                 ),
                 StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                    state_code='US_XX',
                     decision=StateSupervisionViolationResponseDecision.CONTINUANCE,
                     revocation_type=StateSupervisionViolationResponseRevocationType.SHOCK_INCARCERATION,
                 )
@@ -7922,6 +8044,7 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
             violation_date=date(2005, 1, 3),
             supervision_violation_types=[
                 StateSupervisionViolationTypeEntry.new_with_defaults(
+                    state_code='US_XX',
                     violation_type=StateSupervisionViolationType.MISDEMEANOR
                 )
             ]
@@ -7934,10 +8057,12 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
             response_date=date(2005, 1, 7),
             supervision_violation_response_decisions=[
                 StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                    state_code='US_XX',
                     decision=StateSupervisionViolationResponseDecision.REVOCATION,
                     revocation_type=StateSupervisionViolationResponseRevocationType.REINCARCERATION
                 ),
                 StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                    state_code='US_XX',
                     decision=StateSupervisionViolationResponseDecision.CONTINUANCE,
                     revocation_type=StateSupervisionViolationResponseRevocationType.SHOCK_INCARCERATION,
                 )
@@ -7951,12 +8076,15 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
             violation_date=date(2009, 1, 3),
             supervision_violation_types=[
                 StateSupervisionViolationTypeEntry.new_with_defaults(
+                    state_code='US_XX',
                     violation_type=StateSupervisionViolationType.TECHNICAL
                 ),
                 StateSupervisionViolationTypeEntry.new_with_defaults(
+                    state_code='US_XX',
                     violation_type=StateSupervisionViolationType.FELONY
                 ),
                 StateSupervisionViolationTypeEntry.new_with_defaults(
+                    state_code='US_XX',
                     violation_type=StateSupervisionViolationType.ABSCONDED
                 )
             ]
@@ -7969,10 +8097,12 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
             response_date=date(2009, 1, 7),
             supervision_violation_response_decisions=[
                 StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                    state_code='US_XX',
                     decision=StateSupervisionViolationResponseDecision.REVOCATION,
                     revocation_type=StateSupervisionViolationResponseRevocationType.REINCARCERATION
                 ),
                 StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                    state_code='US_XX',
                     decision=StateSupervisionViolationResponseDecision.CONTINUANCE,
                     revocation_type=StateSupervisionViolationResponseRevocationType.SHOCK_INCARCERATION,
                 )
@@ -8007,6 +8137,7 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
             violation_date=date(2008, 12, 7),
             supervision_violation_types=[
                 StateSupervisionViolationTypeEntry.new_with_defaults(
+                    state_code='US_XX',
                     violation_type=StateSupervisionViolationType.FELONY
                 )
             ]
@@ -8019,6 +8150,7 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
             response_date=date(2008, 12, 7),
             supervision_violation_response_decisions=[
                 StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                    state_code='US_XX',
                     decision=StateSupervisionViolationResponseDecision.REVOCATION,
                     revocation_type=StateSupervisionViolationResponseRevocationType.REINCARCERATION
                 )
@@ -8032,6 +8164,7 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
             violation_date=date(2009, 12, 1),
             supervision_violation_types=[
                 StateSupervisionViolationTypeEntry.new_with_defaults(
+                    state_code='US_XX',
                     violation_type=StateSupervisionViolationType.TECHNICAL
                 )
             ]
@@ -8044,10 +8177,12 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
             response_date=date(2009, 12, 1),
             supervision_violation_response_decisions=[
                 StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                    state_code='US_XX',
                     decision=StateSupervisionViolationResponseDecision.REVOCATION,
                     revocation_type=StateSupervisionViolationResponseRevocationType.REINCARCERATION
                 ),
                 StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                    state_code='US_XX',
                     decision=StateSupervisionViolationResponseDecision.CONTINUANCE,
                     revocation_type=StateSupervisionViolationResponseRevocationType.SHOCK_INCARCERATION,
                 )
@@ -8079,12 +8214,15 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
             violation_date=date(2009, 1, 3),
             supervision_violation_types=[
                 StateSupervisionViolationTypeEntry.new_with_defaults(
+                    state_code='US_MO',
                     violation_type=StateSupervisionViolationType.TECHNICAL),
             ],
             supervision_violated_conditions=[
                 StateSupervisionViolatedConditionEntry.new_with_defaults(
+                    state_code='US_MO',
                     condition='DRG'),
                 StateSupervisionViolatedConditionEntry.new_with_defaults(
+                    state_code='US_MO',
                     condition='OTHER'),
             ]
         )
@@ -8097,10 +8235,12 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
             response_date=date(2009, 1, 7),
             supervision_violation_response_decisions=[
                 StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                    state_code='US_MO',
                     decision=StateSupervisionViolationResponseDecision.REVOCATION,
                     revocation_type=StateSupervisionViolationResponseRevocationType.REINCARCERATION
                 ),
                 StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                    state_code='US_MO',
                     decision=StateSupervisionViolationResponseDecision.CONTINUANCE,
                     revocation_type=StateSupervisionViolationResponseRevocationType.SHOCK_INCARCERATION,
                 )
@@ -8131,10 +8271,12 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
             violation_date=date(2009, 1, 3),
             supervision_violation_types=[
                 StateSupervisionViolationTypeEntry.new_with_defaults(
+                    state_code='US_PA',
                     violation_type=StateSupervisionViolationType.ABSCONDED,
                     violation_type_raw_text='H09',
                 ),
                 StateSupervisionViolationTypeEntry.new_with_defaults(
+                    state_code='US_PA',
                     violation_type=StateSupervisionViolationType.TECHNICAL,
                     violation_type_raw_text='H08'  # High Technical
                 ),
@@ -8148,10 +8290,12 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
             response_date=date(2009, 1, 7),
             supervision_violation_response_decisions=[
                 StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                    state_code='US_PA',
                     decision=StateSupervisionViolationResponseDecision.REVOCATION,
                     revocation_type=StateSupervisionViolationResponseRevocationType.REINCARCERATION
                 ),
                 StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                    state_code='US_PA',
                     decision=StateSupervisionViolationResponseDecision.CONTINUANCE,
                     revocation_type=StateSupervisionViolationResponseRevocationType.SHOCK_INCARCERATION,
                 )
@@ -8181,6 +8325,7 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
             violation_date=date(2009, 1, 3),
             supervision_violation_types=[
                 StateSupervisionViolationTypeEntry.new_with_defaults(
+                    state_code='US_PA',
                     violation_type=StateSupervisionViolationType.TECHNICAL,
                     violation_type_raw_text='L08'  # Substance Use
                 ),
@@ -8194,10 +8339,12 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
             response_date=date(2009, 1, 7),
             supervision_violation_response_decisions=[
                 StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                    state_code='US_PA',
                     decision=StateSupervisionViolationResponseDecision.REVOCATION,
                     revocation_type=StateSupervisionViolationResponseRevocationType.REINCARCERATION
                 ),
                 StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                    state_code='US_PA',
                     decision=StateSupervisionViolationResponseDecision.CONTINUANCE,
                     revocation_type=StateSupervisionViolationResponseRevocationType.SHOCK_INCARCERATION,
                 )
@@ -8228,6 +8375,7 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
             violation_date=date(2009, 1, 3),
             supervision_violation_types=[
                 StateSupervisionViolationTypeEntry.new_with_defaults(
+                    state_code='US_PA',
                     violation_type=StateSupervisionViolationType.TECHNICAL,
                     violation_type_raw_text='M16'  # Electronic Monitoring
                 ),
@@ -8241,10 +8389,12 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
             response_date=date(2009, 1, 7),
             supervision_violation_response_decisions=[
                 StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                    state_code='US_PA',
                     decision=StateSupervisionViolationResponseDecision.REVOCATION,
                     revocation_type=StateSupervisionViolationResponseRevocationType.REINCARCERATION
                 ),
                 StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                    state_code='US_PA',
                     decision=StateSupervisionViolationResponseDecision.CONTINUANCE,
                     revocation_type=StateSupervisionViolationResponseRevocationType.SHOCK_INCARCERATION,
                 )
@@ -8275,6 +8425,7 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
             violation_date=date(2009, 1, 3),
             supervision_violation_types=[
                 StateSupervisionViolationTypeEntry.new_with_defaults(
+                    state_code='US_PA',
                     violation_type=StateSupervisionViolationType.TECHNICAL,
                     violation_type_raw_text='M05'  # MED_TECH
                 ),
@@ -8287,6 +8438,7 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
             violation_date=date(2009, 1, 3),
             supervision_violation_types=[
                 StateSupervisionViolationTypeEntry.new_with_defaults(
+                    state_code='US_PA',
                     violation_type=StateSupervisionViolationType.TECHNICAL,
                     violation_type_raw_text='M05'  # MED_TECH
                 ),
@@ -8299,6 +8451,7 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
             violation_date=date(2009, 1, 3),
             supervision_violation_types=[
                 StateSupervisionViolationTypeEntry.new_with_defaults(
+                    state_code='US_PA',
                     violation_type=StateSupervisionViolationType.TECHNICAL,
                     violation_type_raw_text='M14'  # SUBSTANCE_ABUSE
                 ),
@@ -8312,10 +8465,12 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
             response_date=date(2009, 1, 7),
             supervision_violation_response_decisions=[
                 StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                    state_code='US_PA',
                     decision=StateSupervisionViolationResponseDecision.REVOCATION,
                     revocation_type=StateSupervisionViolationResponseRevocationType.REINCARCERATION
                 ),
                 StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                    state_code='US_PA',
                     decision=StateSupervisionViolationResponseDecision.CONTINUANCE,
                     revocation_type=StateSupervisionViolationResponseRevocationType.SHOCK_INCARCERATION,
                 )
@@ -8363,14 +8518,14 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
             response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
             response_date=date(2009, 1, 7),
             supervision_violation_response_decisions=[
-                StateSupervisionViolationResponseDecisionEntry.
-                new_with_defaults(
+                StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                    state_code='US_XX',
                     decision=StateSupervisionViolationResponseDecision.REVOCATION,
                     revocation_type=StateSupervisionViolationResponseRevocationType.
                     REINCARCERATION
                 ),
-                StateSupervisionViolationResponseDecisionEntry.
-                new_with_defaults(
+                StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                    state_code='US_XX',
                     decision=StateSupervisionViolationResponseDecision.CONTINUANCE,
                     revocation_type=StateSupervisionViolationResponseRevocationType.
                     SHOCK_INCARCERATION,
@@ -8398,6 +8553,7 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
             violation_date=date(2009, 1, 3),
             supervision_violation_types=[
                 StateSupervisionViolationTypeEntry.new_with_defaults(
+                    state_code='US_MO',
                     violation_type=StateSupervisionViolationType.TECHNICAL),
             ]
         )
@@ -8411,6 +8567,7 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
             response_date=date(2009, 1, 7),
             supervision_violation_response_decisions=[
                 StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                    state_code='US_MO',
                     decision=StateSupervisionViolationResponseDecision.CONTINUANCE,
                     revocation_type=StateSupervisionViolationResponseRevocationType.SHOCK_INCARCERATION,
                 )
@@ -8427,10 +8584,12 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
             response_date=date(2009, 1, 19),
             supervision_violation_response_decisions=[
                 StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                    state_code='US_MO',
                     decision=StateSupervisionViolationResponseDecision.REVOCATION,
                     revocation_type=StateSupervisionViolationResponseRevocationType.REINCARCERATION
                 ),
                 StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                    state_code='US_MO',
                     decision=StateSupervisionViolationResponseDecision.CONTINUANCE,
                     revocation_type=StateSupervisionViolationResponseRevocationType.SHOCK_INCARCERATION,
                 )
@@ -8471,9 +8630,11 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
             state_code='US_XX',
             supervision_violation_types=[
                 StateSupervisionViolationTypeEntry.new_with_defaults(
+                    state_code='US_XX',
                     violation_type=StateSupervisionViolationType.ABSCONDED
                 ),
                 StateSupervisionViolationTypeEntry.new_with_defaults(
+                    state_code='US_XX',
                     violation_type=StateSupervisionViolationType.MISDEMEANOR
                 )
             ]
@@ -8487,10 +8648,12 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
                 response_date=date(2009, 1, 7),
                 supervision_violation_response_decisions=[
                     StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                        state_code='US_XX',
                         decision=StateSupervisionViolationResponseDecision.REVOCATION,
                         revocation_type=StateSupervisionViolationResponseRevocationType.REINCARCERATION
                     ),
                     StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                        state_code='US_XX',
                         decision=StateSupervisionViolationResponseDecision.CONTINUANCE,
                         revocation_type=StateSupervisionViolationResponseRevocationType.SHOCK_INCARCERATION,
                     )
@@ -8521,9 +8684,11 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
             violation_date=date(2009, 1, 7),
             supervision_violation_types=[
                 StateSupervisionViolationTypeEntry.new_with_defaults(
+                    state_code='US_XX',
                     violation_type=StateSupervisionViolationType.ABSCONDED
                 ),
                 StateSupervisionViolationTypeEntry.new_with_defaults(
+                    state_code='US_XX',
                     violation_type=StateSupervisionViolationType.MISDEMEANOR
                 )
             ]
@@ -8537,14 +8702,14 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
                 response_date=date(2009, 1, 7),
                 is_draft=True,
                 supervision_violation_response_decisions=[
-                    StateSupervisionViolationResponseDecisionEntry.
-                    new_with_defaults(
+                    StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                        state_code='US_XX',
                         decision=StateSupervisionViolationResponseDecision.REVOCATION,
                         revocation_type=StateSupervisionViolationResponseRevocationType.
                         REINCARCERATION
                     ),
-                    StateSupervisionViolationResponseDecisionEntry.
-                    new_with_defaults(
+                    StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                        state_code='US_XX',
                         decision=StateSupervisionViolationResponseDecision.CONTINUANCE,
                         revocation_type=StateSupervisionViolationResponseRevocationType.
                         SHOCK_INCARCERATION,
@@ -8575,10 +8740,12 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
                 violation_date=date(2009, 1, 7),
                 supervision_violation_types=[
                     StateSupervisionViolationTypeEntry.new_with_defaults(
+                        state_code='US_MO',
                         violation_type=StateSupervisionViolationType.TECHNICAL),
                 ],
                 supervision_violated_conditions=[
                     StateSupervisionViolatedConditionEntry.new_with_defaults(
+                        state_code='US_MO',
                         condition='LAW'),
                 ]
             )
@@ -8592,14 +8759,14 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
                 response_date=date(2009, 1, 7),
                 is_draft=False,
                 supervision_violation_response_decisions=[
-                    StateSupervisionViolationResponseDecisionEntry.
-                    new_with_defaults(
+                    StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                        state_code='US_MO',
                         decision=StateSupervisionViolationResponseDecision.REVOCATION,
                         revocation_type=StateSupervisionViolationResponseRevocationType.
                         REINCARCERATION
                     ),
-                    StateSupervisionViolationResponseDecisionEntry.
-                    new_with_defaults(
+                    StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                        state_code='US_MO',
                         decision=StateSupervisionViolationResponseDecision.CONTINUANCE,
                         revocation_type=StateSupervisionViolationResponseRevocationType.
                         SHOCK_INCARCERATION,
@@ -8821,9 +8988,11 @@ class TestIdentifyMostSevereRevocationType(unittest.TestCase):
     def test_identify_most_severe_revocation_type(self):
         response_decision_entries = [
             StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                state_code='US_XX',
                 revocation_type=StateSupervisionViolationResponseRevocationType.REINCARCERATION
             ),
             StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                state_code='US_XX',
                 revocation_type=StateSupervisionViolationResponseRevocationType.SHOCK_INCARCERATION
             )]
 
@@ -8837,6 +9006,7 @@ class TestIdentifyMostSevereRevocationType(unittest.TestCase):
         for revocation_type in StateSupervisionViolationResponseRevocationType:
             response_decision_entries = [
                 StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                    state_code='US_XX',
                     revocation_type=revocation_type
                 )
             ]
@@ -8854,11 +9024,14 @@ class TestIdentifyMostSevereCaseType(unittest.TestCase):
 
     def test_identify_most_severe_case_type(self):
         supervision_period = StateSupervisionPeriod.new_with_defaults(
+            state_code='US_XX',
             case_type_entries=[
                 StateSupervisionCaseTypeEntry.new_with_defaults(
+                    state_code='US_XX',
                     case_type=StateSupervisionCaseType.DOMESTIC_VIOLENCE
                 ),
                 StateSupervisionCaseTypeEntry.new_with_defaults(
+                    state_code='US_XX',
                     case_type=StateSupervisionCaseType.SEX_OFFENSE
                 )
             ]
@@ -8873,8 +9046,10 @@ class TestIdentifyMostSevereCaseType(unittest.TestCase):
     def test_identify_most_severe_case_type_test_all_types(self):
         for case_type in StateSupervisionCaseType:
             supervision_period = StateSupervisionPeriod.new_with_defaults(
+                state_code='US_XX',
                 case_type_entries=[
                     StateSupervisionCaseTypeEntry.new_with_defaults(
+                        state_code='US_XX',
                         case_type=case_type
                     ),
                 ]
@@ -8887,6 +9062,7 @@ class TestIdentifyMostSevereCaseType(unittest.TestCase):
 
     def test_identify_most_severe_case_type_no_type_entries(self):
         supervision_period = StateSupervisionPeriod.new_with_defaults(
+            state_code='US_XX',
             case_type_entries=[]
         )
 
@@ -8917,20 +9093,24 @@ class TestGetRevocationDetails(unittest.TestCase):
             violation_date=date(2018, 4, 20),
             supervision_violation_types=[
                 StateSupervisionViolationTypeEntry.new_with_defaults(
+                    state_code='US_XX',
                     violation_type=StateSupervisionViolationType.MISDEMEANOR
                 )
             ]
         )
 
         source_supervision_violation_response = StateSupervisionViolationResponse.new_with_defaults(
+            state_code='US_XX',
             supervision_violation_response_id=_DEFAULT_SSVR_ID,
             response_date=date(2018, 4, 23),
             supervision_violation_response_decisions=[
                 StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                    state_code='US_XX',
                     decision=StateSupervisionViolationResponseDecision.REVOCATION,
                     revocation_type=StateSupervisionViolationResponseRevocationType.REINCARCERATION
                 ),
                 StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                    state_code='US_XX',
                     revocation_type=StateSupervisionViolationResponseRevocationType.SHOCK_INCARCERATION,
                 )
             ],
@@ -8977,20 +9157,24 @@ class TestGetRevocationDetails(unittest.TestCase):
             violation_date=date(2018, 4, 20),
             supervision_violation_types=[
                 StateSupervisionViolationTypeEntry.new_with_defaults(
+                    state_code='US_ND',
                     violation_type=StateSupervisionViolationType.MISDEMEANOR
                 )
             ]
         )
 
         source_supervision_violation_response = StateSupervisionViolationResponse.new_with_defaults(
+            state_code='US_ND',
             supervision_violation_response_id=_DEFAULT_SSVR_ID,
             response_date=date(2018, 4, 23),
             supervision_violation_response_decisions=[
                 StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                    state_code='US_ND',
                     decision=StateSupervisionViolationResponseDecision.REVOCATION,
                     revocation_type=StateSupervisionViolationResponseRevocationType.REINCARCERATION
                 ),
                 StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                    state_code='US_ND',
                     revocation_type=StateSupervisionViolationResponseRevocationType.SHOCK_INCARCERATION,
                 )
             ],
@@ -9098,20 +9282,24 @@ class TestGetRevocationDetails(unittest.TestCase):
             violation_date=date(2018, 4, 20),
             supervision_violation_types=[
                 StateSupervisionViolationTypeEntry.new_with_defaults(
+                    state_code='US_MO',
                     violation_type=StateSupervisionViolationType.MISDEMEANOR
                 )
             ]
         )
 
         source_supervision_violation_response = StateSupervisionViolationResponse.new_with_defaults(
+            state_code='US_MO',
             supervision_violation_response_id=000,
             response_date=date(2018, 4, 23),
             supervision_violation_response_decisions=[
                 StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                    state_code='US_MO',
                     decision=StateSupervisionViolationResponseDecision.REVOCATION,
                     revocation_type=StateSupervisionViolationResponseRevocationType.REINCARCERATION
                 ),
                 StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                    state_code='US_MO',
                     revocation_type=StateSupervisionViolationResponseRevocationType.SHOCK_INCARCERATION,
                 )
             ],
@@ -9157,12 +9345,14 @@ class TestGetRevocationDetails(unittest.TestCase):
             violation_date=date(2018, 4, 20),
             supervision_violation_types=[
                 StateSupervisionViolationTypeEntry.new_with_defaults(
+                    state_code='US_ND',
                     violation_type=StateSupervisionViolationType.MISDEMEANOR
                 )
             ]
         )
 
         source_supervision_violation_response = StateSupervisionViolationResponse.new_with_defaults(
+            state_code='US_ND',
             supervision_violation_response_id=_DEFAULT_SSVR_ID,
             response_date=date(2018, 4, 23),
             supervision_violation_response_decisions=None,

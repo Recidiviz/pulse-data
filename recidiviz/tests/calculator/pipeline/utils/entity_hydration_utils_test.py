@@ -216,6 +216,7 @@ class TestSetViolationResponseOnIncarcerationPeriod(unittest.TestCase):
         on the StateIncarcerationPeriod."""
         supervision_violation_response = \
             StateSupervisionViolationResponse.new_with_defaults(
+                state_code='US_XX',
                 supervision_violation_response_id=123,
                 response_type=
                 StateSupervisionViolationResponseType.PERMANENT_DECISION
@@ -224,7 +225,7 @@ class TestSetViolationResponseOnIncarcerationPeriod(unittest.TestCase):
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1111,
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-            state_code='TX',
+            state_code='US_XX',
             admission_date=date(2015, 5, 30),
             admission_reason=StateIncarcerationPeriodAdmissionReason.
             PROBATION_REVOCATION,
@@ -235,11 +236,13 @@ class TestSetViolationResponseOnIncarcerationPeriod(unittest.TestCase):
         )
 
         supervision_violation = StateSupervisionViolation.new_with_defaults(
+            state_code='US_XX',
             supervision_violation_id=55555
         )
 
         hydrated_supervision_violation_response = \
             StateSupervisionViolationResponse.new_with_defaults(
+                state_code='US_XX',
                 supervision_violation_response_id=123,
                 response_type=
                 StateSupervisionViolationResponseType.PERMANENT_DECISION,
@@ -256,7 +259,7 @@ class TestSetViolationResponseOnIncarcerationPeriod(unittest.TestCase):
             StateIncarcerationPeriod.new_with_defaults(
                 incarceration_period_id=1111,
                 status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-                state_code='TX',
+                state_code='US_XX',
                 admission_date=date(2015, 5, 30),
                 admission_reason=StateIncarcerationPeriodAdmissionReason.
                 PROBATION_REVOCATION,
@@ -292,6 +295,7 @@ class TestSetViolationOnViolationsResponse(unittest.TestCase):
 
         supervision_violation_response = \
             StateSupervisionViolationResponse.new_with_defaults(
+                state_code='US_XX',
                 supervision_violation_response_id=123,
                 response_type=
                 StateSupervisionViolationResponseType.PERMANENT_DECISION
@@ -299,11 +303,13 @@ class TestSetViolationOnViolationsResponse(unittest.TestCase):
 
         supervision_violation = \
             StateSupervisionViolation.new_with_defaults(
+                state_code='US_XX',
                 supervision_violation_id=999,
                 supervision_violation_responses=
                 [supervision_violation_response],
                 supervision_violation_types=[
                     StateSupervisionViolationTypeEntry.new_with_defaults(
+                        state_code='US_XX',
                         violation_type=StateSupervisionViolationType.TECHNICAL
                     )]
             )
@@ -316,6 +322,7 @@ class TestSetViolationOnViolationsResponse(unittest.TestCase):
 
         expected_violation_response = \
             StateSupervisionViolationResponse.new_with_defaults(
+                state_code='US_XX',
                 supervision_violation_response_id=123,
                 response_type=
                 StateSupervisionViolationResponseType.PERMANENT_DECISION,
@@ -343,6 +350,7 @@ class TestSetViolationOnViolationsResponse(unittest.TestCase):
 
         supervision_violation_response = \
             StateSupervisionViolationResponse.new_with_defaults(
+                state_code='US_XX',
                 supervision_violation_response_id=123,
                 response_type=
                 StateSupervisionViolationResponseType.PERMANENT_DECISION
@@ -350,10 +358,12 @@ class TestSetViolationOnViolationsResponse(unittest.TestCase):
 
         supervision_violation = \
             StateSupervisionViolation.new_with_defaults(
+                state_code='US_XX',
                 supervision_violation_id=999,
                 supervision_violation_responses=[],
                 supervision_violation_types=[
                     StateSupervisionViolationTypeEntry.new_with_defaults(
+                        state_code='US_XX',
                         violation_type=StateSupervisionViolationType.TECHNICAL
                     )]
             )
@@ -366,6 +376,7 @@ class TestSetViolationOnViolationsResponse(unittest.TestCase):
 
         expected_violation_response = \
             StateSupervisionViolationResponse.new_with_defaults(
+                state_code='US_XX',
                 supervision_violation_response_id=123,
                 response_type=
                 StateSupervisionViolationResponseType.PERMANENT_DECISION,
@@ -397,39 +408,48 @@ class TestSetSentencesOnSentenceGroup(unittest.TestCase):
         supervision_sentence_id = 456
 
         hydrated_incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
+            state_code='US_XX',
             incarceration_sentence_id=incarceration_sentence_id,
             start_date=date(2000, 1, 1),
             charges=[StateCharge.new_with_defaults(
+                state_code='US_XX',
                 ncic_code='1234'
             )],
             incarceration_periods=[
                 StateIncarcerationPeriod.new_with_defaults(
+                    state_code='US_XX',
                     admission_date=date(2000, 3, 2)
                 )
             ]
         )
 
         hydrated_supervision_sentence = StateSupervisionSentence.new_with_defaults(
+            state_code='US_XX',
             supervision_sentence_id=supervision_sentence_id,
             start_date=date(2000, 1, 1),
             charges=[StateCharge.new_with_defaults(
+                state_code='US_XX',
                 ncic_code='1234'
             )],
             incarceration_periods=[
                 StateIncarcerationPeriod.new_with_defaults(
+                    state_code='US_XX',
                     admission_date=date(2000, 3, 2)
                 )
             ]
         )
 
         sentence_group = StateSentenceGroup.new_with_defaults(
+            state_code='US_XX',
             incarceration_sentences=[
                 StateIncarcerationSentence.new_with_defaults(
+                    state_code='US_XX',
                     incarceration_sentence_id=incarceration_sentence_id
                 )
             ],
             supervision_sentences=[
                 StateSupervisionSentence.new_with_defaults(
+                    state_code='US_XX',
                     supervision_sentence_id=supervision_sentence_id
                 )
             ]
@@ -443,32 +463,39 @@ class TestSetSentencesOnSentenceGroup(unittest.TestCase):
         )
 
         hydrated_incarceration_sentence_with_group = StateIncarcerationSentence.new_with_defaults(
+            state_code='US_XX',
             incarceration_sentence_id=incarceration_sentence_id,
             start_date=date(2000, 1, 1),
             charges=[StateCharge.new_with_defaults(
+                state_code='US_XX',
                 ncic_code='1234'
             )],
             incarceration_periods=[
                 StateIncarcerationPeriod.new_with_defaults(
+                    state_code='US_XX',
                     admission_date=date(2000, 3, 2)
                 )
             ]
         )
 
         hydrated_supervision_sentence_with_group = StateSupervisionSentence.new_with_defaults(
+            state_code='US_XX',
             supervision_sentence_id=supervision_sentence_id,
             start_date=date(2000, 1, 1),
             charges=[StateCharge.new_with_defaults(
+                state_code='US_XX',
                 ncic_code='1234'
             )],
             incarceration_periods=[
                 StateIncarcerationPeriod.new_with_defaults(
+                    state_code='US_XX',
                     admission_date=date(2000, 3, 2)
                 )
             ]
         )
 
         expected_sentence_group = StateSentenceGroup.new_with_defaults(
+            state_code='US_XX',
             incarceration_sentences=[hydrated_incarceration_sentence_with_group],
             supervision_sentences=[hydrated_supervision_sentence_with_group]
         )
@@ -493,6 +520,7 @@ class TestSetSentencesOnSentenceGroup(unittest.TestCase):
         """Tests that the hydrated StateIncarcerationSentences and StateSupervisionSentences are set on the
         StateSentenceGroup."""
         sentence_group = StateSentenceGroup.new_with_defaults(
+            state_code='US_XX',
             incarceration_sentences=[],
             supervision_sentences=[]
         )
@@ -505,6 +533,7 @@ class TestSetSentencesOnSentenceGroup(unittest.TestCase):
         )
 
         expected_sentence_group = StateSentenceGroup.new_with_defaults(
+            state_code='US_XX',
             incarceration_sentences=[],
             supervision_sentences=[]
         )

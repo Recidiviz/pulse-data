@@ -397,6 +397,7 @@ class TestClassifyProgramAssignments(unittest.TestCase):
         fake_person_id = 12345
 
         fake_person = entities.StatePerson.new_with_defaults(
+            state_code='US_XX',
             person_id=fake_person_id, gender=Gender.MALE,
             birthdate=date(1970, 1, 1),
             residency_status=ResidencyStatus.PERMANENT
@@ -485,6 +486,7 @@ class TestClassifyProgramAssignments(unittest.TestCase):
         fake_person_id = 12345
 
         fake_person = entities.StatePerson.new_with_defaults(
+            state_code='US_ND',
             person_id=fake_person_id, gender=Gender.MALE,
             birthdate=date(1970, 1, 1),
             residency_status=ResidencyStatus.PERMANENT
@@ -571,6 +573,7 @@ class TestClassifyProgramAssignments(unittest.TestCase):
         fake_person_id = 12345
 
         fake_person = entities.StatePerson.new_with_defaults(
+            state_code='US_XX',
             person_id=fake_person_id, gender=Gender.MALE,
             birthdate=date(1970, 1, 1),
             residency_status=ResidencyStatus.PERMANENT
@@ -631,6 +634,7 @@ class TestClassifyProgramAssignments(unittest.TestCase):
         fake_person_id = 12345
 
         fake_person = entities.StatePerson.new_with_defaults(
+            state_code='US_XX',
             person_id=fake_person_id, gender=Gender.MALE,
             birthdate=date(1970, 1, 1),
             residency_status=ResidencyStatus.PERMANENT
@@ -701,6 +705,7 @@ class TestClassifyProgramAssignments(unittest.TestCase):
         fake_person_id = 12345
 
         fake_person = entities.StatePerson.new_with_defaults(
+            state_code='US_XX',
             person_id=fake_person_id, gender=Gender.MALE,
             birthdate=date(1970, 1, 1),
             residency_status=ResidencyStatus.PERMANENT
@@ -815,6 +820,7 @@ class TestCalculateProgramMetricCombinations(unittest.TestCase):
         no supervision months. This should never happen because any person
         without program events is dropped entirely from the pipeline."""
         fake_person = StatePerson.new_with_defaults(
+            state_code='US_XX',
             person_id=123, gender=Gender.MALE,
             birthdate=date(1970, 1, 1),
             residency_status=ResidencyStatus.PERMANENT)

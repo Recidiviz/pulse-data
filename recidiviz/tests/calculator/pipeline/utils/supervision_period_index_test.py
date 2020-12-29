@@ -29,6 +29,7 @@ class TestSupervisionPeriodIndexSupervisionPeriodsConverter(unittest.TestCase):
     """Tests the sorting logic in the _supervision_periods_converter."""
     def test_supervision_periods_converter(self):
         supervision_period_1 = StateSupervisionPeriod.new_with_defaults(
+            state_code='US_XX',
             supervision_period_id=111,
             start_date=date(2000, 1, 1),
             termination_date=date(2000, 10, 1),
@@ -36,6 +37,7 @@ class TestSupervisionPeriodIndexSupervisionPeriodsConverter(unittest.TestCase):
         )
 
         supervision_period_2 = StateSupervisionPeriod.new_with_defaults(
+            state_code='US_XX',
             supervision_period_id=222,
             start_date=date(2000, 10, 1),
             termination_date=date(2003, 3, 1),
@@ -52,12 +54,14 @@ class TestSupervisionPeriodIndexSupervisionPeriodsConverter(unittest.TestCase):
 
     def test_supervision_periods_converter_empty_termination_date(self):
         supervision_period_1 = StateSupervisionPeriod.new_with_defaults(
+            state_code='US_XX',
             supervision_period_id=111,
             start_date=date(2000, 1, 1),
             termination_date=date(2000, 1, 1),
         )
 
         supervision_period_2 = StateSupervisionPeriod.new_with_defaults(
+            state_code='US_XX',
             supervision_period_id=222,
             start_date=date(2000, 1, 1),
         )
@@ -72,6 +76,7 @@ class TestSupervisionPeriodIndexSupervisionPeriodsConverter(unittest.TestCase):
 
     def test_supervision_periods_converter_sort_by_admission_reason_court(self):
         supervision_period_1 = StateSupervisionPeriod.new_with_defaults(
+            state_code='US_XX',
             supervision_period_id=111,
             start_date=date(2000, 1, 1),
             termination_date=date(2000, 1, 1),
@@ -79,6 +84,7 @@ class TestSupervisionPeriodIndexSupervisionPeriodsConverter(unittest.TestCase):
         )
 
         supervision_period_2 = StateSupervisionPeriod.new_with_defaults(
+            state_code='US_XX',
             supervision_period_id=222,
             start_date=date(2000, 1, 1),
             termination_date=date(2000, 1, 1),
@@ -95,6 +101,7 @@ class TestSupervisionPeriodIndexSupervisionPeriodsConverter(unittest.TestCase):
 
     def test_supervision_periods_converter_sort_by_admission_reason_conditional_release(self):
         supervision_period_1 = StateSupervisionPeriod.new_with_defaults(
+            state_code='US_XX',
             supervision_period_id=111,
             start_date=date(2000, 1, 1),
             termination_date=date(2000, 1, 1),
@@ -102,6 +109,7 @@ class TestSupervisionPeriodIndexSupervisionPeriodsConverter(unittest.TestCase):
         )
 
         supervision_period_2 = StateSupervisionPeriod.new_with_defaults(
+            state_code='US_XX',
             supervision_period_id=222,
             start_date=date(2000, 1, 1),
             termination_date=date(2000, 1, 1),
@@ -121,6 +129,7 @@ class TestSupervisionStartDatesByPeriodID(unittest.TestCase):
     """Tests the supervision_start_dates_by_period_id variable setter on the SupervisionPeriodIndex class."""
     def test_supervision_start_dates_by_period_id(self):
         supervision_period_1 = StateSupervisionPeriod.new_with_defaults(
+            state_code='US_XX',
             supervision_period_id=111,
             start_date=date(2000, 1, 1),
             termination_date=date(2000, 10, 3),
@@ -128,6 +137,7 @@ class TestSupervisionStartDatesByPeriodID(unittest.TestCase):
         )
 
         supervision_period_2 = StateSupervisionPeriod.new_with_defaults(
+            state_code='US_XX',
             supervision_period_id=222,
             start_date=date(2000, 10, 3),
             termination_date=date(2000, 10, 11),
@@ -147,6 +157,7 @@ class TestSupervisionStartDatesByPeriodID(unittest.TestCase):
 
     def test_supervision_start_dates_by_period_id_multiple_official_admissions(self):
         supervision_period_1 = StateSupervisionPeriod.new_with_defaults(
+            state_code='US_XX',
             supervision_period_id=111,
             start_date=date(2000, 1, 1),
             termination_date=date(2000, 10, 3),
@@ -155,6 +166,7 @@ class TestSupervisionStartDatesByPeriodID(unittest.TestCase):
         )
 
         supervision_period_2 = StateSupervisionPeriod.new_with_defaults(
+            state_code='US_XX',
             supervision_period_id=222,
             start_date=date(2000, 10, 3),
             termination_date=date(2000, 10, 11),
@@ -163,6 +175,7 @@ class TestSupervisionStartDatesByPeriodID(unittest.TestCase):
         )
 
         supervision_period_3 = StateSupervisionPeriod.new_with_defaults(
+            state_code='US_XX',
             supervision_period_id=333,
             start_date=date(2020, 5, 1),
             termination_date=date(2020, 10, 3),
@@ -171,6 +184,7 @@ class TestSupervisionStartDatesByPeriodID(unittest.TestCase):
         )
 
         supervision_period_4 = StateSupervisionPeriod.new_with_defaults(
+            state_code='US_XX',
             supervision_period_id=444,
             start_date=date(2020, 10, 3),
             termination_date=date(2020, 10, 11),
@@ -193,6 +207,7 @@ class TestSupervisionStartDatesByPeriodID(unittest.TestCase):
 
     def test_supervision_start_dates_by_period_id_multiple_absconsion_periods(self):
         supervision_period_1 = StateSupervisionPeriod.new_with_defaults(
+            state_code='US_XX',
             supervision_period_id=111,
             start_date=date(2000, 1, 1),
             termination_date=date(2000, 10, 3),
@@ -201,6 +216,7 @@ class TestSupervisionStartDatesByPeriodID(unittest.TestCase):
         )
 
         supervision_period_2 = StateSupervisionPeriod.new_with_defaults(
+            state_code='US_XX',
             supervision_period_id=222,
             start_date=date(2000, 10, 3),
             termination_date=date(2000, 10, 11),
@@ -209,6 +225,7 @@ class TestSupervisionStartDatesByPeriodID(unittest.TestCase):
         )
 
         supervision_period_3 = StateSupervisionPeriod.new_with_defaults(
+            state_code='US_XX',
             supervision_period_id=333,
             start_date=date(2000, 10, 12),
             termination_date=date(2001, 1, 3),
@@ -217,6 +234,7 @@ class TestSupervisionStartDatesByPeriodID(unittest.TestCase):
         )
 
         supervision_period_4 = StateSupervisionPeriod.new_with_defaults(
+            state_code='US_XX',
             supervision_period_id=444,
             start_date=date(2001, 1, 4),
             termination_date=date(2001, 10, 11),
@@ -240,6 +258,7 @@ class TestSupervisionStartDatesByPeriodID(unittest.TestCase):
     def test_supervision_start_dates_by_period_id_no_official_admission(self):
         # The first supervision period always counts as the official start of supervision
         supervision_period_1 = StateSupervisionPeriod.new_with_defaults(
+            state_code='US_XX',
             supervision_period_id=111,
             start_date=date(2000, 1, 1),
             termination_date=date(2000, 10, 3),
@@ -247,6 +266,7 @@ class TestSupervisionStartDatesByPeriodID(unittest.TestCase):
         )
 
         supervision_period_2 = StateSupervisionPeriod.new_with_defaults(
+            state_code='US_XX',
             supervision_period_id=222,
             start_date=date(2000, 10, 3),
             termination_date=date(2000, 10, 11),
@@ -266,6 +286,7 @@ class TestSupervisionStartDatesByPeriodID(unittest.TestCase):
 
     def test_supervision_start_dates_by_period_id_official_transfer_admission_investigation(self):
         supervision_period_1 = StateSupervisionPeriod.new_with_defaults(
+            state_code='US_XX',
             supervision_period_id=111,
             start_date=date(2000, 1, 1),
             termination_date=date(2000, 10, 3),
@@ -275,6 +296,7 @@ class TestSupervisionStartDatesByPeriodID(unittest.TestCase):
         )
 
         supervision_period_2 = StateSupervisionPeriod.new_with_defaults(
+            state_code='US_XX',
             supervision_period_id=222,
             start_date=date(2000, 10, 3),
             termination_date=date(2000, 10, 11),
@@ -285,6 +307,7 @@ class TestSupervisionStartDatesByPeriodID(unittest.TestCase):
 
         # Transferring from INVESTIGATION to PROBATION is a new official start of supervision
         supervision_period_3 = StateSupervisionPeriod.new_with_defaults(
+            state_code='US_XX',
             supervision_period_id=333,
             start_date=date(2000, 10, 12),
             termination_date=date(2001, 1, 3),
@@ -307,6 +330,7 @@ class TestSupervisionStartDatesByPeriodID(unittest.TestCase):
 
     def test_supervision_start_dates_by_period_id_official_transfer_admission_informal_probation(self):
         supervision_period_1 = StateSupervisionPeriod.new_with_defaults(
+            state_code='US_XX',
             supervision_period_id=111,
             start_date=date(2000, 1, 1),
             termination_date=date(2000, 10, 3),
@@ -316,6 +340,7 @@ class TestSupervisionStartDatesByPeriodID(unittest.TestCase):
         )
 
         supervision_period_2 = StateSupervisionPeriod.new_with_defaults(
+            state_code='US_XX',
             supervision_period_id=222,
             start_date=date(2000, 10, 3),
             termination_date=date(2000, 10, 11),
@@ -326,6 +351,7 @@ class TestSupervisionStartDatesByPeriodID(unittest.TestCase):
 
         # Transferring from INFORMAL_PROBATION to PROBATION is a new official start of supervision
         supervision_period_3 = StateSupervisionPeriod.new_with_defaults(
+            state_code='US_XX',
             supervision_period_id=333,
             start_date=date(2000, 10, 12),
             termination_date=date(2001, 1, 3),
@@ -348,6 +374,7 @@ class TestSupervisionStartDatesByPeriodID(unittest.TestCase):
 
     def test_supervision_start_dates_by_period_id_official_transfer_types(self):
         supervision_period_1 = StateSupervisionPeriod.new_with_defaults(
+            state_code='US_XX',
             supervision_period_id=111,
             start_date=date(2000, 1, 1),
             termination_date=date(2000, 10, 3),
@@ -357,6 +384,7 @@ class TestSupervisionStartDatesByPeriodID(unittest.TestCase):
         )
 
         supervision_period_2 = StateSupervisionPeriod.new_with_defaults(
+            state_code='US_XX',
             supervision_period_id=222,
             start_date=date(2000, 10, 3),
             termination_date=date(2000, 10, 11),
@@ -367,6 +395,7 @@ class TestSupervisionStartDatesByPeriodID(unittest.TestCase):
 
         # Transferring from INVESTIGATION to INFORMAL_PROBATION is a new official start of supervision
         supervision_period_3 = StateSupervisionPeriod.new_with_defaults(
+            state_code='US_XX',
             supervision_period_id=333,
             start_date=date(2000, 10, 12),
             termination_date=date(2001, 1, 3),
@@ -389,6 +418,7 @@ class TestSupervisionStartDatesByPeriodID(unittest.TestCase):
 
     def test_supervision_start_dates_by_period_id_not_official_transfer_admissions(self):
         supervision_period_1 = StateSupervisionPeriod.new_with_defaults(
+            state_code='US_XX',
             supervision_period_id=111,
             start_date=date(2000, 1, 1),
             termination_date=date(2000, 10, 3),
@@ -398,6 +428,7 @@ class TestSupervisionStartDatesByPeriodID(unittest.TestCase):
         )
 
         supervision_period_2 = StateSupervisionPeriod.new_with_defaults(
+            state_code='US_XX',
             supervision_period_id=222,
             start_date=date(2000, 10, 3),
             termination_date=date(2000, 10, 11),
@@ -408,6 +439,7 @@ class TestSupervisionStartDatesByPeriodID(unittest.TestCase):
 
         # Transferring from INVESTIGATION to INFORMAL_PROBATION is a new official start of supervision
         supervision_period_3 = StateSupervisionPeriod.new_with_defaults(
+            state_code='US_XX',
             supervision_period_id=333,
             start_date=date(2000, 10, 12),
             termination_date=date(2001, 1, 3),
@@ -433,6 +465,7 @@ class TestSupervisionPeriodsByTerminationMonth(unittest.TestCase):
     """Tests the supervision_periods_by_termination_month variable setter on the SupervisionPeriodIndex class."""
     def test_supervision_periods_by_termination_month(self):
         supervision_period_1 = StateSupervisionPeriod.new_with_defaults(
+            state_code='US_XX',
             supervision_period_id=111,
             start_date=date(2000, 1, 1),
             termination_date=date(2000, 10, 3),
@@ -440,6 +473,7 @@ class TestSupervisionPeriodsByTerminationMonth(unittest.TestCase):
         )
 
         supervision_period_2 = StateSupervisionPeriod.new_with_defaults(
+            state_code='US_XX',
             supervision_period_id=222,
             start_date=date(2000, 10, 3),
             termination_date=date(2000, 10, 11),
@@ -461,6 +495,7 @@ class TestSupervisionPeriodsByTerminationMonth(unittest.TestCase):
 
     def test_supervision_periods_by_termination_month_multiple_months(self):
         supervision_period_1 = StateSupervisionPeriod.new_with_defaults(
+            state_code='US_XX',
             supervision_period_id=111,
             start_date=date(2000, 1, 1),
             termination_date=date(2000, 5, 3),
@@ -468,6 +503,7 @@ class TestSupervisionPeriodsByTerminationMonth(unittest.TestCase):
         )
 
         supervision_period_2 = StateSupervisionPeriod.new_with_defaults(
+            state_code='US_XX',
             supervision_period_id=222,
             start_date=date(2000, 10, 3),
             termination_date=date(2000, 10, 11),
@@ -489,6 +525,7 @@ class TestSupervisionPeriodsByTerminationMonth(unittest.TestCase):
 
     def test_supervision_periods_by_termination_month_multiple_years(self):
         supervision_period_1 = StateSupervisionPeriod.new_with_defaults(
+            state_code='US_XX',
             supervision_period_id=111,
             start_date=date(2000, 1, 1),
             termination_date=date(2000, 5, 3),
@@ -496,6 +533,7 @@ class TestSupervisionPeriodsByTerminationMonth(unittest.TestCase):
         )
 
         supervision_period_2 = StateSupervisionPeriod.new_with_defaults(
+            state_code='US_XX',
             supervision_period_id=222,
             start_date=date(2020, 10, 3),
             termination_date=date(2020, 10, 11),
@@ -523,12 +561,14 @@ class TestGetMostRecentPreviousSupervisionPeriod(unittest.TestCase):
 
     def test_get_most_recent_previous_supervision_period_valid(self):
         supervision_period_1 = StateSupervisionPeriod.new_with_defaults(
+            state_code='US_XX',
             supervision_period_id=111,
             start_date=date(2000, 1, 1),
             termination_date=date(2000, 10, 1),
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE
         )
         supervision_period_2 = StateSupervisionPeriod.new_with_defaults(
+            state_code='US_XX',
             supervision_period_id=111,
             start_date=date(2000, 10, 1),
             termination_date=date(2000, 11, 1),
@@ -544,12 +584,14 @@ class TestGetMostRecentPreviousSupervisionPeriod(unittest.TestCase):
 
     def test_get_most_recent_previous_supervision_period_first_in_list(self):
         supervision_period_1 = StateSupervisionPeriod.new_with_defaults(
+            state_code='US_XX',
             supervision_period_id=111,
             start_date=date(2000, 1, 1),
             termination_date=date(2000, 10, 1),
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE
         )
         supervision_period_2 = StateSupervisionPeriod.new_with_defaults(
+            state_code='US_XX',
             supervision_period_id=111,
             start_date=date(2010, 10, 1),
             termination_date=date(2010, 11, 1),
@@ -564,6 +606,7 @@ class TestGetMostRecentPreviousSupervisionPeriod(unittest.TestCase):
 
     def test_get_most_recent_previous_supervision_period_single_period_in_list(self):
         supervision_period = StateSupervisionPeriod.new_with_defaults(
+            state_code='US_XX',
             supervision_period_id=111,
             start_date=date(2000, 1, 1),
             termination_date=date(2000, 10, 1),
