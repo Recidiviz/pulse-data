@@ -189,6 +189,13 @@ def test_get_all_table_classes():
         'sentence_relationship',
         'sentence_relationship_history'
     ]
+    justice_counts_table_names = [
+        'source',
+        'report',
+        'report_table_definition',
+        'report_table_instance',
+        'cell',
+    ]
     state_table_names = [
         'state_agent',
         'state_agent_history',
@@ -265,8 +272,8 @@ def test_get_all_table_classes():
         'direct_ingest_raw_file_metadata',
     ]
 
-    expected_table_class_names = \
-        aggregate_table_names + county_table_names + state_table_names + operations_table_names
+    expected_table_class_names = (aggregate_table_names + county_table_names + justice_counts_table_names
+        + state_table_names + operations_table_names)
 
     all_table_classes = get_all_table_classes()
 
