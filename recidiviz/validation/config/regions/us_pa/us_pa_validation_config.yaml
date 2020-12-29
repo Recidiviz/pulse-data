@@ -21,7 +21,7 @@ num_allowed_rows_overrides:
       task. The actual number of bad periods is 69 as of 10/1 but it will increase over time with new data refreshes
       so I made this number have some wiggle room.
   - validation_name: overlapping_incarceration_periods
-    num_allowed_rows_override: 7500
+    num_allowed_rows_override: 12500
     override_reason: TODO(#4187) - These bad periods are created as a result of id instability explained further in the
       task. The actual number of bad periods is 69 as of 10/1 but it will increase over time with new data refreshes
       so I made this number have some wiggle room.
