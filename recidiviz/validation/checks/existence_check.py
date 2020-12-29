@@ -59,7 +59,11 @@ class ExistenceValidationChecker(ValidationChecker[ExistenceDataValidationCheck]
             if validation_job.validation.num_allowed_rows < invalid_rows:
                 was_successful = False
 
-        description = f'Found {invalid_rows} invalid rows, though 0 were expected' if not was_successful else None
+        description = None
+        if not was_successful:
+            num_allowed_rows = validation_job.validation.num_allowed_rows
+            description = f'Found [{invalid_rows}] invalid rows, though [{num_allowed_rows}] were expected'
+
         return DataValidationJobResult(validation_job=validation_job,
                                        was_successful=was_successful,
                                        failure_description=description)
