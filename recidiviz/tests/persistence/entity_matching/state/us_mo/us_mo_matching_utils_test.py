@@ -59,26 +59,30 @@ _STATE_CODE = 'US_MO'
 class TestUsMoMatchingUtils(BaseStateMatchingUtilsTest):
     """Test class for US_MO specific matching utils."""
 
-    def test_removeSeosFromViolationIds(self):
+    def test_removeSeosFromViolationIds(self) -> None:
         svr = schema.StateSupervisionViolationResponse(
-            external_id='DOC-CYC-VSN1-SEO-FSO')
+            state_code=_STATE_CODE, external_id='DOC-CYC-VSN1-SEO-FSO')
         sv = schema.StateSupervisionViolation(
+            state_code=_STATE_CODE,
             external_id='DOC-CYC-VSN1-SEO-FSO',
             supervision_violation_responses=[svr])
         svr_2 = schema.StateSupervisionViolationResponse(
-            external_id='DOC-CYC-VSN1-SEO-FSO')
+            state_code=_STATE_CODE, external_id='DOC-CYC-VSN1-SEO-FSO')
         sv_2 = schema.StateSupervisionViolation(
+            state_code=_STATE_CODE,
             external_id='DOC-CYC-VSN1-SEO-FSO',
             supervision_violation_responses=[svr_2])
         sp = schema.StateSupervisionPeriod(
+            state_code=_STATE_CODE,
             supervision_violation_entries=[sv, sv_2])
-        ss = schema.StateSupervisionSentence(supervision_periods=[sp])
-        sg = schema.StateSentenceGroup(supervision_sentences=[ss])
-        p = schema.StatePerson(sentence_groups=[sg])
+        ss = schema.StateSupervisionSentence(state_code=_STATE_CODE, supervision_periods=[sp])
+        sg = schema.StateSentenceGroup(state_code=_STATE_CODE, supervision_sentences=[ss])
+        p = schema.StatePerson(state_code=_STATE_CODE, sentence_groups=[sg])
 
         expected_svr = StateSupervisionViolationResponse.new_with_defaults(
-            external_id='DOC-CYC-VSN1')
+            state_code=_STATE_CODE, external_id='DOC-CYC-VSN1')
         expected_sv = StateSupervisionViolation.new_with_defaults(
+            state_code=_STATE_CODE,
             external_id='DOC-CYC-VSN1',
             supervision_violation_responses=[expected_svr])
         expected_svr_2 = attr.evolve(expected_svr)
@@ -86,19 +90,19 @@ class TestUsMoMatchingUtils(BaseStateMatchingUtilsTest):
             expected_sv,
             supervision_violation_responses=[expected_svr_2])
         expected_sp = StateSupervisionPeriod.new_with_defaults(
-            supervision_violation_entries=[expected_sv, expected_sv_2])
+            state_code=_STATE_CODE, supervision_violation_entries=[expected_sv, expected_sv_2])
         expected_ss = StateSupervisionSentence.new_with_defaults(
-            supervision_periods=[expected_sp])
+            state_code=_STATE_CODE, supervision_periods=[expected_sp])
         expected_sg = StateSentenceGroup.new_with_defaults(
-            supervision_sentences=[expected_ss])
+            state_code=_STATE_CODE, supervision_sentences=[expected_ss])
         expected_p = StatePerson.new_with_defaults(
-            sentence_groups=[expected_sg])
+            state_code=_STATE_CODE, sentence_groups=[expected_sg])
 
         remove_suffix_from_violation_ids([p])
         self.assertEqual(expected_p, self.to_entity(p))
 
-    def test_removeSeosFromViolationIds_unexpectedFormat(self):
-        with pytest.raises(ValueError):
+    def test_removeSeosFromViolationIds_unexpectedFormat(self) -> None:
+        with pytest.raises(ValueError) as e:
             sv = schema.StateSupervisionViolation(external_id='bad_id')
             sp = schema.StateSupervisionPeriod(
                 supervision_violation_entries=[sv])
@@ -106,8 +110,10 @@ class TestUsMoMatchingUtils(BaseStateMatchingUtilsTest):
             sg = schema.StateSentenceGroup(supervision_sentences=[ss])
             p = schema.StatePerson(sentence_groups=[sg])
             remove_suffix_from_violation_ids([p])
+        self.assertEqual(str(e.value),
+                         'Unexpected id format [bad_id] for [StateSupervisionViolation(external_id=bad_id)]')
 
-    def test_setCurrentSupervisingOfficerFromSupervision_periods(self):
+    def test_setCurrentSupervisingOfficerFromSupervision_periods(self) -> None:
         # Arrange
         person = generate_person(person_id=_ID)
         external_id = generate_external_id(

@@ -129,8 +129,9 @@ class TestBuildRootEntity(unittest.TestCase):
 
         external_id_1 = schema.StatePersonExternalId(
             person_external_id_id=999,
-            external_id=888,
+            external_id='888',
             state_code='US_XX',
+            id_type='US_XX_TYPE',
             person_id=fake_person_id)
 
         external_ids_data = [normalized_database_base_dict(external_id_1)]
@@ -256,8 +257,9 @@ class TestBuildRootEntity(unittest.TestCase):
 
         external_id_1 = schema.StatePersonExternalId(
             person_external_id_id=999,
-            external_id=888,
+            external_id='888',
             state_code='US_XX',
+            id_type='US_XX_TYPE',
             person_id=fake_person_id)
 
         external_ids_data = [normalized_database_base_dict(external_id_1)]
@@ -552,8 +554,9 @@ class TestBuildRootEntity(unittest.TestCase):
 
         external_id_1 = schema.StatePersonExternalId(
             person_external_id_id=999,
-            external_id=888,
+            external_id='888',
             state_code='CA',
+            id_type='US_XX_TYPE',
             person_id=fake_person_id)
 
         external_ids_data = [normalized_database_base_dict(external_id_1)]
@@ -689,8 +692,9 @@ class TestBuildRootEntity(unittest.TestCase):
 
         external_id_1 = schema.StatePersonExternalId(
             person_external_id_id=999,
-            external_id=888,
+            external_id='888',
             state_code='US_XX',
+            id_type='US_XX_TYPE',
             person_id=fake_person_id)
 
         external_ids_data = [normalized_database_base_dict(external_id_1)]

@@ -325,6 +325,7 @@ class TestNdEntityMatching(BaseStateEntityMatcherTest):
             admission_reason=
             StateIncarcerationPeriodAdmissionReason.TRANSFER)
         incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
+            state_code=_US_ND,
             external_id=_EXTERNAL_ID,
             incarceration_periods=[incarceration_period,
                                    incarceration_period_2,
@@ -543,7 +544,7 @@ class TestNdEntityMatching(BaseStateEntityMatcherTest):
             status=StateSentenceStatus.EXTERNAL_UNKNOWN,
             incarceration_sentences=[incarceration_sentence])
         placeholder_person = StatePerson.new_with_defaults(
-            sentence_groups=[sentence_group])
+            state_code=_US_ND, sentence_groups=[sentence_group])
 
         expected_complete_incarceration_period = attr.evolve(
             complete_incarceration_period,

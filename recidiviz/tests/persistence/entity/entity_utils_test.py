@@ -45,17 +45,19 @@ class TestEntityUtils(TestCase):
         return converter.convert_schema_object_to_entity(
             schema_obj, populate_back_edges=False)
 
-    def test_getEntityRelationshipFieldNames_children(self):
+    def test_getEntityRelationshipFieldNames_children(self) -> None:
         entity = StateSentenceGroup.new_with_defaults(
-            fines=[StateFine.new_with_defaults()],
-            person=[StatePerson.new_with_defaults()],
+            state_code='US_XX',
+            fines=[StateFine.new_with_defaults(state_code='US_XX')],
+            person=[StatePerson.new_with_defaults(state_code='US_XX')],
             sentence_group_id=_ID)
         self.assertEqual(
             {'fines'},
             get_set_entity_field_names(entity, EntityFieldType.FORWARD_EDGE))
 
-    def test_getDbEntityRelationshipFieldNames_children(self):
+    def test_getDbEntityRelationshipFieldNames_children(self) -> None:
         entity = schema.StateSentenceGroup(
+            state_code='US_XX',
             fines=[schema.StateFine()],
             person=schema.StatePerson(),
             person_id=_ID,
@@ -64,8 +66,9 @@ class TestEntityUtils(TestCase):
             {'fines'},
             get_set_entity_field_names(entity, EntityFieldType.FORWARD_EDGE))
 
-    def test_getEntityRelationshipFieldNames_backedges(self):
+    def test_getEntityRelationshipFieldNames_backedges(self) -> None:
         entity = schema.StateSentenceGroup(
+            state_code='US_XX',
             fines=[schema.StateFine()],
             person=schema.StatePerson(),
             person_id=_ID,
@@ -74,18 +77,20 @@ class TestEntityUtils(TestCase):
             {'person'},
             get_set_entity_field_names(entity, EntityFieldType.BACK_EDGE))
 
-    def test_getEntityRelationshipFieldNames_flatFields(self):
+    def test_getEntityRelationshipFieldNames_flatFields(self) -> None:
         entity = schema.StateSentenceGroup(
-            fines=[schema.StateFine()],
-            person=schema.StatePerson(),
+            state_code='US_XX',
+            fines=[schema.StateFine(state_code='US_XX')],
+            person=schema.StatePerson(state_code='US_XX'),
             person_id=_ID,
             sentence_group_id=_ID)
         self.assertEqual(
-            {'sentence_group_id'},
+            {'state_code', 'sentence_group_id'},
             get_set_entity_field_names(entity, EntityFieldType.FLAT_FIELD))
 
-    def test_getEntityRelationshipFieldNames_foreignKeys(self):
+    def test_getEntityRelationshipFieldNames_foreignKeys(self) -> None:
         entity = schema.StateSentenceGroup(
+            state_code='US_XX',
             fines=[schema.StateFine()],
             person=schema.StatePerson(),
             person_id=_ID,
@@ -94,45 +99,46 @@ class TestEntityUtils(TestCase):
             {'person_id'},
             get_set_entity_field_names(entity, EntityFieldType.FOREIGN_KEYS))
 
-    def test_getEntityRelationshipFieldNames_all(self):
+    def test_getEntityRelationshipFieldNames_all(self) -> None:
         entity = schema.StateSentenceGroup(
+            state_code='US_XX',
             fines=[schema.StateFine()],
             person=schema.StatePerson(),
             person_id=_ID,
             sentence_group_id=_ID)
         self.assertEqual(
-            {'fines', 'person', 'person_id', 'sentence_group_id'},
+            {'state_code', 'fines', 'person', 'person_id', 'sentence_group_id'},
             get_set_entity_field_names(entity, EntityFieldType.ALL))
 
-    def test_isStandaloneClass(self):
+    def test_isStandaloneClass(self) -> None:
         for cls in schema_utils.get_non_history_state_database_entities():
             if cls == schema.StateAgent:
                 self.assertTrue(is_standalone_class(cls))
             else:
                 self.assertFalse(is_standalone_class(cls))
 
-    def test_schemaEdgeDirectionChecker_isHigherRanked_higherRank(self):
+    def test_schemaEdgeDirectionChecker_isHigherRanked_higherRank(self) -> None:
         direction_checker = SchemaEdgeDirectionChecker.state_direction_checker()
         self.assertTrue(direction_checker.is_higher_ranked(
             StatePerson, StateSentenceGroup))
         self.assertTrue(direction_checker.is_higher_ranked(
             StateSentenceGroup, StateSupervisionViolation))
 
-    def test_schemaEdgeDirectionChecker_isHigherRanked_lowerRank(self):
+    def test_schemaEdgeDirectionChecker_isHigherRanked_lowerRank(self) -> None:
         direction_checker = SchemaEdgeDirectionChecker.state_direction_checker()
         self.assertFalse(direction_checker.is_higher_ranked(
             StateSentenceGroup, StatePerson))
         self.assertFalse(direction_checker.is_higher_ranked(
             StateSupervisionViolation, StateSentenceGroup))
 
-    def test_schemaEdgeDirectionChecker_isHigherRanked_sameRank(self):
+    def test_schemaEdgeDirectionChecker_isHigherRanked_sameRank(self) -> None:
         direction_checker = SchemaEdgeDirectionChecker.state_direction_checker()
         self.assertFalse(direction_checker.is_higher_ranked(
             StatePerson, StatePerson))
         self.assertFalse(direction_checker.is_higher_ranked(
             StateSupervisionViolation, StateSupervisionViolation))
 
-    def test_pruneDanglingPlaceholders_isDangling(self):
+    def test_pruneDanglingPlaceholders_isDangling(self) -> None:
         # Arrange
         dangling_placeholder_person = generate_person()
         dangling_placeholder_sg = generate_sentence_group()

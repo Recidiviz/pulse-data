@@ -142,7 +142,7 @@ def generate_full_graph_state_person(
     Returns:
         A test instance of a StatePerson.
     """
-    person = entities.StatePerson.new_with_defaults()
+    person = entities.StatePerson.new_with_defaults(state_code='us_ca')
 
     person.external_ids = [
         entities.StatePersonExternalId.new_with_defaults(
@@ -197,6 +197,7 @@ def generate_full_graph_state_person(
     person.sentence_groups = [sentence_group]
 
     person_supervising_officer = entities.StateAgent.new_with_defaults(
+        state_code='us_ca',
         external_id='SUPERVISING_OFFICER_ID',
         full_name='SUPERVISING OFFICER',
     )

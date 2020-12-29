@@ -310,7 +310,7 @@ class TestDao(TestCase):
         session.add(person)
         session.commit()
 
-        ingested_person = entities.StatePerson.new_with_defaults()
+        ingested_person = entities.StatePerson.new_with_defaults(state_code=_STATE_CODE)
 
         ingested_person.external_ids = \
             [
@@ -360,7 +360,7 @@ class TestDao(TestCase):
         session.add(person2)
         session.commit()
 
-        ingested_person = entities.StatePerson.new_with_defaults()
+        ingested_person = entities.StatePerson.new_with_defaults(state_code=_STATE_CODE)
 
         ingested_person.external_ids = \
             [
