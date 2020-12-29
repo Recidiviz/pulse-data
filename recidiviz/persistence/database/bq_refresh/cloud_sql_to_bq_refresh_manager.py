@@ -38,7 +38,7 @@ from recidiviz.persistence.database.bq_refresh.cloud_sql_to_bq_refresh_config im
 from recidiviz.persistence.database.bq_refresh.bq_refresh_cloud_task_manager import \
     BQRefreshCloudTaskManager
 from recidiviz.persistence.database.sqlalchemy_engine_manager import SchemaType
-from recidiviz.utils.auth import authenticate_request
+from recidiviz.utils.auth.gae import requires_gae_auth
 from recidiviz.utils import pubsub_helper
 
 
@@ -73,7 +73,7 @@ cloud_sql_to_bq_blueprint = flask.Blueprint('export_manager', __name__)
 
 
 @cloud_sql_to_bq_blueprint.route('/refresh_bq_table', methods=['POST'])
-@authenticate_request
+@requires_gae_auth
 def refresh_bq_table() -> Tuple[str, int]:
     """Worker function to handle BQ export task requests.
 
@@ -103,7 +103,7 @@ def refresh_bq_table() -> Tuple[str, int]:
 
 
 @cloud_sql_to_bq_blueprint.route('/monitor_refresh_bq_tasks', methods=['POST'])
-@authenticate_request
+@requires_gae_auth
 def monitor_refresh_bq_tasks() -> Tuple[str, int]:
     """Worker function to publish a message to a Pub/Sub topic once all tasks in
     the BIGQUERY_QUEUE queue have completed.
@@ -131,7 +131,7 @@ def monitor_refresh_bq_tasks() -> Tuple[str, int]:
 
 
 @cloud_sql_to_bq_blueprint.route('/create_refresh_bq_tasks/<schema_arg>')
-@authenticate_request
+@requires_gae_auth
 def create_all_bq_refresh_tasks_for_schema(schema_arg: str) -> Tuple[str, HTTPStatus]:
     """Creates an export task for each table to be exported.
 

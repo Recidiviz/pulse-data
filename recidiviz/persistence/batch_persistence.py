@@ -38,7 +38,7 @@ from recidiviz.persistence import datastore_ingest_info
 from recidiviz.persistence.datastore_ingest_info import BatchIngestInfoData
 from recidiviz.persistence.ingest_info_validator import ingest_info_validator
 from recidiviz.utils import monitoring, regions
-from recidiviz.utils.auth import authenticate_request
+from recidiviz.utils.auth.gae import requires_gae_auth
 
 FAILED_TASK_THRESHOLD = 0.1
 
@@ -229,7 +229,7 @@ def persist_to_database(region_code: str,
 
 
 @batch_blueprint.route('/read_and_persist')
-@authenticate_request
+@requires_gae_auth
 def read_and_persist() -> Tuple[str, HTTPStatus]:
     """Reads all of the messages from Datastore for a region and persists
     them to the database.

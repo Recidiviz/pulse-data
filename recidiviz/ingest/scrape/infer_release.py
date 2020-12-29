@@ -27,7 +27,7 @@ from recidiviz.ingest.scrape import scrape_phase, sessions
 from recidiviz.ingest.scrape.ingest_utils import validate_regions
 from recidiviz.persistence import persistence
 from recidiviz.utils import monitoring
-from recidiviz.utils.auth import authenticate_request
+from recidiviz.utils.auth.gae import requires_gae_auth
 from recidiviz.utils.params import get_str_param_values
 from recidiviz.utils.regions import Region, RemovedFromWebsite, get_region
 
@@ -35,7 +35,7 @@ infer_release_blueprint = Blueprint('infer_release', __name__)
 
 
 @infer_release_blueprint.route('/release')
-@authenticate_request
+@requires_gae_auth
 def infer_release():
     """Runs infer release for the given regions."""
     region_codes = \

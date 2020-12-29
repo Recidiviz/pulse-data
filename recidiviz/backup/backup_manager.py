@@ -28,7 +28,7 @@ from recidiviz.persistence.database.sqladmin_client import sqladmin_client
 from recidiviz.persistence.database.sqlalchemy_engine_manager import \
     SQLAlchemyEngineManager
 from recidiviz.utils import metadata
-from recidiviz.utils.auth import authenticate_request
+from recidiviz.utils.auth.gae import requires_gae_auth
 
 
 # Approximately 6 months - with weekly backups, we will always have
@@ -44,7 +44,7 @@ backup_manager_blueprint = flask.Blueprint('backup_manager', __name__)
 
 
 @backup_manager_blueprint.route('/update_long_term_backups')
-@authenticate_request
+@requires_gae_auth
 def update_long_term_backups() -> Tuple[str, HTTPStatus]:
     """Create manual backups for all cloudsql instances and delete
     manual backups for each instance that are older than _MAX_BACKUP_AGE_DAYS.

@@ -27,7 +27,7 @@ from flask import Blueprint, request
 
 from recidiviz.big_query import view_update_manager
 from recidiviz.utils import monitoring
-from recidiviz.utils.auth import authenticate_request
+from recidiviz.utils.auth.gae import requires_gae_auth
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.utils.params import get_bool_param_value
@@ -65,7 +65,7 @@ validation_manager_blueprint = Blueprint('validation_manager', __name__)
 
 
 @validation_manager_blueprint.route('/validate')
-@authenticate_request
+@requires_gae_auth
 def handle_validation_request() -> Tuple[str, HTTPStatus]:
     """API endpoint to service data validation requests."""
     should_update_views = get_bool_param_value('should_update_views', request.args, default=False)

@@ -29,14 +29,14 @@ import recidiviz.reporting.data_retrieval as data_retrieval
 import recidiviz.reporting.email_delivery as email_delivery
 from recidiviz.reporting.email_reporting_utils import validate_email_address
 from recidiviz.reporting.region_codes import InvalidRegionCodeException
-from recidiviz.utils.auth import authenticate_request
+from recidiviz.utils.auth.gae import requires_gae_auth
 from recidiviz.utils.params import get_only_str_param_value, get_str_param_values
 
 reporting_endpoint_blueprint = Blueprint('reporting_endpoint_blueprint', __name__)
 
 
 @reporting_endpoint_blueprint.route('/start_new_batch', methods=['GET', 'POST'])
-@authenticate_request
+@requires_gae_auth
 def start_new_batch() -> Tuple[str, HTTPStatus]:
     """Start a new batch of email generation for the indicated state.
 
@@ -91,7 +91,7 @@ def start_new_batch() -> Tuple[str, HTTPStatus]:
 
 
 @reporting_endpoint_blueprint.route('/deliver_emails_for_batch', methods=['GET', 'POST'])
-@authenticate_request
+@requires_gae_auth
 def deliver_emails_for_batch() -> Tuple[str, HTTPStatus]:
     """Deliver a batch of generated emails.
 
