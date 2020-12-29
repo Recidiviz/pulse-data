@@ -140,3 +140,9 @@ secrets.yaml # keep in case any developers still have them
 *.tfvars
 # Used to store temporary files
 **/.tfout/*
+
+# Typescript
+**/node_modules
+
+# Stackdriver Traces
+traces

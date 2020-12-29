@@ -63,6 +63,7 @@ else
 fi
 
 echo "Building docker image"
+export DOCKER_BUILDKIT=1
 run_cmd docker build -t recidiviz-image .
 
 if [[ ! -z ${DEBUG_BUILD_NAME} ]]; then

@@ -37,7 +37,7 @@ from recidiviz.ingest.aggregate.regions.ny import ny_aggregate_site_scraper
 from recidiviz.ingest.aggregate.regions.tn import tn_aggregate_site_scraper
 from recidiviz.ingest.aggregate.regions.tx import tx_aggregate_site_scraper
 from recidiviz.utils import metadata
-from recidiviz.utils.auth import authenticate_request
+from recidiviz.utils.auth.gae import requires_gae_auth
 from recidiviz.utils.params import get_str_param_value
 
 scrape_aggregate_reports_blueprint = Blueprint(
@@ -55,7 +55,7 @@ UPLOAD_BUCKET = '{}-state-aggregate-reports'
 
 
 @scrape_aggregate_reports_blueprint.route('/scrape_state')
-@authenticate_request
+@requires_gae_auth
 def scrape_aggregate_reports():
     """Calls state aggregates"""
 

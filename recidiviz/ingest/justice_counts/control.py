@@ -24,13 +24,13 @@ from flask import Blueprint, request
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.tools.justice_counts import manual_upload
-from recidiviz.utils.auth import authenticate_request
+from recidiviz.utils.auth.gae import requires_gae_auth
 from recidiviz.utils.params import get_str_param_value
 
 justice_counts_control = Blueprint('justice_counts_control', __name__)
 
 @justice_counts_control.route('/ingest')
-@authenticate_request
+@requires_gae_auth
 def ingest() -> Tuple[str, HTTPStatus]:
     manifest_path = get_str_param_value('manifest_path', request.args, preserve_case=True)
 

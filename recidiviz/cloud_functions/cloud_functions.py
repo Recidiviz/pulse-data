@@ -40,7 +40,7 @@ from recidiviz.ingest.aggregate.regions.tn import tn_aggregate_ingest
 from recidiviz.ingest.aggregate.regions.tx import tx_aggregate_ingest
 from recidiviz.persistence.database.schema.aggregate import dao
 from recidiviz.utils import metadata
-from recidiviz.utils.auth import authenticate_request
+from recidiviz.utils.auth.gae import requires_gae_auth
 from recidiviz.utils.params import get_str_param_value
 
 cloud_functions_blueprint = Blueprint('cloud_functions', __name__)
@@ -54,7 +54,7 @@ HISTORICAL_BUCKET = '{}-processed-state-aggregates'
 
 
 @cloud_functions_blueprint.route('/state_aggregate')
-@authenticate_request
+@requires_gae_auth
 def state_aggregate() -> Tuple[str, HTTPStatus]:
     """Calls state aggregates"""
 
@@ -117,7 +117,7 @@ def state_aggregate() -> Tuple[str, HTTPStatus]:
 
 
 @cloud_functions_blueprint.route('/dataflow_monitor')
-@authenticate_request
+@requires_gae_auth
 def dataflow_monitor() -> Tuple[str, HTTPStatus]:
     """Calls the dataflow monitor manager to begin monitoring a Dataflow job.
 

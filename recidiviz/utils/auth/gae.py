@@ -14,12 +14,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-
 """Tools for handling authentication of requests."""
-
-
 from http import HTTPStatus
 import logging
+import os
 from functools import wraps
 
 from flask import request
@@ -28,7 +26,7 @@ from recidiviz.utils import metadata
 from recidiviz.utils import validate_jwt
 
 
-def authenticate_request(func):
+def requires_gae_auth(func):
     """Decorator to validate inbound request is authorized for Recidiviz
 
     Decorator function that checks for end-user authentication or that the
@@ -54,6 +52,11 @@ def authenticate_request(func):
             The output of the function, if successfully authenticated.
             An error or redirect response, otherwise.
         """
+        if os.environ.get('FLASK_ENV') == 'development':
+            # Bypass GAE auth check in development. This environment variable
+            # should not be set in staging or production instances.
+            return func(*args, **kwargs)
+
         is_cron = request.headers.get('X-Appengine-Cron')
         is_task = request.headers.get('X-AppEngine-QueueName')
         incoming_app_id = request.headers.get('X-Appengine-Inbound-Appid')

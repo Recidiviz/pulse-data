@@ -24,13 +24,13 @@ from flask import Blueprint
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.persistence import persistence
 from recidiviz.utils import monitoring
-from recidiviz.utils.auth import authenticate_request
+from recidiviz.utils.auth.gae import requires_gae_auth
 
 actions = Blueprint('actions', __name__)
 
 
 @actions.route("/v1/records", methods=['POST'])
-@authenticate_request
+@requires_gae_auth
 def write_record() -> Tuple[str, HTTPStatus]:
     ingest_info = None
     last_scraped_time = None

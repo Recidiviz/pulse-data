@@ -24,7 +24,7 @@ from flask import Blueprint, request
 
 from recidiviz.ingest.models.single_count import SingleCount
 from recidiviz.persistence.single_count import store_single_count
-from recidiviz.utils.auth import authenticate_request
+from recidiviz.utils.auth.gae import requires_gae_auth
 from recidiviz.utils.params import get_str_param_value
 
 store_single_count_blueprint = Blueprint('store_single_count', __name__)
@@ -35,7 +35,7 @@ class StoreSingleCountError(Exception):
 
 
 @store_single_count_blueprint.route('/single_count')
-@authenticate_request
+@requires_gae_auth
 def store_single_count_endpoint():
     """Endpoint to store a single count"""
 

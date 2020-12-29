@@ -38,14 +38,14 @@ from recidiviz.ingest.scrape.scraper_cloud_task_manager import \
     ScraperCloudTaskManager
 from recidiviz.utils import (monitoring, pubsub_helper, regions,
                              structured_logging)
-from recidiviz.utils.auth import authenticate_request
+from recidiviz.utils.auth.gae import requires_gae_auth
 from recidiviz.utils.params import get_str_param_value, get_str_param_values
 
 scraper_control = Blueprint('scraper_control', __name__)
 
 
 @scraper_control.route('/start')
-@authenticate_request
+@requires_gae_auth
 def scraper_start():
     """Request handler to start one or several running scrapers
 
@@ -178,7 +178,7 @@ def scraper_start():
 
 
 @scraper_control.route('/stop')
-@authenticate_request
+@requires_gae_auth
 def scraper_stop():
     """Request handler to stop one or several running scrapers.
     Note: Stopping any scrape type for a region involves purging the
@@ -288,7 +288,7 @@ def scraper_stop():
 
 
 @scraper_control.route('/resume')
-@authenticate_request
+@requires_gae_auth
 def scraper_resume():
     """Request handler to resume one or several stopped scrapers
 

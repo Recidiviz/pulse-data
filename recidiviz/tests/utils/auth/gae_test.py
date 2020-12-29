@@ -17,29 +17,31 @@
 
 # pylint: disable=unused-import,wrong-import-order
 
-"""Tests for utils/auth.py."""
+"""Tests for utils/gae.py."""
 
 
 import pytest
 from flask import Flask, request
 from mock import Mock, patch
 
-from recidiviz.utils import auth
+from recidiviz.utils.auth import gae
 
-from ..context import utils
+from recidiviz.tests.context import utils
 
 BEST_ALBUM = 'Music Has The Right To Children'
 APP_ID = "recidiviz-auth-test"
 
 dummy_app = Flask(__name__)
 
+
 @dummy_app.route('/')
-@auth.authenticate_request
+@gae.requires_gae_auth
 def boards_of_canada_holder():
     return (BEST_ALBUM, 200)
 
+
 class TestAuthenticateRequest:
-    """Tests for the @authenticate_request decorator."""
+    """Tests for the @requires_gae_auth decorator."""
 
     def setup_method(self, _test_method):
         dummy_app.config['TESTING'] = True
@@ -52,7 +54,7 @@ class TestAuthenticateRequest:
             '/', headers={'X-Appengine-Inbound-Appid': 'blah'})
         assert response.status_code == 401
         assert response.get_data().decode() == \
-                'Failed: Unauthorized external request.'
+            'Failed: Unauthorized external request.'
 
     @patch('recidiviz.utils.metadata.project_id', Mock(return_value='test-project'))
     @patch('recidiviz.utils.metadata.project_number', Mock(return_value='123456789'))
@@ -105,4 +107,4 @@ class TestAuthenticateRequest:
         response = self.client.get('/')
         assert response.status_code == 401
         assert response.get_data().decode() == \
-                'Failed: Unauthorized external request.'
+            'Failed: Unauthorized external request.'
