@@ -287,7 +287,8 @@ def get_all_validations() -> List[DataValidationCheck]:
 
         # External comparison validations
         SamenessDataValidationCheck(view=INCARCERATION_POPULATION_BY_FACILITY_EXTERNAL_COMPARISON_VIEW_BUILDER.build(),
-                                    comparison_columns=['external_population_count', 'internal_population_count']),
+                                    comparison_columns=['external_population_count', 'internal_population_count'],
+                                    max_allowed_error=0.02),
         SamenessDataValidationCheck(
             view=INCARCERATION_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_VIEW_BUILDER.build(),
             sameness_check_type=SamenessDataValidationCheckType.STRINGS,

@@ -11,11 +11,22 @@ exclusions:
   - validation_name: incarceration_population_by_facility_internal_comparison
     exclusion_type: DOES_NOT_APPLY
     exclusion_reason: The incarceration pipeline run for MO only calculates metrics for 2019-12, which is outside the scope of the COVID report
-max_allowed_error_overrides: []  # This region will use only the default max_allowed_error values
+max_allowed_error_overrides:
+  - validation_name: sentence_type_by_district_by_demographics_internal_consistency
+    max_allowed_error_override: 0.2
+    override_reason: TODO(#5074) - The age_bucket_breakdown_sum column does not match the others - investigate.
 num_allowed_rows_overrides:
   - validation_name: overlapping_incarceration_periods
-    num_allowed_rows_override: 174
+    num_allowed_rows_override: 200
     override_reason: In MO we rely on a table where they build incarceration period spans for us; some older rows have issues with overlap.
   - validation_name: overlapping_supervision_periods
-    num_allowed_rows_override: 150
+    num_allowed_rows_override: 400
     override_reason: Older raw data from MO contains overlapping period information that we do not correct.
+  - validation_name: supervision_termination_prior_to_start
+    num_allowed_rows_override: 5
+    override_reason: TODO(#5073) - Edge case related to ids shifting because we're filtering out investigative periods
+      and not clearing out None end_date values in entity matching.
+  - validation_name: incarceration_admission_after_open_period
+    num_allowed_rows_override: 10
+    override_reason: TODO(#5075) - We are generating a stable SQN number in the incarceration periods queries but not
+      actually using it. Doing so will likely make these edge case periods go away.

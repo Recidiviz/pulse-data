@@ -70,9 +70,10 @@ class TestExistenceValidationChecker(TestCase):
         result = ExistenceValidationChecker.run_check(job)
 
         self.assertEqual(result,
-                         DataValidationJobResult(validation_job=job,
-                                                 was_successful=False,
-                                                 failure_description='Found 2 invalid rows, though 0 were expected'))
+                         DataValidationJobResult(
+                             validation_job=job,
+                             was_successful=False,
+                             failure_description='Found [2] invalid rows, though [0] were expected'))
 
     def test_existence_check_failures_below_threshold(self):
         self.mock_client.run_query_async.return_value = ['some result row', 'some other result row']
