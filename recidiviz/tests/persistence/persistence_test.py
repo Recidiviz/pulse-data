@@ -1076,6 +1076,7 @@ class MultipleStateTestMixin():
         assert result[2].sentence_groups[0].status == 'COMPLETED'
 
 
+@pytest.mark.uses_db
 @patch('recidiviz.utils.metadata.project_id', Mock(return_value='test-project'))
 @patch('os.getenv', Mock(return_value='production'))
 class TestPersistenceMultipleThreadsOverlapping(TestCase, MultipleStateTestMixin):

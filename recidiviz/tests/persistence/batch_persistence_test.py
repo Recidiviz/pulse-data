@@ -42,6 +42,7 @@ TEST_ERROR = 'TestError'
 TEST_PARAMS = {'test': 'value'}
 TEST_TRACE = 'TEST TRACE'
 
+
 @pytest.fixture(scope="class")
 def client(request):
     app = Flask(__name__)
@@ -447,7 +448,6 @@ class TestBatchPersistence(TestCase):
 @pytest.mark.usefixtures("client")
 class TestReadAndPersist(TestCase):
     """Tests read and persist"""
-
 
     @patch('recidiviz.utils.metadata.project_number', Mock(return_value='123456789'))
     @patch("recidiviz.persistence.batch_persistence.ScraperCloudTaskManager")
