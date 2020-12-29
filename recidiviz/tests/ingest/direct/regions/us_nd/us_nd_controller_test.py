@@ -86,7 +86,7 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
     def controller_cls(cls) -> Type[GcsfsDirectIngestController]:
         return UsNdController
 
-    def test_populate_data_elite_offenderidentifier(self):
+    def test_populate_data_elite_offenderidentifier(self) -> None:
         expected = IngestInfo(
             state_people=[
                 StatePerson(state_person_id='39768',
@@ -113,7 +113,7 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
 
         self.run_parse_file_test(expected, 'elite_offenderidentifier')
 
-    def test_populate_data_elite_offenders(self):
+    def test_populate_data_elite_offenders(self) -> None:
         expected = IngestInfo(
             state_people=[
                 StatePerson(state_person_id='39768', surname='HOPKINS',
@@ -144,7 +144,7 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
 
         self.run_parse_file_test(expected, 'elite_offenders')
 
-    def test_populate_data_elite_alias(self):
+    def test_populate_data_elite_alias(self) -> None:
         expected = IngestInfo(
             state_people=[
                 StatePerson(state_person_id='39768',
@@ -168,7 +168,7 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
 
         self.run_parse_file_test(expected, 'elite_alias')
 
-    def test_populate_data_elite_offenderbookingstable(self):
+    def test_populate_data_elite_offenderbookingstable(self) -> None:
         expected = IngestInfo(
             state_people=[
                 StatePerson(state_person_id='52163',
@@ -190,7 +190,7 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
 
         self.run_parse_file_test(expected, 'elite_offenderbookingstable')
 
-    def test_populate_data_elite_offendersentenceaggs(self):
+    def test_populate_data_elite_offendersentenceaggs(self) -> None:
         incarceration_sentence_105640 = StateIncarcerationSentence(
             parole_eligibility_date='11/24/2005')
 
@@ -222,7 +222,7 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
 
         self.run_parse_file_test(expected, 'elite_offendersentenceaggs')
 
-    def test_populate_data_elite_offendersentences(self):
+    def test_populate_data_elite_offendersentences(self) -> None:
         sentences_114909 = [
             StateIncarcerationSentence(
                 state_incarceration_sentence_id='114909-1',
@@ -290,7 +290,7 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
 
         self.run_parse_file_test(expected, 'elite_offendersentences')
 
-    def test_populate_data_elite_offendersentenceterms(self):
+    def test_populate_data_elite_offendersentenceterms(self) -> None:
         supervision_sentence_105640_2 = StateSupervisionSentence(
             state_supervision_sentence_id='105640-2', supervision_type='PROBATION', max_length='10Y 0M 0D')
 
@@ -358,7 +358,7 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
 
         self.run_parse_file_test(expected, 'elite_offendersentenceterms')
 
-    def test_populate_data_elite_offenderchargestable(self):
+    def test_populate_data_elite_offenderchargestable(self) -> None:
         state_charge_105640_1 = StateCharge(
             state_charge_id='105640-1',
             status='SENTENCED',
@@ -520,7 +520,7 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
 
         self.run_parse_file_test(expected, 'elite_offenderchargestable')
 
-    def test_populate_data_elite_orderstable(self):
+    def test_populate_data_elite_orderstable(self) -> None:
         court_case_5190 = StateCourtCase(state_court_case_id='5190',
                                          status='A',
                                          date_convicted='6/19/89  12:00:00 AM',
@@ -572,7 +572,7 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
 
         self.run_parse_file_test(expected, 'elite_orderstable')
 
-    def test_populate_data_elite_externalmovements(self):
+    def test_populate_data_elite_externalmovements(self) -> None:
         incarceration_periods_113377 = [
             StateIncarcerationPeriod(state_incarceration_period_id='113377-2',
                                      status='OUT-Y',
@@ -877,7 +877,7 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
         ])
         self.run_parse_file_test(expected, 'elite_offense_in_custody_and_pos_report_data')
 
-    def test_populate_data_docstars_offenders(self):
+    def test_populate_data_docstars_offenders(self) -> None:
         expected = IngestInfo(state_people=[
             StatePerson(state_person_id='241896',
                         surname='Knowles',
@@ -968,7 +968,7 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
 
         self.run_parse_file_test(expected, 'docstars_offenders')
 
-    def test_populate_data_docstars_offendercasestable_with_officers(self):
+    def test_populate_data_docstars_offendercasestable_with_officers(self) -> None:
         agent_63 = StateAgent(
             state_agent_id='63',
             agent_type='SUPERVISION_OFFICER',
@@ -1179,7 +1179,7 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
 
         self.run_parse_file_test(expected, 'docstars_offendercasestable_with_officers')
 
-    def test_populate_data_docstars_offensestable(self):
+    def test_populate_data_docstars_offensestable(self) -> None:
         expected = IngestInfo(
             state_people=[
                 StatePerson(
@@ -1248,7 +1248,7 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
 
         self.run_parse_file_test(expected, 'docstars_offensestable')
 
-    def test_populate_data_docstars_lsi_chronology(self):
+    def test_populate_data_docstars_lsi_chronology(self) -> None:
         metadata_12345 = json.dumps({
             "domain_criminal_history": 7, "domain_education_employment": 7, "domain_financial": 1,
             "domain_family_marital": 2, "domain_accommodation": 0, "domain_leisure_recreation": 2,
@@ -1312,7 +1312,7 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
 
         self.run_parse_file_test(expected, 'docstars_lsi_chronology')
 
-    def test_populate_data_ftr_episode(self):
+    def test_populate_data_ftr_episode(self) -> None:
         metadata_1231 = json.dumps({
             "preferred_provider_id": '49',
             "preferred_location_id": '126',
@@ -1423,13 +1423,12 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
         self.run_parse_file_test(expected, 'docstars_ftr_episode')
 
     # TODO(#2157): Move into integration specific file
-    def test_run_full_ingest_all_files_specific_order(self):
+    def test_run_full_ingest_all_files_specific_order(self) -> None:
         ######################################
         # ELITE OFFENDER IDENTIFIERS
         ######################################
         # Arrange
-        person_1 = entities.StatePerson.new_with_defaults()
-        person_1.state_code = _STATE_CODE
+        person_1 = entities.StatePerson.new_with_defaults(state_code=_STATE_CODE)
         person_1_external_id = entities.StatePersonExternalId.new_with_defaults(
             external_id='39768', id_type=US_ND_ELITE, state_code=_STATE_CODE, person=person_1)
         person_1_external_id_2 = entities.StatePersonExternalId.new_with_defaults(
@@ -1437,8 +1436,7 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
         person_1.external_ids.append(person_1_external_id)
         person_1.external_ids.append(person_1_external_id_2)
 
-        person_2 = entities.StatePerson.new_with_defaults()
-        person_2.state_code = _STATE_CODE
+        person_2 = entities.StatePerson.new_with_defaults(state_code=_STATE_CODE)
         person_2_external_id = entities.StatePersonExternalId.new_with_defaults(
             external_id='52163', id_type=US_ND_ELITE, state_code=_STATE_CODE, person=person_2)
         person_2_external_id_2 = entities.StatePersonExternalId.new_with_defaults(
@@ -1449,8 +1447,7 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
         person_2.external_ids.append(person_2_external_id_2)
         person_2.external_ids.append(person_2_external_id_3)
 
-        person_3 = entities.StatePerson.new_with_defaults()
-        person_3.state_code = _STATE_CODE
+        person_3 = entities.StatePerson.new_with_defaults(state_code=_STATE_CODE)
         person_3_external_id_1 = entities.StatePersonExternalId.new_with_defaults(
             external_id='12345', id_type=US_ND_SID, state_code=_STATE_CODE, person=person_3)
         person_3_external_id_2 = entities.StatePersonExternalId.new_with_defaults(
@@ -1597,8 +1594,7 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
         sentence_group_114909.date_imposed = datetime.date(year=2018, month=2, day=27)
         sentence_group_114909.max_length_days = 316
 
-        person_4 = entities.StatePerson.new_with_defaults()
-        person_4.state_code = _STATE_CODE
+        person_4 = entities.StatePerson.new_with_defaults(state_code=_STATE_CODE)
         sentence_group_115077 = entities.StateSentenceGroup.new_with_defaults(
             external_id='115077',
             status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
@@ -2143,8 +2139,7 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
             incarceration_sentences=[incarceration_sentence_114909_ips],
             person=incarceration_sentence_114909_ips.person)
 
-        person_555555 = entities.StatePerson.new_with_defaults()
-        person_555555.state_code = _STATE_CODE
+        person_555555 = entities.StatePerson.new_with_defaults(state_code=_STATE_CODE)
         sentence_group_555555 = entities.StateSentenceGroup.new_with_defaults(
             external_id='555555',
             status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
@@ -2360,8 +2355,7 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
         sentence_group_110651.incarceration_sentences.append(incarceration_sentence_110651_placeholder)
         person_2.sentence_groups.append(sentence_group_110651)
 
-        person_5 = entities.StatePerson.new_with_defaults()
-        person_5.state_code = _STATE_CODE
+        person_5 = entities.StatePerson.new_with_defaults(state_code=_STATE_CODE)
         person_5_external_id = entities.StatePersonExternalId.new_with_defaults(
             external_id='21109', id_type=US_ND_ELITE, state_code=_STATE_CODE, person=person_5)
         sentence_group_5129 = entities.StateSentenceGroup.new_with_defaults(
@@ -3211,7 +3205,7 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
 
         self.assert_expected_db_people(expected_people)
 
-    def test_runOutOfOrder_mergeTwoDatabasePeople(self):
+    def test_runOutOfOrder_mergeTwoDatabasePeople(self) -> None:
         """Tests that our system correctly handles the situation where we commit
         2 separate people into our DB, but after ingesting a later file, we
         realize that those 2 people should actually be merged into one person.
@@ -3224,13 +3218,12 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
         # ELITE OFFENDERS
         ######################################
         # Arrange
-        person_1 = entities.StatePerson.new_with_defaults()
+        person_1 = entities.StatePerson.new_with_defaults(state_code=_STATE_CODE)
         person_1.full_name = '{"given_names": "JON", "surname": "HOPKINS"}'
         person_1.birthdate = datetime.date(year=1979, month=8, day=15)
         person_1.birthdate_inferred_from_age = False
         person_1.gender = Gender.MALE
         person_1.gender_raw_text = 'M'
-        person_1.state_code = _STATE_CODE
         person_1_race = entities.StatePersonRace.new_with_defaults(
             state_code=_STATE_CODE, race=Race.WHITE, race_raw_text='CAUCASIAN', person=person_1)
         person_1_alias_1 = entities.StatePersonAlias.new_with_defaults(
@@ -3246,7 +3239,7 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
         person_1.aliases = [person_1_alias_1]
         person_1.external_ids.append(person_1_external_id)
 
-        person_2 = entities.StatePerson.new_with_defaults()
+        person_2 = entities.StatePerson.new_with_defaults(state_code=_STATE_CODE)
         person_2_external_id = entities.StatePersonExternalId.new_with_defaults(
             external_id='52163', id_type=US_ND_ELITE, state_code=_STATE_CODE, person=person_2)
         person_2.full_name = '{"given_names": "SOLANGE", "surname": "KNOWLES"}'
@@ -3254,7 +3247,6 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
         person_2.birthdate_inferred_from_age = False
         person_2.gender = Gender.FEMALE
         person_2.gender_raw_text = 'F'
-        person_2.state_code = _STATE_CODE
         person_2_race = entities.StatePersonRace.new_with_defaults(
             state_code=_STATE_CODE, race=Race.BLACK, race_raw_text='BLACK', person=person_2)
         person_2_alias_1 = entities.StatePersonAlias.new_with_defaults(
@@ -3279,8 +3271,7 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
         ######################################
 
         # Arrange
-        person_1_dup = entities.StatePerson.new_with_defaults()
-        person_1_dup.state_code = _STATE_CODE
+        person_1_dup = entities.StatePerson.new_with_defaults(state_code=_STATE_CODE)
         person_1_dup_external_id = entities.StatePersonExternalId.new_with_defaults(
             external_id='92237', id_type=US_ND_SID, state_code=_STATE_CODE, person=person_1_dup)
         person_1_dup.external_ids.append(person_1_dup_external_id)
@@ -3351,8 +3342,7 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
         person_1_dup.assessments.append(assessment_12346)
         expected_people.append(person_1_dup)
 
-        person_2_dup = entities.StatePerson.new_with_defaults()
-        person_2_dup.state_code = _STATE_CODE
+        person_2_dup = entities.StatePerson.new_with_defaults(state_code=_STATE_CODE)
         person_2_dup_external_id_2 = entities.StatePersonExternalId.new_with_defaults(
             external_id='241896', id_type=US_ND_SID, state_code=_STATE_CODE, person=person_2_dup)
         person_2_dup.external_ids.append(person_2_dup_external_id_2)
@@ -3401,8 +3391,7 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
         person_2_dup.external_ids = []
         person_2_dup.assessments = []
 
-        person_3 = entities.StatePerson.new_with_defaults()
-        person_3.state_code = _STATE_CODE
+        person_3 = entities.StatePerson.new_with_defaults(state_code=_STATE_CODE)
         person_3_external_id_1 = entities.StatePersonExternalId.new_with_defaults(
             external_id='12345', id_type=US_ND_SID, state_code=_STATE_CODE, person=person_3)
         person_3_external_id_2 = entities.StatePersonExternalId.new_with_defaults(

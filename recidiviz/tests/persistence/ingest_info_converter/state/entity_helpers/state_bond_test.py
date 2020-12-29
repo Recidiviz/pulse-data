@@ -34,7 +34,7 @@ _EMPTY_METADATA = IngestMetadata.new_with_defaults()
 class StateBondConverterTest(unittest.TestCase):
     """Tests for converting state bonds."""
 
-    def testParseStateBond(self):
+    def testParseStateBond(self) -> None:
         # Arrange
         ingest_bond = ingest_info_pb2.StateBond(
             status='ACTIVE',
@@ -66,37 +66,39 @@ class StateBondConverterTest(unittest.TestCase):
 
         self.assertEqual(result, expected_result)
 
-    def testParseBond_AmountIsNoBond_UsesAmountAsType(self):
+    def testParseBond_AmountIsNoBond_UsesAmountAsType(self) -> None:
         # Arrange
-        ingest_bond = ingest_info_pb2.StateBond(amount='No Bond')
+        ingest_bond = ingest_info_pb2.StateBond(state_code='us_xx', amount='No Bond')
 
         # Act
         result = state_bond.convert(ingest_bond, _EMPTY_METADATA)
 
         # Assert
         expected_result = entities.StateBond.new_with_defaults(
+            state_code='US_XX',
             bond_type=BondType.DENIED,
             status=BondStatus.SET
         )
         self.assertEqual(result, expected_result)
 
-    def testParseBond_AmountIsBondDenied_UsesAmountAsType(self):
+    def testParseBond_AmountIsBondDenied_UsesAmountAsType(self) -> None:
         # Arrange
-        ingest_bond = ingest_info_pb2.StateBond(amount='Bond Denied')
+        ingest_bond = ingest_info_pb2.StateBond(state_code='us_xx', amount='Bond Denied')
 
         # Act
         result = state_bond.convert(ingest_bond, _EMPTY_METADATA)
 
         # Assert
         expected_result = entities.StateBond.new_with_defaults(
+            state_code='US_XX',
             bond_type=BondType.DENIED,
             status=BondStatus.SET
         )
         self.assertEqual(result, expected_result)
 
-    def testParseBond_MapStatusToType(self):
+    def testParseBond_MapStatusToType(self) -> None:
         # Arrange
-        ingest_bond = ingest_info_pb2.StateBond(bond_type='bond revoked')
+        ingest_bond = ingest_info_pb2.StateBond(state_code='us_xx', bond_type='bond revoked')
         overrides_builder = EnumOverrides.Builder()
         overrides_builder.add('BOND REVOKED', BondStatus.REVOKED, BondType)
         overrides = overrides_builder.build()
@@ -107,18 +109,19 @@ class StateBondConverterTest(unittest.TestCase):
 
         # Assert
         expected_result = entities.StateBond.new_with_defaults(
-            bond_type_raw_text='BOND REVOKED', status=BondStatus.REVOKED)
+            state_code='US_XX', bond_type_raw_text='BOND REVOKED', status=BondStatus.REVOKED)
         self.assertEqual(result, expected_result)
 
-    def testParseBond_OnlyAmount_InfersCash(self):
+    def testParseBond_OnlyAmount_InfersCash(self) -> None:
         # Arrange
-        ingest_bond = ingest_info_pb2.StateBond(amount='1,500')
+        ingest_bond = ingest_info_pb2.StateBond(state_code='us_xx', amount='1,500')
 
         # Act
         result = state_bond.convert(ingest_bond, _EMPTY_METADATA)
 
         # Assert
         expected_result = entities.StateBond.new_with_defaults(
+            state_code='US_XX',
             bond_type=BondType.CASH,
             status=BondStatus.PRESENT_WITHOUT_INFO,
             amount_dollars=1500)

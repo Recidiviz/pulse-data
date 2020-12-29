@@ -38,7 +38,11 @@ _STATE_CODE = 'NC'
 
 
 def generate_person(**kwargs) -> schema.StatePerson:
-    return schema.StatePerson(**kwargs)
+    args = {
+        'state_code': _STATE_CODE,
+    }
+    args.update(kwargs)
+    return schema.StatePerson(**args)
 
 
 def generate_external_id(**kwargs) -> schema.StatePersonExternalId:
