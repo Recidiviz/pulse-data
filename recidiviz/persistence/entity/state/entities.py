@@ -25,6 +25,7 @@ from typing import Optional, List, TypeVar
 import datetime
 import attr
 
+from recidiviz.common import attr_validators
 from recidiviz.common.attr_mixins import BuildableAttr, DefaultableAttr
 from recidiviz.common.constants.state.state_agent import StateAgentType
 from recidiviz.common.constants.state.state_assessment import (
@@ -117,22 +118,22 @@ PeriodType = TypeVar('PeriodType', 'StateSupervisionPeriod', 'StateIncarceration
 
 # Cross-entity relationships
 
+
 @attr.s(eq=False)
 class StatePersonExternalId(Entity, BuildableAttr, DefaultableAttr):
     """Models an external id associated with a particular StatePerson."""
-    external_id: str = attr.ib()
+    external_id: str = attr.ib(validator=attr_validators.is_str)
 
     #   - Where
     # State providing the external id
-    state_code: str = attr.ib()  # non-nullable
+    state_code: str = attr.ib(validator=attr_validators.is_str)
 
     #   - What
-    # TODO(#1905): Not optional in schema
-    id_type: Optional[str] = attr.ib()
+    id_type: str = attr.ib(validator=attr_validators.is_str)
 
     # Primary key - Only optional when hydrated in the data converter, before we have written this entity to the
     # persistence layer
-    person_external_id_id: Optional[int] = attr.ib(default=None)
+    person_external_id_id: Optional[int] = attr.ib(default=None, validator=attr_validators.is_opt_int)
 
     # Cross-entity relationships
     person: Optional['StatePerson'] = attr.ib(default=None)
@@ -142,7 +143,7 @@ class StatePersonExternalId(Entity, BuildableAttr, DefaultableAttr):
 class StatePersonAlias(Entity, BuildableAttr, DefaultableAttr):
     """Models an alias associated with a particular StatePerson."""
     # Attributes
-    state_code: str = attr.ib()  # non-nullable
+    state_code: str = attr.ib(validator=attr_validators.is_str)
     alias_type: Optional[StatePersonAliasType] = attr.ib()
     alias_type_raw_text: Optional[str] = attr.ib()
     # TODO(#1905): Remove defaults for string fields
@@ -160,7 +161,7 @@ class StatePersonAlias(Entity, BuildableAttr, DefaultableAttr):
 class StatePersonRace(Entity, BuildableAttr, DefaultableAttr):
     """Models a race associated with a particular StatePerson."""
     # Attributes
-    state_code: str = attr.ib()  # non-nullable
+    state_code: str = attr.ib(validator=attr_validators.is_str)
     race: Optional[Race] = attr.ib()
     race_raw_text: Optional[str] = attr.ib()
 
@@ -176,7 +177,7 @@ class StatePersonRace(Entity, BuildableAttr, DefaultableAttr):
 class StatePersonEthnicity(Entity, BuildableAttr, DefaultableAttr):
     """Models an ethnicity associated with a particular StatePerson."""
     # Attributes
-    state_code: str = attr.ib()  # non-nullable
+    state_code: str = attr.ib(validator=attr_validators.is_str)
     ethnicity: Optional[Ethnicity] = attr.ib()
     ethnicity_raw_text: Optional[str] = attr.ib()
 
@@ -194,33 +195,34 @@ class StatePerson(Entity, BuildableAttr, DefaultableAttr):
     # Attributes
 
     #   - Where
-    state_code: str = attr.ib()  # non-nullable
-    current_address: Optional[str] = attr.ib(default=None)
+    state_code: str = attr.ib(validator=attr_validators.is_str)
+    current_address: Optional[str] = attr.ib(default=None, validator=attr_validators.is_opt_str)
 
     #   - What
-    full_name: Optional[str] = attr.ib(default=None)
+    full_name: Optional[str] = attr.ib(default=None, validator=attr_validators.is_opt_str)
 
-    birthdate: Optional[datetime.date] = attr.ib(default=None)
-    birthdate_inferred_from_age: Optional[bool] = attr.ib(default=None)
+    birthdate: Optional[datetime.date] = attr.ib(default=None, validator=attr_validators.is_opt_date)
+    birthdate_inferred_from_age: Optional[bool] = attr.ib(default=None, validator=attr_validators.is_opt_bool)
 
-    gender: Optional[Gender] = attr.ib(default=None)
-    gender_raw_text: Optional[str] = attr.ib(default=None)
+    gender: Optional[Gender] = attr.ib(default=None, validator=attr_validators.is_opt(Gender))
+    gender_raw_text: Optional[str] = attr.ib(default=None, validator=attr_validators.is_opt_str)
 
     # NOTE: This may change over time - we track these changes in history tables
-    residency_status: Optional[ResidencyStatus] = attr.ib(default=None)
+    residency_status: Optional[ResidencyStatus] = attr.ib(default=None,
+                                                          validator=attr_validators.is_opt(ResidencyStatus))
 
     # Primary key - Only optional when hydrated in the data converter, before we have written this entity to the
     # persistence layer
-    person_id: Optional[int] = attr.ib(default=None)
+    person_id: Optional[int] = attr.ib(default=None, validator=attr_validators.is_opt_int)
 
     # Cross-entity relationships
-    external_ids: List['StatePersonExternalId'] = attr.ib(factory=list)
-    aliases: List['StatePersonAlias'] = attr.ib(factory=list)
-    races: List['StatePersonRace'] = attr.ib(factory=list)
-    ethnicities: List['StatePersonEthnicity'] = attr.ib(factory=list)
-    assessments: List['StateAssessment'] = attr.ib(factory=list)
-    program_assignments: List['StateProgramAssignment'] = attr.ib(factory=list)
-    sentence_groups: List['StateSentenceGroup'] = attr.ib(factory=list)
+    external_ids: List['StatePersonExternalId'] = attr.ib(factory=list, validator=attr_validators.is_list)
+    aliases: List['StatePersonAlias'] = attr.ib(factory=list, validator=attr_validators.is_list)
+    races: List['StatePersonRace'] = attr.ib(factory=list, validator=attr_validators.is_list)
+    ethnicities: List['StatePersonEthnicity'] = attr.ib(factory=list, validator=attr_validators.is_list)
+    assessments: List['StateAssessment'] = attr.ib(factory=list, validator=attr_validators.is_list)
+    program_assignments: List['StateProgramAssignment'] = attr.ib(factory=list, validator=attr_validators.is_list)
+    sentence_groups: List['StateSentenceGroup'] = attr.ib(factory=list, validator=attr_validators.is_list)
     supervising_officer: Optional['StateAgent'] = attr.ib(default=None)
 
     # NOTE: Eventually we might have a relationship to objects holding pre-sentence information so we can track
@@ -243,7 +245,7 @@ class StateBond(ExternalIdEntity, BuildableAttr, DefaultableAttr):
     date_paid: Optional[datetime.date] = attr.ib()
 
     #   - Where
-    state_code: str = attr.ib()  # non-nullable
+    state_code: str = attr.ib(validator=attr_validators.is_str)
     county_code: Optional[str] = attr.ib()
 
     #   - What
@@ -279,7 +281,7 @@ class StateCourtCase(ExternalIdEntity, BuildableAttr, DefaultableAttr):
 
     #   - Where
     # Location of the court itself
-    state_code: str = attr.ib()  # non-nullable
+    state_code: str = attr.ib(validator=attr_validators.is_str)
     # County where the court case took place
     county_code: Optional[str] = attr.ib()
     # Area of jurisdictional coverage of the court which tried the case, may be the same as the county, the entire
@@ -318,7 +320,7 @@ class StateCharge(ExternalIdEntity, BuildableAttr, DefaultableAttr):
     date_charged: Optional[datetime.date] = attr.ib()
 
     #   - Where
-    state_code: str = attr.ib()  # non-nullable
+    state_code: str = attr.ib(validator=attr_validators.is_str)
     county_code: str = attr.ib()
 
     #   - What
@@ -369,7 +371,7 @@ class StateAssessment(ExternalIdEntity, BuildableAttr, DefaultableAttr):
     assessment_date: Optional[datetime.date] = attr.ib()
 
     #   - Where
-    state_code: str = attr.ib()  # non-nullable
+    state_code: str = attr.ib(validator=attr_validators.is_str)
 
     #   - What
     assessment_score: Optional[int] = attr.ib()
@@ -412,7 +414,7 @@ class StateSentenceGroup(ExternalIdEntity, BuildableAttr, DefaultableAttr):
     # TODO(#1698): Consider including rollup projected completion dates?
 
     #   - Where
-    state_code: str = attr.ib()  # non-nullable
+    state_code: str = attr.ib(validator=attr_validators.is_str)
     # The county where this sentence was issued
     county_code: Optional[str] = attr.ib()
 
@@ -471,7 +473,7 @@ class StateSupervisionSentence(ExternalIdEntity, BuildableAttr, DefaultableAttr)
     completion_date: Optional[datetime.date] = attr.ib()
 
     #   - Where
-    state_code: str = attr.ib()  # non-nullable
+    state_code: str = attr.ib(validator=attr_validators.is_str)
     # The county where this sentence was issued
     county_code: Optional[str] = attr.ib()
 
@@ -524,7 +526,7 @@ class StateIncarcerationSentence(ExternalIdEntity, BuildableAttr, DefaultableAtt
     completion_date: Optional[datetime.date] = attr.ib()
 
     #   - Where
-    state_code: str = attr.ib()  # non-nullable
+    state_code: str = attr.ib(validator=attr_validators.is_str)
     # The county where this sentence was issued
     county_code: Optional[str] = attr.ib()
 
@@ -573,7 +575,7 @@ class StateFine(ExternalIdEntity, BuildableAttr, DefaultableAttr):
     date_paid: Optional[datetime.date] = attr.ib()
 
     #   - Where
-    state_code: str = attr.ib()  # non-nullable
+    state_code: str = attr.ib(validator=attr_validators.is_str)
     # The county where this fine was issued
     county_code: Optional[str] = attr.ib()
 
@@ -613,7 +615,7 @@ class StateIncarcerationPeriod(ExternalIdEntity, BuildableAttr, DefaultableAttr,
     release_date: Optional[datetime.date] = attr.ib()
 
     #   - Where
-    state_code: str = attr.ib()  # non-nullable
+    state_code: str = attr.ib(validator=attr_validators.is_str)
     # The county where the facility is located
     county_code: Optional[str] = attr.ib()
 
@@ -698,7 +700,7 @@ class StateSupervisionPeriod(ExternalIdEntity, BuildableAttr, DefaultableAttr, D
     termination_date: Optional[datetime.date] = attr.ib()
 
     #   - Where
-    state_code: str = attr.ib()  # non-nullable
+    state_code: str = attr.ib(validator=attr_validators.is_str)
     # The county where this person is being supervised
     county_code: Optional[str] = attr.ib()
 
@@ -753,7 +755,7 @@ class StateSupervisionPeriod(ExternalIdEntity, BuildableAttr, DefaultableAttr, D
 class StateSupervisionCaseTypeEntry(Entity, BuildableAttr, DefaultableAttr):
     # Attributes
     #   - Where
-    state_code: str = attr.ib()  # non-nullable
+    state_code: str = attr.ib(validator=attr_validators.is_str)
 
     #   - What
     case_type: Optional[StateSupervisionCaseType] = attr.ib()
@@ -784,7 +786,7 @@ class StateIncarcerationIncident(ExternalIdEntity, BuildableAttr, DefaultableAtt
     incident_date: Optional[datetime.date] = attr.ib()
 
     #   - Where
-    state_code: str = attr.ib()  # non-nullable
+    state_code: str = attr.ib(validator=attr_validators.is_str)
     facility: Optional[str] = attr.ib()
     location_within_facility: Optional[str] = attr.ib()
 
@@ -819,7 +821,7 @@ class StateIncarcerationIncidentOutcome(ExternalIdEntity, BuildableAttr, Default
     report_date: Optional[datetime.date] = attr.ib()
 
     #   - Where
-    state_code: str = attr.ib()  # non-nullable
+    state_code: str = attr.ib(validator=attr_validators.is_str)
 
     #   - What
     outcome_description: Optional[str] = attr.ib()
@@ -847,7 +849,7 @@ class StateParoleDecision(ExternalIdEntity, BuildableAttr, DefaultableAttr):
     corrective_action_deadline: Optional[datetime.date] = attr.ib()
 
     #   - Where
-    state_code: str = attr.ib()  # non-nullable
+    state_code: str = attr.ib(validator=attr_validators.is_str)
     # The county where the decision was made, if different from the county where this person is incarcerated.
     county_code: Optional[str] = attr.ib()
 
@@ -874,7 +876,7 @@ class StateParoleDecision(ExternalIdEntity, BuildableAttr, DefaultableAttr):
 class StateSupervisionViolationTypeEntry(Entity, BuildableAttr, DefaultableAttr):
     """Models a violation type associated with a particular StateSupervisionViolation."""
     # Attributes
-    state_code: str = attr.ib()  # non-nullable
+    state_code: str = attr.ib(validator=attr_validators.is_str)
     violation_type: Optional[StateSupervisionViolationType] = attr.ib()
     violation_type_raw_text: Optional[str] = attr.ib()
 
@@ -893,7 +895,7 @@ class StateSupervisionViolatedConditionEntry(Entity, BuildableAttr, DefaultableA
     StateSupervisionViolation.
     """
     # Attributes
-    state_code: str = attr.ib()  # non-nullable
+    state_code: str = attr.ib(validator=attr_validators.is_str)
 
     # A string code corresponding to the condition - region specific.
     condition: str = attr.ib()  # non-nullable
@@ -928,7 +930,7 @@ class StateSupervisionViolation(ExternalIdEntity, BuildableAttr, DefaultableAttr
 
     #   - Where
     # State that recorded this violation, not necessarily where the violation took place
-    state_code: str = attr.ib()  # non-nullable
+    state_code: str = attr.ib(validator=attr_validators.is_str)
 
     #   - What
     # These should correspond to |conditions| in StateSupervisionPeriod
@@ -957,7 +959,7 @@ class StateSupervisionViolation(ExternalIdEntity, BuildableAttr, DefaultableAttr
 class StateSupervisionViolationResponseDecisionEntry(Entity, BuildableAttr, DefaultableAttr):
     """Models the type of decision resulting from a response to a StateSupervisionViolation."""
     # Attributes
-    state_code: str = attr.ib()  # non-nullable
+    state_code: str = attr.ib(validator=attr_validators.is_str)
 
     decision: Optional[StateSupervisionViolationResponseDecision] = attr.ib()
     decision_raw_text: Optional[str] = attr.ib()
@@ -991,7 +993,7 @@ class StateSupervisionViolationResponse(ExternalIdEntity, BuildableAttr, Default
     response_date: Optional[datetime.date] = attr.ib()
 
     #   - Where
-    state_code: str = attr.ib()  # non-nullable
+    state_code: str = attr.ib(validator=attr_validators.is_str)
 
     #   - What
     # TODO(#2668): DEPRECATED - DELETE IN FOLLOW-UP PR
@@ -1031,7 +1033,7 @@ class StateAgent(ExternalIdEntity, BuildableAttr, DefaultableAttr):
 
     # Attributes
     #   - Where
-    state_code: str = attr.ib()  # non-nullable
+    state_code: str = attr.ib(validator=attr_validators.is_str)
 
     #   - What
     full_name: Optional[str] = attr.ib()
@@ -1055,7 +1057,7 @@ class StateProgramAssignment(ExternalIdEntity, BuildableAttr, DefaultableAttr):
     discharge_date: Optional[datetime.date] = attr.ib()
 
     #   - Where
-    state_code: str = attr.ib()  # non-nullable
+    state_code: str = attr.ib(validator=attr_validators.is_str)
 
     #   - What
     program_id: Optional[str] = attr.ib()
@@ -1097,7 +1099,7 @@ class StateEarlyDischarge(ExternalIdEntity, BuildableAttr, DefaultableAttr):
     requesting_body_type_raw_text: Optional[str] = attr.ib()
 
     #   - Where
-    state_code: str = attr.ib()  # non-nullable
+    state_code: str = attr.ib(validator=attr_validators.is_str)
     county_code: str = attr.ib()
 
     #   - Who
@@ -1127,7 +1129,7 @@ class StateSupervisionContact(ExternalIdEntity, BuildableAttr, DefaultableAttr):
     contact_date: Optional[datetime.date] = attr.ib()
 
     #   - Where
-    state_code: str = attr.ib()  # non-nullable
+    state_code: str = attr.ib(validator=attr_validators.is_str)
 
     #   - What
     contact_type: Optional[StateSupervisionContactType] = attr.ib()
