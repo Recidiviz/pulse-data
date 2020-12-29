@@ -114,6 +114,7 @@ class TestRevokedSupervisionPeriodsIfRevocationOccurred(unittest.TestCase):
 
     def test_revoked_supervision_periods_if_revocation_did_not_occur_with_treatment_transfer_US_ID(self) -> None:
         supervision_period = StateSupervisionPeriod.new_with_defaults(
+            state_code='US_ID',
             start_date=date(2017, 1, 1),
             termination_date=date(2017, 5, 17),
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
