@@ -1752,7 +1752,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
             self.to_entity(db_supervision_sentence),
             supervision_sentence_id=None, min_length_days=1)
         sentence_group_placeholder = StateSentenceGroup.new_with_defaults(
-            supervision_sentences=[supervision_sentence_updated])
+            state_code=_STATE_CODE, supervision_sentences=[supervision_sentence_updated])
         external_id = attr.evolve(
             self.to_entity(db_external_id), person_external_id_id=None)
         person = attr.evolve(
@@ -1995,16 +1995,16 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
             self.to_entity(db_supervision_sentence),
             supervision_sentence_id=None, min_length_days=1)
         placeholder_sentence_group = StateSentenceGroup.new_with_defaults(
-            supervision_sentences=[supervision_sentence_updated])
+            state_code=_STATE_CODE, supervision_sentences=[supervision_sentence_updated])
         placeholder_person = StatePerson.new_with_defaults(
-            sentence_groups=[placeholder_sentence_group], state_code=_STATE_CODE)
+            state_code=_STATE_CODE, sentence_groups=[placeholder_sentence_group])
 
         supervision_sentence_another_updated = attr.evolve(
             self.to_entity(db_supervision_sentence_another),
             supervision_sentence_id=None, min_length_days=11)
         placeholder_sentence_group_another = \
             StateSentenceGroup.new_with_defaults(
-                supervision_sentences=[supervision_sentence_another_updated])
+                state_code=_STATE_CODE, supervision_sentences=[supervision_sentence_another_updated])
         placeholder_person_another = StatePerson.new_with_defaults(
             sentence_groups=[placeholder_sentence_group_another], state_code=_STATE_CODE)
 
@@ -2076,6 +2076,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
             self.to_entity(db_supervision_sentence_another),
             supervision_sentence_id=None, min_length_days=11)
         placeholder_sentence_group = StateSentenceGroup.new_with_defaults(
+            state_code=_STATE_CODE,
             supervision_sentences=[
                 supervision_sentence_updated,
                 supervision_sentence_another_updated])
@@ -2140,9 +2141,9 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
             self.to_entity(db_supervision_sentence),
             supervision_sentence_id=None, min_length_days=1)
         placeholder_sentence_group = StateSentenceGroup.new_with_defaults(
-            supervision_sentences=[supervision_sentence_updated])
+            state_code=_STATE_CODE, supervision_sentences=[supervision_sentence_updated])
         placeholder_person = StatePerson.new_with_defaults(
-            sentence_groups=[placeholder_sentence_group], state_code=_STATE_CODE)
+            state_code=_STATE_CODE, sentence_groups=[placeholder_sentence_group])
 
         expected_supervision_sentence = attr.evolve(
             supervision_sentence_updated, supervision_sentence_id=_ID)

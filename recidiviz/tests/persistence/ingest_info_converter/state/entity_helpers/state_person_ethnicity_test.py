@@ -31,7 +31,7 @@ _EMPTY_METADATA = IngestMetadata.new_with_defaults()
 class StatePersonEthnicityConverterTest(unittest.TestCase):
     """Tests for converting state person ethnicities."""
 
-    def testParseStatePersonEthnicity(self):
+    def testParseStatePersonEthnicity(self) -> None:
         # Arrange
         ingest_person_ethnicity = ingest_info_pb2.StatePersonEthnicity(
             ethnicity='HISPANIC',
