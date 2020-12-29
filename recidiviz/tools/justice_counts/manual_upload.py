@@ -168,6 +168,39 @@ class PopulationType(Dimension, EntityEnum, metaclass=EntityEnumMeta):
             'SUPERVISION': cls.SUPERVISION,
         }
 
+
+class ReleaseType(Dimension, EntityEnum, metaclass=EntityEnumMeta):
+
+    # Release from prison to supervision
+    TO_SUPERVISION = 'TO_SUPERVISION'
+
+    # Release that has been fully served
+    COMPLETED = 'COMPLETED'
+
+    # Releases that are not covered above
+    OTHER = 'OTHER'
+
+    @classmethod
+    def get(cls, dimension_cell_value: str, enum_overrides: Optional[EnumOverrides] = None) -> 'ReleaseType':
+        return parse_entity_enum(cls, dimension_cell_value, enum_overrides)
+
+    @classmethod
+    def dimension_identifier(cls) -> str:
+        return 'metric/release/type'
+
+    @property
+    def dimension_value(self) -> str:
+        return self.value
+
+    @classmethod
+    def _get_default_map(cls) -> Dict[str, 'ReleaseType']:
+        return {
+            'TO SUPERVISION': cls.TO_SUPERVISION,
+            'COMPLETED': cls.COMPLETED,
+            'OTHER': cls.OTHER,
+        }
+
+
 class AdmissionType(Dimension, EntityEnum, metaclass=EntityEnumMeta):
     """Dimension that represents the type of incarceration admission"""
 
@@ -491,6 +524,11 @@ def _convert_optional(dimension_type: Type[EntityEnumT], value: Optional[str]) -
 def _convert_optional_population_type(value: Optional[str]) -> Optional[PopulationType]:
     return _convert_optional(PopulationType, value)
 
+
+def _convert_optional_release_type(value: Optional[str]) -> Optional[ReleaseType]:
+    return _convert_optional(ReleaseType, value)
+
+
 def _convert_optional_admission_type(value: Optional[str]) -> Optional[AdmissionType]:
     return _convert_optional(AdmissionType, value)
 
@@ -535,6 +573,30 @@ class Population(Metric):
     @classmethod
     def get_metric_type(cls) -> schema.MetricType:
         return schema.MetricType.POPULATION
+
+@attr.s(frozen=True)
+class Releases(Metric):
+    """
+    Metric for recording releases.
+    """
+    measurement_type: schema.MeasurementType = attr.ib(converter=schema.MeasurementType)
+    release_type: Optional[ReleaseType] = attr.ib(converter=_convert_optional_release_type, default=None)
+
+    @property
+    def filters(self) -> List[Dimension]:
+        return [self.release_type] if self.release_type is not None else []
+
+    @property
+    def required_aggregated_dimensions(self) -> List[Type[Dimension]]:
+        return [ReleaseType] if self.release_type is None else []
+
+    def get_measurement_type(self) -> schema.MeasurementType:
+        return self.measurement_type
+
+    @classmethod
+    def get_metric_type(cls) -> schema.MetricType:
+        return schema.MetricType.RELEASES
+
 
 @attr.s(frozen=True)
 class Admissions(Metric):
@@ -1094,6 +1156,8 @@ def _parse_metric(metric_input: YAMLDict) -> Metric:
             return Population(**metric_args)
         if metric_type == 'admissions':
             return Admissions(**metric_args)
+        if metric_type == 'releases':
+            return Releases(**metric_args)
     raise ValueError(f"Invalid metric, expected a dictionary with a single key that is one of ('admissions', "
                      f"'population') but received: {repr(metric_input)}")
 
