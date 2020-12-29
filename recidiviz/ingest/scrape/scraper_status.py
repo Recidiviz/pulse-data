@@ -28,14 +28,14 @@ from recidiviz.ingest.scrape import (constants, ingest_utils,
 from recidiviz.ingest.scrape.scraper_cloud_task_manager import \
     ScraperCloudTaskManager
 from recidiviz.utils import monitoring, regions, structured_logging
-from recidiviz.utils.auth import authenticate_request
+from recidiviz.utils.auth.gae import requires_gae_auth
 from recidiviz.utils.params import get_str_param_values
 
 scraper_status = Blueprint('scraper_status', __name__)
 
 
 @scraper_status.route('/check_finished')
-@authenticate_request
+@requires_gae_auth
 def check_for_finished_scrapers():
     """Checks for any finished scrapers and kicks off next processes."""
 

@@ -46,7 +46,7 @@ from recidiviz.metrics.export.optimized_metric_big_query_view_exporter import Op
 from recidiviz.metrics.export.optimized_metric_big_query_view_export_validator import \
     OptimizedMetricBigQueryViewExportValidator
 from recidiviz.utils import metadata, monitoring
-from recidiviz.utils.auth import authenticate_request
+from recidiviz.utils.auth.gae import requires_gae_auth
 from recidiviz.utils.environment import GCP_PROJECT_STAGING, GCP_PROJECT_PRODUCTION
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.utils.params import get_str_param_value, str_to_bool
@@ -80,7 +80,7 @@ export_blueprint = Blueprint('export', __name__)
 
 
 @export_blueprint.route('/metric_view_data')
-@authenticate_request
+@requires_gae_auth
 def metric_view_data_export() -> Tuple[str, HTTPStatus]:
     """Exports data in BigQuery metric views to cloud storage buckets.
 

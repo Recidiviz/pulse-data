@@ -28,7 +28,7 @@ from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.calculator.dataflow_output_storage_config import DATAFLOW_METRICS_COLD_STORAGE_DATASET, \
     MAX_DAYS_IN_DATAFLOW_METRICS_TABLE
 from recidiviz.calculator.query.state.dataset_config import DATAFLOW_METRICS_DATASET, REFERENCE_VIEWS_DATASET
-from recidiviz.utils.auth import authenticate_request
+from recidiviz.utils.auth.gae import requires_gae_auth
 
 # Datasets must be at least 12 hours old to be deleted
 DATASET_DELETION_MIN_SECONDS = 12 * 60 * 60
@@ -37,7 +37,7 @@ calculation_data_storage_manager_blueprint = flask.Blueprint('calculation_data_s
 
 
 @calculation_data_storage_manager_blueprint.route('/prune_old_dataflow_data')
-@authenticate_request
+@requires_gae_auth
 def prune_old_dataflow_data() -> Tuple[str, HTTPStatus]:
     """Calls the move_old_dataflow_metrics_to_cold_storage function."""
     move_old_dataflow_metrics_to_cold_storage()
@@ -46,7 +46,7 @@ def prune_old_dataflow_data() -> Tuple[str, HTTPStatus]:
 
 
 @calculation_data_storage_manager_blueprint.route('/delete_empty_datasets')
-@authenticate_request
+@requires_gae_auth
 def delete_empty_datasets() -> Tuple[str, HTTPStatus]:
     """Calls the _delete_empty_datasets function."""
     _delete_empty_datasets()
