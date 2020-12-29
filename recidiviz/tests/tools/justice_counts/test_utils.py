@@ -30,4 +30,4 @@ def prepare_files(fs: FakeGCSFileSystem, manifest_filepath: str) -> GcsfsFilePat
     for file_name in os.listdir(directory):
         path = os.path.join(directory, file_name)
         fs.test_add_path(gcs_path(path), path)
-    return gcs_path(os.path.join(directory, 'manifest.yaml'))
+    return gcs_path(manifest_filepath)
