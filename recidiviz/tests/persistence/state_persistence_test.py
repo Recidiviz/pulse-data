@@ -20,6 +20,7 @@ from datetime import datetime
 from typing import Optional
 from unittest import TestCase
 
+import pytest
 from mock import patch, Mock
 
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
@@ -57,15 +58,17 @@ SENTENCE_GROUP_ID = 'SG1'
 SENTENCE_GROUP_ID_2 = 'SG2'
 SENTENCE_GROUP_ID_3 = 'SG3'
 
-STATE_ERROR_THRESHOLDS_WITH_FORTY_PERCENT_RATIOS = {SystemLevel.STATE:
-                                            {
-                                                OVERALL_THRESHOLD: 0.4,
-                                                ENUM_THRESHOLD: 0.4,
-                                                ENTITY_MATCHING_THRESHOLD: 0.4,
-                                                DATABASE_INVARIANT_THRESHOLD: 0
-                                            }
+STATE_ERROR_THRESHOLDS_WITH_FORTY_PERCENT_RATIOS = {
+    SystemLevel.STATE: {
+        OVERALL_THRESHOLD: 0.4,
+        ENUM_THRESHOLD: 0.4,
+        ENTITY_MATCHING_THRESHOLD: 0.4,
+        DATABASE_INVARIANT_THRESHOLD: 0
+    }
 }
 
+
+@pytest.mark.uses_db
 @patch('recidiviz.environment.in_gae', Mock(return_value=True))
 @patch('recidiviz.utils.metadata.project_id', Mock(return_value='fake-project'))
 @patch.dict('os.environ', {'PERSIST_LOCALLY': 'false'})

@@ -22,6 +22,7 @@ from collections import defaultdict
 from typing import Dict, Set
 from unittest.case import TestCase
 
+import pytest
 from pytest_alembic import runner  # type: ignore
 from sqlalchemy import create_engine
 
@@ -29,6 +30,7 @@ from recidiviz.persistence.database.sqlalchemy_engine_manager import SQLAlchemyE
 from recidiviz.tools.postgres import local_postgres_helpers
 
 
+@pytest.mark.uses_db
 class MigrationsTestBase:
     """This is the base class for testing that migrations work.
 
@@ -91,8 +93,8 @@ class MigrationsTestBase:
         self.db_dir = local_postgres_helpers.start_on_disk_postgresql_database()
         self.overridden_env_vars = local_postgres_helpers.update_local_sqlalchemy_postgres_env_vars()
 
-        local_postgres_helpers.use_on_disk_postgresql_database(
-            SQLAlchemyEngineManager.declarative_method_for_schema(self.schema_type))
+        declarative_base = SQLAlchemyEngineManager.declarative_method_for_schema(self.schema_type)
+        local_postgres_helpers.use_on_disk_postgresql_database(declarative_base)
 
         # Check enum values
         schema_enums = self.fetch_all_enums()
@@ -105,6 +107,9 @@ class MigrationsTestBase:
             self.assertEqual(len(migration_values),
                              len(migration_values.intersection(schema_values)),
                              msg=f'{enum_name} values differ')
+
+        # Cleanup needed for this method.
+        local_postgres_helpers.teardown_on_disk_postgresql_database(declarative_base)
 
     def test_full_upgrade(self):
         """Enforce that migrations can be run forward to completion."""

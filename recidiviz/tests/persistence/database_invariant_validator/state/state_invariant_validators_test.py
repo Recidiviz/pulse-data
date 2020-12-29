@@ -19,6 +19,7 @@
 from typing import Optional
 import unittest
 
+import pytest
 from more_itertools import one
 
 from recidiviz.common.ingest_metadata import SystemLevel
@@ -36,6 +37,7 @@ ID_TYPE_1 = 'ID_TYPE_1'
 ID_TYPE_2 = 'ID_TYPE_2'
 
 
+@pytest.mark.uses_db
 class TestStateDatabaseInvariantValidators(unittest.TestCase):
     """Tests for state_database_invariant_validators.py."""
 

@@ -21,6 +21,8 @@ import datetime
 from typing import Optional
 from unittest import TestCase
 
+import pytest
+
 from recidiviz.common.constants.state import external_id_types
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.persistence.database.session_factory import SessionFactory
@@ -38,6 +40,7 @@ _STATE_CODE = 'US_ND'
 _BIRTHDATE = datetime.date(year=2012, month=1, day=2)
 
 
+@pytest.mark.uses_db
 class TestDao(TestCase):
     """Test that the methods in dao.py correctly read from the SQL database."""
 

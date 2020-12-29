@@ -21,7 +21,7 @@ import shlex
 import signal
 import subprocess
 from time import sleep
-from typing import Tuple
+from typing import Dict, Optional, Tuple
 
 from mock import patch
 import pytest
@@ -32,39 +32,50 @@ from recidiviz.ingest.scrape import sessions
 from recidiviz.utils import pubsub_helper
 
 
-def pytest_configure():
+def pytest_configure(config) -> None:
     recidiviz.called_from_test = True
+    config.addinivalue_line("markers", "uses_db: for tests that spin up a new database.")
 
 
-def pytest_unconfigure():
+def pytest_unconfigure() -> None:
     del recidiviz.called_from_test
 
 
-def pytest_addoption(parser):
+def pytest_addoption(parser) -> None:
     parser.addoption("-E", "--with-emulator", action="store_true",
                      help="run tests that require the datastore emulator.")
+    parser.addoption("--test-set", type=str, choices=['parallel', 'not-parallel'])
 
 
-def pytest_runtest_setup(item):
+def pytest_runtest_setup(item: pytest.Item) -> None:
+    test_set = item.config.getoption('test_set', default=None)
     if 'emulator' in item.fixturenames:
-        if not item.config.getoption('with_emulator', default=None):
+        if test_set == 'parallel' or not item.config.getoption('with_emulator', default=None):
             pytest.skip("requires datastore emulator")
     else:
-        # For tests wihtout the emulator, prevent them from trying to create google cloud clients.
+        # For tests without the emulator, prevent them from trying to create google cloud clients.
         item.google_auth_patcher = patch("google.auth.default")
         mock_google_auth = item.google_auth_patcher.start()
         mock_google_auth.side_effect = AssertionError(
             "Unit test may not instantiate a Google client. Please mock the appropriate client class inside this test "
             " (e.g. `patch('google.cloud.bigquery.Client')`).")
 
+        if item.get_closest_marker('uses_db') is not None:
+            if test_set == 'parallel':
+                pytest.skip('[parallel tests] skipping because test requires database')
+        else:
+            if test_set == 'not-parallel':
+                pytest.skip('[not-parallel tests] skipping because test does not require database or emulator')
 
-def pytest_runtest_teardown(item):
+
+def pytest_runtest_teardown(item: pytest.Item) -> None:
     if hasattr(item, 'google_auth_patcher') and item.google_auth_patcher is not None:
         item.google_auth_patcher.stop()
 
+
 # TODO(#263): return the datastore client from this fixture
 @pytest.fixture(scope='session')
-def emulator(request):
+def emulator(request) -> None:
     datastore_emulator, pubsub_emulator = _start_emulators()
 
     # These environment variables can only be set while these tests are
@@ -74,7 +85,7 @@ def emulator(request):
     pubsub_helper.clear_publisher()
     pubsub_helper.clear_subscriber()
 
-    def cleanup():
+    def cleanup() -> None:
         os.killpg(datastore_emulator.pid, signal.SIGTERM)
         os.killpg(pubsub_emulator.pid, signal.SIGTERM)
 
@@ -110,14 +121,14 @@ def _start_emulators() -> Tuple[subprocess.Popen, subprocess.Popen]:
     return datastore_emulator, pubsub_emulator
 
 
-def _write_emulator_environs():
+def _write_emulator_environs() -> Dict[str, Optional[str]]:
     # Note: If multiple emulator environments contain the same key, the last one
     # wins
     emulator_names = ['datastore', 'pubsub']
     env_dict = {}
     for emulator_name in emulator_names:
         filename = os.path.join(
-            os.environ.get('HOME'),
+            os.environ.get('HOME', ''),
             '.config/gcloud/emulators/{}/env.yaml'.format(emulator_name))
         env_file = open(filename, 'r')
         env_dict.update(yaml.full_load(env_file))
@@ -133,7 +144,7 @@ def _write_emulator_environs():
     return old_environs
 
 
-def _restore_environs(prior_environs):
+def _restore_environs(prior_environs: Dict[str, Optional[str]]) -> None:
     for key, value in prior_environs.items():
         if value:
             os.environ[key] = value

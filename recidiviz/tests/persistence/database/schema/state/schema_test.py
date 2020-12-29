@@ -18,6 +18,7 @@
 import unittest
 from typing import Optional
 
+import pytest
 import sqlalchemy
 
 import recidiviz.common.constants.state.shared_enums
@@ -138,6 +139,7 @@ class TestStateSchemaTableConsistency(TestSchemaTableConsistency):
             self.assertTrue(cls.__name__.startswith('State'))
 
 
+@pytest.mark.uses_db
 class TestUniqueExternalIdConstraint(unittest.TestCase):
     """Tests for UniqueConstraint on StatePersonExternalId."""
 

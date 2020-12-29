@@ -18,6 +18,7 @@
 from typing import List, Optional
 from unittest import TestCase
 
+import pytest
 
 from recidiviz.persistence.database.database_entity import DatabaseEntity
 from recidiviz.persistence.database.base_schema import StateBase
@@ -33,6 +34,7 @@ from recidiviz.tests.persistence.entity.state.entities_test_utils import \
 from recidiviz.tools.postgres import local_postgres_helpers
 
 
+@pytest.mark.uses_db
 class TestStateSchemaEntityConverter(TestCase):
     """Tests for state/schema_entity_converter.py."""
 

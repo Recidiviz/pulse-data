@@ -24,6 +24,7 @@ import os
 import unittest
 from typing import Type, Optional
 
+import pytest
 from freezegun import freeze_time
 from mock import patch
 from sqlalchemy.ext.declarative import DeclarativeMeta
@@ -43,6 +44,7 @@ from recidiviz.tests.utils.test_utils import print_visible_header_label
 from recidiviz.tools.postgres import local_postgres_helpers
 
 
+@pytest.mark.uses_db
 @freeze_time('2019-09-27')
 class BaseDirectIngestControllerTests(unittest.TestCase):
     """Class with basic functionality for tests of all region-specific
