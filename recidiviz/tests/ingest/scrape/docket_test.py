@@ -29,9 +29,11 @@ from recidiviz.utils import pubsub_helper
 
 REGIONS = ['us_ny', 'us_va']
 
+
 @pytest.mark.usefixtures('emulator')
 class TestDocket:
     """Tests for the methods related to population of items in the docket."""
+
     def setup_method(self, _test_method):
         self.project_id_patcher = patch('recidiviz.utils.metadata.project_id')
         self.project_id_patcher.start().return_value = 'test-project'

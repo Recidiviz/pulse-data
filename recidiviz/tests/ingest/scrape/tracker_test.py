@@ -118,6 +118,7 @@ def get_payload():
 PUBLISHED_SECONDS = datetime_helpers.to_milliseconds(
     datetime(2012, 4, 21, 15, 0, tzinfo=pytz.utc)) // 1000
 
+
 def create_pubsub_message(content, ack_id="ACKID", published=PUBLISHED_SECONDS,
                           **attrs):
     return types.ReceivedMessage(
@@ -130,7 +131,9 @@ def create_pubsub_message(content, ack_id="ACKID", published=PUBLISHED_SECONDS,
         ack_id=ack_id,
     )
 
+
 REGIONS = ['us_ny', 'us_va']
+
 
 @pytest.mark.usefixtures("emulator")
 class TestTrackerIntegration:
@@ -139,6 +142,7 @@ class TestTrackerIntegration:
     These are similar to the tests above, but use the emulators to verify that
     the systems work together correctly.
     """
+
     def setup_method(self, _test_method):
         self.project_id_patcher = patch('recidiviz.utils.metadata.project_id')
         self.project_id_patcher.start().return_value = 'test-project'

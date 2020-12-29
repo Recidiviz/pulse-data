@@ -21,12 +21,15 @@ import datetime
 from typing import Optional
 from unittest.case import TestCase
 
+import pytest
+
 from recidiviz.persistence.database.base_schema import JusticeCountsBase
 from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.tools.postgres import local_postgres_helpers
 
 
+@pytest.mark.uses_db
 class TestSchema(TestCase):
     """Test the schema can be written to and read from successfully"""
 

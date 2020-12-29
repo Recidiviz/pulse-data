@@ -18,6 +18,7 @@
 from typing import List, Optional
 from unittest.case import TestCase
 
+import pytest
 from mock import patch, create_autospec
 
 from recidiviz.persistence.database.schema_entity_converter import (
@@ -35,6 +36,7 @@ from recidiviz.tools.postgres import local_postgres_helpers
 from recidiviz.utils.regions import Region
 
 
+@pytest.mark.uses_db
 class BaseStateEntityMatcherTest(TestCase):
     """Base class for testing state specific entity matching logic."""
 
@@ -114,6 +116,7 @@ class BaseStateEntityMatcherTest(TestCase):
         return session
 
 
+@pytest.mark.uses_db
 class BaseStateMatchingUtilsTest(TestCase):
     """Base class for testing state matching utils"""
 

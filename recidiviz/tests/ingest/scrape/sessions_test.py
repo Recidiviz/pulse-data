@@ -148,7 +148,6 @@ class TestWriteSessions:
         assert not sessions.close_session(scrape_key)
 
 
-
 class TestAddDocketItemToCurrentSession:
     """Tests for the add_docket_item_to_current_session method in the module."""
 
@@ -209,6 +208,7 @@ def fix_dt(dt):
 @pytest.mark.usefixtures("emulator")
 class TestSessionManager:
     """Tests for various query methods in the module."""
+
     def setup_method(self, _test_method):
         self.keys_to_delete = []
 

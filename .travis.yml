@@ -27,13 +27,14 @@ script:
   # Order test commands with fastest first to ensure we fail fast
   # Note: Pass `-it` to docker to display the test result to the travis output (ie. web ui)
   - if [ $TRAVIS_PULL_REQUEST != "false" ]; then
-      docker exec -it recidiviz pipenv run python -m recidiviz.tools.validate_source_modifications --commit-range $TRAVIS_COMMIT_RANGE;
+    docker exec -it recidiviz pipenv run python -m recidiviz.tools.validate_source_modifications --commit-range $TRAVIS_COMMIT_RANGE;
     fi
   - docker exec -it recidiviz pipenv run python -m recidiviz.tools.is_pipenv_locked
   - docker exec -it recidiviz pipenv run mypy recidiviz
   - docker exec -it recidiviz pipenv run ./recidiviz/tools/travis/run_pylint.sh
 
-  - docker exec -it recidiviz pipenv run pytest recidiviz --with-emulator
+  - docker exec -it recidiviz pipenv run pytest recidiviz -n auto --test-set parallel
+  - docker exec -it recidiviz pipenv run pytest recidiviz --test-set not-parallel --with-emulator
 
   # Cache the newly built docker image for the next Travis run
   - echo "$DOCKER_PASSWORD" | docker login -u="$DOCKER_USERNAME" --password-stdin && docker save recidiviz-image | gzip -c > ~/docker-images/recidiviz-image.tgz
@@ -52,8 +53,8 @@ deploy:
 # could switch to periodically running builds on master via a Travis cron.
 branches:
   only:
-  - master
-  - /^releases\/v[0-9]+\.[0-9]+-rc$/
+    - master
+    - /^releases\/v[0-9]+\.[0-9]+-rc$/
 
 cache:
   directories:
