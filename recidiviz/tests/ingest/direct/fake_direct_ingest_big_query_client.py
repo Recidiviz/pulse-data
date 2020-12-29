@@ -50,12 +50,12 @@ class FakeDirectIngestBigQueryClient(BigQueryClient):
         return self._project_id
 
     def dataset_ref_for_id(self, dataset_id: str) -> bigquery.DatasetReference:
-        raise ValueError('Must be implemented for use in tests.')
+        return bigquery.DatasetReference(self._project_id, dataset_id)
 
     def create_dataset_if_necessary(self,
                                     dataset_ref: bigquery.DatasetReference,
                                     default_table_expiration_ms: Optional[int] = None) -> None:
-        raise ValueError('Must be implemented for use in tests.')
+        pass
 
     def dataset_exists(self, dataset_ref: bigquery.DatasetReference) -> bool:
         raise ValueError('Must be implemented for use in tests.')
