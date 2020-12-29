@@ -86,6 +86,7 @@ class StatePersonConverterTest(unittest.TestCase):
         # Arrange
         metadata = IngestMetadata.new_with_defaults()
         ingest_person = ingest_info_pb2.StatePerson(
+            state_code='us_xx',
             surname='UNESCAPED,SURNAME"WITH-CHARS"',
             given_names='GIVEN_NAMES',
             middle_names='MIDDLE_NAMES'
@@ -102,7 +103,7 @@ class StatePersonConverterTest(unittest.TestCase):
             .format('GIVEN_NAMES', 'MIDDLE_NAMES',
                     'UNESCAPED,SURNAME\\"WITH-CHARS\\"')
         expected_result = entities.StatePerson.new_with_defaults(
-            full_name=expected_full_name)
+            state_code='US_XX', full_name=expected_full_name)
 
         self.assertEqual(result, expected_result)
 
@@ -112,7 +113,7 @@ class StatePersonConverterTest(unittest.TestCase):
         # Arrange
         mock_datetime.now.return_value = _NOW
         metadata = IngestMetadata.new_with_defaults()
-        ingest_person = ingest_info_pb2.StatePerson(age='27')
+        ingest_person = ingest_info_pb2.StatePerson(state_code='us_xx', age='27')
 
         # Act
         state_person.copy_fields_to_builder(
@@ -121,6 +122,7 @@ class StatePersonConverterTest(unittest.TestCase):
 
         # Assert
         expected_result = entities.StatePerson.new_with_defaults(
+            state_code='US_XX',
             birthdate=datetime(year=_NOW.year - 27, month=1, day=1).date(),
             birthdate_inferred_from_age=True
         )
