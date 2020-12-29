@@ -26,6 +26,7 @@ from google.cloud import bigquery
 from recidiviz.big_query.big_query_client import BigQueryClient
 from recidiviz.big_query.big_query_view_collector import BigQueryViewCollector
 from recidiviz.big_query.export.export_query_config import ExportQueryConfig
+from recidiviz.big_query.view_update_manager import TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS
 from recidiviz.cloud_storage.gcs_file_system import GCSFileSystem
 from recidiviz.ingest.direct.controllers.direct_ingest_big_query_view_types import DirectIngestPreProcessedIngestView, \
     DirectIngestPreProcessedIngestViewBuilder, RawTableViewType, DestinationTableType
@@ -167,6 +168,10 @@ class DirectIngestIngestViewExportManager:
 
         logging.info('Generated bound query with params \nquery: [%s]\nparams: [%s]', query, query_params)
 
+        self.big_query_client.create_dataset_if_necessary(
+            dataset_ref=self.big_query_client.dataset_ref_for_id(ingest_view.dataset_id),
+            default_table_expiration_ms=TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS
+        )
         query_job = self.big_query_client.run_query_async(
             query_str=query,
             query_parameters=query_params)

@@ -320,6 +320,7 @@ class DirectIngestIngestViewExportManagerTest(unittest.TestCase):
             export_manager.export_view_for_args(export_args)
 
         # Assert
+        self.mock_client.create_dataset_if_necessary.assert_not_called()
         self.mock_client.run_query_async.assert_not_called()
         self.mock_client.export_query_results_to_cloud_storage.assert_not_called()
         self.mock_client.delete_table.assert_not_called()
@@ -468,6 +469,10 @@ class DirectIngestIngestViewExportManagerTest(unittest.TestCase):
         expected_lower_bound_query = expected_upper_bound_query.replace('2020_07_20_00_00_00_upper_bound',
                                                                         '2019_07_20_00_00_00_lower_bound')
 
+        self.mock_client.dataset_ref_for_id.assert_has_calls([mock.call('us_xx_ingest_views')])
+        self.mock_client.create_dataset_if_necessary.assert_has_calls([
+            mock.call(dataset_ref=mock.ANY, default_table_expiration_ms=86400000)
+        ])
         self.mock_client.run_query_async.assert_has_calls([
             mock.call(
                 query_str=expected_upper_bound_query,
@@ -928,3 +933,5 @@ ORDER BY colA, colC;"""
 
         # Assert
         self.assertEqual(expected_debug_query, debug_query)
+
+        self.mock_client.create_dataset_if_necessary.assert_not_called()
