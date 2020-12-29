@@ -81,7 +81,7 @@ class TestRecidivismPipeline(unittest.TestCase):
     def build_data_dict(fake_person_id: int):
         """Builds a data_dict for a basic run of the pipeline."""
         fake_person = schema.StatePerson(
-            state_code='CA',
+            state_code='US_XX',
             person_id=fake_person_id, gender=Gender.MALE,
             birthdate=date(1970, 1, 1),
             residency_status=ResidencyStatus.PERMANENT)
@@ -90,7 +90,7 @@ class TestRecidivismPipeline(unittest.TestCase):
 
         race_1 = schema.StatePersonRace(
             person_race_id=111,
-            state_code='CA',
+            state_code='US_XX',
             race=Race.BLACK,
             person_id=fake_person_id
         )
@@ -106,7 +106,7 @@ class TestRecidivismPipeline(unittest.TestCase):
 
         ethnicity = schema.StatePersonEthnicity(
             person_ethnicity_id=111,
-            state_code='CA',
+            state_code='US_XX',
             ethnicity=Ethnicity.HISPANIC,
             person_id=fake_person_id)
 
@@ -116,7 +116,7 @@ class TestRecidivismPipeline(unittest.TestCase):
             incarceration_period_id=1111,
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-            state_code='CA',
+            state_code='US_XX',
             county_code='124',
             facility='San Quentin',
             facility_security_level=StateIncarcerationFacilitySecurityLevel.MAXIMUM,
@@ -132,7 +132,7 @@ class TestRecidivismPipeline(unittest.TestCase):
             incarceration_period_id=2222,
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-            state_code='CA',
+            state_code='US_XX',
             county_code='124',
             facility='San Quentin',
             facility_security_level=StateIncarcerationFacilitySecurityLevel.MAXIMUM,
@@ -147,7 +147,7 @@ class TestRecidivismPipeline(unittest.TestCase):
             incarceration_period_id=3333,
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             status=StateIncarcerationPeriodStatus.IN_CUSTODY,
-            state_code='CA',
+            state_code='US_XX',
             county_code='124',
             facility='San Quentin',
             facility_security_level=StateIncarcerationFacilitySecurityLevel.MAXIMUM,
@@ -186,12 +186,12 @@ class TestRecidivismPipeline(unittest.TestCase):
         ]
 
         fake_person_id_to_county_query_result = [
-            {'state_code': 'CA',
+            {'state_code': 'US_XX',
              'person_id': fake_person_id,
              'county_of_residence': _COUNTY_OF_RESIDENCE}]
 
         state_race_ethnicity_population_count_data = [{
-            'state_code': 'CA',
+            'state_code': 'US_XX',
             'race_or_ethnicity': 'BLACK',
             'population_count': 1,
             'representation_priority': 1
@@ -255,7 +255,7 @@ class TestRecidivismPipeline(unittest.TestCase):
         fake_person_id_1 = 12345
 
         fake_person_1 = schema.StatePerson(
-            state_code='CA',
+            state_code='US_XX',
             person_id=fake_person_id_1, gender=Gender.MALE,
             birthdate=date(1970, 1, 1),
             residency_status=ResidencyStatus.PERMANENT)
@@ -263,7 +263,7 @@ class TestRecidivismPipeline(unittest.TestCase):
         fake_person_id_2 = 6789
 
         fake_person_2 = schema.StatePerson(
-            state_code='CA',
+            state_code='US_XX',
             person_id=fake_person_id_2, gender=Gender.FEMALE,
             birthdate=date(1990, 1, 1),
             residency_status=ResidencyStatus.PERMANENT)
@@ -275,7 +275,7 @@ class TestRecidivismPipeline(unittest.TestCase):
             incarceration_period_id=1111,
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-            state_code='CA',
+            state_code='US_XX',
             county_code='124',
             facility='San Quentin',
             facility_security_level=StateIncarcerationFacilitySecurityLevel.MAXIMUM,
@@ -291,7 +291,7 @@ class TestRecidivismPipeline(unittest.TestCase):
             incarceration_period_id=2222,
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-            state_code='CA',
+            state_code='US_XX',
             county_code='124',
             facility='San Quentin',
             facility_security_level=StateIncarcerationFacilitySecurityLevel.MAXIMUM,
@@ -307,7 +307,7 @@ class TestRecidivismPipeline(unittest.TestCase):
                 incarceration_period_id=3333,
                 incarceration_type=StateIncarcerationType.STATE_PRISON,
                 status=StateIncarcerationPeriodStatus.IN_CUSTODY,
-                state_code='CA',
+                state_code='US_XX',
                 county_code='124',
                 facility='San Quentin',
                 facility_security_level=StateIncarcerationFacilitySecurityLevel.MAXIMUM,
@@ -320,7 +320,7 @@ class TestRecidivismPipeline(unittest.TestCase):
             incarceration_period_id=4444,
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-            state_code='CA',
+            state_code='US_XX',
             county_code='124',
             facility='San Quentin',
             facility_security_level=StateIncarcerationFacilitySecurityLevel.MAXIMUM,
@@ -354,7 +354,7 @@ class TestRecidivismPipeline(unittest.TestCase):
             incarceration_period_id=5555,
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-            state_code='CA',
+            state_code='US_XX',
             county_code='124',
             facility='San Quentin',
             facility_security_level=StateIncarcerationFacilitySecurityLevel.MAXIMUM,
@@ -372,7 +372,7 @@ class TestRecidivismPipeline(unittest.TestCase):
                 incarceration_period_id=6666,
                 incarceration_type=StateIncarcerationType.STATE_PRISON,
                 status=StateIncarcerationPeriodStatus.IN_CUSTODY,
-                state_code='CA',
+                state_code='US_XX',
                 county_code='124',
                 facility='San Quentin',
                 facility_security_level=StateIncarcerationFacilitySecurityLevel.MAXIMUM,
@@ -391,12 +391,12 @@ class TestRecidivismPipeline(unittest.TestCase):
         ]
 
         fake_person_id_to_county_query_result = [
-            {'state_code': 'CA',
+            {'state_code': 'US_XX',
              'person_id': fake_person_id_1,
              'county_of_residence': _COUNTY_OF_RESIDENCE}]
 
         state_race_ethnicity_population_count_data = [{
-            'state_code': 'CA',
+            'state_code': 'US_XX',
             'race_or_ethnicity': 'BLACK',
             'population_count': 1,
             'representation_priority': 1
@@ -448,7 +448,7 @@ class TestRecidivismPipeline(unittest.TestCase):
 
         run_test_pipeline(
             pipeline_module=pipeline,
-            state_code='CA',
+            state_code='US_XX',
             dataset=dataset,
             read_from_bq_constructor=read_from_bq_constructor,
             write_to_bq_constructor=write_to_bq_constructor,
@@ -468,6 +468,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
         fake_person_id = 12345
 
         fake_person = entities.StatePerson.new_with_defaults(
+            state_code='US_XX',
             person_id=fake_person_id, gender=Gender.MALE,
             birthdate=date(1970, 1, 1),
             residency_status=ResidencyStatus.PERMANENT)
@@ -476,7 +477,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
             incarceration_period_id=1111,
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-            state_code='TX',
+            state_code='US_XX',
             admission_date=date(2008, 11, 20),
             admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
             release_date=date(2010, 12, 4),
@@ -486,7 +487,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
             incarceration_period_id=2222,
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             incarceration_type=StateIncarcerationType.STATE_PRISON,
-            state_code='TX',
+            state_code='US_XX',
             admission_date=date(2011, 4, 5),
             admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
             release_date=date(2014, 4, 14),
@@ -496,7 +497,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
             incarceration_period_id=3333,
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             status=StateIncarcerationPeriodStatus.IN_CUSTODY,
-            state_code='TX',
+            state_code='US_XX',
             admission_date=date(2017, 1, 4),
             admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION)
 
@@ -516,7 +517,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
         }
 
         first_recidivism_release_event = RecidivismReleaseEvent(
-            state_code='TX',
+            state_code='US_XX',
             original_admission_date=initial_incarceration.admission_date,
             release_date=initial_incarceration.release_date,
             release_facility=None,
@@ -526,7 +527,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
             return_type=ReincarcerationReturnType.NEW_ADMISSION)
 
         second_recidivism_release_event = RecidivismReleaseEvent(
-            state_code='TX',
+            state_code='US_XX',
             original_admission_date=first_reincarceration.admission_date,
             release_date=first_reincarceration.release_date,
             release_facility=None,
@@ -562,6 +563,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
         fake_person_id = 12345
 
         fake_person = entities.StatePerson.new_with_defaults(
+            state_code='US_XX',
             person_id=fake_person_id, gender=Gender.MALE,
             birthdate=date(1970, 1, 1),
             residency_status=ResidencyStatus.PERMANENT)
@@ -570,7 +572,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
             incarceration_period_id=1111,
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-            state_code='TX', admission_date=date(2008, 11, 20),
+            state_code='US_XX', admission_date=date(2008, 11, 20),
             admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
             release_date=date(2010, 12, 4),
             release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED)
@@ -585,7 +587,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
         }
 
         non_recidivism_release_event = NonRecidivismReleaseEvent(
-            'TX', only_incarceration.admission_date,
+            'US_XX', only_incarceration.admission_date,
             only_incarceration.release_date, only_incarceration.facility,
             _COUNTY_OF_RESIDENCE)
 
@@ -613,6 +615,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
         fake_person_id = 12345
 
         fake_person = entities.StatePerson.new_with_defaults(
+            state_code='US_XX',
             person_id=fake_person_id, gender=Gender.MALE,
             birthdate=date(1970, 1, 1),
             residency_status=ResidencyStatus.PERMANENT)
@@ -647,6 +650,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
         fake_person_id = 12345
 
         fake_person = entities.StatePerson.new_with_defaults(
+            state_code='US_XX',
             person_id=fake_person_id, gender=Gender.MALE,
             birthdate=date(1970, 1, 1),
             residency_status=ResidencyStatus.PERMANENT)
@@ -655,7 +659,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
             incarceration_period_id=1111,
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-            state_code='TX',
+            state_code='US_XX',
             admission_date=date(2008, 11, 20),
             admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
             release_date=date(2010, 1, 4),
@@ -665,7 +669,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
             incarceration_period_id=2222,
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-            state_code='TX',
+            state_code='US_XX',
             admission_date=date(2010, 4, 5),
             admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
             release_date=date(2010, 10, 14),
@@ -675,7 +679,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
             incarceration_period_id=3333,
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             status=StateIncarcerationPeriodStatus.IN_CUSTODY,
-            state_code='TX',
+            state_code='US_XX',
             admission_date=date(2017, 1, 4),
             admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
         )
@@ -694,7 +698,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
         }
 
         first_recidivism_release_event = RecidivismReleaseEvent(
-            state_code='TX',
+            state_code='US_XX',
             original_admission_date=initial_incarceration.admission_date,
             release_date=initial_incarceration.release_date,
             release_facility=None,
@@ -704,7 +708,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
             return_type=ReincarcerationReturnType.NEW_ADMISSION)
 
         second_recidivism_release_event = RecidivismReleaseEvent(
-            state_code='TX',
+            state_code='US_XX',
             original_admission_date=first_reincarceration.admission_date,
             release_date=first_reincarceration.release_date,
             release_facility=None,
@@ -737,6 +741,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
         fake_person_id = 12345
 
         fake_person = entities.StatePerson.new_with_defaults(
+            state_code='US_XX',
             person_id=fake_person_id, gender=Gender.MALE,
             birthdate=date(1970, 1, 1),
             residency_status=ResidencyStatus.PERMANENT)
@@ -745,7 +750,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
             incarceration_period_id=1111,
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-            state_code='TX',
+            state_code='US_XX',
             admission_date=date(2008, 11, 20),
             admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
             release_date=date(2010, 12, 4),
@@ -755,7 +760,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
             incarceration_period_id=2222,
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-            state_code='TX',
+            state_code='US_XX',
             admission_date=date(2011, 4, 5),
             admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
             release_date=date(2014, 4, 14),
@@ -765,7 +770,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
             incarceration_period_id=3333,
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             status=StateIncarcerationPeriodStatus.IN_CUSTODY,
-            state_code='TX',
+            state_code='US_XX',
             admission_date=date(2017, 1, 4),
             admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION)
 
@@ -783,7 +788,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
         }
 
         first_recidivism_release_event = RecidivismReleaseEvent(
-            state_code='TX',
+            state_code='US_XX',
             original_admission_date=initial_incarceration.admission_date,
             release_date=initial_incarceration.release_date,
             release_facility=None,
@@ -793,7 +798,7 @@ class TestClassifyReleaseEvents(unittest.TestCase):
             return_type=ReincarcerationReturnType.NEW_ADMISSION)
 
         second_recidivism_release_event = RecidivismReleaseEvent(
-            state_code='TX',
+            state_code='US_XX',
             original_admission_date=first_reincarceration.admission_date,
             release_date=first_reincarceration.release_date,
             release_facility=None,
@@ -834,11 +839,12 @@ class TestCalculateRecidivismMetricCombinations(unittest.TestCase):
     def testCalculateRecidivismMetricCombinations(self):
         """Tests the CalculateRecidivismMetricCombinations DoFn in the pipeline."""
         fake_person = entities.StatePerson.new_with_defaults(
+            state_code='US_XX',
             person_id=self.fake_person_id, gender=Gender.MALE,
             residency_status=ResidencyStatus.PERMANENT)
 
         first_recidivism_release_event = RecidivismReleaseEvent(
-            state_code='CA',
+            state_code='US_XX',
             original_admission_date=date(2008, 11, 20),
             release_date=date(2010, 12, 4), release_facility=None,
             reincarceration_date=date(2011, 4, 5),
@@ -847,7 +853,7 @@ class TestCalculateRecidivismMetricCombinations(unittest.TestCase):
             return_type=ReincarcerationReturnType.NEW_ADMISSION)
 
         second_recidivism_release_event = RecidivismReleaseEvent(
-            state_code='CA',
+            state_code='US_XX',
             original_admission_date=date(2011, 4, 5),
             release_date=date(2014, 4, 14), release_facility=None,
             reincarceration_date=date(2017, 1, 4),
@@ -906,6 +912,7 @@ class TestCalculateRecidivismMetricCombinations(unittest.TestCase):
         """Tests the CalculateRecidivismMetricCombinations DoFn in the pipeline
         when there are no ReleaseEvents associated with the entities.StatePerson."""
         fake_person = entities.StatePerson.new_with_defaults(
+            state_code='US_XX',
             person_id=self.fake_person_id, gender=Gender.MALE,
             residency_status=ResidencyStatus.PERMANENT)
 
@@ -961,7 +968,7 @@ class TestProduceReincarcerationRecidivismMetric(unittest.TestCase):
                            'methodology': MetricMethodologyType.PERSON,
                            'start_date': date(2010, 1, 1),
                            'end_date': date(2010, 12, 31),
-                           'metric_type': MetricType.REINCARCERATION_COUNT, 'state_code': 'CA'}
+                           'metric_type': MetricType.REINCARCERATION_COUNT, 'state_code': 'US_XX',}
 
         value = 10
 
@@ -991,7 +998,7 @@ class TestProduceReincarcerationRecidivismMetric(unittest.TestCase):
                            'release_cohort': 2014,
                            'methodology': MetricMethodologyType.PERSON,
                            'follow_up_period': 1,
-                           'metric_type': MetricType.REINCARCERATION_RATE, 'state_code': 'CA'}
+                           'metric_type': MetricType.REINCARCERATION_RATE, 'state_code': 'US_XX',}
 
         value = 1
 
@@ -1022,7 +1029,7 @@ class TestProduceReincarcerationRecidivismMetric(unittest.TestCase):
                            'methodology': MetricMethodologyType.PERSON,
                            'start_date': date(2010, 1, 1),
                            'end_date': date(2010, 12, 31),
-                           'metric_type': MetricType.REINCARCERATION_COUNT, 'state_code': 'CA'}
+                           'metric_type': MetricType.REINCARCERATION_COUNT, 'state_code': 'US_XX',}
 
         value = 0
 
@@ -1139,49 +1146,49 @@ class MetricGroup:
     """Stores a set of metrics where every dimension is included for testing
     dimension filtering."""
     recidivism_metric_with_age = ReincarcerationRecidivismRateMetric(
-        job_id='12345', state_code='CA', release_cohort=2015,
+        job_id='12345', state_code='US_XX', release_cohort=2015,
         follow_up_period=1, methodology=MetricMethodologyType.PERSON,
         age_bucket='25-29', total_releases=1000, recidivated_releases=900,
         recidivism_rate=0.9)
 
     recidivism_metric_with_gender = ReincarcerationRecidivismRateMetric(
-        job_id='12345', state_code='CA', release_cohort=2015,
+        job_id='12345', state_code='US_XX', release_cohort=2015,
         follow_up_period=1, methodology=MetricMethodologyType.PERSON,
         gender=Gender.MALE, total_releases=1000, recidivated_releases=875,
         recidivism_rate=0.875)
 
     recidivism_metric_with_race = ReincarcerationRecidivismRateMetric(
-        job_id='12345', state_code='CA', release_cohort=2015,
+        job_id='12345', state_code='US_XX', release_cohort=2015,
         follow_up_period=1, methodology=MetricMethodologyType.PERSON,
         race=[Race.BLACK], total_releases=1000, recidivated_releases=875,
         recidivism_rate=0.875)
 
     recidivism_metric_with_ethnicity = ReincarcerationRecidivismRateMetric(
-        job_id='12345', state_code='CA', release_cohort=2015,
+        job_id='12345', state_code='US_XX', release_cohort=2015,
         follow_up_period=1, methodology=MetricMethodologyType.PERSON,
         ethnicity=[Ethnicity.HISPANIC], total_releases=1000,
         recidivated_releases=875, recidivism_rate=0.875)
 
     recidivism_metric_with_release_facility = \
         ReincarcerationRecidivismRateMetric(
-            job_id='12345', state_code='CA', release_cohort=2015,
+            job_id='12345', state_code='US_XX', release_cohort=2015,
             follow_up_period=1, methodology=MetricMethodologyType.PERSON,
             release_facility='Red',
             total_releases=1000, recidivated_releases=300, recidivism_rate=0.30)
 
     recidivism_metric_with_stay_length = ReincarcerationRecidivismRateMetric(
-        job_id='12345', state_code='CA', release_cohort=2015,
+        job_id='12345', state_code='US_XX', release_cohort=2015,
         follow_up_period=1, methodology=MetricMethodologyType.PERSON,
         stay_length_bucket='12-24', total_releases=1000,
         recidivated_releases=300, recidivism_rate=0.30)
 
     recidivism_metric_without_dimensions = ReincarcerationRecidivismRateMetric(
-        job_id='12345', state_code='CA', release_cohort=2015,
+        job_id='12345', state_code='US_XX', release_cohort=2015,
         follow_up_period=1, methodology=MetricMethodologyType.PERSON,
         total_releases=1500, recidivated_releases=1200, recidivism_rate=0.80)
 
     recidivism_metric_event_based = ReincarcerationRecidivismRateMetric(
-        job_id='12345', state_code='CA', release_cohort=2015,
+        job_id='12345', state_code='US_XX', release_cohort=2015,
         follow_up_period=1, methodology=MetricMethodologyType.EVENT,
         total_releases=1500, recidivated_releases=1200, recidivism_rate=0.80)
 

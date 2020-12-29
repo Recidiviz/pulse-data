@@ -70,23 +70,23 @@ class TestMapSupervisionCombinations(unittest.TestCase):
 
     def test_map_supervision_combinations(self):
         """Tests the map_supervision_combinations function."""
-        person = StatePerson.new_with_defaults(person_id=12345,
+        person = StatePerson.new_with_defaults(state_code='US_XX', person_id=12345,
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
 
-        race = StatePersonRace.new_with_defaults(state_code='US_MO', race=Race.WHITE)
+        race = StatePersonRace.new_with_defaults(state_code='US_XX', race=Race.WHITE)
 
         person.races = [race]
 
         ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code='US_MO',
+            state_code='US_XX',
             ethnicity=Ethnicity.NOT_HISPANIC)
 
         person.ethnicities = [ethnicity]
 
         supervision_time_buckets = [
             NonRevocationReturnSupervisionTimeBucket(
-                state_code='US_MO', year=2018, month=3,
+                state_code='US_XX', year=2018, month=3,
                 bucket_date=date(2018, 3, 31),
                 is_on_supervision_last_day_of_month=True,
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
@@ -95,7 +95,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
                 supervision_level_raw_text='HIGH'
             ),
             NonRevocationReturnSupervisionTimeBucket(
-                state_code='US_MO', year=2018, month=4,
+                state_code='US_XX', year=2018, month=4,
                 bucket_date=date(2018, 4, 1),
                 is_on_supervision_last_day_of_month=True,
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
@@ -119,23 +119,23 @@ class TestMapSupervisionCombinations(unittest.TestCase):
 
     def test_map_supervision_combinations_assessment(self):
         """Tests the map_supervision_combinations function when there is assessment data present."""
-        person = StatePerson.new_with_defaults(person_id=12345,
+        person = StatePerson.new_with_defaults(state_code='US_XX', person_id=12345,
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
 
-        race = StatePersonRace.new_with_defaults(state_code='US_MO', race=Race.WHITE)
+        race = StatePersonRace.new_with_defaults(state_code='US_XX', race=Race.WHITE)
 
         person.races = [race]
 
         ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code='US_MO',
+            state_code='US_XX',
             ethnicity=Ethnicity.NOT_HISPANIC)
 
         person.ethnicities = [ethnicity]
 
         supervision_time_buckets = [
             NonRevocationReturnSupervisionTimeBucket(
-                state_code='US_MO',
+                state_code='US_XX',
                 year=2018,
                 month=3,
                 bucket_date=date(2018, 3, 31),
@@ -146,7 +146,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
                 assessment_level=StateAssessmentLevel.HIGH,
                 assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION),
             NonRevocationReturnSupervisionTimeBucket(
-                state_code='US_MO',
+                state_code='US_XX',
                 year=2018,
                 month=4,
                 bucket_date=date(2018, 4, 1),
@@ -173,23 +173,23 @@ class TestMapSupervisionCombinations(unittest.TestCase):
     def test_map_supervision_combinations_exclude_assessment(self):
         """Tests the map_supervision_combinations function when there is assessment data present, but it should not
         be included for this state and pipeline type."""
-        person = StatePerson.new_with_defaults(person_id=12345,
+        person = StatePerson.new_with_defaults(state_code='US_XX', person_id=12345,
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
 
-        race = StatePersonRace.new_with_defaults(state_code='US_MO', race=Race.WHITE)
+        race = StatePersonRace.new_with_defaults(state_code='US_XX', race=Race.WHITE)
 
         person.races = [race]
 
         ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code='US_MO',
+            state_code='US_XX',
             ethnicity=Ethnicity.NOT_HISPANIC)
 
         person.ethnicities = [ethnicity]
 
         supervision_time_buckets = [
             NonRevocationReturnSupervisionTimeBucket(
-                state_code='US_MO',
+                state_code='US_XX',
                 year=2018,
                 month=3,
                 bucket_date=date(2018, 3, 31),
@@ -200,7 +200,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
                 assessment_level=StateAssessmentLevel.HIGH,
                 assessment_type=StateAssessmentType.ORAS_PRISON_INTAKE),
             NonRevocationReturnSupervisionTimeBucket(
-                state_code='US_MO',
+                state_code='US_XX',
                 year=2018,
                 month=4,
                 bucket_date=date(2018, 4, 1),
@@ -227,23 +227,23 @@ class TestMapSupervisionCombinations(unittest.TestCase):
     def test_map_supervision_combinations_supervising_officer_district(self):
         """Tests the map_supervision_combinations function when there is supervising officer and district data
         present."""
-        person = StatePerson.new_with_defaults(person_id=12345,
+        person = StatePerson.new_with_defaults(state_code='US_XX', person_id=12345,
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
 
-        race = StatePersonRace.new_with_defaults(state_code='US_MO', race=Race.WHITE)
+        race = StatePersonRace.new_with_defaults(state_code='US_XX', race=Race.WHITE)
 
         person.races = [race]
 
         ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code='US_MO',
+            state_code='US_XX',
             ethnicity=Ethnicity.NOT_HISPANIC)
 
         person.ethnicities = [ethnicity]
 
         supervision_time_buckets = [
             NonRevocationReturnSupervisionTimeBucket(
-                state_code='US_MO',
+                state_code='US_XX',
                 year=2018,
                 month=3,
                 bucket_date=date(2018, 3, 31),
@@ -255,7 +255,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
                 supervising_officer_external_id='143',
                 supervising_district_external_id='DISTRICT X'),
             NonRevocationReturnSupervisionTimeBucket(
-                state_code='US_MO',
+                state_code='US_XX',
                 year=2018,
                 month=4,
                 bucket_date=date(2018, 4, 1),
@@ -282,31 +282,31 @@ class TestMapSupervisionCombinations(unittest.TestCase):
 
     def test_map_supervision_revocation_combinations(self):
         """Tests the map_supervision_combinations function for a revocation month."""
-        person = StatePerson.new_with_defaults(person_id=12345,
+        person = StatePerson.new_with_defaults(state_code='US_XX', person_id=12345,
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
 
         person_external_id = StatePersonExternalId.new_with_defaults(
             external_id='SID1341',
             id_type='US_MO_DOC',
-            state_code='US_MO'
+            state_code='US_XX'
         )
 
         person.external_ids = [person_external_id]
 
-        race = StatePersonRace.new_with_defaults(state_code='US_MO', race=Race.WHITE)
+        race = StatePersonRace.new_with_defaults(state_code='US_XX', race=Race.WHITE)
 
         person.races = [race]
 
         ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code='US_MO',
+            state_code='US_XX',
             ethnicity=Ethnicity.NOT_HISPANIC)
 
         person.ethnicities = [ethnicity]
 
         supervision_time_buckets = [
             RevocationReturnSupervisionTimeBucket(
-                state_code='US_MO',
+                state_code='US_XX',
                 year=2018,
                 month=3,
                 bucket_date=date(2018, 3, 31),
@@ -344,23 +344,23 @@ class TestMapSupervisionCombinations(unittest.TestCase):
 
     def test_map_supervision_combinations_supervision_success(self):
         """Tests the map_supervision_combinations function when there is a ProjectedSupervisionCompletionBucket."""
-        person = StatePerson.new_with_defaults(person_id=12345,
+        person = StatePerson.new_with_defaults(state_code='US_XX', person_id=12345,
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
 
-        race = StatePersonRace.new_with_defaults(state_code='US_MO', race=Race.WHITE)
+        race = StatePersonRace.new_with_defaults(state_code='US_XX', race=Race.WHITE)
 
         person.races = [race]
 
         ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code='US_MO',
+            state_code='US_XX',
             ethnicity=Ethnicity.NOT_HISPANIC)
 
         person.ethnicities = [ethnicity]
 
         supervision_time_buckets = [
             ProjectedSupervisionCompletionBucket(
-                state_code='US_MO', year=2018, month=3,
+                state_code='US_XX', year=2018, month=3,
                 bucket_date=date(2018, 3, 31),
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
                 case_type=StateSupervisionCaseType.GENERAL,
@@ -371,7 +371,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
                 supervising_district_external_id='district5'
             ),
             NonRevocationReturnSupervisionTimeBucket(
-                state_code='US_MO', year=2018, month=3,
+                state_code='US_XX', year=2018, month=3,
                 bucket_date=date(2018, 3, 31),
                 is_on_supervision_last_day_of_month=True,
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
@@ -380,7 +380,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
                 supervision_level_raw_text='HIGH'
             ),
             NonRevocationReturnSupervisionTimeBucket(
-                state_code='US_MO', year=2018, month=4,
+                state_code='US_XX', year=2018, month=4,
                 bucket_date=date(2018, 4, 1),
                 is_on_supervision_last_day_of_month=False,
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
@@ -410,23 +410,23 @@ class TestMapSupervisionCombinations(unittest.TestCase):
     def test_map_supervision_combinations_supervision_unsuccessful(self):
         """Tests the map_supervision_combinations function when there is a ProjectedSupervisionCompletionBucket
         and the supervision is not successfully completed."""
-        person = StatePerson.new_with_defaults(person_id=12345,
+        person = StatePerson.new_with_defaults(state_code='US_XX', person_id=12345,
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
 
-        race = StatePersonRace.new_with_defaults(state_code='US_MO', race=Race.WHITE)
+        race = StatePersonRace.new_with_defaults(state_code='US_XX', race=Race.WHITE)
 
         person.races = [race]
 
         ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code='US_MO',
+            state_code='US_XX',
             ethnicity=Ethnicity.NOT_HISPANIC)
 
         person.ethnicities = [ethnicity]
 
         supervision_time_buckets = [
             ProjectedSupervisionCompletionBucket(
-                state_code='US_MO', year=2018, month=3,
+                state_code='US_XX', year=2018, month=3,
                 bucket_date=date(2018, 3, 31),
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
                 case_type=StateSupervisionCaseType.GENERAL,
@@ -436,7 +436,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
                 supervising_district_external_id='district5'
             ),
             NonRevocationReturnSupervisionTimeBucket(
-                state_code='US_MO', year=2018, month=3,
+                state_code='US_XX', year=2018, month=3,
                 bucket_date=date(2018, 3, 31),
                 is_on_supervision_last_day_of_month=True,
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
@@ -445,7 +445,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
                 supervision_level_raw_text='HIGH'
             ),
             NonRevocationReturnSupervisionTimeBucket(
-                state_code='US_MO', year=2018, month=4,
+                state_code='US_XX', year=2018, month=4,
                 bucket_date=date(2018, 4, 1),
                 is_on_supervision_last_day_of_month=False,
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
@@ -478,7 +478,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
     def test_map_supervision_combinations_supervision_mixed_success(self):
         """Tests the map_supervision_combinations function when there is a ProjectedSupervisionCompletionBucket and the
         supervision is not successfully completed."""
-        person = StatePerson.new_with_defaults(person_id=12345,
+        person = StatePerson.new_with_defaults(state_code='US_XX', person_id=12345,
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
 
@@ -562,34 +562,34 @@ class TestMapSupervisionCombinations(unittest.TestCase):
     def test_map_supervision_combinations_supervision_with_district_officer(self):
         """Tests the map_supervision_combinations function when there is a mix of missing & non-null district/officer
         data for one person over many ProjectedSupervisionCompletionBuckets."""
-        person = StatePerson.new_with_defaults(person_id=12345,
+        person = StatePerson.new_with_defaults(state_code='US_XX', person_id=12345,
                                                birthdate=date(1993, 4, 2),
                                                gender=Gender.FEMALE)
 
-        race = StatePersonRace.new_with_defaults(state_code='US_MO', race=Race.WHITE)
+        race = StatePersonRace.new_with_defaults(state_code='US_XX', race=Race.WHITE)
 
         person.races = [race]
 
         ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code='US_MO',
+            state_code='US_XX',
             ethnicity=Ethnicity.NOT_HISPANIC)
 
         person.ethnicities = [ethnicity]
 
         supervision_time_buckets = [
             ProjectedSupervisionCompletionBucket(
-                state_code='US_MO', year=2017, month=6, bucket_date=date(2017, 6, 30),
+                state_code='US_XX', year=2017, month=6, bucket_date=date(2017, 6, 30),
                 supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
                 successful_completion=False,
             ),
             ProjectedSupervisionCompletionBucket(
-                state_code='US_MO', year=2020, month=1, bucket_date=date(2020, 1, 30),
+                state_code='US_XX', year=2020, month=1, bucket_date=date(2020, 1, 30),
                 supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
                 successful_completion=False,
                 supervising_officer_external_id='officer45', supervising_district_external_id='district5'
             ),
             ProjectedSupervisionCompletionBucket(
-                state_code='US_MO', year=2018, month=12, bucket_date=date(2018, 12, 31),
+                state_code='US_XX', year=2018, month=12, bucket_date=date(2018, 12, 31),
                 supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
                 successful_completion=False
             )
@@ -621,31 +621,31 @@ class TestMapSupervisionCombinations(unittest.TestCase):
 
     def test_map_supervision_combinations_revocation_and_not(self):
         """Tests the map_supervision_combinations function."""
-        person = StatePerson.new_with_defaults(person_id=12345,
+        person = StatePerson.new_with_defaults(state_code='US_XX', person_id=12345,
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
 
         person_external_id = StatePersonExternalId.new_with_defaults(
             external_id='SID1341',
             id_type='US_MO_DOC',
-            state_code='US_MO'
+            state_code='US_XX'
         )
 
         person.external_ids = [person_external_id]
 
-        race = StatePersonRace.new_with_defaults(state_code='US_MO', race=Race.WHITE)
+        race = StatePersonRace.new_with_defaults(state_code='US_XX', race=Race.WHITE)
 
         person.races = [race]
 
         ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code='US_MO',
+            state_code='US_XX',
             ethnicity=Ethnicity.NOT_HISPANIC)
 
         person.ethnicities = [ethnicity]
 
         supervision_time_buckets = [
             NonRevocationReturnSupervisionTimeBucket(
-                state_code='US_MO', year=2018, month=2,
+                state_code='US_XX', year=2018, month=2,
                 bucket_date=date(2018, 2, 1),
                 is_on_supervision_last_day_of_month=False,
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
@@ -658,7 +658,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
                 response_count=19
             ),
             NonRevocationReturnSupervisionTimeBucket(
-                state_code='US_MO', year=2018, month=3,
+                state_code='US_XX', year=2018, month=3,
                 bucket_date=date(2018, 3, 31),
                 is_on_supervision_last_day_of_month=True,
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
@@ -671,7 +671,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
                 response_count=19
             ),
             RevocationReturnSupervisionTimeBucket(
-                state_code='US_MO', year=2018, month=4,
+                state_code='US_XX', year=2018, month=4,
                 bucket_date=date(2018, 4, 1),
                 is_on_supervision_last_day_of_month=False,
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
@@ -702,23 +702,23 @@ class TestMapSupervisionCombinations(unittest.TestCase):
 
     def test_map_supervision_combinations_multiple_months(self):
         """Tests the map_supervision_combinations function where the person was on supervision for multiple months."""
-        person = StatePerson.new_with_defaults(person_id=12345,
+        person = StatePerson.new_with_defaults(state_code='US_XX', person_id=12345,
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
 
-        race = StatePersonRace.new_with_defaults(state_code='US_MO', race=Race.WHITE)
+        race = StatePersonRace.new_with_defaults(state_code='US_XX', race=Race.WHITE)
 
         person.races = [race]
 
         ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code='US_MO',
+            state_code='US_XX',
             ethnicity=Ethnicity.NOT_HISPANIC)
 
         person.ethnicities = [ethnicity]
 
         supervision_time_buckets = [
             NonRevocationReturnSupervisionTimeBucket(
-                state_code='US_MO', year=2018, month=3,
+                state_code='US_XX', year=2018, month=3,
                 bucket_date=date(2018, 3, 31),
                 is_on_supervision_last_day_of_month=True,
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE),
@@ -751,16 +751,16 @@ class TestMapSupervisionCombinations(unittest.TestCase):
     def test_map_supervision_combinations_overlapping_days(self):
         """Tests the map_supervision_combinations function where the person was serving multiple supervision sentences
         simultaneously in a given month."""
-        person = StatePerson.new_with_defaults(person_id=12345,
+        person = StatePerson.new_with_defaults(state_code='US_XX', person_id=12345,
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
 
-        race = StatePersonRace.new_with_defaults(state_code='US_MO', race=Race.WHITE)
+        race = StatePersonRace.new_with_defaults(state_code='US_XX', race=Race.WHITE)
 
         person.races = [race]
 
         ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code='US_MO',
+            state_code='US_XX',
             ethnicity=Ethnicity.NOT_HISPANIC)
 
         person.ethnicities = [ethnicity]
@@ -792,7 +792,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
     def test_map_supervision_combinations_overlapping_months_types(self):
         """Tests the map_supervision_combinations function where the person was serving multiple supervision sentences
         simultaneously in a given month, but the supervisions are of different types."""
-        person = StatePerson.new_with_defaults(person_id=12345,
+        person = StatePerson.new_with_defaults(state_code='US_XX', person_id=12345,
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
 
@@ -846,7 +846,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
     def test_map_supervision_combinations_overlapping_months_types_dual(self):
         """Tests the map_supervision_combinations function where the person was serving multiple supervision sentences
         simultaneously in a given month, but the supervisions are of different types."""
-        person = StatePerson.new_with_defaults(person_id=12345,
+        person = StatePerson.new_with_defaults(state_code='US_XX', person_id=12345,
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
 
@@ -914,7 +914,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
     def test_map_supervision_combinations_two_revocations_in_month_sort_date(self):
         """Tests the map_supervision_combinations function where the person was revoked twice in a given month. Asserts
         that the revocation with the latest date is chosen."""
-        person = StatePerson.new_with_defaults(person_id=12345,
+        person = StatePerson.new_with_defaults(state_code='US_XX', person_id=12345,
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
 
@@ -966,16 +966,16 @@ class TestMapSupervisionCombinations(unittest.TestCase):
 
     @freeze_time('2010-01-31')
     def test_map_supervision_combinations_relevant_periods(self):
-        person = StatePerson.new_with_defaults(person_id=12345,
+        person = StatePerson.new_with_defaults(state_code='US_XX', person_id=12345,
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
 
-        race = StatePersonRace.new_with_defaults(state_code='US_MO', race=Race.WHITE)
+        race = StatePersonRace.new_with_defaults(state_code='US_XX', race=Race.WHITE)
 
         person.races = [race]
 
         ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code='US_MO',
+            state_code='US_XX',
             ethnicity=Ethnicity.NOT_HISPANIC)
 
         person.ethnicities = [ethnicity]
@@ -1003,25 +1003,26 @@ class TestMapSupervisionCombinations(unittest.TestCase):
 
     @freeze_time('2010-01-31')
     def test_map_supervision_combinations_one_non_relevant_period(self):
-        person = StatePerson.new_with_defaults(person_id=12345, birthdate=date(1984, 8, 31), gender=Gender.FEMALE)
+        person = StatePerson.new_with_defaults(state_code='US_XX', person_id=12345, birthdate=date(1984, 8, 31),
+                                               gender=Gender.FEMALE)
 
-        race = StatePersonRace.new_with_defaults(state_code='US_MO', race=Race.WHITE)
+        race = StatePersonRace.new_with_defaults(state_code='US_XX', race=Race.WHITE)
 
         person.races = [race]
 
-        ethnicity = StatePersonEthnicity.new_with_defaults(state_code='US_MO', ethnicity=Ethnicity.NOT_HISPANIC)
+        ethnicity = StatePersonEthnicity.new_with_defaults(state_code='US_XX', ethnicity=Ethnicity.NOT_HISPANIC)
 
         person.ethnicities = [ethnicity]
 
         relevant_bucket = NonRevocationReturnSupervisionTimeBucket(
-            state_code='US_MO',
+            state_code='US_XX',
             year=2010,
             month=1,
             bucket_date=date(2010, 1, 1),
             is_on_supervision_last_day_of_month=False,
             supervision_type=StateSupervisionPeriodSupervisionType.PAROLE)
         not_relevant_bucket = RevocationReturnSupervisionTimeBucket(
-            state_code='US_MO',
+            state_code='US_XX',
             year=1980,
             month=1,
             bucket_date=date(1980, 1, 1),
@@ -1051,31 +1052,31 @@ class TestMapSupervisionCombinations(unittest.TestCase):
 
     @freeze_time('2010-01-31')
     def test_map_supervision_combinations_relevant_periods_revocation(self):
-        person = StatePerson.new_with_defaults(person_id=12345,
+        person = StatePerson.new_with_defaults(state_code='US_XX', person_id=12345,
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
 
         person_external_id = StatePersonExternalId.new_with_defaults(
             external_id='SID1341',
             id_type='US_MO_DOC',
-            state_code='US_MO'
+            state_code='US_XX'
         )
 
         person.external_ids = [person_external_id]
 
-        race = StatePersonRace.new_with_defaults(state_code='US_MO', race=Race.WHITE)
+        race = StatePersonRace.new_with_defaults(state_code='US_XX', race=Race.WHITE)
 
         person.races = [race]
 
         ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code='US_MO',
+            state_code='US_XX',
             ethnicity=Ethnicity.NOT_HISPANIC)
 
         person.ethnicities = [ethnicity]
 
         supervision_time_buckets = [
             RevocationReturnSupervisionTimeBucket(
-                state_code='US_MO',
+                state_code='US_XX',
                 year=2010,
                 month=1,
                 bucket_date=date(1980, 1, 1),
@@ -1100,16 +1101,16 @@ class TestMapSupervisionCombinations(unittest.TestCase):
 
     @freeze_time('2010-01-31')
     def test_map_supervision_combinations_relevant_periods_duplicates(self):
-        person = StatePerson.new_with_defaults(person_id=12345,
+        person = StatePerson.new_with_defaults(state_code='US_XX', person_id=12345,
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
 
-        race = StatePersonRace.new_with_defaults(state_code='US_MO', race=Race.WHITE)
+        race = StatePersonRace.new_with_defaults(state_code='US_XX', race=Race.WHITE)
 
         person.races = [race]
 
         ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code='US_MO',
+            state_code='US_XX',
             ethnicity=Ethnicity.NOT_HISPANIC)
 
         person.ethnicities = [ethnicity]
@@ -1140,23 +1141,23 @@ class TestMapSupervisionCombinations(unittest.TestCase):
 
     @freeze_time('2010-01-31')
     def test_map_supervision_combinations_relevant_periods_duplicate_month_mixed_success(self):
-        person = StatePerson.new_with_defaults(person_id=12345,
+        person = StatePerson.new_with_defaults(state_code='US_XX', person_id=12345,
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
 
-        race = StatePersonRace.new_with_defaults(state_code='US_MO', race=Race.WHITE)
+        race = StatePersonRace.new_with_defaults(state_code='US_XX', race=Race.WHITE)
 
         person.races = [race]
 
         ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code='US_MO',
+            state_code='US_XX',
             ethnicity=Ethnicity.NOT_HISPANIC)
 
         person.ethnicities = [ethnicity]
 
         supervision_time_buckets = [
             ProjectedSupervisionCompletionBucket(
-                state_code='US_MO',
+                state_code='US_XX',
                 year=2010,
                 month=1,
                 bucket_date=date(2010, 1, 31),
@@ -1166,7 +1167,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
                 sentence_days_served=190
             ),
             ProjectedSupervisionCompletionBucket(
-                state_code='US_MO',
+                state_code='US_XX',
                 year=2010,
                 month=1,
                 bucket_date=date(2010, 1, 31),
@@ -1201,7 +1202,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
 
     @freeze_time('2010-01-31')
     def test_map_supervision_combinations_relevant_periods_supervision_types(self):
-        person = StatePerson.new_with_defaults(person_id=12345,
+        person = StatePerson.new_with_defaults(state_code='US_XX', person_id=12345,
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
 
@@ -1255,16 +1256,16 @@ class TestMapSupervisionCombinations(unittest.TestCase):
 
     @freeze_time('2010-01-31')
     def test_map_supervision_combinations_relevant_periods_duplicate_termination(self):
-        person = StatePerson.new_with_defaults(person_id=12345,
+        person = StatePerson.new_with_defaults(state_code='US_XX', person_id=12345,
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
 
-        race = StatePersonRace.new_with_defaults(state_code='US_MO', race=Race.WHITE)
+        race = StatePersonRace.new_with_defaults(state_code='US_XX', race=Race.WHITE)
 
         person.races = [race]
 
         ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code='US_MO',
+            state_code='US_XX',
             ethnicity=Ethnicity.NOT_HISPANIC)
 
         person.ethnicities = [ethnicity]
@@ -1310,31 +1311,31 @@ class TestMapSupervisionCombinations(unittest.TestCase):
 
     @freeze_time('2010-01-31')
     def test_map_supervision_combinations_relevant_periods_all_metrics(self):
-        person = StatePerson.new_with_defaults(person_id=12345,
+        person = StatePerson.new_with_defaults(state_code='US_XX', person_id=12345,
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
 
         person_external_id = StatePersonExternalId.new_with_defaults(
             external_id='SID1341',
             id_type='US_MO_DOC',
-            state_code='US_MO'
+            state_code='US_XX'
         )
 
         person.external_ids = [person_external_id]
 
-        race = StatePersonRace.new_with_defaults(state_code='US_MO', race=Race.WHITE)
+        race = StatePersonRace.new_with_defaults(state_code='US_XX', race=Race.WHITE)
 
         person.races = [race]
 
         ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code='US_MO',
+            state_code='US_XX',
             ethnicity=Ethnicity.NOT_HISPANIC)
 
         person.ethnicities = [ethnicity]
 
         supervision_time_buckets = [
             NonRevocationReturnSupervisionTimeBucket(
-                state_code='US_MO', year=2010, month=1,
+                state_code='US_XX', year=2010, month=1,
                 bucket_date=date(2010, 1, 1),
                 is_on_supervision_last_day_of_month=False,
                 case_compliance=SupervisionCaseCompliance(
@@ -1344,7 +1345,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
                 )
             ),
             RevocationReturnSupervisionTimeBucket(
-                state_code='US_MO', year=2010, month=1,
+                state_code='US_XX', year=2010, month=1,
                 bucket_date=date(2010, 1, 1),
                 is_on_supervision_last_day_of_month=False,
                 supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
@@ -1359,7 +1360,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
                 ]
             ),
             SupervisionTerminationBucket(
-                state_code='US_MO',
+                state_code='US_XX',
                 year=2010,
                 month=1,
                 bucket_date=date(2010, 1, 16),
@@ -1370,7 +1371,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
                 assessment_score_change=-3
             ),
             ProjectedSupervisionCompletionBucket(
-                state_code='US_MO',
+                state_code='US_XX',
                 year=2010,
                 month=1,
                 bucket_date=date(2010, 1, 31),
@@ -1410,7 +1411,8 @@ class TestMapSupervisionCombinations(unittest.TestCase):
 
     def test_map_supervision_combinations_start_bucket(self):
         """Tests the map_supervision_combinations when there are SupervisionStartBuckets sent to the calculator."""
-        person = StatePerson.new_with_defaults(person_id=12345, birthdate=date(1984, 8, 31), gender=Gender.FEMALE)
+        person = StatePerson.new_with_defaults(state_code='US_XX', person_id=12345, birthdate=date(1984, 8, 31),
+                                               gender=Gender.FEMALE)
         race = StatePersonRace.new_with_defaults(state_code='US_XX', race=Race.WHITE)
         person.races = [race]
         ethnicity = StatePersonEthnicity.new_with_defaults(state_code='US_XX', ethnicity=Ethnicity.NOT_HISPANIC)
@@ -1446,7 +1448,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
     def test_map_supervision_combinations_termination_bucket(self):
         """Tests the map_supervision_combinations when there are SupervisionTerminationBuckets sent to the
         calculator."""
-        person = StatePerson.new_with_defaults(person_id=12345,
+        person = StatePerson.new_with_defaults(state_code='US_XX', person_id=12345,
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
 
@@ -1492,22 +1494,22 @@ class TestMapSupervisionCombinations(unittest.TestCase):
     def test_map_supervision_combinations_termination_buckets_no_score_change(self):
         """Tests the map_supervision_combinations when there are SupervisionTerminationBuckets sent to the calculator,
         but the bucket doesn't have an assessment_score_change."""
-        person = StatePerson.new_with_defaults(person_id=12345,
+        person = StatePerson.new_with_defaults(state_code='US_XX', person_id=12345,
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
 
-        race = StatePersonRace.new_with_defaults(state_code='US_MO', race=Race.WHITE)
+        race = StatePersonRace.new_with_defaults(state_code='US_XX', race=Race.WHITE)
 
         person.races = [race]
 
         ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code='US_MO',
+            state_code='US_XX',
             ethnicity=Ethnicity.NOT_HISPANIC)
 
         person.ethnicities = [ethnicity]
 
         termination_bucket = SupervisionTerminationBucket(
-            state_code='US_MO',
+            state_code='US_XX',
             year=2000,
             month=1,
             bucket_date=date(2000, 1, 13),
@@ -1539,7 +1541,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
     def test_map_supervision_combinations_termination_buckets(self):
         """Tests the map_supervision_combinations when there are SupervisionTerminationBuckets sent to the calculator
         that end in the same month."""
-        person = StatePerson.new_with_defaults(person_id=12345,
+        person = StatePerson.new_with_defaults(state_code='US_XX', person_id=12345,
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
 
@@ -1597,22 +1599,22 @@ class TestMapSupervisionCombinations(unittest.TestCase):
                    in supervision_combinations)
 
     def test_map_supervision_combinations_only_terminations(self):
-        person = StatePerson.new_with_defaults(person_id=12345,
+        person = StatePerson.new_with_defaults(state_code='US_XX', person_id=12345,
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
 
-        race = StatePersonRace.new_with_defaults(state_code='US_MO', race=Race.WHITE)
+        race = StatePersonRace.new_with_defaults(state_code='US_XX', race=Race.WHITE)
 
         person.races = [race]
 
         ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code='US_MO',
+            state_code='US_XX',
             ethnicity=Ethnicity.NOT_HISPANIC)
 
         person.ethnicities = [ethnicity]
 
         termination_bucket = SupervisionTerminationBucket(
-            state_code='US_MO',
+            state_code='US_XX',
             year=2010,
             month=1,
             bucket_date=date(2010, 1, 13),
@@ -1627,7 +1629,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
 
         supervision_time_buckets = [
             ProjectedSupervisionCompletionBucket(
-                state_code='US_MO', year=2010, month=3,
+                state_code='US_XX', year=2010, month=3,
                 bucket_date=date(2010, 3, 31),
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
                 successful_completion=True, incarcerated_during_sentence=False,
@@ -1678,22 +1680,22 @@ class TestMapSupervisionCombinations(unittest.TestCase):
             for _combination, value in supervision_combinations)
 
     def test_map_supervision_combinations_only_success(self):
-        person = StatePerson.new_with_defaults(person_id=12345,
+        person = StatePerson.new_with_defaults(state_code='US_XX', person_id=12345,
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
 
-        race = StatePersonRace.new_with_defaults(state_code='US_MO', race=Race.WHITE)
+        race = StatePersonRace.new_with_defaults(state_code='US_XX', race=Race.WHITE)
 
         person.races = [race]
 
         ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code='US_MO',
+            state_code='US_XX',
             ethnicity=Ethnicity.NOT_HISPANIC)
 
         person.ethnicities = [ethnicity]
 
         termination_bucket = SupervisionTerminationBucket(
-            state_code='US_MO',
+            state_code='US_XX',
             year=2010,
             month=1,
             bucket_date=date(2010, 1, 13),
@@ -1707,7 +1709,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
 
         supervision_time_buckets = [
             ProjectedSupervisionCompletionBucket(
-                state_code='US_MO', year=2010, month=3,
+                state_code='US_XX', year=2010, month=3,
                 bucket_date=date(2010, 3, 31),
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
                 successful_completion=True, supervising_officer_external_id='officer45',
@@ -1756,22 +1758,22 @@ class TestMapSupervisionCombinations(unittest.TestCase):
             for _combination, value in supervision_combinations)
 
     def test_map_supervision_combinations_only_successful_sentence_length(self):
-        person = StatePerson.new_with_defaults(person_id=12345,
+        person = StatePerson.new_with_defaults(state_code='US_XX', person_id=12345,
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
 
-        race = StatePersonRace.new_with_defaults(state_code='US_MO', race=Race.WHITE)
+        race = StatePersonRace.new_with_defaults(state_code='US_XX', race=Race.WHITE)
 
         person.races = [race]
 
         ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code='US_MO',
+            state_code='US_XX',
             ethnicity=Ethnicity.NOT_HISPANIC)
 
         person.ethnicities = [ethnicity]
 
         termination_bucket = SupervisionTerminationBucket(
-            state_code='US_MO',
+            state_code='US_XX',
             year=2010,
             month=1,
             bucket_date=date(2010, 1, 13),
@@ -1785,7 +1787,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
 
         supervision_time_buckets = [
             ProjectedSupervisionCompletionBucket(
-                state_code='US_MO', year=2010, month=3,
+                state_code='US_XX', year=2010, month=3,
                 bucket_date=date(2010, 3, 31),
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
                 successful_completion=True, incarcerated_during_sentence=False,
@@ -1831,22 +1833,22 @@ class TestMapSupervisionCombinations(unittest.TestCase):
                    for _combination, value in supervision_combinations)
 
     def test_map_supervision_combinations_only_revocation(self):
-        person = StatePerson.new_with_defaults(person_id=12345,
+        person = StatePerson.new_with_defaults(state_code='US_XX', person_id=12345,
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
 
-        race = StatePersonRace.new_with_defaults(state_code='US_MO', race=Race.WHITE)
+        race = StatePersonRace.new_with_defaults(state_code='US_XX', race=Race.WHITE)
 
         person.races = [race]
 
         ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code='US_MO',
+            state_code='US_XX',
             ethnicity=Ethnicity.NOT_HISPANIC)
 
         person.ethnicities = [ethnicity]
 
         termination_bucket = SupervisionTerminationBucket(
-            state_code='US_MO',
+            state_code='US_XX',
             year=2010,
             month=1,
             bucket_date=date(2010, 1, 13),
@@ -1860,7 +1862,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
 
         supervision_time_buckets = [
             ProjectedSupervisionCompletionBucket(
-                state_code='US_MO', year=2010, month=3,
+                state_code='US_XX', year=2010, month=3,
                 bucket_date=date(2010, 3, 31),
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
                 successful_completion=True, supervising_officer_external_id='officer45',
@@ -1868,12 +1870,12 @@ class TestMapSupervisionCombinations(unittest.TestCase):
             ),
             termination_bucket,
             RevocationReturnSupervisionTimeBucket(
-                state_code='US_MO', year=2010, month=1,
+                state_code='US_XX', year=2010, month=1,
                 bucket_date=date(2010, 1, 1),
                 is_on_supervision_last_day_of_month=False,
                 supervision_type=StateSupervisionPeriodSupervisionType.PROBATION),
             NonRevocationReturnSupervisionTimeBucket(
-                state_code='US_MO',
+                state_code='US_XX',
                 year=2010, month=2,
                 bucket_date=date(2010, 2, 2),
                 is_on_supervision_last_day_of_month=False,
@@ -1914,28 +1916,28 @@ class TestMapSupervisionCombinations(unittest.TestCase):
             for _combination, value in supervision_combinations)
 
     def test_map_supervision_combinations_only_revocation_analysis(self):
-        person = StatePerson.new_with_defaults(person_id=12345,
+        person = StatePerson.new_with_defaults(state_code='US_XX', person_id=12345,
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
 
         person_external_id = StatePersonExternalId.new_with_defaults(
             external_id='SID1341',
             id_type='US_MO_DOC',
-            state_code='US_MO'
+            state_code='US_XX'
         )
 
         person.external_ids = [person_external_id]
 
-        race = StatePersonRace.new_with_defaults(state_code='US_MO', race=Race.WHITE)
+        race = StatePersonRace.new_with_defaults(state_code='US_XX', race=Race.WHITE)
 
         person.races = [race]
 
-        ethnicity = StatePersonEthnicity.new_with_defaults(state_code='US_MO', ethnicity=Ethnicity.NOT_HISPANIC)
+        ethnicity = StatePersonEthnicity.new_with_defaults(state_code='US_XX', ethnicity=Ethnicity.NOT_HISPANIC)
 
         person.ethnicities = [ethnicity]
 
         termination_bucket = SupervisionTerminationBucket(
-            state_code='US_MO',
+            state_code='US_XX',
             year=2010,
             month=1,
             bucket_date=date(2010, 1, 13),
@@ -1949,7 +1951,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
 
         supervision_time_buckets = [
             ProjectedSupervisionCompletionBucket(
-                state_code='US_MO', year=2010, month=3,
+                state_code='US_XX', year=2010, month=3,
                 bucket_date=date(2010, 3, 31),
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
                 successful_completion=True, supervising_officer_external_id='officer45',
@@ -1957,12 +1959,12 @@ class TestMapSupervisionCombinations(unittest.TestCase):
             ),
             termination_bucket,
             RevocationReturnSupervisionTimeBucket(
-                state_code='US_MO', year=2010, month=1,
+                state_code='US_XX', year=2010, month=1,
                 bucket_date=date(2010, 1, 1),
                 is_on_supervision_last_day_of_month=False,
                 supervision_type=StateSupervisionPeriodSupervisionType.PROBATION),
             NonRevocationReturnSupervisionTimeBucket(
-                state_code='US_MO',
+                state_code='US_XX',
                 year=2010, month=2,
                 bucket_date=date(2010, 2, 2),
                 is_on_supervision_last_day_of_month=False,
@@ -2003,28 +2005,28 @@ class TestMapSupervisionCombinations(unittest.TestCase):
             for _combination, value in supervision_combinations)
 
     def test_map_supervision_combinations_only_revocation_violation_type_analysis(self):
-        person = StatePerson.new_with_defaults(person_id=12345,
+        person = StatePerson.new_with_defaults(state_code='US_XX', person_id=12345,
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
 
         person_external_id = StatePersonExternalId.new_with_defaults(
             external_id='SID1341',
             id_type='US_MO_DOC',
-            state_code='US_MO'
+            state_code='US_XX'
         )
 
         person.external_ids = [person_external_id]
 
-        race = StatePersonRace.new_with_defaults(state_code='US_MO', race=Race.WHITE)
+        race = StatePersonRace.new_with_defaults(state_code='US_XX', race=Race.WHITE)
 
         person.races = [race]
 
-        ethnicity = StatePersonEthnicity.new_with_defaults(state_code='US_MO', ethnicity=Ethnicity.NOT_HISPANIC)
+        ethnicity = StatePersonEthnicity.new_with_defaults(state_code='US_XX', ethnicity=Ethnicity.NOT_HISPANIC)
 
         person.ethnicities = [ethnicity]
 
         termination_bucket = SupervisionTerminationBucket(
-            state_code='US_MO',
+            state_code='US_XX',
             year=2010,
             month=1,
             bucket_date=date(2010, 1, 13),
@@ -2038,7 +2040,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
 
         supervision_time_buckets = [
             ProjectedSupervisionCompletionBucket(
-                state_code='US_MO', year=2010, month=3,
+                state_code='US_XX', year=2010, month=3,
                 bucket_date=date(2010, 3, 31),
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
                 successful_completion=True, supervising_officer_external_id='officer45',
@@ -2046,7 +2048,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
             ),
             termination_bucket,
             RevocationReturnSupervisionTimeBucket(
-                state_code='US_MO', year=2010, month=1,
+                state_code='US_XX', year=2010, month=1,
                 bucket_date=date(2010, 1, 1),
                 is_on_supervision_last_day_of_month=False,
                 supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
@@ -2061,7 +2063,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
                 ]
             ),
             NonRevocationReturnSupervisionTimeBucket(
-                state_code='US_MO',
+                state_code='US_XX',
                 year=2010, month=2,
                 bucket_date=date(2010, 2, 2),
                 is_on_supervision_last_day_of_month=False,
@@ -2103,22 +2105,22 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         assert all('person_id' not in _combination.keys() for _combination, value in supervision_combinations)
 
     def test_map_supervision_combinations_only_population(self):
-        person = StatePerson.new_with_defaults(person_id=12345,
+        person = StatePerson.new_with_defaults(state_code='US_XX', person_id=12345,
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
 
-        race = StatePersonRace.new_with_defaults(state_code='US_MO', race=Race.WHITE)
+        race = StatePersonRace.new_with_defaults(state_code='US_XX', race=Race.WHITE)
 
         person.races = [race]
 
         ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code='US_MO',
+            state_code='US_XX',
             ethnicity=Ethnicity.NOT_HISPANIC)
 
         person.ethnicities = [ethnicity]
 
         termination_bucket = SupervisionTerminationBucket(
-            state_code='US_MO',
+            state_code='US_XX',
             year=2010,
             month=1,
             bucket_date=date(2010, 1, 13),
@@ -2132,21 +2134,21 @@ class TestMapSupervisionCombinations(unittest.TestCase):
 
         supervision_time_buckets = [
             ProjectedSupervisionCompletionBucket(
-                state_code='US_MO', year=2010, month=3, bucket_date=date(2010, 3, 31),
+                state_code='US_XX', year=2010, month=3, bucket_date=date(2010, 3, 31),
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
                 successful_completion=True, supervising_officer_external_id='officer45',
                 supervising_district_external_id='district5'
             ),
             termination_bucket,
             RevocationReturnSupervisionTimeBucket(
-                state_code='US_MO',
+                state_code='US_XX',
                 year=2010,
                 month=1,
                 bucket_date=date(2010, 1, 1),
                 is_on_supervision_last_day_of_month=False,
                 supervision_type=StateSupervisionPeriodSupervisionType.PROBATION),
             NonRevocationReturnSupervisionTimeBucket(
-                state_code='US_MO',
+                state_code='US_XX',
                 year=2010,
                 month=2,
                 bucket_date=date(2010, 2, 22),
@@ -2189,17 +2191,17 @@ class TestMapSupervisionCombinations(unittest.TestCase):
 
     @freeze_time('2010-01-31')
     def test_map_supervision_combinations_relevant_periods_calculation_month_count_12(self):
-        person = StatePerson.new_with_defaults(person_id=12345,
+        person = StatePerson.new_with_defaults(state_code='US_XX', person_id=12345,
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
 
-        race = StatePersonRace.new_with_defaults(state_code='US_MO',
+        race = StatePersonRace.new_with_defaults(state_code='US_XX',
                                                  race=Race.WHITE)
 
         person.races = [race]
 
         ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code='US_MO',
+            state_code='US_XX',
             ethnicity=Ethnicity.NOT_HISPANIC)
 
         person.ethnicities = [ethnicity]
@@ -2236,17 +2238,17 @@ class TestMapSupervisionCombinations(unittest.TestCase):
 
     @freeze_time('2010-12-31')
     def test_map_supervision_combinations_relevant_periods_calculation_month_count_37(self):
-        person = StatePerson.new_with_defaults(person_id=12345,
+        person = StatePerson.new_with_defaults(state_code='US_XX', person_id=12345,
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
 
-        race = StatePersonRace.new_with_defaults(state_code='US_MO',
+        race = StatePersonRace.new_with_defaults(state_code='US_XX',
                                                  race=Race.WHITE)
 
         person.races = [race]
 
         ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code='US_MO',
+            state_code='US_XX',
             ethnicity=Ethnicity.NOT_HISPANIC)
 
         person.ethnicities = [ethnicity]
@@ -2275,17 +2277,17 @@ class TestMapSupervisionCombinations(unittest.TestCase):
 
     @freeze_time('2010-12-31')
     def test_map_supervision_combinations_relevant_periods_calculation_month_no_output(self):
-        person = StatePerson.new_with_defaults(person_id=12345,
+        person = StatePerson.new_with_defaults(state_code='US_XX', person_id=12345,
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
 
-        race = StatePersonRace.new_with_defaults(state_code='US_MO',
+        race = StatePersonRace.new_with_defaults(state_code='US_XX',
                                                  race=Race.WHITE)
 
         person.races = [race]
 
         ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code='US_MO',
+            state_code='US_XX',
             ethnicity=Ethnicity.NOT_HISPANIC)
 
         person.ethnicities = [ethnicity]
@@ -2308,23 +2310,23 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         assert all(value == 1 for _combination, value in supervision_combinations)
 
     def test_map_supervision_combinations_only_successful_sentence_length_duplicate_month_longer_sentence(self):
-        person = StatePerson.new_with_defaults(person_id=12345,
+        person = StatePerson.new_with_defaults(state_code='US_XX', person_id=12345,
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
 
-        race = StatePersonRace.new_with_defaults(state_code='US_MO', race=Race.WHITE)
+        race = StatePersonRace.new_with_defaults(state_code='US_XX', race=Race.WHITE)
 
         person.races = [race]
 
         ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code='US_MO',
+            state_code='US_XX',
             ethnicity=Ethnicity.NOT_HISPANIC)
 
         person.ethnicities = [ethnicity]
 
         supervision_time_buckets = [
             ProjectedSupervisionCompletionBucket(
-                state_code='US_MO', year=2018, month=3,
+                state_code='US_XX', year=2018, month=3,
                 bucket_date=date(2018, 3, 31),
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
                 successful_completion=True, incarcerated_during_sentence=False,
@@ -2332,7 +2334,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
                 supervising_officer_external_id='officer45', supervising_district_external_id='district5'
             ),
             ProjectedSupervisionCompletionBucket(
-                state_code='US_MO', year=2018, month=3,
+                state_code='US_XX', year=2018, month=3,
                 bucket_date=date(2018, 3, 31),
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
                 successful_completion=True, incarcerated_during_sentence=False,
@@ -2373,23 +2375,23 @@ class TestMapSupervisionCombinations(unittest.TestCase):
 
     def test_map_supervision_combinations_compliance_metrics(self):
         """Tests the map_supervision_combinations function when there are compliance metrics to be generated."""
-        person = StatePerson.new_with_defaults(person_id=12345,
+        person = StatePerson.new_with_defaults(state_code='US_XX', person_id=12345,
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
 
-        race = StatePersonRace.new_with_defaults(state_code='US_MO', race=Race.WHITE)
+        race = StatePersonRace.new_with_defaults(state_code='US_XX', race=Race.WHITE)
 
         person.races = [race]
 
         ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code='US_MO',
+            state_code='US_XX',
             ethnicity=Ethnicity.NOT_HISPANIC)
 
         person.ethnicities = [ethnicity]
 
         supervision_time_buckets = [
             NonRevocationReturnSupervisionTimeBucket(
-                state_code='US_MO', year=2018, month=3,
+                state_code='US_XX', year=2018, month=3,
                 bucket_date=date(2018, 3, 31),
                 is_on_supervision_last_day_of_month=True,
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
@@ -2403,7 +2405,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
                 )
             ),
             NonRevocationReturnSupervisionTimeBucket(
-                state_code='US_MO', year=2018, month=4,
+                state_code='US_XX', year=2018, month=4,
                 bucket_date=date(2018, 4, 1),
                 is_on_supervision_last_day_of_month=False,
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
@@ -2431,7 +2433,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         assert all(value == 1 for _combination, value in supervision_combinations)
 
     def test_map_supervision_combinations_supervision_out_of_state_population_metrics_is_out_of_state(self):
-        person = StatePerson.new_with_defaults(person_id=12345,
+        person = StatePerson.new_with_defaults(state_code='US_XX', person_id=12345,
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
 
@@ -2492,7 +2494,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
             for _combination, value in supervision_combinations)
 
     def test_map_supervision_combinations_supervision_out_of_state_population_metrics_not_out_of_state(self):
-        person = StatePerson.new_with_defaults(person_id=12345,
+        person = StatePerson.new_with_defaults(state_code='US_XX', person_id=12345,
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
 
@@ -2542,23 +2544,23 @@ class TestMapSupervisionCombinations(unittest.TestCase):
     def test_map_supervision_downgrade_metrics(self):
         """Tests the map_supervision_combinations function when there are supervision downgrade metrics to be
          generated."""
-        person = StatePerson.new_with_defaults(person_id=12345,
+        person = StatePerson.new_with_defaults(state_code='US_XX', person_id=12345,
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
 
-        race = StatePersonRace.new_with_defaults(state_code='US_MO', race=Race.WHITE)
+        race = StatePersonRace.new_with_defaults(state_code='US_XX', race=Race.WHITE)
 
         person.races = [race]
 
         ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code='US_MO',
+            state_code='US_XX',
             ethnicity=Ethnicity.NOT_HISPANIC)
 
         person.ethnicities = [ethnicity]
 
         supervision_time_buckets = [
             NonRevocationReturnSupervisionTimeBucket(
-                state_code='US_MO', year=2018, month=3,
+                state_code='US_XX', year=2018, month=3,
                 bucket_date=date(2018, 3, 31),
                 is_on_supervision_last_day_of_month=True,
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
@@ -2567,7 +2569,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
                 supervision_level_raw_text='HIGH'
             ),
             NonRevocationReturnSupervisionTimeBucket(
-                state_code='US_MO', year=2018, month=4,
+                state_code='US_XX', year=2018, month=4,
                 bucket_date=date(2018, 4, 1),
                 is_on_supervision_last_day_of_month=False,
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
@@ -2596,24 +2598,24 @@ class TestCharacteristicCombinations(unittest.TestCase):
     """Tests the characteristic_combinations function."""
 
     def setUp(self) -> None:
-        self.person = StatePerson.new_with_defaults(person_id=12345,
+        self.person = StatePerson.new_with_defaults(state_code='US_XX', person_id=12345,
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
 
-        race_white = StatePersonRace.new_with_defaults(state_code='US_MO', race=Race.WHITE)
-        race_black = StatePersonRace.new_with_defaults(state_code='US_MO', race=Race.BLACK)
+        race_white = StatePersonRace.new_with_defaults(state_code='US_XX', race=Race.WHITE)
+        race_black = StatePersonRace.new_with_defaults(state_code='US_XX', race=Race.BLACK)
 
         self.person.races = [race_white, race_black]
 
         ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code='US_MO',
+            state_code='US_XX',
             ethnicity=Ethnicity.NOT_HISPANIC)
 
         self.person.ethnicities = [ethnicity]
 
     def test_characteristic_combinations_compliance(self):
         supervision_time_bucket = NonRevocationReturnSupervisionTimeBucket(
-            state_code='US_MO', year=2018, month=3,
+            state_code='US_XX', year=2018, month=3,
             bucket_date=date(2018, 3, 1),
             is_on_supervision_last_day_of_month=False,
             supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
@@ -2658,7 +2660,7 @@ class TestCharacteristicCombinations(unittest.TestCase):
 
     def test_characteristic_combinations_population(self):
         supervision_time_bucket = NonRevocationReturnSupervisionTimeBucket(
-            state_code='US_MO', year=2018, month=3,
+            state_code='US_XX', year=2018, month=3,
             bucket_date=date(2018, 3, 1),
             is_on_supervision_last_day_of_month=False,
             supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
@@ -2694,7 +2696,7 @@ class TestCharacteristicCombinations(unittest.TestCase):
 
     def test_characteristic_combinations_revocation(self):
         supervision_time_bucket = RevocationReturnSupervisionTimeBucket(
-            state_code='US_MO', year=2018, month=3,
+            state_code='US_XX', year=2018, month=3,
             bucket_date=date(2018, 3, 1),
             is_on_supervision_last_day_of_month=False,
             supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
@@ -2723,7 +2725,7 @@ class TestCharacteristicCombinations(unittest.TestCase):
 
     def test_characteristic_combinations_revocation_analysis(self):
         supervision_time_bucket = RevocationReturnSupervisionTimeBucket(
-            state_code='US_MO', year=2018, month=3,
+            state_code='US_XX', year=2018, month=3,
             bucket_date=date(2018, 3, 1),
             is_on_supervision_last_day_of_month=False,
             supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
@@ -2756,7 +2758,7 @@ class TestCharacteristicCombinations(unittest.TestCase):
 
     def test_characteristic_combinations_revocation_violation_type_analysis(self):
         supervision_time_bucket = RevocationReturnSupervisionTimeBucket(
-            state_code='US_MO', year=2018, month=3,
+            state_code='US_XX', year=2018, month=3,
             bucket_date=date(2018, 3, 1),
             is_on_supervision_last_day_of_month=False,
             supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
@@ -2788,7 +2790,7 @@ class TestCharacteristicCombinations(unittest.TestCase):
 
     def test_characteristic_combinations_supervision_success(self):
         supervision_time_bucket = ProjectedSupervisionCompletionBucket(
-            state_code='US_MO', year=2018, month=3,
+            state_code='US_XX', year=2018, month=3,
             bucket_date=date(2018, 3, 1),
             supervision_type=StateSupervisionPeriodSupervisionType.PAROLE
         )
@@ -2812,7 +2814,7 @@ class TestCharacteristicCombinations(unittest.TestCase):
 
     def test_characteristic_combinations_supervision_successful_sentence_days_served(self):
         supervision_time_bucket = ProjectedSupervisionCompletionBucket(
-            state_code='US_MO', year=2018, month=3,
+            state_code='US_XX', year=2018, month=3,
             bucket_date=date(2018, 3, 1),
             supervision_type=StateSupervisionPeriodSupervisionType.PAROLE
         )
@@ -2836,7 +2838,7 @@ class TestCharacteristicCombinations(unittest.TestCase):
 
     def test_characteristic_combinations_termination(self):
         supervision_time_bucket = SupervisionTerminationBucket(
-            state_code='US_MO', year=2018, month=3,
+            state_code='US_XX', year=2018, month=3,
             bucket_date=date(2018, 3, 1),
             supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
             response_count=5,
@@ -2867,7 +2869,7 @@ class TestCharacteristicCombinations(unittest.TestCase):
     def test_characteristic_combinations_supervision_downgrade(self):
         supervision_time_buckets = [
             NonRevocationReturnSupervisionTimeBucket(
-                state_code='US_MO', year=2018, month=3,
+                state_code='US_XX', year=2018, month=3,
                 bucket_date=date(2018, 3, 31),
                 is_on_supervision_last_day_of_month=True,
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
@@ -2876,7 +2878,7 @@ class TestCharacteristicCombinations(unittest.TestCase):
                 supervision_level_raw_text='HIGH'
             ),
             NonRevocationReturnSupervisionTimeBucket(
-                state_code='US_MO', year=2018, month=4,
+                state_code='US_XX', year=2018, month=4,
                 bucket_date=date(2018, 4, 1),
                 is_on_supervision_last_day_of_month=False,
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,

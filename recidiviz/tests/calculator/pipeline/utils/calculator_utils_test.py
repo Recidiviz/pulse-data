@@ -34,7 +34,7 @@ from recidiviz.persistence.entity.state.entities import StatePerson, \
 def test_age_at_date_earlier_month():
     birthdate = date(1989, 6, 17)
     check_date = date(2014, 4, 15)
-    person = StatePerson.new_with_defaults(birthdate=birthdate)
+    person = StatePerson.new_with_defaults(state_code='US_XX', birthdate=birthdate)
 
     assert calculator_utils.age_at_date(person, check_date) == 24
 
@@ -42,7 +42,7 @@ def test_age_at_date_earlier_month():
 def test_age_at_date_same_month_earlier_date():
     birthdate = date(1989, 6, 17)
     check_date = date(2014, 6, 16)
-    person = StatePerson.new_with_defaults(birthdate=birthdate)
+    person = StatePerson.new_with_defaults(state_code='US_XX', birthdate=birthdate)
 
     assert calculator_utils.age_at_date(person, check_date) == 24
 
@@ -50,7 +50,7 @@ def test_age_at_date_same_month_earlier_date():
 def test_age_at_date_same_month_same_date():
     birthdate = date(1989, 6, 17)
     check_date = date(2014, 6, 17)
-    person = StatePerson.new_with_defaults(birthdate=birthdate)
+    person = StatePerson.new_with_defaults(state_code='US_XX', birthdate=birthdate)
 
     assert calculator_utils.age_at_date(person, check_date) == 25
 
@@ -58,7 +58,7 @@ def test_age_at_date_same_month_same_date():
 def test_age_at_date_same_month_later_date():
     birthdate = date(1989, 6, 17)
     check_date = date(2014, 6, 18)
-    person = StatePerson.new_with_defaults(birthdate=birthdate)
+    person = StatePerson.new_with_defaults(state_code='US_XX', birthdate=birthdate)
 
     assert calculator_utils.age_at_date(person, check_date) == 25
 
@@ -66,14 +66,14 @@ def test_age_at_date_same_month_later_date():
 def test_age_at_date_later_month():
     birthdate = date(1989, 6, 17)
     check_date = date(2014, 7, 11)
-    person = StatePerson.new_with_defaults(birthdate=birthdate)
+    person = StatePerson.new_with_defaults(state_code='US_XX', birthdate=birthdate)
 
     assert calculator_utils.age_at_date(person, check_date) == 25
 
 
 def test_age_at_date_birthdate_unknown():
     assert calculator_utils.age_at_date(
-        StatePerson.new_with_defaults(), datetime.today()) is None
+        StatePerson.new_with_defaults(state_code='US_XX'), datetime.today()) is None
 
 
 def test_age_bucket():
@@ -212,14 +212,14 @@ INCLUDED_PIPELINES = ['incarceration', 'supervision']
 class TestPersonExternalIdToInclude(unittest.TestCase):
     """Tests the person_external_id_to_include function."""
     def test_person_external_id_to_include(self):
-        person = StatePerson.new_with_defaults(person_id=12345,
+        person = StatePerson.new_with_defaults(state_code='US_XX', person_id=12345,
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
 
         person_external_id = StatePersonExternalId.new_with_defaults(
             external_id='SID1341',
             id_type='US_MO_DOC',
-            state_code='US_MO'
+            state_code='US_MO',
         )
 
         person.external_ids = [person_external_id]
@@ -231,7 +231,7 @@ class TestPersonExternalIdToInclude(unittest.TestCase):
             self.assertEqual(external_id, person_external_id.external_id)
 
     def test_person_external_id_to_include_no_results(self):
-        person = StatePerson.new_with_defaults(person_id=12345,
+        person = StatePerson.new_with_defaults(state_code='US_XX', person_id=12345,
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
 
@@ -249,7 +249,7 @@ class TestPersonExternalIdToInclude(unittest.TestCase):
             self.assertIsNone(external_id)
 
     def test_person_has_external_ids_from_multiple_states(self):
-        person = StatePerson.new_with_defaults(person_id=12345,
+        person = StatePerson.new_with_defaults(state_code='US_XX', person_id=12345,
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
 
@@ -272,7 +272,7 @@ class TestPersonExternalIdToInclude(unittest.TestCase):
                 INCLUDED_PIPELINES[0], person_external_id_2.state_code, person)
 
     def test_person_has_multiple_external_ids_of_the_same_type(self):
-        person = StatePerson.new_with_defaults(person_id=12345,
+        person = StatePerson.new_with_defaults(state_code='US_XX', person_id=12345,
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
 
@@ -333,6 +333,7 @@ class TestAddPersonCharacteristics(unittest.TestCase):
             gender=Gender.FEMALE,
             races=[
                 StatePersonRace.new_with_defaults(
+                    state_code='US_XX',
                     race=Race.ASIAN
                 )
             ])
@@ -355,14 +356,17 @@ class TestAddPersonCharacteristics(unittest.TestCase):
 
     def test_add_person_characteristics_MultipleRaces(self):
         person = StatePerson.new_with_defaults(
+            state_code='US_XX',
             person_id=12345,
             birthdate=date(1984, 8, 31),
             gender=Gender.FEMALE,
             races=[
                 StatePersonRace.new_with_defaults(
+                    state_code='US_XX',
                     race=Race.ASIAN
                 ),
                 StatePersonRace.new_with_defaults(
+                    state_code='US_XX',
                     race=Race.BLACK
                 )
             ])
@@ -391,11 +395,13 @@ class TestAddPersonCharacteristics(unittest.TestCase):
             gender=Gender.FEMALE,
             races=[
                 StatePersonRace.new_with_defaults(
+                    state_code='US_XX',
                     race=Race.ASIAN
                 )
             ],
             ethnicities=[
                 StatePersonEthnicity.new_with_defaults(
+                    state_code='US_XX',
                     ethnicity=Ethnicity.HISPANIC
                 )
             ])
@@ -419,15 +425,18 @@ class TestAddPersonCharacteristics(unittest.TestCase):
 
     def test_add_person_characteristics_EmptyRaceEthnicity(self):
         person = StatePerson.new_with_defaults(
+            state_code='US_XX',
             person_id=12345,
             birthdate=date(1984, 8, 31),
             gender=Gender.FEMALE,
             races=[
                 StatePersonRace.new_with_defaults(
+                    state_code='US_XX',
                 )
             ],
             ethnicities=[
                 StatePersonEthnicity.new_with_defaults(
+                    state_code='US_XX',
                 )
             ])
 
@@ -446,7 +455,8 @@ class TestAddPersonCharacteristics(unittest.TestCase):
         self.assertEqual(updated_characteristics, expected_output)
 
     def test_add_person_characteristics_NoAttributes(self):
-        person = StatePerson.new_with_defaults(person_id=12345)
+        person = StatePerson.new_with_defaults(
+            state_code='US_XX', person_id=12345)
 
         event_date = date(2010, 9, 1)
 
@@ -466,10 +476,12 @@ class TestAddPersonCharacteristics(unittest.TestCase):
             gender=Gender.FEMALE,
             races=[
                 StatePersonRace.new_with_defaults(
+                    state_code='US_XX',
                 )
             ],
             ethnicities=[
                 StatePersonEthnicity.new_with_defaults(
+                    state_code='US_XX',
                 )
             ],
             external_ids=[

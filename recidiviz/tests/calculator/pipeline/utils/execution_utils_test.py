@@ -164,6 +164,7 @@ class TestPersonAndKwargsForIdentifier(unittest.TestCase):
     """Tests the person_and_kwargs_for_identifier function."""
     def test_person_and_kwargs_for_identifier(self):
         person_input = StatePerson.new_with_defaults(
+            state_code='US_XX',
             person_id=123
         )
 
@@ -187,10 +188,12 @@ class TestPersonAndKwargsForIdentifier(unittest.TestCase):
 
     def test_person_and_kwargs_for_identifier_two_people_same_id(self):
         person_input_1 = StatePerson.new_with_defaults(
+            state_code='US_XX',
             person_id=123
         )
 
         person_input_2 = StatePerson.new_with_defaults(
+            state_code='US_XX',
             person_id=123
         )
 

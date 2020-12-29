@@ -59,7 +59,7 @@ class TestMapProgramCombinations(unittest.TestCase):
     # relevant metric periods
     @freeze_time('2030-11-02')
     def test_map_program_combinations(self):
-        person = StatePerson.new_with_defaults(person_id=12345,
+        person = StatePerson.new_with_defaults(state_code='US_ND', person_id=12345,
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
 
@@ -100,7 +100,7 @@ class TestMapProgramCombinations(unittest.TestCase):
         assert all(value == 1 for _combination, value in program_combinations)
 
     def test_map_program_combinations_full_info(self):
-        person = StatePerson.new_with_defaults(person_id=12345,
+        person = StatePerson.new_with_defaults(state_code='US_ND', person_id=12345,
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
 
@@ -150,7 +150,7 @@ class TestMapProgramCombinations(unittest.TestCase):
         assert all(value == 1 for _combination, value in program_combinations)
 
     def test_map_program_combinations_full_info_probation(self):
-        person = StatePerson.new_with_defaults(person_id=12345,
+        person = StatePerson.new_with_defaults(state_code='US_ND', person_id=12345,
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
 
@@ -200,7 +200,7 @@ class TestMapProgramCombinations(unittest.TestCase):
         assert all(value == 1 for _combination, value in program_combinations)
 
     def test_map_program_combinations_multiple_supervision_types(self):
-        person = StatePerson.new_with_defaults(person_id=12345,
+        person = StatePerson.new_with_defaults(state_code='US_ND', person_id=12345,
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
 
@@ -287,7 +287,7 @@ class TestMapProgramCombinations(unittest.TestCase):
 
     @freeze_time('2007-12-30')
     def test_map_program_combinations_relevant_periods(self):
-        person = StatePerson.new_with_defaults(person_id=12345,
+        person = StatePerson.new_with_defaults(state_code='US_ND', person_id=12345,
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
 
@@ -330,7 +330,7 @@ class TestMapProgramCombinations(unittest.TestCase):
 
     @freeze_time('2007-12-30')
     def test_map_program_combinations_relevant_periods_duplicates(self):
-        person = StatePerson.new_with_defaults(person_id=12345,
+        person = StatePerson.new_with_defaults(state_code='US_ND', person_id=12345,
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
 
@@ -383,7 +383,7 @@ class TestMapProgramCombinations(unittest.TestCase):
 
     @freeze_time('2007-12-30')
     def test_map_program_combinations_relevant_periods_multiple_supervisions(self):
-        person = StatePerson.new_with_defaults(person_id=12345,
+        person = StatePerson.new_with_defaults(state_code='US_ND', person_id=12345,
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
 
@@ -456,7 +456,7 @@ class TestMapProgramCombinations(unittest.TestCase):
 
     @freeze_time('2012-11-30')
     def test_map_program_combinations_calculation_month_count_1(self):
-        person = StatePerson.new_with_defaults(person_id=12345,
+        person = StatePerson.new_with_defaults(state_code='US_ND', person_id=12345,
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
 
@@ -500,7 +500,7 @@ class TestMapProgramCombinations(unittest.TestCase):
 
     @freeze_time('2012-12-31')
     def test_map_program_combinations_calculation_month_count_36(self):
-        person = StatePerson.new_with_defaults(person_id=12345,
+        person = StatePerson.new_with_defaults(state_code='US_ND', person_id=12345,
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
 
@@ -544,7 +544,7 @@ class TestMapProgramCombinations(unittest.TestCase):
 
     @freeze_time('2012-12-31')
     def test_map_program_combinations_calculation_month_count_36_include(self):
-        person = StatePerson.new_with_defaults(person_id=12345,
+        person = StatePerson.new_with_defaults(state_code='US_ND', person_id=12345,
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
 
@@ -596,7 +596,7 @@ class TestCharacteristicsDict(unittest.TestCase):
     """Tests the characteristics_dict function."""
 
     def setUp(self) -> None:
-        self.person = StatePerson.new_with_defaults(person_id=12345,
+        self.person = StatePerson.new_with_defaults(state_code='US_ND', person_id=12345,
                                                     birthdate=date(1984, 8, 31),
                                                     gender=Gender.FEMALE)
 

@@ -1716,6 +1716,7 @@ class TestRepackageUnifyingIdParentIdStructure(unittest.TestCase):
     def testRepackageUnifyingIdParentIdStructure(self):
         incarceration_sentence = \
             entities.StateIncarcerationSentence.new_with_defaults(
+                state_code='US_XX',
                 incarceration_sentence_id=444
             )
 
@@ -1741,6 +1742,7 @@ class TestRepackageUnifyingIdParentIdStructure(unittest.TestCase):
     def testRepackageUnifyingIdParentIdStructure_NoRootIds(self):
         incarceration_sentence = \
             entities.StateIncarcerationSentence.new_with_defaults(
+                state_code='US_XX',
                 incarceration_sentence_id=444
             )
 
