@@ -592,6 +592,33 @@ class ManualUploadTest(unittest.TestCase):
 
         session.close()
 
+    def test_releasesMetric_isPersisted(self):
+        # Act
+        manual_upload.ingest(self.fs, test_utils.prepare_files(self.fs, manifest_filepath('report_releases')))
+
+        # Assert
+        session = SessionFactory.for_schema_base(JusticeCountsBase)
+
+        [type_definition] = session.query(schema.ReportTableDefinition).all()
+        self.assertEqual(['metric/release/type', 'metric/release/type/raw'],
+                         type_definition.aggregated_dimensions)
+
+        self.assertEqual(schema.MeasurementType.DELTA, type_definition.measurement_type)
+
+        [type_table] = session.query(schema.ReportTableInstance).all()
+
+        raw_type_values = {tuple(cell.aggregated_dimension_values): int(cell.value) for cell in
+                           session.query(schema.Cell).filter(schema.Cell.report_table_instance == type_table).all()}
+
+        expected_totals = {
+            ('COMPLETED', 'Discharged'): 125,
+            ('TO_SUPERVISION', 'Parole'): 53,
+            ('OTHER', 'Other'): 27,
+        }
+        self.assertEqual(expected_totals, raw_type_values)
+
+        session.close()
+
     def test_reincarcerationsWithViolationType_arePersisted(self):
         # Act
         manual_upload.ingest(self.fs, test_utils.prepare_files(self.fs, manifest_filepath('report8_reincarcerations')))
