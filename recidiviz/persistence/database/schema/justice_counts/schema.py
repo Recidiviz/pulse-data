@@ -50,7 +50,7 @@ class MetricType(enum.Enum):
     ARRESTS = 'ARRESTS'
     POPULATION = 'POPULATION'
     REVOCATIONS = 'REVOCATIONS'
-    TERMINATIONS = 'TERMINATIONS'
+    RELEASES = 'RELEASES'
 
 
 class MeasurementType(enum.Enum):
