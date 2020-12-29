@@ -765,6 +765,8 @@ class TableConverter:
                         self._dimension_values_for_dimension_cell(column_name, row[column_name]))
             dimension_values = tuple(dimension_values_list)
 
+            # Pandas might've inferred our data as strings, floats, or ints. This handles converting all of them to
+            # Decimal. We could instead do this up front, and tell `read_csv` which dtypes to use for each column.
             raw_value = row[self.value_column]
             if isinstance(raw_value, str):
                 raw_value = raw_value.replace(',', '')
@@ -914,6 +916,9 @@ class Table:
         return results
 
 
+def _convert_publish_date(value: Optional[str]) -> datetime.date:
+    return datetime.date.fromisoformat(value) if value else datetime.date.today()
+
 @attr.s(frozen=True)
 class Report:
     # Name of the website or organization that published the report, e.g. 'Mississippi Department of Corrections'
@@ -928,7 +933,8 @@ class Report:
     tables: List[Table] = attr.ib()
 
     # The date the report was published, used to identify updated reports.
-    publish_date: datetime.date = attr.ib(converter=datetime.date.fromisoformat)  # type: ignore[misc]
+    publish_date: datetime.date = attr.ib(converter=_convert_publish_date)
+
     # The URL for the report on the source's website
     url: parse.ParseResult = attr.ib(converter=parse.urlparse)
 
