@@ -33,6 +33,8 @@ from opencensus.stats import measure, view as opencensus_view, aggregation
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.big_query.big_query_view import BigQueryView, BigQueryViewBuilder
 from recidiviz.calculator.query.county.view_config import VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE as COUNTY_VIEW_BUILDERS
+from recidiviz.calculator.query.justice_counts.view_config import VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE as \
+    JUSTICE_COUNTS_VIEW_BUILDERS
 from recidiviz.calculator.query.state.view_config import VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE as STATE_VIEW_BUILDERS
 from recidiviz.ingest.views.view_config import VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE as INGEST_METADATA_VIEW_BUILDERS
 from recidiviz.utils import monitoring
@@ -56,6 +58,7 @@ monitoring.register_views([failed_view_updates_view])
 
 class BigQueryViewNamespace(Enum):
     COUNTY = 'county'
+    JUSTICE_COUNTS = 'justice_counts'
     STATE = 'state'
     VALIDATION = 'validation'
     INGEST_METADATA = 'ingest_metadata'
@@ -63,6 +66,7 @@ class BigQueryViewNamespace(Enum):
 
 VIEW_BUILDERS_BY_NAMESPACE: Dict[BigQueryViewNamespace, Sequence[BigQueryViewBuilder]] = {
     BigQueryViewNamespace.COUNTY: COUNTY_VIEW_BUILDERS,
+    BigQueryViewNamespace.JUSTICE_COUNTS: JUSTICE_COUNTS_VIEW_BUILDERS,
     BigQueryViewNamespace.STATE: STATE_VIEW_BUILDERS,
     BigQueryViewNamespace.VALIDATION: VALIDATION_VIEW_BUILDERS,
     BigQueryViewNamespace.INGEST_METADATA: INGEST_METADATA_VIEW_BUILDERS,

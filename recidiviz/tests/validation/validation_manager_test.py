@@ -33,6 +33,7 @@ from recidiviz.validation.configured_validations import get_all_validations, get
 from recidiviz.validation.validation_manager import validation_manager_blueprint, _fetch_validation_jobs_to_perform
 from recidiviz.validation.validation_models import DataValidationJob, DataValidationJobResult
 from recidiviz.calculator.query.county import view_config as county_view_config
+from recidiviz.calculator.query.justice_counts import view_config as justice_counts_view_config
 from recidiviz.calculator.query.state import view_config as state_view_config
 from recidiviz.ingest.views import view_config as ingest_metadata_view_config
 from recidiviz.validation.views import view_config as validation_view_config
@@ -214,6 +215,9 @@ class TestHandleRequest(TestCase):
         self.maxDiff = None
         expected_update_calls = [
             call(BigQueryViewNamespace.COUNTY, county_view_config.VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE,
+                 dataset_overrides=None,
+                 materialized_views_only=False),
+            call(BigQueryViewNamespace.JUSTICE_COUNTS, justice_counts_view_config.VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE,
                  dataset_overrides=None,
                  materialized_views_only=False),
             call(BigQueryViewNamespace.STATE, state_view_config.VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE,

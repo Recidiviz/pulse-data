@@ -28,7 +28,7 @@ from sqlalchemy import Table, ForeignKeyConstraint
 from sqlalchemy.ext.declarative import DeclarativeMeta
 
 from recidiviz.common.ingest_metadata import SystemLevel
-from recidiviz.persistence.database.base_schema import JailsBase, \
+from recidiviz.persistence.database.base_schema import JailsBase, JusticeCountsBase, \
     StateBase, OperationsBase
 from recidiviz.persistence.database.database_entity import DatabaseEntity
 from recidiviz.persistence.database.schema.aggregate import \
@@ -36,11 +36,12 @@ from recidiviz.persistence.database.schema.aggregate import \
 from recidiviz.persistence.database.schema.county import schema as county_schema
 from recidiviz.persistence.database.schema.history_table_shared_columns_mixin \
     import HistoryTableSharedColumns
+from recidiviz.persistence.database.schema.justice_counts import schema as justice_counts_schema
 from recidiviz.persistence.database.schema.state import schema as state_schema
 from recidiviz.persistence.database.schema.operations import schema as operations_schema
 
 _SCHEMA_MODULES: List[ModuleType] = \
-    [aggregate_schema, county_schema, state_schema, operations_schema]
+    [aggregate_schema, county_schema, justice_counts_schema, state_schema, operations_schema]
 
 BQ_TYPES = {
     sqlalchemy.Boolean: 'BOOL',
@@ -112,13 +113,16 @@ def get_county_table_classes() -> Iterator[Table]:
     yield from get_all_table_classes_in_module(county_schema)
 
 
+def get_justice_counts_table_classes() -> Iterator[Table]:
+    yield from get_all_table_classes_in_module(justice_counts_schema)
+
+
 def get_state_table_classes() -> Iterator[Table]:
     yield from get_all_table_classes_in_module(state_schema)
 
 
 def get_operations_table_classes() -> Iterator[Table]:
     yield from get_all_table_classes_in_module(operations_schema)
-
 
 def get_non_history_state_database_entities() -> List[Type[DatabaseEntity]]:
     to_return = []
@@ -144,6 +148,7 @@ def _is_database_entity_subclass(member: Any) -> bool:
             and issubclass(member, DatabaseEntity)
             and member is not DatabaseEntity
             and member is not JailsBase
+            and member is not JusticeCountsBase
             and member is not StateBase
             and member is not OperationsBase)
 
@@ -203,6 +208,8 @@ def schema_base_for_schema_module(module: ModuleType) -> DeclarativeMeta:
 def schema_base_for_object(schema_object: DatabaseEntity) -> DeclarativeMeta:
     if isinstance(schema_object, JailsBase):
         return JailsBase
+    if isinstance(schema_object, JusticeCountsBase):
+        return JusticeCountsBase
     if isinstance(schema_object, StateBase):
         return StateBase
     if isinstance(schema_object, OperationsBase):
