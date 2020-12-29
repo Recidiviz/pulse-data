@@ -66,6 +66,7 @@ class FakeType(manual_upload.Dimension, EntityEnum, metaclass=EntityEnumMeta):
             'C': cls.C,
         }
 
+
 class FakeSubtype(manual_upload.Dimension, EntityEnum, metaclass=EntityEnumMeta):
     B_1 = 'B_1'
     B_2 = 'B_2'
@@ -90,6 +91,7 @@ class FakeSubtype(manual_upload.Dimension, EntityEnum, metaclass=EntityEnumMeta)
         }
 
 
+@pytest.mark.uses_db
 class ManualUploadTest(unittest.TestCase):
     """Tests that the manual upload tool works as expected"""
 
@@ -432,7 +434,7 @@ class ManualUploadTest(unittest.TestCase):
 
         [table_definition] = session.query(schema.ReportTableDefinition).all()
         self.assertEqual(['global/facility/raw', 'global/location/state', 'metric/population/type'],
-                          table_definition.filtered_dimensions)
+                         table_definition.filtered_dimensions)
         self.assertEqual(['MSP', 'US_CO', 'PRISON'], table_definition.filtered_dimension_values)
         self.assertEqual(['global/gender/raw', 'global/race/raw'], table_definition.aggregated_dimensions)
 
@@ -555,7 +557,7 @@ class ManualUploadTest(unittest.TestCase):
 
         raw_type_values = {tuple(cell.aggregated_dimension_values): int(cell.value) for cell in
                            session.query(schema.Cell)
-                               .filter(schema.Cell.report_table_instance == type_table).all()}
+                           .filter(schema.Cell.report_table_instance == type_table).all()}
 
         EXPECTED_TOTALS = {
             ('FROM_SUPERVISION', 'Probation Revocations', 'PROBATION', 'Probation Revocations'): 244,
@@ -569,11 +571,11 @@ class ManualUploadTest(unittest.TestCase):
 
         type_values = {
             (result[0], result[1]): int(result[2]) for result in
-                session.query(schema.Cell.aggregated_dimension_values[1], schema.Cell.aggregated_dimension_values[3],
-                              sql.func.sum(schema.Cell.value))
-                    .filter(schema.Cell.report_table_instance == type_table)
-                    .group_by(schema.Cell.aggregated_dimension_values[1], schema.Cell.aggregated_dimension_values[3])
-                    .all()}
+            session.query(schema.Cell.aggregated_dimension_values[1], schema.Cell.aggregated_dimension_values[3],
+                          sql.func.sum(schema.Cell.value))
+            .filter(schema.Cell.report_table_instance == type_table)
+            .group_by(schema.Cell.aggregated_dimension_values[1], schema.Cell.aggregated_dimension_values[3])
+            .all()}
         EXPECTED_TOTALS = {
             ('FROM_SUPERVISION', 'PAROLE'): 128,
             ('FROM_SUPERVISION', 'PROBATION'): 244,
@@ -608,9 +610,9 @@ class ManualUploadTest(unittest.TestCase):
 
         violation_type_values = {
             result[0]: int(result[1]) for result in
-                session.query(schema.Cell.aggregated_dimension_values[2], sql.func.sum(schema.Cell.value))
-                    .group_by(schema.Cell.aggregated_dimension_values[2])
-                    .all()}
+            session.query(schema.Cell.aggregated_dimension_values[2], sql.func.sum(schema.Cell.value))
+            .group_by(schema.Cell.aggregated_dimension_values[2])
+            .all()}
         EXPECTED_TOTALS = {
             'TECHNICAL': 19_926,
             'NEW_CRIME': 13_625,

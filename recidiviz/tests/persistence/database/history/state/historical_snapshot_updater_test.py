@@ -20,6 +20,7 @@ import datetime
 from typing import Optional
 
 from more_itertools import one
+import pytest
 
 from recidiviz.common.ingest_metadata import SystemLevel
 from recidiviz.persistence.database.session_factory import SessionFactory
@@ -34,6 +35,7 @@ from recidiviz.tests.persistence.database.database_test_utils import \
 from recidiviz.tools.postgres import local_postgres_helpers
 
 
+@pytest.mark.uses_db
 class TestStateHistoricalSnapshotUpdater(BaseHistoricalSnapshotUpdaterTest):
     """Tests for StateHistoricalSnapshotUpdater"""
 

@@ -23,6 +23,7 @@ import unittest
 from collections import defaultdict
 from typing import List, Optional, Set, Tuple
 
+import pytest
 from freezegun import freeze_time
 from mock import patch, Mock
 
@@ -150,6 +151,7 @@ class CountyTestGcsfsDirectIngestController(
         return ['tagA', 'tagB']
 
 
+@pytest.mark.uses_db
 @patch('recidiviz.utils.metadata.project_id',
        Mock(return_value='recidiviz-staging'))
 class TestGcsfsDirectIngestController(unittest.TestCase):
