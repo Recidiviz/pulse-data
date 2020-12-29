@@ -49,6 +49,7 @@ class UsMoGetPreIncarcerationSupervisionTypeTest(unittest.TestCase):
 
         supervision_sentence_parole = FakeUsMoSupervisionSentence.fake_sentence_from_sentence(
             StateSupervisionSentence.new_with_defaults(
+                state_code='US_MO',
                 supervision_sentence_id=1,
                 external_id='1167633-20171012-2',
                 start_date=datetime.date(2017, 2, 1),
@@ -78,6 +79,7 @@ class UsMoGetPreIncarcerationSupervisionTypeTest(unittest.TestCase):
 
         supervision_sentence_parole = FakeUsMoSupervisionSentence.fake_sentence_from_sentence(
             StateSupervisionSentence.new_with_defaults(
+                state_code='US_MO',
                 supervision_sentence_id=1,
                 external_id='1167633-20171012-2',
                 start_date=datetime.date(2017, 2, 1),
@@ -91,8 +93,9 @@ class UsMoGetPreIncarcerationSupervisionTypeTest(unittest.TestCase):
 
         old_incarceration_sentence = FakeUsMoIncarcerationSentence.fake_sentence_from_sentence(
             StateIncarcerationSentence.new_with_defaults(
+                state_code='US_MO',
                 incarceration_sentence_id=1,
-                external_id='US_MO',
+                external_id='is1',
                 start_date=datetime.date(2017, 2, 1),
                 completion_date=datetime.date(2017, 3, 4),
                 status=StateSentenceStatus.COMPLETED),
@@ -132,6 +135,7 @@ class UsMoGetPostIncarcerationSupervisionTypeTest(unittest.TestCase):
 
         supervision_sentence_parole = FakeUsMoSupervisionSentence.fake_sentence_from_sentence(
             StateSupervisionSentence.new_with_defaults(
+                state_code='US_MO',
                 supervision_sentence_id=1,
                 external_id='1167633-20171012-2',
                 start_date=datetime.date(year=2020, month=1, day=11),
@@ -163,6 +167,7 @@ class UsMoGetPostIncarcerationSupervisionTypeTest(unittest.TestCase):
 
         supervision_sentence_parole = FakeUsMoSupervisionSentence.fake_sentence_from_sentence(
             StateSupervisionSentence.new_with_defaults(
+                state_code='US_MO',
                 supervision_sentence_id=1,
                 external_id='1167633-20171012-2',
                 start_date=datetime.date(2020, 1, 13),
@@ -176,8 +181,9 @@ class UsMoGetPostIncarcerationSupervisionTypeTest(unittest.TestCase):
 
         old_incarceration_sentence = FakeUsMoIncarcerationSentence.fake_sentence_from_sentence(
             StateIncarcerationSentence.new_with_defaults(
+                state_code='US_MO',
                 incarceration_sentence_id=1,
-                external_id='US_MO',
+                external_id='is1',
                 start_date=datetime.date(2017, 2, 1),
                 completion_date=datetime.date(2017, 3, 4),
                 status=StateSentenceStatus.COMPLETED),

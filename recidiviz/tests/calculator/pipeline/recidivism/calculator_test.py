@@ -431,7 +431,7 @@ class TestMapRecidivismCombinations(unittest.TestCase):
     def test_map_recidivism_combinations(self):
         """Tests the map_recidivism_combinations function where there is
         recidivism."""
-        person = StatePerson.new_with_defaults(person_id=12345,
+        person = StatePerson.new_with_defaults(state_code='CA', person_id=12345,
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
 
@@ -480,7 +480,7 @@ class TestMapRecidivismCombinations(unittest.TestCase):
     def test_map_recidivism_combinations_multiple_in_period(self):
         """Tests the map_recidivism_combinations function where there are multiple instances of recidivism within a
         follow-up period."""
-        person = StatePerson.new_with_defaults(person_id=12345,
+        person = StatePerson.new_with_defaults(state_code='CA', person_id=12345,
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
 
@@ -549,7 +549,7 @@ class TestMapRecidivismCombinations(unittest.TestCase):
 
     def test_map_recidivism_combinations_multiple_releases_in_year(self):
         """Tests the map_recidivism_combinations function where there are multiple releases in the same year."""
-        person = StatePerson.new_with_defaults(person_id=12345,
+        person = StatePerson.new_with_defaults(state_code='CA', person_id=12345,
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
 
@@ -606,7 +606,7 @@ class TestMapRecidivismCombinations(unittest.TestCase):
     def test_map_recidivism_combinations_return_one_year_later(self):
         """Tests the map_recidivism_combinations function where the person returned to prison exactly one year after
         they were released."""
-        person = StatePerson.new_with_defaults(person_id=12345,
+        person = StatePerson.new_with_defaults(state_code='CA', person_id=12345,
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
 
@@ -655,7 +655,7 @@ class TestMapRecidivismCombinations(unittest.TestCase):
     def test_map_recidivism_combinations_no_recidivism(self):
         """Tests the map_recidivism_combinations function where there is no
         recidivism."""
-        person = StatePerson.new_with_defaults(person_id=12345,
+        person = StatePerson.new_with_defaults(state_code='CA', person_id=12345,
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
 
@@ -689,7 +689,7 @@ class TestMapRecidivismCombinations(unittest.TestCase):
     def test_map_recidivism_combinations_recidivated_after_last_period(self):
         """Tests the map_recidivism_combinations function where there is
         recidivism but it occurred after the last follow-up period we track."""
-        person = StatePerson.new_with_defaults(person_id=12345,
+        person = StatePerson.new_with_defaults(state_code='CA', person_id=12345,
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
 
@@ -738,7 +738,7 @@ class TestMapRecidivismCombinations(unittest.TestCase):
     def test_map_recidivism_combinations_multiple_races(self):
         """Tests the map_recidivism_combinations function where there is
         recidivism, and the person has more than one race."""
-        person = StatePerson.new_with_defaults(person_id=12345,
+        person = StatePerson.new_with_defaults(state_code='CA', person_id=12345,
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
 
@@ -791,7 +791,7 @@ class TestMapRecidivismCombinations(unittest.TestCase):
     def test_map_recidivism_combinations_multiple_ethnicities(self):
         """Tests the map_recidivism_combinations function where there is
         recidivism, and the person has more than one ethnicity."""
-        person = StatePerson.new_with_defaults(person_id=12345,
+        person = StatePerson.new_with_defaults(state_code='CA', person_id=12345,
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
 
@@ -845,7 +845,7 @@ class TestMapRecidivismCombinations(unittest.TestCase):
         """Tests the map_recidivism_combinations function where there is
         recidivism, and the person has multiple races and multiple
         ethnicities."""
-        person = StatePerson.new_with_defaults(person_id=12345,
+        person = StatePerson.new_with_defaults(state_code='CA', person_id=12345,
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
 
@@ -902,7 +902,7 @@ class TestMapRecidivismCombinations(unittest.TestCase):
     def test_map_recidivism_combinations_revocation_parole(self):
         """Tests the map_recidivism_combinations function where there is
         recidivism, and they returned from a revocation of parole."""
-        person = StatePerson.new_with_defaults(person_id=12345,
+        person = StatePerson.new_with_defaults(state_code='CA', person_id=12345,
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
 
@@ -956,7 +956,7 @@ class TestMapRecidivismCombinations(unittest.TestCase):
     def test_map_recidivism_combinations_revocation_probation(self):
         """Tests the map_recidivism_combinations function where there is
         recidivism, and they returned from a revocation of parole."""
-        person = StatePerson.new_with_defaults(person_id=12345,
+        person = StatePerson.new_with_defaults(state_code='CA', person_id=12345,
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
 
@@ -1011,7 +1011,7 @@ class TestMapRecidivismCombinations(unittest.TestCase):
         """Tests the map_recidivism_combinations function where there is
         recidivism, and they returned from a technical violation that resulted
         in the revocation of parole."""
-        person = StatePerson.new_with_defaults(person_id=12345,
+        person = StatePerson.new_with_defaults(state_code='CA', person_id=12345,
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
 
@@ -1073,7 +1073,7 @@ class TestMapRecidivismCombinations(unittest.TestCase):
                     assert combination.get('days_at_liberty') == days_at_liberty
 
     def test_map_recidivism_combinations_count_metric_buckets(self):
-        person = StatePerson.new_with_defaults(person_id=12345,
+        person = StatePerson.new_with_defaults(state_code='CA', person_id=12345,
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
 
@@ -1117,7 +1117,7 @@ class TestMapRecidivismCombinations(unittest.TestCase):
                     self.assertEqual(0, value)
 
     def test_map_recidivism_combinations_count_metric_no_recidivism(self):
-        person = StatePerson.new_with_defaults(person_id=12345,
+        person = StatePerson.new_with_defaults(state_code='CA', person_id=12345,
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
 
@@ -1148,7 +1148,7 @@ class TestMapRecidivismCombinations(unittest.TestCase):
 
     @freeze_time('1914-09-30')
     def test_map_recidivism_combinations_count_relevant_periods(self):
-        person = StatePerson.new_with_defaults(person_id=12345,
+        person = StatePerson.new_with_defaults(state_code='CA', person_id=12345,
                                                birthdate=date(1884, 8, 31),
                                                gender=Gender.FEMALE)
 
@@ -1226,7 +1226,7 @@ class TestMapRecidivismCombinations(unittest.TestCase):
                             assert combo.get('days_at_liberty') in (days_at_liberty_1, days_at_liberty_2)
 
     def test_map_recidivism_combinations_count_twice_in_month(self):
-        person = StatePerson.new_with_defaults(person_id=12345,
+        person = StatePerson.new_with_defaults(state_code='CA', person_id=12345,
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
 
@@ -1296,7 +1296,7 @@ class TestMapRecidivismCombinations(unittest.TestCase):
 class TestCharacteristicCombinations(unittest.TestCase):
     """Tests the characteristic_combinations function."""
     def setUp(self) -> None:
-        self.person = StatePerson.new_with_defaults(person_id=12345,
+        self.person = StatePerson.new_with_defaults(state_code='US_XX', person_id=12345,
                                                     birthdate=date(1984, 8, 31),
                                                     gender=Gender.FEMALE)
 

@@ -31,9 +31,11 @@ class TestIdentifyMostSevereViolationType(unittest.TestCase):
             state_code='US_XX',
             supervision_violation_types=[
                 StateSupervisionViolationTypeEntry.new_with_defaults(
+                    state_code='US_XX',
                     violation_type=StateSupervisionViolationType.TECHNICAL
                 ),
                 StateSupervisionViolationTypeEntry.new_with_defaults(
+                    state_code='US_XX',
                     violation_type=StateSupervisionViolationType.FELONY
                 )
             ])
@@ -50,6 +52,7 @@ class TestIdentifyMostSevereViolationType(unittest.TestCase):
                 state_code='US_XX',
                 supervision_violation_types=[
                     StateSupervisionViolationTypeEntry.new_with_defaults(
+                        state_code='US_XX',
                         violation_type=violation_type)
                 ])
             most_severe_violation_type, most_severe_violation_type_subtype = \
@@ -68,9 +71,11 @@ class TestGetViolationTypeFrequencyCounter(unittest.TestCase):
                 state_code='US_XX',
                 supervision_violation_types=[
                     StateSupervisionViolationTypeEntry.new_with_defaults(
+                        state_code='US_XX',
                         violation_type=StateSupervisionViolationType.ABSCONDED
                     ),
                     StateSupervisionViolationTypeEntry.new_with_defaults(
+                        state_code='US_XX',
                         violation_type=StateSupervisionViolationType.FELONY
                     )
                 ],
@@ -99,14 +104,17 @@ class TestGetViolationTypeFrequencyCounter(unittest.TestCase):
                 state_code='US_MO',
                 supervision_violation_types=[
                     StateSupervisionViolationTypeEntry.new_with_defaults(
+                        state_code='US_XX',
                         violation_type=StateSupervisionViolationType.ABSCONDED
                     ),
                     StateSupervisionViolationTypeEntry.new_with_defaults(
+                        state_code='US_XX',
                         violation_type=StateSupervisionViolationType.FELONY
                     )
                 ],
                 supervision_violated_conditions=[
                     StateSupervisionViolatedConditionEntry.new_with_defaults(
+                        state_code='US_XX',
                         condition='DRG'
                     )
                 ]
@@ -124,11 +132,13 @@ class TestGetViolationTypeFrequencyCounter(unittest.TestCase):
                 state_code='US_MO',
                 supervision_violation_types=[
                     StateSupervisionViolationTypeEntry.new_with_defaults(
+                        state_code='US_XX',
                         violation_type=StateSupervisionViolationType.TECHNICAL
                     )
                 ],
                 supervision_violated_conditions=[
                     StateSupervisionViolatedConditionEntry.new_with_defaults(
+                        state_code='US_XX',
                         condition='DRG'
                     )
                 ]
@@ -145,6 +155,7 @@ class TestGetViolationTypeFrequencyCounter(unittest.TestCase):
                 state_code='US_MO',
                 supervision_violation_types=[
                     StateSupervisionViolationTypeEntry.new_with_defaults(
+                        state_code='US_XX',
                         violation_type=StateSupervisionViolationType.TECHNICAL
                     )
                 ]
@@ -162,14 +173,17 @@ class TestGetViolationTypeFrequencyCounter(unittest.TestCase):
                 state_code='US_MO',
                 supervision_violation_types=[
                     StateSupervisionViolationTypeEntry.new_with_defaults(
+                        state_code='US_XX',
                         violation_type=StateSupervisionViolationType.ABSCONDED
                     ),
                     StateSupervisionViolationTypeEntry.new_with_defaults(
+                        state_code='US_XX',
                         violation_type=StateSupervisionViolationType.FELONY
                     )
                 ],
                 supervision_violated_conditions=[
                     StateSupervisionViolatedConditionEntry.new_with_defaults(
+                        state_code='US_XX',
                         condition='WEA'
                     )
                 ]
@@ -178,17 +192,21 @@ class TestGetViolationTypeFrequencyCounter(unittest.TestCase):
                 state_code='US_MO',
                 supervision_violation_types=[
                     StateSupervisionViolationTypeEntry.new_with_defaults(
+                        state_code='US_XX',
                         violation_type=StateSupervisionViolationType.MISDEMEANOR
                     ),
                     StateSupervisionViolationTypeEntry.new_with_defaults(
+                        state_code='US_XX',
                         violation_type=StateSupervisionViolationType.TECHNICAL
                     )
                 ],
                 supervision_violated_conditions=[
                     StateSupervisionViolatedConditionEntry.new_with_defaults(
+                        state_code='US_XX',
                         condition='DRG'
                     ),
                     StateSupervisionViolatedConditionEntry.new_with_defaults(
+                        state_code='US_XX',
                         condition='EMP'
                     )
                 ]
@@ -206,12 +224,15 @@ class TestGetViolationTypeFrequencyCounter(unittest.TestCase):
                 state_code='US_PA',
                 supervision_violation_types=[
                     StateSupervisionViolationTypeEntry.new_with_defaults(
+                        state_code='US_XX',
                         violation_type=StateSupervisionViolationType.ABSCONDED
                     ),
                     StateSupervisionViolationTypeEntry.new_with_defaults(
+                        state_code='US_XX',
                         violation_type=StateSupervisionViolationType.FELONY
                     ),
                     StateSupervisionViolationTypeEntry.new_with_defaults(
+                        state_code='US_XX',
                         violation_type=StateSupervisionViolationType.TECHNICAL,
                         violation_type_raw_text='L05'
                     ),
@@ -221,9 +242,11 @@ class TestGetViolationTypeFrequencyCounter(unittest.TestCase):
                 state_code='US_PA',
                 supervision_violation_types=[
                     StateSupervisionViolationTypeEntry.new_with_defaults(
+                        state_code='US_XX',
                         violation_type=StateSupervisionViolationType.MISDEMEANOR
                     ),
                     StateSupervisionViolationTypeEntry.new_with_defaults(
+                        state_code='US_XX',
                         violation_type=StateSupervisionViolationType.TECHNICAL,
                         violation_type_raw_text='H12'
                     )
