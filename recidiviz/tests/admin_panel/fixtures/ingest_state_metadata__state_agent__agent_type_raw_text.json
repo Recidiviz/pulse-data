@@ -1,0 +1,8 @@
+{"state_code":"US_XX","agent_type_raw_text":"NULL","total_count":"293971","placeholder_count":"0"}
+{"state_code":"US_YY","agent_type_raw_text":"NOT_NULL","total_count":"273754","placeholder_count":"178166"}
+{"state_code":"US_XX","agent_type_raw_text":"NOT_NULL","total_count":"2781056","placeholder_count":"0"}
+{"state_code":"US_ZZ","agent_type_raw_text":"NULL","total_count":"11821","placeholder_count":"11821"}
+{"state_code":"US_YY","agent_type_raw_text":"NULL","total_count":"862","placeholder_count":"862"}
+{"state_code":"US_ZZ","agent_type_raw_text":"NOT_NULL","total_count":"876944","placeholder_count":"347452"}
+{"state_code":"US_WW","agent_type_raw_text":"NOT_NULL","total_count":"632899","placeholder_count":"0"}
+{"state_code":"US_WW","agent_type_raw_text":"NULL","total_count":"50180","placeholder_count":"50180"}

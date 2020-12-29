@@ -29,6 +29,7 @@ from opencensus.ext.stackdriver import trace_exporter as stackdriver_trace
 from opencensus.trace import config_integration, file_exporter, samplers
 from opencensus.trace.propagation import google_cloud_format
 
+from recidiviz.admin_panel.routes import admin_panel
 from recidiviz.backup.backup_manager import backup_manager_blueprint
 from recidiviz.calculator.calculation_data_storage_manager import calculation_data_storage_manager_blueprint
 from recidiviz.calculator.pipeline.utils.dataflow_monitor_manager import dataflow_monitor_blueprint
@@ -54,6 +55,7 @@ structured_logging.setup()
 logging.info("[%s] Running server.py", datetime.datetime.now().isoformat())
 
 app = Flask(__name__)
+app.register_blueprint(admin_panel, url_prefix='/admin')
 app.register_blueprint(scraper_control, url_prefix='/scraper')
 app.register_blueprint(scraper_status, url_prefix='/scraper')
 app.register_blueprint(worker, url_prefix='/scraper')
@@ -82,14 +84,16 @@ if environment.in_gae():
     monitoring.register_stackdriver_exporter()
     trace_exporter = stackdriver_trace.StackdriverExporter(
         project_id=metadata.project_id(), transport=AsyncTransport)
-    trace_sampler = trace.CompositeSampler({
+    trace_sampler = trace.CompositeSampler(
+        {
             '/direct/process_job': samplers.AlwaysOnSampler(),
             # There are a lot of scraper requests, so they can use the default rate of 1 in 10k.
             '/scraper/': samplers.ProbabilitySampler(),
             '/scrape_aggregate_reports/': samplers.ProbabilitySampler()
         },
         # For other requests, trace 1 in 20.
-        default_sampler=samplers.ProbabilitySampler(rate=0.05))
+        default_sampler=samplers.ProbabilitySampler(rate=0.05),
+    )
 else:
     trace_exporter = file_exporter.FileExporter(file_name='traces')
     trace_sampler = samplers.AlwaysOnSampler()

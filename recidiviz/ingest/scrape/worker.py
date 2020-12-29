@@ -30,7 +30,7 @@ from recidiviz.ingest.models.scrape_key import ScrapeKey
 from recidiviz.ingest.scrape import sessions
 from recidiviz.ingest.scrape.task_params import QueueRequest
 from recidiviz.utils import monitoring, regions
-from recidiviz.utils.auth import authenticate_request
+from recidiviz.utils.auth.gae import requires_gae_auth
 
 m_tasks = measure.MeasureInt("ingest/scrape/task_count",
                              "The count of scrape tasks that occurred", "1")
@@ -54,7 +54,7 @@ worker = Blueprint('worker', __name__)
 
 # NB: Region is part of the url so that request logs can be filtered on it.
 @worker.route("/work/<region>", methods=['POST'])
-@authenticate_request
+@requires_gae_auth
 def work(region):
     """POST request handler to route chunk of scraper work
 

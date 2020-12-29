@@ -26,14 +26,14 @@ from flask import request
 from recidiviz.calculator.pipeline.utils.calculate_cloud_task_manager import \
     CalculateCloudTaskManager
 from recidiviz.calculator.pipeline.utils.execution_utils import get_dataflow_job_with_id
-from recidiviz.utils.auth import authenticate_request
+from recidiviz.utils.auth.gae import requires_gae_auth
 from recidiviz.utils import pubsub_helper, metadata
 
 dataflow_monitor_blueprint = flask.Blueprint('dataflow_monitor', __name__)
 
 
 @dataflow_monitor_blueprint.route('/monitor', methods=['POST'])
-@authenticate_request
+@requires_gae_auth
 def handle_dataflow_monitor_task():
     """Worker function to publish a message to a Pub/Sub topic once a Dataflow
     job with the given `job_id` has successfully completed.

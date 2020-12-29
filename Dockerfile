@@ -1,3 +1,14 @@
+FROM node:12.18-alpine as yarn-build
+
+WORKDIR /usr
+COPY ./frontends/admin-panel/package.json ./frontends/admin-panel/yarn.lock ./frontends/admin-panel/tsconfig.json /usr/
+RUN yarn
+
+COPY ./frontends/admin-panel/src /usr/src
+COPY ./frontends/admin-panel/public /usr/public
+
+RUN yarn build
+
 FROM ubuntu:bionic
 
 RUN apt update -y && \
@@ -65,6 +76,9 @@ RUN if [ "$DEV_MODE" = "True" ]; \
 
 # Add the rest of the application code once all dependencies are installed
 ADD . /app
+
+# Add the built admin panel frontend to the image
+COPY --from=yarn-build /usr/build /app/frontends/admin-panel/build
 
 EXPOSE 8080
 CMD pipenv run gunicorn -c gunicorn.conf.py --log-file=- -b :8080 recidiviz.server:app

@@ -1,0 +1,49 @@
+{
+  "name": "recidiviz-admin-panel",
+  "version": "0.1.0",
+  "description": "An internal admin panel for deriving insights into Recidiviz operations",
+  "private": true,
+  "author": "Recidiviz <team@recidiviz.org>",
+  "license": "GNU General Public License v3",
+  "dependencies": {
+    "antd": "^4.6.3",
+    "react": "^16.7.0",
+    "react-dom": "^16.7.0",
+    "react-router-dom": "^5.2.0",
+    "react-scripts": "3.4.3"
+  },
+  "scripts": {
+    "dev": "react-scripts start",
+    "build": "react-scripts build",
+    "lint": "tsc && eslint '**/*.{js,ts,tsx}'",
+    "test": "react-scripts test",
+    "eject": "react-scripts eject"
+  },
+  "browserslist": [
+    ">0.2%",
+    "not dead",
+    "not ie <= 11",
+    "not op_mini all"
+  ],
+  "homepage": "/admin",
+  "proxy": "http://localhost:5000",
+  "devDependencies": {
+    "@types/node": "14.6.4",
+    "@types/react": "16.9.49",
+    "@types/react-dom": "16.9.8",
+    "@types/react-router-dom": "^5.1.6",
+    "@typescript-eslint/eslint-plugin": "^4.11.0",
+    "@typescript-eslint/parser": "^4.11.0",
+    "babel-plugin-import": "^1.11.0",
+    "eslint-config-airbnb": "^18.2.1",
+    "eslint-config-prettier": "^7.1.0",
+    "eslint-config-react-app": "^6.0.0",
+    "eslint-import-resolver-typescript": "^2.3.0",
+    "eslint-plugin-import": "^2.22.1",
+    "eslint-plugin-prettier": "^3.3.0",
+    "eslint-plugin-simple-import-sort": "^7.0.0",
+    "lodash": "^4.17.20",
+    "prettier": "^2.2.1",
+    "typescript": "4.0.2"
+  }
+}

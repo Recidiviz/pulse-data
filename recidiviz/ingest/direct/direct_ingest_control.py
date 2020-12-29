@@ -47,7 +47,7 @@ from recidiviz.ingest.direct.direct_ingest_region_utils import get_existing_regi
 from recidiviz.ingest.direct.errors import DirectIngestError, \
     DirectIngestErrorType
 from recidiviz.utils import regions, monitoring, metadata
-from recidiviz.utils.auth import authenticate_request
+from recidiviz.utils.auth.gae import requires_gae_auth
 from recidiviz.utils.monitoring import TagKey
 from recidiviz.utils.params import get_str_param_value, get_bool_param_value
 from recidiviz.utils.regions import get_supported_direct_ingest_region_codes, get_region
@@ -56,7 +56,7 @@ direct_ingest_control = Blueprint('direct_ingest_control', __name__)
 
 
 @direct_ingest_control.route('/normalize_raw_file_path')
-@authenticate_request
+@requires_gae_auth
 def normalize_raw_file_path() -> Tuple[str, HTTPStatus]:
     """Called from a Cloud Function when a new file is added to a bucket that is configured to rename files but not
     ingest them. For example, a bucket that is being used for automatic data transfer testing.
@@ -83,7 +83,7 @@ def normalize_raw_file_path() -> Tuple[str, HTTPStatus]:
 
 
 @direct_ingest_control.route('/handle_direct_ingest_file')
-@authenticate_request
+@requires_gae_auth
 def handle_direct_ingest_file() -> Tuple[str, HTTPStatus]:
     """Called from a Cloud Function when a new file is added to a direct ingest
     bucket. Will trigger a job that deals with normalizing and splitting the
@@ -120,7 +120,7 @@ def handle_direct_ingest_file() -> Tuple[str, HTTPStatus]:
 
 
 @direct_ingest_control.route('/handle_new_files', methods=['GET', 'POST'])
-@authenticate_request
+@requires_gae_auth
 def handle_new_files() -> Tuple[str, HTTPStatus]:
     """Normalizes and splits files in the ingest bucket for a given region as
     is appropriate. Will schedule the next process_job task if no renaming /
@@ -155,7 +155,7 @@ def handle_new_files() -> Tuple[str, HTTPStatus]:
 
 @direct_ingest_control.route('/ensure_all_file_paths_normalized',
                              methods=['GET', 'POST'])
-@authenticate_request
+@requires_gae_auth
 def ensure_all_file_paths_normalized() -> Tuple[str, HTTPStatus]:
     logging.info(
         'Received request for direct ingest ensure_all_file_paths_normalized: '
@@ -186,7 +186,7 @@ def ensure_all_file_paths_normalized() -> Tuple[str, HTTPStatus]:
 
 
 @direct_ingest_control.route('/raw_data_import', methods=['POST'])
-@authenticate_request
+@requires_gae_auth
 def raw_data_import() -> Tuple[str, HTTPStatus]:
     """Imports a single raw direct ingest CSV file from a location in GCS File System to its corresponding raw data
     table in BQ.
@@ -228,7 +228,7 @@ def raw_data_import() -> Tuple[str, HTTPStatus]:
 
 
 @direct_ingest_control.route('/create_raw_data_latest_view_update_tasks', methods=['GET', 'POST'])
-@authenticate_request
+@requires_gae_auth
 def create_raw_data_latest_view_update_tasks() -> Tuple[str, HTTPStatus]:
     """Creates tasks for every direct ingest region with SQL preprocessing
     enabled to update the raw data table latest views.
@@ -248,7 +248,7 @@ def create_raw_data_latest_view_update_tasks() -> Tuple[str, HTTPStatus]:
 
 
 @direct_ingest_control.route('/update_raw_data_latest_views_for_state', methods=['POST'])
-@authenticate_request
+@requires_gae_auth
 def update_raw_data_latest_views_for_state() -> Tuple[str, HTTPStatus]:
     """Updates raw data tables for a given state
     """
@@ -266,7 +266,7 @@ def update_raw_data_latest_views_for_state() -> Tuple[str, HTTPStatus]:
 
 
 @direct_ingest_control.route('/ingest_view_export', methods=['POST'])
-@authenticate_request
+@requires_gae_auth
 def ingest_view_export() -> Tuple[str, HTTPStatus]:
     """Exports an ingest view from BQ to a file in the region's GCS File System ingest bucket that is ready to be
     processed and ingested into our Recidiviz DB.
@@ -307,7 +307,7 @@ def ingest_view_export() -> Tuple[str, HTTPStatus]:
 
 
 @direct_ingest_control.route('/process_job', methods=['POST'])
-@authenticate_request
+@requires_gae_auth
 def process_job() -> Tuple[str, HTTPStatus]:
     """Processes a single direct ingest file, specified in the provided ingest
     arguments.
@@ -346,7 +346,7 @@ def process_job() -> Tuple[str, HTTPStatus]:
 
 
 @direct_ingest_control.route('/scheduler', methods=['GET', 'POST'])
-@authenticate_request
+@requires_gae_auth
 def scheduler() -> Tuple[str, HTTPStatus]:
     logging.info('Received request for direct ingest scheduler: %s',
                  request.values)
