@@ -1098,14 +1098,11 @@ def _parse_metric(metric_input: YAMLDict) -> Metric:
                      f"'population') but received: {repr(metric_input)}")
 
 
-def _get_table_path(directory_path: GcsfsDirectoryPath,
-                    spreadsheet_name: str, name: Optional[str], file: Optional[str]) -> GcsfsFilePath:
+def _get_table_filename(spreadsheet_name: str, name: Optional[str], file: Optional[str]) -> str:
     if name is not None:
-        table_file_name = f"{spreadsheet_name} - {name}.csv"
-        table_path = GcsfsFilePath.from_directory_and_file_name(directory_path, table_file_name)
-        return table_path
+        return f"{spreadsheet_name} - {name}.csv"
     if file is not None:
-        return GcsfsFilePath.from_directory_and_file_name(directory_path, file)
+        return file
     raise ValueError("Did not receive name parameter for table")
 
 # Only three layers of dictionary nesting is currently supported by the table parsing logic but we use the recursive
@@ -1128,9 +1125,10 @@ def _parse_tables(gcs: GCSFileSystem, manifest_path: GcsfsFilePath,
         filter_dimensions = \
             _parse_dimensions_from_additional_filters(table_input.pop_dict_optional('additional_filters'))
         metric = _parse_metric(table_input.pop_dict('metric'))
-        table_path = _get_table_path(directory_path, spreadsheet_name,
-                                     name=table_input.pop_optional('name', str),
-                                     file=table_input.pop_optional('file', str))
+        table_path = GcsfsFilePath.from_directory_and_file_name(
+            directory_path, _get_table_filename(spreadsheet_name,
+                                                name=table_input.pop_optional('name', str),
+                                                file=table_input.pop_optional('file', str)))
 
         logging.info('Reading table: %s', table_path)
         table_handle = gcs.download_to_temp_file(table_path)
@@ -1314,17 +1312,19 @@ def _create_parser() -> argparse.ArgumentParser:
     return parser
 
 def upload(gcs: GCSFileSystem, manifest_path: str) -> GcsfsFilePath:
+    directory, manifest_filename = os.path.split(manifest_path)
     with open(manifest_path, mode='r') as manifest_file:
-        directory = os.path.dirname(manifest_path)
-        manifest: dict = yaml.full_load(manifest_file)
+        manifest = YAMLDict(yaml.full_load(manifest_file))
 
         gcs_directory = GcsfsDirectoryPath.from_absolute_path(
-            os.path.join(f'gs://{metadata.project_id()}-justice-counts-ingest', manifest['source'],
-                         manifest['report_type'], manifest['report_instance'])
+            os.path.join(f'gs://{metadata.project_id()}-justice-counts-ingest', manifest.pop('source', str),
+                         manifest.pop('report_type', str), manifest.pop('report_instance', str))
         )
 
-        for table in manifest['tables']:
-            table_filename = table['file']
+        for table in manifest.pop_dicts('tables'):
+            table_filename = _get_table_filename(manifest_filename[:-len('.yaml')],
+                                                 name=table.pop_optional('name', str),
+                                                 file=table.pop_optional('file', str))
             gcs.upload_from_contents_handle(
                 path=GcsfsFilePath.from_directory_and_file_name(gcs_directory, table_filename),
                 contents_handle=GcsfsFileContentsHandle(os.path.join(directory, table_filename)),
