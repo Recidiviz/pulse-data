@@ -164,7 +164,8 @@ class SubSimulation:
                     policy_ts=self.user_inputs['policy_time_step'],
                     constant_admissions=self.user_inputs['constant_admissions'],
                     tag=compartment,
-                    policy_list=shell_policies[compartment]
+                    policy_list=shell_policies[compartment],
+                    projection_type=self.user_inputs.get('projection_type')
                 )
             else:
                 self.simulation_compartments[compartment] = FullCompartment(
@@ -175,10 +176,17 @@ class SubSimulation:
                     tag=compartment
                 )
 
-        for compartment_obj in self.simulation_compartments.values():
+        for compartment_tag, compartment_obj in self.simulation_compartments.items():
             compartment_obj.initialize_edges(list(self.simulation_compartments.values()))
             if self.microsim and isinstance(compartment_obj, FullCompartment):
-                compartment_obj.microsim_initialize()
+                compartment_population = \
+                    self.total_population_data[(self.total_population_data.compartment == compartment_tag) &
+                                               (self.total_population_data.time_step == self.start_ts)]
+                if compartment_population.empty:
+                    compartment_population = 0
+                else:
+                    compartment_population = compartment_population.iloc[0].total_population
+                compartment_obj.microsim_initialize(compartment_population)
 
     def scale_total_populations(self):
         """scales populations of compartments in simulation. If a FullCompartment isn't included, it won't be scaled"""
