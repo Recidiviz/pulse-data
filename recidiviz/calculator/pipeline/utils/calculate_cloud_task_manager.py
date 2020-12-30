@@ -18,19 +18,17 @@
 
 import datetime
 import uuid
-from typing import Optional
 
+from recidiviz.common.google_cloud.cloud_task_queue_manager import CloudTaskQueueManager, CloudTaskQueueInfo
 from recidiviz.common.google_cloud.google_cloud_tasks_shared_queues import \
     JOB_MONITOR_QUEUE_V2
-from recidiviz.common.google_cloud.google_cloud_tasks_client_wrapper import \
-    GoogleCloudTasksClientWrapper
 
 
 class CalculateCloudTaskManager:
     """Class for interacting with the calculation pipeline cloud task queues."""
-    def __init__(self, project_id: Optional[str] = None):
-        self.cloud_task_client = \
-            GoogleCloudTasksClientWrapper(project_id=project_id)
+    def __init__(self) -> None:
+        self.job_monitor_cloud_task_queue_manager = CloudTaskQueueManager(queue_info_cls=CloudTaskQueueInfo,
+                                                                          queue_name=JOB_MONITOR_QUEUE_V2)
 
     def create_dataflow_monitor_task(self,
                                      job_id: str,
@@ -44,16 +42,15 @@ class CalculateCloudTaskManager:
             topic: Pub/Sub topic where a message will be published if the job
                 completes successfully
         """
-        body = {'project_id': self.cloud_task_client.project_id,
+        body = {'project_id': self.job_monitor_cloud_task_queue_manager.cloud_task_client.project_id,
                 'job_id': job_id,
                 'location': location,
                 'topic': topic}
         task_id = '{}-{}-{}'.format(
             job_id, str(datetime.datetime.utcnow().date()), uuid.uuid4())
 
-        self.cloud_task_client.create_task(
+        self.job_monitor_cloud_task_queue_manager.create_task(
             task_id=task_id,
-            queue_name=JOB_MONITOR_QUEUE_V2,
             relative_uri='/dataflow_monitor/monitor',
             body=body,
             schedule_delay_seconds=300,  # 5-minute delay

@@ -41,6 +41,14 @@ CLOUD_TASK_MANAGER_PACKAGE_NAME = bq_refresh_cloud_task_manager.__name__
 
 class TestBQRefreshCloudTaskManager(unittest.TestCase):
     """Tests for BQRefreshCloudTaskManager"""
+    def setUp(self) -> None:
+        self.metadata_patcher = patch('recidiviz.utils.metadata.project_id')
+        self.mock_project_id_fn = self.metadata_patcher.start()
+        self.mock_project_id = 'recidiviz-456'
+        self.mock_project_id_fn.return_value = self.mock_project_id
+
+    def tearDown(self) -> None:
+        self.metadata_patcher.stop()
 
     @patch(f'{CLOUD_TASK_MANAGER_PACKAGE_NAME}.uuid')
     @patch('google.cloud.tasks_v2.CloudTasksClient')
@@ -51,10 +59,9 @@ class TestBQRefreshCloudTaskManager(unittest.TestCase):
         uuid = 'random-uuid'
         mock_uuid.uuid4.return_value = uuid
 
-        project_id = 'recidiviz-456'
         table_name = 'test_table'
         schema_type = SchemaType.JAILS.value
-        queue_path = f'queue_path/{project_id}/{QUEUES_REGION}'
+        queue_path = f'queue_path/{self.mock_project_id}/{QUEUES_REGION}'
         task_id = f'test_table-{schema_type}-2019-04-12-random-uuid'
         task_path = f'{queue_path}/{task_id}'
 
@@ -76,16 +83,15 @@ class TestBQRefreshCloudTaskManager(unittest.TestCase):
         mock_client.return_value.queue_path.return_value = queue_path
 
         # Act
-        BQRefreshCloudTaskManager(project_id=project_id). \
-            create_refresh_bq_table_task(table_name=table_name, schema_type=SchemaType.JAILS)
+        BQRefreshCloudTaskManager().create_refresh_bq_table_task(table_name=table_name, schema_type=SchemaType.JAILS)
 
         # Assert
         mock_client.return_value.queue_path.assert_called_with(
-            project_id,
+            self.mock_project_id,
             QUEUES_REGION,
             BIGQUERY_QUEUE_V2)
         mock_client.return_value.task_path.assert_called_with(
-            project_id,
+            self.mock_project_id,
             QUEUES_REGION,
             BIGQUERY_QUEUE_V2,
             task_id)
@@ -104,10 +110,9 @@ class TestBQRefreshCloudTaskManager(unittest.TestCase):
         uuid = 'random-uuid'
         mock_uuid.uuid4.return_value = uuid
 
-        project_id = 'recidiviz-456'
         topic = 'fake.topic'
         message = 'A fake message'
-        queue_path = f'queue_path/{project_id}/{QUEUES_REGION}'
+        queue_path = f'queue_path/{self.mock_project_id}/{QUEUES_REGION}'
         task_id = 'fake-topic-2019-04-13-random-uuid'
         task_path = f'{queue_path}/{task_id}'
 
@@ -131,16 +136,15 @@ class TestBQRefreshCloudTaskManager(unittest.TestCase):
         mock_client.return_value.queue_path.return_value = queue_path
 
         # Act
-        BQRefreshCloudTaskManager(project_id=project_id). \
-            create_bq_refresh_monitor_task(topic=topic, message=message)
+        BQRefreshCloudTaskManager(). create_bq_refresh_monitor_task(topic=topic, message=message)
 
         # Assert
         mock_client.return_value.queue_path.assert_called_with(
-            project_id,
+            self.mock_project_id,
             QUEUES_REGION,
             JOB_MONITOR_QUEUE_V2)
         mock_client.return_value.task_path.assert_called_with(
-            project_id,
+            self.mock_project_id,
             QUEUES_REGION,
             JOB_MONITOR_QUEUE_V2,
             task_id)

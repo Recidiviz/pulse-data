@@ -20,14 +20,10 @@ exports.
 
 import datetime
 import uuid
-from typing import Optional
 
+from recidiviz.common.google_cloud.cloud_task_queue_manager import CloudTaskQueueInfo, CloudTaskQueueManager
 from recidiviz.common.google_cloud.google_cloud_tasks_shared_queues import \
     BIGQUERY_QUEUE_V2, JOB_MONITOR_QUEUE_V2
-from recidiviz.common.google_cloud.google_cloud_tasks_client_wrapper import \
-    GoogleCloudTasksClientWrapper
-from recidiviz.ingest.direct.direct_ingest_cloud_task_manager import \
-    CloudTaskQueueInfo
 from recidiviz.persistence.database.sqlalchemy_engine_manager import SchemaType
 
 
@@ -36,22 +32,14 @@ class BQRefreshCloudTaskManager:
     exports.
     """
 
-    def __init__(self, project_id: Optional[str] = None):
-        self.cloud_task_client = \
-            GoogleCloudTasksClientWrapper(project_id=project_id)
-
-    def _get_queue_info(self,
-                        queue_name: str) -> CloudTaskQueueInfo:
-        tasks_list = \
-            self.cloud_task_client.list_tasks_with_prefix(
-                queue_name=queue_name,
-                task_id_prefix='')
-        task_names = [task.name for task in tasks_list] if tasks_list else []
-        return CloudTaskQueueInfo(queue_name=queue_name,
-                                  task_names=task_names)
+    def __init__(self) -> None:
+        self.bq_cloud_task_queue_manager = CloudTaskQueueManager(queue_info_cls=CloudTaskQueueInfo,
+                                                                 queue_name=BIGQUERY_QUEUE_V2)
+        self.job_monitor_cloud_task_queue_manager = CloudTaskQueueManager(queue_info_cls=CloudTaskQueueInfo,
+                                                                          queue_name=JOB_MONITOR_QUEUE_V2)
 
     def get_bq_queue_info(self) -> CloudTaskQueueInfo:
-        return self._get_queue_info(BIGQUERY_QUEUE_V2)
+        return self.bq_cloud_task_queue_manager.get_queue_info()
 
     def create_refresh_bq_table_task(self, table_name: str, schema_type: SchemaType) -> None:
         """Create a BigQuery table export path.
@@ -69,9 +57,8 @@ class BQRefreshCloudTaskManager:
             str(datetime.datetime.utcnow().date()),
             uuid.uuid4())
 
-        self.cloud_task_client.create_task(
+        self.bq_cloud_task_queue_manager.create_task(
             task_id=task_id,
-            queue_name=BIGQUERY_QUEUE_V2,
             relative_uri='/cloud_sql_to_bq/refresh_bq_table',
             body=body,
         )
@@ -90,9 +77,8 @@ class BQRefreshCloudTaskManager:
         task_id = '{}-{}-{}'.format(
             task_topic, str(datetime.datetime.utcnow().date()), uuid.uuid4())
 
-        self.cloud_task_client.create_task(
+        self.job_monitor_cloud_task_queue_manager.create_task(
             task_id=task_id,
-            queue_name=JOB_MONITOR_QUEUE_V2,
             relative_uri='/cloud_sql_to_bq/monitor_refresh_bq_tasks',
             body=body,
             schedule_delay_seconds=60,  # 1-minute delay
