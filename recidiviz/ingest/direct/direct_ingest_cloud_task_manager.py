@@ -19,14 +19,13 @@ import abc
 import logging
 import os
 import uuid
-from typing import Optional, Dict, List, TypeVar, Type, Union
+from typing import Optional, Dict, Union
 
 import attr
 
+from recidiviz.common.google_cloud.cloud_task_queue_manager import CloudTaskQueueInfo, CloudTaskQueueManager
 from recidiviz.common.google_cloud.google_cloud_tasks_shared_queues import \
     DIRECT_INGEST_SCHEDULER_QUEUE_V2, DIRECT_INGEST_BQ_IMPORT_EXPORT_QUEUE_V2
-from recidiviz.common.google_cloud.google_cloud_tasks_client_wrapper import \
-    GoogleCloudTasksClientWrapper
 from recidiviz.ingest.direct.controllers.direct_ingest_types import CloudTaskArgs, IngestArgs
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import \
     GcsfsIngestArgs, GcsfsRawDataBQImportArgs, GcsfsIngestViewExportArgs
@@ -58,25 +57,6 @@ def _build_task_id(region_code: str,
         task_id_parts.append(str(uuid.uuid4()))
 
     return '-'.join(task_id_parts)
-
-
-@attr.s
-class CloudTaskQueueInfo:
-    """Holds info about a Cloud Task queue."""
-    queue_name: str = attr.ib()
-
-    # Task names for tasks in queue, in order.
-    # pylint:disable=not-an-iterable
-    task_names: List[str] = attr.ib(factory=list)
-
-    def size(self) -> int:
-        """Number of tasks currently queued in the queue for the given region.
-        If this is generated from the queue itself, it will return at least 1.
-        """
-        return len(self.task_names)
-
-
-QueueInfoType = TypeVar('QueueInfoType', bound=CloudTaskQueueInfo)
 
 
 @attr.s
@@ -220,38 +200,31 @@ class DirectIngestCloudTaskManagerImpl(DirectIngestCloudTaskManager):
     """Real implementation of the DirectIngestCloudTaskManager that interacts
     with actual GCP Cloud Task queues."""
 
-    def __init__(self, project_id: Optional[str] = None):
-        self.cloud_task_client = \
-            GoogleCloudTasksClientWrapper(project_id=project_id)
+    def __init__(self) -> None:
+        self.scheduler_cloud_task_queue_manager = CloudTaskQueueManager(queue_info_cls=SchedulerCloudTaskQueueInfo,
+                                                                        queue_name=DIRECT_INGEST_SCHEDULER_QUEUE_V2)
+        self.bq_import_export_cloud_task_queue_manager = CloudTaskQueueManager(
+            queue_info_cls=BQImportExportCloudTaskQueueInfo,
+            queue_name=DIRECT_INGEST_BQ_IMPORT_EXPORT_QUEUE_V2)
 
-    def _get_queue_info(self,
-                        queue_info_cls: Type[QueueInfoType],
-                        queue_name: str,
-                        region_code: str) -> QueueInfoType:
-        tasks_list = \
-            self.cloud_task_client.list_tasks_with_prefix(
-                queue_name=queue_name,
-                task_id_prefix=region_code)
-        task_names = [task.name for task in tasks_list] if tasks_list else []
-        return queue_info_cls(queue_name=queue_name, task_names=task_names)
+        self.region_process_job_queue_managers: Dict[str,
+                                                     CloudTaskQueueManager[ProcessIngestJobCloudTaskQueueInfo]] = {}
+
+    def _get_process_job_queue_manager(self,
+                                       region: Region) -> CloudTaskQueueManager[ProcessIngestJobCloudTaskQueueInfo]:
+        if region.region_code not in self.region_process_job_queue_managers:
+            self.region_process_job_queue_managers[region.region_code] = CloudTaskQueueManager(
+                queue_info_cls=ProcessIngestJobCloudTaskQueueInfo, queue_name=region.get_queue_name())
+        return self.region_process_job_queue_managers[region.region_code]
 
     def get_process_job_queue_info(self, region: Region) -> ProcessIngestJobCloudTaskQueueInfo:
-        return self._get_queue_info(
-            ProcessIngestJobCloudTaskQueueInfo,
-            region.get_queue_name(),
-            region.region_code)
+        return self._get_process_job_queue_manager(region).get_queue_info(task_id_prefix=region.region_code)
 
     def get_scheduler_queue_info(self, region: Region) -> SchedulerCloudTaskQueueInfo:
-        return self._get_queue_info(
-            SchedulerCloudTaskQueueInfo,
-            DIRECT_INGEST_SCHEDULER_QUEUE_V2,
-            region.region_code)
+        return self.scheduler_cloud_task_queue_manager.get_queue_info(task_id_prefix=region.region_code)
 
     def get_bq_import_export_queue_info(self, region: Region) -> BQImportExportCloudTaskQueueInfo:
-        return self._get_queue_info(
-            BQImportExportCloudTaskQueueInfo,
-            DIRECT_INGEST_BQ_IMPORT_EXPORT_QUEUE_V2,
-            region.region_code)
+        return self.bq_import_export_cloud_task_queue_manager.get_queue_info(task_id_prefix=region.region_code)
 
     def create_direct_ingest_process_job_task(self,
                                               region: Region,
@@ -262,9 +235,8 @@ class DirectIngestCloudTaskManagerImpl(DirectIngestCloudTaskManager):
         relative_uri = f'/direct/process_job?region={region.region_code}'
         body = self._get_body_from_args(ingest_args)
 
-        self.cloud_task_client.create_task(
+        self._get_process_job_queue_manager(region).create_task(
             task_id=task_id,
-            queue_name=region.get_queue_name(),
             relative_uri=relative_uri,
             body=body,
         )
@@ -281,9 +253,8 @@ class DirectIngestCloudTaskManagerImpl(DirectIngestCloudTaskManager):
         relative_uri = f'/direct/scheduler?region={region.region_code}&' \
             f'just_finished_job={just_finished_job}'
 
-        self.cloud_task_client.create_task(
+        self.scheduler_cloud_task_queue_manager.create_task(
             task_id=task_id,
-            queue_name=DIRECT_INGEST_SCHEDULER_QUEUE_V2,
             relative_uri=relative_uri,
             body={},
             schedule_delay_seconds=delay_sec
@@ -299,9 +270,8 @@ class DirectIngestCloudTaskManagerImpl(DirectIngestCloudTaskManager):
             f'/direct/handle_new_files?region={region.region_code}&' \
             f'can_start_ingest={can_start_ingest}'
 
-        self.cloud_task_client.create_task(
+        self.scheduler_cloud_task_queue_manager.create_task(
             task_id=task_id,
-            queue_name=DIRECT_INGEST_SCHEDULER_QUEUE_V2,
             relative_uri=relative_uri,
             body={},
         )
@@ -316,9 +286,8 @@ class DirectIngestCloudTaskManagerImpl(DirectIngestCloudTaskManager):
 
         body = self._get_body_from_args(data_import_args)
 
-        self.cloud_task_client.create_task(
+        self.bq_import_export_cloud_task_queue_manager.create_task(
             task_id=task_id,
-            queue_name=DIRECT_INGEST_BQ_IMPORT_EXPORT_QUEUE_V2,
             relative_uri=relative_uri,
             body=body,
         )
@@ -333,9 +302,8 @@ class DirectIngestCloudTaskManagerImpl(DirectIngestCloudTaskManager):
 
         body = self._get_body_from_args(ingest_view_export_args)
 
-        self.cloud_task_client.create_task(
+        self.bq_import_export_cloud_task_queue_manager.create_task(
             task_id=task_id,
-            queue_name=DIRECT_INGEST_BQ_IMPORT_EXPORT_QUEUE_V2,
             relative_uri=relative_uri,
             body=body,
         )

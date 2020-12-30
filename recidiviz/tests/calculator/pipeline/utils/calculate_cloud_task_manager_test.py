@@ -20,6 +20,7 @@ import datetime
 import json
 import unittest
 
+import mock
 from freezegun import freeze_time
 from google.cloud import tasks_v2
 from google.protobuf import timestamp_pb2
@@ -40,10 +41,19 @@ CLOUD_TASK_MANAGER_PACKAGE_NAME = calculate_cloud_task_manager.__name__
 class TestCalculateCloudTaskManager(unittest.TestCase):
     """Tests for CalculateCloudTaskManager"""
 
+    def setUp(self) -> None:
+        self.metadata_patcher = patch('recidiviz.utils.metadata.project_id')
+        self.mock_project_id_fn = self.metadata_patcher.start()
+        self.mock_project_id = 'recidiviz-456'
+        self.mock_project_id_fn.return_value = self.mock_project_id
+
+    def tearDown(self) -> None:
+        self.metadata_patcher.stop()
+
     @patch(f'{CLOUD_TASK_MANAGER_PACKAGE_NAME}.uuid')
     @patch('google.cloud.tasks_v2.CloudTasksClient')
     @freeze_time('2019-04-14')
-    def test_create_dataflow_monitor_task(self, mock_client, mock_uuid):
+    def test_create_dataflow_monitor_task(self, mock_client: mock.MagicMock, mock_uuid: mock.MagicMock) -> None:
         # Arrange
         delay_sec = 300
         now_utc_timestamp = int(datetime.datetime.now().timestamp())
@@ -54,15 +64,14 @@ class TestCalculateCloudTaskManager(unittest.TestCase):
         job_id = '12345'
         location = 'fake_location'
         topic = 'fake.topic'
-        project_id = 'recidiviz-456'
         body = {
-            'project_id': project_id,
+            'project_id': self.mock_project_id,
             'job_id': job_id,
             'location': location,
             'topic': topic,
         }
 
-        queue_path = f'queue_path/{project_id}/{QUEUES_REGION}'
+        queue_path = f'queue_path/{self.mock_project_id}/{QUEUES_REGION}'
 
         task_id = '12345-2019-04-14-random-uuid'
         task_path = f'{queue_path}/{task_id}'
@@ -81,16 +90,15 @@ class TestCalculateCloudTaskManager(unittest.TestCase):
         mock_client.return_value.queue_path.return_value = queue_path
 
         # Act
-        CalculateCloudTaskManager(project_id=project_id). \
-            create_dataflow_monitor_task(job_id, location, topic)
+        CalculateCloudTaskManager().create_dataflow_monitor_task(job_id, location, topic)
 
         # Assert
         mock_client.return_value.queue_path.assert_called_with(
-            project_id,
+            self.mock_project_id,
             QUEUES_REGION,
             JOB_MONITOR_QUEUE_V2)
         mock_client.return_value.task_path.assert_called_with(
-            project_id,
+            self.mock_project_id,
             QUEUES_REGION,
             JOB_MONITOR_QUEUE_V2,
             task_id)

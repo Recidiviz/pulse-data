@@ -44,7 +44,7 @@ _DIRECT_INGEST_NORMALIZE_RAW_PATH_URL = (
     'http://{}.appspot.com/direct/normalize_raw_file_path?bucket={}&relative_file_path={}')
 
 _METRIC_VIEW_EXPORT_CLOUD_FUNCTION_URL = (
-    'http://{}.appspot.com/export/metric_view_data'
+    'http://{}.appspot.com/export/create_metric_view_data_export_task'
 )
 _DATAFLOW_MONITOR_URL = (
     'http://{}.appspot.com/cloud_function/dataflow_monitor?job_id={}'
