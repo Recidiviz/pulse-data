@@ -58,8 +58,7 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_VIOLATION_QUERY_TEMPLATE = \
         {most_severe_violation_type_subtype_grouping},
         {violation_count_type_grouping},
         count
-      FROM `{project_id}.{metrics_dataset}.supervision_revocation_violation_type_analysis_metrics`
-      {filter_to_most_recent_job_id_for_metric}
+      FROM `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_revocation_violation_type_analysis_metrics`
       WHERE revocation_type = 'REINCARCERATION'
         AND methodology = 'PERSON'
         AND year = EXTRACT(YEAR FROM CURRENT_DATE('US/Pacific'))
@@ -116,7 +115,7 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_VIOLATION_VIEW_BUILDER = MetricBigQueryViewBu
                 'level_2_supervision_location', 'supervision_type',
                 'supervision_level', 'violation_type', 'reported_violations', 'charge_category'],
     description=REVOCATIONS_MATRIX_DISTRIBUTION_BY_VIOLATION_DESCRIPTION,
-    metrics_dataset=dataset_config.DATAFLOW_METRICS_DATASET,
+    materialized_metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
     most_severe_violation_type_subtype_grouping=
     state_specific_query_strings.state_specific_most_severe_violation_type_subtype_grouping(),
@@ -128,8 +127,6 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_VIOLATION_VIEW_BUILDER = MetricBigQueryViewBu
     supervision_type_dimension=bq_utils.unnest_supervision_type(),
     supervision_level_dimension=bq_utils.unnest_column('supervision_level', 'supervision_level'),
     charge_category_dimension=bq_utils.unnest_charge_category(),
-    filter_to_most_recent_job_id_for_metric=bq_utils.filter_to_most_recent_job_id_for_metric(
-        reference_dataset=dataset_config.REFERENCE_VIEWS_DATASET),
     state_specific_supervision_location_optimization_filter=
     state_specific_query_strings.state_specific_supervision_location_optimization_filter()
 )

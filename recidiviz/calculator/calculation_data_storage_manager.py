@@ -27,8 +27,9 @@ from more_itertools import peekable
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.calculator.dataflow_output_storage_config import DATAFLOW_METRICS_COLD_STORAGE_DATASET, \
     MAX_DAYS_IN_DATAFLOW_METRICS_TABLE
-from recidiviz.calculator.query.state.dataset_config import DATAFLOW_METRICS_DATASET, REFERENCE_VIEWS_DATASET
 from recidiviz.utils.auth.gae import requires_gae_auth
+from recidiviz.calculator.query.state.dataset_config import DATAFLOW_METRICS_DATASET, \
+    DATAFLOW_METRICS_MATERIALIZED_DATASET
 
 # Datasets must be at least 12 hours old to be deleted
 DATASET_DELETION_MIN_SECONDS = 12 * 60 * 60
@@ -86,7 +87,7 @@ def move_old_dataflow_metrics_to_cold_storage() -> None:
 
         source_data_join_clause = """LEFT JOIN
                           (SELECT DISTINCT job_id AS keep_job_id FROM
-                          `{project_id}.{reference_views_dataset}.most_recent_job_id_by_metric_and_state_code_materialized`)
+                          `{project_id}.{materialized_metrics_dataset}.most_recent_job_id_by_metric_and_state_code_materialized`)
                         ON job_id = keep_job_id
                         LEFT JOIN 
                           (SELECT DISTINCT created_on AS keep_created_date FROM
@@ -97,7 +98,7 @@ def move_old_dataflow_metrics_to_cold_storage() -> None:
                         """.format(
                             project_id=table_ref.project,
                             dataflow_metrics_dataset=table_ref.dataset_id,
-                            reference_views_dataset=REFERENCE_VIEWS_DATASET,
+                            materialized_metrics_dataset=DATAFLOW_METRICS_MATERIALIZED_DATASET,
                             table_id=table_id,
                             day_count_limit=MAX_DAYS_IN_DATAFLOW_METRICS_TABLE
                         )

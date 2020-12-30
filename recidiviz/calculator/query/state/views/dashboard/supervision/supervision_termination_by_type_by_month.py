@@ -51,8 +51,7 @@ SUPERVISION_TERMINATION_BY_TYPE_BY_MONTH_QUERY_TEMPLATE = \
         MAX(projected_completion_count) as projected_completion_count,
         supervision_type,
         district
-      FROM `{project_id}.{metrics_dataset}.supervision_success_metrics`
-      {filter_to_most_recent_job_id_for_metric},
+      FROM `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_success_metrics`,
       {district_dimension},
       {supervision_type_dimension}
       WHERE methodology = 'EVENT'
@@ -74,11 +73,9 @@ SUPERVISION_TERMINATION_BY_TYPE_BY_MONTH_VIEW_BUILDER = MetricBigQueryViewBuilde
     dimensions=['state_code', 'projected_year', 'projected_month', 'supervision_type', 'district'],
     description=SUPERVISION_TERMINATION_BY_TYPE_BY_MONTH_DESCRIPTION,
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
-    metrics_dataset=dataset_config.DATAFLOW_METRICS_DATASET,
+    materialized_metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
     district_dimension=bq_utils.unnest_district(),
     supervision_type_dimension=bq_utils.unnest_supervision_type(),
-    filter_to_most_recent_job_id_for_metric=bq_utils.filter_to_most_recent_job_id_for_metric(
-        reference_dataset=dataset_config.REFERENCE_VIEWS_DATASET)
 )
 
 if __name__ == '__main__':
