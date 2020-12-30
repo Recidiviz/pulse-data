@@ -31,9 +31,7 @@ WITH external_data AS (
     follow_up_period,
     recidivated_releases as recidivated,
     person_external_id
-  FROM `{{project_id}}.{{metrics_dataset}}.recidivism_rate_metrics`
-   INNER JOIN `{{project_id}}.{{materialized_metrics_dataset}}.most_recent_job_id_by_metric_and_state_code_materialized` job
-  USING (state_code, metric_type, job_id)
+  FROM `{{project_id}}.{{materialized_metrics_dataset}}.most_recent_recidivism_rate_metrics`
   WHERE methodology = 'PERSON'
 ), internal_metrics_for_valid_regions_and_dates AS (
   SELECT * FROM
