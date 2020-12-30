@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2019 Recidiviz, Inc.
+# Copyright (C) 2020 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,37 +14,43 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Class for interacting with cloud tasks and queues related to updating state raw data latest views
-"""
+"""Class for interacting with cloud tasks related to BQ view export."""
 
 import datetime
 import uuid
+from typing import Optional
 
 from recidiviz.common.google_cloud.cloud_task_queue_manager import CloudTaskQueueManager, CloudTaskQueueInfo
-from recidiviz.common.google_cloud.google_cloud_tasks_shared_queues import \
-    BIGQUERY_QUEUE_V2
+from recidiviz.common.google_cloud.google_cloud_tasks_shared_queues import BIGQUERY_QUEUE_V2
 
 
-class DirectIngestRawUpdateCloudTaskManager:
-    """Class for interacting with cloud tasks and queues related to updating
-    state raw data latest views.
-    """
+class ViewExportCloudTaskManager:
+    """Class for interacting with cloud tasks related to BQ view export."""
 
     def __init__(self) -> None:
         self.cloud_task_queue_manager = CloudTaskQueueManager(queue_info_cls=CloudTaskQueueInfo,
                                                               queue_name=BIGQUERY_QUEUE_V2)
 
-    def create_raw_data_latest_view_update_task(self, region_code: str) -> None:
+    def create_metric_view_data_export_task(self, export_job_filter: Optional[str]) -> None:
+        """Create a BigQuery table export path.
 
-        relative_uri = f'/direct/update_raw_data_latest_views_for_state?region={region_code}'
+        Args:
+            export_job_filter: Kind of jobs to initiate export for. Can either be an export_name (e.g. LANTERN)
+                or a state_code (e.g. US_ND)
+        """
+        base_uri = '/export/metric_view_data'
+        if export_job_filter:
+            uri = f'{base_uri}?export_job_filter={export_job_filter}'
+        else:
+            uri = base_uri
 
-        task_id = '{}-update_raw_data_latest_views-{}-{}'.format(
-            region_code,
+        task_id = 'view_export-{}-{}-{}'.format(
+            export_job_filter,
             str(datetime.datetime.utcnow().date()),
             uuid.uuid4())
 
         self.cloud_task_queue_manager.create_task(
             task_id=task_id,
-            relative_uri=relative_uri,
+            relative_uri=uri,
             body={},
         )

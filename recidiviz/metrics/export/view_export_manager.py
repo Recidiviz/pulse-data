@@ -45,6 +45,7 @@ from recidiviz.metrics.export.export_config import ExportMetricBigQueryViewConfi
 from recidiviz.metrics.export.optimized_metric_big_query_view_exporter import OptimizedMetricBigQueryViewExporter
 from recidiviz.metrics.export.optimized_metric_big_query_view_export_validator import \
     OptimizedMetricBigQueryViewExportValidator
+from recidiviz.metrics.export.view_export_cloud_task_manager import ViewExportCloudTaskManager
 from recidiviz.utils import metadata, monitoring
 from recidiviz.utils.auth.gae import requires_gae_auth
 from recidiviz.utils.environment import GCP_PROJECT_STAGING, GCP_PROJECT_PRODUCTION
@@ -77,6 +78,30 @@ monitoring.register_views([failed_metric_export_validation_view, failed_metric_e
 
 
 export_blueprint = Blueprint('export', __name__)
+
+
+@export_blueprint.route('/create_metric_view_data_export_task')
+@requires_gae_auth
+def create_metric_view_data_export_task() -> Tuple[str, HTTPStatus]:
+    """Queues a task to export data in BigQuery metric views to cloud storage buckets.
+
+    Example:
+        export/create_metric_view_data_export_task?export_job_filter=US_ID
+    URL parameters:
+        export_job_filter: (string) Kind of jobs to initiate export for. Can either be an export_name (e.g. LANTERN)
+                                    or a state_code (e.g. US_ND)
+    Args:
+        N/A
+    Returns:
+        N/A
+    """
+    logging.info("Queueing a task to export view data to cloud storage")
+
+    export_job_filter = get_str_param_value("export_job_filter", request.args)
+
+    ViewExportCloudTaskManager().create_metric_view_data_export_task(export_job_filter=export_job_filter)
+
+    return '', HTTPStatus.OK
 
 
 @export_blueprint.route('/metric_view_data')
