@@ -16,7 +16,7 @@
 # =============================================================================
 """A query template for doing person-level recidivism validation against an external dataset."""
 
-# pylint: disable=trailing-whitespace
+# pylint: disable=trailing-whitespace, line-too-long
 RECIDIVISM_PERSON_LEVEL_EXTERNAL_COMPARISON_QUERY_TEMPLATE = \
     """
 WITH external_data AS (
@@ -32,7 +32,7 @@ WITH external_data AS (
     recidivated_releases as recidivated,
     person_external_id
   FROM `{{project_id}}.{{metrics_dataset}}.recidivism_rate_metrics`
-   INNER JOIN `{{project_id}}.{{reference_views_dataset}}.most_recent_job_id_by_metric_and_state_code_materialized` job
+   INNER JOIN `{{project_id}}.{{materialized_metrics_dataset}}.most_recent_job_id_by_metric_and_state_code_materialized` job
   USING (state_code, metric_type, job_id)
   WHERE methodology = 'PERSON'
 ), internal_metrics_for_valid_regions_and_dates AS (

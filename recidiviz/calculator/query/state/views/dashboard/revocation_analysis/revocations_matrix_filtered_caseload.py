@@ -16,7 +16,6 @@
 # =============================================================================
 """Revocations Matrix Filtered Caseload."""
 # pylint: disable=trailing-whitespace, line-too-long
-from recidiviz.calculator.query import bq_utils
 from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config, state_specific_query_strings
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
@@ -78,14 +77,11 @@ REVOCATIONS_MATRIX_FILTERED_CASELOAD_VIEW_BUILDER = MetricBigQueryViewBuilder(
                 'level_2_supervision_location', 'supervision_type', 'supervision_level',
                 'charge_category', 'risk_level', 'violation_type', 'reported_violations', 'state_id', 'officer'],
     description=REVOCATIONS_MATRIX_FILTERED_CASELOAD_DESCRIPTION,
-    metrics_dataset=dataset_config.DATAFLOW_METRICS_DATASET,
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
     most_severe_violation_type_subtype_grouping=
     state_specific_query_strings.state_specific_most_severe_violation_type_subtype_grouping(),
     state_specific_officer_recommendation=state_specific_query_strings.state_specific_officer_recommendation(),
     state_specific_supervision_level=state_specific_query_strings.state_specific_supervision_level(),
-    filter_to_most_recent_job_id_for_metric=bq_utils.filter_to_most_recent_job_id_for_metric(
-        reference_dataset=dataset_config.REFERENCE_VIEWS_DATASET)
 )
 
 if __name__ == '__main__':

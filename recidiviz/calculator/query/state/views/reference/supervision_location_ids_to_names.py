@@ -18,7 +18,6 @@
 
 # pylint: disable=trailing-whitespace, line-too-long
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
-from recidiviz.calculator.query import bq_utils
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -263,8 +262,6 @@ SUPERVISION_LOCATION_IDS_TO_NAMES_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_id=SUPERVISION_LOCATION_IDS_TO_NAMES_VIEW_NAME,
     view_query_template=SUPERVISION_LOCATION_IDS_TO_NAMES_QUERY_TEMPLATE,
     description=SUPERVISION_LOCATION_IDS_TO_NAMES_DESCRIPTION,
-    filter_to_most_recent_job_id_for_metric=bq_utils.filter_to_most_recent_job_id_for_metric(
-        reference_dataset=dataset_config.REFERENCE_VIEWS_DATASET),
 )
 
 if __name__ == '__main__':

@@ -38,7 +38,7 @@ SUPERVISION_POPULATION_BY_DISTRICT_BY_DEMOGRAPHICS_VIEW_QUERY_TEMPLATE = \
       gender,
       age_bucket,
       COUNT(DISTINCT person_id) AS total_supervision_count
-    FROM `{project_id}.{reference_views_dataset}.most_recent_daily_supervision_population_materialized`,
+    FROM `{project_id}.{materialized_metrics_dataset}.most_recent_daily_supervision_population_materialized`,
       {unnested_race_or_ethnicity_dimension},
       {gender_dimension},
       {age_dimension},
@@ -62,7 +62,7 @@ SUPERVISION_POPULATION_BY_DISTRICT_BY_DEMOGRAPHICS_VIEW_BUILDER = MetricBigQuery
     view_query_template=SUPERVISION_POPULATION_BY_DISTRICT_BY_DEMOGRAPHICS_VIEW_QUERY_TEMPLATE,
     dimensions=['state_code', 'supervision_type', 'district', 'race_or_ethnicity', 'gender', 'age_bucket'],
     description=SUPERVISION_POPULATION_BY_DISTRICT_BY_DEMOGRAPHICS_VIEW_DESCRIPTION,
-    reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
+    materialized_metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
     unnested_race_or_ethnicity_dimension=bq_utils.unnest_column('prioritized_race_or_ethnicity', 'race_or_ethnicity'),
     gender_dimension=bq_utils.unnest_column('gender', 'gender'),
     age_dimension=bq_utils.unnest_column('age_bucket', 'age_bucket'),

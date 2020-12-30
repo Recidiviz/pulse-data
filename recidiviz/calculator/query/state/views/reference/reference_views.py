@@ -24,12 +24,6 @@ from recidiviz.calculator.query.state.views.reference.event_based_revocations_fo
     EVENT_BASED_REVOCATIONS_FOR_MATRIX_VIEW_BUILDER
 from recidiviz.calculator.query.state.views.reference.incarceration_period_judicial_district_association import \
     INCARCERATION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_BUILDER
-from recidiviz.calculator.query.state.views.reference.most_recent_daily_incarceration_population import \
-    MOST_RECENT_DAILY_INCARCERATION_POPULATION_VIEW_BUILDER
-from recidiviz.calculator.query.state.views.reference.most_recent_daily_job_id_by_metric_and_state_code import \
-    MOST_RECENT_DAILY_JOB_ID_BY_METRIC_AND_STATE_CODE_VIEW_BUILDER
-from recidiviz.calculator.query.state.views.reference.most_recent_daily_supervision_population import \
-    MOST_RECENT_DAILY_SUPERVISION_POPULATION_VIEW_BUILDER
 from recidiviz.calculator.query.state.views.reference.sentence_group_judicial_district_association import \
     SENTENCE_GROUP_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_BUILDER
 from recidiviz.calculator.query.state.views.reference.supervision_period_judicial_district_association import \
@@ -38,8 +32,6 @@ from recidiviz.calculator.query.state.views.reference.supervision_termination_ma
     SUPERVISION_TERMINATION_MATRIX_BY_PERSON_VIEW_BUILDER
 from recidiviz.calculator.query.state.views.reference.us_mo_sentence_statuses import \
     US_MO_SENTENCE_STATUSES_VIEW_BUILDER
-from recidiviz.calculator.query.state.views.reference.most_recent_job_id_by_metric_and_state_code import \
-    MOST_RECENT_JOB_ID_BY_METRIC_AND_STATE_CODE_VIEW_BUILDER
 from recidiviz.calculator.query.state.views.reference.persons_to_recent_county_of_residence import \
     PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_VIEW_BUILDER
 from recidiviz.calculator.query.state.views.reference.persons_with_last_known_address import \
@@ -64,10 +56,6 @@ from recidiviz.calculator.query.state.views.reference.supervision_matrix_by_pers
 # NOTE: These views must be listed in order of dependency. For example, if reference view Y depends on reference view X,
 # then view X should appear in the list before view Y.
 REFERENCE_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
-    MOST_RECENT_JOB_ID_BY_METRIC_AND_STATE_CODE_VIEW_BUILDER,
-    MOST_RECENT_DAILY_JOB_ID_BY_METRIC_AND_STATE_CODE_VIEW_BUILDER,
-    MOST_RECENT_DAILY_INCARCERATION_POPULATION_VIEW_BUILDER,
-    MOST_RECENT_DAILY_SUPERVISION_POPULATION_VIEW_BUILDER,
     EVENT_BASED_REVOCATIONS_FOR_MATRIX_VIEW_BUILDER,
     AUGMENTED_AGENT_INFO_VIEW_BUILDER,
     SSVR_TO_AGENT_ASSOCIATION_VIEW_BUILDER,

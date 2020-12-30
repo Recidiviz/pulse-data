@@ -21,6 +21,8 @@ from typing import List, Sequence
 
 from recidiviz.big_query.big_query_view import BigQueryViewBuilder
 from recidiviz.calculator.query.state.views.covid_dashboard.covid_dashboard_views import COVID_DASHBOARD_VIEW_BUILDERS
+from recidiviz.calculator.query.state.views.dataflow_metrics_materialized.dataflow_metrics_materialized_views import \
+    DATAFLOW_METRICS_MATERIALIZED_VIEW_BUILDERS
 from recidiviz.calculator.query.state.views.covid_report.covid_report_views import COVID_REPORT_VIEW_BUILDERS
 from recidiviz.calculator.query.state.views.dashboard.dashboard_views import DASHBOARD_VIEW_BUILDERS, \
     CORE_DASHBOARD_VIEW_BUILDERS, LANTERN_DASHBOARD_VIEW_BUILDERS, LANTERN_VIEW_BUILDERS_EXCLUDED_FROM_EXPORT
@@ -37,6 +39,7 @@ from recidiviz.metrics.export.export_config import ExportViewCollectionConfig
 
 
 VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE: Sequence[BigQueryViewBuilder] = list(itertools.chain.from_iterable((
+    DATAFLOW_METRICS_MATERIALIZED_VIEW_BUILDERS,
     REFERENCE_VIEW_BUILDERS,
     COVID_DASHBOARD_VIEW_BUILDERS,
     COVID_REPORT_VIEW_BUILDERS,

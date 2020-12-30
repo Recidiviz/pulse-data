@@ -22,6 +22,9 @@ DASHBOARD_VIEWS_DATASET: str = 'dashboard_views'
 # Where the metrics that Dataflow jobs produce live
 DATAFLOW_METRICS_DATASET: str = 'dataflow_metrics'
 
+# Where the most recent metrics that Dataflow jobs produce live
+DATAFLOW_METRICS_MATERIALIZED_DATASET: str = 'dataflow_metrics_materialized'
+
 # Where static reference tables live
 STATIC_REFERENCE_TABLES_DATASET: str = 'static_reference_tables'
 

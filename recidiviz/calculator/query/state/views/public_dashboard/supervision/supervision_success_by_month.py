@@ -40,8 +40,7 @@ SUPERVISION_SUCCESS_BY_MONTH_VIEW_QUERY_TEMPLATE = \
         -- Take the MIN so that successful_termination is 1 only if all periods were 1 (successful)
         MIN(successful_completion_count) as successful_termination,
         person_id,
-      FROM `{project_id}.{metrics_dataset}.supervision_success_metrics`
-      {filter_to_most_recent_job_id_for_metric},
+      FROM `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_success_metrics`,
       UNNEST ([{grouped_districts}, 'ALL']) AS district
       WHERE methodology = 'EVENT'
         AND metric_period_months = 1
@@ -76,14 +75,12 @@ SUPERVISION_SUCCESS_BY_MONTH_VIEW_BUILDER = MetricBigQueryViewBuilder(
     view_query_template=SUPERVISION_SUCCESS_BY_MONTH_VIEW_QUERY_TEMPLATE,
     dimensions=['state_code', 'supervision_type', 'projected_year', 'projected_month', 'district'],
     description=SUPERVISION_SUCCESS_BY_MONTH_VIEW_DESCRIPTION,
-    metrics_dataset=dataset_config.DATAFLOW_METRICS_DATASET,
+    materialized_metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
     grouped_districts=
     state_specific_query_strings.state_supervision_specific_district_groupings('supervising_district_external_id',
                                                                                'judicial_district_code'),
     district_dimension=bq_utils.unnest_district(),
-    filter_to_most_recent_job_id_for_metric=bq_utils.filter_to_most_recent_job_id_for_metric(
-        reference_dataset=dataset_config.REFERENCE_VIEWS_DATASET)
 )
 
 if __name__ == '__main__':
