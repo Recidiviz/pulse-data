@@ -50,7 +50,7 @@ flask = "*"
 iteration-utilities = "*"
 "pypdf2" = "*"
 pyyaml = "*"
-# TODO(#4287): Upgrade google-cloud-* to 2.0.0 once permitted by apache-airflow
+# TODO(#4287): Upgrade google-cloud-* to 2.0.0 now that we have removed apache-airflow from our Pipfile
 google-cloud-datastore = "<2.0.0"
 google-cloud-tasks = "<2.0.0"
 google-cloud-pubsub = "<2.0.0"
@@ -92,15 +92,12 @@ zope = {event = "*"}
 psutil = "*"
 psycogreen = "*"
 # Pinned to the latest version supported by GCP.
-apache-airflow = {extras = ["gcp"],version = "==1.10.12"}
 # TODO(#4287): Revisit this when we update apache-airflow.
 # This is pulled in from apache-airflow -> flask-appbuilder. marshmallow-sqlalchemy==0.24.0 drops support for
 # marshmallow~=2, but flask-appbuilder does not yet support marshmallow~=3, so we pin marshmallow-sqlalchemy back
 # instead.
 marshmallow-sqlalchemy = "<0.24.0"
-# TODO(#4287): Revisit this when we update apache-airflow.
-# apache-airflow requires attrs~=19.3 and cattrs~=1, but cattrs>=1.1.0 no longer supports that version, so pin back cattrs.
-cattrs = "==1.0.0"
+cattrs = "*"
 # If the dill version changes be sure to update the pinned version in setup.py
 dill = "*"
 matplotlib = "*"
