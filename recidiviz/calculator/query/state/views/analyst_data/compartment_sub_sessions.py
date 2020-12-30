@@ -19,7 +19,8 @@
 # pylint: disable=line-too-long
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config
-from recidiviz.calculator.query.state.dataset_config import DATAFLOW_METRICS_DATASET, STATIC_REFERENCE_TABLES_DATASET
+from recidiviz.calculator.query.state.dataset_config import STATIC_REFERENCE_TABLES_DATASET, \
+    DATAFLOW_METRICS_MATERIALIZED_DATASET
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -65,10 +66,7 @@ COMPARTMENT_SUB_SESSIONS_QUERY_TEMPLATE = \
         facility AS compartment_location,
         CAST(NULL AS STRING) AS assessment_score_bucket
     FROM
-        `{project_id}.{metrics_dataset}.incarceration_population_metrics`
-    INNER JOIN
-        `{project_id}.{reference_views_dataset}.most_recent_job_id_by_metric_and_state_code_materialized`
-    USING (state_code, year, month, metric_period_months, metric_type, job_id)
+        `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_population_metrics`
     WHERE metric_period_months = 0
         AND methodology = 'EVENT'
         AND state_code in ('US_ND','US_ID')
@@ -88,10 +86,7 @@ COMPARTMENT_SUB_SESSIONS_QUERY_TEMPLATE = \
         CONCAT(COALESCE(level_1_supervision_location_external_id,'EXTERNAL_UNKNOWN'),'|', COALESCE(level_2_supervision_location_external_id,'EXTERNAL_UNKNOWN')),
         assessment_score_bucket
     FROM
-        `{project_id}.{metrics_dataset}.supervision_population_metrics`
-    INNER JOIN
-        `{project_id}.{reference_views_dataset}.most_recent_job_id_by_metric_and_state_code_materialized`
-    USING (state_code, year, month, metric_period_months, metric_type, job_id)
+        `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_population_metrics`
     WHERE metric_period_months = 0
         AND methodology = 'EVENT'
         AND state_code in ('US_ND','US_ID')
@@ -110,10 +105,7 @@ COMPARTMENT_SUB_SESSIONS_QUERY_TEMPLATE = \
         CASE WHEN supervision_type in ('PAROLE', 'PROBATION','DUAL') THEN supervision_type END AS compartment_level_2,
         CONCAT(COALESCE(level_1_supervision_location_external_id,'EXTERNAL_UNKNOWN'),'|', COALESCE(level_2_supervision_location_external_id,'EXTERNAL_UNKNOWN')),
         assessment_score_bucket
-    FROM `{project_id}.{metrics_dataset}.supervision_out_of_state_population_metrics` 
-    INNER JOIN
-        `{project_id}.{reference_views_dataset}.most_recent_job_id_by_metric_and_state_code_materialized`
-    USING (state_code, year, month, metric_period_months, metric_type, job_id)
+    FROM `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_out_of_state_population_metrics`
     WHERE metric_period_months = 0
         AND methodology = 'EVENT'
         AND state_code in ('US_ND','US_ID')  
@@ -374,10 +366,7 @@ COMPARTMENT_SUB_SESSIONS_QUERY_TEMPLATE = \
         --There are no cases of multiple admission reasons occurring on the same date as we are sub-setting for 
         --"NEW_ADMISSION", therefore there is no 'order by' in the window function below
         ROW_NUMBER() OVER(PARTITION BY person_id, admission_date) AS rn
-    FROM `{project_id}.{metrics_dataset}.incarceration_admission_metrics`
-    INNER JOIN
-        `{project_id}.{reference_views_dataset}.most_recent_job_id_by_metric_and_state_code_materialized`
-        USING (state_code, year, month, metric_period_months, metric_type, job_id)
+    FROM `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_admission_metrics`
     WHERE methodology = 'EVENT'
         AND metric_period_months = 1
         AND admission_reason = 'NEW_ADMISSION' 
@@ -392,10 +381,7 @@ COMPARTMENT_SUB_SESSIONS_QUERY_TEMPLATE = \
         --This is very rare (2 cases) where a person has more that one revocation (with different reasons) on the same day. In both cases one of the 
         --records has a null reason, so here I dedup prioritizing the non-null one.
         ROW_NUMBER() OVER(PARTITION BY person_id, revocation_admission_date ORDER BY IF(source_violation_type IS NULL, 1, 0)) AS rn
-    FROM `{project_id}.{metrics_dataset}.supervision_revocation_metrics` 
-    INNER JOIN
-        `{project_id}.{reference_views_dataset}.most_recent_job_id_by_metric_and_state_code_materialized`
-    USING (state_code, year, month, metric_period_months, metric_type, job_id)
+    FROM `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_revocation_metrics`
     WHERE methodology = 'EVENT'
         AND metric_period_months = 1
     UNION ALL
@@ -407,10 +393,7 @@ COMPARTMENT_SUB_SESSIONS_QUERY_TEMPLATE = \
         admission_reason AS start_sub_reason,
         'SUPERVISION' as compartment_level_1,
          ROW_NUMBER() OVER(PARTITION BY person_id, start_date ORDER BY priority ASC) AS rn
-    FROM `{project_id}.{metrics_dataset}.supervision_start_metrics` m
-    INNER JOIN
-        `{project_id}.{reference_views_dataset}.most_recent_job_id_by_metric_and_state_code_materialized`
-    USING (state_code, year, month, metric_period_months, metric_type, job_id)
+    FROM `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_start_metrics` m
     --The main logic here is to de-prioritize transfers when they are concurrent with another reason
     LEFT JOIN `static_reference_tables.admission_start_reason_dedup_priority` d
       ON d.data_source = 'SUPERVISION'
@@ -432,10 +415,7 @@ COMPARTMENT_SUB_SESSIONS_QUERY_TEMPLATE = \
         release_reason AS end_reason,
         'INCARCERATION' AS data_source,
         ROW_NUMBER() OVER(PARTITION BY person_id, release_date ORDER BY COALESCE(priority, 999)) AS rn
-    FROM `{project_id}.{metrics_dataset}.incarceration_release_metrics` AS m
-    INNER JOIN
-        `{project_id}.{reference_views_dataset}.most_recent_job_id_by_metric_and_state_code_materialized` 
-    USING (state_code, year, month, metric_period_months, metric_type, job_id)
+    FROM `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_release_metrics` AS m
     LEFT JOIN `{project_id}.{static_reference_views_dataset}.release_termination_reason_dedup_priority` AS p
         ON m.release_reason = p.end_reason
         AND p.data_source = 'INCARCERATION'
@@ -450,10 +430,7 @@ COMPARTMENT_SUB_SESSIONS_QUERY_TEMPLATE = \
         termination_reason AS end_reason,
         'SUPERVISION' AS data_source,
         ROW_NUMBER() OVER(PARTITION BY person_id, termination_date ORDER BY COALESCE(priority, 999)) AS rn
-    FROM `{project_id}.{metrics_dataset}.supervision_termination_metrics` m
-    INNER JOIN
-        `{project_id}.{reference_views_dataset}.most_recent_job_id_by_metric_and_state_code_materialized`
-    USING (state_code, year, month, metric_period_months, metric_type, job_id)
+    FROM `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_termination_metrics` m
     LEFT JOIN `{project_id}.{static_reference_views_dataset}.release_termination_reason_dedup_priority` AS p
         ON m.termination_reason = p.end_reason
         AND p.data_source = 'SUPERVISION'
@@ -549,9 +526,8 @@ COMPARTMENT_SUB_SESSIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_id=COMPARTMENT_SUB_SESSIONS_VIEW_NAME,
     view_query_template=COMPARTMENT_SUB_SESSIONS_QUERY_TEMPLATE,
     description=COMPARTMENT_SUB_SESSIONS_VIEW_DESCRIPTION,
-    metrics_dataset=DATAFLOW_METRICS_DATASET,
     static_reference_dataset=STATIC_REFERENCE_TABLES_DATASET,
-    reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
+    materialized_metrics_dataset=DATAFLOW_METRICS_MATERIALIZED_DATASET,
     static_reference_views_dataset=dataset_config.STATIC_REFERENCE_TABLES_DATASET,
     should_materialize=True
 )

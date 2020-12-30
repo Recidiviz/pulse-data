@@ -47,8 +47,7 @@ SUPERVISION_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_VIEW_BUILDER = SimpleBig
     view_query_template=SUPERVISION_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_QUERY_TEMPLATE,
     description=SUPERVISION_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_DESCRIPTION,
     external_accuracy_dataset=dataset_config.EXTERNAL_ACCURACY_DATASET,
-    metrics_dataset=state_dataset_config.DATAFLOW_METRICS_DATASET,
-    reference_views_dataset=state_dataset_config.REFERENCE_VIEWS_DATASET
+    materialized_metrics_dataset=state_dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
 )
 
 if __name__ == '__main__':

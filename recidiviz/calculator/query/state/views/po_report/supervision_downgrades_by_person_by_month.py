@@ -17,7 +17,6 @@
 """Supervision downgrades by person by month."""
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
-from recidiviz.calculator.query import bq_utils
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -34,8 +33,7 @@ SUPERVISION_DOWNGRADES_BY_PERSON_BY_MONTH_QUERY_TEMPLATE = \
             state_code, year, month, person_id,
             supervising_officer_external_id,
             MAX(date_of_downgrade) AS date_of_downgrade
-        FROM `{project_id}.{metrics_dataset}.supervision_downgrade_metrics`
-        {filter_to_most_recent_job_id_for_metric}
+        FROM `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_downgrade_metrics`
         WHERE person_id IS NOT NULL
             AND supervising_officer_external_id IS NOT NULL
             AND metric_period_months = 1
@@ -60,8 +58,7 @@ SUPERVISION_DOWNGRADES_BY_PERSON_BY_MONTH_VIEW_BUILDER = SimpleBigQueryViewBuild
     view_query_template=SUPERVISION_DOWNGRADES_BY_PERSON_BY_MONTH_QUERY_TEMPLATE,
     description=SUPERVISION_DOWNGRADES_BY_PERSON_BY_MONTH_DESCRIPTION,
     metrics_dataset=dataset_config.DATAFLOW_METRICS_DATASET,
-    filter_to_most_recent_job_id_for_metric=bq_utils.filter_to_most_recent_job_id_for_metric(
-        reference_dataset=dataset_config.REFERENCE_VIEWS_DATASET)
+    materialized_metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
 )
 
 if __name__ == '__main__':

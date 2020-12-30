@@ -42,7 +42,7 @@ US_ID_PPO_METRICS_SUPERVISION_LEVEL_QUERY_TEMPLATE = \
       (
         SELECT state_code, person_id, supervision_type, supervision_level, date_of_supervision
         FROM `{project_id}.{metrics_dataset}.supervision_population_metrics` 
-        JOIN `{project_id}.{reference_views_dataset}.most_recent_job_id_by_metric_and_state_code_materialized`
+        JOIN `{project_id}.{materialized_metrics_dataset}.most_recent_job_id_by_metric_and_state_code_materialized`
             USING (job_id, state_code, year, month, metric_period_months, metric_type)
         WHERE methodology = 'PERSON'
           AND metric_period_months = 0
@@ -65,7 +65,7 @@ US_ID_PPO_METRICS_SUPERVISION_LEVEL_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     base_dataset=STATE_BASE_DATASET,
     analyst_dataset=ANALYST_VIEWS_DATASET,
     metrics_dataset=dataset_config.DATAFLOW_METRICS_DATASET,
-    reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
+    materialized_metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
     should_materialize=True
 )
 

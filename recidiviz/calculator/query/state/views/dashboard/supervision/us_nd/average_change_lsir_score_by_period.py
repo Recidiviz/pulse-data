@@ -52,8 +52,7 @@ AVERAGE_CHANGE_LSIR_SCORE_BY_PERIOD_QUERY_TEMPLATE = \
         -- Use the most recent termination per person/period/supervision/district
         ROW_NUMBER() OVER (PARTITION BY state_code, metric_period_months, supervision_type, district, person_id
                            ORDER BY termination_date DESC, assessment_score_change) AS supervision_rank
-      FROM `{project_id}.{metrics_dataset}.supervision_termination_metrics` m
-      {filter_to_most_recent_job_id_for_metric},
+      FROM `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_termination_metrics` m,
       {district_dimension},
       {supervision_type_dimension},
       {metric_period_dimension}
@@ -76,14 +75,12 @@ AVERAGE_CHANGE_LSIR_SCORE_BY_PERIOD_VIEW_BUILDER = MetricBigQueryViewBuilder(
     view_query_template=AVERAGE_CHANGE_LSIR_SCORE_BY_PERIOD_QUERY_TEMPLATE,
     dimensions=['state_code', 'metric_period_months', 'supervision_type', 'district'],
     description=AVERAGE_CHANGE_LSIR_SCORE_BY_PERIOD_DESCRIPTION,
-    metrics_dataset=dataset_config.DATAFLOW_METRICS_DATASET,
+    materialized_metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
     district_dimension=bq_utils.unnest_district(),
     supervision_type_dimension=bq_utils.unnest_supervision_type(),
     metric_period_dimension=bq_utils.unnest_metric_period_months(),
     metric_period_condition=bq_utils.metric_period_condition(),
-    filter_to_most_recent_job_id_for_metric=bq_utils.filter_to_most_recent_job_id_for_metric(
-        reference_dataset=dataset_config.REFERENCE_VIEWS_DATASET)
 )
 
 if __name__ == '__main__':

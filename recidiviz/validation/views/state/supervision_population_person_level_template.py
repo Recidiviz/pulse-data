@@ -42,12 +42,10 @@ sanitized_internal_metrics AS (
       END AS supervising_officer_external_id,
       supervision_level_raw_text,
       supervising_district_external_id,
-   FROM `{{project_id}}.{{metrics_dataset}}.supervision_population_metrics`
-   JOIN `{{project_id}}.{{reference_views_dataset}}.most_recent_job_id_by_metric_and_state_code_materialized` job
-      USING (state_code, job_id, year, month, metric_period_months)
+   FROM `{{project_id}}.{{materialized_metrics_dataset}}.most_recent_supervision_population_metrics`
    WHERE metric_period_months = 0
    AND methodology = 'PERSON'
-   AND job.metric_type = 'SUPERVISION_POPULATION'
+   AND metric_type = 'SUPERVISION_POPULATION'
    AND (state_code != 'US_ID' OR 
        # Idaho only gives us population numbers for folks explicitly on active probation, parole, or dual supervision.
        # The following groups are folks we consider a part of the SupervisionPopulation even though ID does not:

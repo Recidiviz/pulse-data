@@ -18,7 +18,6 @@
 # pylint: disable=trailing-whitespace
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
-from recidiviz.calculator.query import bq_utils
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -39,8 +38,7 @@ SUPERVISION_COMPLIANCE_BY_PERSON_BY_MONTH_QUERY_TEMPLATE = \
         face_to_face_count,
         assessment_up_to_date,
         face_to_face_frequency_sufficient
-    FROM `{project_id}.{metrics_dataset}.supervision_case_compliance_metrics`
-    {filter_to_most_recent_job_id_for_metric}
+    FROM `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_case_compliance_metrics`
     WHERE methodology = 'PERSON'
         AND person_id IS NOT NULL
         AND supervising_officer_external_id IS NOT NULL
@@ -55,9 +53,7 @@ SUPERVISION_COMPLIANCE_BY_PERSON_BY_MONTH_VIEW_BUILDER = SimpleBigQueryViewBuild
     should_materialize=True,
     view_query_template=SUPERVISION_COMPLIANCE_BY_PERSON_BY_MONTH_QUERY_TEMPLATE,
     description=SUPERVISION_COMPLIANCE_BY_PERSON_BY_MONTH_DESCRIPTION,
-    metrics_dataset=dataset_config.DATAFLOW_METRICS_DATASET,
-    filter_to_most_recent_job_id_for_metric=bq_utils.filter_to_most_recent_job_id_for_metric(
-        reference_dataset=dataset_config.REFERENCE_VIEWS_DATASET)
+    materialized_metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
 )
 
 if __name__ == '__main__':
