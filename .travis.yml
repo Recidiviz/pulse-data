@@ -9,6 +9,15 @@ env:
     - secure: "UDCpFraLrjyCmWjBqEPitkBUoBmTlKsLNHd7yA261P82vRmOkxCG2dN5x4VDLbpjdG2nU1K/aHrWlbU0khaBRsKWmk/1oSIlqG/Yuf6vGfh4enIq1nHQCDbH3sLRC6HTaf5lqrjQPca7Tww9VjllsDye2OWY049/PP1QZo77FjplWi3dnXOAa0UkQG2BSiRR0R08LZcafGypHcpVKlyE3uMH1tJlKaHRcyH1MD5y8RZK6cmVs1NY4/AZN7hZlcrdLV9KnIIqHorSjww48L+EL3O2pJbZzqPt64d3dgccPIMIwv21/isjmCQ5tQZhYulQzXU3chCuAkjOZLa+I24Jn6hlYkK5JkmEuqWjeAqpTPTFcV70YBuHhTcbNNKDiwXeV7zvzi7ONBTZ1Jie2SyWucUGYPA9B4sU1dnF0yGDtkSUxYYeB1NCQ+Ps3W812g4TU5GW6iou/jb+R61TGOaFS5MCssl45xSA+p/aX2h59YcAsvS/yaU5UhaIyt752ZRMkhgZ9czpz8Mx0hy0kfsl8ujx1g6ZZhbR5vDIjeeweerFxTES54PGfD5+Kw83JDL/U83fMCHMY9vBlFmhhf8kGDD8shWAh2oFpXZt7exliH4y68VGiZNvnW6trQiKlprkDX5XbvlI9FV2r8etXDpXmWpAFO3f2jSYKfpU/N4eQmw="
     - secure: "oSNPJ5LgVty4Ur+6W7o3Sqan1CtU/11T8/vJAzEOu6NdVUUx6cdyOmLXjVOtXVn6+PHqiaXx4SQwk0m6xrb2B4mFVZvSTz03YFRjtHhSI3NJ72bKoqCElxLQx605p6H+XAPcSdTv9oLQvQ38ybcIjHOnJuNnTxcjKJStjdPSj1uDfo/jk5ik/rK3Fqr3WC3JwwbGEkI42fQkysGc1M/2aEIhgdlQNtdQVSCyKWRhhmFN/ZBjmGnFsLB0HNkg+dvR66CFk37agtTTlGBPpW0vpCiU3ACVjiRveAioDWtWdqfZWbsEcKTv/hcjqJ4ePDV+tqGe0BZyTJ8Bw3WEUysPpg+lkkznQ49OdhHgsYvozuKf3tmiRogKhcQb5wefq9abeE5V6HSFEUzp2J0WvbHoYm20zoee6cYvScZClRvb3CDuedmAAiEJ8N2Fw3iw8jIWVcyW1lbKRoDFOHnVPRVmBYgotATygFmugN64JT00y66O7/+LmWY2Xhwbkk1iO5xRwxqC6pVKTP/OiNvaeAXwc0zbBtqmu/IIj91dx0jIPck5ArHcBBU3MnDc+lrwvEtJlNa/+aGrue/6SY7jN8i/huwX1NZ4rhypGYr2nR8Ja8gVOU5nRMmc1o+9/8pkdJvKY1AvirvL4olbe66RhhGqO6M3kUtW/HrJ4s8DH1G0NDE="
     - secure: "AfVS0ZOg1Q56aJ5mO1/a3hHUKFDkR9eHp/9ckLf8nap/o8uaPcNMk6udS0qiUFzmz+fhT4UWmsPjuSxeN5KMUFh0xeGMQf/4D2oqQURvzJ/wHKxF3WbkHtTCvUhZEkzyK9o+UtuyD/Z7mpaJ0a4a3MFvFMEEpE3me8MruMIXkHoP2Ufl2dgTysE452u6wXCWVUboBwdcLzAK4foqgFqdXWD3US8jXmFVanG4d0Us+8SQ9ChQHd/kgtICZRUdB0FB1qhat0mFZ4aNljhO9TUsz/qMAX/Y2/ftKGGB9Aybl41EPNU78+lrl6u0UAnLbAY7/UhwWWSoXAaRlVm71hRRbEHKfZb38CoBhfCb8xc4UgNTjeownjtm3AnKOsxKJY0VwQ8iSRDNcLPLEEKcrDFi1o3KKAZE93EuoPNC1/2qKkZtjclQWK8YaRr03e11GF1B65luqryiBAdTqN21mQM2YBz9E/mAjtHp176poAb2A5NU+gRaPAv0HUVW/7QiKer7YKjJ8fcSz6YpwFb3kv0mtdLT0MiT7w6FVbnj0Ym6n43jT6w3Ij9Hay3WatSMCVXwU+e1Vq3SfXSFdbslui0e5NTH3X9dFEohAzGT1FtfSD9oCt7m6x/LFzOVUGzKq850X8DZvTzHT5BH65i0Pif0KHfXLUuZ3vXGThCQuFavqGM="
+
+# Currently just installs terraform.
+before_install:
+  - curl -sLo /tmp/terraform.zip https://releases.hashicorp.com/terraform/0.14.3/terraform_0.14.3_linux_amd64.zip
+  - unzip /tmp/terraform.zip -d /tmp
+  - mkdir -p ~/bin
+  - mv /tmp/terraform ~/bin
+  - export PATH="~/bin:$PATH"
+
 install:
   # First try to read the most recent docker image from cache
   - mkdir -p ~/docker-images
@@ -32,6 +41,10 @@ script:
   - docker exec -it recidiviz pipenv run python -m recidiviz.tools.is_pipenv_locked
   - docker exec -it recidiviz pipenv run mypy recidiviz
   - docker exec -it recidiviz pipenv run ./recidiviz/tools/travis/run_pylint.sh
+
+  # Lint Terraform
+  - TF_INPUT=false terraform init -backend=false ./recidiviz/tools/deploy/terraform
+  - TF_INPUT=false terraform validate ./recidiviz/tools/deploy/terraform
 
   - docker exec -it recidiviz pipenv run pytest recidiviz -n auto --test-set parallel
   - docker exec -it recidiviz pipenv run pytest recidiviz --test-set not-parallel --with-emulator
