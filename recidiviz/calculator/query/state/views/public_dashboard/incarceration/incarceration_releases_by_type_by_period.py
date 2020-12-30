@@ -46,8 +46,7 @@ INCARCERATION_RELEASES_BY_TYPE_BY_PERIOD_VIEW_QUERY_TEMPLATE = \
           IFNULL(gender, 'EXTERNAL_UNKNOWN') as gender,
           IFNULL(age_bucket, 'EXTERNAL_UNKNOWN') as age_bucket
         FROM
-          `{project_id}.{metrics_dataset}.incarceration_release_metrics` releases
-        {filter_to_most_recent_job_id_for_metric}
+          `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_release_metrics` releases
         WHERE release_reason in ('COMMUTED', 'COMPASSIONATE', 'CONDITIONAL_RELEASE', 'SENTENCE_SERVED', 'TRANSFERRED_OUT_OF_STATE', 'DEATH')
           AND methodology = 'EVENT'
           AND metric_period_months = 1
@@ -105,7 +104,7 @@ INCARCERATION_RELEASES_BY_TYPE_BY_PERIOD_VIEW_BUILDER = MetricBigQueryViewBuilde
     view_query_template=INCARCERATION_RELEASES_BY_TYPE_BY_PERIOD_VIEW_QUERY_TEMPLATE,
     dimensions=['state_code', 'metric_period_months', 'race_or_ethnicity', 'gender', 'age_bucket'],
     description=INCARCERATION_RELEASES_BY_TYPE_BY_PERIOD_VIEW_DESCRIPTION,
-    metrics_dataset=dataset_config.DATAFLOW_METRICS_DATASET,
+    materialized_metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
     static_reference_dataset=dataset_config.STATIC_REFERENCE_TABLES_DATASET,
     metric_period_condition=bq_utils.metric_period_condition(),
@@ -114,8 +113,6 @@ INCARCERATION_RELEASES_BY_TYPE_BY_PERIOD_VIEW_BUILDER = MetricBigQueryViewBuilde
     gender_dimension=bq_utils.unnest_column('gender', 'gender'),
     age_dimension=bq_utils.unnest_column('age_bucket', 'age_bucket'),
     state_specific_race_or_ethnicity_groupings=state_specific_query_strings.state_specific_race_or_ethnicity_groupings(),
-    filter_to_most_recent_job_id_for_metric=bq_utils.filter_to_most_recent_job_id_for_metric(
-        reference_dataset=dataset_config.REFERENCE_VIEWS_DATASET)
 )
 
 if __name__ == '__main__':

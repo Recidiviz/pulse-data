@@ -18,7 +18,7 @@
 """A view which provides a comparison of internal incarceration population counts by facility to external counts
 provided by the state."""
 
-# pylint: disable=trailing-whitespace
+# pylint: disable=trailing-whitespace, line-too-long
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config as state_dataset_config
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
@@ -54,7 +54,7 @@ INCARCERATION_POPULATION_BY_FACILITY_EXTERNAL_COMPARISON_QUERY_TEMPLATE = \
             IFNULL(facility, 'EXTERNAL_UNKNOWN') as facility,
             COUNT(DISTINCT(person_id)) as internal_population_count
           FROM `{project_id}.{metrics_dataset}.incarceration_population_metrics`
-          JOIN `{project_id}.{reference_views_dataset}.most_recent_job_id_by_metric_and_state_code_materialized` job
+          JOIN `{project_id}.{materialized_metrics_dataset}.most_recent_job_id_by_metric_and_state_code_materialized` job
             USING (state_code, job_id, year, month, metric_period_months)
           WHERE metric_period_months = 0
           AND methodology = 'PERSON'
@@ -72,7 +72,7 @@ INCARCERATION_POPULATION_BY_FACILITY_EXTERNAL_COMPARISON_VIEW_BUILDER = SimpleBi
     description=INCARCERATION_POPULATION_BY_FACILITY_EXTERNAL_COMPARISON_DESCRIPTION,
     external_accuracy_dataset=dataset_config.EXTERNAL_ACCURACY_DATASET,
     metrics_dataset=state_dataset_config.DATAFLOW_METRICS_DATASET,
-    reference_views_dataset=state_dataset_config.REFERENCE_VIEWS_DATASET
+    materialized_metrics_dataset=state_dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET
 )
 
 if __name__ == '__main__':

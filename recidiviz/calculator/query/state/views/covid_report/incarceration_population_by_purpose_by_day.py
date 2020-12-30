@@ -19,7 +19,7 @@
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder, SimpleBigQueryViewBuilder
 from recidiviz.calculator.query import bq_utils
 from recidiviz.calculator.query.state import dataset_config
-from recidiviz.calculator.query.state.dataset_config import STATE_BASE_DATASET, DATAFLOW_METRICS_DATASET, \
+from recidiviz.calculator.query.state.dataset_config import STATE_BASE_DATASET, DATAFLOW_METRICS_MATERIALIZED_DATASET, \
     STATIC_REFERENCE_TABLES_DATASET
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -40,8 +40,7 @@ INCARCERATION_POPULATION_BY_PURPOSE_BY_DAY_QUERY_TEMPLATE = \
         date_of_stay,
         specialized_purpose_for_incarceration,
       FROM
-        `{project_id}.{metrics_dataset}.incarceration_population_metrics`
-      {filter_to_most_recent_job_id_for_metric}
+        `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_population_metrics`
       LEFT JOIN
         `{project_id}.{static_reference_dataset}.state_incarceration_facility_capacity`
       USING (state_code, facility)
@@ -72,12 +71,10 @@ INCARCERATION_POPULATION_BY_PURPOSE_BY_DAY_VIEW_BUILDER = SimpleBigQueryViewBuil
     view_query_template=INCARCERATION_POPULATION_BY_PURPOSE_BY_DAY_QUERY_TEMPLATE,
     description=INCARCERATION_POPULATION_BY_PURPOSE_BY_DAY_DESCRIPTION,
     base_dataset=STATE_BASE_DATASET,
-    metrics_dataset=DATAFLOW_METRICS_DATASET,
+    materialized_metrics_dataset=DATAFLOW_METRICS_MATERIALIZED_DATASET,
     static_reference_dataset=STATIC_REFERENCE_TABLES_DATASET,
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
     facility_dimension=bq_utils.unnest_column('facility', 'facility'),
-    filter_to_most_recent_job_id_for_metric=bq_utils.filter_to_most_recent_job_id_for_metric(
-        reference_dataset=dataset_config.REFERENCE_VIEWS_DATASET)
 )
 
 if __name__ == '__main__':

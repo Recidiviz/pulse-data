@@ -17,7 +17,6 @@
 """Event based revocations to support various revocation matrix views."""
 # pylint: disable=trailing-whitespace, line-too-long
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
-from recidiviz.calculator.query import bq_utils
 from recidiviz.calculator.query.state import dataset_config, state_specific_query_strings
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -53,8 +52,7 @@ EVENT_BASED_REVOCATIONS_FOR_MATRIX_QUERY_TEMPLATE = \
         IFNULL(supervising_officer_external_id, 'EXTERNAL_UNKNOWN') AS officer,
         {state_specific_officer_recommendation},
         violation_history_description AS violation_record
-    FROM `{project_id}.{metrics_dataset}.supervision_revocation_analysis_metrics` 
-    {filter_to_most_recent_job_id_for_metric}
+    FROM `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_revocation_analysis_metrics`
     WHERE methodology = 'EVENT'
         AND metric_period_months = 1
         AND revocation_type = 'REINCARCERATION'
@@ -67,10 +65,7 @@ EVENT_BASED_REVOCATIONS_FOR_MATRIX_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_id=EVENT_BASED_REVOCATIONS_FOR_MATRIX_VIEW_NAME,
     view_query_template=EVENT_BASED_REVOCATIONS_FOR_MATRIX_QUERY_TEMPLATE,
     description=EVENT_BASED_REVOCATIONS_FOR_MATRIX_DESCRIPTION,
-    metrics_dataset=dataset_config.DATAFLOW_METRICS_DATASET,
-    reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
-    filter_to_most_recent_job_id_for_metric=bq_utils.filter_to_most_recent_job_id_for_metric(
-        reference_dataset=dataset_config.REFERENCE_VIEWS_DATASET),
+    materialized_metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
     state_specific_officer_recommendation=state_specific_query_strings.state_specific_officer_recommendation()
 )
 

@@ -51,8 +51,7 @@ ADMISSIONS_VERSUS_RELEASES_BY_MONTH_QUERY_TEMPLATE = \
         state_code, year, month, 
         district,
         COUNT(DISTINCT person_id) AS release_count
-      FROM `{project_id}.{metrics_dataset}.incarceration_release_metrics`
-      {filter_to_most_recent_job_id_for_metric},
+      FROM `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_release_metrics`,
       {district_dimension}
       WHERE methodology = 'EVENT'
         AND metric_period_months = 1
@@ -68,10 +67,9 @@ ADMISSIONS_VERSUS_RELEASES_BY_MONTH_QUERY_TEMPLATE = \
         EXTRACT(MONTH FROM incarceration_month_end_date) AS month,
         district,
         COUNT(DISTINCT person_id) AS month_end_population
-      FROM `{project_id}.{metrics_dataset}.incarceration_population_metrics`,
+      FROM `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_population_metrics`,
         -- Convert the "month end" data in the incarceration_population_metrics to the "prior month end" by adding 1 month to the date
-        UNNEST([DATE_ADD(DATE(year, month, 1), INTERVAL 1 MONTH)]) AS incarceration_month_end_date
-      {filter_to_most_recent_job_id_for_metric},
+        UNNEST([DATE_ADD(DATE(year, month, 1), INTERVAL 1 MONTH)]) AS incarceration_month_end_date,
       {district_dimension}
       WHERE methodology = 'PERSON'
         AND metric_period_months = 0
@@ -94,11 +92,9 @@ ADMISSIONS_VERSUS_RELEASES_BY_MONTH_VIEW_BUILDER = MetricBigQueryViewBuilder(
     dimensions=['state_code', 'year', 'month', 'district'],
     description=ADMISSIONS_VERSUS_RELEASES_BY_MONTH_DESCRIPTION,
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
-    metrics_dataset=dataset_config.DATAFLOW_METRICS_DATASET,
+    materialized_metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
     district_dimension=bq_utils.unnest_district(
         district_column='county_of_residence'),
-    filter_to_most_recent_job_id_for_metric=bq_utils.filter_to_most_recent_job_id_for_metric(
-        reference_dataset=dataset_config.REFERENCE_VIEWS_DATASET),
 )
 
 if __name__ == '__main__':

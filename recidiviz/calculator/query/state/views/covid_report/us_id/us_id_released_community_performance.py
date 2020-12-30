@@ -17,7 +17,6 @@
 """US_ID released community performance during COVID for the 2020 and 2019 cohorts"""
 # pylint: disable=trailing-whitespace,line-too-long
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
-from recidiviz.calculator.query import bq_utils
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.calculator.query.state.dataset_config import COVID_REPORT_DATASET
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
@@ -54,8 +53,7 @@ US_ID_RELEASED_COMMUNITY_PERFORMANCE_QUERY_TEMPLATE = \
         END AS cohort,
         week_num, report_year, m.state_code, m.person_id, m.release_date AS start_date, NULL AS termination_date,
         ROW_NUMBER() OVER (PARTITION BY state_code, person_id, week_num, report_year, purpose_for_incarceration, release_reason ORDER BY release_date DESC) AS release_rank
-      FROM `{project_id}.{metrics_dataset}.incarceration_release_metrics` m
-      {filter_to_most_recent_job_id_for_metric}
+      FROM `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_release_metrics` m
       JOIN report_dates
         ON release_date BETWEEN earliest_start_date AND report_end_date
       WHERE state_code = 'US_ID'
@@ -98,15 +96,13 @@ US_ID_RELEASED_COMMUNITY_PERFORMANCE_QUERY_TEMPLATE = \
 
 US_ID_RELEASED_COMMUNITY_PERFORMANCE_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=dataset_config.COVID_REPORT_DATASET,
-    metrics_dataset=dataset_config.DATAFLOW_METRICS_DATASET,
+    materialized_metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
     reference_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
     state_dataset=dataset_config.STATE_BASE_DATASET,
     view_id=US_ID_RELEASED_COMMUNITY_PERFORMANCE_VIEW_NAME,
     view_query_template=US_ID_RELEASED_COMMUNITY_PERFORMANCE_QUERY_TEMPLATE,
     description=US_ID_RELEASED_COMMUNITY_PERFORMANCE_DESCRIPTION,
     covid_report_dataset=COVID_REPORT_DATASET,
-    filter_to_most_recent_job_id_for_metric=bq_utils.filter_to_most_recent_job_id_for_metric(
-        reference_dataset=dataset_config.REFERENCE_VIEWS_DATASET)
 )
 
 if __name__ == '__main__':

@@ -19,7 +19,7 @@
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder, SimpleBigQueryViewBuilder
 from recidiviz.calculator.query import bq_utils
 from recidiviz.calculator.query.state import dataset_config, state_specific_query_strings
-from recidiviz.calculator.query.state.dataset_config import STATE_BASE_DATASET, DATAFLOW_METRICS_DATASET, \
+from recidiviz.calculator.query.state.dataset_config import STATE_BASE_DATASET, DATAFLOW_METRICS_MATERIALIZED_DATASET, \
     STATIC_REFERENCE_TABLES_DATASET
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -79,8 +79,7 @@ FACILITY_POPULATION_BY_AGE_WITH_CAPACITY_BY_DAY_QUERY_TEMPLATE = \
               facility,
               date_of_stay,
             FROM
-              `{project_id}.{metrics_dataset}.incarceration_population_metrics`
-            {filter_to_most_recent_job_id_for_metric}
+              `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_population_metrics`
             WHERE metric_period_months = 0
             AND methodology = 'PERSON'
             {state_specific_facility_exclusion}
@@ -102,13 +101,11 @@ FACILITY_POPULATION_BY_AGE_WITH_CAPACITY_BY_DAY_VIEW_BUILDER = SimpleBigQueryVie
     view_query_template=FACILITY_POPULATION_BY_AGE_WITH_CAPACITY_BY_DAY_QUERY_TEMPLATE,
     description=FACILITY_POPULATION_BY_AGE_WITH_CAPACITY_BY_DAY_DESCRIPTION,
     base_dataset=STATE_BASE_DATASET,
-    metrics_dataset=DATAFLOW_METRICS_DATASET,
+    materialized_metrics_dataset=DATAFLOW_METRICS_MATERIALIZED_DATASET,
     static_reference_dataset=STATIC_REFERENCE_TABLES_DATASET,
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
     facility_dimension=bq_utils.unnest_column('facility', 'facility'),
     state_specific_facility_exclusion=state_specific_query_strings.state_specific_facility_exclusion(),
-    filter_to_most_recent_job_id_for_metric=bq_utils.filter_to_most_recent_job_id_for_metric(
-        reference_dataset=dataset_config.REFERENCE_VIEWS_DATASET)
 )
 
 if __name__ == '__main__':

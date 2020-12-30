@@ -40,8 +40,7 @@ EVENT_BASED_PROGRAM_REFERRALS_QUERY_TEMPLATE = \
       supervision_type, district,
       participation_status,
       gender, age_bucket, race, ethnicity, assessment_score_bucket
-    FROM `{project_id}.{metrics_dataset}.program_referral_metrics`
-    {filter_to_most_recent_job_id_for_metric},
+    FROM `{project_id}.{materialized_metrics_dataset}.most_recent_program_referral_metrics`,
     {district_dimension},
     {supervision_type_dimension}
     WHERE methodology = 'EVENT'
@@ -57,12 +56,10 @@ EVENT_BASED_PROGRAM_REFERRALS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_id=EVENT_BASED_PROGRAM_REFERRALS_VIEW_NAME,
     view_query_template=EVENT_BASED_PROGRAM_REFERRALS_QUERY_TEMPLATE,
     description=EVENT_BASED_PROGRAM_REFERRALS_DESCRIPTION,
-    metrics_dataset=dataset_config.DATAFLOW_METRICS_DATASET,
+    materialized_metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
     district_dimension=bq_utils.unnest_district(),
     supervision_type_dimension=bq_utils.unnest_supervision_type(),
-    filter_to_most_recent_job_id_for_metric=bq_utils.filter_to_most_recent_job_id_for_metric(
-        reference_dataset=dataset_config.REFERENCE_VIEWS_DATASET)
 )
 
 if __name__ == '__main__':

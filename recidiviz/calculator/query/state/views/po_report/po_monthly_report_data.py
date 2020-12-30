@@ -85,8 +85,7 @@ PO_MONTHLY_REPORT_DATA_QUERY_TEMPLATE = \
         state_code, year, month, supervising_officer_external_id AS officer_external_id,
         COUNT(DISTINCT IF(assessment_up_to_date IS NOT NULL, person_id, NULL)) AS assessment_compliance_caseload_count,
         COUNT(DISTINCT IF(face_to_face_frequency_sufficient IS NOT NULL, person_id, NULL)) AS facetoface_compliance_caseload_count
-      FROM `{project_id}.{metrics_dataset}.supervision_case_compliance_metrics`
-      {filter_to_most_recent_job_id_for_metric}
+      FROM `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_case_compliance_metrics`
       WHERE methodology = 'PERSON'
         AND person_id IS NOT NULL
         AND supervising_officer_external_id IS NOT NULL
@@ -198,11 +197,9 @@ PO_MONTHLY_REPORT_DATA_VIEW_BUILDER = MetricBigQueryViewBuilder(
     district_dimension=bq_utils.unnest_district(district_column='district'),
     description=PO_MONTHLY_REPORT_DATA_DESCRIPTION,
     po_report_dataset=PO_REPORT_DATASET,
-    metrics_dataset=dataset_config.DATAFLOW_METRICS_DATASET,
+    materialized_metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
     static_reference_dataset=dataset_config.STATIC_REFERENCE_TABLES_DATASET,
-    filter_to_most_recent_job_id_for_metric=bq_utils.filter_to_most_recent_job_id_for_metric(
-        reference_dataset=dataset_config.REFERENCE_VIEWS_DATASET)
 )
 
 if __name__ == '__main__':

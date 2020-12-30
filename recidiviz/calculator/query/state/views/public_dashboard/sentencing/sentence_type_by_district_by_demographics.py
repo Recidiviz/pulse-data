@@ -46,7 +46,7 @@ SENTENCE_TYPE_BY_DISTRICT_BY_DEMOGRAPHICS_VIEW_QUERY_TEMPLATE = \
         date_of_stay as population_date,
         judicial_district_code
       FROM
-         `{project_id}.{reference_views_dataset}.most_recent_daily_incarceration_population_materialized`
+         `{project_id}.{materialized_metrics_dataset}.most_recent_daily_incarceration_population_materialized`
     ), supervision_population AS (
       SELECT
         state_code,
@@ -59,7 +59,7 @@ SENTENCE_TYPE_BY_DISTRICT_BY_DEMOGRAPHICS_VIEW_QUERY_TEMPLATE = \
         date_of_supervision as population_date,
         judicial_district_code
       FROM
-        `{project_id}.{reference_views_dataset}.most_recent_daily_supervision_population_materialized`
+        `{project_id}.{materialized_metrics_dataset}.most_recent_daily_supervision_population_materialized`
       WHERE supervision_type IN ('PROBATION', 'PAROLE')
     ), all_incarceration_supervision AS (
       (SELECT * FROM incarceration_population)
@@ -109,7 +109,7 @@ SENTENCE_TYPE_BY_DISTRICT_BY_DEMOGRAPHICS_VIEW_BUILDER = MetricBigQueryViewBuild
     view_query_template=SENTENCE_TYPE_BY_DISTRICT_BY_DEMOGRAPHICS_VIEW_QUERY_TEMPLATE,
     dimensions=['state_code', 'district', 'race_or_ethnicity', 'gender', 'age_bucket'],
     description=SENTENCE_TYPE_BY_DISTRICT_BY_DEMOGRAPHICS_VIEW_DESCRIPTION,
-    reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
+    materialized_metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
     state_specific_race_or_ethnicity_groupings=state_specific_query_strings.state_specific_race_or_ethnicity_groupings(),
     unnested_race_or_ethnicity_dimension=bq_utils.unnest_column('prioritized_race_or_ethnicity', 'race_or_ethnicity'),
     gender_dimension=bq_utils.unnest_column('gender', 'gender'),

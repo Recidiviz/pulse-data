@@ -39,7 +39,7 @@ ACTIVE_PROGRAM_PARTICIPATION_BY_REGION_VIEW_QUERY_TEMPLATE = \
         job_id,
         metric_type
       FROM
-        `{project_id}.{reference_views_dataset}.most_recent_daily_job_id_by_metric_and_state_code_materialized`
+        `{project_id}.{materialized_metrics_dataset}.most_recent_daily_job_id_by_metric_and_state_code_materialized`
     ), participants_with_race_or_ethnicity AS (
       SELECT
         state_code,
@@ -93,7 +93,7 @@ ACTIVE_PROGRAM_PARTICIPATION_BY_REGION_VIEW_BUILDER = MetricBigQueryViewBuilder(
     description=ACTIVE_PROGRAM_PARTICIPATION_BY_REGION_VIEW_DESCRIPTION,
     base_dataset=dataset_config.STATE_BASE_DATASET,
     static_reference_dataset=dataset_config.STATIC_REFERENCE_TABLES_DATASET,
-    reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
+    materialized_metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
     metrics_dataset=dataset_config.DATAFLOW_METRICS_DATASET,
     current_month_condition=bq_utils.current_month_condition(),
     state_specific_race_or_ethnicity_groupings=
@@ -102,8 +102,6 @@ ACTIVE_PROGRAM_PARTICIPATION_BY_REGION_VIEW_BUILDER = MetricBigQueryViewBuilder(
     unnested_race_or_ethnicity_dimension=bq_utils.unnest_column('race_or_ethnicity', 'race_or_ethnicity'),
     region_dimension=bq_utils.unnest_column('region_id', 'region_id'),
     supervision_type_dimension=bq_utils.unnest_supervision_type(),
-    filter_to_most_recent_job_id_for_metric=bq_utils.filter_to_most_recent_job_id_for_metric(
-        reference_dataset=dataset_config.REFERENCE_VIEWS_DATASET)
 )
 
 if __name__ == '__main__':

@@ -50,8 +50,7 @@ REINCARCERATIONS_BY_PERIOD_QUERY_TEMPLATE = \
         state_code, metric_period_months,
         district,
         COUNT(DISTINCT person_id) AS returns
-      FROM `{project_id}.{metrics_dataset}.recidivism_count_metrics` m
-      {filter_to_most_recent_job_id_for_metric},
+      FROM `{project_id}.{materialized_metrics_dataset}.most_recent_recidivism_count_metrics` m,
       {district_dimension},
       {metric_period_dimension}
       WHERE methodology = 'PERSON'
@@ -71,14 +70,12 @@ REINCARCERATIONS_BY_PERIOD_VIEW_BUILDER = MetricBigQueryViewBuilder(
     view_query_template=REINCARCERATIONS_BY_PERIOD_QUERY_TEMPLATE,
     dimensions=['state_code', 'metric_period_months', 'district'],
     description=REINCARCERATIONS_BY_PERIOD_DESCRIPTION,
-    metrics_dataset=dataset_config.DATAFLOW_METRICS_DATASET,
+    materialized_metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
     district_dimension=bq_utils.unnest_district(
         district_column='county_of_residence'),
     metric_period_dimension=bq_utils.unnest_metric_period_months(),
     metric_period_condition=bq_utils.metric_period_condition(),
-    filter_to_most_recent_job_id_for_metric=bq_utils.filter_to_most_recent_job_id_for_metric(
-        reference_dataset=dataset_config.REFERENCE_VIEWS_DATASET)
 )
 
 if __name__ == '__main__':
