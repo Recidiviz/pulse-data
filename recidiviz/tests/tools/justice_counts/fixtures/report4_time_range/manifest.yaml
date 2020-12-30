@@ -1,0 +1,19 @@
+source: 'Colorado Department of Corrections'
+report_type: 'Dashboard Measures'
+report_instance: '2020-10-05'
+publish_date: '2020-10-05'
+tables:
+    - file: 'table.csv'
+      time_window:
+        column:
+          names:
+            - 'Start Date'
+            - 'End Date'
+          type: 'RANGE'
+      system: 'CORRECTIONS'
+      metric:
+        population:
+          population_type: 'PRISON'
+      location:
+        state: 'US_CO'
+      methodology: 'Unknown'
