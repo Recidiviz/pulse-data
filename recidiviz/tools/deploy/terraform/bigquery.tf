@@ -19,7 +19,7 @@ resource "google_project_service" "bigquery_connection_api" {
   service = "bigqueryconnection.googleapis.com"
 
   disable_dependent_services = true
-  disable_on_destry = true
+  disable_on_destroy = true
 }
 
 # TODO(#5082): Once the Cloud SQL instance exists in terraform, use this to provision the connection.
