@@ -730,6 +730,7 @@ class BigQueryClientImpl(BigQueryClient):
                 break
 
             start_index += rows_processed
+            logging.info("Processed [%d] rows...", start_index)
 
     def copy_view(self,
                   view: BigQueryView,
