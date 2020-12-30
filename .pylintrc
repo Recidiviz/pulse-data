@@ -29,8 +29,8 @@ persistent=yes
 # usually to register additional checkers.
 load-plugins=
 
-# Whitelists trusted C extensions outside of the standard library.
-extension-pkg-whitelist=lxml
+# Whitelists trusted C, Python extensions outside of the standard library.
+extension-pkg-whitelist=lxml,numpy
 
 [MESSAGES CONTROL]
 
