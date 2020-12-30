@@ -32,7 +32,7 @@ cattr.register_unstructure_hook(datetime.datetime,
                                 datetime.datetime.isoformat)
 cattr.register_structure_hook(
     datetime.datetime,
-    lambda serialized, desired_type: desired_type.fromisoformat(serialized))
+    lambda serialized, desired_type: datetime.datetime.fromisoformat(serialized))
 
 cattr.register_unstructure_hook(
     IngestInfo, ingest_utils.ingest_info_to_serializable)

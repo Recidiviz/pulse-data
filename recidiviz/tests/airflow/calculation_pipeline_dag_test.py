@@ -16,10 +16,27 @@
 # =============================================================================
 """
 Unit test to ensure that the DAG is valid and will be properly loaded into the Airflow UI.
+
+NOTE: These are currently disabled to allow us to remove apache-airflow from our Pipfile. If you are making changes
+to airflow dags, you can run these tests with these steps:
+1) Un-comment the airflow.models import below
+2) Comment out the `unittest.skip` annotations on the individual tests below
+3) Run the following commands to install airflow into your pipenv environment:
+    git checkout v1.49.0 Pipfile*
+    pipenv sync --dev
+
+4) Run just these tests:
+    pipenv run pytest recidiviz/tests/airflow/calculation_pipeline_dag_test.py
+
+5) Clean up Pipfile changes:
+    git reset HEAD Pipfile*
+    git checkout -- Pipfile*
+    pipenv sync --dev
 """
 import unittest
 
-from airflow.models import DagBag
+# TODO(#5101): Un-comment and re-enable tests below once we can include apache-airflow in our Pipfile dependencies
+# from airflow.models import DagBag
 from mock import patch
 
 dag_folder = "recidiviz/airflow/dag"
@@ -30,7 +47,8 @@ dag_folder = "recidiviz/airflow/dag"
 @patch('recidiviz.cloud_functions.cloud_function_utils.IAP_CLIENT_ID', {'recidiviz-testing':
                                                                         'xx.apps.googleusercontent.com'})
 class TestDagIntegrity(unittest.TestCase):
-    def test_dagbag_import(self):
+    @unittest.skip("TODO(#5101): Re-enable once we can include apache-airflow in our Pipfile dependencies")
+    def test_dagbag_import(self) -> None:
         """
         Verify that Airflow will be able to import all DAGs in the repository without errors
         """
@@ -42,7 +60,8 @@ class TestDagIntegrity(unittest.TestCase):
             )
         )
 
-    def test_correct_dag(self):
+    @unittest.skip("TODO(#5101): Re-enable once we can include apache-airflow in our Pipfile dependencies")
+    def test_correct_dag(self) -> None:
         """
         Verify that there is one DAG with the correct name
         """
