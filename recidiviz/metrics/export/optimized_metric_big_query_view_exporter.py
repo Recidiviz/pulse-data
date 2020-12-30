@@ -77,9 +77,13 @@ class OptimizedMetricBigQueryViewExporter(BigQueryViewExporter):
     def export(self, export_configs: Sequence[ExportBigQueryViewConfig[MetricBigQueryView]]) -> List[GcsfsFilePath]:
         storage_client = storage.Client()
         output_paths = []
+
+        query_jobs = []
         for config in export_configs:
             query_job = self.bq_client.run_query_async(config.query, [])
+            query_jobs.append((config, query_job))
 
+        for config, query_job in query_jobs:
             optimized_format = self.convert_query_results_to_optimized_value_matrix(query_job, config)
             output_path = self._export_optimized_format(config, optimized_format, storage_client)
             output_paths.append(output_path)
