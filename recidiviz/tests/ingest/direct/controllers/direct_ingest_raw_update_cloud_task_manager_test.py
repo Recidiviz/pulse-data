@@ -19,6 +19,7 @@
 import json
 import unittest
 
+import mock
 from freezegun import freeze_time
 from google.cloud import tasks_v2
 from mock import patch
@@ -39,28 +40,35 @@ CLOUD_TASK_MANAGER_PACKAGE_NAME = direct_ingest_raw_update_cloud_task_manager.__
 class TestDirectIngestRawUpdateCloudTaskManager(unittest.TestCase):
     """Tests for DirectIngestRawUpdateCloudTaskManager"""
 
+    def setUp(self) -> None:
+        self.metadata_patcher = patch('recidiviz.utils.metadata.project_id')
+        self.mock_project_id_fn = self.metadata_patcher.start()
+        self.mock_project_id = 'recidiviz-456'
+        self.mock_project_id_fn.return_value = self.mock_project_id
+
+    def tearDown(self) -> None:
+        self.metadata_patcher.stop()
+
     @patch(f'{CLOUD_TASK_MANAGER_PACKAGE_NAME}.uuid')
     @patch('google.cloud.tasks_v2.CloudTasksClient')
     @freeze_time('2019-04-12')
-    def test_create_bq_test(self, mock_client, mock_uuid):
+    def test_create_bq_test(self, mock_client: mock.MagicMock, mock_uuid: mock.MagicMock) -> None:
         # Arrange
         uuid = 'random-uuid'
         mock_uuid.uuid4.return_value = uuid
 
         region_code = 'us_xx'
-        project_id = 'recidiviz-456'
-        queue_path = f'queue_path/{project_id}/{QUEUES_REGION}'
+        queue_path = f'queue_path/{self.mock_project_id}/{QUEUES_REGION}'
         task_id = 'us_xx-update_raw_data_latest_views-2019-04-12-random-uuid'
         task_path = f'{queue_path}/{task_id}'
         relative_uri = f'/direct/update_raw_data_latest_views_for_state?region={region_code}'
-        body = {}
 
         task = tasks_v2.types.task_pb2.Task(
             name=task_path,
             app_engine_http_request={
                 'http_method': 'POST',
                 'relative_uri': relative_uri,
-                'body': json.dumps(body).encode()
+                'body': json.dumps({}).encode()
             }
         )
 
@@ -68,16 +76,15 @@ class TestDirectIngestRawUpdateCloudTaskManager(unittest.TestCase):
         mock_client.return_value.queue_path.return_value = queue_path
 
         # Act
-        DirectIngestRawUpdateCloudTaskManager(project_id=project_id). \
-            create_raw_data_latest_view_update_task(region_code)
+        DirectIngestRawUpdateCloudTaskManager(). create_raw_data_latest_view_update_task(region_code)
 
         # Assert
         mock_client.return_value.queue_path.assert_called_with(
-            project_id,
+            self.mock_project_id,
             QUEUES_REGION,
             BIGQUERY_QUEUE_V2)
         mock_client.return_value.task_path.assert_called_with(
-            project_id,
+            self.mock_project_id,
             QUEUES_REGION,
             BIGQUERY_QUEUE_V2,
             task_id)

@@ -233,7 +233,7 @@ def create_raw_data_latest_view_update_tasks() -> Tuple[str, HTTPStatus]:
     """Creates tasks for every direct ingest region with SQL preprocessing
     enabled to update the raw data table latest views.
     """
-    raw_update_ctm = DirectIngestRawUpdateCloudTaskManager(metadata.project_id())
+    raw_update_ctm = DirectIngestRawUpdateCloudTaskManager()
 
     for region_code in get_existing_region_dir_names():
         with monitoring.push_region_tag(region_code):
