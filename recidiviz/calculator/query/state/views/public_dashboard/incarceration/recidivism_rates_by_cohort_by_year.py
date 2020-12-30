@@ -42,10 +42,7 @@ RECIDIVISM_RATES_BY_COHORT_BY_YEAR_VIEW_QUERY_TEMPLATE = \
         SUM(recidivated_releases) as recidivated_releases,
         SUM(total_releases) as releases
       FROM
-        `{project_id}.{metrics_dataset}.recidivism_rate_metrics`
-          INNER JOIN
-            `{project_id}.{materialized_metrics_dataset}.most_recent_job_id_by_metric_and_state_code_materialized`
-          USING (state_code, metric_type, job_id),
+        `{project_id}.{materialized_metrics_dataset}.most_recent_recidivism_rate_metrics`,
         {gender_dimension},
         {age_dimension},
         {race_or_ethnicity_dimension}
@@ -71,7 +68,6 @@ RECIDIVISM_RATES_BY_COHORT_BY_YEAR_VIEW_BUILDER = MetricBigQueryViewBuilder(
     view_query_template=RECIDIVISM_RATES_BY_COHORT_BY_YEAR_VIEW_QUERY_TEMPLATE,
     dimensions=['state_code', 'release_cohort', 'followup_years', 'gender', 'age_bucket', 'race_or_ethnicity'],
     description=RECIDIVISM_RATES_BY_COHORT_BY_YEAR_VIEW_DESCRIPTION,
-    metrics_dataset=dataset_config.DATAFLOW_METRICS_DATASET,
     materialized_metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
     state_specific_race_or_ethnicity_groupings=
     state_specific_query_strings.state_specific_race_or_ethnicity_groupings(),

@@ -46,9 +46,7 @@ REINCARCERATION_RATE_BY_STAY_LENGTH_QUERY_TEMPLATE = \
       SUM(recidivated_releases)/COUNT(*) AS recidivism_rate,
       stay_length_bucket,
       district
-    FROM `{project_id}.{metrics_dataset}.recidivism_rate_metrics`
-    JOIN `{project_id}.{materialized_metrics_dataset}.most_recent_job_id_by_metric_and_state_code_materialized` job
-      USING (state_code, job_id, metric_type),
+    FROM `{project_id}.{materialized_metrics_dataset}.most_recent_recidivism_rate_metrics`,
     {district_dimension}
     WHERE methodology = 'PERSON'
       AND person_id IS NOT NULL
@@ -66,7 +64,6 @@ REINCARCERATION_RATE_BY_STAY_LENGTH_VIEW_BUILDER = MetricBigQueryViewBuilder(
     dimensions=['state_code', 'release_cohort', 'follow_up_period', 'stay_length_bucket', 'district'],
     description=REINCARCERATION_RATE_BY_STAY_LENGTH_DESCRIPTION,
     materialized_metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
-    metrics_dataset=dataset_config.DATAFLOW_METRICS_DATASET,
     district_dimension=bq_utils.unnest_district(
         district_column='county_of_residence'),
 )
