@@ -59,8 +59,7 @@ SUPERVISION_TERMINATION_MATRIX_BY_PERSON_VIEW_QUERY_TEMPLATE = \
             supervising_officer_external_id AS officer,
             termination_date,
             FALSE AS is_revocation
-        FROM `{project_id}.{metrics_dataset}.supervision_termination_metrics`
-        {filter_to_most_recent_job_id_for_metric}
+        FROM `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_termination_metrics`
         WHERE methodology = 'EVENT'
             AND termination_reason IN ('DISCHARGE', 'EXPIRATION', 'SUSPENSION', 'INTERNAL_UNKNOWN', 'EXTERNAL_UNKNOWN', 'DEATH')
             AND month IS NOT NULL
@@ -123,7 +122,7 @@ SUPERVISION_TERMINATION_MATRIX_BY_PERSON_VIEW_BUILDER = SimpleBigQueryViewBuilde
     view_id=SUPERVISION_TERMINATION_MATRIX_BY_PERSON_VIEW_NAME,
     view_query_template=SUPERVISION_TERMINATION_MATRIX_BY_PERSON_VIEW_QUERY_TEMPLATE,
     description=SUPERVISION_TERMINATION_MATRIX_BY_PERSON_VIEW_DESCRIPTION,
-    metrics_dataset=dataset_config.DATAFLOW_METRICS_DATASET,
+    materialized_metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
     most_severe_violation_type_subtype_grouping=
     state_specific_query_strings.state_specific_most_severe_violation_type_subtype_grouping(),
@@ -139,8 +138,6 @@ SUPERVISION_TERMINATION_MATRIX_BY_PERSON_VIEW_BUILDER = SimpleBigQueryViewBuilde
     charge_category_dimension=bq_utils.unnest_charge_category(),
     metric_period_dimension=bq_utils.unnest_metric_period_months(),
     metric_period_condition=bq_utils.metric_period_condition(),
-    filter_to_most_recent_job_id_for_metric=bq_utils.filter_to_most_recent_job_id_for_metric(
-        reference_dataset=dataset_config.REFERENCE_VIEWS_DATASET),
     state_specific_supervision_location_optimization_filter=
     state_specific_query_strings.state_specific_supervision_location_optimization_filter()
 )

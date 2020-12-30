@@ -43,8 +43,7 @@ SUPERVISION_SUCCESS_BY_PERIOD_BY_DEMOGRAPHICS_VIEW_QUERY_TEMPLATE = \
         IFNULL(age_bucket, 'EXTERNAL_UNKNOWN') as age_bucket,
         supervision_type,
         metric_period_months
-      FROM `{project_id}.{metrics_dataset}.supervision_success_metrics` success_metrics
-      {filter_to_most_recent_job_id_for_metric},
+      FROM `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_success_metrics` success_metrics,
       {race_or_ethnicity_dimension},
       {gender_dimension},
       {age_dimension},
@@ -107,7 +106,7 @@ SUPERVISION_SUCCESS_BY_PERIOD_BY_DEMOGRAPHICS_VIEW_BUILDER = MetricBigQueryViewB
     dimensions=['state_code', 'supervision_type', 'metric_period_months', 'district',
                 'race_or_ethnicity', 'gender', 'age_bucket'],
     description=SUPERVISION_SUCCESS_BY_PERIOD_BY_DEMOGRAPHICS_VIEW_DESCRIPTION,
-    metrics_dataset=dataset_config.DATAFLOW_METRICS_DATASET,
+    materialized_metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
     static_reference_dataset=dataset_config.STATIC_REFERENCE_TABLES_DATASET,
     grouped_districts=
@@ -118,8 +117,6 @@ SUPERVISION_SUCCESS_BY_PERIOD_BY_DEMOGRAPHICS_VIEW_BUILDER = MetricBigQueryViewB
     gender_dimension=bq_utils.unnest_column('gender', 'gender'),
     age_dimension=bq_utils.unnest_column('age_bucket', 'age_bucket'),
     state_specific_race_or_ethnicity_groupings=state_specific_query_strings.state_specific_race_or_ethnicity_groupings(),
-    filter_to_most_recent_job_id_for_metric=bq_utils.filter_to_most_recent_job_id_for_metric(
-        reference_dataset=dataset_config.REFERENCE_VIEWS_DATASET)
 )
 
 if __name__ == '__main__':

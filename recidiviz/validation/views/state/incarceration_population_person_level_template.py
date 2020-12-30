@@ -39,9 +39,7 @@ sanitized_internal_metrics AS (
           AND facility NOT LIKE 'BONNEVILLE%'
           AND facility NOT LIKE 'JEFFERSON%',
           'COUNTY JAILS', facility) AS facility, 
-   FROM `{{project_id}}.{{metrics_dataset}}.incarceration_population_metrics`
-   JOIN `{{project_id}}.{{reference_views_dataset}}.most_recent_job_id_by_metric_and_state_code_materialized` job
-      USING (state_code, job_id, year, month, metric_period_months)
+   FROM `{{project_id}}.{{materialized_metrics_dataset}}.most_recent_incarceration_population_metrics`
    WHERE metric_period_months = 0
    AND methodology = 'PERSON'
 ),

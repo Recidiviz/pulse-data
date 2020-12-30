@@ -44,7 +44,7 @@ RECIDIVISM_RATES_BY_COHORT_BY_YEAR_VIEW_QUERY_TEMPLATE = \
       FROM
         `{project_id}.{metrics_dataset}.recidivism_rate_metrics`
           INNER JOIN
-            `{project_id}.{reference_views_dataset}.most_recent_job_id_by_metric_and_state_code_materialized`
+            `{project_id}.{materialized_metrics_dataset}.most_recent_job_id_by_metric_and_state_code_materialized`
           USING (state_code, metric_type, job_id),
         {gender_dimension},
         {age_dimension},
@@ -72,7 +72,7 @@ RECIDIVISM_RATES_BY_COHORT_BY_YEAR_VIEW_BUILDER = MetricBigQueryViewBuilder(
     dimensions=['state_code', 'release_cohort', 'followup_years', 'gender', 'age_bucket', 'race_or_ethnicity'],
     description=RECIDIVISM_RATES_BY_COHORT_BY_YEAR_VIEW_DESCRIPTION,
     metrics_dataset=dataset_config.DATAFLOW_METRICS_DATASET,
-    reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
+    materialized_metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
     state_specific_race_or_ethnicity_groupings=
     state_specific_query_strings.state_specific_race_or_ethnicity_groupings(),
     race_or_ethnicity_dimension=bq_utils.unnest_column('prioritized_race_or_ethnicity', 'race_or_ethnicity'),

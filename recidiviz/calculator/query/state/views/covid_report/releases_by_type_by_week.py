@@ -17,7 +17,6 @@
 """Releases from incarceration by week, broken down by total releases and conditional releases"""
 # pylint: disable=trailing-whitespace,line-too-long
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
-from recidiviz.calculator.query import bq_utils
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -44,9 +43,8 @@ RELEASES_BY_TYPE_BY_WEEK_QUERY_TEMPLATE = \
         FROM
           `{project_id}.{reference_views_dataset}.covid_report_weeks` report
         JOIN
-          `{project_id}.{metrics_dataset}.incarceration_release_metrics` releases
+          `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_release_metrics` releases
         USING (state_code)
-        {filter_to_most_recent_job_id_for_metric}
         WHERE releases.release_date BETWEEN report.start_date AND report.end_date
           AND release_reason in ('COMMUTED', 'COMPASSIONATE', 'CONDITIONAL_RELEASE', 'SENTENCE_SERVED')
           AND methodology = 'EVENT'
@@ -92,10 +90,8 @@ RELEASES_BY_TYPE_BY_WEEK_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_query_template=RELEASES_BY_TYPE_BY_WEEK_QUERY_TEMPLATE,
     description=RELEASES_BY_TYPE_BY_WEEK_DESCRIPTION,
     covid_report_dataset=dataset_config.COVID_REPORT_DATASET,
-    metrics_dataset=dataset_config.DATAFLOW_METRICS_DATASET,
+    materialized_metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
-    filter_to_most_recent_job_id_for_metric=bq_utils.filter_to_most_recent_job_id_for_metric(
-        reference_dataset=dataset_config.REFERENCE_VIEWS_DATASET)
 )
 
 if __name__ == '__main__':

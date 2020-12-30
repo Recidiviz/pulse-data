@@ -47,7 +47,7 @@ INCARCERATION_POPULATION_BY_FACILITY_BY_DEMOGRAPHICS_VIEW_QUERY_TEMPLATE = \
         gender,
         age_bucket
       FROM
-        `{project_id}.{reference_views_dataset}.most_recent_daily_incarceration_population_materialized` 
+        `{project_id}.{materialized_metrics_dataset}.most_recent_daily_incarceration_population_materialized`
       LEFT JOIN
         `{project_id}.{static_reference_dataset}.state_incarceration_facility_capacity`
       USING (state_code, facility),
@@ -72,7 +72,7 @@ INCARCERATION_POPULATION_BY_FACILITY_BY_DEMOGRAPHICS_VIEW_BUILDER = MetricBigQue
     dimensions=['state_code', 'date_of_stay', 'facility', 'race_or_ethnicity', 'gender', 'age_bucket'],
     description=INCARCERATION_POPULATION_BY_FACILITY_BY_DEMOGRAPHICS_VIEW_DESCRIPTION,
     static_reference_dataset=dataset_config.STATIC_REFERENCE_TABLES_DATASET,
-    reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
+    materialized_metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
     unnested_race_or_ethnicity_dimension=bq_utils.unnest_column('prioritized_race_or_ethnicity', 'race_or_ethnicity'),
     gender_dimension=bq_utils.unnest_column('gender', 'gender'),
     age_dimension=bq_utils.unnest_column('age_bucket', 'age_bucket'),

@@ -39,8 +39,7 @@ INCARCERATION_POPULATION_BY_MONTH_BY_DEMOGRAPHICS_VIEW_QUERY_TEMPLATE = \
          * EXCEPT (prioritized_race_or_ethnicity),
          ROW_NUMBER () OVER (PARTITION BY state_code, year, month, date_of_stay, person_id ORDER BY representation_priority) as inclusion_priority
       FROM
-        `{project_id}.{metrics_dataset}.incarceration_population_metrics`
-      {filter_to_most_recent_job_id_for_metric},
+        `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_population_metrics`,
         {race_ethnicity_dimension}
       LEFT JOIN
          `{project_id}.{static_reference_dataset}.state_race_ethnicity_population_counts`
@@ -87,7 +86,7 @@ INCARCERATION_POPULATION_BY_MONTH_BY_DEMOGRAPHICS_VIEW_BUILDER = MetricBigQueryV
     view_query_template=INCARCERATION_POPULATION_BY_MONTH_BY_DEMOGRAPHICS_VIEW_QUERY_TEMPLATE,
     dimensions=['state_code', 'population_date', 'race_or_ethnicity', 'gender', 'age_bucket'],
     description=INCARCERATION_POPULATION_BY_MONTH_BY_DEMOGRAPHICS_VIEW_DESCRIPTION,
-    metrics_dataset=dataset_config.DATAFLOW_METRICS_DATASET,
+    materialized_metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
     static_reference_dataset=dataset_config.STATIC_REFERENCE_TABLES_DATASET,
     race_ethnicity_dimension=bq_utils.unnest_race_and_ethnicity(),
@@ -96,8 +95,6 @@ INCARCERATION_POPULATION_BY_MONTH_BY_DEMOGRAPHICS_VIEW_BUILDER = MetricBigQueryV
     age_dimension=bq_utils.unnest_column('age_bucket', 'age_bucket'),
     state_specific_race_or_ethnicity_groupings=state_specific_query_strings.state_specific_race_or_ethnicity_groupings(),
     state_specific_facility_exclusion=state_specific_query_strings.state_specific_facility_exclusion(),
-    filter_to_most_recent_job_id_for_metric=bq_utils.filter_to_most_recent_job_id_for_metric(
-        reference_dataset=dataset_config.REFERENCE_VIEWS_DATASET)
 )
 
 if __name__ == '__main__':

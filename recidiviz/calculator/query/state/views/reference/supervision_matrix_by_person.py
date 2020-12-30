@@ -52,8 +52,7 @@ SUPERVISION_MATRIX_BY_PERSON_QUERY_TEMPLATE = \
             supervising_officer_external_id AS officer,
             date_of_supervision,
             FALSE AS is_revocation
-        FROM `{project_id}.{metrics_dataset}.supervision_population_metrics`
-        {filter_to_most_recent_job_id_for_metric}
+        FROM `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_population_metrics`
         WHERE methodology = 'EVENT'
             AND metric_period_months = 0
             AND month IS NOT NULL
@@ -113,7 +112,7 @@ SUPERVISION_MATRIX_BY_PERSON_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_id=SUPERVISION_MATRIX_BY_PERSON_VIEW_NAME,
     view_query_template=SUPERVISION_MATRIX_BY_PERSON_QUERY_TEMPLATE,
     description=SUPERVISION_MATRIX_BY_PERSON_DESCRIPTION,
-    metrics_dataset=dataset_config.DATAFLOW_METRICS_DATASET,
+    materialized_metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
     most_severe_violation_type_subtype_grouping=
     state_specific_query_strings.state_specific_most_severe_violation_type_subtype_grouping(),
@@ -129,8 +128,6 @@ SUPERVISION_MATRIX_BY_PERSON_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     charge_category_dimension=bq_utils.unnest_charge_category(),
     metric_period_dimension=bq_utils.unnest_metric_period_months(),
     metric_period_condition=bq_utils.metric_period_condition(),
-    filter_to_most_recent_job_id_for_metric=bq_utils.filter_to_most_recent_job_id_for_metric(
-        reference_dataset=dataset_config.REFERENCE_VIEWS_DATASET),
     state_specific_supervision_location_optimization_filter=
     state_specific_query_strings.state_specific_supervision_location_optimization_filter()
 )
