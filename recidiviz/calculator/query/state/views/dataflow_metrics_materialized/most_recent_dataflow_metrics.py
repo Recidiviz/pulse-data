@@ -16,7 +16,7 @@
 # =============================================================================
 """Generator to grab all dataflow_metrics views and join them to
 most_recent_job_id_by_metric_and_state_code_materialized"""
-from typing import List
+from typing import List, Dict
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.dataflow_output_storage_config import DATAFLOW_METRICS_TO_TABLES
@@ -25,15 +25,13 @@ from recidiviz.calculator.query.state.dataset_config import DATAFLOW_METRICS_MAT
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-# TODO(#12345): Support for this table (fake number as this is addressed in the PR stacked on this one)
-METRIC_TABLES_TO_EXCLUDE_FROM_MATERIALIZATION: List[str] = [
-    'recidivism_rate_metrics'
-]
+DEFAULT_JOIN_INDICES: str = 'job_id, state_code, year, month, metric_period_months, metric_type'
 
-METRICS_VIEWS_TO_MATERIALIZE: List[str] = [
-    metric_table for metric_table in DATAFLOW_METRICS_TO_TABLES.values()
-    if metric_table not in METRIC_TABLES_TO_EXCLUDE_FROM_MATERIALIZATION
-]
+METRIC_TABLES_JOIN_OVERRIDES: Dict[str, str] = {
+    'recidivism_rate_metrics': 'job_id, state_code, metric_type',
+}
+
+METRICS_VIEWS_TO_MATERIALIZE: List[str] = list(DATAFLOW_METRICS_TO_TABLES.values())
 
 MOST_RECENT_JOBS_TEMPLATE: str = \
     """
@@ -42,18 +40,20 @@ MOST_RECENT_JOBS_TEMPLATE: str = \
     FROM `{project_id}.{metrics_dataset}.{metric_view}`
     JOIN
         `{project_id}.{materialized_metrics_dataset}.most_recent_job_id_by_metric_and_state_code_materialized`
-        USING (job_id, state_code, year, month, metric_period_months, metric_type)
+        USING ({join_indices})
     """
 
 
 def _make_most_recent_metric_view_builder(metric_name: str) -> SimpleBigQueryViewBuilder:
     description = f"{metric_name} for the most recent job run"
     view_id = f"most_recent_{metric_name}"
+    join_indices = METRIC_TABLES_JOIN_OVERRIDES.get(metric_name, DEFAULT_JOIN_INDICES)
     return SimpleBigQueryViewBuilder(
         dataset_id=DATAFLOW_METRICS_MATERIALIZED_DATASET,
         view_id=view_id,
         view_query_template=MOST_RECENT_JOBS_TEMPLATE,
         description=description,
+        join_indices=join_indices,
         metrics_dataset=DATAFLOW_METRICS_DATASET,
         metric_view=metric_name,
         materialized_metrics_dataset=DATAFLOW_METRICS_MATERIALIZED_DATASET,
