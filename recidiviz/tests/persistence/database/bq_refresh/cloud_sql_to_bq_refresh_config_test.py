@@ -37,6 +37,9 @@ class CloudSqlToBQConfigTest(unittest.TestCase):
 
     def setUp(self) -> None:
         self.schema_types: List[SchemaType] = list(SchemaType)
+        self.disabled_schema_types = {SchemaType.JUSTICE_COUNTS}
+        self.enabled_schema_types = [schema_type for schema_type in self.schema_types
+                                     if schema_type not in self.disabled_schema_types]
         self.mock_project_id = 'fake-recidiviz-project'
         self.mock_region_codes_to_exclude = {
             self.mock_project_id: ['US_ND']
@@ -61,7 +64,10 @@ class CloudSqlToBQConfigTest(unittest.TestCase):
     def test_for_schema_type_returns_instance(self) -> None:
         for schema_type in self.schema_types:
             config = CloudSqlToBQConfig.for_schema_type(schema_type)
-            self.assertIsInstance(config, CloudSqlToBQConfig)
+            if schema_type in self.disabled_schema_types:
+                self.assertIsNone(config)
+            else:
+                self.assertIsInstance(config, CloudSqlToBQConfig)
 
     def test_get_bq_schema_for_table(self) -> None:
         """Test that get_bq_schema_for_table returns a list
@@ -69,8 +75,9 @@ class CloudSqlToBQConfigTest(unittest.TestCase):
 
             Assert that excluded columns are not in the schema.
         """
-        for schema_type in self.schema_types:
+        for schema_type in self.enabled_schema_types:
             config = CloudSqlToBQConfig.for_schema_type(schema_type)
+            assert config is not None
             table_name = config.sorted_tables[0].name
             schema = config.get_bq_schema_for_table(table_name)
             for schema_field in schema:
@@ -87,6 +94,7 @@ class CloudSqlToBQConfigTest(unittest.TestCase):
         """Assert that the region code is included in the schema for association tables in the State schema."""
         association_table_name = 'state_supervision_period_program_assignment_association'
         config = CloudSqlToBQConfig.for_schema_type(SchemaType.STATE)
+        assert config is not None
         region_code_col = 'state_code'
         schema = config.get_bq_schema_for_table(association_table_name)
 
@@ -97,6 +105,7 @@ class CloudSqlToBQConfigTest(unittest.TestCase):
             with the correct project ID and table name.
         """
         config = CloudSqlToBQConfig.for_schema_type(SchemaType.JAILS)
+        assert config is not None
         fake_table = 'my_fake_table'
         bucket = '{}-dbexport'.format(self.mock_project_id)
         gcs_export_uri = 'gs://{bucket}/{table_name}.csv'.format(
@@ -109,8 +118,9 @@ class CloudSqlToBQConfigTest(unittest.TestCase):
             1. Assert that each export query is of type string
             2. Assert that excluded columns are not in the query
         """
-        for schema_type in self.schema_types:
+        for schema_type in self.enabled_schema_types:
             config = CloudSqlToBQConfig.for_schema_type(schema_type)
+            assert config is not None
             config.region_codes_to_exclude = []
 
             for table in config.sorted_tables:
@@ -132,8 +142,9 @@ class CloudSqlToBQConfigTest(unittest.TestCase):
             2. For the StateBase schema, assert that included history tables are included
             3. For the StateBase schema, assert that other history tables are excluded
         """
-        for schema_type in self.schema_types:
+        for schema_type in self.enabled_schema_types:
             config = CloudSqlToBQConfig.for_schema_type(schema_type)
+            assert config is not None
             tables_to_export = config.get_tables_to_export()
 
             self.assertIsInstance(tables_to_export, List)
@@ -157,8 +168,9 @@ class CloudSqlToBQConfigTest(unittest.TestCase):
         Checks that it is a string, checks that it has characters,
         and checks that those characters are letters, numbers, or _.
         """
-        for schema_type in self.schema_types:
+        for schema_type in self.enabled_schema_types:
             config = CloudSqlToBQConfig.for_schema_type(schema_type)
+            assert config is not None
             allowed_characters = set(string.ascii_letters + string.digits + '_')
 
             self.assertIsInstance(config.dataset_id, str)
@@ -170,6 +182,7 @@ class CloudSqlToBQConfigTest(unittest.TestCase):
         """Given a table name, assert that it returns a query builder that filters for rows
             excluded from the export query"""
         config = CloudSqlToBQConfig.for_schema_type(SchemaType.STATE)
+        assert config is not None
         config.region_codes_to_exclude = ['US_VA', 'us_id', 'US_hi']
         for table in config.get_tables_to_export():
             if is_association_table(table.name):
@@ -185,6 +198,7 @@ class CloudSqlToBQConfigTest(unittest.TestCase):
         """Given a table name and no excluded region codes, assert that it returns a query builder
             that returns no rows"""
         config = CloudSqlToBQConfig.for_schema_type(SchemaType.STATE)
+        assert config is not None
         config.region_codes_to_exclude = []
         filter_clause = "WHERE FALSE"
         for table in config.get_tables_to_export():
@@ -198,6 +212,7 @@ class CloudSqlToBQConfigTest(unittest.TestCase):
             query builder that returns no rows"""
         filter_clause = "WHERE FALSE"
         config = CloudSqlToBQConfig.for_schema_type(SchemaType.JAILS)
+        assert config is not None
         for table in config.get_tables_to_export():
             query_builder = config.get_stale_bq_rows_for_excluded_regions_query_builder(table.name)
             self.assertIsInstance(query_builder, BigQuerySchemaTableRegionFilteredQueryBuilder)
@@ -208,6 +223,7 @@ class CloudSqlToBQConfigTest(unittest.TestCase):
     def test_incorrect_environment(self) -> None:
         with self.assertRaises(ValueError):
             config = CloudSqlToBQConfig.for_schema_type(SchemaType.STATE)
+            assert config is not None
             self.assertEqual(config.region_codes_to_exclude, [])
 
     def test_column_to_exclude(self) -> None:
@@ -218,6 +234,7 @@ class CloudSqlToBQConfigTest(unittest.TestCase):
         2) Check that all columns are defined in their respective tables.
         """
         config = CloudSqlToBQConfig.for_schema_type(SchemaType.JAILS)
+        assert config is not None
         tables = config.get_tables_to_export()
         table_names = list(map(lambda t: t.name, tables))
 
