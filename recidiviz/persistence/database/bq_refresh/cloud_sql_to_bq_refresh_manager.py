@@ -96,6 +96,10 @@ def refresh_bq_table() -> Tuple[str, int]:
     bq_client = BigQueryClientImpl()
     cloud_sql_to_bq_config = CloudSqlToBQConfig.for_schema_type(schema_type)
 
+    if cloud_sql_to_bq_config is None:
+        logging.info("Cloud SQL to BQ is disabled for: %s", schema_type)
+        return ('', HTTPStatus.OK)
+
     logging.info("Starting BQ export task for table: %s", table_name)
 
     export_table_then_load_table(bq_client, table_name, cloud_sql_to_bq_config)
@@ -149,6 +153,10 @@ def create_all_bq_refresh_tasks_for_schema(schema_arg: str) -> Tuple[str, HTTPSt
     task_manager = BQRefreshCloudTaskManager()
 
     cloud_sql_to_bq_config = CloudSqlToBQConfig.for_schema_type(schema_type)
+    if cloud_sql_to_bq_config is None:
+        logging.info("Cloud SQL to BQ is disabled for: %s", schema_type)
+        return ('', HTTPStatus.OK)
+
     for table in cloud_sql_to_bq_config.get_tables_to_export():
         task_manager.create_refresh_bq_table_task(table.name, schema_type)
 
