@@ -208,7 +208,7 @@ class CloudSqlToBQConfig:
         return region_codes_to_exclude_by_project.get('region_codes_to_exclude', [])
 
     @classmethod
-    def for_schema_type(cls, schema_type: SchemaType) -> 'CloudSqlToBQConfig':
+    def for_schema_type(cls, schema_type: SchemaType) -> Optional['CloudSqlToBQConfig']:
         """Logic for instantiating a config object for a schema type."""
         yaml_config_file_path = os.path.join(os.path.dirname(__file__), 'cloud_sql_to_bq_config.yaml')
         with open(yaml_config_file_path, 'r') as yaml_config_file:
@@ -221,10 +221,9 @@ class CloudSqlToBQConfig:
                 dataset_id=county_dataset_config.COUNTY_BASE_DATASET,
                 columns_to_exclude=yaml_config.get('county_columns_to_exclude', {}))
         if schema_type == SchemaType.JUSTICE_COUNTS:
-            return CloudSqlToBQConfig(
-                metadata_base=base_schema.JusticeCountsBase,
-                schema_type=SchemaType.JUSTICE_COUNTS,
-                dataset_id=justice_counts_dataset_config.JUSTICE_COUNTS_BASE_DATASET)
+            # Justice Counts views currently rely on federated queries directly to Postgres instead of this refresh.
+            # TODO(#5081): Re-enable this once arrays are removed from the Justice Counts schema.
+            return None
         if schema_type == SchemaType.OPERATIONS:
             return CloudSqlToBQConfig(
                 metadata_base=base_schema.OperationsBase,
