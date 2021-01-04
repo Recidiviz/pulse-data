@@ -71,9 +71,7 @@ ADMISSIONS_VERSUS_RELEASES_BY_MONTH_QUERY_TEMPLATE = \
         -- Convert the "month end" data in the incarceration_population_metrics to the "prior month end" by adding 1 month to the date
         UNNEST([DATE_ADD(DATE(year, month, 1), INTERVAL 1 MONTH)]) AS incarceration_month_end_date,
       {district_dimension}
-      WHERE methodology = 'PERSON'
-        AND metric_period_months = 0
-        AND person_id IS NOT NULL
+      WHERE methodology = 'EVENT'
         AND year >= EXTRACT(YEAR FROM DATE_SUB(CURRENT_DATE(), INTERVAL 4 YEAR))
         -- Get population count for the last day of the month
         AND date_of_stay = DATE_SUB(DATE_ADD(DATE(year, month, 1), INTERVAL 1 MONTH), INTERVAL 1 DAY)
