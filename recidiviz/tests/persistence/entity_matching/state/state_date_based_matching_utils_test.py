@@ -69,7 +69,10 @@ class TestStateDateBasedMatchingUtils(BaseStateMatchingUtilsTest):
             completion_date=_DATE_3,
             status=StateSentenceStatus.SERVING)
 
-        sg = StateSentenceGroup.new_with_defaults(state_code=_STATE_CODE, supervision_sentences=[ss, placeholder_ss])
+        sg = StateSentenceGroup.new_with_defaults(
+            state_code=_STATE_CODE,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+            supervision_sentences=[ss, placeholder_ss])
 
         state_person = StatePerson.new_with_defaults(state_code=_STATE_CODE, sentence_groups=[sg])
 
@@ -98,7 +101,10 @@ class TestStateDateBasedMatchingUtils(BaseStateMatchingUtilsTest):
             start_date=_DATE_2,
             completion_date=_DATE_3, status=StateSentenceStatus.SERVING)
 
-        sg = StateSentenceGroup.new_with_defaults(state_code=_STATE_CODE, supervision_sentences=[ss, placeholder_ss])
+        sg = StateSentenceGroup.new_with_defaults(
+            state_code=_STATE_CODE,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+            supervision_sentences=[ss, placeholder_ss])
 
         state_person = StatePerson.new_with_defaults(state_code=_STATE_CODE, sentence_groups=[sg])
 
@@ -147,7 +153,9 @@ class TestStateDateBasedMatchingUtils(BaseStateMatchingUtilsTest):
             status=StateSentenceStatus.COMPLETED)
 
         sg = StateSentenceGroup.new_with_defaults(
-            state_code=_STATE_CODE, incarceration_sentences=[inc_s], supervision_sentences=[ss, placeholder_ss])
+            state_code=_STATE_CODE,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+            incarceration_sentences=[inc_s], supervision_sentences=[ss, placeholder_ss])
 
         state_person = StatePerson.new_with_defaults(state_code=_STATE_CODE, sentence_groups=[sg])
 
@@ -188,7 +196,9 @@ class TestStateDateBasedMatchingUtils(BaseStateMatchingUtilsTest):
             state_code=_STATE_CODE, external_id=_EXTERNAL_ID, start_date=_DATE_4, completion_date=None)
 
         sg = StateSentenceGroup.new_with_defaults(
-            state_code=_STATE_CODE, incarceration_sentences=[inc_s], supervision_sentences=[ss, placeholder_ss])
+            state_code=_STATE_CODE,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+            incarceration_sentences=[inc_s], supervision_sentences=[ss, placeholder_ss])
 
         state_person = StatePerson.new_with_defaults(state_code=_STATE_CODE, sentence_groups=[sg])
 
@@ -227,7 +237,9 @@ class TestStateDateBasedMatchingUtils(BaseStateMatchingUtilsTest):
             state_code=_STATE_CODE, external_id=_EXTERNAL_ID, start_date=_DATE_4, completion_date=None)
 
         sg = StateSentenceGroup.new_with_defaults(
-            state_code=_STATE_CODE, incarceration_sentences=[inc_s], supervision_sentences=[ss, placeholder_ss])
+            state_code=_STATE_CODE,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+            incarceration_sentences=[inc_s], supervision_sentences=[ss, placeholder_ss])
 
         state_person = StatePerson.new_with_defaults(state_code=_STATE_CODE, sentence_groups=[sg])
 
@@ -273,7 +285,9 @@ class TestStateDateBasedMatchingUtils(BaseStateMatchingUtilsTest):
             completion_date=None)
 
         sg = StateSentenceGroup.new_with_defaults(
-            state_code=_STATE_CODE, incarceration_sentences=[inc_s], supervision_sentences=[ss, placeholder_ss])
+            state_code=_STATE_CODE,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+            incarceration_sentences=[inc_s], supervision_sentences=[ss, placeholder_ss])
 
         state_person = StatePerson.new_with_defaults(state_code=_STATE_CODE, sentence_groups=[sg])
 
@@ -311,7 +325,9 @@ class TestStateDateBasedMatchingUtils(BaseStateMatchingUtilsTest):
             state_code=_STATE_CODE, incarceration_periods=[ip], supervision_periods=[sp])
 
         sg = StateSentenceGroup.new_with_defaults(
-            state_code=_STATE_CODE, incarceration_sentences=[inc_s_no_dates, placeholder_inc_s])
+            state_code=_STATE_CODE,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+            incarceration_sentences=[inc_s_no_dates, placeholder_inc_s])
 
         state_person = StatePerson.new_with_defaults(state_code=_STATE_CODE, sentence_groups=[sg])
 
@@ -345,7 +361,9 @@ class TestStateDateBasedMatchingUtils(BaseStateMatchingUtilsTest):
             supervision_periods=[sp_which_no_longer_overlaps])
 
         sg = StateSentenceGroup.new_with_defaults(
-            sentence_group_id=_ID_3, state_code=_STATE_CODE, incarceration_sentences=[inc_s_updated_dates])
+            sentence_group_id=_ID_3, state_code=_STATE_CODE,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+            incarceration_sentences=[inc_s_updated_dates])
 
         state_person = StatePerson.new_with_defaults(state_code=_STATE_CODE, person_id=_ID, sentence_groups=[sg])
 
@@ -388,7 +406,9 @@ class TestStateDateBasedMatchingUtils(BaseStateMatchingUtilsTest):
             supervision_periods=[sp])
 
         sg = StateSentenceGroup.new_with_defaults(
-            state_code=_STATE_CODE, incarceration_sentences=[inc_s, placeholder_inc_s])
+            state_code=_STATE_CODE,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+            incarceration_sentences=[inc_s, placeholder_inc_s])
 
         state_person = StatePerson.new_with_defaults(state_code=_STATE_CODE, sentence_groups=[sg])
 
@@ -418,7 +438,10 @@ class TestStateDateBasedMatchingUtils(BaseStateMatchingUtilsTest):
             incarceration_periods=[placeholder_ip],
             supervision_periods=[placeholder_sp])
 
-        sg = StateSentenceGroup.new_with_defaults(state_code=_STATE_CODE, incarceration_sentences=[inc_s, inc_s_2])
+        sg = StateSentenceGroup.new_with_defaults(
+            state_code=_STATE_CODE,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+            incarceration_sentences=[inc_s, inc_s_2])
 
         state_person = StatePerson.new_with_defaults(state_code=_STATE_CODE, sentence_groups=[sg])
 
@@ -465,7 +488,9 @@ class TestStateDateBasedMatchingUtils(BaseStateMatchingUtilsTest):
             state_code=_STATE_CODE, external_id=_EXTERNAL_ID, supervision_periods=[sp_is, sp_2_is, placeholder_sp_is])
 
         sg = StateSentenceGroup.new_with_defaults(
-            state_code=_STATE_CODE, incarceration_sentences=[inc_s], supervision_sentences=[ss])
+            state_code=_STATE_CODE,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+            incarceration_sentences=[inc_s], supervision_sentences=[ss])
 
         state_person = StatePerson.new_with_defaults(state_code=_STATE_CODE, sentence_groups=[sg])
 
@@ -516,7 +541,9 @@ class TestStateDateBasedMatchingUtils(BaseStateMatchingUtilsTest):
             supervision_periods=[sp_ss])
 
         sg = StateSentenceGroup.new_with_defaults(
-            sentence_group_id=_ID, state_code=_STATE_CODE, supervision_sentences=[ss])
+            sentence_group_id=_ID, state_code=_STATE_CODE,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+            supervision_sentences=[ss])
 
         state_person = StatePerson.new_with_defaults(state_code=_STATE_CODE, person_id=_ID, sentence_groups=[sg])
 
@@ -563,8 +590,14 @@ class TestStateDateBasedMatchingUtils(BaseStateMatchingUtilsTest):
         inc_s = StateIncarcerationSentence.new_with_defaults(
             state_code=_STATE_CODE, external_id=_EXTERNAL_ID, supervision_periods=[sp_is, sp_2_is, placeholder_sp_is])
 
-        sg = StateSentenceGroup.new_with_defaults(state_code=_STATE_CODE, incarceration_sentences=[inc_s])
-        sg_2 = StateSentenceGroup.new_with_defaults(state_code=_STATE_CODE, supervision_sentences=[ss])
+        sg = StateSentenceGroup.new_with_defaults(
+            state_code=_STATE_CODE,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+            incarceration_sentences=[inc_s])
+        sg_2 = StateSentenceGroup.new_with_defaults(
+            state_code=_STATE_CODE,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+            supervision_sentences=[ss])
 
         state_person = StatePerson.new_with_defaults(state_code=_STATE_CODE, sentence_groups=[sg, sg_2])
 
@@ -617,7 +650,9 @@ class TestStateDateBasedMatchingUtils(BaseStateMatchingUtilsTest):
             supervision_periods=[sp_ss])
 
         sg = StateSentenceGroup.new_with_defaults(
-            external_id=_EXTERNAL_ID, sentence_group_id=_ID, state_code=_STATE_CODE, supervision_sentences=[ss])
+            external_id=_EXTERNAL_ID, sentence_group_id=_ID, state_code=_STATE_CODE,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+            supervision_sentences=[ss])
 
         state_person = StatePerson.new_with_defaults(state_code=_STATE_CODE, person_id=_ID, sentence_groups=[sg])
 
@@ -673,8 +708,14 @@ class TestStateDateBasedMatchingUtils(BaseStateMatchingUtilsTest):
         inc_s = StateIncarcerationSentence.new_with_defaults(
             state_code=_STATE_CODE, external_id=_EXTERNAL_ID, supervision_periods=[sp_is, sp_2_is, placeholder_sp_is])
 
-        sg = StateSentenceGroup.new_with_defaults(state_code=_STATE_CODE, incarceration_sentences=[inc_s])
-        sg_2 = StateSentenceGroup.new_with_defaults(state_code=_STATE_CODE, supervision_sentences=[ss])
+        sg = StateSentenceGroup.new_with_defaults(
+            state_code=_STATE_CODE,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+            incarceration_sentences=[inc_s])
+        sg_2 = StateSentenceGroup.new_with_defaults(
+            state_code=_STATE_CODE,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+            supervision_sentences=[ss])
 
         state_person = StatePerson.new_with_defaults(state_code=_STATE_CODE, sentence_groups=[sg, sg_2])
 
@@ -726,7 +767,9 @@ class TestStateDateBasedMatchingUtils(BaseStateMatchingUtilsTest):
             supervision_periods=[sp_ss])
 
         sg = StateSentenceGroup.new_with_defaults(
-            external_id=_EXTERNAL_ID, sentence_group_id=_ID, state_code=_STATE_CODE, supervision_sentences=[ss])
+            external_id=_EXTERNAL_ID, sentence_group_id=_ID, state_code=_STATE_CODE,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+            supervision_sentences=[ss])
 
         state_person = StatePerson.new_with_defaults(state_code=_STATE_CODE, person_id=_ID, sentence_groups=[sg])
 

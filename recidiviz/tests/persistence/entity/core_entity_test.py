@@ -20,6 +20,7 @@ import unittest
 
 import pytest
 
+from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.entity.county.entities import Person, Booking, \
     Hold, Charge
@@ -104,7 +105,7 @@ class TestCoreEntity(unittest.TestCase):
 
     def test_getField(self) -> None:
         entity = entities.StateSentenceGroup.new_with_defaults(
-            state_code='us_nc', county_code=None)
+            state_code='us_nc', status=StateSentenceStatus.PRESENT_WITHOUT_INFO, county_code=None)
         db_entity = converter.convert_entity_to_schema_object(entity)
 
         self.assertEqual('us_nc', entity.get_field('state_code'))
@@ -120,7 +121,7 @@ class TestCoreEntity(unittest.TestCase):
         fine = entities.StateFine.new_with_defaults(state_code='us_nc', external_id='ex1')
         fine_2 = entities.StateFine.new_with_defaults(state_code='us_nc', external_id='ex2')
         entity = entities.StateSentenceGroup.new_with_defaults(
-            state_code='us_nc', fines=[fine, fine_2])
+            state_code='us_nc',  status=StateSentenceStatus.PRESENT_WITHOUT_INFO, fines=[fine, fine_2])
         db_entity = converter.convert_entity_to_schema_object(entity)
 
         self.assertCountEqual(['us_nc'],
@@ -143,7 +144,7 @@ class TestCoreEntity(unittest.TestCase):
         fine = entities.StateFine.new_with_defaults(state_code='us_nc', external_id='ex1')
         fine_2 = entities.StateFine.new_with_defaults(state_code='us_nc', external_id='ex2')
         entity = entities.StateSentenceGroup.new_with_defaults(
-            state_code='us_nc', fines=[fine, fine_2])
+            state_code='us_nc', status=StateSentenceStatus.PRESENT_WITHOUT_INFO, fines=[fine, fine_2])
         db_entity = converter.convert_entity_to_schema_object(entity)
         if not isinstance(db_entity, schema.StateSentenceGroup):
             self.fail(f'Unexpected type for db_entity: {[db_entity]}.')
@@ -159,7 +160,8 @@ class TestCoreEntity(unittest.TestCase):
         self.assertCountEqual([], db_entity.fines)
 
     def test_setField(self) -> None:
-        entity = entities.StateSentenceGroup.new_with_defaults(state_code='US_XX')
+        entity = entities.StateSentenceGroup.new_with_defaults(state_code='US_XX',
+                                                               status=StateSentenceStatus.PRESENT_WITHOUT_INFO)
         db_entity = converter.convert_entity_to_schema_object(entity)
         if not isinstance(db_entity, schema.StateSentenceGroup):
             self.fail(f'Unexpected type for db_entity: {[db_entity]}.')
@@ -177,7 +179,8 @@ class TestCoreEntity(unittest.TestCase):
             db_entity.set_field('country_code', 'us')
 
     def test_setFieldFromList(self) -> None:
-        entity = entities.StateSentenceGroup.new_with_defaults(state_code='US_XX')
+        entity = entities.StateSentenceGroup.new_with_defaults(state_code='US_XX',
+                                                               status=StateSentenceStatus.PRESENT_WITHOUT_INFO)
         fine = entities.StateFine.new_with_defaults(state_code='US_XX', external_id='ex1')
         fine_2 = entities.StateFine.new_with_defaults(state_code='US_XX', external_id='ex2')
 
@@ -204,7 +207,8 @@ class TestCoreEntity(unittest.TestCase):
                                   populate_back_edges=False))
 
     def test_setFieldFromList_raises(self) -> None:
-        entity = entities.StateSentenceGroup.new_with_defaults(state_code='US_XX')
+        entity = entities.StateSentenceGroup.new_with_defaults(state_code='US_XX',
+                                                               status=StateSentenceStatus.PRESENT_WITHOUT_INFO)
         db_entity = converter.convert_entity_to_schema_object(entity)
 
         with pytest.raises(ValueError):

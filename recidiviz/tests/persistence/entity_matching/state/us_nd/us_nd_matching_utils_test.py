@@ -397,6 +397,7 @@ class TestUsNdMatchingUtils(BaseStateMatchingUtilsTest):
 
         placeholder_sg = StateSentenceGroup.new_with_defaults(
             state_code=_STATE_CODE,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
             incarceration_sentences=[placeholder_is],
             supervision_sentences=[placeholder_ss])
         placeholder_person = StatePerson.new_with_defaults(
@@ -486,6 +487,7 @@ class TestUsNdMatchingUtils(BaseStateMatchingUtilsTest):
             state_code=_STATE_CODE, incarceration_periods=[ip_1, ip_2])
         placeholder_sg = StateSentenceGroup.new_with_defaults(
             state_code=_STATE_CODE,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
             incarceration_sentences=[placeholder_is],
             supervision_sentences=[placeholder_ss])
         placeholder_person = StatePerson.new_with_defaults(
@@ -561,6 +563,7 @@ class TestUsNdMatchingUtils(BaseStateMatchingUtilsTest):
             state_code=_STATE_CODE, incarceration_periods=[ip_1, ip_2])
         placeholder_sg = StateSentenceGroup.new_with_defaults(
             state_code=_STATE_CODE,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
             incarceration_sentences=[placeholder_is],
             supervision_sentences=[placeholder_ss])
         placeholder_person = StatePerson.new_with_defaults(
@@ -631,6 +634,7 @@ class TestUsNdMatchingUtils(BaseStateMatchingUtilsTest):
             state_code=_STATE_CODE, incarceration_periods=[ip_1, ip_2])
         placeholder_sg = StateSentenceGroup.new_with_defaults(
             state_code=_STATE_CODE,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
             incarceration_sentences=[placeholder_is],
             supervision_sentences=[placeholder_ss])
         placeholder_person = StatePerson.new_with_defaults(

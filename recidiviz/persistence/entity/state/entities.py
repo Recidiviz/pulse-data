@@ -162,12 +162,12 @@ class StatePersonRace(Entity, BuildableAttr, DefaultableAttr):
     """Models a race associated with a particular StatePerson."""
     # Attributes
     state_code: str = attr.ib(validator=attr_validators.is_str)
-    race: Optional[Race] = attr.ib()
-    race_raw_text: Optional[str] = attr.ib()
+    race: Optional[Race] = attr.ib(default=None, validator=attr_validators.is_opt(Race))
+    race_raw_text: Optional[str] = attr.ib(default=None, validator=attr_validators.is_opt_str)
 
     # Primary key - Only optional when hydrated in the data converter, before we have written this entity to the
     # persistence layer
-    person_race_id: Optional[int] = attr.ib(default=None)
+    person_race_id: Optional[int] = attr.ib(default=None, validator=attr_validators.is_opt_int)
 
     # Cross-entity relationships
     person: Optional['StatePerson'] = attr.ib(default=None)
@@ -178,12 +178,12 @@ class StatePersonEthnicity(Entity, BuildableAttr, DefaultableAttr):
     """Models an ethnicity associated with a particular StatePerson."""
     # Attributes
     state_code: str = attr.ib(validator=attr_validators.is_str)
-    ethnicity: Optional[Ethnicity] = attr.ib()
-    ethnicity_raw_text: Optional[str] = attr.ib()
+    ethnicity: Optional[Ethnicity] = attr.ib(default=None, validator=attr_validators.is_opt(Ethnicity))
+    ethnicity_raw_text: Optional[str] = attr.ib(default=None, validator=attr_validators.is_opt_str)
 
     # Primary key - Only optional when hydrated in the data converter, before we have written this entity to the
     # persistence layer
-    person_ethnicity_id: Optional[int] = attr.ib(default=None)
+    person_ethnicity_id: Optional[int] = attr.ib(default=None, validator=attr_validators.is_opt_int)
 
     # Cross-entity relationships
     person: Optional['StatePerson'] = attr.ib(default=None)
@@ -398,25 +398,25 @@ class StateAssessment(ExternalIdEntity, BuildableAttr, DefaultableAttr):
 @attr.s(eq=False)
 class StateSentenceGroup(ExternalIdEntity, BuildableAttr, DefaultableAttr):
     """Models a group of related sentences, which may be served consecutively or concurrently."""
+    #   - Where
+    state_code: str = attr.ib(validator=attr_validators.is_str)
+    # The county where this sentence was issued
+    county_code: Optional[str] = attr.ib(default=None, validator=attr_validators.is_opt_str)
+
     # Status
     # TODO(#1698): Look at Measures for Justice doc for methodology on how to calculate an aggregate sentence status
     #  from multiple sentence statuses.
     # This will be a composite of all the linked individual statuses
-    status: StateSentenceStatus = attr.ib()  # non-nullable
-    status_raw_text: Optional[str] = attr.ib()
+    status: StateSentenceStatus = attr.ib(default=None, validator=attr.validators.instance_of(StateSentenceStatus))
+    status_raw_text: Optional[str] = attr.ib(default=None, validator=attr_validators.is_opt_str)
 
     # Type
     # N/A
 
     # Attributes
     #   - When
-    date_imposed: Optional[datetime.date] = attr.ib()
+    date_imposed: Optional[datetime.date] = attr.ib(default=None, validator=attr_validators.is_opt_date)
     # TODO(#1698): Consider including rollup projected completion dates?
-
-    #   - Where
-    state_code: str = attr.ib(validator=attr_validators.is_str)
-    # The county where this sentence was issued
-    county_code: Optional[str] = attr.ib()
 
     #   - What
     # See |supervision_sentences|, |incarceration_sentences|, and |fines| in entity relationships below for more of the
@@ -424,25 +424,27 @@ class StateSentenceGroup(ExternalIdEntity, BuildableAttr, DefaultableAttr):
 
     # Total length periods, either rolled up from individual sentences or directly reported from the ingested
     # source data
-    min_length_days: Optional[int] = attr.ib()
-    max_length_days: Optional[int] = attr.ib()
+    min_length_days: Optional[int] = attr.ib(default=None, validator=attr_validators.is_opt_int)
+    max_length_days: Optional[int] = attr.ib(default=None, validator=attr_validators.is_opt_int)
 
     # TODO(#2668): Remove this column - can be derived from incarceration
     #  sentences.
-    is_life: Optional[bool] = attr.ib()
+    is_life: Optional[bool] = attr.ib(default=None, validator=attr_validators.is_opt_bool)
 
     #   - Who
     # See |person| in entity relationships below.
 
     # Primary key - Only optional when hydrated in the data converter, before we have written this entity to the
     # persistence layer
-    sentence_group_id: Optional[int] = attr.ib(default=None)
+    sentence_group_id: Optional[int] = attr.ib(default=None, validator=attr_validators.is_opt_int)
 
     # Cross-entity relationships
     person: Optional['StatePerson'] = attr.ib(default=None)
-    supervision_sentences: List['StateSupervisionSentence'] = attr.ib(factory=list)
-    incarceration_sentences: List['StateIncarcerationSentence'] = attr.ib(factory=list)
-    fines: List['StateFine'] = attr.ib(factory=list)
+    supervision_sentences: List['StateSupervisionSentence'] = attr.ib(factory=list,
+                                                                      validator=attr_validators.is_list)
+    incarceration_sentences: List['StateIncarcerationSentence'] = attr.ib(factory=list,
+                                                                          validator=attr_validators.is_list)
+    fines: List['StateFine'] = attr.ib(factory=list, validator=attr_validators.is_list)
     # TODO(#1698): Add information about the time relationship between individual
     #  sentences (i.e. consecutive vs concurrent).
 

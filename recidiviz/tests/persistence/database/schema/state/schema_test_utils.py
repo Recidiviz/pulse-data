@@ -19,7 +19,6 @@ prepopulated.
 """
 from recidiviz.common.constants.bond import BondStatus, BondType
 from recidiviz.common.constants.charge import ChargeStatus
-from recidiviz.common.constants.county.sentence import SentenceStatus
 from recidiviz.common.constants.state.state_agent import StateAgentType
 from recidiviz.common.constants.state.state_court_case import \
     StateCourtCaseStatus
@@ -56,7 +55,7 @@ def generate_external_id(**kwargs) -> schema.StatePersonExternalId:
 
 def generate_sentence_group(**kwargs) -> schema.StateSentenceGroup:
     args = {
-        'status': SentenceStatus.PRESENT_WITHOUT_INFO.value,
+        'status': StateSentenceStatus.PRESENT_WITHOUT_INFO.value,
         'state_code': _STATE_CODE,
     }
     args.update(kwargs)
@@ -90,7 +89,7 @@ def generate_alias(**kwargs) -> schema.StatePersonAlias:
 def generate_incarceration_sentence(person, **kwargs) \
         -> schema.StateIncarcerationSentence:
     args = {
-        'status': SentenceStatus.PRESENT_WITHOUT_INFO.value,
+        'status': StateSentenceStatus.PRESENT_WITHOUT_INFO.value,
         'state_code': _STATE_CODE,
     }
     args.update(kwargs)

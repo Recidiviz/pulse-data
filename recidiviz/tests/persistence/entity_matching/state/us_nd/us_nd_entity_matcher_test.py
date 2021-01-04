@@ -231,6 +231,7 @@ class TestNdEntityMatching(BaseStateEntityMatcherTest):
         sg = StateSentenceGroup.new_with_defaults(
             external_id=_EXTERNAL_ID,
             state_code=_US_ND,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
             supervision_sentences=[placeholder_ss])
         placeholder_person = StatePerson.new_with_defaults(sentence_groups=[sg], state_code=_US_ND)
 
@@ -333,6 +334,7 @@ class TestNdEntityMatching(BaseStateEntityMatcherTest):
         sentence_group = StateSentenceGroup.new_with_defaults(
             external_id=_EXTERNAL_ID,
             state_code=_US_ND,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
             incarceration_sentences=[incarceration_sentence])
         placeholder_person = StatePerson.new_with_defaults(
             sentence_groups=[sentence_group], state_code=_US_ND)
@@ -441,6 +443,7 @@ class TestNdEntityMatching(BaseStateEntityMatcherTest):
             incarceration_periods=[incomplete_incarceration_period])
         sentence_group = StateSentenceGroup.new_with_defaults(
             state_code=_US_ND,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
             external_id=_EXTERNAL_ID,
             incarceration_sentences=[incarceration_sentence])
         placeholder_person = StatePerson.new_with_defaults(
@@ -631,6 +634,7 @@ class TestNdEntityMatching(BaseStateEntityMatcherTest):
             incarceration_periods=[updated_incarceration_period])
         sentence_group = StateSentenceGroup.new_with_defaults(
             state_code=_US_ND,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
             external_id=_EXTERNAL_ID,
             incarceration_sentences=[incarceration_sentence])
         placeholder_person = StatePerson.new_with_defaults(
@@ -738,6 +742,7 @@ class TestNdEntityMatching(BaseStateEntityMatcherTest):
             incarceration_periods=[incarceration_period])
         sentence_group = StateSentenceGroup.new_with_defaults(
             state_code=_US_ND,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
             external_id=_EXTERNAL_ID,
             incarceration_sentences=[incarceration_sentence])
         placeholder_person = StatePerson.new_with_defaults(
@@ -838,6 +843,7 @@ class TestNdEntityMatching(BaseStateEntityMatcherTest):
             incarceration_periods=[incarceration_period_different_state])
         sentence_group = StateSentenceGroup.new_with_defaults(
             state_code=_US_ND,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
             external_id=_EXTERNAL_ID,
             incarceration_sentences=[incarceration_sentence])
         placeholder_person = StatePerson.new_with_defaults(
@@ -944,6 +950,7 @@ class TestNdEntityMatching(BaseStateEntityMatcherTest):
                                    new_incarceration_period])
         sentence_group = StateSentenceGroup.new_with_defaults(
             state_code=_US_ND,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
             external_id=_EXTERNAL_ID,
             incarceration_sentences=[incarceration_sentence])
         placeholder_person = StatePerson.new_with_defaults(
