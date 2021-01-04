@@ -45,7 +45,6 @@ import pandas
 from sqlalchemy import cast
 from sqlalchemy.orm.session import Session
 from sqlalchemy.sql.schema import UniqueConstraint
-import yaml
 
 from recidiviz.common.constants import states
 from recidiviz.common.constants.enum_overrides import EnumOverrides
@@ -58,7 +57,7 @@ from recidiviz.cloud_storage.gcs_file_system import GCSFileSystem, GcsfsFileCont
 from recidiviz.persistence.database.base_schema import JusticeCountsBase
 from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.persistence.database.session_factory import SessionFactory
-from recidiviz.utils.yaml import YAMLDict
+from recidiviz.utils.yaml_dict import YAMLDict
 from recidiviz.utils import metadata
 
 DimensionT = TypeVar('DimensionT', bound='Dimension')
@@ -1236,29 +1235,26 @@ def _get_report_and_acquirer(gcs: GCSFileSystem, manifest_path: GcsfsFilePath) -
     manifest_handle = gcs.download_to_temp_file(manifest_path)
     if manifest_handle is None:
         raise ValueError(f"Unable to download manifest from path: {manifest_path}")
-    with manifest_handle.open() as manifest_file:
-        loaded_yaml = yaml.full_load(manifest_file)
-        if not isinstance(loaded_yaml, dict):
-            raise ValueError(f"Expected manifest to contain a top-level dictionary, but received: {loaded_yaml}")
-        manifest = YAMLDict(loaded_yaml)
-        source_name = manifest.pop('source', str)
-        # Parse tables separately
-        # TODO(#4479): Also allow for location to be a column in the csv, as is done for dates.
-        tables = _parse_tables(gcs, manifest_path, source_name, manifest.pop_dicts('tables'))
 
-        report = Report(
-            source_name=source_name,
-            report_type=manifest.pop('report_type', str),
-            report_instance=manifest.pop('report_instance', str),
-            publish_date=manifest.pop('publish_date', str),
-            url=manifest.pop('url', str),
-            tables=tables)
-        acquirer = manifest.pop('assignee', str)
+    manifest = YAMLDict.from_path(manifest_handle.local_file_path)
+    source_name = manifest.pop('source', str)
+    # Parse tables separately
+    # TODO(#4479): Also allow for location to be a column in the csv, as is done for dates.
+    tables = _parse_tables(gcs, manifest_path, source_name, manifest.pop_dicts('tables'))
 
-        if len(manifest) > 0:
-            raise ValueError(f"Received unexpected parameters in manifest: {manifest}")
+    report = Report(
+        source_name=source_name,
+        report_type=manifest.pop('report_type', str),
+        report_instance=manifest.pop('report_instance', str),
+        publish_date=manifest.pop('publish_date', str),
+        url=manifest.pop('url', str),
+        tables=tables)
+    acquirer = manifest.pop('assignee', str)
 
-        return report, acquirer
+    if len(manifest) > 0:
+        raise ValueError(f"Received unexpected parameters in manifest: {manifest}")
+
+    return report, acquirer
 
 # Persistence Layer
 # TODO(#4478): Refactor this into the persistence layer (including splitting out conversion, validation)
@@ -1393,33 +1389,33 @@ def _create_parser() -> argparse.ArgumentParser:
     )
     return parser
 
+
 def upload(gcs: GCSFileSystem, manifest_path: str) -> GcsfsFilePath:
     directory, manifest_filename = os.path.split(manifest_path)
-    with open(manifest_path, mode='r') as manifest_file:
-        manifest = YAMLDict(yaml.full_load(manifest_file))
+    manifest = YAMLDict.from_path(manifest_path)
 
-        gcs_directory = GcsfsDirectoryPath.from_absolute_path(
-            os.path.join(f'gs://{metadata.project_id()}-justice-counts-ingest', manifest.pop('source', str),
-                         manifest.pop('report_type', str), manifest.pop('report_instance', str))
-        )
+    gcs_directory = GcsfsDirectoryPath.from_absolute_path(
+        os.path.join(f'gs://{metadata.project_id()}-justice-counts-ingest', manifest.pop('source', str),
+                     manifest.pop('report_type', str), manifest.pop('report_instance', str))
+    )
 
-        for table in manifest.pop_dicts('tables'):
-            table_filename = _get_table_filename(manifest_filename[:-len('.yaml')],
-                                                 name=table.pop_optional('name', str),
-                                                 file=table.pop_optional('file', str))
-            gcs.upload_from_contents_handle(
-                path=GcsfsFilePath.from_directory_and_file_name(gcs_directory, table_filename),
-                contents_handle=GcsfsFileContentsHandle(os.path.join(directory, table_filename)),
-                content_type='text/csv'
-            )
-
-        manifest_gcs_path = GcsfsFilePath.from_directory_and_file_name(gcs_directory, os.path.basename(manifest_path))
+    for table in manifest.pop_dicts('tables'):
+        table_filename = _get_table_filename(manifest_filename[:-len('.yaml')],
+                                             name=table.pop_optional('name', str),
+                                             file=table.pop_optional('file', str))
         gcs.upload_from_contents_handle(
-            path=manifest_gcs_path,
-            contents_handle=GcsfsFileContentsHandle(manifest_path),
-            content_type='text/yaml'
+            path=GcsfsFilePath.from_directory_and_file_name(gcs_directory, table_filename),
+            contents_handle=GcsfsFileContentsHandle(os.path.join(directory, table_filename)),
+            content_type='text/csv'
         )
-        return manifest_gcs_path
+
+    manifest_gcs_path = GcsfsFilePath.from_directory_and_file_name(gcs_directory, os.path.basename(manifest_path))
+    gcs.upload_from_contents_handle(
+        path=manifest_gcs_path,
+        contents_handle=GcsfsFileContentsHandle(manifest_path),
+        content_type='text/yaml'
+    )
+    return manifest_gcs_path
 
 def trigger_ingest(gcs_path: GcsfsFilePath, app_url: Optional[str]) -> None:
     app_url = app_url or f'https://{metadata.project_id()}.appspot.com'
