@@ -23,7 +23,6 @@ from mock import patch
 
 from recidiviz.common.constants.bond import BondStatus
 from recidiviz.common.constants.charge import ChargeStatus
-from recidiviz.common.constants.county.sentence import SentenceStatus
 from recidiviz.common.constants.person_characteristics import Gender, Race, \
     Ethnicity
 from recidiviz.common.constants.state.state_agent import StateAgentType
@@ -679,7 +678,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
             charge_id=None, court_case=conflicting_court_case)
         sentence_2 = StateSupervisionSentence.new_with_defaults(
             state_code=_STATE_CODE,
-            status=SentenceStatus.PRESENT_WITHOUT_INFO,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
             external_id=_EXTERNAL_ID_2,
             charges=[charge_2])
         sentence_group = attr.evolve(
@@ -1384,7 +1383,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
             supervising_officer=db_agent_po)
         db_supervision_sentence = generate_supervision_sentence(
             person=db_person,
-            status=SentenceStatus.SERVING.value,
+            status=StateSentenceStatus.SERVING.value,
             external_id=_EXTERNAL_ID,
             state_code=_STATE_CODE,
             min_length_days=0,
@@ -1649,7 +1648,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
         db_person = generate_person(person_id=_ID, full_name=_FULL_NAME, state_code=_STATE_CODE)
         db_supervision_sentence = generate_supervision_sentence(
             person=db_person,
-            supervision_sentence_id=_ID, status=SentenceStatus.SERVING.value,
+            supervision_sentence_id=_ID, status=StateSentenceStatus.SERVING.value,
             external_id=_EXTERNAL_ID,
             state_code=_STATE_CODE,
             min_length_days=0)
@@ -1657,7 +1656,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
             generate_supervision_sentence(
                 person=db_person,
                 supervision_sentence_id=_ID_2,
-                status=SentenceStatus.SERVING.value,
+                status=StateSentenceStatus.SERVING.value,
                 external_id=_EXTERNAL_ID_2,
                 state_code=_STATE_CODE,
                 min_length_days=0)
@@ -1723,7 +1722,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
         db_person = generate_person(person_id=_ID, full_name=_FULL_NAME, state_code=_STATE_CODE)
         db_supervision_sentence = generate_supervision_sentence(
             person=db_person,
-            supervision_sentence_id=_ID, status=SentenceStatus.SERVING.value,
+            supervision_sentence_id=_ID, status=StateSentenceStatus.SERVING.value,
             external_id=_EXTERNAL_ID,
             state_code=_STATE_CODE,
             min_length_days=0)
@@ -1731,7 +1730,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
             generate_supervision_sentence(
                 person=db_person,
                 supervision_sentence_id=_ID_2,
-                status=SentenceStatus.SERVING.value,
+                status=StateSentenceStatus.SERVING.value,
                 external_id=_EXTERNAL_ID_2,
                 state_code=_STATE_CODE,
                 min_length_days=0)
@@ -1752,7 +1751,9 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
             self.to_entity(db_supervision_sentence),
             supervision_sentence_id=None, min_length_days=1)
         sentence_group_placeholder = StateSentenceGroup.new_with_defaults(
-            state_code=_STATE_CODE, supervision_sentences=[supervision_sentence_updated])
+            state_code=_STATE_CODE,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+            supervision_sentences=[supervision_sentence_updated])
         external_id = attr.evolve(
             self.to_entity(db_external_id), person_external_id_id=None)
         person = attr.evolve(
@@ -1789,7 +1790,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
         db_person = generate_person(person_id=_ID, full_name=_FULL_NAME, state_code=_STATE_CODE)
         db_supervision_sentence = generate_supervision_sentence(
             person=db_person,
-            supervision_sentence_id=_ID, status=SentenceStatus.SERVING.value,
+            supervision_sentence_id=_ID, status=StateSentenceStatus.SERVING.value,
             external_id=_EXTERNAL_ID,
             state_code=_STATE_CODE,
             min_length_days=0)
@@ -1797,7 +1798,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
             generate_supervision_sentence(
                 person=db_person,
                 supervision_sentence_id=_ID_2,
-                status=SentenceStatus.SERVING.value,
+                status=StateSentenceStatus.SERVING.value,
                 external_id=_EXTERNAL_ID_2,
                 state_code=_STATE_CODE,
                 min_length_days=10)
@@ -1823,12 +1824,12 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
         sentence_group_new = StateSentenceGroup.new_with_defaults(
             external_id=_EXTERNAL_ID,
             state_code=_STATE_CODE,
-            status=SentenceStatus.PRESENT_WITHOUT_INFO,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
             supervision_sentences=[supervision_sentence_updated])
         sentence_group_new_another = StateSentenceGroup.new_with_defaults(
             external_id=_EXTERNAL_ID_2,
             state_code=_STATE_CODE,
-            status=SentenceStatus.PRESENT_WITHOUT_INFO,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
             supervision_sentences=[supervision_sentence_another_updated])
         external_id = attr.evolve(self.to_entity(db_external_id),
                                   person_external_id_id=None)
@@ -1874,7 +1875,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
         db_person = generate_person(person_id=_ID, full_name=_FULL_NAME, state_code=_STATE_CODE)
         db_supervision_sentence = generate_supervision_sentence(
             person=db_person,
-            supervision_sentence_id=_ID, status=SentenceStatus.SERVING.value,
+            supervision_sentence_id=_ID, status=StateSentenceStatus.SERVING.value,
             external_id=_EXTERNAL_ID,
             state_code=_STATE_CODE,
             min_length_days=0)
@@ -1882,7 +1883,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
             generate_supervision_sentence(
                 person=db_person,
                 supervision_sentence_id=_ID_2,
-                status=SentenceStatus.SERVING.value,
+                status=StateSentenceStatus.SERVING.value,
                 external_id=_EXTERNAL_ID_2,
                 state_code=_STATE_CODE,
                 min_length_days=10)
@@ -1905,7 +1906,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
             min_length_days=1)
         placeholder_sentence_group = StateSentenceGroup.new_with_defaults(
             state_code=_STATE_CODE,
-            status=SentenceStatus.PRESENT_WITHOUT_INFO,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
             supervision_sentences=[supervision_sentence_updated])
 
         supervision_sentence_another_updated = attr.evolve(
@@ -1918,7 +1919,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
         placeholder_sentence_group_another = \
             StateSentenceGroup.new_with_defaults(
                 state_code=_STATE_CODE,
-                status=SentenceStatus.PRESENT_WITHOUT_INFO,
+                status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
                 supervision_sentences=[supervision_sentence_another_updated],
                 fines=[fine])
         placeholder_person = StatePerson.new_with_defaults(
@@ -1962,7 +1963,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
         db_person = generate_person(person_id=_ID, full_name=_FULL_NAME, state_code=_STATE_CODE)
         db_supervision_sentence = generate_supervision_sentence(
             person=db_person,
-            supervision_sentence_id=_ID, status=SentenceStatus.SERVING.value,
+            supervision_sentence_id=_ID, status=StateSentenceStatus.SERVING.value,
             external_id=_EXTERNAL_ID,
             state_code=_STATE_CODE,
             min_length_days=0)
@@ -1970,7 +1971,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
             generate_supervision_sentence(
                 person=db_person,
                 supervision_sentence_id=_ID_2,
-                status=SentenceStatus.SERVING.value,
+                status=StateSentenceStatus.SERVING.value,
                 external_id=_EXTERNAL_ID_2,
                 state_code=_STATE_CODE,
                 min_length_days=10)
@@ -1995,7 +1996,9 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
             self.to_entity(db_supervision_sentence),
             supervision_sentence_id=None, min_length_days=1)
         placeholder_sentence_group = StateSentenceGroup.new_with_defaults(
-            state_code=_STATE_CODE, supervision_sentences=[supervision_sentence_updated])
+            state_code=_STATE_CODE,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+            supervision_sentences=[supervision_sentence_updated])
         placeholder_person = StatePerson.new_with_defaults(
             state_code=_STATE_CODE, sentence_groups=[placeholder_sentence_group])
 
@@ -2004,7 +2007,9 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
             supervision_sentence_id=None, min_length_days=11)
         placeholder_sentence_group_another = \
             StateSentenceGroup.new_with_defaults(
-                state_code=_STATE_CODE, supervision_sentences=[supervision_sentence_another_updated])
+                state_code=_STATE_CODE,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+            supervision_sentences=[supervision_sentence_another_updated])
         placeholder_person_another = StatePerson.new_with_defaults(
             sentence_groups=[placeholder_sentence_group_another], state_code=_STATE_CODE)
 
@@ -2040,7 +2045,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
         db_person = generate_person(person_id=_ID, full_name=_FULL_NAME, state_code=_STATE_CODE)
         db_supervision_sentence = generate_supervision_sentence(
             person=db_person,
-            supervision_sentence_id=_ID, status=SentenceStatus.SERVING.value,
+            supervision_sentence_id=_ID, status=StateSentenceStatus.SERVING.value,
             external_id=_EXTERNAL_ID,
             state_code=_STATE_CODE,
             min_length_days=0)
@@ -2048,7 +2053,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
             generate_supervision_sentence(
                 person=db_person,
                 supervision_sentence_id=_ID_2,
-                status=SentenceStatus.SERVING.value,
+                status=StateSentenceStatus.SERVING.value,
                 external_id=_EXTERNAL_ID_2,
                 state_code=_STATE_CODE,
                 min_length_days=10)
@@ -2077,6 +2082,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
             supervision_sentence_id=None, min_length_days=11)
         placeholder_sentence_group = StateSentenceGroup.new_with_defaults(
             state_code=_STATE_CODE,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
             supervision_sentences=[
                 supervision_sentence_updated,
                 supervision_sentence_another_updated])
@@ -2121,7 +2127,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
         db_person = generate_person(person_id=_ID, full_name=_FULL_NAME, state_code=_STATE_CODE)
         db_supervision_sentence = generate_supervision_sentence(
             person=db_person,
-            supervision_sentence_id=_ID, status=SentenceStatus.SERVING.value,
+            supervision_sentence_id=_ID, status=StateSentenceStatus.SERVING.value,
             external_id=_EXTERNAL_ID,
             state_code=_STATE_CODE,
             min_length_days=0)
@@ -2141,7 +2147,9 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
             self.to_entity(db_supervision_sentence),
             supervision_sentence_id=None, min_length_days=1)
         placeholder_sentence_group = StateSentenceGroup.new_with_defaults(
-            state_code=_STATE_CODE, supervision_sentences=[supervision_sentence_updated])
+            state_code=_STATE_CODE,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+            supervision_sentences=[supervision_sentence_updated])
         placeholder_person = StatePerson.new_with_defaults(
             state_code=_STATE_CODE, sentence_groups=[placeholder_sentence_group])
 
@@ -2171,7 +2179,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
         db_placeholder_person = generate_person(person_id=_ID, state_code=_STATE_CODE)
         db_supervision_sentence = generate_supervision_sentence(
             person=db_placeholder_person,
-            supervision_sentence_id=_ID, status=SentenceStatus.SERVING.value,
+            supervision_sentence_id=_ID, status=StateSentenceStatus.SERVING.value,
             external_id=_EXTERNAL_ID,
             state_code=_STATE_CODE,
             min_length_days=0)
@@ -2188,7 +2196,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
         sentence_group = StateSentenceGroup.new_with_defaults(
             external_id=_EXTERNAL_ID,
             state_code=_STATE_CODE,
-            status=SentenceStatus.PRESENT_WITHOUT_INFO,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
             supervision_sentences=[supervision_sentence_updated])
         external_id = StatePersonExternalId.new_with_defaults(
             state_code=_STATE_CODE, external_id=_EXTERNAL_ID, id_type=_ID_TYPE)
@@ -2202,7 +2210,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
             supervision_sentence_updated, supervision_sentence_id=_ID)
         expected_sentence_group = attr.evolve(
             sentence_group,
-            status=SentenceStatus.PRESENT_WITHOUT_INFO,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
             supervision_sentences=[expected_supervision_sentence_updated])
         expected_placeholder_sentence_group = attr.evolve(
             self.to_entity(db_placeholder_sentence_group),
@@ -2231,7 +2239,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
         db_person = generate_person(person_id=_ID, full_name=_FULL_NAME, state_code=_STATE_CODE)
         db_supervision_sentence = generate_supervision_sentence(
             person=db_person,
-            supervision_sentence_id=_ID, status=SentenceStatus.SERVING.value,
+            supervision_sentence_id=_ID, status=StateSentenceStatus.SERVING.value,
             external_id=_EXTERNAL_ID,
             state_code=_STATE_CODE,
             min_length_days=0)
@@ -2239,7 +2247,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
             generate_supervision_sentence(
                 person=db_person,
                 supervision_sentence_id=_ID_2,
-                status=SentenceStatus.SERVING.value,
+                status=StateSentenceStatus.SERVING.value,
                 external_id=_EXTERNAL_ID_2,
                 state_code=_STATE_CODE,
                 min_length_days=10)
@@ -2265,12 +2273,12 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
         sentence_group_new = StateSentenceGroup.new_with_defaults(
             external_id=_EXTERNAL_ID,
             state_code=_STATE_CODE,
-            status=SentenceStatus.PRESENT_WITHOUT_INFO,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
             supervision_sentences=[supervision_sentence_updated])
         sentence_group_new_another = StateSentenceGroup.new_with_defaults(
             external_id=_EXTERNAL_ID_2,
             state_code=_STATE_CODE,
-            status=SentenceStatus.PRESENT_WITHOUT_INFO,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
             supervision_sentences=[supervision_sentence_another_updated])
 
         placeholder_person = StatePerson.new_with_defaults(
@@ -2311,7 +2319,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
         db_placeholder_person = generate_person(person_id=_ID, state_code=_STATE_CODE)
         db_supervision_sentence = generate_supervision_sentence(
             person=db_placeholder_person,
-            supervision_sentence_id=_ID, status=SentenceStatus.SERVING.value,
+            supervision_sentence_id=_ID, status=StateSentenceStatus.SERVING.value,
             external_id=_EXTERNAL_ID,
             state_code=_STATE_CODE,
             min_length_days=0)
@@ -2319,7 +2327,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
             generate_supervision_sentence(
                 person=db_placeholder_person,
                 supervision_sentence_id=_ID_2,
-                status=SentenceStatus.SERVING.value,
+                status=StateSentenceStatus.SERVING.value,
                 external_id=_EXTERNAL_ID_2, state_code=_STATE_CODE,
                 min_length_days=10)
         db_sentence_group = generate_sentence_group(
@@ -2736,6 +2744,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
                 StateSentenceGroup.new_with_defaults(
                     state_code=_STATE_CODE,
                     external_id=_EXTERNAL_ID,
+                    status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
                     incarceration_sentences=[
                         StateIncarcerationSentence.new_with_defaults(
                             state_code=_STATE_CODE,
@@ -2820,6 +2829,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
                 StateSentenceGroup.new_with_defaults(
                     state_code=_STATE_CODE,
                     external_id=_EXTERNAL_ID,
+                    status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
                     incarceration_sentences=[
                         StateIncarcerationSentence.new_with_defaults(
                             state_code=_STATE_CODE,
@@ -3115,6 +3125,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
         sentence_group = StateSentenceGroup.new_with_defaults(
             external_id=db_sentence_group.external_id,
             state_code=_STATE_CODE,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
             supervision_sentences=[supervision_sentence]
         )
         external_id = StatePersonExternalId.new_with_defaults(
