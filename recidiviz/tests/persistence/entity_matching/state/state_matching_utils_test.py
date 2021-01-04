@@ -470,7 +470,7 @@ class TestStateMatchingUtils(BaseStateMatchingUtilsTest):
 
     def test_isPlaceholder_personWithExternalId(self) -> None:
         sentence_group = StateSentenceGroup.new_with_defaults(
-            state_code=_STATE_CODE)
+            state_code=_STATE_CODE, status=StateSentenceStatus.PRESENT_WITHOUT_INFO)
         person = StatePerson.new_with_defaults(state_code=_STATE_CODE, sentence_groups=[sentence_group])
         self.assertTrue(is_placeholder(person))
         person.external_ids.append(

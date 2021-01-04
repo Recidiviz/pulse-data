@@ -22,6 +22,7 @@ import attr
 from recidiviz.common.constants.state.state_incarceration_period import \
     StateIncarcerationPeriodStatus, StateIncarcerationPeriodAdmissionReason, \
     StateIncarcerationPeriodReleaseReason
+from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.persistence.entity.state.entities import StatePerson, StateSentenceGroup, StateIncarcerationPeriod, \
     StateIncarcerationIncident, StateIncarcerationSentence
 from recidiviz.persistence.entity_matching.state.state_incarceration_incident_matching_utils import \
@@ -109,6 +110,7 @@ class TestIncidentMatchingUtils(BaseStateMatchingUtilsTest):
                 incarceration_periods=[placeholder_incarceration_period])
         sentence_group = StateSentenceGroup.new_with_defaults(
             state_code=_STATE_CODE,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
             incarceration_sentences=[incarceration_sentence,
                                      placeholder_incarceration_sentence])
 

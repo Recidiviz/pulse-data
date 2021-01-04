@@ -19,6 +19,7 @@ from unittest import TestCase
 
 import attr
 
+from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.persistence.database import schema_utils
 from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.entity.entity_utils import EntityFieldType, \
@@ -48,6 +49,7 @@ class TestEntityUtils(TestCase):
     def test_getEntityRelationshipFieldNames_children(self) -> None:
         entity = StateSentenceGroup.new_with_defaults(
             state_code='US_XX',
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
             fines=[StateFine.new_with_defaults(state_code='US_XX')],
             person=[StatePerson.new_with_defaults(state_code='US_XX')],
             sentence_group_id=_ID)

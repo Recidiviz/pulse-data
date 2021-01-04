@@ -353,6 +353,7 @@ class TestMoEntityMatching(BaseStateEntityMatcherTest):
         sentence_group = StateSentenceGroup.new_with_defaults(
             external_id=db_sentence_group.external_id,
             state_code=_US_MO,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
             supervision_sentences=[supervision_sentence])
 
         external_id = attr.evolve(self.to_entity(db_external_id),
@@ -451,6 +452,7 @@ class TestMoEntityMatching(BaseStateEntityMatcherTest):
         sentence_group = StateSentenceGroup.new_with_defaults(
             external_id=db_sentence_group.external_id,
             state_code=_US_MO,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
             supervision_sentences=[placeholder_supervision_sentence]
         )
         external_id = StatePersonExternalId.new_with_defaults(
