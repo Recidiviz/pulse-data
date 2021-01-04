@@ -23,11 +23,20 @@ from flask import Blueprint, Response, jsonify, request, send_from_directory
 
 from recidiviz.admin_panel.ingest_metadata_store import IngestMetadataCountsStore, IngestMetadataResult
 from recidiviz.utils.auth.gae import requires_gae_auth
-from recidiviz.utils.environment import in_test
+from recidiviz.utils.environment import (
+    GCP_PROJECT_STAGING,
+    in_development,
+    in_gae_staging,
+    in_gae_production,
+    in_test,
+)
 from recidiviz.utils.timer import RepeatedTimer
 
 logging.getLogger().setLevel(logging.INFO)
-ingest_metadata_store = IngestMetadataCountsStore()
+if in_development():
+    ingest_metadata_store = IngestMetadataCountsStore(override_project_id=GCP_PROJECT_STAGING)
+else:
+    ingest_metadata_store = IngestMetadataCountsStore()
 
 static_folder = os.path.abspath(os.path.join(
     os.path.dirname(os.path.realpath(__file__)),
@@ -67,6 +76,20 @@ def fetch_table_nonnull_counts_by_column() -> str:
 @requires_gae_auth
 def fetch_object_counts_by_table() -> str:
     return jsonify_ingest_metadata_result(ingest_metadata_store.fetch_object_counts_by_table())
+
+
+@admin_panel.route('/runtime_env_vars.js')
+@requires_gae_auth
+def runtime_env_vars() -> str:
+    if in_development():
+        env_string = 'development'
+    elif in_gae_staging():
+        env_string = 'staging'
+    elif in_gae_production():
+        env_string = 'production'
+    else:
+        env_string = 'unknown'
+    return f'window.RUNTIME_GAE_ENVIRONMENT="{env_string}";'
 
 
 @admin_panel.route('/')

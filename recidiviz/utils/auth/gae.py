@@ -17,13 +17,12 @@
 """Tools for handling authentication of requests."""
 from http import HTTPStatus
 import logging
-import os
 from functools import wraps
 
 from flask import request
 
-from recidiviz.utils import metadata
-from recidiviz.utils import validate_jwt
+from recidiviz.utils import metadata, validate_jwt
+from recidiviz.utils.environment import in_development
 
 
 def requires_gae_auth(func):
@@ -52,9 +51,8 @@ def requires_gae_auth(func):
             The output of the function, if successfully authenticated.
             An error or redirect response, otherwise.
         """
-        if os.environ.get('FLASK_ENV') == 'development':
-            # Bypass GAE auth check in development. This environment variable
-            # should not be set in staging or production instances.
+        if in_development():
+            # Bypass GAE auth check in development.
             return func(*args, **kwargs)
 
         is_cron = request.headers.get('X-Appengine-Cron')

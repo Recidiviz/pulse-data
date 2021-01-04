@@ -19,14 +19,14 @@ import json
 import logging
 import os
 from collections import defaultdict
-from typing import Dict
+from typing import Dict, Optional
 
 import attr
 
 from recidiviz.cloud_storage.gcs_file_system import GCSBlobDoesNotExistError
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
-from recidiviz.utils.environment import GCP_PROJECT_STAGING
+from recidiviz.utils import metadata
 
 
 @attr.s
@@ -59,8 +59,9 @@ InternalMetadataBackingStore = Dict[str, Dict[str, Dict[str, Dict[str, IngestMet
 class IngestMetadataCountsStore:
     """Creates a store for fetching counts of different column values from GCS."""
 
-    def __init__(self) -> None:
+    def __init__(self, override_project_id: Optional[str] = None) -> None:
         self.gcs_fs = GcsfsFactory.build()
+        self.override_project_id = override_project_id
 
         # This class takes heavy advantage of the fact that python dicts are thread-safe.
         self.store: InternalMetadataBackingStore = defaultdict(lambda: defaultdict(dict))
@@ -69,9 +70,9 @@ class IngestMetadataCountsStore:
         """
         Recalculates the internal store of ingest metadata counts.
         """
-        # TODO(#5044): Dynamically select staging vs. prod depending on the known project id.
+        project_id = metadata.project_id() if self.override_project_id is None else self.override_project_id
         file_paths = [f for f in self.gcs_fs.ls_with_blob_prefix(
-            f'{GCP_PROJECT_STAGING}-ingest-metadata', '') if isinstance(f, GcsfsFilePath)]
+            f'{project_id}-ingest-metadata', '') if isinstance(f, GcsfsFilePath)]
         for path in file_paths:
             name, extension = os.path.splitext(path.file_name)
             if extension != '.json':
