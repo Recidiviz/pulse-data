@@ -1,3 +1,4 @@
+
 # Recidiviz - a data platform for criminal justice reform
 # Copyright (C) 2020 Recidiviz, Inc.
 #
@@ -15,16 +16,13 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 
-terraform {
-  required_providers {
-    google = {
-      source  = "hashicorp/google"
-      version = "3.51.0"
-    }
-  }
+module "case_triage_database" {
+  source            = "./modules/cloud-sql"
+  base_secret_name  = "case_triage"
+  region            = var.region
+  zone              = var.zone
+  tier              = "db-custom-1-3840" # 1 vCPU, 3.75GB Memory
+  has_readonly_user = true
+  require_ssl_connection = true
 }
 
-provider "google" {
-  project = var.project_id
-  region  = var.region
-}
