@@ -82,16 +82,10 @@ PO_MONTHLY_REPORT_DATA_QUERY_TEMPLATE = \
     ),
     compliance_caseloads AS (
       SELECT
-        state_code, year, month, supervising_officer_external_id AS officer_external_id,
+        state_code, year, month, officer_external_id,
         COUNT(DISTINCT IF(assessment_up_to_date IS NOT NULL, person_id, NULL)) AS assessment_compliance_caseload_count,
         COUNT(DISTINCT IF(face_to_face_frequency_sufficient IS NOT NULL, person_id, NULL)) AS facetoface_compliance_caseload_count
-      FROM `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_case_compliance_metrics`
-      WHERE methodology = 'PERSON'
-        AND person_id IS NOT NULL
-        AND supervising_officer_external_id IS NOT NULL
-        AND metric_period_months = 0
-        AND date_of_evaluation = LAST_DAY(DATE(year, month, 1), MONTH)
-        AND year >= EXTRACT(YEAR FROM DATE_SUB(CURRENT_DATE('US/Pacific'), INTERVAL 3 YEAR))
+      FROM `{project_id}.{po_report_dataset}.supervision_compliance_by_person_by_month_materialized`
       GROUP BY state_code, year, month, officer_external_id
     ),
     averages_by_state_and_district AS (
