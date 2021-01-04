@@ -51,7 +51,7 @@ class CloudSqlToGcsExportTest(unittest.TestCase):
 
         secrets_values = {
             'sqlalchemy_db_name': self.mock_database,
-            'cloudsql_instance_id': '{}:zone:{}'.format(
+            'sqlalchemy_cloudsql_instance_id': '{}:zone:{}'.format(
                 self.mock_project_id, self.mock_instance_id)
         }
 

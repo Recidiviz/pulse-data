@@ -46,7 +46,7 @@ class SQLAlchemyEngineManagerTest(TestCase):
         # Assert
         assert mock_create_engine.call_args_list == [
             call('postgresql://sqlalchemy_db_user_value:sqlalchemy_db_password_value@/sqlalchemy_db_name_value'
-                 '?host=/cloudsql/cloudsql_instance_id_value', isolation_level=None, pool_recycle=600),
+                 '?host=/cloudsql/sqlalchemy_cloudsql_instance_id_value', isolation_level=None, pool_recycle=600),
             call('postgresql://state_db_user_value:state_db_password_value@/state_db_name_value'
                  '?host=/cloudsql/state_cloudsql_instance_id_value', isolation_level='SERIALIZABLE', pool_recycle=600),
             call('postgresql://operations_db_user_value:operations_db_password_value@/operations_db_name_value'
@@ -74,7 +74,7 @@ class SQLAlchemyEngineManagerTest(TestCase):
         # Assert
         assert mock_create_engine.call_args_list == [
             call('postgresql://sqlalchemy_db_user_value:sqlalchemy_db_password_value@/sqlalchemy_db_name_value'
-                 '?host=/cloudsql/cloudsql_instance_id_value', isolation_level=None, pool_recycle=600),
+                 '?host=/cloudsql/sqlalchemy_cloudsql_instance_id_value', isolation_level=None, pool_recycle=600),
             call('postgresql://state_db_user_value:state_db_password_value@/state_db_name_value'
                  '?host=/cloudsql/state_cloudsql_instance_id_value', isolation_level='SERIALIZABLE', pool_recycle=600),
             call('postgresql://operations_db_user_value:operations_db_password_value@/operations_db_name_value'
