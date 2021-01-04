@@ -393,6 +393,24 @@ class Gender(Dimension):
         return self.value
 
 
+@attr.s(frozen=True)
+class Age(Dimension):
+    value: str = attr.ib()
+
+    @classmethod
+    def get(cls, dimension_cell_value: str, enum_overrides: Optional[EnumOverrides] = None) -> 'Age':
+        assert_no_overrides(cls, enum_overrides)
+        return cls(dimension_cell_value)
+
+    @classmethod
+    def dimension_identifier(cls) -> str:
+        return 'global/age/raw'
+
+    @property
+    def dimension_value(self) -> str:
+        return self.value
+
+
 # TODO(#4473): Raise an error if there are conflicting dimension names
 def parse_dimension_name(dimension_name: str) -> Type[Dimension]:
     """Parses a dimension name to its corresponding Dimension class."""

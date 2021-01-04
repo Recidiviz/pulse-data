@@ -689,3 +689,25 @@ class ManualUploadTest(unittest.TestCase):
         self.assertEqual(['metric/population/type', 'metric/population/type/raw',
                           'source/colorado_department_of_corrections/population_subtype/raw'],
                          table_definition.aggregated_dimensions)
+
+    def test_ingestAgeRaw_isPersisted(self):
+        # Act
+        manual_upload.ingest(self.fs, test_utils.prepare_files(self.fs, manifest_filepath('report_age_raw')))
+
+        # Assert
+        session = SessionFactory.for_schema_base(JusticeCountsBase)
+
+        [table_definition] = session.query(schema.ReportTableDefinition).all()
+        self.assertEqual(['global/age/raw', 'global/gender/raw'], table_definition.aggregated_dimensions)
+
+        cells = session.query(schema.Cell).all()
+        self.assertEqual([
+            (['0-24', 'Male'], decimal.Decimal(1370)),
+            (['0-24', 'Female'], decimal.Decimal(0)),
+            (['25-34', 'Male'], decimal.Decimal(638)),
+            (['25-34', 'Female'], decimal.Decimal(0)),
+            (['35-44', 'Male'], decimal.Decimal(15)),
+            (['35-44', 'Female'], decimal.Decimal(0)),
+            (['45+', 'Male'], decimal.Decimal(0)),
+            (['45+', 'Female'], decimal.Decimal(0)),
+        ], [(cell.aggregated_dimension_values, cell.value) for cell in cells])
