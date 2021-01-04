@@ -46,15 +46,6 @@ class SQLAlchemyEngineManager:
 
     _engine_for_schema: Dict[DeclarativeMeta, Engine] = {}
 
-    # An instance id can be None if the schema exists but there is not yet a cloud sql instance for it. In that case
-    # the app will skip over trying to connect to it.
-    _SCHEMA_TO_INSTANCE_ID_KEY: Dict[SchemaType, Optional[str]] = {
-        SchemaType.JAILS: 'cloudsql_instance_id',
-        SchemaType.STATE: 'state_cloudsql_instance_id',
-        SchemaType.OPERATIONS: 'operations_cloudsql_instance_id',
-        SchemaType.JUSTICE_COUNTS: 'justice_counts_cloudsql_instance_id',
-    }
-
     _SCHEMA_TO_SECRET_MANAGER_PREFIX: Dict[SchemaType, str] = {
         SchemaType.JAILS: 'sqlalchemy',
         SchemaType.STATE: 'state',
@@ -230,9 +221,8 @@ class SQLAlchemyEngineManager:
         return user
 
     @classmethod
-    def get_cloudsql_instance_id_key(
-            cls, schema_type: SchemaType) -> Optional[str]:
-        return cls._SCHEMA_TO_INSTANCE_ID_KEY[schema_type]
+    def get_cloudsql_instance_id_key(cls, schema_type: SchemaType) -> str:
+        return f'{cls._SCHEMA_TO_SECRET_MANAGER_PREFIX[schema_type]}_cloudsql_instance_id'
 
     @classmethod
     def get_stripped_cloudsql_instance_id(
