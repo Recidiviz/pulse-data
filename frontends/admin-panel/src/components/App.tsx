@@ -28,12 +28,13 @@ import "../style/App.css";
 
 const App = (): JSX.Element => {
   const location = useLocation();
+  const title = window.RUNTIME_GAE_ENVIRONMENT || "unknown env";
 
   return (
     <Layout style={{ height: "100%" }}>
       <Layout.Sider>
         <Typography.Title level={4} style={{ margin: 23 }}>
-          Admin Panel
+          {title.toUpperCase()}
         </Typography.Title>
         <Menu mode="inline" selectedKeys={selectedMenuKeys(location.pathname)}>
           <Menu.Item key={IngestMetadata.ROOT_ROUTE}>

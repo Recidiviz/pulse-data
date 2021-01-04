@@ -28,7 +28,7 @@ import logging
 import os
 from functools import wraps
 import sys
-from typing import Optional
+from typing import Callable, Optional
 
 import requests
 from google.cloud import datastore, environment_vars
@@ -98,7 +98,7 @@ def get_datastore_client() -> datastore.Client:
     return datastore.Client()
 
 
-def local_only(func):
+def local_only(func: Callable) -> Callable:
     """Decorator function to verify request only runs locally
 
     Decorator function to check run environment. If prod / served on GAE,
@@ -153,16 +153,20 @@ def in_test():
     return recidiviz.called_from_test
 
 
-def test_only(func):
+def test_only(func: Callable) -> Callable:
     """Decorator to verify function only runs in tests
 
     If called while not in tests, throws an exception.
     """
 
     @wraps(func)
-    def check_test_and_call(*args, **kwargs):
+    def check_test_and_call(*args, **kwargs) -> Callable:
         if not in_test():
             raise RuntimeError("Function may only be called from tests")
         return func(*args, **kwargs)
 
     return check_test_and_call
+
+
+def in_development() -> bool:
+    return not in_gae() and not in_test()
