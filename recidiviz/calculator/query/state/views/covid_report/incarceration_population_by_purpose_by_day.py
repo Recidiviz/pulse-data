@@ -44,8 +44,7 @@ INCARCERATION_POPULATION_BY_PURPOSE_BY_DAY_QUERY_TEMPLATE = \
       LEFT JOIN
         `{project_id}.{static_reference_dataset}.state_incarceration_facility_capacity`
       USING (state_code, facility)
-      WHERE metric_period_months = 0
-      AND methodology = 'PERSON'
+      WHERE methodology = 'EVENT'
       -- Revisit these exclusions when #3657 and #3723 are complete --
       AND (state_code != 'US_ND' OR facility not in ('OOS', 'CPP'))
       AND EXTRACT(YEAR FROM date_of_stay) > EXTRACT(YEAR FROM DATE_SUB(CURRENT_DATE(), INTERVAL 1 YEAR))
