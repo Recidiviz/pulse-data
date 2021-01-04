@@ -48,6 +48,7 @@ from recidiviz.common.constants.state.state_incarceration_period import \
     StateIncarcerationPeriodStatus, StateIncarcerationFacilitySecurityLevel, \
     StateIncarcerationPeriodAdmissionReason, \
     StateIncarcerationPeriodReleaseReason, StateSpecializedPurposeForIncarceration
+from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.state.state_supervision_period import StateSupervisionPeriodSupervisionType
 from recidiviz.persistence.entity.state.entities import \
     Gender, Race, ResidencyStatus, Ethnicity, StatePerson, \
@@ -148,6 +149,7 @@ class TestIncarcerationPipeline(unittest.TestCase):
         sentence_group = schema.StateSentenceGroup(
             sentence_group_id=98765,
             state_code=state_code,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
             person_id=fake_person_id
         )
 
@@ -410,6 +412,7 @@ class TestIncarcerationPipeline(unittest.TestCase):
         sentence_group = schema.StateSentenceGroup(
             sentence_group_id=111,
             state_code='US_XX',
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
             person_id=fake_person_id
         )
 
@@ -569,6 +572,7 @@ class TestClassifyIncarcerationEvents(unittest.TestCase):
 
         sentence_group = StateSentenceGroup.new_with_defaults(
             state_code='US_XX',
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
             sentence_group_id=123,
             incarceration_sentences=[incarceration_sentence]
         )

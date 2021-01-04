@@ -20,6 +20,7 @@ import datetime
 import attr
 import pytest
 
+from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.state.state_supervision_period import \
     StateSupervisionPeriodStatus
 from recidiviz.persistence.database.schema.state import schema
@@ -76,7 +77,9 @@ class TestUsMoMatchingUtils(BaseStateMatchingUtilsTest):
             state_code=_STATE_CODE,
             supervision_violation_entries=[sv, sv_2])
         ss = schema.StateSupervisionSentence(state_code=_STATE_CODE, supervision_periods=[sp])
-        sg = schema.StateSentenceGroup(state_code=_STATE_CODE, supervision_sentences=[ss])
+        sg = schema.StateSentenceGroup(state_code=_STATE_CODE,
+                                       status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+                                       supervision_sentences=[ss])
         p = schema.StatePerson(state_code=_STATE_CODE, sentence_groups=[sg])
 
         expected_svr = StateSupervisionViolationResponse.new_with_defaults(
@@ -94,7 +97,9 @@ class TestUsMoMatchingUtils(BaseStateMatchingUtilsTest):
         expected_ss = StateSupervisionSentence.new_with_defaults(
             state_code=_STATE_CODE, supervision_periods=[expected_sp])
         expected_sg = StateSentenceGroup.new_with_defaults(
-            state_code=_STATE_CODE, supervision_sentences=[expected_ss])
+            state_code=_STATE_CODE,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+            supervision_sentences=[expected_ss])
         expected_p = StatePerson.new_with_defaults(
             state_code=_STATE_CODE, sentence_groups=[expected_sg])
 

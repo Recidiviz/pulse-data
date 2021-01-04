@@ -31,6 +31,7 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_sentence_classi
 from recidiviz.common.constants.state.state_incarceration_period import \
     StateIncarcerationPeriodStatus, StateIncarcerationPeriodAdmissionReason, \
     StateIncarcerationPeriodReleaseReason
+from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.state.state_supervision_violation import \
     StateSupervisionViolationType
 from recidiviz.common.constants.state.state_supervision_violation_response \
@@ -441,6 +442,7 @@ class TestSetSentencesOnSentenceGroup(unittest.TestCase):
 
         sentence_group = StateSentenceGroup.new_with_defaults(
             state_code='US_XX',
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
             incarceration_sentences=[
                 StateIncarcerationSentence.new_with_defaults(
                     state_code='US_XX',
@@ -496,6 +498,7 @@ class TestSetSentencesOnSentenceGroup(unittest.TestCase):
 
         expected_sentence_group = StateSentenceGroup.new_with_defaults(
             state_code='US_XX',
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
             incarceration_sentences=[hydrated_incarceration_sentence_with_group],
             supervision_sentences=[hydrated_supervision_sentence_with_group]
         )
@@ -521,6 +524,7 @@ class TestSetSentencesOnSentenceGroup(unittest.TestCase):
         StateSentenceGroup."""
         sentence_group = StateSentenceGroup.new_with_defaults(
             state_code='US_XX',
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
             incarceration_sentences=[],
             supervision_sentences=[]
         )
@@ -534,6 +538,7 @@ class TestSetSentencesOnSentenceGroup(unittest.TestCase):
 
         expected_sentence_group = StateSentenceGroup.new_with_defaults(
             state_code='US_XX',
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
             incarceration_sentences=[],
             supervision_sentences=[]
         )
