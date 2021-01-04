@@ -575,12 +575,18 @@ class BigQueryClientImpl(BigQueryClient):
         bq_view = bigquery.Table(view)
         bq_view.view_query = view.view_query
 
-        if self.table_exists(dataset_ref, view.view_id):
-            logging.info("Updating existing view [%s]", str(bq_view))
-            return self.client.update_table(bq_view, ['view_query'])
+        try:
+            table = self.get_table(dataset_ref, view.view_id)
+        except exceptions.NotFound:
+            logging.info("Creating view %s", str(bq_view))
+            return self.client.create_table(bq_view)
 
-        logging.info("Creating view %s", str(bq_view))
-        return self.client.create_table(bq_view)
+        if table.table_type == 'TABLE':
+            raise ValueError(
+                f'Cannot call create_or_update_view on table {view.view_id} in dataset {dataset_ref.dataset_id}.')
+
+        logging.info("Updating existing view [%s]", str(bq_view))
+        return self.client.update_table(bq_view, ['view_query'])
 
     def load_table_from_cloud_storage_async(
             self,
