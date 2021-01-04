@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Supervision case compliance to state standards by person by month."""
-# pylint: disable=trailing-whitespace
+# pylint: disable=trailing-whitespace,line-too-long
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config
@@ -31,20 +31,32 @@ SUPERVISION_COMPLIANCE_BY_PERSON_BY_MONTH_DESCRIPTION = """
 SUPERVISION_COMPLIANCE_BY_PERSON_BY_MONTH_QUERY_TEMPLATE = \
     """
     /*{description}*/
-    SELECT 
+    WITH compliance AS (
+      SELECT 
         state_code, year, month, person_id, 
         supervising_officer_external_id AS officer_external_id,
         assessment_count,
         face_to_face_count,
         assessment_up_to_date,
-        face_to_face_frequency_sufficient
+        face_to_face_frequency_sufficient,
+        ROW_NUMBER() OVER (PARTITION BY state_code, year, month, supervising_officer_external_id, person_id
+         ORDER BY assessment_count DESC, face_to_face_count DESC, assessment_up_to_date DESC, face_to_face_frequency_sufficient DESC) as inclusion_order
     FROM `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_case_compliance_metrics`
-    WHERE methodology = 'PERSON'
-        AND person_id IS NOT NULL
+      WHERE methodology = 'EVENT'
         AND supervising_officer_external_id IS NOT NULL
-        AND metric_period_months = 0
         AND date_of_evaluation = LAST_DAY(DATE(year, month, 1), MONTH)
         AND year >= EXTRACT(YEAR FROM DATE_SUB(CURRENT_DATE('US/Pacific'), INTERVAL 3 YEAR))
+    )
+    
+    SELECT 
+      state_code, year, month, person_id, 
+      officer_external_id,
+      assessment_count,
+      face_to_face_count,
+      assessment_up_to_date,
+      face_to_face_frequency_sufficient
+    FROM compliance
+    WHERE inclusion_order = 1
     """
 
 SUPERVISION_COMPLIANCE_BY_PERSON_BY_MONTH_VIEW_BUILDER = SimpleBigQueryViewBuilder(
