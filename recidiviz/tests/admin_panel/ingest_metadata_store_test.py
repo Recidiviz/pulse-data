@@ -45,11 +45,11 @@ class TestIngestMetadataStore(TestCase):
         for f in os.listdir(fixture_folder):
             _, table, col = f.split('__')
             self.table_column_map[table].append(col[:-len('.json')])
-            path = GcsfsFilePath.from_absolute_path(f'gs://recidiviz-staging-ingest-metadata/{f}')
+            path = GcsfsFilePath.from_absolute_path(f'gs://recidiviz-456-ingest-metadata/{f}')
             fake_gcs.test_add_path(path, local_path=os.path.join(fixture_folder, f))
 
         self.gcs_factory_patcher.start().return_value = fake_gcs
-        self.store = IngestMetadataCountsStore()
+        self.store = IngestMetadataCountsStore(override_project_id='recidiviz-456')
         self.store.recalculate_store()
 
     def tearDown(self) -> None:
