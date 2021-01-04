@@ -17,10 +17,14 @@
 """All views needed for the population projection simulation"""
 from typing import List
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+from recidiviz.calculator.query.state.views.population_projection.microsim_projection import \
+    MICROSIM_PROJECTION_VIEW_BUILDER
 from recidiviz.calculator.query.state.views.population_projection.population_outflows import \
     POPULATION_OUTFLOWS_VIEW_BUILDER
 from recidiviz.calculator.query.state.views.population_projection.population_projection_sessions import \
     POPULATION_PROJECTION_SESSIONS_VIEW_BUILDER
+from recidiviz.calculator.query.state.views.population_projection.population_projection_outputs import \
+    POPULATION_PROJECTION_OUTPUT_VIEW_BUILDERS
 from recidiviz.calculator.query.state.views.population_projection.population_transitions import \
     POPULATION_TRANSITIONS_VIEW_BUILDER
 from recidiviz.calculator.query.state.views.population_projection.incarceration_remaining_sentences import \
@@ -59,5 +63,6 @@ POPULATION_PROJECTION_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     REMAINING_SENTENCES_VIEW_BUILDER,
     TOTAL_POPULATION_VIEW_BUILDER,
     TOTAL_JAIL_POPULATION_VIEW_BUILDER,
-    TOTAL_OUT_OF_STATE_SUPERVISED_POPULATION_VIEW_BUILDER
-]
+    TOTAL_OUT_OF_STATE_SUPERVISED_POPULATION_VIEW_BUILDER,
+    MICROSIM_PROJECTION_VIEW_BUILDER,
+] + POPULATION_PROJECTION_OUTPUT_VIEW_BUILDERS
