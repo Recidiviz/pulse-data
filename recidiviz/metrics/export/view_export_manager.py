@@ -104,7 +104,7 @@ def create_metric_view_data_export_task() -> Tuple[str, HTTPStatus]:
     return '', HTTPStatus.OK
 
 
-@export_blueprint.route('/metric_view_data')
+@export_blueprint.route('/metric_view_data', methods=['GET', 'POST'])
 @requires_gae_auth
 def metric_view_data_export() -> Tuple[str, HTTPStatus]:
     """Exports data in BigQuery metric views to cloud storage buckets.
