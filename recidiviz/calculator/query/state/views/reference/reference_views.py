@@ -36,8 +36,6 @@ from recidiviz.calculator.query.state.views.reference.persons_to_recent_county_o
     PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_VIEW_BUILDER
 from recidiviz.calculator.query.state.views.reference.persons_with_last_known_address import \
     PERSONS_WITH_LAST_KNOWN_ADDRESS_VIEW_BUILDER
-from recidiviz.calculator.query.state.views.reference.ssvr_to_agent_association import \
-    SSVR_TO_AGENT_ASSOCIATION_VIEW_BUILDER
 from recidiviz.calculator.query.state.views.reference.supervision_period_to_agent_association import \
     SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION_VIEW_BUILDER
 from recidiviz.calculator.query.state.views.reference.event_based_admissions import \
@@ -58,7 +56,6 @@ from recidiviz.calculator.query.state.views.reference.supervision_matrix_by_pers
 REFERENCE_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
     EVENT_BASED_REVOCATIONS_FOR_MATRIX_VIEW_BUILDER,
     AUGMENTED_AGENT_INFO_VIEW_BUILDER,
-    SSVR_TO_AGENT_ASSOCIATION_VIEW_BUILDER,
     SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION_VIEW_BUILDER,
     PERSONS_WITH_LAST_KNOWN_ADDRESS_VIEW_BUILDER,
     PERSONS_TO_RECENT_COUNTY_OF_RESIDENCE_VIEW_BUILDER,

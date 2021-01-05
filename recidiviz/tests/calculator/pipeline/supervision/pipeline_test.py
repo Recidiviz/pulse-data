@@ -154,7 +154,7 @@ class TestSupervisionPipeline(unittest.TestCase):
         }
 
     def build_supervision_pipeline_data_dict(
-            self, fake_person_id: int, fake_supervision_period_id: int, fake_svr_id: int):
+            self, fake_person_id: int, fake_supervision_period_id: int):
         """Builds a data_dict for a basic run of the pipeline."""
         fake_person = schema.StatePerson(
             state_code='US_XX',
@@ -325,15 +325,6 @@ class TestSupervisionPipeline(unittest.TestCase):
             normalized_database_base_dict(supervision_contact)
         ]
 
-        ssvr_to_agent_data = [{
-            'state_code': 'US_XX',
-            'agent_id': 1010,
-            'person_id': fake_person_id,
-            'agent_external_id': 'OFFICER0009',
-            'district_external_id': None,
-            'supervision_violation_response_id': fake_svr_id
-        }]
-
         supervision_period_to_agent_data = [{
             'state_code': 'US_XX',
             'agent_id': 1010,
@@ -390,7 +381,6 @@ class TestSupervisionPipeline(unittest.TestCase):
             supervision_sentence_supervision_period_association,
             schema.StateAssessment.__tablename__: assessment_data,
             schema.StateSupervisionContact.__tablename__: supervision_contact_data,
-            'ssvr_to_agent_association': ssvr_to_agent_data,
             'supervision_period_to_agent_association': supervision_period_to_agent_data,
             'supervision_period_judicial_district_association': supervision_period_judicial_district_association_data,
             'state_race_ethnicity_population_counts': state_race_ethnicity_population_count_data,
@@ -404,12 +394,9 @@ class TestSupervisionPipeline(unittest.TestCase):
     def testSupervisionPipeline(self):
         fake_person_id = 12345
         fake_supervision_period_id = 1111
-        fake_svr_id = \
-            database_test_utils.generate_test_supervision_violation_response(
-                fake_person_id).supervision_violation_response_id
 
         data_dict = self.build_supervision_pipeline_data_dict(
-            fake_person_id, fake_supervision_period_id, fake_svr_id)
+            fake_person_id, fake_supervision_period_id)
         dataset = 'recidiviz-123.state'
 
         expected_metric_types = {
@@ -426,12 +413,9 @@ class TestSupervisionPipeline(unittest.TestCase):
     def testSupervisionPipelineWithPersonIdFilterSet(self):
         fake_person_id = 12345
         fake_supervision_period_id = 1111
-        fake_svr_id = \
-            database_test_utils.generate_test_supervision_violation_response(
-                fake_person_id).supervision_violation_response_id
 
         data_dict = self.build_supervision_pipeline_data_dict(
-            fake_person_id, fake_supervision_period_id, fake_svr_id)
+            fake_person_id, fake_supervision_period_id)
         dataset = 'recidiviz-123.state'
 
         expected_metric_types = {
@@ -665,15 +649,6 @@ class TestSupervisionPipeline(unittest.TestCase):
             normalized_database_base_dict(assessment)
         ]
 
-        ssvr_to_agent_data = [{
-            'state_code': 'US_XX',
-            'agent_id': 1010,
-            'person_id': fake_person_id,
-            'agent_external_id': 'OFFICER0009',
-            'district_external_id': None,
-            'supervision_violation_response_id': fake_svr_id
-        }]
-
         supervision_period_to_agent_data = [{
             'state_code': 'US_XX',
             'agent_id': 1010,
@@ -711,7 +686,6 @@ class TestSupervisionPipeline(unittest.TestCase):
             schema.state_supervision_sentence_supervision_period_association_table.name:
             supervision_sentence_supervision_period_association,
             schema.StateAssessment.__tablename__: assessment_data,
-            'ssvr_to_agent_association': ssvr_to_agent_data,
             'supervision_period_to_agent_association': supervision_period_to_agent_data,
             'supervision_period_judicial_district_association': supervision_period_judicial_district_association_data,
             'state_race_ethnicity_population_counts': state_race_ethnicity_population_count_data,
@@ -954,15 +928,6 @@ class TestSupervisionPipeline(unittest.TestCase):
             normalized_database_base_dict(assessment)
         ]
 
-        ssvr_to_agent_data = [{
-            'state_code': 'US_XX',
-            'agent_id': 1010,
-            'person_id': fake_person_id,
-            'agent_external_id': 'OFFICER0009',
-            'district_external_id': None,
-            'supervision_violation_response_id': fake_svr_id
-        }]
-
         supervision_period_to_agent_data = [{
             'state_code': 'US_XX',
             'agent_id': 1010,
@@ -1000,7 +965,6 @@ class TestSupervisionPipeline(unittest.TestCase):
             schema.state_supervision_sentence_supervision_period_association_table.name:
             supervision_sentence_supervision_period_association,
             schema.StateAssessment.__tablename__: assessment_data,
-            'ssvr_to_agent_association': ssvr_to_agent_data,
             'supervision_period_to_agent_association': supervision_period_to_agent_data,
             'supervision_period_judicial_district_association': supervision_period_judicial_district_association_data,
             'state_race_ethnicity_population_counts': state_race_ethnicity_population_count_data,
@@ -1219,15 +1183,6 @@ class TestSupervisionPipeline(unittest.TestCase):
             normalized_database_base_dict(assessment)
         ]
 
-        ssvr_to_agent_data = [{
-            'state_code': 'US_XX',
-            'agent_id': 1010,
-            'person_id': fake_person_id,
-            'agent_external_id': 'OFFICER0009',
-            'district_external_id': None,
-            'supervision_violation_response_id': fake_svr_id
-        }]
-
         supervision_period_to_agent_data = [{
             'state_code': 'US_XX',
             'agent_id': 1010,
@@ -1265,7 +1220,6 @@ class TestSupervisionPipeline(unittest.TestCase):
             schema.state_supervision_sentence_supervision_period_association_table.name:
             supervision_sentence_supervision_period_association,
             schema.StateAssessment.__tablename__: assessment_data,
-            'ssvr_to_agent_association': ssvr_to_agent_data,
             'supervision_period_to_agent_association': supervision_period_to_agent_data,
             'supervision_period_judicial_district_association': supervision_period_judicial_district_association_data,
             'state_race_ethnicity_population_counts': state_race_ethnicity_population_count_data,
@@ -1462,15 +1416,6 @@ class TestSupervisionPipeline(unittest.TestCase):
             normalized_database_base_dict(assessment)
         ]
 
-        ssvr_to_agent_data = [{
-            'state_code': 'US_XX',
-            'agent_id': 1010,
-            'person_id': supervision_violation_response.person_id,
-            'agent_external_id': 'OFFICER0009',
-            'district_external_id': None,
-            'supervision_violation_response_id': supervision_violation_response.supervision_violation_response_id
-        }]
-
         supervision_period_to_agent_data = [{
             'state_code': 'US_XX',
             'agent_id': 1010,
@@ -1507,7 +1452,6 @@ class TestSupervisionPipeline(unittest.TestCase):
             schema.state_supervision_sentence_supervision_period_association_table.name:
                 supervision_sentence_supervision_period_association,
             schema.StateAssessment.__tablename__: assessment_data,
-            'ssvr_to_agent_association': ssvr_to_agent_data,
             'supervision_period_to_agent_association': supervision_period_to_agent_data,
             'supervision_period_judicial_district_association': supervision_period_judicial_district_association_data,
             'state_race_ethnicity_population_counts': state_race_ethnicity_population_count_data,
@@ -1557,7 +1501,6 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             supervision_contacts: List[entities.StateSupervisionContact] = None,
             supervision_period_judicial_district_association: List[Dict[Any, Any]] = None,
             supervision_period_to_agent_association: List[Dict[Any, Any]] = None,
-            ssvr_to_agent_association: List[Dict[Any, Any]] = None
     ):
         return {
             'person': [person],
@@ -1572,7 +1515,6 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                                                                  if supervision_period_judicial_district_association
                                                                  else []),
             'supervision_period_to_agent_association': supervision_period_to_agent_association or [],
-            'ssvr_to_agent_association': ssvr_to_agent_association or []
         }
 
     def testClassifySupervisionTimeBuckets(self):
@@ -1643,13 +1585,6 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             'judicial_district_code': judicial_district_code
         }
 
-        ssvr_to_agent_map = {
-            'agent_id': 000,
-            'agent_external_id': 'XXX',
-            'district_external_id': None,
-            'supervision_violation_response_id': 999
-        }
-
         supervision_period_to_agent_map = {
             'agent_id': 1010,
             'person_id': fake_person_id,
@@ -1668,7 +1603,6 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             supervision_sentences=[supervision_sentence],
             supervision_period_judicial_district_association=[supervision_period_to_judicial_district_row],
             supervision_period_to_agent_association=[supervision_period_to_agent_map],
-            ssvr_to_agent_association=[ssvr_to_agent_map]
         )
 
         supervision_period_supervision_type = StateSupervisionPeriodSupervisionType.PROBATION
@@ -1812,14 +1746,6 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             assessment_date=date(2015, 3, 10)
         )
 
-        ssvr_to_agent_map = {
-            'agent_id': 000,
-            'person_id': fake_person_id,
-            'agent_external_id': 'OFFICER0009',
-            'district_external_id': None,
-            'supervision_violation_response_id': 999
-        }
-
         supervision_period_to_agent_map = {
             'agent_id': 1010,
             'person_id': fake_person_id,
@@ -1837,7 +1763,6 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             supervision_sentences=[supervision_sentence],
             violation_responses=[violation_report],
             supervision_period_to_agent_association=[supervision_period_to_agent_map],
-            ssvr_to_agent_association=[ssvr_to_agent_map],
         )
 
         supervision_period_supervision_type = StateSupervisionPeriodSupervisionType.PROBATION
@@ -2007,14 +1932,6 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             assessment_date=date(2015, 3, 10)
         )
 
-        ssvr_to_agent_map = {
-            'agent_id': 000,
-            'person_id': fake_person_id,
-            'agent_external_id': 'OFFICER0009',
-            'district_external_id': None,
-            'supervision_violation_response_id': 999
-        }
-
         supervision_period_to_agent_map = {
             'agent_id': 1010,
             'person_id': fake_person_id,
@@ -2032,7 +1949,6 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             supervision_sentences=[supervision_sentence],
             violation_responses=[violation_report],
             supervision_period_to_agent_association=[supervision_period_to_agent_map],
-            ssvr_to_agent_association=[ssvr_to_agent_map],
         )
 
         supervision_period_supervision_type = StateSupervisionPeriodSupervisionType.PROBATION
@@ -2175,13 +2091,6 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             assessment_date=date(2015, 3, 13)
         )
 
-        ssvr_to_agent_map = {
-            'agent_id': 000,
-            'agent_external_id': 'XXX',
-            'district_external_id': None,
-            'supervision_violation_response_id': 999
-        }
-
         supervision_period_to_agent_map = {
             'agent_id': 1010,
             'person_id': fake_person_id,
@@ -2197,7 +2106,6 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             supervision_periods=[supervision_period],
             supervision_sentences=[supervision_sentence],
             supervision_period_to_agent_association=[supervision_period_to_agent_map],
-            ssvr_to_agent_association=[ssvr_to_agent_map],
         )
 
         supervision_period_supervision_type = StateSupervisionPeriodSupervisionType.PROBATION
@@ -2282,13 +2190,6 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 supervision_periods=[supervision_period]
             )
 
-        ssvr_to_agent_map = {
-            'agent_id': 000,
-            'agent_external_id': 'XXX',
-            'district_external_id': None,
-            'supervision_violation_response_id': 999
-        }
-
         supervision_period_to_agent_map = {
             'agent_id': 1010,
             'person_id': fake_person_id,
@@ -2303,7 +2204,6 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             supervision_periods=[supervision_period],
             supervision_sentences=[supervision_sentence],
             supervision_period_to_agent_association=[supervision_period_to_agent_map],
-            ssvr_to_agent_association=[ssvr_to_agent_map],
         )
 
         supervision_period_supervision_type = StateSupervisionPeriodSupervisionType.PROBATION
@@ -2380,13 +2280,6 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             assessment_date=date(2015, 3, 10)
         )
 
-        ssvr_to_agent_map = {
-            'agent_id': 000,
-            'agent_external_id': 'XXX',
-            'district_external_id': None,
-            'supervision_violation_response_id': 999
-        }
-
         supervision_period_to_agent_map = {
             'agent_id': 1010,
             'person_id': fake_person_id,
@@ -2400,7 +2293,6 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             assessments=[assessment],
             incarceration_periods=[incarceration_period],
             supervision_period_to_agent_association=[supervision_period_to_agent_map],
-            ssvr_to_agent_association=[ssvr_to_agent_map],
         )
 
         correct_output = []

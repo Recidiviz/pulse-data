@@ -36,8 +36,7 @@ from recidiviz.calculator.pipeline.utils.calculator_utils import identify_most_s
 from recidiviz.calculator.pipeline.utils.incarceration_period_index import IncarcerationPeriodIndex
 from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_manager import \
     supervision_types_mutually_exclusive_for_state, \
-    default_to_supervision_period_officer_for_revocation_details_for_state, get_month_supervision_type, \
-    terminating_supervision_period_supervision_type, \
+    get_month_supervision_type, terminating_supervision_period_supervision_type, \
     supervision_period_counts_towards_supervision_population_in_date_range_state_specific, \
     filter_violation_responses_before_revocation, \
     should_collapse_transfers_different_purpose_for_incarceration, incarceration_period_is_from_revocation, \
@@ -112,7 +111,6 @@ def find_supervision_time_buckets(
         assessments: List[StateAssessment],
         violation_responses: List[StateSupervisionViolationResponse],
         supervision_contacts: List[StateSupervisionContact],
-        ssvr_to_agent_association: List[Dict[str, Any]],
         supervision_period_to_agent_association: List[Dict[str, Any]],
         supervision_period_judicial_district_association: List[Dict[str, Any]],
 ) -> List[SupervisionTimeBucket]:
@@ -142,8 +140,6 @@ def find_supervision_time_buckets(
         - assessments: list of StateAssessments for a person
         - violations: list of StateSupervisionViolations for a person
         - violation_responses: list of StateSupervisionViolationResponses for a person
-        - ssvr_agent_association: A list of dictionaries associating StateSupervisionViolationResponse ids to
-            information about the corresponding StateAgent on the response
         - supervision_period_to_agent_associations: A list of dictionaries associating StateSupervisionPeriod ids to
             information about the corresponding StateAgent
         - supervision_period_judicial_district_association: a list of dictionaries with information connecting
@@ -165,9 +161,6 @@ def find_supervision_time_buckets(
 
     supervision_period_to_agent_associations = list_of_dicts_to_dict_with_keys(
         supervision_period_to_agent_association, StateSupervisionPeriod.get_class_id_name())
-
-    ssvr_to_agent_associations = list_of_dicts_to_dict_with_keys(
-        ssvr_to_agent_association, StateSupervisionViolationResponse.get_class_id_name())
 
     supervision_time_buckets: List[SupervisionTimeBucket] = []
 
@@ -255,7 +248,6 @@ def find_supervision_time_buckets(
         supervision_periods,
         assessments,
         violation_responses,
-        ssvr_to_agent_associations,
         supervision_period_to_agent_associations,
         supervision_period_to_judicial_district_associations,
         incarceration_period_index)
@@ -650,7 +642,6 @@ RevocationDetails = NamedTuple('RevocationDetails', [
 
 def _get_revocation_details(incarceration_period: StateIncarcerationPeriod,
                             supervision_period: Optional[StateSupervisionPeriod],
-                            ssvr_agent_associations: Dict[int, Dict[Any, Any]],
                             supervision_period_to_agent_associations:
                             Optional[Dict[int, Dict[Any, Any]]]) -> RevocationDetails:
     """Identifies the attributes of the revocation return from the supervision period that was revoked, if available,
@@ -662,30 +653,14 @@ def _get_revocation_details(incarceration_period: StateIncarcerationPeriod,
     level_1_supervision_location_external_id = None
     level_2_supervision_location_external_id = None
 
+    if supervision_period and supervision_period_to_agent_associations:
+        (supervising_officer_external_id,
+         level_1_supervision_location_external_id,
+         level_2_supervision_location_external_id) = \
+            get_supervising_officer_and_location_info_from_supervision_period(
+                supervision_period, supervision_period_to_agent_associations)
+
     source_violation_response = incarceration_period.source_supervision_violation_response
-
-    if not default_to_supervision_period_officer_for_revocation_details_for_state(incarceration_period.state_code):
-        # TODO(#4547): Once reruns in stage and prod complete for the change (#4638) that properly ingests ND agent info
-        # onto supervision periods, most critically, prioritizing terminating agent over the most recent agent, we
-        # should be able to remove this block and just use the
-        # get_supervising_officer_and_location_info_from_supervision_period function for all states.
-        if source_violation_response:
-            supervision_violation_response_id = source_violation_response.supervision_violation_response_id
-
-            if supervision_violation_response_id:
-                agent_info = ssvr_agent_associations.get(supervision_violation_response_id)
-
-                if agent_info is not None:
-                    supervising_officer_external_id = agent_info.get('agent_external_id')
-                    level_1_supervision_location_external_id = agent_info.get('district_external_id')
-    else:
-        if supervision_period and supervision_period_to_agent_associations:
-            (supervising_officer_external_id,
-             level_1_supervision_location_external_id,
-             level_2_supervision_location_external_id) = \
-                get_supervising_officer_and_location_info_from_supervision_period(
-                    supervision_period, supervision_period_to_agent_associations)
-
     if source_violation_response:
         response_decisions = source_violation_response.supervision_violation_response_decisions
         if response_decisions:
@@ -854,17 +829,14 @@ def _get_responses_in_window_before_revocation(revocation_date: date,
     return responses_in_window
 
 
-def find_revocation_return_buckets(
-        supervision_sentences: List[StateSupervisionSentence],
-        incarceration_sentences: List[StateIncarcerationSentence],
-        supervision_periods: List[StateSupervisionPeriod],
-        assessments: List[StateAssessment],
-        violation_responses: List[StateSupervisionViolationResponse],
-        ssvr_agent_associations: Dict[int, Dict[Any, Any]],
-        supervision_period_to_agent_associations: Dict[int, Dict[Any, Any]],
-        supervision_period_to_judicial_district_associations: Dict[int, Dict[Any, Any]],
-        incarceration_period_index: IncarcerationPeriodIndex
-) -> List[SupervisionTimeBucket]:
+def find_revocation_return_buckets(supervision_sentences: List[StateSupervisionSentence],
+                                   incarceration_sentences: List[StateIncarcerationSentence],
+                                   supervision_periods: List[StateSupervisionPeriod],
+                                   assessments: List[StateAssessment],
+                                   violation_responses: List[StateSupervisionViolationResponse],
+                                   supervision_period_to_agent_associations: Dict[int, Dict[Any, Any]],
+                                   supervision_period_to_judicial_district_associations: Dict[int, Dict[Any, Any]],
+                                   incarceration_period_index: IncarcerationPeriodIndex) -> List[SupervisionTimeBucket]:
     """Looks at all incarceration periods to see if they were revocation returns. For each revocation admission, adds
     one RevocationReturnSupervisionTimeBuckets for each overlapping supervision period. If there are no overlapping
     supervision periods, looks for a recently terminated period. If there are no overlapping or recently terminated
@@ -907,8 +879,7 @@ def find_revocation_return_buckets(
             # Add a RevocationReturnSupervisionTimeBucket for each supervision period that was revoked
             for supervision_period in revoked_supervision_periods:
                 revocation_details = _get_revocation_details(
-                    incarceration_period, supervision_period,
-                    ssvr_agent_associations, supervision_period_to_agent_associations)
+                    incarceration_period, supervision_period, supervision_period_to_agent_associations)
 
                 pre_revocation_supervision_type = get_pre_revocation_supervision_type(
                     incarceration_sentences, supervision_sentences, incarceration_period, supervision_period)
@@ -966,8 +937,7 @@ def find_revocation_return_buckets(
         else:
             # There are no overlapping or proximal supervision periods. Add one
             # RevocationReturnSupervisionTimeBucket with as many details as possible about this revocation
-            revocation_details = _get_revocation_details(
-                incarceration_period, None, ssvr_agent_associations, None)
+            revocation_details = _get_revocation_details(incarceration_period, None, None)
 
             pre_revocation_supervision_type = get_pre_revocation_supervision_type(
                 incarceration_sentences, supervision_sentences, incarceration_period, None)

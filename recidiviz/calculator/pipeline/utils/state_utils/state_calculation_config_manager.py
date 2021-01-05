@@ -74,21 +74,6 @@ def supervision_types_mutually_exclusive_for_state(state_code: str) -> bool:
     return state_code.upper() in ('US_ID', 'US_MO')
 
 
-def default_to_supervision_period_officer_for_revocation_details_for_state(state_code: str) -> bool:
-    """For some states, if there's no officer information coming from the source_supervision_violation_response,
-    we should default to the officer information on the overlapping supervision period for the revocation details.
-
-        - US_ID: True
-        - US_MO: True
-        - US_ND: False
-        - US_PA: True
-
-    Returns whether our calculations should use supervising officer information for revocation details. Defaults to True
-    if the state_code has not been explicitly listed to return False.
-    """
-    return state_code.upper() != 'US_ND'
-
-
 def temporary_custody_periods_under_state_authority(state_code: str) -> bool:
     """Whether or not periods of temporary custody are considered a part of state authority.
 
@@ -424,8 +409,8 @@ def get_case_compliance_on_date(supervision_period: StateSupervisionPeriod,
     return None
 
 
-# TODO(#3829): Build level 1/level 2 supervision location distinction directly into our schema (info currently
-#  packed into supervision_site for states that have both).
+# TODO(#3829): Remove this helper once we've built level 1/level 2 supervision location distinction directly into our
+#  schema (info currently packed into supervision_site for states that have both).
 def get_supervising_officer_and_location_info_from_supervision_period(
         supervision_period: StateSupervisionPeriod,
         supervision_period_to_agent_associations: Dict[int, Dict[str, Any]]) \
