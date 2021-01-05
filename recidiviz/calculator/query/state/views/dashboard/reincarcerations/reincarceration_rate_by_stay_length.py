@@ -38,6 +38,23 @@ REINCARCERATION_RATE_BY_STAY_LENGTH_DESCRIPTION = \
 REINCARCERATION_RATE_BY_STAY_LENGTH_QUERY_TEMPLATE = \
     """
     /*{description}*/
+    WITH releases AS (
+        SELECT
+          state_code,
+          release_cohort,
+          follow_up_period,
+          person_id,
+          recidivated_releases,
+          stay_length_bucket,
+          county_of_residence,
+          ROW_NUMBER() OVER (PARTITION BY state_code, release_cohort, follow_up_period, person_id
+                                ORDER BY release_date ASC, recidivated_releases DESC) as release_order
+        FROM `{project_id}.{materialized_metrics_dataset}.most_recent_recidivism_rate_metrics`
+        WHERE methodology = 'EVENT'
+          AND follow_up_period = 1
+          AND release_cohort = EXTRACT(YEAR FROM DATE_SUB(CURRENT_DATE(), INTERVAL 2 YEAR))
+    )
+
     SELECT
       state_code,
       release_cohort,
@@ -46,13 +63,10 @@ REINCARCERATION_RATE_BY_STAY_LENGTH_QUERY_TEMPLATE = \
       SUM(recidivated_releases)/COUNT(*) AS recidivism_rate,
       stay_length_bucket,
       district
-    FROM `{project_id}.{materialized_metrics_dataset}.most_recent_recidivism_rate_metrics`,
-    {district_dimension}
-    WHERE methodology = 'PERSON'
-      AND person_id IS NOT NULL
-      AND follow_up_period = 1
-      AND district IS NOT NULL
-      AND release_cohort = EXTRACT(YEAR FROM DATE_SUB(CURRENT_DATE(), INTERVAL 2 YEAR))
+    FROM releases,
+      {district_dimension}
+    WHERE release_order = 1
+    AND district IS NOT NULL
     GROUP BY state_code, release_cohort, follow_up_period, stay_length_bucket, district
     ORDER BY state_code, release_cohort, follow_up_period, stay_length_bucket, district
     """

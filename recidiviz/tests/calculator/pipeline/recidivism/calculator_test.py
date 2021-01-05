@@ -1343,7 +1343,8 @@ class TestCharacteristicCombinations(unittest.TestCase):
                            'ethnicity': [Ethnicity.NOT_HISPANIC],
                            'person_id': 12345,
                            'return_type': ReincarcerationReturnType.NEW_ADMISSION,
-                           'prioritized_race_or_ethnicity': _DEFAULT_PERSON_METADATA.prioritized_race_or_ethnicity
+                           'prioritized_race_or_ethnicity': _DEFAULT_PERSON_METADATA.prioritized_race_or_ethnicity,
+                           'release_date': release_event.release_date
                            }
 
         self.assertEqual(expected_output, characteristic_dict)
