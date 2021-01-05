@@ -32,14 +32,14 @@ from typing import Dict, Tuple, Optional, List
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 import recidiviz.reporting.email_reporting_utils as utils
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
+from recidiviz.reporting.context.po_monthly_report.constants import DEFAULT_EMAIL_SUBJECT
 from recidiviz.reporting.sendgrid_client_wrapper import SendGridClientWrapper
-
-EMAIL_SUBJECT = "Your monthly Recidiviz report"
 
 
 def deliver(batch_id: str,
             redirect_address: Optional[str] = None,
-            cc_addresses: Optional[List[str]] = None) -> Tuple[int, int]:
+            cc_addresses: Optional[List[str]] = None,
+            subject_override: Optional[str] = None) -> Tuple[int, int]:
     """Delivers emails for the given batch.
 
     Delivers emails to the email address specified in the generated email filename.
@@ -50,6 +50,8 @@ def deliver(batch_id: str,
     Args:
         batch_id: The identifier for the batch
         redirect_address: (optional) An email address to which all emails will be sent
+        cc_addresses: (optional) A list of email addressed to include on the cc line
+        subject_override: (optional) The subject line to override to.
 
     Returns:
         A tuple with counts of successful deliveries and failures (successes, failures)
@@ -86,12 +88,13 @@ def deliver(batch_id: str,
     success_count = 0
     fail_count = 0
     sendgrid = SendGridClientWrapper()
+    subject = DEFAULT_EMAIL_SUBJECT if subject_override is None else subject_override
 
     for recipient_email_address in html_files:
         sent_successfully = sendgrid.send_message(to_email=recipient_email_address,
                                                   from_email=from_email_address,
                                                   from_email_name=from_email_name,
-                                                  subject=EMAIL_SUBJECT,
+                                                  subject=subject,
                                                   html_content=html_files[recipient_email_address],
                                                   redirect_address=redirect_address,
                                                   cc_addresses=cc_addresses,

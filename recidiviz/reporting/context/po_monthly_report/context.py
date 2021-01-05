@@ -33,6 +33,7 @@ from recidiviz.reporting.context.context_utils import singular_or_plural, month_
     round_float_value_to_int, round_float_value_to_number_of_digits, format_greeting, format_name, format_date, \
     format_violation_type, align_columns
 import recidiviz.reporting.email_reporting_utils as utils
+from recidiviz.reporting.context.po_monthly_report.constants import DEFAULT_MESSAGE_BODY
 from recidiviz.reporting.context.report_context import ReportContext
 from recidiviz.reporting.recipient import Recipient
 
@@ -130,8 +131,10 @@ class PoMonthlyReportContext(ReportContext):
         self.prepared_data = copy.deepcopy(self.recipient_data)
 
         self.prepared_data["static_image_path"] = utils.get_static_image_path(self.state_code, self.get_report_type())
-
         self.prepared_data["greeting"] = format_greeting(self.recipient_data["officer_given_name"])
+
+        if "message_body" not in self.prepared_data:
+            self.prepared_data["message_body"] = DEFAULT_MESSAGE_BODY
 
         self._convert_month_to_name("review_month")
 
@@ -196,7 +199,7 @@ class PoMonthlyReportContext(ReportContext):
         return num_metrics_outperformed_region_averages
 
     def _set_total_revocations(self) -> None:
-        self.prepared_data['total_revocations'] = str(int(self.recipient_data['technical_revocations']) + \
+        self.prepared_data['total_revocations'] = str(int(self.recipient_data['technical_revocations']) +
                                                       int(self.recipient_data['crime_revocations']))
 
     def _get_metric_text_singular_or_plural(self, metric_value: int) -> str:
@@ -391,7 +394,7 @@ class PoMonthlyReportContext(ReportContext):
                 elif clients_key == "absconsions_clients":
                     additional_columns = [
                         f'Absconsion reported on {format_date(client["absconsion_report_date"])}'
-                     ]
+                    ]
                 elif clients_key == "revocations_clients":
                     additional_columns = [
                         f'{format_violation_type(client["revocation_violation_type"])}',

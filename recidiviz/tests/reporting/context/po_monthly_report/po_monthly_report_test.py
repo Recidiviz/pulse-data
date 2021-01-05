@@ -26,6 +26,7 @@ import json
 
 from recidiviz.reporting.recipient import Recipient
 from recidiviz.tests.ingest.fixtures import as_string_from_relative_path
+from recidiviz.reporting.context.po_monthly_report.constants import DEFAULT_MESSAGE_BODY
 from recidiviz.reporting.context.po_monthly_report.context import PoMonthlyReportContext
 
 # The path is defined relative to recidiviz/tests/ingest, hence the specific path structure below:
@@ -174,6 +175,7 @@ class PoMonthlyReportContextTests(TestCase):
 
         expected = deepcopy(self.recipient.data)
         expected["static_image_path"] = "http://123.456.7.8/US_ID/po_monthly_report/static"
+        expected["message_body"] = DEFAULT_MESSAGE_BODY
         expected["review_month"] = "May"
         expected["greeting"] = "Hey there, Christopher!"
 
