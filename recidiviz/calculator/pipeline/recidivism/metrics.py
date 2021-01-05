@@ -37,7 +37,8 @@ class ReincarcerationRecidivismMetricType(RecidivizMetricType):
     REINCARCERATION_RATE = 'REINCARCERATION_RATE'
 
 
-# TODO: Implement rearrest and reconviction recidivism metrics (Issues #1841 and #1842)
+# TODO(#1841): Implement rearrest recidivism metrics
+# TODO(#1842): Implement reconviction recidivism metrics
 @attr.s
 class ReincarcerationRecidivismMetric(RecidivizMetric, PersonLevelMetric):
     """Models a single recidivism metric.
@@ -169,6 +170,9 @@ class ReincarcerationRecidivismRateMetric(ReincarcerationRecidivismMetric):
 
     # The float rate of recidivism for the releases that the characteristics in this metric describe
     recidivism_rate: float = attr.ib(default=None)  # non-nullable
+
+    # Date of release
+    release_date: date = attr.ib(default=None)  # non-nullable
 
     @staticmethod
     def build_from_metric_key_group(metric_key: Dict[str, Any],
