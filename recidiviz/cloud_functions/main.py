@@ -263,6 +263,8 @@ def handle_start_new_batch_email_reporting(request: Request) -> None:
             state_code: (required) State code for the report (i.e. "US_ID")
             report_type: (required) The type of report (i.e. "po_monthly_report")
             test_address: (optional) A test address to generate emails for
+            region_code: (optional) The sub-region of the state to generate emails for (i.e. "US_ID_D5")
+            message_body: (optional) If included, overrides the default message body.
         Args:
             request: The HTTP request. Must contain JSON with "state_code" and
             "report_type" keys, and may contain an optional "test_address" key.
@@ -281,8 +283,13 @@ def handle_start_new_batch_email_reporting(request: Request) -> None:
         logging.error("No request params, returning")
         return
 
-    query_params = build_query_param_string(request_params,
-                                            ["state_code", "report_type", "test_address", "region_code"])
+    query_params = build_query_param_string(request_params, [
+        "state_code",
+        "report_type",
+        "test_address",
+        "region_code",
+        "message_body",
+    ])
 
     url = _APP_ENGINE_PO_MONTHLY_REPORT_GENERATE_EMAILS_URL.format(project_id, query_params)
 
@@ -303,6 +310,7 @@ def handle_deliver_emails_for_batch_email_reporting(request: Request) -> None:
         cc_address: (optional) List of email addresses to include in the CC field.
             Example JSON:
             { "batch_id": "XXXX", "cc_address": ["cc_address@domain.org"] }
+        subject_override: (optional) Override the subject of the sent out emails
     Args:
         request: HTTP request payload containing JSON with keys as described above
     Returns:
@@ -320,7 +328,12 @@ def handle_deliver_emails_for_batch_email_reporting(request: Request) -> None:
         logging.error("No request params, returning")
         return
 
-    query_params = build_query_param_string(request_params, ["batch_id", "redirect_address", "cc_address"])
+    query_params = build_query_param_string(request_params, [
+        "batch_id",
+        "redirect_address",
+        "cc_address",
+        "subject_override",
+    ])
 
     url = _APP_ENGINE_PO_MONTHLY_REPORT_DELIVER_EMAILS_URL.format(project_id, query_params)
 

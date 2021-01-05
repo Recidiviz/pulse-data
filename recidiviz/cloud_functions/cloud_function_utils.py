@@ -21,7 +21,8 @@ Mostly copied from:
 https://cloud.google.com/iap/docs/authentication-howto#iap_make_request-python
 """
 import re
-from typing import Optional, Match
+from typing import List, Match, Optional
+import urllib.parse
 
 import requests
 
@@ -48,8 +49,8 @@ GCP_PROJECT_ID_KEY = 'GCP_PROJECT'
 _IAM_SCOPE = 'https://www.googleapis.com/auth/iam'
 _OAUTH_TOKEN_URI = 'https://www.googleapis.com/oauth2/v4/token'
 _STATE_DIRECT_INGEST_BUCKET_REGEX = re.compile(
-        r'(recidiviz-staging|recidiviz-123)-direct-ingest-state-'
-        r'([a-z]+-[a-z]+)$')
+    r'(recidiviz-staging|recidiviz-123)-direct-ingest-state-'
+    r'([a-z]+-[a-z]+)$')
 
 # Value to be passed to the GCSFileSystem cache_timeout to indicate that we
 # should not cache.
@@ -177,21 +178,20 @@ def get_dataflow_template_bucket(project_id: str) -> str:
     return f'{project_id}-dataflow-templates'
 
 
-def build_query_param_string(request_params: dict, accepted_query_params: list) -> str:
+def build_query_param_string(request_params: dict, accepted_query_params: List[str]) -> str:
     """Given a dict of request params from the CF event JSON, it returns a query string for a URL endpoint for the
     request params that are included in the `accepted_query_params` list.
     If the param value is a list, it will add a query param for each value in the list.
     If a request param key is not accepted by the endpoint, it will raise a KeyError.
     """
-    query_params = []
+    query_tuples = []
     for param_key, param_value in request_params.items():
         if param_key not in accepted_query_params:
             raise KeyError(f"Unexpected key in request: [{param_key}]. "
                            f"Expected one of the following: {accepted_query_params}")
         if isinstance(param_value, list):
-            query_params.extend([f"{param_key}={value}" for value in param_value])
+            for val in param_value:
+                query_tuples.append((param_key, val))
         if isinstance(param_value, str):
-            query_params.append(f"{param_key}={param_value}")
-    if not query_params:
-        return ""
-    return f"?{'&'.join(query_params)}"
+            query_tuples.append((param_key, param_value))
+    return f'?{urllib.parse.urlencode(query_tuples)}'

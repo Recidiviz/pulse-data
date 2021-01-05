@@ -23,6 +23,7 @@ from recidiviz.cloud_functions.cloud_function_utils import \
 
 class CloudFunctionUtilsTest(TestCase):
     """Tests for cloud_function_utils.py."""
+
     def test_get_state_region_code_from_bucket(self) -> None:
         self.assertEqual(
             get_state_region_code_from_direct_ingest_bucket(
@@ -57,13 +58,13 @@ class CloudFunctionUtilsTest(TestCase):
 
     def test_build_query_param_string(self) -> None:
         """Given valid request params, it returns a query param string."""
-        request_params = { "batch_id": "20201120051030",
-                           "redirect_address": "dev@recidiviz.org",
-                           "cc_address": ["cc1@domain.org", "cc2@domain.org"]}
+        request_params = {"batch_id": "20201120051030",
+                          "redirect_address": "dev@recidiviz.org",
+                          "cc_address": ["cc1@domain.org", "cc2@domain.org"]}
 
         accepted_query_params = ["batch_id", "redirect_address", "cc_address"]
-        expected = "?batch_id=20201120051030&redirect_address=dev@recidiviz.org&cc_address=cc1@domain.org&" \
-                   "cc_address=cc2@domain.org"
+        expected = "?batch_id=20201120051030&redirect_address=dev%40recidiviz.org&cc_address=cc1%40domain.org&" \
+                   "cc_address=cc2%40domain.org"
         self.assertEqual(expected, build_query_param_string(request_params, accepted_query_params))
 
     def test_build_query_param_string_invalid_request_params(self) -> None:
@@ -79,5 +80,5 @@ class CloudFunctionUtilsTest(TestCase):
                           "redirect_address": None,
                           "cc_address": ["cc1@domain.org", "cc2@domain.org"]}
         accepted_query_params = ["batch_id", "redirect_address", "cc_address"]
-        expected = "?batch_id=20201120051030&cc_address=cc1@domain.org&cc_address=cc2@domain.org"
+        expected = "?batch_id=20201120051030&cc_address=cc1%40domain.org&cc_address=cc2%40domain.org"
         self.assertEqual(expected, build_query_param_string(request_params, accepted_query_params))
