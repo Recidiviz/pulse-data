@@ -17,10 +17,12 @@
 
 """Helpers for working with parameters from requests."""
 from typing import List, Optional
+from urllib.parse import unquote
 from werkzeug.datastructures import MultiDict
 
+
 def get_str_param_value(
-        arg_key: str, args, default: Optional[str] = None,
+        arg_key: str, args: MultiDict, default: Optional[str] = None,
         preserve_case: bool = False) -> Optional[str]:
     """Retrieves URL parameter from request handler params list
 
@@ -45,6 +47,7 @@ def get_str_param_value(
     return clean_str_param_value(args.get(arg_key, default),
                                  preserve_case=preserve_case)
 
+
 def get_only_str_param_value(arg_key: str, args: MultiDict, preserve_case: bool = False) -> Optional[str]:
     """Returns a single value for the provided key in the request args.
 
@@ -53,12 +56,13 @@ def get_only_str_param_value(arg_key: str, args: MultiDict, preserve_case: bool 
         A single value for a given arg_key if found
         None if no value is found
     """
-    values = get_str_param_values(arg_key, args)
+    values = get_str_param_values(arg_key, args, preserve_case=preserve_case)
     if len(values) > 1:
         raise ValueError(f"Only one value can be provided for query param {arg_key}.")
     if values:
-        return clean_str_param_value(values[0], preserve_case=preserve_case)
+        return values[0]
     return None
+
 
 def get_bool_param_value(arg_key: str, args: MultiDict, default: bool) -> bool:
     str_value = get_str_param_value(arg_key, args)
@@ -79,13 +83,16 @@ def str_to_bool(bool_str: str, arg_key=None) -> bool:
     raise ValueError(
         f'Unexpected value {bool_str} for bool param {arg_key}')
 
-def get_str_param_values(arg_key: str, args: MultiDict) -> List[str]:
+
+def get_str_param_values(arg_key: str, args: MultiDict, preserve_case: bool = False) -> List[str]:
     """Same as above, but returns all values for a given key"""
-    return [clean_str_param_value(val) for val in args.getlist(arg_key)]
+    values = [clean_str_param_value(val, preserve_case=preserve_case) for val in args.getlist(arg_key)]
+    return [v for v in values if v is not None]
 
 
-def clean_str_param_value(value: str, preserve_case: bool = False) -> str:
+def clean_str_param_value(value: Optional[str], preserve_case: bool = False) -> Optional[str]:
     if value:
+        value = unquote(value)
         if preserve_case:
             return value.strip()
         return value.lower().strip()
