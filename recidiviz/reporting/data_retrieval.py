@@ -37,7 +37,8 @@ from recidiviz.reporting.region_codes import InvalidRegionCodeException, REGION_
 def start(state_code: str,
           report_type: str,
           test_address: Optional[str] = None,
-          region_code: Optional[str] = None) -> str:
+          region_code: Optional[str] = None,
+          message_body: Optional[str] = None) -> str:
     """Begins data retrieval for a new batch of email reports.
 
     Start with collection of data from the calculation pipelines.
@@ -51,6 +52,7 @@ def start(state_code: str,
         test_address: Optional email address for which to generate all emails
         region_code: Optional region code which specifies the sub-region of the state in which to
             generate reports. If empty, this generates reports for all regions.
+        message_body: Optional override for the message body in the email.
 
     Returns: The batch id for the newly started batch
     """
@@ -67,8 +69,15 @@ def start(state_code: str,
         logging.info("Overriding batch emails with test address: %s", test_address)
         recipients = [
             recipient.create_derived_recipient({
-                "email_address": utils.format_test_address(test_address, recipient.email_address)
+                "email_address": utils.format_test_address(test_address, recipient.email_address),
             })
+            for recipient in recipients
+        ]
+
+    if message_body is not None:
+        logging.info("Overriding default message body in batch emails (batch id = %s)", batch_id)
+        recipients = [
+            recipient.create_derived_recipient({"message_body": message_body})
             for recipient in recipients
         ]
 

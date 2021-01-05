@@ -51,6 +51,7 @@ def start_new_batch() -> Tuple[str, HTTPStatus]:
             username, for example: tester+recipient_username@tester-domain.org.
         region_code: (optional) Indicates the sub-region of the state to generate emails for. If
             omitted, we generate emails for all sub-regions of the state.
+        message_body: (optional) If included, overrides the default message body.
 
     Returns:
         Text indicating the results of the run and an HTTP status
@@ -63,6 +64,7 @@ def start_new_batch() -> Tuple[str, HTTPStatus]:
         report_type = get_only_str_param_value('report_type', request.args)
         test_address = get_only_str_param_value('test_address', request.args)
         region_code = get_only_str_param_value('region_code', request.args)
+        message_body = get_only_str_param_value('message_body', request.args, preserve_case=True)
 
         validate_email_address(test_address)
     except ValueError as error:
@@ -81,7 +83,13 @@ def start_new_batch() -> Tuple[str, HTTPStatus]:
     region_code = None if not region_code else region_code.upper()
 
     try:
-        batch_id = data_retrieval.start(state_code, report_type, test_address, region_code)
+        batch_id = data_retrieval.start(
+            state_code,
+            report_type,
+            test_address,
+            region_code,
+            message_body,
+        )
     except InvalidRegionCodeException:
         return 'Invalid region code provided', HTTPStatus.BAD_REQUEST
     else:
@@ -104,7 +112,8 @@ def deliver_emails_for_batch() -> Tuple[str, HTTPStatus]:
         cc_address: (optional) An email address to which all emails will be CC'd. This can be used for sending
         a batch of reports to multiple recipients. Multiple cc_address params can be given.
             Example:
-            ?batch_id=123&cc_address=cc-one@test.org&cc_address=cc_two@test.org&cc_address=cc_three@test.org
+            ?batch_id=123&cc_address=cc-one%40test.org&cc_address=cc_two%40test.org&cc_address=cc_three%40test.org
+        subject_override: (optional) Override for subject being sent.
 
     Returns:
         Text indicating the results of the run and an HTTP status
@@ -117,6 +126,7 @@ def deliver_emails_for_batch() -> Tuple[str, HTTPStatus]:
         batch_id = get_only_str_param_value('batch_id', request.args)
         redirect_address = get_only_str_param_value('redirect_address', request.args)
         cc_addresses = get_str_param_values('cc_address', request.args)
+        subject_override = get_only_str_param_value('subject_override', request.args, preserve_case=True)
 
         validate_email_address(redirect_address)
         for cc_address in cc_addresses:
@@ -132,7 +142,8 @@ def deliver_emails_for_batch() -> Tuple[str, HTTPStatus]:
 
     success_count, failure_count = email_delivery.deliver(batch_id,
                                                           redirect_address=redirect_address,
-                                                          cc_addresses=cc_addresses)
+                                                          cc_addresses=cc_addresses,
+                                                          subject_override=subject_override)
 
     redirect_text = f"to the redirect email address {redirect_address}" if redirect_address else ""
     cc_addresses_text = f"CC'd {','.join(email for email in cc_addresses)}." if cc_addresses else ""
