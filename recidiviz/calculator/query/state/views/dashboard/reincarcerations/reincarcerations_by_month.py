@@ -30,32 +30,40 @@ REINCARCERATIONS_BY_MONTH_DESCRIPTION = """ Reincarcerations by month """
 REINCARCERATIONS_BY_MONTH_QUERY_TEMPLATE = \
     """
     /*{description}*/
-    SELECT
-      state_code, year, month, district,
-      IFNULL(ret.returns, 0) as returns,
-      IFNULL(adm.total_admissions, 0) as total_admissions
-    FROM (
+    WITH admissions AS (
       SELECT
         state_code, year, month,
         district,
         COUNT(person_id) as total_admissions
       FROM `{project_id}.{reference_views_dataset}.event_based_admissions`
       GROUP BY state_code, year, month, district
-    ) adm
-    LEFT JOIN (
+    ), reincarcerations AS (
+      SELECT
+        state_code, year, month,
+        county_of_residence,
+        person_id,
+        ROW_NUMBER() OVER (PARTITION BY state_code, year, month, person_id
+                            ORDER BY reincarceration_date, county_of_residence) as return_order
+      FROM `{project_id}.{materialized_metrics_dataset}.most_recent_recidivism_count_metrics`
+      WHERE methodology = 'EVENT'
+      AND year >= EXTRACT(YEAR FROM DATE_SUB(CURRENT_DATE('US/Pacific'), INTERVAL 3 YEAR))
+    ), person_based_reincarcerations AS (
       SELECT
         state_code, year, month,
         district,
         COUNT(person_id) AS returns
-      FROM `{project_id}.{materialized_metrics_dataset}.most_recent_recidivism_count_metrics`,
+      FROM reincarcerations,
       {district_dimension}
-      WHERE methodology = 'PERSON'
-        AND person_id IS NOT NULL
-        AND metric_period_months = 1
-        AND month IS NOT NULL
-        AND year >= EXTRACT(YEAR FROM DATE_SUB(CURRENT_DATE('US/Pacific'), INTERVAL 3 YEAR))
+      WHERE return_order = 1
       GROUP BY state_code, year, month, district
-    ) ret
+    )
+    
+    SELECT
+      state_code, year, month, district,
+      IFNULL(returns, 0) as returns,
+      IFNULL(total_admissions, 0) as total_admissions
+    FROM admissions
+    LEFT JOIN person_based_reincarcerations
     USING (state_code, year, month, district)
     WHERE district IS NOT NULL
     ORDER BY state_code, year, month, district
@@ -69,8 +77,7 @@ REINCARCERATIONS_BY_MONTH_VIEW_BUILDER = MetricBigQueryViewBuilder(
     description=REINCARCERATIONS_BY_MONTH_DESCRIPTION,
     materialized_metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
-    district_dimension=bq_utils.unnest_district(
-        district_column='county_of_residence'),
+    district_dimension=bq_utils.unnest_district(district_column='county_of_residence'),
 )
 
 if __name__ == '__main__':
