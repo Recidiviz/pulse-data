@@ -31,34 +31,50 @@ REINCARCERATIONS_BY_PERIOD_DESCRIPTION = \
 REINCARCERATIONS_BY_PERIOD_QUERY_TEMPLATE = \
     """
     /*{description}*/
-    SELECT
-      state_code, metric_period_months, district,
-      IFNULL(ret.returns, 0) as returns,
-      IFNULL(adm.total_admissions, 0) as total_admissions
-    FROM (
+
+    WITH admissions AS (
+      SELECT
+            state_code, metric_period_months,
+            district,
+            COUNT(DISTINCT person_id) as total_admissions
+          FROM `{project_id}.{reference_views_dataset}.event_based_admissions`,
+          {metric_period_dimension}
+          WHERE {metric_period_condition}
+          GROUP BY state_code, metric_period_months, district
+    ), all_reincarcerations AS (
+      SELECT
+        state_code, year, month, reincarceration_date, 
+        county_of_residence,
+        person_id
+      FROM `{project_id}.{materialized_metrics_dataset}.most_recent_recidivism_count_metrics`
+        WHERE methodology = 'EVENT'
+    ), reincarcerations_with_metric_periods AS (
       SELECT
         state_code, metric_period_months,
-        district,
-        COUNT(DISTINCT person_id) as total_admissions
-      FROM `{project_id}.{reference_views_dataset}.event_based_admissions`,
+        county_of_residence,
+        person_id,
+        ROW_NUMBER() OVER (PARTITION BY state_code, metric_period_months, person_id
+                            ORDER BY reincarceration_date, county_of_residence) as return_order
+      FROM all_reincarcerations,
       {metric_period_dimension}
       WHERE {metric_period_condition}
-      GROUP BY state_code, metric_period_months, district
-    ) adm
-    LEFT JOIN (
+    ), person_based_reincarcerations AS (
       SELECT
         state_code, metric_period_months,
         district,
-        COUNT(DISTINCT person_id) AS returns
-      FROM `{project_id}.{materialized_metrics_dataset}.most_recent_recidivism_count_metrics` m,
-      {district_dimension},
-      {metric_period_dimension}
-      WHERE methodology = 'PERSON'
-        AND person_id IS NOT NULL
-        AND m.metric_period_months = 1
-        AND {metric_period_condition}
+        COUNT(person_id) AS returns
+      FROM reincarcerations_with_metric_periods,
+      {district_dimension}
+      WHERE return_order = 1
       GROUP BY state_code, metric_period_months, district
-    ) ret
+    )
+
+    SELECT
+      state_code, metric_period_months, district,
+      IFNULL(returns, 0) as returns,
+      IFNULL(total_admissions, 0) as total_admissions
+    FROM admissions
+    LEFT JOIN person_based_reincarcerations 
     USING (state_code, metric_period_months, district)
     WHERE district IS NOT NULL
     ORDER BY state_code, metric_period_months, district
@@ -72,8 +88,7 @@ REINCARCERATIONS_BY_PERIOD_VIEW_BUILDER = MetricBigQueryViewBuilder(
     description=REINCARCERATIONS_BY_PERIOD_DESCRIPTION,
     materialized_metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
-    district_dimension=bq_utils.unnest_district(
-        district_column='county_of_residence'),
+    district_dimension=bq_utils.unnest_district(district_column='county_of_residence'),
     metric_period_dimension=bq_utils.unnest_metric_period_months(),
     metric_period_condition=bq_utils.metric_period_condition(),
 )
