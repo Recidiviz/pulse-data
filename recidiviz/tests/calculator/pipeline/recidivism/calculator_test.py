@@ -19,6 +19,7 @@
 
 """Tests for recidivism/calculator.py."""
 import unittest
+from collections import defaultdict
 from datetime import date
 from typing import Dict, List
 
@@ -50,8 +51,9 @@ _COUNTY_OF_RESIDENCE = 'county'
 
 class TestReincarcerations(unittest.TestCase):
     """Tests the reincarcerations() function in the calculator."""
+
     def test_reincarcerations(self):
-        release_date = date.today()
+        release_date = date(2018, 1, 1)
         original_admission_date = release_date - relativedelta(years=4)
         reincarceration_date = release_date + relativedelta(years=3)
         second_release_date = reincarceration_date + relativedelta(years=1)
@@ -66,6 +68,29 @@ class TestReincarcerations(unittest.TestCase):
         release_events = {2018: [first_event], 2022: [second_event]}
 
         expected_reincarcerations = {reincarceration_date: first_event}
+
+        reincarcerations = calculator.reincarcerations(release_events)
+        self.assertEqual(expected_reincarcerations, reincarcerations)
+
+    def test_reincarcerations_two_releases_same_reincarceration(self):
+        release_date = date(2018, 1, 1)
+        original_admission_date = release_date - relativedelta(years=4)
+        second_release_date = release_date + relativedelta(years=1)
+        reincarceration_date = second_release_date + relativedelta(years=1)
+
+        first_event = RecidivismReleaseEvent(
+            'CA', original_admission_date, release_date, 'Sing Sing',
+            _COUNTY_OF_RESIDENCE, reincarceration_date, 'Sing Sing',
+            ReincarcerationReturnType.NEW_ADMISSION)
+        second_event = RecidivismReleaseEvent(
+            'CA', release_date, second_release_date, 'Sing Sing',
+            _COUNTY_OF_RESIDENCE, reincarceration_date, 'Sing Sing',
+            ReincarcerationReturnType.NEW_ADMISSION)
+        release_events = {2018: [first_event], 2022: [second_event]}
+
+        # Both release events have identified the same admission that can be counted as a valid reincarceration
+        # The second event is prioritized because it has fewer days between release and reincarceration
+        expected_reincarcerations = {reincarceration_date: second_event}
 
         reincarcerations = calculator.reincarcerations(release_events)
         self.assertEqual(expected_reincarcerations, reincarcerations)
@@ -267,124 +292,6 @@ class TestStayLengthBucket(unittest.TestCase):
             self.assertEqual(bucket, event.stay_length_bucket)
 
 
-class TestRecidivismValueForMetric(unittest.TestCase):
-    """Tests the recidivism_value_for_metric() function in the calculator."""
-    def test_recidivism_value_for_metric(self):
-        combo = {'age': '<25', 'race': 'black', 'gender': 'female'}
-
-        value = calculator.recidivism_value_for_metric(combo, None, None, None)
-
-        self.assertEqual(1, value)
-
-    def test_recidivism_value_for_metric_new_admission(self):
-        combo = {'age': '<25', 'race': 'black', 'gender': 'female',
-                 'return_type': ReincarcerationReturnType.NEW_ADMISSION}
-
-        value = calculator.recidivism_value_for_metric(
-            combo, ReincarcerationReturnType.NEW_ADMISSION, None, None)
-
-        self.assertEqual(1, value)
-
-    def test_recidivism_value_for_metric_not_new_admission(self):
-        combo = {'age': '<25', 'race': 'black', 'gender': 'female',
-                 'return_type': ReincarcerationReturnType.NEW_ADMISSION}
-
-        value = calculator.recidivism_value_for_metric(
-            combo, ReincarcerationReturnType.REVOCATION, None, None)
-
-        self.assertEqual(0, value)
-
-    def test_recidivism_value_for_metric_parole_revocation(self):
-        combo = {'age': '<25', 'race': 'black', 'gender': 'female',
-                 'return_type': ReincarcerationReturnType.REVOCATION,
-                 'from_supervision_type':
-                     StateSupervisionPeriodSupervisionType.PAROLE}
-
-        value = calculator.recidivism_value_for_metric(
-            combo, ReincarcerationReturnType.REVOCATION,
-            StateSupervisionPeriodSupervisionType.PAROLE, None)
-
-        self.assertEqual(1, value)
-
-    def test_recidivism_value_for_metric_probation_revocation(self):
-        combo = {'age': '<25', 'race': 'black', 'gender': 'female',
-                 'return_type': ReincarcerationReturnType.REVOCATION,
-                 'from_supervision_type':
-                     StateSupervisionPeriodSupervisionType.PROBATION}
-
-        value = calculator.recidivism_value_for_metric(
-            combo, ReincarcerationReturnType.REVOCATION,
-            StateSupervisionPeriodSupervisionType.PROBATION, None)
-
-        self.assertEqual(1, value)
-
-    def test_recidivism_value_for_metric_parole_revocation_source_violation(self):
-        combo = {'age': '<25', 'race': 'black', 'gender': 'female',
-                 'return_type': ReincarcerationReturnType.REVOCATION,
-                 'from_supervision_type':
-                     StateSupervisionPeriodSupervisionType.PAROLE,
-                 'source_violation_type': StateSupervisionViolationType.TECHNICAL}
-
-        value = calculator.recidivism_value_for_metric(
-            combo, ReincarcerationReturnType.REVOCATION,
-            StateSupervisionPeriodSupervisionType.PAROLE,
-            StateSupervisionViolationType.TECHNICAL)
-
-        self.assertEqual(1, value)
-
-    def test_recidivism_value_for_metric_probation_revocation_source_violation(self):
-        combo = {'age': '<25', 'race': 'black', 'gender': 'female',
-                 'return_type': ReincarcerationReturnType.REVOCATION,
-                 'from_supervision_type':
-                     StateSupervisionPeriodSupervisionType.PROBATION,
-                 'source_violation_type': StateSupervisionViolationType.FELONY}
-
-        value = calculator.recidivism_value_for_metric(
-            combo, ReincarcerationReturnType.REVOCATION,
-            StateSupervisionPeriodSupervisionType.PROBATION,
-            StateSupervisionViolationType.FELONY)
-
-        self.assertEqual(1, value)
-
-    def test_recidivism_value_for_metric_not_revocation(self):
-        combo = {'age': '<25', 'race': 'black', 'gender': 'female',
-                 'return_type': ReincarcerationReturnType.REVOCATION,
-                 'from_supervision_type':
-                     StateSupervisionPeriodSupervisionType.PROBATION}
-
-        value = calculator.recidivism_value_for_metric(
-            combo, ReincarcerationReturnType.NEW_ADMISSION,
-            StateSupervisionPeriodSupervisionType.PROBATION, None)
-
-        self.assertEqual(0, value)
-
-    def test_recidivism_value_for_metric_not_supervision_type(self):
-        combo = {'age': '<25', 'race': 'black', 'gender': 'female',
-                 'return_type': ReincarcerationReturnType.REVOCATION,
-                 'from_supervision_type':
-                     StateSupervisionPeriodSupervisionType.PROBATION}
-
-        value = calculator.recidivism_value_for_metric(
-            combo, ReincarcerationReturnType.REVOCATION,
-            StateSupervisionPeriodSupervisionType.PAROLE, None)
-
-        self.assertEqual(0, value)
-
-    def test_recidivism_value_for_metric_not_source_violation_type(self):
-        combo = {'age': '<25', 'race': 'black', 'gender': 'female',
-                 'return_type': ReincarcerationReturnType.REVOCATION,
-                 'from_supervision_type':
-                     StateSupervisionPeriodSupervisionType.PROBATION,
-                 'source_violation_type': StateSupervisionViolationType.FELONY}
-
-        value = calculator.recidivism_value_for_metric(
-            combo, ReincarcerationReturnType.REVOCATION,
-            StateSupervisionPeriodSupervisionType.PAROLE,
-            StateSupervisionViolationType.TECHNICAL)
-
-        self.assertEqual(0, value)
-
-
 _ALL_METRIC_INCLUSIONS_DICT = {
     MetricType.REINCARCERATION_COUNT: True,
     MetricType.REINCARCERATION_RATE: True
@@ -467,9 +374,7 @@ class TestMapRecidivismCombinations(unittest.TestCase):
 
         for combination, value in recidivism_combinations:
             if combination.get('metric_type') == MetricType.REINCARCERATION_RATE and \
-                    combination.get('follow_up_period') <= 5 or \
-                    combination.get('return_type') == \
-                    ReincarcerationReturnType.REVOCATION:
+                    combination.get('follow_up_period') <= 5:
                 self.assertEqual(0, value)
             else:
                 self.assertEqual(1, value)
@@ -533,9 +438,7 @@ class TestMapRecidivismCombinations(unittest.TestCase):
 
         for combination, value in recidivism_combinations:
             if combination.get('metric_type') == MetricType.REINCARCERATION_RATE and \
-                    combination.get('follow_up_period') < 2 or \
-                    combination.get('return_type') == \
-                    ReincarcerationReturnType.REVOCATION:
+                    combination.get('follow_up_period') < 2:
                 self.assertEqual(0, value)
             else:
                 self.assertEqual(1, value)
@@ -547,18 +450,103 @@ class TestMapRecidivismCombinations(unittest.TestCase):
                     else:
                         self.assertEqual(days_at_liberty_2, combination.get('days_at_liberty'))
 
-    def test_map_recidivism_combinations_multiple_releases_in_year(self):
-        """Tests the map_recidivism_combinations function where there are multiple releases in the same year."""
-        person = StatePerson.new_with_defaults(state_code='CA', person_id=12345,
+    def test_map_recidivism_combinations_multiple_in_period_different_types(self):
+        """Tests the map_recidivism_combinations function where there are multiple instances of recidivism within a
+        follow-up period with different return type information"""
+        person = StatePerson.new_with_defaults(state_code='US_XX',
+                                               person_id=12345,
                                                birthdate=date(1984, 8, 31),
                                                gender=Gender.FEMALE)
 
-        race = StatePersonRace.new_with_defaults(state_code='CA',
+        race = StatePersonRace.new_with_defaults(state_code='US_XX',
                                                  race=Race.BLACK)
         person.races = [race]
 
         ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code='CA',
+            state_code='US_XX',
+            ethnicity=Ethnicity.NOT_HISPANIC)
+
+        person.ethnicities = [ethnicity]
+
+        release_events_by_cohort = {
+            1910: [
+                RecidivismReleaseEvent(
+                    'US_XX', date(1905, 7, 19), date(1910, 1, 1), 'Hudson',
+                    _COUNTY_OF_RESIDENCE,
+                    date(1910, 1, 12), 'Upstate',
+                    return_type=ReincarcerationReturnType.NEW_ADMISSION),
+                RecidivismReleaseEvent(
+                    'US_XX', date(1910, 1, 12), date(1910, 8, 19), 'Upstate',
+                    _COUNTY_OF_RESIDENCE,
+                    date(1910, 10, 15), 'Sing Sing',
+                    return_type=ReincarcerationReturnType.REVOCATION,
+                    from_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+                    source_violation_type=StateSupervisionViolationType.FELONY
+                )
+            ],
+        }
+
+        recidivism_combinations = calculator.map_recidivism_combinations(
+            person, release_events_by_cohort, _ALL_METRIC_INCLUSIONS_DICT, _DEFAULT_PERSON_METADATA)
+
+        # For the first event:
+        #   For all periods there is an additional event-based count:
+        #       10 periods * (1 person-based + 2 event-based) = 30 rate metrics
+        #
+        #   Count metrics: 1 count window * 2 methodologies = 2
+        #
+        # For the second event:
+        #   10 periods * 1 event-methodology = 10 rate metrics
+        #
+        # Count metrics: 1 count window * 2 methodologies = 2
+
+        expected_count = (30 + 2 + 10 + 2)
+
+        expected_return_type_counts = {
+            ReincarcerationReturnType.NEW_ADMISSION: 22,
+            ReincarcerationReturnType.REVOCATION: 22
+        }
+
+        expected_from_supervision_type_counts = {
+            StateSupervisionPeriodSupervisionType.PAROLE: 22,
+            None: 22
+        }
+
+        expected_source_violation_type_counts = {
+            StateSupervisionViolationType.FELONY: 22,
+            None: 22
+        }
+
+        # Multiplied by 2 to include the county of residence field
+        assert len(recidivism_combinations) == expected_count
+
+        return_type_counts: Dict[ReincarcerationReturnType, int] = defaultdict(int)
+        from_supervision_type_counts: Dict[StateSupervisionPeriodSupervisionType, int] = defaultdict(int)
+        source_violation_type_counts: Dict[StateSupervisionViolationType, int] = defaultdict(int)
+
+        for combination, value in recidivism_combinations:
+            self.assertEqual(1, value)
+
+            return_type_counts[combination.get('return_type')] += 1
+            from_supervision_type_counts[combination.get('from_supervision_type')] += 1
+            source_violation_type_counts[combination.get('source_violation_type')] += 1
+
+        self.assertEqual(expected_return_type_counts, return_type_counts)
+        self.assertEqual(expected_from_supervision_type_counts, from_supervision_type_counts)
+        self.assertEqual(expected_source_violation_type_counts, source_violation_type_counts)
+
+    def test_map_recidivism_combinations_multiple_releases_in_year(self):
+        """Tests the map_recidivism_combinations function where there are multiple releases in the same year."""
+        person = StatePerson.new_with_defaults(state_code='US_XX', person_id=12345,
+                                               birthdate=date(1984, 8, 31),
+                                               gender=Gender.FEMALE)
+
+        race = StatePersonRace.new_with_defaults(state_code='US_XX',
+                                                 race=Race.BLACK)
+        person.races = [race]
+
+        ethnicity = StatePersonEthnicity.new_with_defaults(
+            state_code='US_XX',
             ethnicity=Ethnicity.NOT_HISPANIC)
 
         person.ethnicities = [ethnicity]
@@ -566,12 +554,12 @@ class TestMapRecidivismCombinations(unittest.TestCase):
         release_events_by_cohort = {
             1908: [
                 RecidivismReleaseEvent(
-                    'CA', date(1905, 7, 19), date(1908, 1, 19), 'Hudson',
+                    'US_XX', date(1905, 7, 19), date(1908, 1, 19), 'Hudson',
                     _COUNTY_OF_RESIDENCE,
                     date(1908, 5, 12), 'Upstate',
                     ReincarcerationReturnType.NEW_ADMISSION),
                 NonRecidivismReleaseEvent(
-                    'CA', date(1908, 5, 12), date(1908, 8, 19), 'Upstate',
+                    'US_XX', date(1908, 5, 12), date(1908, 8, 19), 'Upstate',
                     _COUNTY_OF_RESIDENCE)
             ],
         }
@@ -588,9 +576,7 @@ class TestMapRecidivismCombinations(unittest.TestCase):
                          len(recidivism_combinations))
 
         for combination, value in recidivism_combinations:
-            if combination.get('return_type') == ReincarcerationReturnType.REVOCATION:
-                self.assertEqual(0, value)
-            elif combination.get('metric_type') == MetricType.REINCARCERATION_COUNT:
+            if combination.get('metric_type') == MetricType.REINCARCERATION_COUNT:
                 self.assertEqual(1, value)
 
                 if combination.get('person_id') is not None:
@@ -601,6 +587,65 @@ class TestMapRecidivismCombinations(unittest.TestCase):
                 if value == 0:
                     print(combination)
                 self.assertEqual(1, value)
+
+    @freeze_time('2100-01-01')
+    def test_map_recidivism_combinations_multiple_releases_same_reincarceration(self):
+        """Tests the map_recidivism_combinations function where there are multiple releases that have identified the
+        same admission as the next valid reincarceration."""
+        person = StatePerson.new_with_defaults(state_code='US_XX',
+                                               person_id=12345,
+                                               birthdate=date(1984, 8, 31),
+                                               gender=Gender.FEMALE)
+
+        race = StatePersonRace.new_with_defaults(state_code='US_XX',
+                                                 race=Race.BLACK)
+        person.races = [race]
+
+        ethnicity = StatePersonEthnicity.new_with_defaults(
+            state_code='US_XX',
+            ethnicity=Ethnicity.NOT_HISPANIC)
+
+        person.ethnicities = [ethnicity]
+
+        release_events_by_cohort = {
+            1908: [RecidivismReleaseEvent(
+                'US_XX', date(1905, 7, 19), date(1908, 9, 19), 'Hudson',
+                _COUNTY_OF_RESIDENCE,
+                date(1913, 8, 12), 'Upstate',
+                ReincarcerationReturnType.NEW_ADMISSION)],
+            1912: [RecidivismReleaseEvent(
+                'US_XX', date(1908, 9, 19), date(1912, 9, 19), 'Hudson',
+                _COUNTY_OF_RESIDENCE,
+                date(1913, 8, 12), 'Upstate',
+                ReincarcerationReturnType.NEW_ADMISSION)]
+        }
+
+        days_at_liberty_2 = (date(1913, 8, 12) - date(1912, 9, 19)).days
+
+        recidivism_combinations = calculator.map_recidivism_combinations(
+            person, release_events_by_cohort, _ALL_METRIC_INCLUSIONS_DICT, _DEFAULT_PERSON_METADATA)
+
+        # For the first event:
+        #  10 periods * 2 methodologies = 20 metrics
+        #
+        # For the second event:
+        #   10 periods * 2 methodologies = 20 metrics
+        #
+        # Count metrics: 1 count window * 2 methodologies = 2
+
+        expected_count = (20 + 20 + 2)
+
+        assert len(recidivism_combinations) == expected_count
+
+        for combination, value in recidivism_combinations:
+            if (combination.get('metric_type') == MetricType.REINCARCERATION_RATE
+                    and combination.get('release_cohort') == 1908 and combination.get('follow_up_period') < 5):
+                self.assertEqual(0, value)
+            else:
+                self.assertEqual(1, value)
+
+            if combination.get('metric_type') == MetricType.REINCARCERATION_COUNT:
+                self.assertEqual(days_at_liberty_2, combination.get('days_at_liberty'))
 
     @freeze_time('2100-01-01')
     def test_map_recidivism_combinations_return_one_year_later(self):
@@ -642,9 +687,7 @@ class TestMapRecidivismCombinations(unittest.TestCase):
 
         for combination, value in recidivism_combinations:
             if combination.get('metric_type') == MetricType.REINCARCERATION_RATE and \
-                    combination.get('follow_up_period') < 2 or \
-                    combination.get('return_type') == \
-                    ReincarcerationReturnType.REVOCATION:
+                    combination.get('follow_up_period') < 2:
                 self.assertEqual(0, value)
             else:
                 self.assertEqual(1, value)
@@ -777,9 +820,7 @@ class TestMapRecidivismCombinations(unittest.TestCase):
 
         for combination, value in recidivism_combinations:
             if combination.get('metric_type') == MetricType.REINCARCERATION_RATE and \
-                    combination.get('follow_up_period') <= 5 or \
-                    combination.get('return_type') == \
-                    ReincarcerationReturnType.REVOCATION:
+                    combination.get('follow_up_period') <= 5:
                 self.assertEqual(0, value)
             elif (combination.get('metric_type') == MetricType.REINCARCERATION_COUNT
                   and combination.get('person_id') is not None):
@@ -830,9 +871,7 @@ class TestMapRecidivismCombinations(unittest.TestCase):
 
         for combination, value in recidivism_combinations:
             if combination.get('metric_type') == MetricType.REINCARCERATION_RATE and \
-                    combination.get('follow_up_period') <= 5 or \
-                    combination.get('return_type') == \
-                    ReincarcerationReturnType.REVOCATION:
+                    combination.get('follow_up_period') <= 5:
                 self.assertEqual(0, value)
             else:
                 self.assertEqual(1, value)
@@ -888,9 +927,7 @@ class TestMapRecidivismCombinations(unittest.TestCase):
 
         for combination, value in recidivism_combinations:
             if combination.get('metric_type') == MetricType.REINCARCERATION_RATE and \
-                    combination.get('follow_up_period') <= 5 or \
-                    combination.get('return_type') == \
-                    ReincarcerationReturnType.REVOCATION:
+                    combination.get('follow_up_period') <= 5:
                 self.assertEqual(0, value)
             else:
                 self.assertEqual(1, value)
@@ -939,12 +976,7 @@ class TestMapRecidivismCombinations(unittest.TestCase):
 
         for combination, value in recidivism_combinations:
             if combination.get('metric_type') == MetricType.REINCARCERATION_RATE and \
-                    combination.get('follow_up_period') <= 5 or \
-                    combination.get('return_type') == \
-                    ReincarcerationReturnType.NEW_ADMISSION or \
-                    combination.get('from_supervision_type') == \
-                    StateSupervisionPeriodSupervisionType.PROBATION or \
-                    combination.get('source_violation_type') is not None:
+                    combination.get('follow_up_period') <= 5:
                 self.assertEqual(0, value)
             else:
                 self.assertEqual(1, value)
@@ -994,11 +1026,7 @@ class TestMapRecidivismCombinations(unittest.TestCase):
 
         for combination, value in recidivism_combinations:
             if combination.get('metric_type') == MetricType.REINCARCERATION_RATE and \
-                    combination.get('follow_up_period') <= 5 or \
-                    combination.get('return_type') == ReincarcerationReturnType.NEW_ADMISSION or \
-                    combination.get('from_supervision_type') in {StateSupervisionPeriodSupervisionType.DUAL,
-                                                                 StateSupervisionPeriodSupervisionType.PAROLE} or \
-                    combination.get('source_violation_type') is not None:
+                    combination.get('follow_up_period') <= 5:
                 self.assertEqual(0, value)
             else:
                 self.assertEqual(1, value)
@@ -1052,19 +1080,6 @@ class TestMapRecidivismCombinations(unittest.TestCase):
             if combination.get('metric_type') == MetricType.REINCARCERATION_RATE and \
                     combination.get('follow_up_period') <= 5:
                 self.assertEqual(0, value)
-            elif combination.get('return_type') == \
-                    ReincarcerationReturnType.NEW_ADMISSION or \
-                    combination.get('from_supervision_type') == \
-                    StateSupervisionPeriodSupervisionType.PROBATION:
-                self.assertEqual(0, value)
-            elif combination.get('from_supervision_type') is None or \
-                    combination.get('from_supervision_type') == \
-                    StateSupervisionPeriodSupervisionType.PAROLE:
-                if combination.get('source_violation_type') not in \
-                        [None, StateSupervisionViolationType.TECHNICAL]:
-                    self.assertEqual(0, value)
-                else:
-                    self.assertEqual(1, value)
             else:
                 self.assertEqual(1, value)
 
@@ -1110,11 +1125,7 @@ class TestMapRecidivismCombinations(unittest.TestCase):
                 assert combo['year'] == 2014
                 assert combo['month'] == 5
 
-                if combo.get('return_type') != \
-                        ReincarcerationReturnType.REVOCATION:
-                    self.assertEqual(1, value)
-                else:
-                    self.assertEqual(0, value)
+                self.assertEqual(1, value)
 
     def test_map_recidivism_combinations_count_metric_no_recidivism(self):
         person = StatePerson.new_with_defaults(state_code='CA', person_id=12345,
@@ -1195,10 +1206,9 @@ class TestMapRecidivismCombinations(unittest.TestCase):
         #
         #   Person-level metrics: (1 count window * 2 methodologies) = 2
         #
-        #   Relevant metric_period_months person-level count metrics:
-        #   (6 event-based + 4 person-based) = 10
+        #   Relevant metric_period_months person-level count metrics: 4 person-based = 4
 
-        expected_combos_count = (10 + 6 + 2 + 2 + 2 + 10)
+        expected_combos_count = (10 + 6 + 2 + 2 + 2 + 4)
 
         self.assertEqual(expected_combos_count, len(recidivism_combinations))
         self.assertEqual(len(set(id(combination_dict) for combination_dict, _ in recidivism_combinations)),
