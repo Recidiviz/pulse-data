@@ -50,8 +50,6 @@ from recidiviz.calculator.pipeline.utils.extractor_utils import BuildRootEntity,
 from recidiviz.calculator.pipeline.utils.person_utils import PersonMetadata, BuildPersonMetadata, \
     ExtractPersonEventsMetadata
 from recidiviz.calculator.pipeline.utils.pipeline_args_utils import add_shared_pipeline_arguments
-from recidiviz.calculator.query.state.views.reference.ssvr_to_agent_association import \
-    SSVR_TO_AGENT_ASSOCIATION_VIEW_NAME
 from recidiviz.calculator.query.state.views.reference.supervision_period_judicial_district_association import \
     SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_NAME
 from recidiviz.calculator.query.state.views.reference.supervision_period_to_agent_association import \
@@ -430,14 +428,6 @@ def run(apache_beam_pipeline_options: PipelineOptions,
             state_code=state_code
         ))
 
-        ssvr_agent_associations_as_kv = (p | 'Load ssvr_agent_associations_as_kv' >> ImportTableAsKVTuples(
-            dataset_id=reference_dataset,
-            table_id=SSVR_TO_AGENT_ASSOCIATION_VIEW_NAME,
-            table_key='person_id',
-            state_code_filter=state_code,
-            person_id_filter_set=person_id_filter_set
-        ))
-
         supervision_period_to_agent_associations_as_kv = (
                 p | 'Load supervision_period_to_agent_associations_as_kv' >>
                 ImportTableAsKVTuples(
@@ -550,7 +540,6 @@ def run(apache_beam_pipeline_options: PipelineOptions,
              'supervision_contacts': supervision_contacts,
              'supervision_period_judicial_district_association': sp_to_judicial_district_kv,
              'supervision_period_to_agent_association': supervision_period_to_agent_associations_as_kv,
-             'ssvr_to_agent_association': ssvr_agent_associations_as_kv
              }
             | 'Group StatePerson to all entities' >>
             beam.CoGroupByKey()

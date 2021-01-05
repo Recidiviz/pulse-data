@@ -338,7 +338,6 @@ def filter_results(table_name: str,
 def check_field_exists_in_table(table_name: str, field_name: str) -> None:
     if table_name in {
         # These are tables read by pipelines that are not in the sqlalchemy schema - skip this check
-        'ssvr_to_agent_association',
         'supervision_period_to_agent_association',
         'supervision_period_judicial_district_association',
         'state_race_ethnicity_population_counts',
