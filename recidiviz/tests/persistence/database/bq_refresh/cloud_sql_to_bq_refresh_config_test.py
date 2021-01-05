@@ -20,16 +20,19 @@
 import string
 import unittest
 from unittest import mock
-from typing import List
+from typing import Dict, List
 
 import sqlalchemy
 from google.cloud import bigquery
+from parameterized import parameterized
 
+from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.persistence.database.bq_refresh.cloud_sql_to_bq_refresh_config import CloudSqlToBQConfig
 from recidiviz.persistence.database.schema_table_region_filtered_query_builder import \
     BigQuerySchemaTableRegionFilteredQueryBuilder
 from recidiviz.persistence.database.schema_utils import is_association_table
 from recidiviz.persistence.database.sqlalchemy_engine_manager import SchemaType
+from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 
 
 class CloudSqlToBQConfigTest(unittest.TestCase):
@@ -41,9 +44,6 @@ class CloudSqlToBQConfigTest(unittest.TestCase):
         self.enabled_schema_types = [schema_type for schema_type in self.schema_types
                                      if schema_type not in self.disabled_schema_types]
         self.mock_project_id = 'fake-recidiviz-project'
-        self.mock_region_codes_to_exclude = {
-            self.mock_project_id: ['US_ND']
-        }
         self.environment_patcher = mock.patch(
             'recidiviz.persistence.database.bq_refresh.cloud_sql_to_bq_refresh_config.environment')
         self.metadata_patcher = mock.patch(
@@ -53,9 +53,25 @@ class CloudSqlToBQConfigTest(unittest.TestCase):
         self.mock_environment = self.environment_patcher.start()
         self.mock_environment.GCP_PROJECT_STAGING = self.mock_project_id
 
+        self.gcs_factory_patcher = mock.patch(
+            'recidiviz.persistence.database.bq_refresh.cloud_sql_to_bq_refresh_config.GcsfsFactory.build')
+        self.fake_gcs = FakeGCSFileSystem()
+        self.gcs_factory_patcher.start().return_value = self.fake_gcs
+        self.set_config_yaml("""
+region_codes_to_exclude:
+  - US_ND
+state_history_tables_to_include:
+  - state_person_history
+county_columns_to_exclude:
+  person:
+    - full_name
+    - birthdate_inferred_from_age
+""")
+
     def tearDown(self) -> None:
         self.metadata_patcher.stop()
         self.environment_patcher.stop()
+        self.gcs_factory_patcher.stop()
 
     def test_for_schema_type_raises_error(self) -> None:
         with self.assertRaises(ValueError):
@@ -245,3 +261,44 @@ class CloudSqlToBQConfigTest(unittest.TestCase):
                     ' not found in in the JailsBase schema.'
                     ' Did you spell it correctly?'.format(table)
             )
+
+    @parameterized.expand([
+        (SchemaType.JAILS, [], {'person': ['full_name', 'birthdate_inferred_from_age']}, []),
+        (SchemaType.OPERATIONS, ['US_ND'], {}, []),
+        (SchemaType.STATE, ['US_ND'], {}, ['state_person_history']),
+    ])
+    def test_yaml_config_reads_correctly_JAILS(self,
+                                               schema: SchemaType,
+                                               regions_to_exclude: List[str],
+                                               columns_to_exclude: Dict[str, List[str]],
+                                               history_tables_to_include: List[str]) -> None:
+        config = CloudSqlToBQConfig.for_schema_type(schema)
+        assert config is not None
+
+        self.assertListsDistinctAndEqual(regions_to_exclude, config.region_codes_to_exclude, msg_prefix='Region codes')
+        self.assertListsDistinctAndEqual(
+            history_tables_to_include,
+            config.history_tables_to_include,
+            msg_prefix='History tables')
+
+        self.assertListsDistinctAndEqual(
+            list(columns_to_exclude.keys()),
+            list(config.columns_to_exclude.keys()),
+            msg_prefix='Excluded columns keys')
+        for k in columns_to_exclude.keys():
+            self.assertListsDistinctAndEqual(
+                columns_to_exclude[k],
+                config.columns_to_exclude[k],
+                msg_prefix=f'Excluded columsn for {k}')
+
+    def assertListsDistinctAndEqual(self, l1: List[str], l2: List[str], msg_prefix: str) -> None:
+        self.assertEqual(len(l1), len(l2), msg=f'{msg_prefix}: Lists have differing lengths')
+        self.assertEqual(len(l1), len(set(l1)), msg=f'{msg_prefix}: First list has duplicate elements')
+        self.assertEqual(len(l2), len(set(l2)), msg=f'{msg_prefix}: Second list has duplicate elements')
+
+        for elem in l1:
+            self.assertTrue(elem in l2, msg=f'{msg_prefix}: Element {elem} present in first list but not second')
+
+    def set_config_yaml(self, contents: str) -> None:
+        path = GcsfsFilePath.from_absolute_path(f'gs://{self.mock_project_id}-configs/cloud_sql_to_bq_config.yaml')
+        self.fake_gcs.upload_from_string(path=path, contents=contents, content_type="text/yaml")
