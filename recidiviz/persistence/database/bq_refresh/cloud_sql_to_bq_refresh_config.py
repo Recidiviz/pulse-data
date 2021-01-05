@@ -14,12 +14,24 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Export configuration.
+"""Export configuration. By default, exports all non-history tables from a given schema.
 
-By default, exports all non-history tables from a given schema. To update this configuration, edit
-cloud_sql_to_bq_config.yaml.
+To update the configuration, take the following steps:
+- Announce in #eng that you intend to change the config file for staging or prod [acquires pseudo-lock]
+- Download file from gs://{project-name}-configs/cloud_sql_to_bq_config.yaml
+- Update and re-upload file
+- Announce in #eng that the change is complete [releases pseudo-lock]
+
+The yaml file format for cloud_sql_to_bq_config.yaml is:
+
+region_codes_to_exclude:
+  - <list of state region codes>
+state_history_tables_to_include:
+  - <list of state history tables>
+county_columns_to_exclude:
+  <map with tables as keys>:
+    - <list of columns for those tables to exclude>
 """
-import os
 from typing import Dict, List, Optional
 
 import yaml
@@ -48,6 +60,8 @@ from recidiviz.calculator.query.county import dataset_config as county_dataset_c
 from recidiviz.calculator.query.state import dataset_config as state_dataset_config
 from recidiviz.calculator.query.operations import dataset_config as operations_dataset_config
 from recidiviz.calculator.query.justice_counts import dataset_config as justice_counts_dataset_config
+from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
+from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.persistence.database.schema_utils import get_table_class_by_name, BQ_TYPES, get_region_code_col, \
     schema_has_region_code_query_support
 from recidiviz.persistence.database.schema_table_region_filtered_query_builder \
@@ -68,6 +82,7 @@ class CloudSqlToBQConfig:
             config = CloudSqlToBQConfig.for_schema_type(SchemaType.JAILS)
             tables = config.get_tables_to_export()
     """
+
     def __init__(self,
                  metadata_base: DeclarativeMeta,
                  schema_type: SchemaType,
@@ -199,20 +214,15 @@ class CloudSqlToBQConfig:
         return project_id
 
     @classmethod
-    def _get_region_codes_to_exclude_by_project(cls, config: Dict[str, Dict[str, List[str]]]) -> List[str]:
-        project_id = cls._get_project_id()
-        if project_id == environment.GCP_PROJECT_PRODUCTION:
-            region_codes_to_exclude_by_project = config.get('production', {})
-        else:
-            region_codes_to_exclude_by_project = config.get('staging', {})
-        return region_codes_to_exclude_by_project.get('region_codes_to_exclude', [])
-
-    @classmethod
     def for_schema_type(cls, schema_type: SchemaType) -> Optional['CloudSqlToBQConfig']:
         """Logic for instantiating a config object for a schema type."""
-        yaml_config_file_path = os.path.join(os.path.dirname(__file__), 'cloud_sql_to_bq_config.yaml')
-        with open(yaml_config_file_path, 'r') as yaml_config_file:
-            yaml_config = yaml.full_load(yaml_config_file)
+        gcs_fs = GcsfsFactory.build()
+        path = GcsfsFilePath.from_absolute_path(f'gs://{cls._get_project_id()}-configs/cloud_sql_to_bq_config.yaml')
+        yaml_string = gcs_fs.download_as_string(path)
+        try:
+            yaml_config = yaml.safe_load(yaml_string)
+        except yaml.YAMLError as e:
+            raise ValueError(f'Could not parse YAML in [{path.abs_path()}]') from e
 
         if schema_type == SchemaType.JAILS:
             return CloudSqlToBQConfig(
@@ -228,14 +238,14 @@ class CloudSqlToBQConfig:
             return CloudSqlToBQConfig(
                 metadata_base=base_schema.OperationsBase,
                 schema_type=SchemaType.OPERATIONS,
-                region_codes_to_exclude=cls._get_region_codes_to_exclude_by_project(yaml_config),
+                region_codes_to_exclude=yaml_config.get('region_codes_to_exclude', []),
                 dataset_id=operations_dataset_config.OPERATIONS_BASE_DATASET)
         if schema_type == SchemaType.STATE:
             return CloudSqlToBQConfig(
                 metadata_base=base_schema.StateBase,
                 schema_type=SchemaType.STATE,
                 dataset_id=state_dataset_config.STATE_BASE_DATASET,
-                region_codes_to_exclude=cls._get_region_codes_to_exclude_by_project(yaml_config),
+                region_codes_to_exclude=yaml_config.get('region_codes_to_exclude', []),
                 history_tables_to_include=yaml_config.get('state_history_tables_to_include', []))
 
         raise ValueError(f'Unexpected schema type value [{schema_type}]')

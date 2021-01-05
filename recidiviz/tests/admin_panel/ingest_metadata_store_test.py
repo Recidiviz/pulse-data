@@ -128,7 +128,7 @@ class TestIngestMetadataStore(TestCase):
         ('state_agent', ['US_WW', 'US_XX', 'US_YY', 'US_ZZ']),
         ('state_charge', ['US_XX', 'US_YY']),
     ])
-    def test_state_consistency(self, table, states) -> None:
+    def test_state_consistency(self, table: str, states: List[str]) -> None:
         """Tests that the same states should be present across all results for the table."""
 
         object_counts = self.store.fetch_object_counts_by_table()[table]
