@@ -28,19 +28,28 @@ AVERAGE_DAYS_AT_LIBERTY_BY_MONTH_DESCRIPTION = \
 
 AVERAGE_DAYS_AT_LIBERTY_BY_MONTH_QUERY_TEMPLATE = \
     """
-    /*{description}*/
+    /*{description}*/  
+    WITH returns AS (
+      SELECT
+        state_code,
+        year,
+        month,
+        person_id,
+        days_at_liberty,
+        reincarceration_date,
+        ROW_NUMBER() OVER (PARTITION BY state_code, year, month, person_id
+                            ORDER BY reincarceration_date ASC, days_at_liberty) as priority_ranking
+        FROM `{project_id}.{materialized_metrics_dataset}.most_recent_recidivism_count_metrics`
+        WHERE methodology = 'EVENT'
+          AND year >= EXTRACT(YEAR FROM DATE_SUB(CURRENT_DATE(), INTERVAL 3 YEAR))
+    )
+
     SELECT
       state_code, year, month,
       COUNT(DISTINCT person_id) AS returns,
       AVG(days_at_liberty) AS avg_liberty
-    FROM `{project_id}.{materialized_metrics_dataset}.most_recent_recidivism_count_metrics`
-    WHERE methodology = 'PERSON'
-      AND person_id IS NOT NULL
-      AND metric_period_months = 1
-      AND month IS NOT NULL
-      AND year >= EXTRACT(YEAR FROM DATE_SUB(CURRENT_DATE(), INTERVAL 3 YEAR))
-      -- TODO(#3123): enforce positive days at liberty earlier in the pipeline
-      AND days_at_liberty >= 0
+    FROM returns
+    WHERE priority_ranking = 1
     GROUP BY state_code, year, month
     ORDER BY state_code, year, month
     """
