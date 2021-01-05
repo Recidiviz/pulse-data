@@ -77,28 +77,6 @@ from recidiviz.tests.calculator.pipeline.utils.us_mo_fakes import FakeUsMoSuperv
 _DEFAULT_SUPERVISION_PERIOD_ID = 999
 _DEFAULT_SSVR_ID = 999
 
-DEFAULT_SSVR_AGENT_ASSOCIATIONS = {
-    999: {
-        'agent_id': 000,
-        'agent_external_id': 'ZZZ',
-        'district_external_id': None,
-        'supervision_violation_response_id': 999
-    }
-}
-
-US_ND_SSVR_AGENT_ASSOCIATIONS = {
-    999: {
-        'agent_id': 000,
-        'agent_external_id': 'ZZZ',
-        'district_external_id': 'Z',
-        'supervision_violation_response_id': 999
-    }
-}
-
-DEFAULT_SSVR_AGENT_ASSOCIATION_LIST = list(DEFAULT_SSVR_AGENT_ASSOCIATIONS.values())
-US_ND_SSVR_AGENT_ASSOCIATIONS_LIST = list(US_ND_SSVR_AGENT_ASSOCIATIONS.values())
-
-
 DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS = {
     999: {
         'agent_id': 000,
@@ -205,7 +183,6 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             assessments,
             violation_responses,
             supervision_contacts,
-            DEFAULT_SSVR_AGENT_ASSOCIATION_LIST,
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
             DEFAULT_SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATIONS
         )
@@ -295,7 +272,6 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             assessments,
             violation_responses,
             supervision_contacts,
-            DEFAULT_SSVR_AGENT_ASSOCIATION_LIST,
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
             DEFAULT_SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATIONS
         )
@@ -377,7 +353,6 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             assessments,
             violation_responses,
             supervision_contacts,
-            DEFAULT_SSVR_AGENT_ASSOCIATION_LIST,
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
             DEFAULT_SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATIONS
         )
@@ -476,7 +451,6 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             assessments,
             violation_responses,
             supervision_contacts,
-            DEFAULT_SSVR_AGENT_ASSOCIATION_LIST,
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
             DEFAULT_SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATIONS
         )
@@ -576,7 +550,6 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             assessments,
             violation_responses,
             supervision_contacts,
-            DEFAULT_SSVR_AGENT_ASSOCIATION_LIST,
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
             DEFAULT_SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATIONS
         )
@@ -680,7 +653,6 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             supervision_periods, incarceration_periods,
             assessments, violation_responses,
             supervision_contacts,
-            DEFAULT_SSVR_AGENT_ASSOCIATION_LIST,
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
             DEFAULT_SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATIONS
         )
@@ -793,7 +765,6 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             supervision_periods, incarceration_periods,
             assessments, violation_responses,
             supervision_contacts,
-            DEFAULT_SSVR_AGENT_ASSOCIATION_LIST,
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
             DEFAULT_SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATIONS
         )
@@ -888,7 +859,6 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             supervision_periods, incarceration_periods,
             assessments, violation_responses,
             supervision_contacts,
-            DEFAULT_SSVR_AGENT_ASSOCIATION_LIST,
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
             DEFAULT_SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATIONS
         )
@@ -1002,7 +972,6 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             supervision_periods, incarceration_periods,
             assessments, violation_responses,
             supervision_contacts,
-            DEFAULT_SSVR_AGENT_ASSOCIATION_LIST,
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
             DEFAULT_SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATIONS
         )
@@ -1137,7 +1106,6 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             supervision_periods, incarceration_periods,
             assessments, violation_responses,
             supervision_contacts,
-            DEFAULT_SSVR_AGENT_ASSOCIATION_LIST,
             supervision_period_agent_association_list,
             DEFAULT_SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATIONS
         )
@@ -1288,7 +1256,6 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             supervision_periods, incarceration_periods,
             assessments, violation_responses,
             supervision_contacts,
-            DEFAULT_SSVR_AGENT_ASSOCIATION_LIST,
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
             DEFAULT_SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATIONS
         )
@@ -1385,7 +1352,6 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             supervision_periods, [],
             assessments, violation_responses,
             supervision_contacts,
-            DEFAULT_SSVR_AGENT_ASSOCIATION_LIST,
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
             DEFAULT_SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATIONS
         )
@@ -1457,7 +1423,6 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             supervision_periods, incarceration_periods,
             assessments, violation_responses,
             supervision_contacts,
-            DEFAULT_SSVR_AGENT_ASSOCIATION_LIST,
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
             DEFAULT_SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATIONS
         )
@@ -1518,7 +1483,6 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             supervision_periods, incarceration_periods,
             assessments, violation_responses,
             supervision_contacts,
-            DEFAULT_SSVR_AGENT_ASSOCIATION_LIST,
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
             DEFAULT_SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATIONS
         )
@@ -1589,7 +1553,6 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             supervision_periods, incarceration_periods,
             assessments, violation_responses,
             supervision_contacts,
-            DEFAULT_SSVR_AGENT_ASSOCIATION_LIST,
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
             DEFAULT_SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATIONS
         )
@@ -1732,7 +1695,6 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             supervision_periods, incarceration_periods,
             assessments, violation_responses,
             supervision_contacts,
-            DEFAULT_SSVR_AGENT_ASSOCIATION_LIST,
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
             DEFAULT_SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATIONS
         )
@@ -1861,7 +1823,6 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             assessments,
             violation_responses,
             supervision_contacts,
-            DEFAULT_SSVR_AGENT_ASSOCIATION_LIST,
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
             DEFAULT_SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATIONS
         )
@@ -1986,7 +1947,6 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             assessments,
             violation_responses,
             supervision_contacts,
-            DEFAULT_SSVR_AGENT_ASSOCIATION_LIST,
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
             DEFAULT_SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATIONS
         )
@@ -2098,7 +2058,6 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             assessments,
             violation_responses,
             supervision_contacts,
-            DEFAULT_SSVR_AGENT_ASSOCIATION_LIST,
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
             DEFAULT_SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATIONS
         )
@@ -2204,7 +2163,6 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             assessments,
             violation_responses,
             supervision_contacts,
-            DEFAULT_SSVR_AGENT_ASSOCIATION_LIST,
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
             DEFAULT_SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATIONS
         )
@@ -2315,7 +2273,6 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             assessments,
             violation_responses,
             supervision_contacts,
-            DEFAULT_SSVR_AGENT_ASSOCIATION_LIST,
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
             DEFAULT_SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATIONS
         )
@@ -2439,7 +2396,6 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             assessments,
             violation_responses,
             supervision_contacts,
-            US_ND_SSVR_AGENT_ASSOCIATIONS_LIST,
             US_ND_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS_LIST,
             DEFAULT_SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATIONS
         )
@@ -2469,15 +2425,15 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 level_1_supervision_location_external_id='X',
             ),
             RevocationReturnSupervisionTimeBucket(
-                incarceration_period.state_code,
+                state_code=incarceration_period.state_code,
                 year=2018, month=6,
                 bucket_date=incarceration_period.admission_date,
                 supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
                 case_type=StateSupervisionCaseType.GENERAL,
-                supervising_officer_external_id='ZZZ',
+                supervising_officer_external_id='XXX',
                 judicial_district_code='XXX',
-                supervising_district_external_id='Z',
-                level_1_supervision_location_external_id='Z',
+                supervising_district_external_id='X',
+                level_1_supervision_location_external_id='X',
                 level_2_supervision_location_external_id=None,
                 revocation_type=StateSupervisionViolationResponseRevocationType.REINCARCERATION,
                 is_on_supervision_last_day_of_month=False),
@@ -2553,7 +2509,6 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             assessments,
             violation_responses,
             supervision_contacts,
-            US_ND_SSVR_AGENT_ASSOCIATIONS_LIST,
             US_ND_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS_LIST,
             DEFAULT_SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATIONS
         )
@@ -2582,14 +2537,14 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 level_1_supervision_location_external_id='X',
                 judicial_district_code='XXX'),
             RevocationReturnSupervisionTimeBucket(
-                incarceration_period.state_code,
+                state_code=incarceration_period.state_code,
                 year=2018, month=6,
                 bucket_date=incarceration_period.admission_date,
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
                 case_type=StateSupervisionCaseType.GENERAL,
-                supervising_officer_external_id='ZZZ',
-                supervising_district_external_id='Z',
-                level_1_supervision_location_external_id='Z',
+                supervising_officer_external_id='XXX',
+                supervising_district_external_id='X',
+                level_1_supervision_location_external_id='X',
                 level_2_supervision_location_external_id=None,
                 judicial_district_code='XXX',
                 revocation_type=StateSupervisionViolationResponseRevocationType.REINCARCERATION,
@@ -2665,7 +2620,6 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             assessments,
             violation_responses,
             supervision_contacts,
-            US_ND_SSVR_AGENT_ASSOCIATIONS_LIST,
             US_ND_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS_LIST,
             DEFAULT_SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATIONS
         )
@@ -2700,9 +2654,9 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
                 case_type=StateSupervisionCaseType.GENERAL,
                 revocation_type=StateSupervisionViolationResponseRevocationType.REINCARCERATION,
-                supervising_officer_external_id='ZZZ',
-                supervising_district_external_id='Z',
-                level_1_supervision_location_external_id='Z',
+                supervising_officer_external_id='XXX',
+                supervising_district_external_id='X',
+                level_1_supervision_location_external_id='X',
                 level_2_supervision_location_external_id=None,
                 judicial_district_code='XXX',
                 is_on_supervision_last_day_of_month=False
@@ -2773,7 +2727,6 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             assessments,
             violation_responses,
             supervision_contacts,
-            DEFAULT_SSVR_AGENT_ASSOCIATION_LIST,
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
             DEFAULT_SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATIONS
         )
@@ -2861,7 +2814,6 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             assessments,
             violation_responses,
             supervision_contacts,
-            DEFAULT_SSVR_AGENT_ASSOCIATION_LIST,
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
             DEFAULT_SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATIONS
         )
@@ -2965,7 +2917,6 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             assessments,
             violation_responses,
             supervision_contacts,
-            DEFAULT_SSVR_AGENT_ASSOCIATION_LIST,
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
             DEFAULT_SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATIONS
         )
@@ -3114,7 +3065,6 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             assessments,
             violation_responses,
             supervision_contacts,
-            DEFAULT_SSVR_AGENT_ASSOCIATION_LIST,
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
             DEFAULT_SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATIONS
         )
@@ -3246,7 +3196,6 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             assessments,
             violation_responses,
             supervision_contacts,
-            DEFAULT_SSVR_AGENT_ASSOCIATION_LIST,
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
             DEFAULT_SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATIONS
         )
@@ -3347,7 +3296,6 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             assessments,
             violation_responses,
             supervision_contacts,
-            DEFAULT_SSVR_AGENT_ASSOCIATION_LIST,
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
             DEFAULT_SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATIONS
         )
@@ -3453,7 +3401,6 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             assessments,
             violation_responses,
             supervision_contacts,
-            DEFAULT_SSVR_AGENT_ASSOCIATION_LIST,
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
             DEFAULT_SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATIONS
         )
@@ -3550,7 +3497,6 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             assessments,
             violation_responses,
             supervision_contacts,
-            DEFAULT_SSVR_AGENT_ASSOCIATION_LIST,
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
             DEFAULT_SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATIONS
         )
@@ -3657,7 +3603,6 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             assessments,
             violation_responses,
             supervision_contacts,
-            DEFAULT_SSVR_AGENT_ASSOCIATION_LIST,
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
             DEFAULT_SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATIONS
         )
@@ -3782,7 +3727,6 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             assessments,
             violation_responses,
             supervision_contacts,
-            DEFAULT_SSVR_AGENT_ASSOCIATION_LIST,
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
             DEFAULT_SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATIONS
         )
@@ -3855,7 +3799,6 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             assessments,
             violation_responses,
             supervision_contacts,
-            DEFAULT_SSVR_AGENT_ASSOCIATION_LIST,
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
             DEFAULT_SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATIONS
         )
@@ -3966,7 +3909,6 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             assessments,
             violation_responses,
             supervision_contacts,
-            DEFAULT_SSVR_AGENT_ASSOCIATION_LIST,
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
             DEFAULT_SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATIONS
         )
@@ -4079,7 +4021,6 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             assessments,
             violation_responses,
             supervision_contacts,
-            DEFAULT_SSVR_AGENT_ASSOCIATION_LIST,
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
             DEFAULT_SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATIONS
         )
@@ -4137,7 +4078,6 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             assessments,
             violation_reports,
             supervision_contacts,
-            DEFAULT_SSVR_AGENT_ASSOCIATION_LIST,
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
             DEFAULT_SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATIONS
         )
@@ -4222,7 +4162,6 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             assessments,
             violation_reports,
             supervision_contacts,
-            DEFAULT_SSVR_AGENT_ASSOCIATION_LIST,
             DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
             DEFAULT_SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATIONS
         )
@@ -4427,7 +4366,6 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             assessments,
             violation_reports,
             supervision_contacts,
-            DEFAULT_SSVR_AGENT_ASSOCIATION_LIST,
             supervision_period_agent_association,
             DEFAULT_SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATIONS
         )
@@ -4662,7 +4600,6 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             assessments,
             violation_reports,
             supervision_contacts,
-            DEFAULT_SSVR_AGENT_ASSOCIATION_LIST,
             supervision_period_agent_association,
             DEFAULT_SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATIONS
         )
@@ -4914,18 +4851,13 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         incarceration_sentences = [incarceration_sentence]
         supervision_contacts = []
 
-        supervision_time_buckets = identifier.find_supervision_time_buckets(
-            [supervision_sentence],
-            incarceration_sentences,
-            [supervision_period],
-            [incarceration_period],
-            assessments,
-            violation_responses,
-            supervision_contacts,
-            DEFAULT_SSVR_AGENT_ASSOCIATION_LIST,
-            supervision_period_agent_association,
-            DEFAULT_SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATIONS
-        )
+        supervision_time_buckets = identifier.find_supervision_time_buckets([supervision_sentence],
+                                                                            incarceration_sentences,
+                                                                            [supervision_period],
+                                                                            [incarceration_period], assessments,
+                                                                            violation_responses, supervision_contacts,
+                                                                            supervision_period_agent_association,
+                                                                            DEFAULT_SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATIONS)
 
         supervision_period_supervision_type = StateSupervisionPeriodSupervisionType.PROBATION
 
@@ -5137,18 +5069,13 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         incarceration_sentences = [incarceration_sentence]
         supervision_contacts = []
 
-        supervision_time_buckets = identifier.find_supervision_time_buckets(
-            [supervision_sentence],
-            incarceration_sentences,
-            [supervision_period],
-            [incarceration_period],
-            assessments,
-            violation_responses,
-            supervision_contacts,
-            DEFAULT_SSVR_AGENT_ASSOCIATION_LIST,
-            supervision_period_agent_association,
-            DEFAULT_SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATIONS
-        )
+        supervision_time_buckets = identifier.find_supervision_time_buckets([supervision_sentence],
+                                                                            incarceration_sentences,
+                                                                            [supervision_period],
+                                                                            [incarceration_period], assessments,
+                                                                            violation_responses, supervision_contacts,
+                                                                            supervision_period_agent_association,
+                                                                            DEFAULT_SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATIONS)
 
         supervision_period_supervision_type = StateSupervisionPeriodSupervisionType.PROBATION
 
@@ -5385,18 +5312,13 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         incarceration_sentences = [incarceration_sentence]
         supervision_contacts = []
 
-        supervision_time_buckets = identifier.find_supervision_time_buckets(
-            [supervision_sentence],
-            incarceration_sentences,
-            [supervision_period],
-            [incarceration_period],
-            assessments,
-            violation_responses,
-            supervision_contacts,
-            DEFAULT_SSVR_AGENT_ASSOCIATION_LIST,
-            supervision_period_agent_association,
-            DEFAULT_SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATIONS
-        )
+        supervision_time_buckets = identifier.find_supervision_time_buckets([supervision_sentence],
+                                                                            incarceration_sentences,
+                                                                            [supervision_period],
+                                                                            [incarceration_period], assessments,
+                                                                            violation_responses, supervision_contacts,
+                                                                            supervision_period_agent_association,
+                                                                            DEFAULT_SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATIONS)
 
         supervision_period_supervision_type = StateSupervisionPeriodSupervisionType.PROBATION
 
@@ -5503,18 +5425,13 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         incarceration_sentences = []
         incarceration_periods = []
 
-        supervision_time_buckets = identifier.find_supervision_time_buckets(
-            [supervision_sentence],
-            incarceration_sentences,
-            [supervision_period],
-            incarceration_periods,
-            assessments,
-            violation_responses,
-            supervision_contacts,
-            DEFAULT_SSVR_AGENT_ASSOCIATION_LIST,
-            DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
-            DEFAULT_SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATIONS
-        )
+        supervision_time_buckets = identifier.find_supervision_time_buckets([supervision_sentence],
+                                                                            incarceration_sentences,
+                                                                            [supervision_period], incarceration_periods,
+                                                                            assessments, violation_responses,
+                                                                            supervision_contacts,
+                                                                            DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
+                                                                            DEFAULT_SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATIONS)
 
         expected_buckets = [
             SupervisionTerminationBucket(
@@ -5591,18 +5508,13 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         incarceration_sentences = []
         incarceration_periods = []
 
-        supervision_time_buckets = identifier.find_supervision_time_buckets(
-            [supervision_sentence],
-            incarceration_sentences,
-            [supervision_period],
-            incarceration_periods,
-            assessments,
-            violation_responses,
-            supervision_contacts,
-            DEFAULT_SSVR_AGENT_ASSOCIATION_LIST,
-            DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
-            DEFAULT_SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATIONS
-        )
+        supervision_time_buckets = identifier.find_supervision_time_buckets([supervision_sentence],
+                                                                            incarceration_sentences,
+                                                                            [supervision_period], incarceration_periods,
+                                                                            assessments, violation_responses,
+                                                                            supervision_contacts,
+                                                                            DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
+                                                                            DEFAULT_SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATIONS)
 
         expected_buckets = [
             create_start_bucket_from_period(supervision_period),
@@ -5687,18 +5599,13 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         incarceration_sentences = []
         incarceration_periods = []
 
-        supervision_time_buckets = identifier.find_supervision_time_buckets(
-            [supervision_sentence],
-            incarceration_sentences,
-            [supervision_period],
-            incarceration_periods,
-            assessments,
-            violation_responses,
-            supervision_contacts,
-            DEFAULT_SSVR_AGENT_ASSOCIATION_LIST,
-            DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
-            DEFAULT_SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATIONS
-        )
+        supervision_time_buckets = identifier.find_supervision_time_buckets([supervision_sentence],
+                                                                            incarceration_sentences,
+                                                                            [supervision_period], incarceration_periods,
+                                                                            assessments, violation_responses,
+                                                                            supervision_contacts,
+                                                                            DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
+                                                                            DEFAULT_SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATIONS)
 
         expected_buckets = [
             SupervisionTerminationBucket(
@@ -5775,18 +5682,13 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         incarceration_sentences = []
         incarceration_periods = []
 
-        supervision_time_buckets = identifier.find_supervision_time_buckets(
-            [supervision_sentence],
-            incarceration_sentences,
-            [supervision_period],
-            incarceration_periods,
-            assessments,
-            violation_responses,
-            supervision_contacts,
-            DEFAULT_SSVR_AGENT_ASSOCIATION_LIST,
-            DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
-            DEFAULT_SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATIONS
-        )
+        supervision_time_buckets = identifier.find_supervision_time_buckets([supervision_sentence],
+                                                                            incarceration_sentences,
+                                                                            [supervision_period], incarceration_periods,
+                                                                            assessments, violation_responses,
+                                                                            supervision_contacts,
+                                                                            DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
+                                                                            DEFAULT_SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATIONS)
 
         self.assertCountEqual(supervision_time_buckets, [])
 
@@ -5835,18 +5737,13 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         incarceration_sentences = []
         incarceration_periods = []
 
-        supervision_time_buckets = identifier.find_supervision_time_buckets(
-            [supervision_sentence],
-            incarceration_sentences,
-            [supervision_period],
-            incarceration_periods,
-            assessments,
-            violation_responses,
-            supervision_contacts,
-            DEFAULT_SSVR_AGENT_ASSOCIATION_LIST,
-            DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
-            DEFAULT_SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATIONS
-        )
+        supervision_time_buckets = identifier.find_supervision_time_buckets([supervision_sentence],
+                                                                            incarceration_sentences,
+                                                                            [supervision_period], incarceration_periods,
+                                                                            assessments, violation_responses,
+                                                                            supervision_contacts,
+                                                                            DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
+                                                                            DEFAULT_SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATIONS)
 
         expected_buckets = [
             SupervisionTerminationBucket(
@@ -9128,7 +9025,6 @@ class TestGetRevocationDetails(unittest.TestCase):
         )
 
         revocation_details = identifier._get_revocation_details(incarceration_period, supervision_period,
-                                                                DEFAULT_SSVR_AGENT_ASSOCIATIONS,
                                                                 DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS)
 
         self.assertEqual(revocation_details,
@@ -9192,17 +9088,16 @@ class TestGetRevocationDetails(unittest.TestCase):
         )
 
         revocation_details = identifier._get_revocation_details(incarceration_period, supervision_period,
-                                                                US_ND_SSVR_AGENT_ASSOCIATIONS,
                                                                 US_ND_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS)
 
         self.assertEqual(revocation_details,
                          identifier.RevocationDetails(
                              revocation_type=StateSupervisionViolationResponseRevocationType.SHOCK_INCARCERATION,
                              source_violation_type=StateSupervisionViolationType.MISDEMEANOR,
-                             level_1_supervision_location_external_id=US_ND_SSVR_AGENT_ASSOCIATIONS.get(
+                             level_1_supervision_location_external_id=US_ND_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS.get(
                                  supervision_period.supervision_period_id).get('district_external_id'),
                              level_2_supervision_location_external_id=None,
-                             supervising_officer_external_id=US_ND_SSVR_AGENT_ASSOCIATIONS.get(
+                             supervising_officer_external_id=US_ND_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS.get(
                                  supervision_period.supervision_period_id).get('agent_external_id')
                          ))
 
@@ -9228,7 +9123,6 @@ class TestGetRevocationDetails(unittest.TestCase):
         )
 
         revocation_details = identifier._get_revocation_details(incarceration_period, supervision_period,
-                                                                DEFAULT_SSVR_AGENT_ASSOCIATIONS,
                                                                 DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS)
 
         self.assertEqual(revocation_details,
@@ -9262,7 +9156,6 @@ class TestGetRevocationDetails(unittest.TestCase):
         )
 
         revocation_details = identifier._get_revocation_details(incarceration_period, supervision_period,
-                                                                DEFAULT_SSVR_AGENT_ASSOCIATIONS,
                                                                 DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS)
 
         self.assertEqual(revocation_details,
@@ -9317,7 +9210,6 @@ class TestGetRevocationDetails(unittest.TestCase):
         )
 
         revocation_details = identifier._get_revocation_details(incarceration_period, None,
-                                                                DEFAULT_SSVR_AGENT_ASSOCIATIONS,
                                                                 DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS)
 
         self.assertEqual(revocation_details,
@@ -9371,17 +9263,16 @@ class TestGetRevocationDetails(unittest.TestCase):
         )
 
         revocation_details = identifier._get_revocation_details(incarceration_period, supervision_period,
-                                                                US_ND_SSVR_AGENT_ASSOCIATIONS,
                                                                 US_ND_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS)
 
         self.assertEqual(revocation_details,
                          identifier.RevocationDetails(
                              revocation_type=StateSupervisionViolationResponseRevocationType.REINCARCERATION,
                              source_violation_type=StateSupervisionViolationType.MISDEMEANOR,
-                             level_1_supervision_location_external_id=US_ND_SSVR_AGENT_ASSOCIATIONS.get(
+                             level_1_supervision_location_external_id=US_ND_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS.get(
                                  supervision_period.supervision_period_id).get('district_external_id'),
                              level_2_supervision_location_external_id=None,
-                             supervising_officer_external_id=US_ND_SSVR_AGENT_ASSOCIATIONS.get(
+                             supervising_officer_external_id=US_ND_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS.get(
                                  supervision_period.supervision_period_id).get('agent_external_id')
                          ))
 
