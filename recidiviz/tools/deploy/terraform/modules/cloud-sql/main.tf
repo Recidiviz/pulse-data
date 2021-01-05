@@ -125,6 +125,7 @@ resource "google_sql_database_instance" "data" {
     }
 
     maintenance_window {
+      day  = 1
       hour = 0
     }
   }
