@@ -20,13 +20,14 @@ per_year_costs:
     RELEASE: 0
     PRISON: 0
 
-big_query_inputs:
-  project_id: recidiviz-staging
-  input_dataset: population_projection_data
-  outflows_data: test_outflows
-  transitions_data: test_transitions
-  total_population_data: test_total_population
-  remaining_sentence_data: test_remaining_sentences
-  total_jail_population_data: test_total_jail_population
-  total_out_of_state_supervised_population_data: test_total_out_of_state_supervision_population
-  state_code: test_state
+data_inputs:
+  big_query_inputs:
+    project_id: recidiviz-staging
+    input_dataset: population_projection_data
+    outflows_data: test_outflows
+    transitions_data: test_transitions
+    total_population_data: test_total_population
+    remaining_sentence_data: test_remaining_sentences
+    total_jail_population_data: test_total_jail_population
+    total_out_of_state_supervised_population_data: test_total_out_of_state_supervision_population
+    state_code: test_state

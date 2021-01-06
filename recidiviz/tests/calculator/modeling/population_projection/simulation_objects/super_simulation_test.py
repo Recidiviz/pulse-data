@@ -21,6 +21,8 @@ import os
 from typing import Dict, Any
 
 from recidiviz.calculator.modeling.population_projection.super_simulation import SuperSimulation
+from recidiviz.calculator.modeling.population_projection.simulations.super_simulation_factory import \
+    SuperSimulationFactory
 
 
 def get_inputs_path(file_name: str) -> str:
@@ -28,7 +30,7 @@ def get_inputs_path(file_name: str) -> str:
 
 
 class ParentSuperSimulation(SuperSimulation):
-    def _initialize_data(self, initialization_params: Dict[str, Any]):
+    def _initialize_data(self, data_inputs_params: Dict[str, Any]):
         pass
 
     def _set_user_inputs(self, yaml_user_inputs: Dict[str, Any]):
@@ -42,7 +44,7 @@ class TestSuperSimulation(unittest.TestCase):
     """Test the SuperSimulation object runs correctly"""
 
     def test_simulation_architecture_must_match_compartment_costs(self):
-        with open(get_inputs_path(
-                'super_simulation_mismatched_compartments.yaml')) as test_configuration:
-            with self.assertRaises(ValueError):
-                ParentSuperSimulation(test_configuration)
+
+        with self.assertRaises(ValueError):
+            SuperSimulationFactory.build_super_simulation(get_inputs_path(
+                'super_simulation_mismatched_compartments.yaml'))

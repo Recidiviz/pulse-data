@@ -16,7 +16,8 @@ time_step: 1
 disaggregation_axes:
   - crime_type
 
-big_query_simulation_tag: NJ_prison
+data_inputs:
+  big_query_simulation_tag: NJ_prison
 
 per_year_costs:
   prison: 6181  # this is the parole cost because prison cost not listed

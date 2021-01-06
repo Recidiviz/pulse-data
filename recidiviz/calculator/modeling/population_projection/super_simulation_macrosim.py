@@ -31,10 +31,9 @@ from recidiviz.calculator.modeling.population_projection.spark_policy import Spa
 class MacroSuperSimulation(SuperSimulation):
     """Manage the PopulationSimulations and output data needed to run tests, baselines, and policy scenarios"""
 
-    def _initialize_data(self, initialization_params: Dict[str, Any]):
+    def _initialize_data(self, data_inputs_params: Dict[str, Any]):
         """Initialize the data_dict from Big Query"""
-        simulation_tag = initialization_params['big_query_simulation_tag']
-
+        simulation_tag = data_inputs_params['big_query_simulation_tag']
         input_data_tables = {
                 'outflows_data': spark_bq_utils.OUTFLOWS_DATA_TABLE_NAME,
                 'transitions_data': spark_bq_utils.TRANSITIONS_DATA_TABLE_NAME,

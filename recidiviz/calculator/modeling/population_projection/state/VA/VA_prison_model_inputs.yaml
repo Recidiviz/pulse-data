@@ -2,7 +2,7 @@
 user_inputs:
   policy_year: 2021
   start_year: 2016
-  projection_years: 10
+  projection_years: 15
 
 model_architecture:
     prison: incarcerated
@@ -17,7 +17,8 @@ time_step: 1
 disaggregation_axes:
   - crime
 
-big_query_simulation_tag: VA_prison
+data_inputs:
+  big_query_simulation_tag: VA_prison
 
 per_year_costs:
   prison: 32146
