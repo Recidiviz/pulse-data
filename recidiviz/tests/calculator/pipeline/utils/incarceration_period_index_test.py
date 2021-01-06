@@ -24,6 +24,7 @@ import pytest
 from freezegun import freeze_time
 
 from recidiviz.calculator.pipeline.utils.incarceration_period_index import IncarcerationPeriodIndex
+from recidiviz.common.constants.state.shared_enums import StateCustodialAuthority
 from recidiviz.common.constants.state.state_incarceration_period import \
     StateIncarcerationPeriodAdmissionReason as AdmissionReason, \
     StateIncarcerationPeriodReleaseReason as ReleaseReason, StateIncarcerationPeriodStatus
@@ -124,11 +125,11 @@ class TestIndexIncarcerationPeriodsByAdmissionMonth(unittest.TestCase):
         self.assertEqual(incarceration_period_index.incarceration_periods_by_admission_date, {})
 
 
-class TestIdentifyMonthsFullyIncarcerated(unittest.TestCase):
-    """Tests the identify_months_of_incarceration function."""
+class TestMonthsExcludedFromSupervisionPopulation(unittest.TestCase):
+    """Tests the months_excluded_from_supervision_population function."""
 
-    def test_identify_months_of_incarceration_incarcerated(self):
-        """Tests the identify_months_of_incarceration function."""
+    def test_months_excluded_from_supervision_population_incarcerated(self):
+        """Tests the months_excluded_from_supervision_population function."""
         incarceration_period = \
             StateIncarcerationPeriod.new_with_defaults(
                 incarceration_period_id=111,
@@ -136,17 +137,18 @@ class TestIdentifyMonthsFullyIncarcerated(unittest.TestCase):
                 state_code='US_XX',
                 admission_date=date(2018, 6, 8),
                 admission_reason=AdmissionReason.NEW_ADMISSION,
-                release_date=date(2018, 12, 21)
+                release_date=date(2018, 12, 21),
+                custodial_authority=StateCustodialAuthority.STATE_PRISON
             )
 
         incarceration_period_index = IncarcerationPeriodIndex([incarceration_period])
 
-        self.assertEqual(incarceration_period_index.months_fully_incarcerated, {
+        self.assertEqual(incarceration_period_index.months_excluded_from_supervision_population, {
             (2018, 7), (2018, 8), (2018, 9), (2018, 10), (2018, 11)
         })
 
-    def test_identify_months_of_incarceration_incarcerated_on_first(self):
-        """Tests the identify_months_of_incarceration function where the person
+    def test_months_excluded_from_supervision_population_incarcerated_on_first(self):
+        """Tests the months_excluded_from_supervision_population function where the person
         was incarcerated on the first of the month."""
         incarceration_period = \
             StateIncarcerationPeriod.new_with_defaults(
@@ -155,17 +157,18 @@ class TestIdentifyMonthsFullyIncarcerated(unittest.TestCase):
                 state_code='US_XX',
                 admission_date=date(2018, 8, 1),
                 admission_reason=AdmissionReason.NEW_ADMISSION,
-                release_date=date(2018, 12, 21)
+                release_date=date(2018, 12, 21),
+                custodial_authority=StateCustodialAuthority.STATE_PRISON
             )
 
         incarceration_period_index = IncarcerationPeriodIndex([incarceration_period])
 
-        self.assertEqual(incarceration_period_index.months_fully_incarcerated, {
+        self.assertEqual(incarceration_period_index.months_excluded_from_supervision_population, {
             (2018, 8), (2018, 9), (2018, 10), (2018, 11)
         })
 
-    def test_identify_months_of_incarceration_released_last_day(self):
-        """Tests the identify_months_of_incarceration function where the person
+    def test_months_excluded_from_supervision_population_released_last_day(self):
+        """Tests the months_excluded_from_supervision_population function where the person
         was released on the last day of a month."""
         incarceration_period = \
             StateIncarcerationPeriod.new_with_defaults(
@@ -174,18 +177,19 @@ class TestIdentifyMonthsFullyIncarcerated(unittest.TestCase):
                 state_code='US_XX',
                 admission_date=date(2018, 8, 15),
                 admission_reason=AdmissionReason.NEW_ADMISSION,
-                release_date=date(2018, 10, 31)
+                release_date=date(2018, 10, 31),
+                custodial_authority=StateCustodialAuthority.STATE_PRISON
             )
 
         incarceration_period_index = IncarcerationPeriodIndex([incarceration_period])
 
-        self.assertEqual(incarceration_period_index.months_fully_incarcerated, {
+        self.assertEqual(incarceration_period_index.months_excluded_from_supervision_population, {
             (2018, 9)
             # The person is not counted as incarcerated on 10/31/2018, so they are not fully incarcerated this month
         })
 
-    def test_identify_months_of_incarceration_no_full_months(self):
-        """Tests the identify_months_of_incarceration function where the person
+    def test_months_excluded_from_supervision_population_no_full_months(self):
+        """Tests the months_excluded_from_supervision_population function where the person
         was not incarcerated for a full month."""
         incarceration_period = \
             StateIncarcerationPeriod.new_with_defaults(
@@ -194,15 +198,16 @@ class TestIdentifyMonthsFullyIncarcerated(unittest.TestCase):
                 state_code='US_XX',
                 admission_date=date(2013, 3, 1),
                 admission_reason=AdmissionReason.NEW_ADMISSION,
-                release_date=date(2013, 3, 30)
+                release_date=date(2013, 3, 30),
+                custodial_authority=StateCustodialAuthority.STATE_PRISON
             )
 
         incarceration_period_index = IncarcerationPeriodIndex([incarceration_period])
 
-        self.assertEqual(incarceration_period_index.months_fully_incarcerated, set())
+        self.assertEqual(incarceration_period_index.months_excluded_from_supervision_population, set())
 
-    def test_identify_months_of_incarceration_leap_year(self):
-        """Tests the identify_months_of_incarceration function where the person
+    def test_months_excluded_from_supervision_population_leap_year(self):
+        """Tests the months_excluded_from_supervision_population function where the person
         was incarcerated until the 28th of February during a leap year, so they
         were not incarcerated for a full month."""
         incarceration_period = \
@@ -212,12 +217,13 @@ class TestIdentifyMonthsFullyIncarcerated(unittest.TestCase):
                 state_code='US_XX',
                 admission_date=date(1996, 2, 1),
                 admission_reason=AdmissionReason.NEW_ADMISSION,
-                release_date=date(1996, 2, 28)
+                release_date=date(1996, 2, 28),
+                custodial_authority=StateCustodialAuthority.STATE_PRISON
             )
 
         incarceration_period_index = IncarcerationPeriodIndex([incarceration_period])
 
-        self.assertEqual(incarceration_period_index.months_fully_incarcerated, set())
+        self.assertEqual(incarceration_period_index.months_excluded_from_supervision_population, set())
 
     def test_identify_months_fully_incarcerated_two_consecutive_periods(self):
         incarceration_period = \
@@ -227,12 +233,13 @@ class TestIdentifyMonthsFullyIncarcerated(unittest.TestCase):
                 state_code='US_XX',
                 admission_date=date(2005, 3, 1),
                 admission_reason=AdmissionReason.NEW_ADMISSION,
-                release_date=date(2005, 3, 15)
+                release_date=date(2005, 3, 15),
+                custodial_authority=StateCustodialAuthority.STATE_PRISON
             )
 
         incarceration_period_index = IncarcerationPeriodIndex([incarceration_period])
 
-        self.assertEqual(incarceration_period_index.months_fully_incarcerated, set())
+        self.assertEqual(incarceration_period_index.months_excluded_from_supervision_population, set())
 
         incarceration_period_2 = \
             StateIncarcerationPeriod.new_with_defaults(
@@ -241,12 +248,13 @@ class TestIdentifyMonthsFullyIncarcerated(unittest.TestCase):
                 state_code='US_XX',
                 admission_date=date(2005, 3, 15),
                 admission_reason=AdmissionReason.TRANSFER,
-                release_date=date(2005, 4, 2)
+                release_date=date(2005, 4, 2),
+                custodial_authority=StateCustodialAuthority.STATE_PRISON
             )
 
         incarceration_period_index = IncarcerationPeriodIndex([incarceration_period, incarceration_period_2])
 
-        self.assertEqual(incarceration_period_index.months_fully_incarcerated, {
+        self.assertEqual(incarceration_period_index.months_excluded_from_supervision_population, {
             (2005, 3)
         })
 
@@ -258,12 +266,13 @@ class TestIdentifyMonthsFullyIncarcerated(unittest.TestCase):
                 state_code='US_XX',
                 admission_date=date(2005, 3, 1),
                 admission_reason=AdmissionReason.NEW_ADMISSION,
-                release_date=date(2005, 3, 15)
+                release_date=date(2005, 3, 15),
+                custodial_authority=StateCustodialAuthority.STATE_PRISON
             )
 
         incarceration_period_index = IncarcerationPeriodIndex([incarceration_period])
 
-        self.assertEqual(incarceration_period_index.months_fully_incarcerated, set())
+        self.assertEqual(incarceration_period_index.months_excluded_from_supervision_population, set())
 
         incarceration_period_2 = \
             StateIncarcerationPeriod.new_with_defaults(
@@ -272,19 +281,20 @@ class TestIdentifyMonthsFullyIncarcerated(unittest.TestCase):
                 state_code='US_XX',
                 admission_date=date(2005, 3, 15),
                 admission_reason=AdmissionReason.TRANSFER,
-                release_date=date(2005, 3, 20)
+                release_date=date(2005, 3, 20),
+                custodial_authority=StateCustodialAuthority.STATE_PRISON
             )
 
         incarceration_period_index = IncarcerationPeriodIndex([incarceration_period, incarceration_period_2])
 
-        self.assertEqual(incarceration_period_index.months_fully_incarcerated, set())
+        self.assertEqual(incarceration_period_index.months_excluded_from_supervision_population, set())
 
 
-class TestIndexMonthToOverlappingIncarcerationPeriods(unittest.TestCase):
-    """Tests the month_to_overlapping_incarceration_periods initialization function."""
+class TestIndexMonthToOverlappingIPsNotUnderSupervisionAuthority(unittest.TestCase):
+    """Tests the month_to_overlapping_ips_not_under_supervision_authority initialization function."""
     def test_no_periods(self):
         index = IncarcerationPeriodIndex([])
-        self.assertEqual(index.month_to_overlapping_incarceration_periods, {})
+        self.assertEqual(index.month_to_overlapping_ips_not_under_supervision_authority, {})
 
     def test_one_period_start_end_middle_of_months(self):
         incarceration_period = \
@@ -295,7 +305,8 @@ class TestIndexMonthToOverlappingIncarcerationPeriods(unittest.TestCase):
                 admission_date=date(2007, 12, 2),
                 admission_reason=AdmissionReason.NEW_ADMISSION,
                 release_date=date(2008, 3, 28),
-                release_reason=ReleaseReason.SENTENCE_SERVED
+                release_reason=ReleaseReason.SENTENCE_SERVED,
+                custodial_authority=StateCustodialAuthority.STATE_PRISON
             )
 
         index = IncarcerationPeriodIndex([incarceration_period])
@@ -311,7 +322,7 @@ class TestIndexMonthToOverlappingIncarcerationPeriods(unittest.TestCase):
             },
         }
 
-        self.assertEqual(index.month_to_overlapping_incarceration_periods, expected)
+        self.assertEqual(index.month_to_overlapping_ips_not_under_supervision_authority, expected)
 
     def test_one_period_start_end_exactly_on_month(self):
         incarceration_period = \
@@ -322,7 +333,8 @@ class TestIndexMonthToOverlappingIncarcerationPeriods(unittest.TestCase):
                 admission_date=date(2007, 12, 1),
                 admission_reason=AdmissionReason.NEW_ADMISSION,
                 release_date=date(2008, 2, 1),
-                release_reason=ReleaseReason.SENTENCE_SERVED
+                release_reason=ReleaseReason.SENTENCE_SERVED,
+                custodial_authority=StateCustodialAuthority.STATE_PRISON
             )
 
         index = IncarcerationPeriodIndex([incarceration_period])
@@ -336,7 +348,7 @@ class TestIndexMonthToOverlappingIncarcerationPeriods(unittest.TestCase):
             },
         }
 
-        self.assertEqual(index.month_to_overlapping_incarceration_periods, expected)
+        self.assertEqual(index.month_to_overlapping_ips_not_under_supervision_authority, expected)
 
     @freeze_time('2008-04-01')
     def test_period_no_termination(self):
@@ -348,6 +360,7 @@ class TestIndexMonthToOverlappingIncarcerationPeriods(unittest.TestCase):
                 state_code='US_XX',
                 admission_date=date(2007, 12, 1),
                 admission_reason=AdmissionReason.NEW_ADMISSION,
+                custodial_authority=StateCustodialAuthority.STATE_PRISON
             )
 
         index = IncarcerationPeriodIndex([incarceration_period])
@@ -364,7 +377,7 @@ class TestIndexMonthToOverlappingIncarcerationPeriods(unittest.TestCase):
             },
         }
 
-        self.assertEqual(index.month_to_overlapping_incarceration_periods, expected)
+        self.assertEqual(index.month_to_overlapping_ips_not_under_supervision_authority, expected)
 
     @freeze_time('2008-04-01')
     def test_period_no_release_date_not_in_custody(self):
@@ -376,6 +389,7 @@ class TestIndexMonthToOverlappingIncarcerationPeriods(unittest.TestCase):
                 state_code='US_XX',
                 admission_date=date(2007, 12, 1),
                 admission_reason=AdmissionReason.NEW_ADMISSION,
+                custodial_authority=StateCustodialAuthority.STATE_PRISON
             )
 
         with pytest.raises(ValueError):
@@ -390,7 +404,8 @@ class TestIndexMonthToOverlappingIncarcerationPeriods(unittest.TestCase):
                 admission_date=date(2007, 12, 1),
                 admission_reason=AdmissionReason.NEW_ADMISSION,
                 release_date=date(2008, 2, 2),
-                release_reason=ReleaseReason.SENTENCE_SERVED
+                release_reason=ReleaseReason.SENTENCE_SERVED,
+                custodial_authority=StateCustodialAuthority.STATE_PRISON
             )
 
         incarceration_period_2 = \
@@ -401,7 +416,8 @@ class TestIndexMonthToOverlappingIncarcerationPeriods(unittest.TestCase):
                 admission_date=date(2008, 2, 4),
                 admission_reason=AdmissionReason.NEW_ADMISSION,
                 release_date=date(2008, 4, 5),
-                release_reason=ReleaseReason.SENTENCE_SERVED
+                release_reason=ReleaseReason.SENTENCE_SERVED,
+                custodial_authority=StateCustodialAuthority.STATE_PRISON
             )
 
         index = IncarcerationPeriodIndex([incarceration_period, incarceration_period_2])
@@ -418,7 +434,7 @@ class TestIndexMonthToOverlappingIncarcerationPeriods(unittest.TestCase):
             },
         }
 
-        self.assertEqual(index.month_to_overlapping_incarceration_periods, expected)
+        self.assertEqual(index.month_to_overlapping_ips_not_under_supervision_authority, expected)
 
     def test_period_starts_ends_same_month(self):
         incarceration_period = \
@@ -429,7 +445,8 @@ class TestIndexMonthToOverlappingIncarcerationPeriods(unittest.TestCase):
                 admission_date=date(2008, 2, 4),
                 admission_reason=AdmissionReason.NEW_ADMISSION,
                 release_date=date(2008, 2, 5),
-                release_reason=ReleaseReason.SENTENCE_SERVED
+                release_reason=ReleaseReason.SENTENCE_SERVED,
+                custodial_authority=StateCustodialAuthority.STATE_PRISON
             )
 
         index = IncarcerationPeriodIndex([incarceration_period])
@@ -440,11 +457,51 @@ class TestIndexMonthToOverlappingIncarcerationPeriods(unittest.TestCase):
             },
         }
 
-        self.assertEqual(index.month_to_overlapping_incarceration_periods, expected)
+        self.assertEqual(index.month_to_overlapping_ips_not_under_supervision_authority, expected)
+
+    def test_multiple_periods_one_under_supervision_authority(self):
+        incarceration_period = \
+            StateIncarcerationPeriod.new_with_defaults(
+                incarceration_period_id=444,
+                external_id='ip4',
+                state_code='US_XX',
+                admission_date=date(2007, 12, 1),
+                admission_reason=AdmissionReason.NEW_ADMISSION,
+                release_date=date(2008, 2, 2),
+                release_reason=ReleaseReason.SENTENCE_SERVED,
+                custodial_authority=StateCustodialAuthority.STATE_PRISON
+            )
+
+        # This period has a supervision custodial authority
+        incarceration_period_2 = \
+            StateIncarcerationPeriod.new_with_defaults(
+                incarceration_period_id=555,
+                external_id='ip5',
+                state_code='US_XX',
+                admission_date=date(2008, 2, 4),
+                admission_reason=AdmissionReason.NEW_ADMISSION,
+                release_date=date(2008, 4, 5),
+                release_reason=ReleaseReason.SENTENCE_SERVED,
+                custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY
+            )
+
+        index = IncarcerationPeriodIndex([incarceration_period, incarceration_period_2])
+
+        expected = {
+            2007: {
+                12: [incarceration_period]
+            },
+            2008: {
+                1: [incarceration_period],
+                2: [incarceration_period]
+            },
+        }
+
+        self.assertEqual(index.month_to_overlapping_ips_not_under_supervision_authority, expected)
 
 
-class TestIsFullyIncarceratedForRange(unittest.TestCase):
-    """Tests the is_fully_incarcerated_for_range function."""
+class TesIsExcludedFromSupervisionPopulationForRange(unittest.TestCase):
+    """Tests the is_excluded_from_supervision_population_for_range function."""
 
     def setUp(self) -> None:
         incarceration_period_partial_month = \
@@ -514,6 +571,19 @@ class TestIsFullyIncarceratedForRange(unittest.TestCase):
                 admission_reason=AdmissionReason.NEW_ADMISSION,
             )
 
+        incarceration_period_multiple_months_supervision_custodial_authority = \
+            StateIncarcerationPeriod.new_with_defaults(
+                status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+                incarceration_period_id=444,
+                external_id='ip4',
+                state_code='US_XX',
+                admission_date=date(2008, 7, 15),
+                admission_reason=AdmissionReason.NEW_ADMISSION,
+                release_date=date(2008, 9, 13),
+                release_reason=ReleaseReason.SENTENCE_SERVED,
+                custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY
+            )
+
         self.single_period_multiple_months_list = [incarceration_period_mulitple_months]
         self.single_period_partial_month_list = [incarceration_period_partial_month]
         self.single_period_unterminated_list = [incarceration_period_unterminated]
@@ -530,11 +600,18 @@ class TestIsFullyIncarceratedForRange(unittest.TestCase):
                                                 incarceration_period_partial_month_2,
                                                 incarceration_period_mulitple_months]
 
-    def run_is_fully_incarcerated_for_range_check(self,
-                                                  incarceration_periods: List[StateIncarcerationPeriod],
-                                                  range_start_num_days_from_periods_start: int,
-                                                  range_end_num_days_from_periods_end: int,
-                                                  is_fully_incarcerated: bool):
+        self.multiple_periods_multiple_months_with_supervision_authority_consecutive_list = [
+            incarceration_period_mulitple_months,
+            incarceration_period_mulitple_months_2,
+            incarceration_period_multiple_months_supervision_custodial_authority
+        ]
+
+    def run_is_excluded_from_supervision_population_for_range_check(
+            self,
+            incarceration_periods: List[StateIncarcerationPeriod],
+            range_start_num_days_from_periods_start: int,
+            range_end_num_days_from_periods_end: int,
+            is_excluded_from_supervision_population: bool):
         period_range_start = incarceration_periods[0].admission_date
         if not period_range_start:
             raise ValueError("Expected admission date")
@@ -548,291 +625,379 @@ class TestIsFullyIncarceratedForRange(unittest.TestCase):
 
         time_range = DateRange(lower_bound_inclusive_date=lower_bound_inclusive,
                                upper_bound_exclusive_date=upper_bound_exclusive)
-        if is_fully_incarcerated:
-            self.assertTrue(index.is_fully_incarcerated_for_range(time_range))
+        if is_excluded_from_supervision_population:
+            self.assertTrue(index.is_excluded_from_supervision_population_for_range(time_range))
         else:
-            self.assertFalse(index.is_fully_incarcerated_for_range(time_range))
+            self.assertFalse(index.is_excluded_from_supervision_population_for_range(time_range))
 
     def test_no_periods(self):
 
         index = IncarcerationPeriodIndex([])
-        self.assertFalse(index.is_fully_incarcerated_for_range(DateRange(lower_bound_inclusive_date=date(2019, 1, 2),
-                                                                         upper_bound_exclusive_date=date(2020, 2, 1))))
+        self.assertFalse(index.is_excluded_from_supervision_population_for_range(
+            DateRange(lower_bound_inclusive_date=date(2019, 1, 2),
+                      upper_bound_exclusive_date=date(2020, 2, 1))))
 
-        self.assertFalse(index.is_fully_incarcerated_for_range(DateRange(lower_bound_inclusive_date=date(2019, 1, 1),
-                                                                         upper_bound_exclusive_date=date(2019, 2, 1))))
+        self.assertFalse(index.is_excluded_from_supervision_population_for_range(
+            DateRange(lower_bound_inclusive_date=date(2019, 1, 1),
+                      upper_bound_exclusive_date=date(2019, 2, 1))))
 
-        self.assertFalse(index.is_fully_incarcerated_for_range(DateRange(lower_bound_inclusive_date=date(2019, 1, 1),
-                                                                         upper_bound_exclusive_date=date(2019, 1, 2))))
+        self.assertFalse(index.is_excluded_from_supervision_population_for_range(
+            DateRange(lower_bound_inclusive_date=date(2019, 1, 1),
+                      upper_bound_exclusive_date=date(2019, 1, 2))))
 
-        self.assertFalse(index.is_fully_incarcerated_for_range(DateRange(lower_bound_inclusive_date=date(2019, 1, 1),
-                                                                         upper_bound_exclusive_date=date(2019, 1, 1))))
+        self.assertFalse(index.is_excluded_from_supervision_population_for_range(
+            DateRange(lower_bound_inclusive_date=date(2019, 1, 1),
+                      upper_bound_exclusive_date=date(2019, 1, 1))))
 
     @freeze_time('2008-07-18')
     def test_one_period_ranges_do_not_overlap(self):
-        self.run_is_fully_incarcerated_for_range_check(
+        self.run_is_excluded_from_supervision_population_for_range_check(
             self.single_period_multiple_months_list,
             range_start_num_days_from_periods_start=360,
             range_end_num_days_from_periods_end=365,
-            is_fully_incarcerated=False
+            is_excluded_from_supervision_population=False
         )
 
-        self.run_is_fully_incarcerated_for_range_check(
+        self.run_is_excluded_from_supervision_population_for_range_check(
             self.single_period_multiple_months_list,
             range_start_num_days_from_periods_start=-360,
             range_end_num_days_from_periods_end=-355,
-            is_fully_incarcerated=False
+            is_excluded_from_supervision_population=False
         )
 
-        self.run_is_fully_incarcerated_for_range_check(
+        self.run_is_excluded_from_supervision_population_for_range_check(
             self.single_period_partial_month_list,
             range_start_num_days_from_periods_start=10,
             range_end_num_days_from_periods_end=13,
-            is_fully_incarcerated=False
+            is_excluded_from_supervision_population=False
         )
 
-        self.run_is_fully_incarcerated_for_range_check(
+        self.run_is_excluded_from_supervision_population_for_range_check(
             self.single_period_partial_month_list,
             range_start_num_days_from_periods_start=-10,
             range_end_num_days_from_periods_end=-7,
-            is_fully_incarcerated=False
+            is_excluded_from_supervision_population=False
         )
 
-        self.run_is_fully_incarcerated_for_range_check(
+        self.run_is_excluded_from_supervision_population_for_range_check(
             self.single_period_partial_month_list,
             range_start_num_days_from_periods_start=3,
             range_end_num_days_from_periods_end=5,
-            is_fully_incarcerated=False
+            is_excluded_from_supervision_population=False
         )
 
-        self.run_is_fully_incarcerated_for_range_check(
+        self.run_is_excluded_from_supervision_population_for_range_check(
             self.single_period_unterminated_list,
             range_start_num_days_from_periods_start=-10,
             range_end_num_days_from_periods_end=-7,
-            is_fully_incarcerated=False
+            is_excluded_from_supervision_population=False
         )
 
     @freeze_time('2008-07-18')
     def test_one_period_ranges_overlap_partially(self):
-        self.run_is_fully_incarcerated_for_range_check(
+        self.run_is_excluded_from_supervision_population_for_range_check(
             self.single_period_multiple_months_list,
             range_start_num_days_from_periods_start=-2,
             range_end_num_days_from_periods_end=-5,
-            is_fully_incarcerated=False
+            is_excluded_from_supervision_population=False
         )
 
-        self.run_is_fully_incarcerated_for_range_check(
+        self.run_is_excluded_from_supervision_population_for_range_check(
             self.single_period_multiple_months_list,
             range_start_num_days_from_periods_start=2,
             range_end_num_days_from_periods_end=5,
-            is_fully_incarcerated=False
+            is_excluded_from_supervision_population=False
         )
 
-        self.run_is_fully_incarcerated_for_range_check(
+        self.run_is_excluded_from_supervision_population_for_range_check(
             self.single_period_multiple_months_list,
             range_start_num_days_from_periods_start=-2,
             range_end_num_days_from_periods_end=5,
-            is_fully_incarcerated=False
+            is_excluded_from_supervision_population=False
         )
 
-        self.run_is_fully_incarcerated_for_range_check(
+        self.run_is_excluded_from_supervision_population_for_range_check(
             self.single_period_partial_month_list,
             range_start_num_days_from_periods_start=-2,
             range_end_num_days_from_periods_end=-5,
-            is_fully_incarcerated=False
+            is_excluded_from_supervision_population=False
         )
 
-        self.run_is_fully_incarcerated_for_range_check(
+        self.run_is_excluded_from_supervision_population_for_range_check(
             self.single_period_partial_month_list,
             range_start_num_days_from_periods_start=2,
             range_end_num_days_from_periods_end=5,
-            is_fully_incarcerated=False
+            is_excluded_from_supervision_population=False
         )
 
-        self.run_is_fully_incarcerated_for_range_check(
+        self.run_is_excluded_from_supervision_population_for_range_check(
             self.single_period_unterminated_list,
             range_start_num_days_from_periods_start=-10,
             range_end_num_days_from_periods_end=-1,
-            is_fully_incarcerated=False
+            is_excluded_from_supervision_population=False
         )
 
     def test_one_period_ranges_overlap_partially_off_by_one_day(self):
-        self.run_is_fully_incarcerated_for_range_check(
+        self.run_is_excluded_from_supervision_population_for_range_check(
             self.single_period_multiple_months_list,
             range_start_num_days_from_periods_start=-1,
             range_end_num_days_from_periods_end=-1,
-            is_fully_incarcerated=False
+            is_excluded_from_supervision_population=False
         )
 
-        self.run_is_fully_incarcerated_for_range_check(
+        self.run_is_excluded_from_supervision_population_for_range_check(
             self.single_period_multiple_months_list,
             range_start_num_days_from_periods_start=1,
             range_end_num_days_from_periods_end=1,
-            is_fully_incarcerated=False
+            is_excluded_from_supervision_population=False
         )
 
-        self.run_is_fully_incarcerated_for_range_check(
+        self.run_is_excluded_from_supervision_population_for_range_check(
             self.single_period_multiple_months_list,
             range_start_num_days_from_periods_start=-1,
             range_end_num_days_from_periods_end=1,
-            is_fully_incarcerated=False
+            is_excluded_from_supervision_population=False
         )
 
-        self.run_is_fully_incarcerated_for_range_check(
+        self.run_is_excluded_from_supervision_population_for_range_check(
             self.single_period_partial_month_list,
             range_start_num_days_from_periods_start=-1,
             range_end_num_days_from_periods_end=-1,
-            is_fully_incarcerated=False
+            is_excluded_from_supervision_population=False
         )
 
-        self.run_is_fully_incarcerated_for_range_check(
+        self.run_is_excluded_from_supervision_population_for_range_check(
             self.single_period_partial_month_list,
             range_start_num_days_from_periods_start=1,
             range_end_num_days_from_periods_end=1,
-            is_fully_incarcerated=False
+            is_excluded_from_supervision_population=False
         )
 
-        self.run_is_fully_incarcerated_for_range_check(
+        self.run_is_excluded_from_supervision_population_for_range_check(
             self.single_period_partial_month_list,
             range_start_num_days_from_periods_start=-1,
             range_end_num_days_from_periods_end=1,
-            is_fully_incarcerated=False
+            is_excluded_from_supervision_population=False
         )
 
     def test_one_period_range_overlaps_with_extra(self):
 
-        self.run_is_fully_incarcerated_for_range_check(
+        self.run_is_excluded_from_supervision_population_for_range_check(
             self.single_period_multiple_months_list,
             range_start_num_days_from_periods_start=5,
             range_end_num_days_from_periods_end=-100,
-            is_fully_incarcerated=True
+            is_excluded_from_supervision_population=True
         )
 
-        self.run_is_fully_incarcerated_for_range_check(
+        self.run_is_excluded_from_supervision_population_for_range_check(
             self.single_period_multiple_months_list,
             range_start_num_days_from_periods_start=1,
             range_end_num_days_from_periods_end=-1,
-            is_fully_incarcerated=True
+            is_excluded_from_supervision_population=True
         )
 
-        self.run_is_fully_incarcerated_for_range_check(
+        self.run_is_excluded_from_supervision_population_for_range_check(
             self.single_period_partial_month_list,
             range_start_num_days_from_periods_start=1,
             range_end_num_days_from_periods_end=-1,
-            is_fully_incarcerated=True
+            is_excluded_from_supervision_population=True
         )
 
     def test_ranges_overlap_exactly(self):
-        self.run_is_fully_incarcerated_for_range_check(
+        self.run_is_excluded_from_supervision_population_for_range_check(
             self.single_period_multiple_months_list,
             range_start_num_days_from_periods_start=0,
             range_end_num_days_from_periods_end=0,
-            is_fully_incarcerated=True
+            is_excluded_from_supervision_population=True
         )
 
-        self.run_is_fully_incarcerated_for_range_check(
+        self.run_is_excluded_from_supervision_population_for_range_check(
             self.single_period_partial_month_list,
             range_start_num_days_from_periods_start=0,
             range_end_num_days_from_periods_end=0,
-            is_fully_incarcerated=True
+            is_excluded_from_supervision_population=True
         )
 
-        self.run_is_fully_incarcerated_for_range_check(
+        self.run_is_excluded_from_supervision_population_for_range_check(
             self.multiple_periods_middle_of_month_consecutive_list,
             range_start_num_days_from_periods_start=0,
             range_end_num_days_from_periods_end=0,
-            is_fully_incarcerated=True
+            is_excluded_from_supervision_population=True
         )
 
-        self.run_is_fully_incarcerated_for_range_check(
+        self.run_is_excluded_from_supervision_population_for_range_check(
             self.multiple_periods_multiple_months_consecutive_list,
             range_start_num_days_from_periods_start=0,
             range_end_num_days_from_periods_end=0,
-            is_fully_incarcerated=True
+            is_excluded_from_supervision_population=True
         )
 
-        self.run_is_fully_incarcerated_for_range_check(
+        self.run_is_excluded_from_supervision_population_for_range_check(
             self.multiple_periods_middle_of_month_with_gap_in_month_list,
             range_start_num_days_from_periods_start=0,
             range_end_num_days_from_periods_end=0,
-            is_fully_incarcerated=False
+            is_excluded_from_supervision_population=False
         )
 
-        self.run_is_fully_incarcerated_for_range_check(
+        self.run_is_excluded_from_supervision_population_for_range_check(
             self.multiple_periods_large_gap_list,
             range_start_num_days_from_periods_start=0,
             range_end_num_days_from_periods_end=0,
-            is_fully_incarcerated=False
+            is_excluded_from_supervision_population=False
+        )
+
+        # Not excluded on the period under supervision authority
+        self.run_is_excluded_from_supervision_population_for_range_check(
+            self.multiple_periods_multiple_months_with_supervision_authority_consecutive_list,
+            range_start_num_days_from_periods_start=0,
+            range_end_num_days_from_periods_end=0,
+            is_excluded_from_supervision_population=False
+        )
+
+        # Range doesn't include time of IP that's under supervision authority
+        self.run_is_excluded_from_supervision_population_for_range_check(
+            self.multiple_periods_multiple_months_with_supervision_authority_consecutive_list,
+            range_start_num_days_from_periods_start=0,
+            range_end_num_days_from_periods_end=-60,
+            is_excluded_from_supervision_population=True
         )
 
     def test_two_consecutive_periods_ranges_do_not_overlap(self):
-        self.run_is_fully_incarcerated_for_range_check(
+        self.run_is_excluded_from_supervision_population_for_range_check(
             self.multiple_periods_multiple_months_consecutive_list,
             range_start_num_days_from_periods_start=360,
             range_end_num_days_from_periods_end=365,
-            is_fully_incarcerated=False
+            is_excluded_from_supervision_population=False
         )
 
-        self.run_is_fully_incarcerated_for_range_check(
+        self.run_is_excluded_from_supervision_population_for_range_check(
             self.multiple_periods_multiple_months_consecutive_list,
             range_start_num_days_from_periods_start=-360,
             range_end_num_days_from_periods_end=-355,
-            is_fully_incarcerated=False
+            is_excluded_from_supervision_population=False
         )
 
-        self.run_is_fully_incarcerated_for_range_check(
+        self.run_is_excluded_from_supervision_population_for_range_check(
             self.multiple_periods_middle_of_month_consecutive_list,
             range_start_num_days_from_periods_start=10,
             range_end_num_days_from_periods_end=13,
-            is_fully_incarcerated=False
+            is_excluded_from_supervision_population=False
         )
 
-        self.run_is_fully_incarcerated_for_range_check(
+        self.run_is_excluded_from_supervision_population_for_range_check(
             self.multiple_periods_middle_of_month_consecutive_list,
             range_start_num_days_from_periods_start=-10,
             range_end_num_days_from_periods_end=-7,
-            is_fully_incarcerated=False
+            is_excluded_from_supervision_population=False
         )
 
-        self.run_is_fully_incarcerated_for_range_check(
+        self.run_is_excluded_from_supervision_population_for_range_check(
             self.multiple_periods_middle_of_month_consecutive_list,
             range_start_num_days_from_periods_start=3,
             range_end_num_days_from_periods_end=5,
-            is_fully_incarcerated=False
+            is_excluded_from_supervision_population=False
         )
 
     def test_two_consecutive_periods_ranges_overlap_partially(self):
-        self.run_is_fully_incarcerated_for_range_check(
+        self.run_is_excluded_from_supervision_population_for_range_check(
             self.multiple_periods_multiple_months_consecutive_list,
             range_start_num_days_from_periods_start=-2,
             range_end_num_days_from_periods_end=-5,
-            is_fully_incarcerated=False
+            is_excluded_from_supervision_population=False
         )
 
-        self.run_is_fully_incarcerated_for_range_check(
+        self.run_is_excluded_from_supervision_population_for_range_check(
             self.multiple_periods_multiple_months_consecutive_list,
             range_start_num_days_from_periods_start=2,
             range_end_num_days_from_periods_end=5,
-            is_fully_incarcerated=False
+            is_excluded_from_supervision_population=False
         )
 
-        self.run_is_fully_incarcerated_for_range_check(
+        self.run_is_excluded_from_supervision_population_for_range_check(
             self.multiple_periods_multiple_months_consecutive_list,
             range_start_num_days_from_periods_start=-2,
             range_end_num_days_from_periods_end=5,
-            is_fully_incarcerated=False
+            is_excluded_from_supervision_population=False
         )
 
-        self.run_is_fully_incarcerated_for_range_check(
+        self.run_is_excluded_from_supervision_population_for_range_check(
             self.multiple_periods_middle_of_month_consecutive_list,
             range_start_num_days_from_periods_start=-2,
             range_end_num_days_from_periods_end=-5,
-            is_fully_incarcerated=False
+            is_excluded_from_supervision_population=False
         )
 
-        self.run_is_fully_incarcerated_for_range_check(
+        self.run_is_excluded_from_supervision_population_for_range_check(
             self.multiple_periods_middle_of_month_consecutive_list,
             range_start_num_days_from_periods_start=2,
             range_end_num_days_from_periods_end=5,
-            is_fully_incarcerated=False
+            is_excluded_from_supervision_population=False
         )
+
+        # Range only includes time of IP that's under supervision authority
+        self.run_is_excluded_from_supervision_population_for_range_check(
+            self.multiple_periods_multiple_months_with_supervision_authority_consecutive_list,
+            range_start_num_days_from_periods_start=200,
+            range_end_num_days_from_periods_end=0,
+            is_excluded_from_supervision_population=False
+        )
+
+
+class TestIncarcerationPeriodsNotUnderSupervisionAuthority(unittest.TestCase):
+    """Tests the incarceration_periods_not_under_supervision_authority function."""
+    def test_incarceration_periods_not_under_supervision_authority(self):
+        incarceration_period = \
+            StateIncarcerationPeriod.new_with_defaults(
+                incarceration_period_id=444,
+                external_id='ip4',
+                state_code='US_XX',
+                admission_date=date(2007, 12, 1),
+                admission_reason=AdmissionReason.NEW_ADMISSION,
+                release_date=date(2008, 2, 2),
+                release_reason=ReleaseReason.SENTENCE_SERVED,
+                custodial_authority=StateCustodialAuthority.STATE_PRISON
+            )
+
+        # This period has a supervision custodial authority
+        incarceration_period_2 = \
+            StateIncarcerationPeriod.new_with_defaults(
+                incarceration_period_id=555,
+                external_id='ip5',
+                state_code='US_XX',
+                admission_date=date(2008, 2, 4),
+                admission_reason=AdmissionReason.NEW_ADMISSION,
+                release_date=date(2008, 4, 5),
+                release_reason=ReleaseReason.SENTENCE_SERVED,
+                custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY
+            )
+
+        index = IncarcerationPeriodIndex([incarceration_period, incarceration_period_2])
+
+        self.assertEqual([incarceration_period],
+                         index.incarceration_periods_not_under_supervision_authority)
+
+    def test_incarceration_periods_not_under_supervision_authority_all_authorities(self):
+        incarceration_period = \
+            StateIncarcerationPeriod.new_with_defaults(
+                incarceration_period_id=444,
+                external_id='ip4',
+                state_code='US_XX',
+                admission_date=date(2007, 12, 1),
+                admission_reason=AdmissionReason.NEW_ADMISSION,
+                release_date=date(2008, 2, 2),
+                release_reason=ReleaseReason.SENTENCE_SERVED,
+            )
+
+        all_custodial_authority_values = [None] + list(StateCustodialAuthority)
+
+        for custodial_authority in all_custodial_authority_values:
+            incarceration_period.custodial_authority = custodial_authority
+
+            index = IncarcerationPeriodIndex([incarceration_period])
+
+            expected_periods = ([incarceration_period]
+                                if incarceration_period.custodial_authority !=
+                                StateCustodialAuthority.SUPERVISION_AUTHORITY else [])
+
+            self.assertEqual(expected_periods,
+                             index.incarceration_periods_not_under_supervision_authority)

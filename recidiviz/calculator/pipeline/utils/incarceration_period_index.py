@@ -23,6 +23,7 @@ from typing import List, Set, Tuple, Dict
 import attr
 
 from recidiviz.calculator.pipeline.utils.incarceration_period_utils import standard_date_sort_for_incarceration_periods
+from recidiviz.common.constants.state.shared_enums import StateCustodialAuthority
 from recidiviz.common.date import DateRange, DateRangeDiff
 from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
 
@@ -38,47 +39,68 @@ class IncarcerationPeriodIndex:
 
     incarceration_periods: List[StateIncarcerationPeriod] = attr.ib(converter=_incarceration_periods_converter)
 
+    # Incarceration periods during which a person cannot also be counted in the supervision population
+    incarceration_periods_not_under_supervision_authority: List[StateIncarcerationPeriod] = attr.ib()
+
+    @incarceration_periods_not_under_supervision_authority.default
+    def _incarceration_periods_not_under_supervision_authority(self) -> List[StateIncarcerationPeriod]:
+        """The incarceration periods in the incarceration_periods list during which a person cannot also be counted in
+        the supervision population. If a person is in a facility, but is under the custodial authority of a supervision
+        department, then they can be counted in the supervision population"""
+        if not self.incarceration_periods:
+            return []
+
+        return [
+            ip for ip in self.incarceration_periods
+            if ip.custodial_authority != StateCustodialAuthority.SUPERVISION_AUTHORITY
+        ]
+
     # A set of tuples in the format (year, month) for each month of which this person has been incarcerated for any
-    # portion of the month.
-    month_to_overlapping_incarceration_periods: Dict[int, Dict[int, List[StateIncarcerationPeriod]]] = attr.ib()
+    # portion of the month, where the incarceration prevents the person from being counted simultaneously in the
+    # supervision population.
+    month_to_overlapping_ips_not_under_supervision_authority: \
+        Dict[int, Dict[int, List[StateIncarcerationPeriod]]] = attr.ib()
 
-    @month_to_overlapping_incarceration_periods.default
-    def _month_to_overlapping_incarceration_periods(self) -> Dict[int, Dict[int, List[StateIncarcerationPeriod]]]:
-        month_to_overlapping_incarceration_periods: Dict[int, Dict[int, List[StateIncarcerationPeriod]]] = \
-            defaultdict(lambda: defaultdict(list))
+    @month_to_overlapping_ips_not_under_supervision_authority.default
+    def _month_to_overlapping_ips_not_under_supervision_authority(self) -> \
+            Dict[int, Dict[int, List[StateIncarcerationPeriod]]]:
+        month_to_overlapping_ips_not_under_supervision_authority: \
+            Dict[int, Dict[int, List[StateIncarcerationPeriod]]] = defaultdict(lambda: defaultdict(list))
 
-        for incarceration_period in self.incarceration_periods:
+        for incarceration_period in self.incarceration_periods_not_under_supervision_authority:
             for year, month in incarceration_period.duration.get_months_range_overlaps_at_all():
-                month_to_overlapping_incarceration_periods[year][month].append(incarceration_period)
+                month_to_overlapping_ips_not_under_supervision_authority[year][month].append(incarceration_period)
 
-        return month_to_overlapping_incarceration_periods
+        return month_to_overlapping_ips_not_under_supervision_authority
 
     # A set of tuples in the format (year, month) for each month of which this person has been incarcerated for the full
-    # month.
-    months_fully_incarcerated: Set[Tuple[int, int]] = attr.ib()
+    # month, where the incarceration prevents the person from being counted simultaneously in the supervision
+    # population.
+    months_excluded_from_supervision_population: Set[Tuple[int, int]] = attr.ib()
 
-    @months_fully_incarcerated.default
-    def _months_fully_incarcerated(self) -> Set[Tuple[int, int]]:
+    @months_excluded_from_supervision_population.default
+    def _months_excluded_from_supervision_population(self) -> Set[Tuple[int, int]]:
         """For each StateIncarcerationPeriod, identifies months where the person was incarcerated for every day during
         that month. Returns a set of months in the format (year, month) for which the person spent the entire month in a
-        prison.
+        prison, where the incarceration prevents the person from being counted simultaneously in the supervision
+        population.
         """
-        months_fully_incarcerated: Set[Tuple[int, int]] = set()
+        months_excluded_from_supervision_population: Set[Tuple[int, int]] = set()
 
-        for incarceration_period in self.incarceration_periods:
+        for incarceration_period in self.incarceration_periods_not_under_supervision_authority:
             months_overlaps_at_all = incarceration_period.duration.get_months_range_overlaps_at_all()
 
             for year, month in months_overlaps_at_all:
-                overlapping_periods = self.month_to_overlapping_incarceration_periods[year][month]
+                overlapping_periods = self.month_to_overlapping_ips_not_under_supervision_authority[year][month]
 
                 remaining_ranges_to_cover = self._get_portions_of_range_not_covered_by_periods_subset(
                     DateRange.for_month(year, month),
                     overlapping_periods
                 )
                 if not remaining_ranges_to_cover:
-                    months_fully_incarcerated.add((year, month))
+                    months_excluded_from_supervision_population.add((year, month))
 
-        return months_fully_incarcerated
+        return months_excluded_from_supervision_population
 
     # A dictionary mapping admission dates of admissions to prison to the StateIncarcerationPeriods that happened on
     # that day.
@@ -96,7 +118,7 @@ class IncarcerationPeriodIndex:
 
         return incarceration_periods_by_admission_date
 
-    def is_fully_incarcerated_for_range(self, range_to_cover: DateRange) -> bool:
+    def is_excluded_from_supervision_population_for_range(self, range_to_cover: DateRange) -> bool:
         """Returns True if this person is incarcerated for the full duration of the date range."""
 
         months_range_overlaps = range_to_cover.get_months_range_overlaps_at_all()
@@ -104,14 +126,14 @@ class IncarcerationPeriodIndex:
         if not months_range_overlaps:
             return False
 
-        months_without_complete_incarceration = []
+        months_without_exclusion_from_supervision = []
         for year, month in months_range_overlaps:
-            was_incarcerated_all_month = (year, month) in self.months_fully_incarcerated
+            was_incarcerated_all_month = (year, month) in self.months_excluded_from_supervision_population
             if not was_incarcerated_all_month:
-                months_without_complete_incarceration.append((year, month))
+                months_without_exclusion_from_supervision.append((year, month))
 
-        for year, month in months_without_complete_incarceration:
-            overlapping_periods = self.month_to_overlapping_incarceration_periods[year][month]
+        for year, month in months_without_exclusion_from_supervision:
+            overlapping_periods = self.month_to_overlapping_ips_not_under_supervision_authority[year][month]
 
             range_portion_overlapping_month = range_to_cover.portion_overlapping_with_month(year, month)
             if not range_portion_overlapping_month:
