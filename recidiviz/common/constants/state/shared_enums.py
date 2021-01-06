@@ -41,3 +41,28 @@ _STATE_ACTING_BODY_TYPE_MAP = {
     'SUPERVISION OFFICER': StateActingBodyType.SUPERVISION_OFFICER,
     'SENTENCED PERSON': StateActingBodyType.SENTENCED_PERSON,
 }
+
+
+@unique
+class StateCustodialAuthority(EntityEnum, metaclass=EntityEnumMeta):
+    """The type of government entity directly responsible for the person on a period of incarceration or supervision.
+    Generally the entity of the agent who is filling out the paperwork and making recommendations for the person. This
+    is not necessarily the decision making authority on the period."""
+    FEDERAL = state_enum_strings.state_custodial_authority_federal
+    OTHER_COUNTRY = state_enum_strings.state_custodial_authority_other_country
+    OTHER_STATE = state_enum_strings.state_custodial_authority_other_state
+    SUPERVISION_AUTHORITY = state_enum_strings.state_custodial_authority_supervision_authority
+    STATE_PRISON = state_enum_strings.state_custodial_authority_state_prison
+
+    @staticmethod
+    def _get_default_map():
+        return _STATE_CUSTODIAL_AUTHORITY_MAP
+
+
+_STATE_CUSTODIAL_AUTHORITY_MAP = {
+    'FEDERAL': StateCustodialAuthority.FEDERAL,
+    'OTHER COUNTRY': StateCustodialAuthority.OTHER_COUNTRY,
+    'OTHER STATE': StateCustodialAuthority.OTHER_STATE,
+    'SUPERVISION AUTHORITY': StateCustodialAuthority.SUPERVISION_AUTHORITY,
+    'STATE PRISON': StateCustodialAuthority.STATE_PRISON
+}

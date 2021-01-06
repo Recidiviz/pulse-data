@@ -22,8 +22,7 @@ from datetime import date
 
 from dateutil.relativedelta import relativedelta
 
-from recidiviz.common.constants.state.state_supervision_period import FEDERAL_CUSTODIAL_AUTHORITY,\
-    OTHER_COUNTRY_CUSTODIAL_AUTHORITY
+from recidiviz.common.constants.state.shared_enums import StateCustodialAuthority
 from recidiviz.calculator.pipeline.utils.supervision_period_utils import \
     find_last_supervision_period_terminated_before_date, SUPERVISION_PERIOD_PROXIMITY_MONTH_LIMIT, \
     prepare_supervision_periods_for_calculations
@@ -236,7 +235,7 @@ class TestPrepareSupervisionPeriodsForCalculations(unittest.TestCase):
             state_code='US_ID',
             start_date=date(2006, 1, 1),
             termination_date=date(2007, 12, 31),
-            custodial_authority=FEDERAL_CUSTODIAL_AUTHORITY,  # Not the state's DOC authority
+            custodial_authority=StateCustodialAuthority.FEDERAL,  # Not the state's authority
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION
         )
 
@@ -250,7 +249,7 @@ class TestPrepareSupervisionPeriodsForCalculations(unittest.TestCase):
             state_code='US_ID',
             start_date=date(2006, 1, 1),
             termination_date=date(2007, 12, 31),
-            custodial_authority=OTHER_COUNTRY_CUSTODIAL_AUTHORITY,  # Not the state's DOC authority
+            custodial_authority=StateCustodialAuthority.OTHER_COUNTRY,  # Not the state's authority
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION
         )
 

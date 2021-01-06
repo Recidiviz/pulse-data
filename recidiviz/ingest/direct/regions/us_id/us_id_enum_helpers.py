@@ -17,6 +17,7 @@
 """US_ID specific enum helper methods."""
 from typing import Optional
 
+from recidiviz.common.constants.state.shared_enums import StateCustodialAuthority
 from recidiviz.common.constants.state.state_incarceration_period import StateIncarcerationPeriodAdmissionReason, \
     StateIncarcerationPeriodReleaseReason, StateSpecializedPurposeForIncarceration
 from recidiviz.common.constants.state.state_supervision_period import StateSupervisionPeriodAdmissionReason, \
@@ -25,7 +26,8 @@ from recidiviz.common.str_field_utils import sorted_list_from_str
 from recidiviz.ingest.direct.regions.us_id.us_id_constants import JAIL_FACILITY_CODES, DEPORTED_LOCATION_NAME, \
     INTERSTATE_FACILITY_CODE, COMMUTED_LOCATION_NAMES, EARLY_DISCHARGE_LOCATION_NAME, DECEASED_LOCATION_NAMES, \
     DISMISSED_LOCATION_NAME, PARDONED_LOCATION_NAMES, HISTORY_FACILITY_TYPE, SUPERVISION_FACILITY_TYPE, \
-    INCARCERATION_FACILITY_TYPE, OTHER_FACILITY_TYPE, FUGITIVE_FACILITY_TYPE
+    INCARCERATION_FACILITY_TYPE, OTHER_FACILITY_TYPE, FUGITIVE_FACILITY_TYPE, PAROLE_COMMISSION_CODE, \
+    FEDERAL_CUSTODY_LOCATION_CODE
 
 
 def supervision_admission_reason_mapper(label: str) -> Optional[StateSupervisionPeriodAdmissionReason]:
@@ -170,3 +172,17 @@ def supervision_period_supervision_type_mapper(label: str) -> Optional[StateSupe
 
 def is_jail_facility(facility: str) -> bool:
     return facility in JAIL_FACILITY_CODES or 'SHERIFF' in facility
+
+
+def custodial_authority_mapper(custodial_authority_code: str) -> StateCustodialAuthority:
+    """Parses supervision facility and location information to determine the custodial authority on the supervision
+    period."""
+    # Interstate and parole commission facilities mean some non-ID entity is supervising the person.
+    if custodial_authority_code in (INTERSTATE_FACILITY_CODE, PAROLE_COMMISSION_CODE):
+        return StateCustodialAuthority.OTHER_STATE
+    if custodial_authority_code == DEPORTED_LOCATION_NAME:
+        return StateCustodialAuthority.OTHER_COUNTRY
+    if custodial_authority_code == FEDERAL_CUSTODY_LOCATION_CODE:
+        return StateCustodialAuthority.FEDERAL
+
+    return StateCustodialAuthority.SUPERVISION_AUTHORITY

@@ -19,6 +19,7 @@
 import unittest
 from datetime import date
 
+from recidiviz.common.constants.state.shared_enums import StateCustodialAuthority
 from recidiviz.common.constants.state.state_incarceration import \
     StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_period import \
@@ -55,7 +56,7 @@ class StateIncarcerationPeriodConverterTest(unittest.TestCase):
             county_code='bis',
             facility='The Prison',
             housing_unit='CB4',
-            custodial_authority='custodial_authority',
+            custodial_authority='STATE_PRISON',
         )
 
         # Act
@@ -93,7 +94,8 @@ class StateIncarcerationPeriodConverterTest(unittest.TestCase):
             county_code='BIS',
             facility='THE PRISON',
             housing_unit='CB4',
-            custodial_authority='CUSTODIAL_AUTHORITY',
+            custodial_authority=StateCustodialAuthority.STATE_PRISON,
+            custodial_authority_raw_text='STATE_PRISON'
         )
 
         self.assertEqual(result, expected_result)

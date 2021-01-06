@@ -452,6 +452,15 @@ state_acting_body_type = Enum(
     name='state_acting_body_type'
 )
 
+state_custodial_authority = Enum(
+    state_enum_strings.state_custodial_authority_federal,
+    state_enum_strings.state_custodial_authority_other_country,
+    state_enum_strings.state_custodial_authority_other_state,
+    state_enum_strings.state_custodial_authority_supervision_authority,
+    state_enum_strings.state_custodial_authority_state_prison,
+    name='state_custodial_authority'
+)
+
 state_supervision_contact_location = Enum(
     enum_strings.internal_unknown,
     enum_strings.external_unknown,
@@ -1525,7 +1534,8 @@ class _StateIncarcerationPeriodSharedColumns(
     specialized_purpose_for_incarceration = \
         Column(state_specialized_purpose_for_incarceration)
     specialized_purpose_for_incarceration_raw_text = Column(String(255))
-    custodial_authority = Column(String(255))
+    custodial_authority = Column(state_custodial_authority)
+    custodial_authority_raw_text = Column(String(255))
 
     @declared_attr
     def source_supervision_violation_response_id(self):
@@ -1615,7 +1625,8 @@ class _StateSupervisionPeriodSharedColumns(_ReferencesStatePersonSharedColumns):
     # This field can contain an arbitrarily long list of conditions, so we do not restrict the length of the length like
     # we do for most other String fields.
     conditions = Column(Text)
-    custodial_authority = Column(String(255))
+    custodial_authority = Column(state_custodial_authority)
+    custodial_authority_raw_text = Column(String(255))
 
     @declared_attr
     def supervising_officer_id(self):

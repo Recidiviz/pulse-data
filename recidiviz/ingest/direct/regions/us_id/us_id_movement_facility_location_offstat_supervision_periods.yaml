@@ -24,8 +24,7 @@ enforced_ancestor_types:
 keys_to_ignore:
   - next_fac_cd             # Next facility code - handled manually in controller.
   - prev_fac_cd             # Previous facility code. Handled manually in controller
-  - fac_cd                  # Facility code - analogous to fac_ldesc used above. Handled manually in controller to help
-                            #                 determine if a person is in interstate probation.
+  - fac_cd                  # Facility code - analogous to fac_ldesc used above. Handled manually in controller.
   - fac_typ                 # Facility type - handled manually in controller for periods of absconscion.
   - loc_cd                  # Location code - handled manually in controller.
   - lu_cd                   # Living unit code - handled manually in controller.

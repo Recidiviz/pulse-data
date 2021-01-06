@@ -19,6 +19,7 @@
 import unittest
 from datetime import date
 
+from recidiviz.common.constants.state.shared_enums import StateCustodialAuthority
 from recidiviz.common.constants.state.state_supervision import \
     StateSupervisionType
 from recidiviz.common.constants.state.state_supervision_period import \
@@ -50,7 +51,7 @@ class StateSupervisionPeriodConverterTest(unittest.TestCase):
             termination_date='2/2/2112',
             state_code='us_nd',
             county_code='bis',
-            custodial_authority='custodial_authority',
+            custodial_authority='SUPERVISION AUTHORITY',
             supervision_site='07-CENTRAL',
             conditions=['CURFEW', 'DRINKING']
         )
@@ -84,7 +85,8 @@ class StateSupervisionPeriodConverterTest(unittest.TestCase):
             county_code='BIS',
             supervision_site='07-CENTRAL',
             conditions='CURFEW, DRINKING',
-            custodial_authority='CUSTODIAL_AUTHORITY',
+            custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
+            custodial_authority_raw_text='SUPERVISION AUTHORITY'
         )
 
         self.assertEqual(result, expected_result)

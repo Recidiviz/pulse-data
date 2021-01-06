@@ -26,6 +26,7 @@ from recidiviz import IngestInfo
 from recidiviz.common.constants.charge import ChargeStatus
 from recidiviz.common.constants.person_characteristics import Gender, Race, Ethnicity, ResidencyStatus
 from recidiviz.common.constants.state.external_id_types import US_PA_CONTROL, US_PA_SID, US_PA_PBPP
+from recidiviz.common.constants.state.shared_enums import StateCustodialAuthority
 from recidiviz.common.constants.state.state_agent import StateAgentType
 from recidiviz.common.constants.state.state_assessment import StateAssessmentClass, StateAssessmentType, \
     StateAssessmentLevel
@@ -1054,7 +1055,7 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
                                                     termination_reason='TRANSFER_WITHIN_STATE',
                                                     termination_date='2013-04-01',
                                                     county_code='ALLEGH', supervision_site='02|7124',
-                                                    supervision_level='MAX', custodial_authority='US_PA_PBPP',
+                                                    supervision_level='MAX', custodial_authority='C2',
                                                     conditions=['MEST', 'ACT35', 'GPAR', 'MVICT', 'REMC', 'END'],
                                                     supervising_officer=StateAgent(
                                                         state_agent_id='555678',
@@ -1076,7 +1077,7 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
                                                     admission_reason='TRANSFER_WITHIN_STATE', start_date='2013-04-01',
                                                     termination_reason='43', termination_date='2014-08-10',
                                                     county_code='ALLEGH', supervision_site='02|7113',
-                                                    supervision_level='MAX', custodial_authority='US_PA_PBPP',
+                                                    supervision_level='MAX', custodial_authority='C2',
                                                     conditions=['MEST', 'ACT35', 'GPAR', 'MVICT', 'REMC', 'END'],
                                                     state_supervision_case_type_entries=[
                                                         StateSupervisionCaseTypeEntry(
@@ -1093,7 +1094,7 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
                                                     admission_reason='C2', start_date='2014-08-10',
                                                     termination_reason='43', termination_date='2018-01-01',
                                                     county_code='ALLEGH', supervision_site='02|7115',
-                                                    supervision_level='MED', custodial_authority='US_PA_PBPP',
+                                                    supervision_level='MED', custodial_authority='C2',
                                                     conditions=['PN', 'EST', 'BL', 'END', 'SUBD', 'AANA'],
                                                     supervising_officer=StateAgent(
                                                         state_agent_id='444123',
@@ -1129,7 +1130,7 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
                                                     admission_reason='05', start_date='2003-10-10',
                                                     termination_reason='42', termination_date='2004-08-10',
                                                     county_code='MERCER', supervision_site='08|7307',
-                                                    supervision_level='MIN', custodial_authority='US_PA_COURTS',
+                                                    supervision_level='MIN', custodial_authority='05',
                                                     conditions=['START', 'EST', 'END', 'AANA', 'REL', 'DAM', 'PARAB',
                                                                 'ACT35', 'BL', 'MISC', 'DDU', 'URI', 'GPAR', 'EMP',
                                                                 'ALC', 'PM', 'PF', 'PA'],
@@ -1145,7 +1146,7 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
                                                     admission_reason='05', start_date='2004-08-10',
                                                     termination_reason='44', termination_date='2005-12-31',
                                                     county_code='MERCER', supervision_site='08|7307',
-                                                    supervision_level='MIN', custodial_authority='US_PA_COURTS',
+                                                    supervision_level='MIN', custodial_authority='05',
                                                     supervising_officer=StateAgent(
                                                         state_agent_id='555',
                                                         full_name='Seinfeld, Jerry',
@@ -1158,7 +1159,7 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
                                                     admission_reason='04', start_date='2005-12-31',
                                                     termination_reason='43', termination_date='2006-10-10',
                                                     county_code='MERCER',
-                                                    supervision_level='ADM', custodial_authority='US_PA_COURTS',
+                                                    supervision_level='ADM', custodial_authority='04',
                                                     supervising_officer=StateAgent(
                                                         full_name='Newman', agent_type='SUPERVISION_OFFICER',
                                                     )
@@ -1182,7 +1183,7 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
                                                     supervision_period_supervision_type='03',
                                                     admission_reason='03', start_date='2016-01-14',
                                                     county_code='PHILAD', supervision_site='01|5112',
-                                                    supervision_level='MED', custodial_authority='US_PA_PBPP',
+                                                    supervision_level='MED', custodial_authority='03',
                                                     conditions=['DOMV', 'AUTO', 'DDU', 'REFR', 'MNOAM', 'END', 'RI',
                                                                 'RC', 'MEMON', 'MCURF', 'REFC'],
                                                     supervising_officer=StateAgent(
@@ -2858,7 +2859,9 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
             termination_reason=StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE,
             termination_reason_raw_text='TRANSFER_WITHIN_STATE',
             termination_date=datetime.date(year=2013, month=4, day=1),
-            county_code='ALLEGH', supervision_site='02|7124', custodial_authority='US_PA_PBPP',
+            county_code='ALLEGH', supervision_site='02|7124',
+            custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
+            custodial_authority_raw_text='C2',
             supervision_level=StateSupervisionLevel.MAXIMUM, supervision_level_raw_text='MAX',
             conditions='MEST, ACT35, GPAR, MVICT, REMC, END',
             supervising_officer=entities.StateAgent.new_with_defaults(
@@ -2895,7 +2898,9 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
             termination_reason=StateSupervisionPeriodTerminationReason.EXPIRATION,
             termination_reason_raw_text='43',
             termination_date=datetime.date(year=2014, month=8, day=10),
-            county_code='ALLEGH', supervision_site='02|7113', custodial_authority='US_PA_PBPP',
+            county_code='ALLEGH', supervision_site='02|7113',
+            custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
+            custodial_authority_raw_text='C2',
             supervision_level=StateSupervisionLevel.MAXIMUM, supervision_level_raw_text='MAX',
             conditions='MEST, ACT35, GPAR, MVICT, REMC, END',
             supervision_sentences=[p2_ss_ph],
@@ -2916,7 +2921,9 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
             termination_reason=StateSupervisionPeriodTerminationReason.EXPIRATION,
             termination_reason_raw_text='43',
             termination_date=datetime.date(year=2018, month=1, day=1),
-            county_code='ALLEGH', supervision_site='02|7115', custodial_authority='US_PA_PBPP',
+            county_code='ALLEGH', supervision_site='02|7115',
+            custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
+            custodial_authority_raw_text='C2',
             supervision_level=StateSupervisionLevel.MEDIUM, supervision_level_raw_text='MED',
             conditions='PN, EST, BL, END, SUBD, AANA',
             supervising_officer=entities.StateAgent.new_with_defaults(
@@ -2955,7 +2962,9 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
             termination_reason=StateSupervisionPeriodTerminationReason.REVOCATION,
             termination_reason_raw_text='42',
             termination_date=datetime.date(year=2004, month=8, day=10),
-            county_code='MERCER', supervision_site='08|7307', custodial_authority='US_PA_COURTS',
+            county_code='MERCER', supervision_site='08|7307',
+            custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
+            custodial_authority_raw_text='05',
             supervision_level=StateSupervisionLevel.MINIMUM, supervision_level_raw_text='MIN',
             conditions='START, EST, END, AANA, REL, DAM, PARAB, ACT35, BL, MISC, DDU, URI, GPAR, EMP, ALC, PM, PF, PA',
             supervising_officer=entities.StateAgent.new_with_defaults(
@@ -2976,7 +2985,9 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
             termination_reason=StateSupervisionPeriodTerminationReason.RETURN_TO_INCARCERATION,
             termination_reason_raw_text='44',
             termination_date=datetime.date(year=2005, month=12, day=31),
-            county_code='MERCER', supervision_site='08|7307', custodial_authority='US_PA_COURTS',
+            county_code='MERCER', supervision_site='08|7307',
+            custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
+            custodial_authority_raw_text='05',
             supervision_level=StateSupervisionLevel.MINIMUM, supervision_level_raw_text='MIN',
             supervising_officer=entities.StateAgent.new_with_defaults(
                 external_id='555',
@@ -2996,7 +3007,9 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
             termination_reason=StateSupervisionPeriodTerminationReason.EXPIRATION,
             termination_reason_raw_text='43',
             termination_date=datetime.date(year=2006, month=10, day=10),
-            county_code='MERCER', custodial_authority='US_PA_COURTS',
+            county_code='MERCER',
+            custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
+            custodial_authority_raw_text='04',
             supervision_level=StateSupervisionLevel.LIMITED, supervision_level_raw_text='ADM',
             supervising_officer=entities.StateAgent.new_with_defaults(
                 state_code=_STATE_CODE_UPPER, full_name='{"full_name": "NEWMAN"}',
@@ -3026,7 +3039,9 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
             admission_reason=StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE,
             admission_reason_raw_text='03',
             start_date=datetime.date(year=2016, month=1, day=14),
-            county_code='PHILAD', supervision_site='01|5112', custodial_authority='US_PA_PBPP',
+            county_code='PHILAD', supervision_site='01|5112',
+            custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
+            custodial_authority_raw_text='03',
             supervision_level=StateSupervisionLevel.MEDIUM, supervision_level_raw_text='MED',
             conditions='DOMV, AUTO, DDU, REFR, MNOAM, END, RI, RC, MEMON, MCURF, REFC',
             supervising_officer=entities.StateAgent.new_with_defaults(

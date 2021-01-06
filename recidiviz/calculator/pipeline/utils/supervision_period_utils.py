@@ -21,8 +21,7 @@ from typing import List, Optional
 
 from dateutil.relativedelta import relativedelta
 
-from recidiviz.common.constants.state.state_supervision_period import FEDERAL_CUSTODIAL_AUTHORITY,\
-    OTHER_COUNTRY_CUSTODIAL_AUTHORITY
+from recidiviz.common.constants.state.shared_enums import StateCustodialAuthority
 from recidiviz.persistence.entity.entity_utils import is_placeholder
 from recidiviz.persistence.entity.state.entities import StateSupervisionPeriod
 
@@ -44,8 +43,7 @@ def prepare_supervision_periods_for_calculations(supervision_periods: List[State
 
 def _drop_placeholder_periods(supervision_periods: List[StateSupervisionPeriod]) -> \
         List[StateSupervisionPeriod]:
-    """Drops all supervision periods where the custodial_authority is not the state DOC of the state_code on the
-    supervision_period."""
+    """Drops all placeholder supervision periods."""
     return [
         period for period in supervision_periods
         if not is_placeholder(period)
@@ -70,10 +68,10 @@ def _set_unset_start_dates(supervision_periods: List[StateSupervisionPeriod]) ->
 
 def _drop_other_country_and_federal_supervision_periods(supervision_periods: List[StateSupervisionPeriod]) -> \
         List[StateSupervisionPeriod]:
-    """Drop all supervision periods whose custodial authority ."""
+    """Drop all supervision periods whose custodial authority excludes it from the state's supervision metrics."""
     return [
         period for period in supervision_periods
-        if period.custodial_authority not in (FEDERAL_CUSTODIAL_AUTHORITY, OTHER_COUNTRY_CUSTODIAL_AUTHORITY)
+        if period.custodial_authority not in (StateCustodialAuthority.FEDERAL, StateCustodialAuthority.OTHER_COUNTRY)
     ]
 
 
