@@ -24,7 +24,7 @@ import pandas as pd
 
 from recidiviz.calculator.modeling.population_projection.super_simulation import SuperSimulation
 from recidiviz.calculator.modeling.population_projection.population_simulation import PopulationSimulation
-from recidiviz.calculator.modeling.population_projection.spark_bq_upload import upload_spark_results
+from recidiviz.calculator.modeling.population_projection import spark_bq_utils
 from recidiviz.calculator.modeling.population_projection.spark_policy import SparkPolicy
 
 
@@ -32,7 +32,22 @@ class MacroSuperSimulation(SuperSimulation):
     """Manage the PopulationSimulations and output data needed to run tests, baselines, and policy scenarios"""
 
     def _initialize_data(self, initialization_params: Dict[str, Any]):
-        """Initialize the data_dict from the CSV data"""
+        """Initialize the data_dict from Big Query"""
+        simulation_tag = initialization_params['big_query_simulation_tag']
+
+        input_data_tables = {
+                'outflows_data': spark_bq_utils.OUTFLOWS_DATA_TABLE_NAME,
+                'transitions_data': spark_bq_utils.TRANSITIONS_DATA_TABLE_NAME,
+                'total_population_data': spark_bq_utils.TOTAL_POPULATION_DATA_TABLE_NAME
+        }
+
+        for table_tag, table_bq_name in input_data_tables.items():
+            table_data = spark_bq_utils.load_spark_table_from_big_query(table_bq_name, simulation_tag)
+            print(f"{table_tag} returned {len(table_data)} results")
+            self.data_dict[table_tag] = table_data
+
+    def _initialize_data_csv(self, initialization_params: Dict[str, Any]):
+        """Initialize the data_dict from CSV data --> deprecated"""
         simulation_data = pd.read_csv(initialization_params['state_data'])
 
         transitions_data = simulation_data[simulation_data.compartment_duration.notnull()]
@@ -301,6 +316,6 @@ class MacroSuperSimulation(SuperSimulation):
         missing_keys = [key for key in required_keys if key not in self.output_data.keys()]
         if len(missing_keys) != 0:
             raise ValueError(f"Output data is missing the required columns {missing_keys}")
-        upload_spark_results(project_id, simulation_tag, self.output_data['cost_avoidance'],
-                             self.output_data['life_years'], self.output_data['policy_simulation'],
-                             self.output_data['cost_avoidance_non_cumulative'])
+        spark_bq_utils.upload_spark_results(project_id, simulation_tag, self.output_data['cost_avoidance'],
+                                            self.output_data['life_years'], self.output_data['policy_simulation'],
+                                            self.output_data['cost_avoidance_non_cumulative'])

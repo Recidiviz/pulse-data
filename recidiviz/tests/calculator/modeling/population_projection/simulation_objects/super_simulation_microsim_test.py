@@ -20,7 +20,6 @@ import unittest
 from datetime import datetime
 from mock import patch
 import pandas as pd
-from numpy.random import random
 
 from recidiviz.calculator.modeling.population_projection.super_simulation_microsim import MicroSuperSimulation
 from recidiviz.tests.calculator.modeling.population_projection.simulation_objects.super_simulation_test \
@@ -34,7 +33,7 @@ outflows_data = pd.DataFrame({
     'state_code': ['test_state'] * 12,
     'run_date': [datetime(2021, 1, 1)] * 12,
     'gender': ['MALE'] * 6 + ['FEMALE'] * 6,
-    'total_population': [100 + 2 * i + random() for i in range(6)] + [10 + i + random() for i in range(6)]
+    'total_population': [100] + [100 + 2 * i for i in range(5)] + [10] + [10 + i for i in range(5)]
 })
 
 transitions_data = pd.DataFrame({
@@ -79,16 +78,18 @@ data_dict = {
 def mock_load_table_from_big_query(project_id: str, dataset: str, table_name: str, state_code: str) -> pd.DataFrame:
     return data_dict[table_name][data_dict[table_name]['state_code'] == state_code]
 
+
 def mock_load_table_from_big_query_no_remaining_data(project_id: str, dataset: str, table_name: str,
                                                      state_code: str) -> pd.DataFrame:
     if table_name == 'test_remaining_sentences':
         table_name = 'test_transitions'
     return data_dict[table_name][data_dict[table_name]['state_code'] == state_code]
 
-class TestMacroSuperSimulation(unittest.TestCase):
+
+class TestMicroSuperSimulation(unittest.TestCase):
     """Test the SuperSimulation object runs correctly"""
 
-    @patch('recidiviz.calculator.modeling.population_projection.spark_bq_inputs.load_table_from_big_query',
+    @patch('recidiviz.calculator.modeling.population_projection.ignite_bq_utils.load_ignite_table_from_big_query',
            mock_load_table_from_big_query)
     def setUp(self):
         with open(get_inputs_path(
@@ -103,7 +104,7 @@ class TestMacroSuperSimulation(unittest.TestCase):
         self.assertFalse(self.microsim.data_dict['total_population_data'].empty)
         self.assertFalse(self.microsim.data_dict['remaining_sentence_data'].empty)
 
-    @patch('recidiviz.calculator.modeling.population_projection.spark_bq_inputs.load_table_from_big_query',
+    @patch('recidiviz.calculator.modeling.population_projection.ignite_bq_utils.load_ignite_table_from_big_query',
            mock_load_table_from_big_query_no_remaining_data)
     def test_using_remaining_sentences_reduces_prison_population(self):
         """Tests microsim is using remaining sentence data in the right way"""

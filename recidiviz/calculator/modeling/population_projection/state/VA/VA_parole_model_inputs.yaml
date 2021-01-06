@@ -15,13 +15,11 @@ reference_date: 0
 time_step: 1
 
 disaggregation_axes:
-  - offense_code
+  - crime
 
-state_data: ../state/VA/preprocessed_data_VA_parole.csv
+big_query_simulation_tag: VA_parole
 
-per_ts_costs:
+per_year_costs:
   prison: 32146
   jail: 31755
   release: 0
-
-micro_simulation: false

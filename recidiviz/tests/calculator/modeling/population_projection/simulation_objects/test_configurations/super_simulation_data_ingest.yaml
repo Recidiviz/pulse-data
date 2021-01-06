@@ -6,6 +6,7 @@ user_inputs:
 
 model_architecture:
     PRETRIAL: null
+    RELEASE: released
     PRISON: incarcerated
 
 reference_date: 2010

@@ -18,15 +18,13 @@ time_step: 0.083333333
 # one month
 
 disaggregation_axes: 
-- placeholder_axis
+- crime_type
 
-state_data: ../state/TX/preprocessed_data_TX_prison_revocations.csv
+big_query_simulation_tag: TX_PO_incentives
 
-per_ts_costs:
+per_year_costs:
   prison_probation_revocations: 5100
   prison_parole_revocations: 5100
   probation: 358
   parole: 482
   release: 0
-
-micro_simulation: false

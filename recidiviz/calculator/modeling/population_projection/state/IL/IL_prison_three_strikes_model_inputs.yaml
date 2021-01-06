@@ -20,11 +20,9 @@ time_step: 0.083333333
 disaggregation_axes:
   - race
 
-state_data: ../../state/IL/preprocessed_data_IL_prison_three_strikes.csv
+big_query_simulation_tag: IL_prison_three_strikes
 
-per_ts_costs:
+per_year_costs:
   prison: 3166.67
   probation: 208.33
   release: 0
-
-micro_simulation: false
