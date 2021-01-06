@@ -20,9 +20,10 @@ import unittest
 from mock import patch
 import pandas as pd
 
-from recidiviz.calculator.modeling.population_projection.super_simulation_macrosim import MacroSuperSimulation
 from recidiviz.tests.calculator.modeling.population_projection.simulation_objects.super_simulation_test \
     import get_inputs_path
+from recidiviz.calculator.modeling.population_projection.simulations.super_simulation_factory import \
+    SuperSimulationFactory
 
 
 outflows_data = pd.DataFrame({
@@ -68,23 +69,19 @@ class TestMacroSuperSimulation(unittest.TestCase):
     @patch('recidiviz.calculator.modeling.population_projection.spark_bq_utils.load_spark_table_from_big_query',
            mock_load_table_from_big_query)
     def setUp(self):
-        with open(get_inputs_path(
-                'super_simulation_data_ingest.yaml')) as test_configuration:
-
-            self.macrosim = MacroSuperSimulation(test_configuration)
+        self.macrosim = SuperSimulationFactory.build_super_simulation(get_inputs_path(
+                'super_simulation_data_ingest.yaml'))
 
     @patch('recidiviz.calculator.modeling.population_projection.spark_bq_utils.load_spark_table_from_big_query',
            mock_load_table_from_big_query)
     def test_reference_year_must_be_integer_time_steps_from_start_year(self):
         """Tests macrosimulation enforces compatibility of start year and time step"""
-        with open(get_inputs_path(
-                'super_simulation_broken_start_year_model_inputs.yaml')) as test_configuration_start_year:
-            with self.assertRaises(ValueError):
-                MacroSuperSimulation(test_configuration_start_year)
-        with open(get_inputs_path(
-                'super_simulation_broken_time_step_model_inputs.yaml')) as test_configuration_time_step:
-            with self.assertRaises(ValueError):
-                MacroSuperSimulation(test_configuration_time_step)
+        with self.assertRaises(ValueError):
+            SuperSimulationFactory.build_super_simulation(get_inputs_path(
+                'super_simulation_broken_start_year_model_inputs.yaml'))
+        with self.assertRaises(ValueError):
+            SuperSimulationFactory.build_super_simulation(get_inputs_path(
+                'super_simulation_broken_time_step_model_inputs.yaml'))
 
     @patch('recidiviz.calculator.modeling.population_projection.spark_bq_utils.load_spark_table_from_big_query',
            mock_load_table_from_big_query)

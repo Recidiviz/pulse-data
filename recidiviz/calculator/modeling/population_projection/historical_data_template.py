@@ -24,16 +24,14 @@ TODO(#99999): fill this out
 STATE: [state_code]
 POLICY: [one line policy description]
 VERSION: [version of model at time of implementation]
-DATA SOURCE: [link to raw data]
 DATA QUALITY: [pick one of MVP/reasonable/great]
 HIGHEST PRIORITY MISSING DATA: [one line data description(s)]
-REFERENCE_DATE: [date time steps count from]
-TIME_STEP: [unit of time steps (ex: year, month, etc)]
 ADDITIONAL NOTES: [fill long form as necessary]
 """
 
 # TODO(#99999): add whatever modules you need
 import pandas as pd
+from recidiviz.calculator.modeling.population_projection.spark_bq_utils import upload_spark_model_inputs
 
 
 # RAW DATA
@@ -52,12 +50,11 @@ total_population_data = pd.DataFrame(columns=['compartment', 'total_population',
 # OUTFLOWS TABLE
 # TODO(#99999): populate outflows_data from raw data
 
-#TOTAL POPULATION TABLE
+# TOTAL POPULATION TABLE
 # TODO(#99999): populate total_population_data from raw data
 
 # STORE DATA
-# TODO(#99999): fill in `state` and `primary_compartment`
-state = 'TK'
-primary_compartment = 'TKTK'
-pd.concat([transitions_data, outflows_data, total_population_data]).to_csv(
-    f'recidiviz/modeling/population_projection/state/{state}/preprocessed_data_{state}_{primary_compartment}.csv')
+# TODO(#99999): fill in `simulation_tag'
+simulation_tag = "TKTK"
+upload_spark_model_inputs('recidiviz-staging', simulation_tag, outflows_data, transitions_data,
+                          total_population_data)

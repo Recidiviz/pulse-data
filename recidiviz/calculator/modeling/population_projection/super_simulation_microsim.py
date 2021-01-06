@@ -38,9 +38,9 @@ class MicroSuperSimulation(SuperSimulation):
             raise ValueError(f"Cannot convert date {timestamp} to integer {ts}")
         return round(ts)
 
-    def _initialize_data(self, initialization_params: Dict[str, Any]):
+    def _initialize_data(self, data_inputs_params: Dict[str, Any]):
         """Initialize the data_dict from Big Query"""
-        big_query_params = initialization_params['big_query_inputs']
+        big_query_params = data_inputs_params['big_query_inputs']
         project_id = big_query_params['project_id']
         dataset = big_query_params['input_dataset']
         state_code = big_query_params['state_code']
