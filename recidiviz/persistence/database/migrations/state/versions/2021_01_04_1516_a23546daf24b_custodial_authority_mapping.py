@@ -20,7 +20,7 @@ UPDATE_QUERY_US_ID = """UPDATE {table_id} SET custodial_authority =
                         (CASE WHEN custodial_authority_raw_text IN ('IS', 'PC') THEN 'OTHER_STATE'
                              WHEN custodial_authority_raw_text = 'DEPORTED' THEN 'OTHER_COUNTRY'
                              WHEN custodial_authority_raw_text = 'FED' THEN 'FEDERAL'
-                             WHEN custodial_authority_raw_text IS NOT NULL THEN 'PROBATION_AND_PAROLE'
+                             WHEN custodial_authority_raw_text IS NOT NULL THEN 'SUPERVISION_AUTHORITY'
                         END)
                         WHERE state_code = 'US_ID';"""
 
