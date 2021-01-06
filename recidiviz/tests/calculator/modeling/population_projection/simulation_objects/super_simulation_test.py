@@ -17,22 +17,26 @@
 """Test the SuperSimulation object"""
 
 import unittest
-# import pandas as pd
-# from pandas.testing import assert_frame_equal
+import os
+from typing import Dict, Any
+
 from recidiviz.calculator.modeling.population_projection.super_simulation import SuperSimulation
-# pylint: disable=line-too-long
+
+
+def get_inputs_path(file_name: str) -> str:
+    return os.path.join(os.path.dirname(__file__), 'test_configurations', file_name)
+
+
+class ParentSuperSimulation(SuperSimulation):
+    def _initialize_data(self, initialization_params: Dict[str, Any]):
+        pass
+
+    def _set_user_inputs(self, yaml_user_inputs: Dict[str, Any]):
+        pass
+
+    def _simulate_baseline(self, simulation_title: str, first_relevant_ts: int = None):
+        pass
 
 
 class TestSuperSimulation(unittest.TestCase):
     """Test the SuperSimulation object runs correctly"""
-
-    def test_reference_year_must_be_integer_time_steps_from_start_year(self):
-        test_configuration_start_year = \
-            open('recidiviz/tests/calculator/modeling/population_projection/simulation_objects/test_configurations/super_simulation_broken_start_year_model_inputs.yaml')
-        test_configuration_time_step = \
-            open('recidiviz/tests/calculator/modeling/population_projection/simulation_objects/test_configurations/super_simulation_broken_time_step_model_inputs.yaml')
-        with self.assertRaises(ValueError):
-            SuperSimulation(test_configuration_start_year)
-
-        with self.assertRaises(ValueError):
-            SuperSimulation(test_configuration_time_step)
