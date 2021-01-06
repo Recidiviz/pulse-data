@@ -43,6 +43,7 @@ class MigrationsTestBase:
     def setUp(self) -> None:
         self.db_dir = local_postgres_helpers.start_on_disk_postgresql_database()
         self.overridden_env_vars = local_postgres_helpers.update_local_sqlalchemy_postgres_env_vars()
+        self.engine = create_engine(local_postgres_helpers.on_disk_postgres_db_url())
 
     def tearDown(self) -> None:
         local_postgres_helpers.restore_local_env_vars(self.overridden_env_vars)
@@ -80,7 +81,7 @@ class MigrationsTestBase:
         raise NotImplementedError
 
     def test_enums_match_schema(self):
-        with runner(self.default_config()) as r:
+        with runner(self.default_config(), self.engine) as r:
             r.migrate_up_to('head')
 
         # Fetch enum values
@@ -113,17 +114,17 @@ class MigrationsTestBase:
 
     def test_full_upgrade(self):
         """Enforce that migrations can be run forward to completion."""
-        with runner(self.default_config()) as r:
+        with runner(self.default_config(), self.engine) as r:
             r.migrate_up_to('head')
 
     def test_single_head_revision(self):
         """Enforce that there is exactly one head revision."""
-        with runner(self.default_config()) as r:
+        with runner(self.default_config(), self.engine) as r:
             self.assertEqual(len(r.heads), 1)
 
     def test_up_down(self):
         """Enforce that migrations can be run all the way up, back, and up again."""
-        with runner(self.default_config()) as r:
+        with runner(self.default_config(), self.engine) as r:
             revisions = r.history.revisions
             r.migrate_up_to('head')
             for rev in reversed(revisions):
@@ -150,7 +151,7 @@ class MigrationsTestBase:
             if not migration_is_empty:
                 raise RuntimeError('migration should be empty')
 
-        with runner(self.default_config()) as r:
+        with runner(self.default_config(), self.engine) as r:
             r.migrate_up_to('head')
             r.generate_revision(message="test_rev", autogenerate=True, process_revision_directives=verify_is_empty)
 
