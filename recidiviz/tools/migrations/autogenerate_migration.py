@@ -65,6 +65,7 @@ def create_parser() -> argparse.ArgumentParser:
 
 
 def main(database: SchemaType, message: str, use_local_db: bool) -> None:
+    """Runs the script to autogenerate migrations."""
     if use_local_db:
         # TODO(#4619): We should eventually move this from a local postgres instance to running
         # postgres from a docker container.
@@ -78,7 +79,15 @@ def main(database: SchemaType, message: str, use_local_db: bool) -> None:
         tmp_db_dir = local_postgres_helpers.start_on_disk_postgresql_database()
         original_env_vars = local_postgres_helpers.update_local_sqlalchemy_postgres_env_vars()
     else:
-        original_env_vars = SQLAlchemyEngineManager.update_readonly_sqlalchemy_env_vars(database)
+        # TODO(Recidiviz/zenhub-tasks#134): This code path will throw when pointed at staging
+        # because we havne't created valid read-only users there just yet.
+        try:
+            original_env_vars = SQLAlchemyEngineManager.update_sqlalchemy_env_vars(database, readonly_user=True)
+        except ValueError as e:
+            logging.warning('Error fetching SQLAlchemy credentials: %s', e)
+            logging.warning('Until readonly users are created, we cannot autogenerate migrations against staging.')
+            logging.warning('See https://github.com/Recidiviz/zenhub-tasks/issues/134')
+            sys.exit(1)
 
     try:
         config = alembic.config.Config(SQLAlchemyEngineManager.get_alembic_file(database))
