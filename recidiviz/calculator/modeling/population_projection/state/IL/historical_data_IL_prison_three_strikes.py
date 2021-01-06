@@ -28,6 +28,7 @@ of 18 automatically has their third Class 1 or 2 offense upgraded to a Class X s
 policy would limit this sentence enhancement to individuals where all three convictions are forcible felonies.
 """
 import pandas as pd
+from recidiviz.calculator.modeling.population_projection.spark_bq_utils import upload_spark_model_inputs
 pd.set_option("display.max_rows", None, "display.max_columns", None)
 # pylint: skip-file
 
@@ -38,16 +39,16 @@ transitions_data = pd.DataFrame(columns=['compartment', 'outflow_to', 'race', 'c
 outflows_data = pd.DataFrame(columns=['compartment', 'outflow_to', 'race', 'time_step', 'total_population'])
 
 # TRANSITIONS TABLE
-prison_transitions_data = pd.read_csv('spark/state/IL/IL_data/Three Strikes Prison Transitions Data (Baseline)-Table 1.csv')
+prison_transitions_data = pd.read_csv('recidiviz/calculator/modeling/population_projection/state/IL/IL_data/Three Strikes Prison Transitions Data (Baseline)-Table 1.csv')
 
-probation_transitions_data = pd.read_csv('spark/state/IL/IL_data/Three Strikes Probation Transitions Data (Baseline)-Table 1.csv')
+probation_transitions_data = pd.read_csv('recidiviz/calculator/modeling/population_projection/state/IL/IL_data/Three Strikes Probation Transitions Data (Baseline)-Table 1.csv')
 
-release_transitions_data = pd.read_csv('spark/state/IL/IL_data/Three Strikes Release Transitions Data (Baseline)-Table 1.csv')
+release_transitions_data = pd.read_csv('recidiviz/calculator/modeling/population_projection/state/IL/IL_data/Three Strikes Release Transitions Data (Baseline)-Table 1.csv')
 
 transitions_data = pd.concat([transitions_data, prison_transitions_data, probation_transitions_data, release_transitions_data])
 
 # OUTFLOWS TABLE
-yearly_outflows_data = pd.read_csv('spark/state/IL/IL_data/Three Strikes Prison Admissions Data-Table 1.csv')
+yearly_outflows_data = pd.read_csv('recidiviz/calculator/modeling/population_projection/state/IL/IL_data/Three Strikes Prison Admissions Data-Table 1.csv')
 
 for year in range(2011, 2020):
     temp_monthly_outflows_data = pd.DataFrame({
@@ -64,7 +65,5 @@ for year in range(2011, 2020):
 # none
 
 # STORE DATA
-state = 'IL'
-primary_compartment = 'prison_three_strikes'
-pd.concat([transitions_data, outflows_data]).to_csv(
-    f'spark/state/{state}/preprocessed_data_{state}_{primary_compartment}.csv')
+upload_spark_model_inputs('recidiviz-staging', 'IL_prison_three_strikes', outflows_data, transitions_data,
+                          pd.DataFrame())

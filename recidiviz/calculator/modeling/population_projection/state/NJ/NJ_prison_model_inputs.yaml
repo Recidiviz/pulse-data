@@ -14,12 +14,10 @@ reference_date: 2016.0
 time_step: 1
 
 disaggregation_axes:
-  - offense_group
+  - crime_type
 
-state_data: ../state/NJ/preprocessed_data_NJ_prison.csv
+big_query_simulation_tag: NJ_prison
 
-per_ts_costs:
+per_year_costs:
   prison: 6181  # this is the parole cost because prison cost not listed
   release: 0
-
-micro_simulation: false

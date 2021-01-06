@@ -16,7 +16,7 @@ time_step: 0.08333333333
 disaggregation_axes:
   - gender
 
-per_ts_costs:
+per_year_costs:
     RELEASE: 0
     PRISON: 0
 

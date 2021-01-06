@@ -29,6 +29,7 @@ Compartment duration for prison based on average sentences
 """
 
 import pandas as pd
+from recidiviz.calculator.modeling.population_projection.spark_bq_utils import upload_spark_model_inputs
 pd.set_option('display.max_rows', None)
 # pylint: skip-file
 
@@ -41,8 +42,8 @@ pd.set_option('display.max_rows', None)
 # offenses: murder/manslaughter, sexual, robbery, violent personal, burglary, theft/forgery/fraud, drug, weapons, other
 
 # OUTFLOWS TABLE (pretrial to prison)
-outflows_data_2019 = pd.read_csv('spark/state/FL/2019-admissions-data.csv')
-outflows_data_2018 = pd.read_csv('spark/state/FL/2018-admissions-data.csv')
+outflows_data_2019 = pd.read_csv('recidiviz/calculator/modeling/population_projection/state/FL/2019-admissions-data.csv')
+outflows_data_2018 = pd.read_csv('recidiviz/calculator/modeling/population_projection/state/FL/2018-admissions-data.csv')
 outflows_data = pd.DataFrame()
 outflows_data = pd.concat([outflows_data, outflows_data_2019, outflows_data_2018])
 # print(annual_outflows_data)
@@ -50,17 +51,17 @@ outflows_data = pd.concat([outflows_data, outflows_data_2019, outflows_data_2018
 # TRANSITIONS TABLE
 # data for average sentences in http://www.dc.state.fl.us/pub/annual/1819/FDC_AR2018-19.pdf
 # data for recidivism rates in http://www.dc.state.fl.us/pub/recidivism/2019-2020/FDC_AR2019-20.pdf
-prison_to_release_transitions_data = pd.read_csv('spark/state/FL/transitions-data.csv')
-release_to_prison_transitions_data = pd.read_csv('spark/state/FL/transitions-recidivism.csv')
+prison_to_release_transitions_data = pd.read_csv('recidiviz/calculator/modeling/population_projection/state/FL/transitions-data.csv')
+release_to_prison_transitions_data = pd.read_csv('recidiviz/calculator/modeling/population_projection/state/FL/transitions-recidivism.csv')
 transitions_data = pd.concat([prison_to_release_transitions_data, release_to_prison_transitions_data])
-print(transitions_data)
 
 # TOTAL POPULATION DATA
+# none
 
-
+transitions_data = transitions_data.rename({'offense': 'crime_type'}, axis=1).drop(['rate_by_age', 'rate_by_offense'], axis=1)
+transitions_data.loc[transitions_data.total_population.isnull(), 'total_population'] = 1
+outflows_data = outflows_data.rename({'offense': 'crime_type'}, axis=1)
 
 # STORE DATA
-state = 'FL'
-primary_compartment = 'prison'
-pd.concat([transitions_data, outflows_data]).to_csv(
-    f'spark/state/{state}/preprocessed_data_{state}_{primary_compartment}.csv')
+upload_spark_model_inputs('recidiviz-staging', 'FL_prison', outflows_data, transitions_data,
+                          pd.DataFrame())

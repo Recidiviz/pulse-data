@@ -30,6 +30,7 @@ HIGHEST PRIORITY MISSING DATA: more years of data
 ADDITIONAL NOTES: NA
 """
 import pandas as pd
+from recidiviz.calculator.modeling.population_projection.spark_bq_utils import upload_spark_model_inputs
 # pylint: skip-file
 
 
@@ -85,7 +86,7 @@ mandatory_minimums = {
 }
 
 #you may have to change this path to point to wherever you have the file on your computer
-historical_sentences = pd.read_csv('spark/state/VA/VA_data/processed_va_historical_sentences_v2.csv')
+historical_sentences = pd.read_csv('recidiviz/calculator/modeling/population_projection/state/VA/VA_data/processed_va_historical_sentences_v2.csv')
 
 # Filter to the supported sentence types
 supported_sentence_types = ['jail', 'prison']
@@ -99,14 +100,14 @@ historical_sentences = historical_sentences[historical_sentences['effective_sent
 jail_prison_sentences = historical_sentences[['offense_group', 'offense_code', 'sentence_type',
                                               'effective_sentence_years']]\
     .groupby(['offense_code', 'sentence_type', 'effective_sentence_years'], as_index=False).count()
-jail_prison_sentences = jail_prison_sentences.rename({'offense_group': 'total_population',
-                                                          'effective_sentence_years': 'compartment_duration',
-                                                          'sentence_type': 'inflow_to'}, axis=1)
+jail_prison_sentences = jail_prison_sentences.rename({'offense_group': 'total_population', 'offense_code': 'crime',
+                                                      'effective_sentence_years': 'compartment_duration',
+                                                      'sentence_type': 'inflow_to'}, axis=1)
 jail_prison_sentences = jail_prison_sentences.rename({'inflow_to': 'compartment'}, axis=1)
 jail_prison_sentences['outflow_to'] = 'release'
 
-for offense_code in set(jail_prison_sentences['offense_code']):
-    jail_prison_sentences = jail_prison_sentences.append({'offense_code': offense_code, 'compartment': 'release',
+for offense_code in set(jail_prison_sentences['crime']):
+    jail_prison_sentences = jail_prison_sentences.append({'crime': offense_code, 'compartment': 'release',
                                                           'compartment_duration': 100, 'total_population': 1,
                                                           'outflow_to': 'prison'}, ignore_index=True)
 transitions_data = jail_prison_sentences
@@ -114,12 +115,9 @@ transitions_data = jail_prison_sentences
 #OUTFLOWS TABLE
 jail_prison_admissions = historical_sentences[['offense_group', 'off1_vcc', 'offense_code', 'time_step', 'sentence_type', 'compartment']]\
     .groupby(['offense_group', 'offense_code', 'compartment', 'sentence_type', 'time_step'], as_index=False).count()
-jail_prison_admissions = jail_prison_admissions.rename({'off1_vcc': 'total_population',
-                                                        'sentence_type': 'outflow_to'}, axis=1)
+jail_prison_admissions = jail_prison_admissions.rename({'off1_vcc': 'total_population', 'offense_code': 'crime',
+                                                        'sentence_type': 'outflow_to'}, axis=1).drop('offense_group', axis=1)
 outflows_data = jail_prison_admissions
 
-#STORE DATA
-state = 'VA'
-primary_compartment = 'parole'
-pd.concat([transitions_data, outflows_data], sort=False).to_csv(
-    f'spark/state/{state}/preprocessed_data_{state}_{primary_compartment}.csv')
+# STORE DATA
+upload_spark_model_inputs('recidiviz-staging', 'VA_parole', outflows_data, transitions_data, pd.DataFrame())
