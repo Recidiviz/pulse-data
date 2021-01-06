@@ -20,7 +20,8 @@ time_step: 0.083333333
 disaggregation_axes:
   - race
 
-big_query_simulation_tag: IL_prison_three_strikes
+data_inputs:
+  big_query_simulation_tag: IL_prison_three_strikes
 
 per_year_costs:
   prison: 3166.67

@@ -31,15 +31,14 @@ per_ts_costs:
     SUPERVISION - PROBATION: 0
     RELEASE - RELEASE: 0
 
-micro_simulation: true
-
-big_query_inputs:
-  project_id: recidiviz-staging
-  input_dataset: population_projection_data
-  outflows_data: population_outflows
-  transitions_data: population_transitions_materialized
-  total_population_data: total_population
-  remaining_sentence_data: remaining_sentences_materialized
-  total_jail_population_data: total_jail_population
-  total_out_of_state_supervised_population_data: total_out_of_state_supervision_population
-  state_code: US_ID
+data_inputs:
+  big_query_inputs:
+    project_id: recidiviz-staging
+    input_dataset: population_projection_data
+    outflows_data: population_outflows
+    transitions_data: population_transitions_materialized
+    total_population_data: total_population
+    remaining_sentence_data: remaining_sentences_materialized
+    total_jail_population_data: total_jail_population
+    total_out_of_state_supervised_population_data: total_out_of_state_supervision_population
+    state_code: US_ID

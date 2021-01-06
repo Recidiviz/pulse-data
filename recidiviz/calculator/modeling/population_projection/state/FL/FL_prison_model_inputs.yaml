@@ -17,7 +17,8 @@ disaggregation_axes:
   - age
   - crime_type
 
-big_query_simulation_tag: FL_prison
+data_inputs:
+  big_query_simulation_tag: FL_prison
 
 per_year_costs:
   prison: 3166.67

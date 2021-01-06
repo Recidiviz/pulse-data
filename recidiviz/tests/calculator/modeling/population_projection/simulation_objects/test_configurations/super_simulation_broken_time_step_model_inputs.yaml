@@ -16,7 +16,8 @@ time_step: 0.4
 disaggregation_axes:
   - crime_type
 
-big_query_simulation_tag: test_data
+data_inputs:
+  big_query_simulation_tag: test_data
 
 per_year_costs:
     RELEASE: 0

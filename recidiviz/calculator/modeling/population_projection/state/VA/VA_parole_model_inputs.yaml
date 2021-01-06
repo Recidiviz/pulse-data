@@ -17,7 +17,8 @@ time_step: 1
 disaggregation_axes:
   - crime
 
-big_query_simulation_tag: VA_parole
+data_inputs:
+  big_query_simulation_tag: VA_parole
 
 per_year_costs:
   prison: 32146

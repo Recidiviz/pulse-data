@@ -21,9 +21,10 @@ from datetime import datetime
 from mock import patch
 import pandas as pd
 
-from recidiviz.calculator.modeling.population_projection.super_simulation_microsim import MicroSuperSimulation
 from recidiviz.tests.calculator.modeling.population_projection.simulation_objects.super_simulation_test \
     import get_inputs_path
+from recidiviz.calculator.modeling.population_projection.simulations.super_simulation_factory import \
+    SuperSimulationFactory
 # pylint: disable=unused-argument
 
 outflows_data = pd.DataFrame({
@@ -92,10 +93,9 @@ class TestMicroSuperSimulation(unittest.TestCase):
     @patch('recidiviz.calculator.modeling.population_projection.ignite_bq_utils.load_ignite_table_from_big_query',
            mock_load_table_from_big_query)
     def setUp(self):
-        with open(get_inputs_path(
-                'super_simulation_microsim_model_inputs.yaml')) as test_configuration:
-            self.microsim = MicroSuperSimulation(test_configuration)
-            self.microsim.simulate_baseline(['PRISON'])
+        self.microsim = SuperSimulationFactory.build_super_simulation(get_inputs_path(
+                'super_simulation_microsim_model_inputs.yaml'))
+        self.microsim.simulate_baseline(['PRISON'])
 
     def test_microsim_data_hydrated(self):
         """Tests microsimulation are properly ingesting data from BQ"""
@@ -108,29 +108,28 @@ class TestMicroSuperSimulation(unittest.TestCase):
            mock_load_table_from_big_query_no_remaining_data)
     def test_using_remaining_sentences_reduces_prison_population(self):
         """Tests microsim is using remaining sentence data in the right way"""
-        with open(get_inputs_path(
-                'super_simulation_microsim_model_inputs.yaml')) as test_configuration:
-            microsim = MicroSuperSimulation(test_configuration)
-            microsim.simulate_baseline(['PRISON'])
+        microsim = SuperSimulationFactory.build_super_simulation(get_inputs_path(
+            'super_simulation_microsim_model_inputs.yaml'))
+        microsim.simulate_baseline(['PRISON'])
 
-            # get time before starting cohort filters out of prison
-            affected_time_frame = self.microsim.data_dict['transitions_data'][
-                self.microsim.data_dict['transitions_data'].compartment == 'PRISON'].compartment_duration.max()
+        # get time before starting cohort filters out of prison
+        affected_time_frame = self.microsim.data_dict['transitions_data'][
+            self.microsim.data_dict['transitions_data'].compartment == 'PRISON'].compartment_duration.max()
 
-            # get projected prison population from simulation substituting transitions data for remaining sentences
-            substitute_outputs = microsim.output_data['baseline']
-            substitute_prison_population = substitute_outputs[
-                (substitute_outputs.compartment == 'PRISON')
-                & (substitute_outputs.time_step > microsim.user_inputs['start_time_step'])
-                & (substitute_outputs.time_step - microsim.user_inputs['start_time_step'] < affected_time_frame)
-            ].groupby('time_step').sum().total_population
+        # get projected prison population from simulation substituting transitions data for remaining sentences
+        substitute_outputs = microsim.output_data['baseline']
+        substitute_prison_population = substitute_outputs[
+            (substitute_outputs.compartment == 'PRISON')
+            & (substitute_outputs.time_step > microsim.user_inputs['start_time_step'])
+            & (substitute_outputs.time_step - microsim.user_inputs['start_time_step'] < affected_time_frame)
+        ].groupby('time_step').sum().total_population
 
-            # get projected prison population from regular simulation
-            regular_outputs = self.microsim.output_data['baseline']
-            regular_prison_population = regular_outputs[
-                (regular_outputs.compartment == 'PRISON')
-                & (regular_outputs.time_step > self.microsim.user_inputs['start_time_step'])
-                & (regular_outputs.time_step - self.microsim.user_inputs['start_time_step'] < affected_time_frame)
-            ].groupby('time_step').sum().total_population
+        # get projected prison population from regular simulation
+        regular_outputs = self.microsim.output_data['baseline']
+        regular_prison_population = regular_outputs[
+            (regular_outputs.compartment == 'PRISON')
+            & (regular_outputs.time_step > self.microsim.user_inputs['start_time_step'])
+            & (regular_outputs.time_step - self.microsim.user_inputs['start_time_step'] < affected_time_frame)
+        ].groupby('time_step').sum().total_population
 
-            self.assertTrue((substitute_prison_population > regular_prison_population).all())
+        self.assertTrue((substitute_prison_population > regular_prison_population).all())
