@@ -63,7 +63,7 @@ class SubSimulation:
         # A dict of compartment tag (pre-trial, jail, prison, release...) to the corresponding SparkCompartment object
         self.simulation_compartments: Dict[str, SparkCompartment] = {}
 
-        # units of subgroup max_sentence (ie 1 would be going 1 * max_sentence backward to initialize)
+        # units of time steps
         self.first_relevant_ts = first_relevant_ts
 
         # indicates whether this is a micro-simulation
@@ -72,8 +72,7 @@ class SubSimulation:
     def initialize(self):
         """Initialize the transition tables, and then the compartments, for the SubSimulation"""
         # TODO(#4512): allow sparse data
-
-        if not self.microsim and not self.total_population_data.empty:
+        if not self.total_population_data.empty:
             if self.user_inputs['start_time_step'] not in self.total_population_data.time_step.values:
                 raise ValueError(f"Start time must be included in population data input\n"
                                  f"Expected: {self.user_inputs['start_time_step']}, "
@@ -147,9 +146,6 @@ class SubSimulation:
                                  shell_policies: Dict[str, List[SparkPolicy]]):
         """Initialize all the SparkCompartments for the subpopulation simulation"""
 
-        if self.microsim:
-            self.first_relevant_ts = int(self.start_ts)
-
         for compartment in self.simulation_architecture:
             transition_type = self.simulation_architecture[compartment]
             outflows_data = preprocessed_data.loc[compartment].dropna(axis=0, how='all').dropna(axis=1, how='all')
@@ -177,16 +173,20 @@ class SubSimulation:
                 )
 
         for compartment_tag, compartment_obj in self.simulation_compartments.items():
-            compartment_obj.initialize_edges(list(self.simulation_compartments.values()))
-            if self.microsim and isinstance(compartment_obj, FullCompartment):
-                compartment_population = \
-                    self.total_population_data[(self.total_population_data.compartment == compartment_tag) &
-                                               (self.total_population_data.time_step == self.start_ts)]
-                if compartment_population.empty:
-                    compartment_population = 0
-                else:
-                    compartment_population = compartment_population.iloc[0].total_population
-                compartment_obj.microsim_initialize(compartment_population)
+            self._initialize_edges_and_cohorts(compartment_tag, compartment_obj)
+
+    def _initialize_edges_and_cohorts(self, compartment_tag: str, compartment_obj: SparkCompartment):
+        """Helper function for _initialize_compartments()"""
+        compartment_obj.initialize_edges(list(self.simulation_compartments.values()))
+        if self.microsim and isinstance(compartment_obj, FullCompartment):
+            compartment_population = \
+                self.total_population_data[(self.total_population_data.compartment == compartment_tag) &
+                                           (self.total_population_data.time_step == self.start_ts)]
+            if compartment_population.empty:
+                compartment_population = 0
+            else:
+                compartment_population = compartment_population.iloc[0].total_population
+            compartment_obj.microsim_initialize(compartment_population)
 
     def scale_total_populations(self):
         """scales populations of compartments in simulation. If a FullCompartment isn't included, it won't be scaled"""
