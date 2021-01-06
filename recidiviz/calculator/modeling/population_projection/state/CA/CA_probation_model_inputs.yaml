@@ -17,11 +17,9 @@ time_step: 1
 disaggregation_axes:
   - crime_type
 
-state_data: ../state/CA/preprocessed_data_CA_probation.csv
+big_query_simulation_tag: CA_probation
 
-per_ts_costs:
+per_year_costs:
   prison: 81203
   probation: 4438
   release: 0
-
-micro_simulation: false

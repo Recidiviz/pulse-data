@@ -30,6 +30,7 @@ HIGHEST PRIORITY MISSING DATA: more years of data
 ADDITIONAL NOTES: NA
 """
 import pandas as pd
+from recidiviz.calculator.modeling.population_projection.spark_bq_utils import upload_spark_model_inputs
 # pylint: skip-file
 
 
@@ -85,7 +86,7 @@ mandatory_minimums = {
 }
 
 #you may have to change this path to point to wherever you have the file on your computer
-historical_sentences = pd.read_csv('spark/state/VA/VA_data/processed_va_historical_sentences_v2.csv')
+historical_sentences = pd.read_csv('recidiviz/calculator/modeling/population_projection/state/VA/VA_data/processed_va_historical_sentences_v2.csv')
 
 # Filter to the supported sentence types
 supported_sentence_types = ['jail', 'prison']
@@ -104,14 +105,14 @@ jail_prison_sentences = historical_sentences[['offense_group', 'offense_code', '
 jail_prison_sentences = jail_prison_sentences.rename({'offense_group': 'total_population',
                                                           'effective_sentence_years': 'compartment_duration',
                                                           'sentence_type': 'inflow_to'}, axis=1)
-jail_prison_sentences = jail_prison_sentences.rename({'inflow_to': 'compartment'}, axis=1)
+jail_prison_sentences = jail_prison_sentences.rename({'inflow_to': 'compartment', 'offense_code': 'crime'}, axis=1)
 
 # add a column for 'outflow_to' which is always 'release' because all data is prison sentences
 jail_prison_sentences['outflow_to'] = 'release'
 
 # for each sub-simulation, add in trivial transitions data to define release behavior
-for offense_code in jail_prison_sentences['offense_code'].unique():
-    jail_prison_sentences = jail_prison_sentences.append({'offense_code': offense_code, 'compartment': 'release',
+for offense_code in jail_prison_sentences['crime'].unique():
+    jail_prison_sentences = jail_prison_sentences.append({'crime': offense_code, 'compartment': 'release',
                                                           'compartment_duration': 30, 'total_population': 1,
                                                           'outflow_to': 'release'}, ignore_index=True)
 transitions_data = jail_prison_sentences
@@ -121,23 +122,20 @@ jail_prison_admissions = historical_sentences[['offense_group', 'off1_vcc', 'off
     .groupby(['offense_group', 'offense_code', 'compartment', 'sentence_type', 'time_step'], as_index=False).count()
 
 # rename column names to match data schema
-jail_prison_admissions = jail_prison_admissions.rename({'off1_vcc': 'total_population',
+jail_prison_admissions = jail_prison_admissions.rename({'off1_vcc': 'total_population', 'offense_code': 'crime',
                                                         'sentence_type': 'outflow_to'}, axis=1)
-outflows_data = jail_prison_admissions
+outflows_data = jail_prison_admissions.drop('offense_group', axis=1)
 
 # this is left over from the last policy we modeled, you'll want to filter differently based on what you're modeling
 affected_crimes = ['ASL1342', 'NAR3038', 'NAR3087', 'DWI5406', 'DWI5449', 'DWI5450', 'LIC6834', 'LIC6860', 'WPN5296',
                    'WPN5297']
 
-transitions_data = transitions_data[transitions_data.offense_code.isin(affected_crimes)]
-outflows_data = outflows_data[outflows_data.offense_code.isin(affected_crimes)]
+transitions_data = transitions_data[transitions_data.crime.isin(affected_crimes)]
+outflows_data = outflows_data[outflows_data.crime.isin(affected_crimes)]
 
 # Don't want sentences listed as hundreds of years to skew our model, so we cap sentence length at 50 years
 sentence_cap_data = pd.Series([50 for i in transitions_data.compartment_duration], index=transitions_data.index)
 transitions_data.loc[transitions_data.compartment_duration > sentence_cap_data, 'compartment_duration'] = 50
 
 #STORE DATA
-state = 'VA'
-primary_compartment = 'prison'
-pd.concat([transitions_data, outflows_data], sort=False).to_csv(
-    f'spark/state/{state}/preprocessed_data_{state}_{primary_compartment}.csv')
+upload_spark_model_inputs('recidiviz-staging', 'VA_prison', outflows_data, transitions_data, pd.DataFrame())

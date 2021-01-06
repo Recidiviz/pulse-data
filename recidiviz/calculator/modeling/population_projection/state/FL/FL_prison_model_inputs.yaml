@@ -15,12 +15,10 @@ time_step: 1
 
 disaggregation_axes:
   - age
-  - offense
+  - crime_type
 
-state_data: ../state/FL/preprocessed_data_FL_prison.csv
+big_query_simulation_tag: FL_prison
 
-per_ts_costs:
+per_year_costs:
   prison: 3166.67
   release: 0
-
-micro_simulation: false

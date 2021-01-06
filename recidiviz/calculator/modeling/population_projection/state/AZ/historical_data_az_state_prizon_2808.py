@@ -10,6 +10,8 @@ TIME_STEP: year
 """
 import pandas as pd
 import numpy as np
+from recidiviz.calculator.modeling.population_projection.spark_bq_utils import upload_spark_model_inputs
+# pylint: skip-file
 
 historical_data_2019 = pd.read_csv(
     'recidiviz/calculator/modeling/population_projection/state/AZ/AZ_data/2019.csv', sep=';', thousands=','
@@ -138,6 +140,11 @@ for crime in crimes:
     })
     total_population_data = pd.concat([total_population_data, crime_total_population])
 
-pd.concat([transitions_data, outflows_data, total_population_data]).to_csv(
-    'recidiviz/calculator/modeling/population_projection/state/AZ/preprocessed_data_AZ_prison_2808.csv'
-)
+outflows_data = outflows_data.rename({'is_violent': 'crime'})
+transitions_data = transitions_data.rename({'is_violent': 'crime'})
+total_population_data = total_population_data.rename({'is_violent': 'crime'})
+
+# STORE DATA
+upload_spark_model_inputs('recidiviz-staging', 'AZ_prison', outflows_data, transitions_data,
+                          total_population_data)
+

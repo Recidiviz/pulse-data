@@ -30,6 +30,7 @@ ADDITIONAL NOTES: N/A
 
 import pandas as pd
 import numpy as np
+from recidiviz.calculator.modeling.population_projection.spark_bq_utils import upload_spark_model_inputs
 # pylint: skip-file
 
 
@@ -41,7 +42,7 @@ total_population_data = pd.DataFrame({
     'total_population': [1836, 1706, 1665, 1557, 1419, 1276, 1137, 1048, 904, 817] +
                         [3741, 3128, 2825, 2411, 2286, 2010, 1749, 1639, 1541, 1525],
     'compartment': ['prison'] * 20,
-    'offense_group': ['PROPERTY'] * 10 + ['DRUG'] * 10
+    'crime_type': ['PROPERTY'] * 10 + ['DRUG'] * 10
 })
 
 # NJ Historical counts of adult offenders in the prison system at the beginning of the year
@@ -69,8 +70,8 @@ historical_offender_counts['property_admissions'] = historical_offender_counts['
 
 
 transitions_data = pd.DataFrame(columns=['compartment', 'outflow_to', 'total_population', 'compartment_duration',
-                                         'offense_group'])
-outflows_data = pd.DataFrame(columns=['compartment', 'outflow_to', 'total_population', 'time_step', 'offense_group'])
+                                         'crime_type'])
+outflows_data = pd.DataFrame(columns=['compartment', 'outflow_to', 'total_population', 'time_step', 'crime_type'])
 
 
 #TRANSITIONS TABLE
@@ -78,12 +79,12 @@ outflows_data = pd.DataFrame(columns=['compartment', 'outflow_to', 'total_popula
 drug_sentences = historical_offender_counts[['drug_median_sentence_length', 'drug_admissions']]
 drug_sentences = drug_sentences.rename({'drug_median_sentence_length': 'compartment_duration',
                                         'drug_admissions': 'total_population'}, axis=1)
-drug_sentences['offense_group'] = 'DRUG'
+drug_sentences['crime_type'] = 'DRUG'
 
 property_sentences = historical_offender_counts[['property_median_sentence_length', 'property_admissions']].copy()
 property_sentences = property_sentences.rename({'property_median_sentence_length': 'compartment_duration',
                                                 'property_admissions': 'total_population'}, axis=1)
-property_sentences['offense_group'] = 'PROPERTY'
+property_sentences['crime_type'] = 'PROPERTY'
 
 historical_sentences = pd.concat([drug_sentences, property_sentences])
 historical_sentences['compartment'] = 'prison'
@@ -91,13 +92,13 @@ historical_sentences['outflow_to'] = 'release'
 historical_sentences = historical_sentences[historical_sentences['total_population'].notnull()]
 
 # Sum all rows with the same offense group and compartment duration
-historical_sentences = historical_sentences.groupby(['compartment_duration', 'offense_group', 'compartment',
+historical_sentences = historical_sentences.groupby(['compartment_duration', 'crime_type', 'compartment',
                                                      'outflow_to'], as_index=False).sum()
 
 
 historical_sentences = historical_sentences.append(
     pd.DataFrame({'compartment_duration': [100, 100],
-                  'offense_group': ['DRUG', 'PROPERTY'],
+                  'crime_type': ['DRUG', 'PROPERTY'],
                   'compartment': ['release', 'release'],
                   'outflow_to': ['prison', 'prison'],
                   'total_population': [1, 1]}).reset_index(drop=True)
@@ -108,11 +109,11 @@ transitions_data = historical_sentences
 #OUTFLOWS TABLE
 drug_admissions = historical_offender_counts[['time_step', 'drug_admissions']]
 drug_admissions = drug_admissions.rename({'drug_admissions': 'total_population'}, axis=1)
-drug_admissions['offense_group'] = 'DRUG'
+drug_admissions['crime_type'] = 'DRUG'
 
 property_admissions = historical_offender_counts[['time_step', 'property_admissions']].copy()
 property_admissions = property_admissions.rename({'property_admissions': 'total_population'}, axis=1)
-property_admissions['offense_group'] = 'PROPERTY'
+property_admissions['crime_type'] = 'PROPERTY'
 
 historical_admissions = pd.concat([drug_admissions, property_admissions])
 historical_admissions['compartment'] = 'pretrial'
@@ -121,8 +122,6 @@ historical_admissions = historical_admissions[historical_admissions['total_popul
 
 outflows_data = historical_admissions
 
-#STORE DATA
-state = 'NJ'
-primary_compartment = 'prison'
-pd.concat([transitions_data, outflows_data, total_population_data], sort=False).to_csv(
-    f'spark/state/{state}/preprocessed_data_{state}_{primary_compartment}.csv')
+# STORE DATA
+upload_spark_model_inputs('recidiviz-staging', 'NJ_prison', outflows_data, transitions_data,
+                          pd.DataFrame())
