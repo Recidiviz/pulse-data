@@ -16,7 +16,7 @@
 # =============================================================================
 """A query template for doing person-level supervision population validation against an external dataset."""
 
-# pylint: disable=trailing-whitespace
+# pylint: disable=trailing-whitespace,line-too-long
 SUPERVISION_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_QUERY_TEMPLATE = \
     """
 WITH 
@@ -42,10 +42,11 @@ sanitized_internal_metrics AS (
       END AS supervising_officer_external_id,
       supervision_level_raw_text,
       supervising_district_external_id,
+      ROW_NUMBER() OVER (PARTITION BY state_code, date_of_supervision, person_external_id
+                        ORDER BY supervising_officer_external_id DESC, supervision_level_raw_text DESC, supervising_district_external_id DESC)
+                        AS inclusion_order
    FROM `{{project_id}}.{{materialized_metrics_dataset}}.most_recent_supervision_population_metrics`
-   WHERE metric_period_months = 0
-   AND methodology = 'PERSON'
-   AND metric_type = 'SUPERVISION_POPULATION'
+   WHERE methodology = 'EVENT'
    AND (state_code != 'US_ID' OR 
        # Idaho only gives us population numbers for folks explicitly on active probation, parole, or dual supervision.
        # The following groups are folks we consider a part of the SupervisionPopulation even though ID does not:
@@ -63,6 +64,7 @@ internal_metrics_for_valid_regions_and_dates AS (
   LEFT JOIN
     sanitized_internal_metrics
   USING (region_code, date_of_supervision)
+  WHERE inclusion_order = 1
 )
 SELECT
       region_code,

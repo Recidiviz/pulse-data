@@ -19,44 +19,54 @@
 # pylint: disable=trailing-whitespace, line-too-long
 RECIDIVISM_PERSON_LEVEL_EXTERNAL_COMPARISON_QUERY_TEMPLATE = \
     """
-WITH external_data AS (
-  -- NOTE: You can replace this part of the query with your own query to test the SELECT query you will use to generate
-  -- data to insert into the `recidivism_person_level` table.
-  SELECT region_code, release_cohort, follow_up_period, person_external_id, recidivated 
-  FROM `{{project_id}}.{{external_accuracy_dataset}}.recidivism_person_level`
-), internal_metrics AS (
-  SELECT
-    state_code AS region_code,
-    release_cohort,
-    follow_up_period,
-    recidivated_releases as recidivated,
-    person_external_id
-  FROM `{{project_id}}.{{materialized_metrics_dataset}}.most_recent_recidivism_rate_metrics`
-  WHERE methodology = 'PERSON'
-), internal_metrics_for_valid_regions_and_dates AS (
-  SELECT * FROM
-  -- Only compare regions and years for which we have external validation data
-  (SELECT DISTINCT region_code, release_cohort, follow_up_period FROM external_data)
-  LEFT JOIN internal_metrics
-  USING (region_code, release_cohort, follow_up_period)
-)
-
-
-SELECT
-  region_code,
-  release_cohort,
-  follow_up_period,
-  external_data.person_external_id as external_person_external_id,
-  internal_data.person_external_id as internal_person_external_id,
-  external_data.recidivated as external_recidivated,
-  internal_data.recidivated as internal_recidivated
-FROM
- external_data
-FULL OUTER JOIN 
-  internal_metrics_for_valid_regions_and_dates internal_data
-USING (region_code, release_cohort, follow_up_period, person_external_id)
-{filter_clause}
-ORDER BY region_code, release_cohort, follow_up_period
+    WITH external_data AS (
+      -- NOTE: You can replace this part of the query with your own query to test the SELECT query you will use to generate
+      -- data to insert into the `recidivism_person_level` table.
+      SELECT region_code, release_cohort, follow_up_period, person_external_id, recidivated 
+      FROM `{{project_id}}.{{external_accuracy_dataset}}.recidivism_person_level`
+    ), releases AS (
+      SELECT
+        state_code,
+        release_cohort,
+        follow_up_period,
+        recidivated_releases,
+        person_external_id,
+        ROW_NUMBER() OVER (PARTITION BY state_code, release_cohort, follow_up_period, person_id ORDER BY release_date ASC, recidivated_releases DESC) as release_order
+        FROM `{{project_id}}.{{materialized_metrics_dataset}}.most_recent_recidivism_rate_metrics`
+      WHERE methodology = 'EVENT'
+    ), internal_metrics AS (
+      SELECT
+        state_code AS region_code,
+        release_cohort,
+        follow_up_period,
+        recidivated_releases as recidivated,
+        person_external_id
+      FROM releases
+      WHERE release_order = 1
+    ), internal_metrics_for_valid_regions_and_dates AS (
+      SELECT * FROM
+      -- Only compare regions and years for which we have external validation data
+      (SELECT DISTINCT region_code, release_cohort, follow_up_period FROM external_data)
+      LEFT JOIN internal_metrics
+      USING (region_code, release_cohort, follow_up_period)
+    )
+    
+    
+    SELECT
+      region_code,
+      release_cohort,
+      follow_up_period,
+      external_data.person_external_id as external_person_external_id,
+      internal_data.person_external_id as internal_person_external_id,
+      external_data.recidivated as external_recidivated,
+      internal_data.recidivated as internal_recidivated
+    FROM
+     external_data
+    FULL OUTER JOIN 
+      internal_metrics_for_valid_regions_and_dates internal_data
+    USING (region_code, release_cohort, follow_up_period, person_external_id)
+    {filter_clause}
+    ORDER BY region_code, release_cohort, follow_up_period
 """
 
 

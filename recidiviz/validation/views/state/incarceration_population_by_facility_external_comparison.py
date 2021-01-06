@@ -35,6 +35,26 @@ INCARCERATION_POPULATION_BY_FACILITY_EXTERNAL_COMPARISON_DESCRIPTION = \
 INCARCERATION_POPULATION_BY_FACILITY_EXTERNAL_COMPARISON_QUERY_TEMPLATE = \
     """
     /*{description}*/
+    WITH external_validation_dates AS (
+        -- Only compare states and months for which we have external validation data
+        SELECT DISTINCT state_code, date_of_stay FROM
+        `{project_id}.{external_accuracy_dataset}.incarceration_population_by_facility`
+    ), internal_incarceration_population AS (
+        SELECT
+            state_code, date_of_stay,
+            IFNULL(facility, 'EXTERNAL_UNKNOWN') as facility,
+            COUNT(DISTINCT(person_id)) as internal_population_count
+        FROM `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_population_metrics`
+        WHERE methodology = 'EVENT'
+        GROUP BY state_code, date_of_stay, facility
+    ), relevant_internal_incarceration_population AS (
+        SELECT * FROM
+          external_validation_dates      
+        LEFT JOIN
+          internal_incarceration_population        
+        USING(state_code, date_of_stay)
+    )
+     
     SELECT
       state_code as region_code,
       date_of_stay,
@@ -43,24 +63,8 @@ INCARCERATION_POPULATION_BY_FACILITY_EXTERNAL_COMPARISON_QUERY_TEMPLATE = \
       IFNULL(internal_population_count, 0) as internal_population_count
     FROM
       `{project_id}.{external_accuracy_dataset}.incarceration_population_by_facility`
-        FULL OUTER JOIN
-      (SELECT * FROM
-         -- Only compare states and months for which we have external validation data
-        (SELECT DISTINCT state_code, date_of_stay FROM
-         `{project_id}.{external_accuracy_dataset}.incarceration_population_by_facility`)
-       LEFT JOIN
-          (SELECT
-            state_code, date_of_stay,
-            IFNULL(facility, 'EXTERNAL_UNKNOWN') as facility,
-            COUNT(DISTINCT(person_id)) as internal_population_count
-          FROM `{project_id}.{metrics_dataset}.incarceration_population_metrics`
-          JOIN `{project_id}.{materialized_metrics_dataset}.most_recent_job_id_by_metric_and_state_code_materialized` job
-            USING (state_code, job_id, year, month, metric_period_months)
-          WHERE metric_period_months = 0
-          AND methodology = 'PERSON'
-          AND job.metric_type = 'INCARCERATION_POPULATION'
-          GROUP BY state_code, date_of_stay, facility)
-      USING(state_code, date_of_stay))
+    FULL OUTER JOIN
+      relevant_internal_incarceration_population
     USING (state_code, date_of_stay, facility)
     ORDER BY region_code, date_of_stay, facility
 """
@@ -71,7 +75,6 @@ INCARCERATION_POPULATION_BY_FACILITY_EXTERNAL_COMPARISON_VIEW_BUILDER = SimpleBi
     view_query_template=INCARCERATION_POPULATION_BY_FACILITY_EXTERNAL_COMPARISON_QUERY_TEMPLATE,
     description=INCARCERATION_POPULATION_BY_FACILITY_EXTERNAL_COMPARISON_DESCRIPTION,
     external_accuracy_dataset=dataset_config.EXTERNAL_ACCURACY_DATASET,
-    metrics_dataset=state_dataset_config.DATAFLOW_METRICS_DATASET,
     materialized_metrics_dataset=state_dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET
 )
 
