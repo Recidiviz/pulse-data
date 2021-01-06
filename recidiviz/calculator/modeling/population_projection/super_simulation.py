@@ -18,8 +18,6 @@
 
 from abc import ABC, abstractmethod
 from typing import Dict, List, Any
-from io import TextIOWrapper
-import yaml
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -31,45 +29,25 @@ from recidiviz.calculator.modeling.population_projection.population_simulation i
 class SuperSimulation(ABC):
     """Manage the PopulationSimulations and output data needed to run tests, baselines, and policy scenarios"""
 
-    def __init__(self, yaml_file: TextIOWrapper):
+    def __init__(self, model_params_dict: Dict[str, Any]):
         self.pop_simulations: Dict[str, PopulationSimulation] = {}
-        self.data_dict = {}
+        self.data_dict: Dict[str, Any] = {}
         self.output_data: Dict[str, pd.DataFrame] = {}
-        self.user_inputs: Dict[str, Any] = {}
-        self.compartment_costs = {}
 
-        initialization_params = yaml.full_load(yaml_file)
+        self.reference_year = model_params_dict['reference_year']
+        self.time_step = model_params_dict['time_step']
 
-        # Make sure only one input setting is provided in the yaml file
-        if sum([initialization_params.get('big_query_simulation_tag') is not None,
-                initialization_params.get('big_query_inputs') is not None]) != 1:
-            raise ValueError(
-                "Only one option can be set in the yaml file: `big_query_simulation_tag` OR `big_query_inputs`")
+        self._initialize_data(model_params_dict['data_inputs_raw'])
 
-        self.reference_year = initialization_params['reference_date']
-        self.time_step = initialization_params['time_step']
+        self.data_dict['simulation_compartments_architecture'] = \
+            model_params_dict['simulation_compartments_architecture']
 
-        self._initialize_data(initialization_params)
+        self.data_dict['disaggregation_axes'] = model_params_dict['disaggregation_axes']
 
-        model_architecture_yaml_key = 'model_architecture'
-        self.data_dict['simulation_compartments_architecture'] = initialization_params[model_architecture_yaml_key]
-        self.data_dict['disaggregation_axes'] = initialization_params['disaggregation_axes']
+        self.compartment_costs = model_params_dict['compartment_costs']
 
         # Parse the simulation settings from the initialization parameters
-        self._set_user_inputs(initialization_params['user_inputs'])
-
-        compartment_costs_key = 'per_year_costs'
-        self.compartment_costs = initialization_params[compartment_costs_key]
-
-        # Ensure there are compartment costs for every compartment in the model architecture
-        model_compartments = set(c for c in self.data_dict['simulation_compartments_architecture']
-                                 if self.data_dict['simulation_compartments_architecture'][c] is not None)
-        compartment_costs = set(self.compartment_costs.keys())
-        if compartment_costs != model_compartments:
-            raise ValueError(
-                f"Compartments do not match in the YAML '{compartment_costs_key}' and '{model_architecture_yaml_key}'\n"
-                f"Mismatched values: {compartment_costs ^ model_compartments}"
-            )
+        self._set_user_inputs(model_params_dict['user_inputs_raw'])
 
     def _convert_to_absolute_year(self, time_steps: Any):
         """converts a number of time steps relative to reference date into absolute dates"""
@@ -92,7 +70,7 @@ class SuperSimulation(ABC):
         return grouped_results
 
     @abstractmethod
-    def _initialize_data(self, initialization_params: Dict[str, Any]):
+    def _initialize_data(self, data_inputs_params: Dict[str, Any]):
         """Initialize the data_dict"""
 
     @abstractmethod

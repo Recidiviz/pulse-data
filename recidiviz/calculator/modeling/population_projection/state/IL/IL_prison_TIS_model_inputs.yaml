@@ -20,7 +20,8 @@ disaggregation_axes:
   - crime_type
   - race
 
-big_query_simulation_tag: IL_prison_TIS
+data_inputs:
+  big_query_simulation_tag: IL_prison_TIS
 
 per_year_costs:
   prison: 3166.67

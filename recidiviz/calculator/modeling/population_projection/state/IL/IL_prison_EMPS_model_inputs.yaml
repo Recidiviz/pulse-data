@@ -20,7 +20,8 @@ disaggregation_axes:
   - crime_type
   - race
 
-big_query_simulation_tag: IL_prison_EMPS
+data_inputs:
+  big_query_simulation_tag: IL_prison_EMPS
 
 per_year_costs:
   prison: 3166.67
