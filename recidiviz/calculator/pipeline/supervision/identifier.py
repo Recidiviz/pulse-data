@@ -436,9 +436,10 @@ def supervision_period_counts_towards_supervision_population_in_date_range(
     """Returns True if the existence of the |supervision_period| means a person can be counted towards the supervision
     population in the provided date range.
     """
-    is_fully_incarcerated_for_range = incarceration_period_index.is_fully_incarcerated_for_range(date_range)
+    is_excluded_from_supervision_population_for_range = \
+        incarceration_period_index.is_excluded_from_supervision_population_for_range(date_range)
 
-    if is_fully_incarcerated_for_range:
+    if is_excluded_from_supervision_population_for_range:
         return False
 
     supervision_overlapping_range = \
