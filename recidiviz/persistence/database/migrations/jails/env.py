@@ -90,7 +90,8 @@ def run_migrations_online() -> None:
     and associate a connection with the context.
 
     """
-    connectable = create_engine(get_sqlalchemy_url())
+    # Create a new connection if we don't already have one configured from Alembic
+    connectable = config.attributes.get('connection', create_engine(get_sqlalchemy_url()))
 
     with connectable.connect() as connection:
         context.configure(
