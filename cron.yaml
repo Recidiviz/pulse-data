@@ -24,7 +24,7 @@ cron:
       max_doublings: 5
       job_age_limit: 9h
 
-  - description: Start America/Chicago scrapers without an assigned stripe 
+  - description: Start America/Chicago scrapers without an assigned stripe
     url: /scraper/start?region=all&scrape_type=background&timezone=America/Chicago&stripe=0
     schedule: every day 21:00
     timezone: America/Chicago
@@ -42,7 +42,7 @@ cron:
       max_doublings: 5
       job_age_limit: 9h
 
-  - description: Start America/Los_Angeles scrapers without an assigned stripe 
+  - description: Start America/Los_Angeles scrapers without an assigned stripe
     url: /scraper/start?region=all&scrape_type=background&timezone=America/Los_Angeles&stripe=0
     schedule: every day 21:00
     timezone: America/Los_Angeles
@@ -60,7 +60,7 @@ cron:
       max_doublings: 5
       job_age_limit: 9h
 
-  - description: Start America/Denver scrapers without an assigned stripe 
+  - description: Start America/Denver scrapers without an assigned stripe
     url: /scraper/start?region=all&scrape_type=background&timezone=America/Denver&stripe=0
     schedule: every day 21:00
     timezone: America/Denver
@@ -95,7 +95,7 @@ cron:
       min_backoff_seconds: 2.5
       max_doublings: 5
       job_age_limit: 9h
- 
+
   - description: Start scrapers in stripe 2
     url: /scraper/start?region=all&scrape_type=background&stripe=2
     schedule: every day 18:00
@@ -206,7 +206,13 @@ cron:
 
   - description: Start Cloud SQL to BigQuery export tasks for operations tables
     url: /cloud_sql_to_bq/create_refresh_bq_tasks/operations
-    schedule: every day 6:00
+    # We're currently delaying operations export to happen _after_ the state export.
+    # As of 2021-01-05, state export takes ~45 minutes, so this one hour delay should
+    # ensure that operations doesn't report on information in state that hasn't yet been
+    # exported to BigQuery.
+    # TODO(#4419): Once we migrate to a DAG for this, we should chain the operations refresh
+    # to happen after the state refresh.
+    schedule: every day 7:00
     timezone: America/Los_Angeles
     retry_parameters:
       min_backoff_seconds: 2.5
