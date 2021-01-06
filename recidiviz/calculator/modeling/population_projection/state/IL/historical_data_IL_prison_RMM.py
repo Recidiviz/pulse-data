@@ -29,6 +29,7 @@ Class 2: 3 to 1 years
 Class 3: 2 to 1 years
 """
 import pandas as pd
+from recidiviz.calculator.modeling.population_projection.spark_bq_utils import upload_spark_model_inputs
 pd.set_option("display.max_rows", None, "display.max_columns", None)
 # pylint: skip-file
 
@@ -45,17 +46,17 @@ transitions_data = pd.DataFrame()
 # change phrase within parentheses in file names below from "LOS" to "Sentence Length"
 # if would like to see transition distributions by sentence length instead
 
-prison_transitions_data = pd.read_csv('spark/state/IL/IL_data/RMM Prison Transitions Data (LOS)-Table 1.csv')
+prison_transitions_data = pd.read_csv('recidiviz/calculator/modeling/population_projection/state/IL/IL_data/RMM Prison Transitions Data (LOS)-Table 1.csv')
 
-probation_transitions_data = pd.read_csv('spark/state/IL/IL_data/RMM Probation Transitions Data-Table 1.csv')
+probation_transitions_data = pd.read_csv('recidiviz/calculator/modeling/population_projection/state/IL/IL_data/RMM Probation Transitions Data-Table 1.csv')
 
-release_transitions_data = pd.read_csv('spark/state/IL/IL_data/RMM Release Transitions Data-Table 1.csv')
+release_transitions_data = pd.read_csv('recidiviz/calculator/modeling/population_projection/state/IL/IL_data/RMM Release Transitions Data-Table 1.csv')
 
 transitions_data = pd.concat([transitions_data, prison_transitions_data, probation_transitions_data, release_transitions_data])
 
 # OUTFLOWS DATA
 
-outflows_data = pd.read_csv('spark/state/IL/IL_data/RMM Prison Admissions Data (LOS)-Table 1.csv')
+outflows_data = pd.read_csv('recidiviz/calculator/modeling/population_projection/state/IL/IL_data/RMM Prison Admissions Data (LOS)-Table 1.csv')
 
 monthly_outflows_data = pd.DataFrame()
 
@@ -81,7 +82,7 @@ for year in range(2011, 2020):
 
 # TOTAL POPULATION DATA
 
-total_population_data = pd.read_csv('spark/state/IL/IL_data/RMM Total Prison Population Data-Table 1.csv')
+total_population_data = pd.read_csv('recidiviz/calculator/modeling/population_projection/state/IL/IL_data/RMM Total Prison Population Data-Table 1.csv')
 
 monthly_total_population_data = pd.DataFrame()
 
@@ -104,8 +105,10 @@ for year in range(2011, 2020):
     })
     monthly_total_population_data = pd.concat([monthly_total_population_data, temp_monthly_total_population_data])
 
-#STORE DATA
-state = 'IL'
-primary_compartment = 'prison_RMM'
-pd.concat([transitions_data, monthly_outflows_data, monthly_total_population_data], sort=False).to_csv(
-    f'spark/state/{state}/preprocessed_data_{state}_{primary_compartment}.csv')
+# STORE DATA
+monthly_outflows_data = monthly_outflows_data.rename({'crime_classification': 'crime_type'})
+transitions_data = transitions_data.rename({'crime_classification': 'crime_type'})
+monthly_total_population_data = monthly_total_population_data.rename({'tis_percentage': 'crime_type'})
+
+upload_spark_model_inputs('recidiviz-staging', 'IL_prison_RMM', monthly_outflows_data, transitions_data,
+                          monthly_total_population_data)

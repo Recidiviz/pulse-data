@@ -17,15 +17,66 @@
 """Test the MacroSuperSimulation object"""
 
 import unittest
+from mock import patch
+import pandas as pd
+
 from recidiviz.calculator.modeling.population_projection.super_simulation_macrosim import MacroSuperSimulation
 from recidiviz.tests.calculator.modeling.population_projection.simulation_objects.super_simulation_test \
     import get_inputs_path
 
 
+outflows_data = pd.DataFrame({
+    'compartment': ['PRETRIAL'] * 12,
+    'outflow_to': ['PRISON'] * 12,
+    'time_step': list(range(5, 11)) * 2,
+    'simulation_tag': ['test_data'] * 12,
+    'crime_type': ['NONVIOLENT'] * 6 + ['VIOLENT'] * 6,
+    'total_population': [100] + [100 + 2 * i for i in range(5)] + [10] + [10 + i for i in range(5)]
+})
+
+transitions_data = pd.DataFrame({
+    'compartment': ['PRISON', 'PRISON', 'RELEASE', 'RELEASE'] * 2,
+    'outflow_to': ['RELEASE', 'RELEASE', 'PRISON', 'RELEASE'] * 2,
+    'compartment_duration': [3, 5, 3, 50] * 2,
+    'simulation_tag': ['test_data'] * 8,
+    'crime_type': ['NONVIOLENT'] * 4 + ['VIOLENT'] * 4,
+    'total_population': [0.6, 0.4, 0.3, 0.7] * 2
+})
+
+total_population_data = pd.DataFrame({
+    'compartment': ['PRISON', 'RELEASE'] * 2,
+    'time_step': [9] * 4,
+    'simulation_tag': ['test_data'] * 4,
+    'crime_type': ['NONVIOLENT'] * 2 + ['VIOLENT'] * 2,
+    'total_population': [300, 500, 30, 50]
+})
+
+data_dict = {
+    'outflows_data_raw': outflows_data,
+    'transitions_data_raw': transitions_data,
+    'total_population_data_raw': total_population_data
+}
+
+
+def mock_load_table_from_big_query(table_name: str, simulation_tag: str) -> pd.DataFrame:
+    return data_dict[table_name][data_dict[table_name].simulation_tag == simulation_tag]
+
+
 class TestMacroSuperSimulation(unittest.TestCase):
     """Test the SuperSimulation object runs correctly"""
 
+    @patch('recidiviz.calculator.modeling.population_projection.spark_bq_utils.load_spark_table_from_big_query',
+           mock_load_table_from_big_query)
+    def setUp(self):
+        with open(get_inputs_path(
+                'super_simulation_data_ingest.yaml')) as test_configuration:
+
+            self.macrosim = MacroSuperSimulation(test_configuration)
+
+    @patch('recidiviz.calculator.modeling.population_projection.spark_bq_utils.load_spark_table_from_big_query',
+           mock_load_table_from_big_query)
     def test_reference_year_must_be_integer_time_steps_from_start_year(self):
+        """Tests macrosimulation enforces compatibility of start year and time step"""
         with open(get_inputs_path(
                 'super_simulation_broken_start_year_model_inputs.yaml')) as test_configuration_start_year:
             with self.assertRaises(ValueError):
@@ -34,3 +85,11 @@ class TestMacroSuperSimulation(unittest.TestCase):
                 'super_simulation_broken_time_step_model_inputs.yaml')) as test_configuration_time_step:
             with self.assertRaises(ValueError):
                 MacroSuperSimulation(test_configuration_time_step)
+
+    @patch('recidiviz.calculator.modeling.population_projection.spark_bq_utils.load_spark_table_from_big_query',
+           mock_load_table_from_big_query)
+    def test_macrosim_data_hydrated(self):
+        """Tests macrosimulation are properly ingesting data from BQ"""
+        self.assertFalse(self.macrosim.data_dict['outflows_data'].empty)
+        self.assertFalse(self.macrosim.data_dict['transitions_data'].empty)
+        self.assertFalse(self.macrosim.data_dict['total_population_data'].empty)

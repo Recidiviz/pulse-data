@@ -31,6 +31,7 @@ ADDITIONAL NOTES: model built to support policy memo for CA AB1950
 import pandas as pd
 from numpy import mean
 from scipy.stats import chi2
+from recidiviz.calculator.modeling.population_projection.spark_bq_utils import upload_spark_model_inputs
 # pylint: skip-file
 
 
@@ -129,8 +130,6 @@ for crime in ['felony', 'misdemeanor']:
 total_population_data['compartment'] = 'probation'
 total_population_data['time_step'] = total_population_data['time_step'].apply(int)
 
-#STORE DATA
-state = 'CA'
-primary_compartment = 'probation'
-pd.concat([transitions_data, outflows_data, total_population_data], sort=False).to_csv(
-    f'spark/state/{state}/preprocessed_data_{state}_{primary_compartment}.csv')
+# STORE DATA
+upload_spark_model_inputs('recidiviz-staging', 'CA_probation', outflows_data, transitions_data,
+                          total_population_data)

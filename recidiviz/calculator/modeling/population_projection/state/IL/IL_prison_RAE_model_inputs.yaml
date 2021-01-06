@@ -17,15 +17,11 @@ time_step: 0.083333333
 # one month
 
 disaggregation_axes:
-  - tis_percentage
+  - crime_type
 
-state_data: ../../state/IL/preprocessed_data_IL_prison_RAE.csv
+big_query_simulation_tag: IL_prison_RAE
 
-per_ts_costs:
+per_year_costs:
   prison: 3166.67
   probation: 208.33
   release: 0
-
-micro_simulation: false
-
-

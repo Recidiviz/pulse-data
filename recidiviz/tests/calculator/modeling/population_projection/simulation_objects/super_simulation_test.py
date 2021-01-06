@@ -40,3 +40,9 @@ class ParentSuperSimulation(SuperSimulation):
 
 class TestSuperSimulation(unittest.TestCase):
     """Test the SuperSimulation object runs correctly"""
+
+    def test_simulation_architecture_must_match_compartment_costs(self):
+        with open(get_inputs_path(
+                'super_simulation_mismatched_compartments.yaml')) as test_configuration:
+            with self.assertRaises(ValueError):
+                ParentSuperSimulation(test_configuration)

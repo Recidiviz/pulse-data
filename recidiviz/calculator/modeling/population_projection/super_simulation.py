@@ -41,9 +41,10 @@ class SuperSimulation(ABC):
         initialization_params = yaml.full_load(yaml_file)
 
         # Make sure only one input setting is provided in the yaml file
-        if sum([initialization_params.get('state_data') is not None,
+        if sum([initialization_params.get('big_query_simulation_tag') is not None,
                 initialization_params.get('big_query_inputs') is not None]) != 1:
-            raise ValueError("Only one option can be set in the yaml file: `state_data` OR `big_query_inputs`")
+            raise ValueError(
+                "Only one option can be set in the yaml file: `big_query_simulation_tag` OR `big_query_inputs`")
 
         self.reference_year = initialization_params['reference_date']
         self.time_step = initialization_params['time_step']
@@ -57,7 +58,7 @@ class SuperSimulation(ABC):
         # Parse the simulation settings from the initialization parameters
         self._set_user_inputs(initialization_params['user_inputs'])
 
-        compartment_costs_key = 'per_ts_costs'
+        compartment_costs_key = 'per_year_costs'
         self.compartment_costs = initialization_params[compartment_costs_key]
 
         # Ensure there are compartment costs for every compartment in the model architecture
@@ -104,7 +105,6 @@ class SuperSimulation(ABC):
             raise ValueError(f"Projection years {yaml_user_inputs['projection_years']} input cannot be evenly divided "
                              f"by time step {self.time_step}")
         self.user_inputs['projection_time_steps'] = round(self.user_inputs['projection_time_steps'])
-        self.user_inputs['run_date'] = yaml_user_inputs['run_date']
 
         # Load all optional arguments, set them to the default value if not provided in the initialization params
         self.user_inputs['constant_admissions'] = yaml_user_inputs.get('constant_admissions', False)
@@ -187,9 +187,13 @@ class SuperSimulation(ABC):
         outflows = pd.DataFrame()
         outflows['model'] = self.gen_arima_output_df(simulation_title).groupby(['compartment', 'outflow_to',
                                                                                 'time_step']).pred.sum()
-        outflows['actual'] = self.data_dict['outflows_data'][self.data_dict['outflows_data'].run_date ==
-                                                             self.data_dict['outflows_data'].run_date.max()].groupby(
-            ['compartment', 'outflow_to', 'time_step']).total_population.sum()
+        if 'run_date' in self.data_dict['outflows_data']:
+            outflows_data = self.data_dict['outflows_data'][self.data_dict['outflows_data'].run_date ==
+                                                            self.data_dict['outflows_data'].run_date.max()]
+        else:
+            outflows_data = self.data_dict['outflows_data']
+
+        outflows['actual'] = outflows_data.groupby(['compartment', 'outflow_to', 'time_step']).total_population.sum()
 
         outflows.fillna(0)
         return outflows[outflows.index.get_level_values(level='time_step') >= self.user_inputs['start_time_step']]

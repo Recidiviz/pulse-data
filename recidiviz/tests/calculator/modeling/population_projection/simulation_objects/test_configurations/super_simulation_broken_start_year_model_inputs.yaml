@@ -1,25 +1,23 @@
 ---
 user_inputs:
   policy_year: 2020
-  start_year: 2017.5
+  start_year: 2019.5
   projection_years: 10
 
 model_architecture:
-    prison: incarcerated
-    pretrial: null
-    release: released
+    PRETRIAL: null
+    RELEASE: released
+    PRISON: incarcerated
 
-reference_date: 2016.0
+reference_date: 2010
 
 time_step: 1
 
 disaggregation_axes:
-  - offense_group
+  - crime_type
 
-state_data: recidiviz/tests/calculator/modeling/population_projection/simulation_objects/preprocessed_data_test.csv
+big_query_simulation_tag: test_data
 
-per_ts_costs:
-  prison: 100
-  release: 0
-
-micro_simulation: false
+per_year_costs:
+    RELEASE: 0
+    PRISON: 1000

@@ -22,9 +22,8 @@ import numpy as np
 import pandas as pd
 
 from recidiviz.calculator.modeling.population_projection.super_simulation import SuperSimulation
-from recidiviz.calculator.modeling.population_projection import spark_bq_inputs
+from recidiviz.calculator.modeling.population_projection import ignite_bq_utils
 from recidiviz.calculator.modeling.population_projection.population_simulation import PopulationSimulation
-from recidiviz.calculator.modeling.population_projection.spark_bq_upload import upload_ignite_results
 
 
 class MicroSuperSimulation(SuperSimulation):
@@ -50,7 +49,7 @@ class MicroSuperSimulation(SuperSimulation):
                              'total_jail_population_data', 'total_out_of_state_supervised_population_data']
         for table_key in input_data_tables:
             table_name = big_query_params[table_key]
-            table_data = spark_bq_inputs.load_table_from_big_query(project_id, dataset, table_name, state_code)
+            table_data = ignite_bq_utils.load_ignite_table_from_big_query(project_id, dataset, table_name, state_code)
             if 'time_step' in table_data.columns:
                 # Convert the time_step from a timestamp to a relative int value
                 table_data['time_step'] = table_data['time_step'].apply(self._convert_to_relative_date_from_timestamp)
@@ -59,16 +58,18 @@ class MicroSuperSimulation(SuperSimulation):
             self.data_dict[table_key] = table_data
 
         # add extra transitions from the RELEASE compartment
-        self.data_dict['transitions_data'] = spark_bq_inputs.add_transition_rows(self.data_dict['transitions_data'])
+        self.data_dict['transitions_data'] = ignite_bq_utils.add_transition_rows(self.data_dict['transitions_data'])
 
-        self.data_dict['remaining_sentence_data'] = spark_bq_inputs.add_remaining_sentence_rows(
+        self.data_dict['remaining_sentence_data'] = ignite_bq_utils.add_remaining_sentence_rows(
             self.data_dict['remaining_sentence_data']
         )
 
     def _set_user_inputs(self, yaml_user_inputs: Dict[str, Any]):
         super()._set_user_inputs(yaml_user_inputs)
-        # this will be populated in the PopulationSimulation
+        self.user_inputs['run_date'] = yaml_user_inputs['run_date']
         self.user_inputs['policy_time_step'] = self.user_inputs['start_time_step'] + 1
+
+        # this will be populated in the PopulationSimulation
         self.user_inputs['policy_list'] = []
 
     def _simulate_baseline(self, simulation_title: str, first_relevant_ts: int = None):
@@ -168,4 +169,4 @@ class MicroSuperSimulation(SuperSimulation):
         microsim_data['year'] = microsim_data['time_step'].apply(self._convert_to_absolute_year)
         microsim_data = microsim_data.drop('time_step', axis=1)
         microsim_data = self._prep_for_upload(microsim_data)
-        upload_ignite_results(project_id, simulation_tag, microsim_data)
+        ignite_bq_utils.upload_ignite_results(project_id, simulation_tag, microsim_data)

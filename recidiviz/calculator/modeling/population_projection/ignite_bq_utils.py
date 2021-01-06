@@ -14,14 +14,31 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Methods to pull data from BigQuery for running the population projection simulation"""
+"""BigQuery Methods for running the Ignite population projection simulation"""
 
+import datetime
 import pandas as pd
 import numpy as np
 import pandas_gbq
 
+from recidiviz.calculator.modeling.population_projection.bq_utils import store_simulation_results, \
+    add_simulation_date_column
 
-def load_table_from_big_query(project_id: str, dataset: str, table_name: str, state_code: str):
+MICROSIM_DATASET = 'population_projection_data'
+MICROSIM_TABLE_NAME = 'microsim_projection_raw'
+MICROSIM_SCHEMA = [
+    {'name': 'simulation_tag', 'type': 'STRING', 'mode': 'REQUIRED'},
+    {'name': 'simulation_date', 'type': 'DATE', 'mode': 'REQUIRED'},
+    {'name': 'simulation_group', 'type': 'STRING', 'mode': 'REQUIRED'},
+    {'name': 'compartment', 'type': 'STRING', 'mode': 'REQUIRED'},
+    {'name': 'total_population', 'type': 'FLOAT', 'mode': 'REQUIRED'},
+    {'name': 'total_population_min', 'type': 'FLOAT', 'mode': 'REQUIRED'},
+    {'name': 'total_population_max', 'type': 'FLOAT', 'mode': 'REQUIRED'},
+    {'name': 'date_created', 'type': 'TIMESTAMP', 'mode': 'REQUIRED'}
+]
+
+
+def load_ignite_table_from_big_query(project_id: str, dataset: str, table_name: str, state_code: str):
     """Pull all data from a table for a specific state and run date"""
 
     query = f"""SELECT * FROM {dataset}.{table_name} WHERE state_code = '{state_code}'"""
@@ -77,3 +94,18 @@ def add_remaining_sentence_rows(remaining_sentence_data: pd.DataFrame):
         remaining_sentence_data['remaining_duration'] = True
         complete_remaining = pd.concat([complete_remaining, extra_rows])
     return complete_remaining
+
+
+def upload_ignite_results(project_id, simulation_tag, microsim_population_df):
+    """Reformat the simulation results to match the table schema and upload them to BigQuery"""
+
+    # Set the upload timestamp for all tables
+    upload_time = datetime.datetime.now()
+
+    microsim_population_df = add_simulation_date_column(microsim_population_df)
+
+    # Add metadata columns to the output table
+    microsim_population_df['simulation_tag'] = simulation_tag
+    microsim_population_df['date_created'] = upload_time
+
+    store_simulation_results(project_id, MICROSIM_DATASET, MICROSIM_TABLE_NAME, MICROSIM_SCHEMA, microsim_population_df)

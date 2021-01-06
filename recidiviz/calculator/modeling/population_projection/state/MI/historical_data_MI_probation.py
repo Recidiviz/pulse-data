@@ -26,6 +26,7 @@ ADDITIONAL NOTES: model built to support policy memo for MI SB1050
 
 import pandas as pd
 from numpy import mean
+from recidiviz.calculator.modeling.population_projection.spark_bq_utils import upload_spark_model_inputs
 # pylint: skip-file
 
 
@@ -195,8 +196,6 @@ total_population_data = \
 total_population_data['compartment'] = 'probation'
 total_population_data['crime_type'] = 'felony'
 
-#STORE DATA
-state = 'MI'
-primary_compartment = 'parole'
-pd.concat([transitions_data, outflows_data, total_population_data], sort=False).to_csv(
-    f'spark/state/{state}/preprocessed_data_{state}_{primary_compartment}.csv')
+# STORE DATA
+upload_spark_model_inputs('recidiviz-staging', 'MI_probation', outflows_data, transitions_data,
+                          total_population_data)
