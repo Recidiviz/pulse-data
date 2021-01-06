@@ -16,7 +16,7 @@
 # =============================================================================
 
 """Converts an ingest_info proto StateSupervisionPeriod to a persistence entity."""
-
+from recidiviz.common.constants.state.shared_enums import StateCustodialAuthority
 from recidiviz.common.constants.state.state_supervision import \
     StateSupervisionType
 from recidiviz.common.constants.state.state_supervision_period import \
@@ -53,7 +53,6 @@ def copy_fields_to_builder(
     new.supervision_site = fn(normalize, 'supervision_site', proto)
     if proto.conditions:
         new.conditions = create_comma_separated_list(proto, 'conditions')
-    new.custodial_authority = fn(normalize, 'custodial_authority', proto)
 
     enum_fields = {
         'status': StateSupervisionPeriodStatus,
@@ -61,7 +60,8 @@ def copy_fields_to_builder(
         'supervision_period_supervision_type': StateSupervisionPeriodSupervisionType,
         'admission_reason': StateSupervisionPeriodAdmissionReason,
         'termination_reason': StateSupervisionPeriodTerminationReason,
-        'supervision_level': StateSupervisionLevel
+        'supervision_level': StateSupervisionLevel,
+        'custodial_authority': StateCustodialAuthority
     }
     enum_mappings = EnumMappings(proto, enum_fields, metadata.enum_overrides)
 
@@ -86,3 +86,5 @@ def copy_fields_to_builder(
     new.termination_reason_raw_text = fn(normalize, 'termination_reason', proto)
     new.supervision_level = enum_mappings.get(StateSupervisionLevel)
     new.supervision_level_raw_text = fn(normalize, 'supervision_level', proto)
+    new.custodial_authority = enum_mappings.get(StateCustodialAuthority)
+    new.custodial_authority_raw_text = fn(normalize, 'custodial_authority', proto)

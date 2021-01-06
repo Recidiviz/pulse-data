@@ -24,7 +24,7 @@ from recidiviz import IngestInfo
 from recidiviz.common.constants.charge import ChargeStatus
 from recidiviz.common.constants.person_characteristics import Gender, Race, Ethnicity, ResidencyStatus
 from recidiviz.common.constants.state.external_id_types import US_ID_DOC
-from recidiviz.common.constants.state.shared_enums import StateActingBodyType
+from recidiviz.common.constants.state.shared_enums import StateActingBodyType, StateCustodialAuthority
 from recidiviz.common.constants.state.state_agent import StateAgentType
 from recidiviz.common.constants.state.state_assessment import StateAssessmentType, StateAssessmentLevel
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
@@ -730,7 +730,7 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
                                             termination_reason='I',
                                             termination_date='2008-01-01',
                                             supervision_period_supervision_type='PS',
-                                            custodial_authority='US_ID_DOC',
+                                            custodial_authority='D1',
                                             supervising_officer=StateAgent(
                                                 state_agent_id='po1',
                                                 full_name='NAME1',
@@ -753,7 +753,7 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
                                             termination_reason='P',
                                             termination_date='2018-01-01',
                                             supervision_period_supervision_type='PS',
-                                            custodial_authority='US_ID_DOC',
+                                            custodial_authority='D1',
                                             supervising_officer=StateAgent(
                                                 state_agent_id='po1',
                                                 full_name='NAME1',
@@ -768,7 +768,7 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
                                             termination_date='2018-12-31',
                                             supervision_period_supervision_type='PB',
                                             supervision_level='UNCLASSIFIED',
-                                            custodial_authority='US_ID_DOC',
+                                            custodial_authority='D0',
                                             ),
                                         StateSupervisionPeriod(
                                             state_supervision_period_id='1111-4',
@@ -779,7 +779,7 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
                                             termination_date='2020-06-01',
                                             termination_reason='DEPORTED',
                                             supervision_level='SO TO GENERAL HIGH',
-                                            custodial_authority='US_ID_DOC',
+                                            custodial_authority='D1',
                                             supervising_officer=StateAgent(
                                                 state_agent_id='po2',
                                                 full_name='NAME2',
@@ -794,7 +794,7 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
                                             termination_date='2020-12-31',
                                             termination_reason='H-PARDONED',
                                             supervision_level='LEVEL 4',
-                                            custodial_authority='OTHER_COUNTRY',
+                                            custodial_authority='DEPORTED',
                                         ),
                                     ]
                                 )
@@ -822,7 +822,7 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
                                             termination_date='2009-07-01',
                                             supervision_period_supervision_type='CP',
                                             supervision_level='UNSUPV/COURT PROB',
-                                            custodial_authority='US_ID_DOC',
+                                            custodial_authority='D2',
                                         ),
                                         StateSupervisionPeriod(
                                             state_supervision_period_id='2222-2',
@@ -837,7 +837,7 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
                                                     case_type='SEX OFFENSE'
                                                 ),
                                             ],
-                                            custodial_authority='US_ID_DOC',
+                                            custodial_authority='FI',
                                         ),
                                         StateSupervisionPeriod(
                                             state_supervision_period_id='2222-3',
@@ -853,12 +853,23 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
                                                     case_type='SO MODERATE'
                                                 ),
                                             ],
-                                            custodial_authority='US_ID_DOC',
+                                            custodial_authority='D2',
                                             supervising_officer=StateAgent(
                                                 state_agent_id='po3',
                                                 full_name='NAME3',
                                                 agent_type='SUPERVISION_OFFICER',
                                             )),
+                                        StateSupervisionPeriod(
+                                            state_supervision_period_id='2222-4',
+                                            supervision_site=
+                                            'PAROLE COMMISSION OFFICE|U.S. IMMIGRATION NATURALIZATION DETAINER',
+                                            admission_reason='I',
+                                            start_date='2012-06-06',
+                                            termination_reason='I',
+                                            termination_date='2012-12-07',
+                                            supervision_period_supervision_type='PR',
+                                            custodial_authority='FED',
+                                        )
                                     ]
                                 )
                             ],
@@ -890,7 +901,7 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
                                                     case_type='DRUG COURT'
                                                 ),
                                             ],
-                                            custodial_authority='US_ID_DOC',
+                                            custodial_authority='D4',
                                         ),
                                         StateSupervisionPeriod(
                                             state_supervision_period_id='3333-2',
@@ -899,7 +910,7 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
                                             supervision_level='INTERSTATE',
                                             supervision_period_supervision_type='PB',
                                             start_date='2018-01-01',
-                                            custodial_authority='WASHINGTON',
+                                            custodial_authority='IS',
                                         ),
                                     ]
                                 )
@@ -1957,7 +1968,8 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
             state_code=_STATE_CODE_UPPER,
             external_id='1111-1',
             supervision_site='DISTRICT 1|OFFICE 1',
-            custodial_authority='US_ID_DOC',
+            custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
+            custodial_authority_raw_text='D1',
             status=StateSupervisionPeriodStatus.TERMINATED,
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             admission_reason_raw_text='COURT_SENTENCE',
@@ -1983,7 +1995,8 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
             state_code=_STATE_CODE_UPPER,
             external_id='1111-2',
             supervision_site='DISTRICT 1|OFFICE 1',
-            custodial_authority='US_ID_DOC',
+            custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
+            custodial_authority_raw_text='D1',
             status=StateSupervisionPeriodStatus.TERMINATED,
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             admission_reason_raw_text='H',
@@ -2001,7 +2014,8 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
             state_code=_STATE_CODE_UPPER,
             external_id='1111-3',
             supervision_site='DISTRICT 0|LIMITED SUPERVISION UNIT',
-            custodial_authority='US_ID_DOC',
+            custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
+            custodial_authority_raw_text='D0',
             status=StateSupervisionPeriodStatus.TERMINATED,
             admission_reason=StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE,
             admission_reason_raw_text='P',
@@ -2020,7 +2034,8 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
             state_code=_STATE_CODE_UPPER,
             external_id='1111-4',
             supervision_site='DISTRICT 1|OFFICE 2',
-            custodial_authority='US_ID_DOC',
+            custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
+            custodial_authority_raw_text='D1',
             status=StateSupervisionPeriodStatus.TERMINATED,
             admission_reason=StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE,
             admission_reason_raw_text='I',
@@ -2040,7 +2055,8 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
             state_code=_STATE_CODE_UPPER,
             external_id='1111-5',
             supervision_site='DISTRICT 1|OFFICE 2',
-            custodial_authority='OTHER_COUNTRY',
+            custodial_authority=StateCustodialAuthority.OTHER_COUNTRY,
+            custodial_authority_raw_text='DEPORTED',
             status=StateSupervisionPeriodStatus.TERMINATED,
             admission_reason=StateSupervisionPeriodAdmissionReason.TRANSFER_OUT_OF_STATE,
             admission_reason_raw_text='DEPORTED',
@@ -2069,7 +2085,8 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
             state_code=_STATE_CODE_UPPER,
             external_id='2222-1',
             supervision_site='DISTRICT 2|UNKNOWN',
-            custodial_authority='US_ID_DOC',
+            custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
+            custodial_authority_raw_text='D2',
             status=StateSupervisionPeriodStatus.TERMINATED,
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             admission_reason_raw_text='COURT_SENTENCE',
@@ -2090,7 +2107,8 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
             status=StateSupervisionPeriodStatus.TERMINATED,
             admission_reason=StateSupervisionPeriodAdmissionReason.ABSCONSION,
             admission_reason_raw_text='ABSCONSION',
-            custodial_authority='US_ID_DOC',
+            custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
+            custodial_authority_raw_text='FI',
             start_date=datetime.date(year=2009, month=7, day=1),
             termination_reason=StateSupervisionPeriodTerminationReason.RETURN_FROM_ABSCONSION,
             termination_reason_raw_text='RETURN_FROM_ABSCONSION',
@@ -2113,7 +2131,8 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
             state_code=_STATE_CODE_UPPER,
             external_id='2222-3',
             supervision_site='DISTRICT 2|OFFICE 3',
-            custodial_authority='US_ID_DOC',
+            custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
+            custodial_authority_raw_text='D2',
             status=StateSupervisionPeriodStatus.TERMINATED,
             admission_reason=StateSupervisionPeriodAdmissionReason.RETURN_FROM_ABSCONSION,
             admission_reason_raw_text='F',
@@ -2136,10 +2155,30 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
             supervision_period=sp_2222_3,
             person=sp_2222_3.person,
         )
+        sp_2222_4 = entities.StateSupervisionPeriod.new_with_defaults(
+            state_code=_STATE_CODE_UPPER,
+            external_id='2222-4',
+            supervision_site='PAROLE COMMISSION OFFICE|U.S. IMMIGRATION NATURALIZATION DETAINER',
+            custodial_authority=StateCustodialAuthority.FEDERAL,
+            custodial_authority_raw_text='FED',
+            status=StateSupervisionPeriodStatus.TERMINATED,
+            admission_reason=StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE,
+            admission_reason_raw_text='I',
+            start_date=datetime.date(year=2012, month=6, day=6),
+            termination_reason=StateSupervisionPeriodTerminationReason.RETURN_TO_INCARCERATION,
+            termination_reason_raw_text='I',
+            termination_date=datetime.date(year=2012, month=12, day=7),
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+            supervision_period_supervision_type_raw_text='PR',
+            incarceration_sentences=[is_2222_2],
+            person=ss_2222_1.person,
+        )
+
         sp_2222_2.case_type_entries.append(sc_2222_2_so)
         sp_2222_3.case_type_entries.append(sc_2222_3_so)
         sg_2222_1.supervision_sentences.append(ss_2222_1_placeholder)
         ss_2222_1.supervision_periods.extend([sp_2222_1, sp_2222_2, sp_2222_3])
+        is_2222_2.supervision_periods.append(sp_2222_4)
 
         ss_3333_1_placeholder = entities.StateSupervisionSentence.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
@@ -2150,7 +2189,8 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
             state_code=_STATE_CODE_UPPER,
             external_id='3333-1',
             supervision_site='DISTRICT 4|UNKNOWN',
-            custodial_authority='US_ID_DOC',
+            custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
+            custodial_authority_raw_text='D4',
             status=StateSupervisionPeriodStatus.TERMINATED,
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             admission_reason_raw_text='COURT_SENTENCE',
@@ -2177,7 +2217,8 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
             external_id='3333-2',
             status=StateSupervisionPeriodStatus.UNDER_SUPERVISION,
             supervision_site='INTERSTATE PROBATION|WASHINGTON',
-            custodial_authority='WASHINGTON',
+            custodial_authority=StateCustodialAuthority.OTHER_STATE,
+            custodial_authority_raw_text='IS',
             admission_reason=StateSupervisionPeriodAdmissionReason.TRANSFER_OUT_OF_STATE,
             admission_reason_raw_text='IS',
             start_date=datetime.date(year=2018, month=1, day=1),

@@ -6,7 +6,7 @@ key_mappings:
   termination_date: state_supervision_period.termination_date
   county_of_residence: state_supervision_period.county_code
   supervision_level: state_supervision_period.supervision_level
-  custodial_authority: state_supervision_period.custodial_authority
+
 
 ancestor_keys:
   parole_number: state_person.state_person_id

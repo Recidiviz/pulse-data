@@ -74,7 +74,7 @@ from recidiviz.common.constants.state.state_program_assignment import \
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.state.state_early_discharge import StateEarlyDischargeDecision, \
     StateEarlyDischargeDecisionStatus
-from recidiviz.common.constants.state.shared_enums import StateActingBodyType
+from recidiviz.common.constants.state.shared_enums import StateActingBodyType, StateCustodialAuthority
 from recidiviz.common.constants.state.state_supervision import (
     StateSupervisionType,
 )
@@ -640,7 +640,10 @@ class StateIncarcerationPeriod(ExternalIdEntity, BuildableAttr, DefaultableAttr,
     specialized_purpose_for_incarceration: Optional[StateSpecializedPurposeForIncarceration] = attr.ib()
     specialized_purpose_for_incarceration_raw_text: Optional[str] = attr.ib()
 
-    custodial_authority: Optional[str] = attr.ib()
+    # The type of government entity directly responsible for the person in this period of incarceration.
+    # Not necessarily the decision making authority.
+    custodial_authority: Optional[StateCustodialAuthority] = attr.ib()
+    custodial_authority_raw_text: Optional[str] = attr.ib()
 
     #   - Who
     # See |person| in entity relationships below.
@@ -718,7 +721,10 @@ class StateSupervisionPeriod(ExternalIdEntity, BuildableAttr, DefaultableAttr, D
     supervision_level: Optional[StateSupervisionLevel] = attr.ib()
     supervision_level_raw_text: Optional[str] = attr.ib()
 
-    custodial_authority: Optional[str] = attr.ib()
+    # The type of government entity directly responsible for the person on this period of supervision.
+    # Not necessarily the decision making authority.
+    custodial_authority: Optional[StateCustodialAuthority] = attr.ib()
+    custodial_authority_raw_text: Optional[str] = attr.ib()
 
     conditions: Optional[str] = attr.ib(default=None)
 
