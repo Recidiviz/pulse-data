@@ -21,7 +21,7 @@ from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 from recidiviz.common.constants.enum_overrides import EnumOverrides, EnumMapper, EnumIgnorePredicate
 from recidiviz.common.constants.person_characteristics import Race, Ethnicity, Gender
 from recidiviz.common.constants.state.external_id_types import US_ID_DOC
-from recidiviz.common.constants.state.shared_enums import StateActingBodyType
+from recidiviz.common.constants.state.shared_enums import StateActingBodyType, StateCustodialAuthority
 from recidiviz.common.constants.state.state_agent import StateAgentType
 from recidiviz.common.constants.state.state_assessment import StateAssessmentType, StateAssessmentLevel
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
@@ -35,8 +35,7 @@ from recidiviz.common.constants.state.state_supervision import StateSupervisionT
 from recidiviz.common.constants.state.state_supervision_contact import StateSupervisionContactLocation, \
     StateSupervisionContactType, StateSupervisionContactReason, StateSupervisionContactStatus
 from recidiviz.common.constants.state.state_supervision_period import StateSupervisionPeriodAdmissionReason, \
-    StateSupervisionPeriodTerminationReason, StateSupervisionPeriodSupervisionType, StateSupervisionLevel, \
-    FEDERAL_CUSTODIAL_AUTHORITY, OTHER_COUNTRY_CUSTODIAL_AUTHORITY
+    StateSupervisionPeriodTerminationReason, StateSupervisionPeriodSupervisionType, StateSupervisionLevel
 from recidiviz.common.constants.state.state_supervision_violation import StateSupervisionViolationType
 from recidiviz.common.constants.state.state_supervision_violation_response import \
     StateSupervisionViolationResponseDecision, StateSupervisionViolationResponseType
@@ -48,13 +47,15 @@ from recidiviz.ingest.direct.regions.us_id.us_id_constants import INTERSTATE_FAC
     VIOLATION_REPORT_NO_RECOMMENDATION_VALUES, ALL_NEW_CRIME_TYPES, VIOLENT_CRIME_TYPES, \
     SEX_CRIME_TYPES, MAX_DATE_STR, PREVIOUS_FACILITY_CODE, NEXT_FACILITY_CODE, CURRENT_FACILITY_CODE, \
     PAROLE_COMMISSION_CODE, LIMITED_SUPERVISION_LIVING_UNIT, BENCH_WARRANT_LIVING_UNIT, COURT_PROBATION_LIVING_UNIT, \
-    LIMITED_SUPERVISION_UNIT_NAME, DISTRICT_0, UNKNOWN, IDOC_CUSTODIAL_AUTHORITY, CURRENT_FACILITY_NAME, \
+    LIMITED_SUPERVISION_UNIT_NAME, DISTRICT_0, UNKNOWN, CURRENT_FACILITY_NAME, \
     CURRENT_LOCATION_NAME, CURRENT_LIVING_UNIT_CODE, CURRENT_LIVING_UNIT_NAME, CURRENT_LOCATION_CODE, \
-    CONTACT_TYPES_TO_BECOME_LOCATIONS, CONTACT_RESULT_ARREST, UNKNOWN_EMPLOYEE_SDESC, FEDERAL_CUSTODY_LOCATION_NAME, \
-    DEPORTED_LOCATION_NAME, NEXT_LOCATION_NAME, PREVIOUS_LOCATION_NAME, HISTORY_FACILITY_TYPE, NEXT_FACILITY_TYPE
+    CONTACT_TYPES_TO_BECOME_LOCATIONS, CONTACT_RESULT_ARREST, UNKNOWN_EMPLOYEE_SDESC, \
+    DEPORTED_LOCATION_NAME, NEXT_LOCATION_NAME, PREVIOUS_LOCATION_NAME, HISTORY_FACILITY_TYPE, NEXT_FACILITY_TYPE, \
+    FEDERAL_CUSTODY_LOCATION_NAMES, FEDERAL_CUSTODY_LOCATION_CODE
 from recidiviz.ingest.direct.regions.us_id.us_id_enum_helpers import incarceration_admission_reason_mapper, \
     incarceration_release_reason_mapper, supervision_admission_reason_mapper, supervision_termination_reason_mapper, \
-    is_jail_facility, purpose_for_incarceration_mapper, supervision_period_supervision_type_mapper
+    is_jail_facility, purpose_for_incarceration_mapper, supervision_period_supervision_type_mapper, \
+    custodial_authority_mapper
 from recidiviz.ingest.direct.state_shared_row_posthooks import copy_name_to_alias, gen_label_single_external_id_hook, \
     gen_rationalize_race_and_ethnicity, create_supervision_site
 from recidiviz.ingest.models.ingest_info import IngestObject, StateAssessment, StateIncarcerationSentence, \
@@ -524,6 +525,7 @@ class UsIdController(CsvGcsfsDirectIngestController):
         StateSupervisionPeriodTerminationReason: supervision_termination_reason_mapper,
         StateSpecializedPurposeForIncarceration: purpose_for_incarceration_mapper,
         StateSupervisionPeriodSupervisionType: supervision_period_supervision_type_mapper,
+        StateCustodialAuthority: custodial_authority_mapper
     }
 
     ENUM_IGNORE_PREDICATES: Dict[EntityEnumMeta, EnumIgnorePredicate] = {}
@@ -682,21 +684,25 @@ class UsIdController(CsvGcsfsDirectIngestController):
             extracted_objects: List[IngestObject],
             _cache: IngestObjectCache) -> None:
         """Sets custodial authority on the StateSupervisionPeriod entities."""
-        custodial_authority = IDOC_CUSTODIAL_AUTHORITY
-
-        # Determine if there should be overrides for custodial authority that are not IDOC.
         facility_cd = row.get(CURRENT_FACILITY_CODE, '')
         location_name = row.get(CURRENT_LOCATION_NAME, '')
-        if facility_cd in (INTERSTATE_FACILITY_CODE, PAROLE_COMMISSION_CODE):
-            custodial_authority = location_name
+        living_unit_cd = row.get(CURRENT_LIVING_UNIT_CODE, '')
+
+        # Default values
+        custodial_authority_code = facility_cd
+
+        if location_name in FEDERAL_CUSTODY_LOCATION_NAMES:
+            custodial_authority_code = FEDERAL_CUSTODY_LOCATION_CODE
+        # People on limited supervision are marked as a part of 'DISTRICT 4' in the data because it started out as a
+        # District 4 only program. Now, however, they count anyone on limited supervision as a part of DISTRICT 0
         elif location_name == DEPORTED_LOCATION_NAME:
-            custodial_authority = OTHER_COUNTRY_CUSTODIAL_AUTHORITY
-        elif location_name == FEDERAL_CUSTODY_LOCATION_NAME:
-            custodial_authority = FEDERAL_CUSTODIAL_AUTHORITY
+            custodial_authority_code = DEPORTED_LOCATION_NAME
+        elif living_unit_cd == LIMITED_SUPERVISION_LIVING_UNIT:
+            custodial_authority_code = 'D0'
 
         for obj in extracted_objects:
-            if isinstance(obj, StateSupervisionPeriod):
-                obj.custodial_authority = custodial_authority
+            if isinstance(obj, StateSupervisionPeriod) and custodial_authority_code:
+                obj.custodial_authority = custodial_authority_code
 
     @staticmethod
     def _override_supervision_type(

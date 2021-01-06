@@ -26,6 +26,7 @@ from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 from recidiviz.common.constants.enum_overrides import EnumOverrides, EnumMapper, EnumIgnorePredicate
 from recidiviz.common.constants.person_characteristics import Race, Gender, Ethnicity
 from recidiviz.common.constants.state.external_id_types import US_PA_SID, US_PA_CONTROL, US_PA_PBPP
+from recidiviz.common.constants.state.shared_enums import StateCustodialAuthority
 from recidiviz.common.constants.state.state_agent import StateAgentType
 from recidiviz.common.constants.state.state_assessment import StateAssessmentType, StateAssessmentClass, \
     StateAssessmentLevel
@@ -511,6 +512,32 @@ class UsPaController(CsvGcsfsDirectIngestController):
         StateSupervisionCaseType.DOMESTIC_VIOLENCE: [
             'PA_DomesticViolence',
         ],
+        StateCustodialAuthority.STATE_PRISON: [
+            '09',  # Emergency Release - used for COVID releases
+        ],
+        StateCustodialAuthority.SUPERVISION_AUTHORITY: [
+            # These periods are in-state probation cases supervised by PBPP. If we implement decision_making_authority,
+            # these would have a type of COURT
+            '4A',  # ARD case - Sentenced by County Judge and Supervised by PBPP
+            '4B',  # PWV case - Sentenced by County Judge and Supervised by PBPP
+            '4C',  # COOP case - Offender on both PBPP and County Supervision (deprecated)
+            '04',  # Special Probation - Sentenced to Probation by County Judge and Supervised by PBPP
+            '05',  # Special Parole - Sentenced by County and Supervised by PBPP
+            # These periods are in-state parole cases supervised by PBPP. If we implement decision_making_authority,
+            # these would have a type of PAROLE_BOARD
+            'R2',  # RSAT Parole (deprecated)
+            'C2',  # CCC Parole
+            'C3',  # CCC Reparole
+            '02',  # State Parole - Paroled from SCI to PBPP Supervision
+            '03',  # State Rearole - Reparoled from SCI to PBPP Supervision
+            'B2',  # Boot Camp - Released according to Boot Camp Law
+            'R3',  # RSAT Reparole (deprecated)
+            # These periods are supervised in-state for sentences from out-of-state. If we implement
+            # decision_making_authority, these would have a type of OTHER_STATE
+            '06',  # Other States' Parole/Reparole - Paroled/Reparoled by other state and transferred to PA
+            '07',  # Other States' Probation - Sentenced to Probation by other state and transferred to PA
+            '08',  # Other States' Deferred Sentence (deprecated)
+        ]
     }
 
     ENUM_MAPPERS: Dict[EntityEnumMeta, EnumMapper] = {
@@ -1112,39 +1139,9 @@ class UsPaController(CsvGcsfsDirectIngestController):
                                  extracted_objects: List[IngestObject],
                                  _cache: IngestObjectCache) -> None:
         """Sets the custodial_authority on the supervision period."""
-
-        supervision_type = row['supervision_type']
-
-        if supervision_type in (
-                '4A',  # ARD case - Sentenced by County Judge and Supervised by PBPP
-                '4B',  # PWV case - Sentenced by County Judge and Supervised by PBPP
-                '4C',  # COOP case - Offender on both PBPP and County Supervision (deprecated)
-                '04',  # Special Probation - Sentenced to Probation by County Judge and Supervised by PBPP
-                '05',  # Special Parole - Sentenced by County and Supervised by PBPP
-        ):
-            custodial_authority = 'US_PA_COURTS'
-        elif not supervision_type or supervision_type in (
-                'R2',  # RSAT Parole (deprecated)
-                'C2',  # CCC Parole
-                'C3',  # CCC Reparole
-                '02',  # State Parole - Paroled from SCI to PBPP Supervision
-                '03',  # State Rearole - Reparoled from SCI to PBPP Supervision
-                'B2',  # Boot Camp - Released according to Boot Camp Law
-                'R3',  # RSAT Reparole (deprecated)
-        ):
-            custodial_authority = 'US_PA_PBPP'
-        elif supervision_type in (
-                '06',  # Other States' Parole/Reparole - Paroled/Reparoled by other state and transferred to PA
-                '07',  # Other States' Probation - Sentenced to Probation by other state and transferred to PA
-                '08',  # Other States' Deferred Sentence (deprecated)
-        ):
-            custodial_authority = 'OUT_OF_STATE'
-        elif supervision_type in (
-                '09',  # Emergency Release - used for COVID releases
-        ):
-            custodial_authority = 'US_PA_DOC'
-        else:
-            raise ValueError(f'Unexpected supervision type code [{supervision_type}]')
+        # TODO(#1882): This row post hook should not be necessary once you can map a column value to multiple fields on
+        #  the ingested object.
+        custodial_authority = row['supervision_type']
 
         for obj in extracted_objects:
             if isinstance(obj, StateSupervisionPeriod):
