@@ -40,6 +40,7 @@ from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_ma
     get_supervising_officer_and_location_info_from_supervision_period
 from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_sentence_classification import SupervisionTypeSpan
 from recidiviz.calculator.pipeline.utils.supervision_period_index import SupervisionPeriodIndex
+from recidiviz.common.constants.state.shared_enums import StateCustodialAuthority
 from recidiviz.common.constants.state.state_assessment import \
     StateAssessmentType, StateAssessmentLevel
 from recidiviz.common.constants.state.state_case_type import \
@@ -2104,6 +2105,120 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
 
         expected_buckets.extend(expected_non_revocation_return_time_buckets(
             attr.evolve(second_supervision_period, start_date=incarceration_period.release_date),
+            second_supervision_period_supervision_type
+        ))
+
+        self.assertCountEqual(supervision_time_buckets, expected_buckets)
+
+    def test_find_supervision_time_buckets_supervision_authority_incarceration_overlaps_periods(self):
+        """Tests the find_supervision_time_buckets function for two supervision periods with an incarceration period
+        that overlaps the end of one supervision period and the start of another, where the incarceration period is
+        under the custodial authority of a supervision entity so the period does not exclude the supervision periods
+        from being counted towards the supervision population."""
+
+        first_supervision_period = \
+            StateSupervisionPeriod.new_with_defaults(
+                supervision_period_id=111,
+                external_id='sp1',
+                status=StateSupervisionPeriodStatus.TERMINATED,
+                state_code='US_XX',
+                start_date=date(2017, 3, 5),
+                termination_date=date(2017, 5, 19),
+                supervision_type=StateSupervisionType.PAROLE
+            )
+
+        incarceration_period = \
+            StateIncarcerationPeriod.new_with_defaults(
+                incarceration_period_id=111,
+                external_id='ip1',
+                status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+                state_code='US_XX',
+                admission_date=date(2017, 5, 15),
+                admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
+                release_date=date(2017, 9, 20),
+                release_reason=ReleaseReason.SENTENCE_SERVED,
+                custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY
+            )
+
+        second_supervision_period = \
+            StateSupervisionPeriod.new_with_defaults(
+                supervision_period_id=222,
+                external_id='sp2',
+                status=StateSupervisionPeriodStatus.TERMINATED,
+                state_code='US_XX',
+                start_date=date(2017, 8, 5),
+                termination_date=date(2017, 12, 19),
+                supervision_type=StateSupervisionType.PROBATION
+            )
+
+        supervision_sentence = \
+            StateSupervisionSentence.new_with_defaults(
+                state_code='US_XX',
+                supervision_sentence_id=111,
+                start_date=date(2017, 1, 1),
+                external_id='ss1',
+                status=StateSentenceStatus.COMPLETED,
+                supervision_type=StateSupervisionType.PROBATION,
+                completion_date=date(2017, 12, 19),
+                supervision_periods=[first_supervision_period,
+                                     second_supervision_period]
+            )
+
+        supervision_sentences = [supervision_sentence]
+        supervision_periods = [first_supervision_period,
+                               second_supervision_period]
+        incarceration_periods = [incarceration_period]
+        assessments = []
+        violation_responses = []
+        supervision_contacts = []
+        incarceration_sentences = []
+
+        supervision_time_buckets = identifier.find_supervision_time_buckets(
+            supervision_sentences,
+            incarceration_sentences,
+            supervision_periods,
+            incarceration_periods,
+            assessments,
+            violation_responses,
+            supervision_contacts,
+            DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
+            DEFAULT_SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATIONS
+        )
+
+        first_supervision_period_supervision_type = StateSupervisionPeriodSupervisionType.PROBATION
+        second_supervision_period_supervision_type = StateSupervisionPeriodSupervisionType.PROBATION
+
+        expected_buckets = [
+            SupervisionTerminationBucket(
+                state_code=first_supervision_period.state_code,
+                year=first_supervision_period.termination_date.year,
+                month=first_supervision_period.termination_date.month,
+                bucket_date=first_supervision_period.termination_date,
+                supervision_type=first_supervision_period_supervision_type,
+                case_type=StateSupervisionCaseType.GENERAL,
+                termination_reason=first_supervision_period.termination_reason
+            ),
+            SupervisionTerminationBucket(
+                state_code=second_supervision_period.state_code,
+                year=second_supervision_period.termination_date.year,
+                month=second_supervision_period.termination_date.month,
+                bucket_date=second_supervision_period.termination_date,
+                supervision_type=second_supervision_period_supervision_type,
+                case_type=StateSupervisionCaseType.GENERAL,
+                termination_reason=second_supervision_period.termination_reason
+            ),
+            create_start_bucket_from_period(first_supervision_period),
+            create_start_bucket_from_period(second_supervision_period),
+        ]
+
+        # The entirety of both supervision periods should be counted as NonRevocationReturnSupervisionTimeBuckets
+        expected_buckets.extend(expected_non_revocation_return_time_buckets(
+            first_supervision_period,
+            first_supervision_period_supervision_type
+        ))
+
+        expected_buckets.extend(expected_non_revocation_return_time_buckets(
+            second_supervision_period,
             second_supervision_period_supervision_type
         ))
 
