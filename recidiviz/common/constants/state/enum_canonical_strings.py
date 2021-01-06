@@ -335,3 +335,11 @@ state_acting_body_type_court = 'COURT'
 state_acting_body_type_parole_board = 'PAROLE_BOARD'
 state_acting_body_type_supervision_officer = 'SUPERVISION_OFFICER'
 state_acting_body_type_sentenced_person = 'SENTENCED_PERSON'
+
+
+state_custodial_authority_court = 'COURT'
+state_custodial_authority_federal = 'FEDERAL'
+state_custodial_authority_other_country = 'OTHER_COUNTRY'
+state_custodial_authority_other_state = 'OTHER_STATE'
+state_custodial_authority_supervision_authority = 'SUPERVISION_AUTHORITY'
+state_custodial_authority_state_prison = 'STATE_PRISON'

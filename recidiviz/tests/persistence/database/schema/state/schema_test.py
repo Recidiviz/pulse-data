@@ -64,6 +64,7 @@ class TestStateSchemaEnums(TestSchemaEnums):
             'state_sentence_status': state_sentence.StateSentenceStatus,
             'state_supervision_type': state_supervision.StateSupervisionType,
             'state_acting_body_type': recidiviz.common.constants.state.shared_enums.StateActingBodyType,
+            'state_custodial_authority': recidiviz.common.constants.state.shared_enums.StateCustodialAuthority,
             'state_early_discharge_decision': StateEarlyDischargeDecision,
             'state_early_discharge_decision_status': StateEarlyDischargeDecisionStatus,
             'state_fine_status': state_fine.StateFineStatus,

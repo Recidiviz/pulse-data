@@ -24,10 +24,6 @@ import recidiviz.common.constants.state.enum_canonical_strings as state_enum_str
 from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 
 
-# Supervision period custodial authority constants
-FEDERAL_CUSTODIAL_AUTHORITY = 'FEDERAL'
-OTHER_COUNTRY_CUSTODIAL_AUTHORITY = 'OTHER_COUNTRY'
-
 # TODO(#2891): Update supervision period objects in schema to use this type
 @unique
 class StateSupervisionPeriodSupervisionType(EntityEnum, metaclass=EntityEnumMeta):

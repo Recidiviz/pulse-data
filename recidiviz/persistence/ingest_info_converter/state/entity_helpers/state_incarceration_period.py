@@ -17,7 +17,7 @@
 
 """Converts an ingest_info proto StateIncarcerationPeriod to a
 persistence entity."""
-
+from recidiviz.common.constants.state.shared_enums import StateCustodialAuthority
 from recidiviz.common.constants.state.state_incarceration import \
     StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_period import \
@@ -55,7 +55,6 @@ def copy_fields_to_builder(
     new.county_code = fn(normalize, 'county_code', proto)
     new.facility = fn(normalize, 'facility', proto)
     new.housing_unit = fn(normalize, 'housing_unit', proto)
-    new.custodial_authority = fn(normalize, 'custodial_authority', proto)
 
     enum_fields = {
         'status': StateIncarcerationPeriodStatus,
@@ -65,6 +64,7 @@ def copy_fields_to_builder(
         'projected_release_reason': StateIncarcerationPeriodReleaseReason,
         'release_reason': StateIncarcerationPeriodReleaseReason,
         'specialized_purpose_for_incarceration': StateSpecializedPurposeForIncarceration,
+        'custodial_authority': StateCustodialAuthority
     }
 
     enum_mappings = EnumMappings(proto, enum_fields, metadata.enum_overrides)
@@ -112,3 +112,6 @@ def copy_fields_to_builder(
     new.specialized_purpose_for_incarceration = enum_mappings.get(
         StateSpecializedPurposeForIncarceration, field_name='specialized_purpose_for_incarceration')
     new.specialized_purpose_for_incarceration_raw_text = fn(normalize, 'specialized_purpose_for_incarceration', proto)
+
+    new.custodial_authority = enum_mappings.get(StateCustodialAuthority, field_name='custodial_authority')
+    new.custodial_authority_raw_text = fn(normalize, 'custodial_authority', proto)
