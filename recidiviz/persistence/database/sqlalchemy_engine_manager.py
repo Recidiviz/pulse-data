@@ -259,23 +259,9 @@ class SQLAlchemyEngineManager:
 
     @classmethod
     def update_sqlalchemy_env_vars(cls, schema_type: SchemaType,
-                                   ssl_cert_path: Optional[str] = None) -> Dict[str, Optional[str]]:
+                                   ssl_cert_path: Optional[str] = None,
+                                   readonly_user: bool = False) -> Dict[str, Optional[str]]:
         """Updates the appropriate env vars for SQLAlchemy to talk to the postgres instance associated with the schema.
-
-        It returns the old set of env variables that were overridden.
-        """
-        original_values = cls.update_readonly_sqlalchemy_env_vars(schema_type, ssl_cert_path=ssl_cert_path)
-
-        os.environ[SQLALCHEMY_DB_USER] = cls.get_db_user(schema_type)
-        os.environ[SQLALCHEMY_DB_PASSWORD] = cls.get_db_password(schema_type)
-
-        return original_values
-
-    @classmethod
-    def update_readonly_sqlalchemy_env_vars(cls, schema_type: SchemaType,
-                                            ssl_cert_path: Optional[str] = None) -> Dict[str, Optional[str]]:
-        """Updates the appropriate env vars for SQLAlchemy to talk to the postgres instance associated with the schema
-        for a read-only user.
 
         It returns the old set of env variables that were overridden.
         """
@@ -290,8 +276,13 @@ class SQLAlchemyEngineManager:
 
         os.environ[SQLALCHEMY_DB_NAME] = cls.get_db_name(schema_type)
         os.environ[SQLALCHEMY_DB_HOST] = cls.get_db_host(schema_type)
-        os.environ[SQLALCHEMY_DB_USER] = cls.get_db_readonly_user(schema_type)
-        os.environ[SQLALCHEMY_DB_PASSWORD] = cls.get_db_readonly_password(schema_type)
+
+        if readonly_user:
+            os.environ[SQLALCHEMY_DB_USER] = cls.get_db_readonly_user(schema_type)
+            os.environ[SQLALCHEMY_DB_PASSWORD] = cls.get_db_readonly_password(schema_type)
+        else:
+            os.environ[SQLALCHEMY_DB_USER] = cls.get_db_user(schema_type)
+            os.environ[SQLALCHEMY_DB_PASSWORD] = cls.get_db_password(schema_type)
 
         if ssl_cert_path is None:
             os.environ[SQLALCHEMY_USE_SSL] = '0'
