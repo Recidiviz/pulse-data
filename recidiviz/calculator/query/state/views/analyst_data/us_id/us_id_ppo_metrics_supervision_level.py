@@ -36,17 +36,15 @@ US_ID_PPO_METRICS_SUPERVISION_LEVEL_QUERY_TEMPLATE = \
       state_code,
       date_of_supervision,
       supervision_type,
-      COUNT(*) as count,
-      COUNTIF(supervision_level in ('LIMITED', 'MINIMUM'))/COUNT(*) as pct_low_or_limited_supervision
+      COUNT(DISTINCT person_id) as count,
+      COUNT(DISTINCT IF(supervision_level in ('LIMITED', 'MINIMUM'), person_id, NULL))/COUNT(*) as pct_low_or_limited_supervision
       FROM 
       (
         SELECT state_code, person_id, supervision_type, supervision_level, date_of_supervision
         FROM `{project_id}.{metrics_dataset}.supervision_population_metrics` 
         JOIN `{project_id}.{materialized_metrics_dataset}.most_recent_job_id_by_metric_and_state_code_materialized`
             USING (job_id, state_code, year, month, metric_period_months, metric_type)
-        WHERE methodology = 'PERSON'
-          AND metric_period_months = 0
-          AND month IS NOT NULL
+        WHERE methodology = 'EVENT'
           AND (date_of_supervision = CURRENT_DATE() OR is_on_supervision_last_day_of_month)      
       )
       
