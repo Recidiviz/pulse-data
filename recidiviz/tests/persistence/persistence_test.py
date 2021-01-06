@@ -1206,6 +1206,7 @@ def _get_run_transaction_after_other_fn(other_precommit_event: threading.Event, 
     return run_transaction_after_other
 
 
+@pytest.mark.uses_db
 @patch('recidiviz.utils.metadata.project_id', Mock(return_value='test-project'))
 @patch('os.getenv', Mock(return_value='production'))
 class TestPersistenceMultipleThreadsInterleaved(TestCase, MultipleStateTestMixin):
