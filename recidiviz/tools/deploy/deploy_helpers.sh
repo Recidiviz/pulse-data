@@ -222,13 +222,20 @@ function verify_can_deploy {
     ${BASH_SOURCE_DIR}/../diff_pipenv.sh || exit_on_fail
 }
 
+function reconfigure_terraform_backend {
+  PROJECT_ID=$1
+  echo "Reconfiguring Terraform backend..."
+  rm -rf .terraform/
+  run_cmd terraform init -backend-config "bucket=${PROJECT_ID}-tf-state" ${BASH_SOURCE_DIR}/terraform
+}
+
+
 function deploy_terraform_infrastructure {
     PROJECT_ID=$1
     GIT_HASH=$2
 
     echo "Starting terraform deployment..."
-    rm -rf .terraform/
-    run_cmd terraform init -backend-config "bucket=${PROJECT_ID}-tf-state" ${BASH_SOURCE_DIR}/terraform
+    reconfigure_terraform_backend $PROJECT_ID
 
     while true
     do
