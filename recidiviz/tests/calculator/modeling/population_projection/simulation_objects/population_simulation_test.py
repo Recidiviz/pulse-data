@@ -79,7 +79,8 @@ class TestPopulationSimulation(unittest.TestCase):
                                                     test_total_population_data,
                                                     self.simulation_architecture,
                                                     ['crime'],
-                                                    self.user_inputs)
+                                                    self.user_inputs,
+                                                    first_relevant_ts=-5)
 
         with self.assertRaises(ValueError):
             population_simulation = PopulationSimulation()
@@ -88,7 +89,9 @@ class TestPopulationSimulation(unittest.TestCase):
                                                     test_total_population_data,
                                                     self.simulation_architecture,
                                                     ['crime'],
-                                                    self.user_inputs)
+                                                    self.user_inputs,
+                                                    first_relevant_ts=-5
+                                                    )
 
         with self.assertRaises(ValueError):
             population_simulation = PopulationSimulation()
@@ -97,7 +100,8 @@ class TestPopulationSimulation(unittest.TestCase):
                                                     self.test_total_population_data,
                                                     self.simulation_architecture,
                                                     ['crime'],
-                                                    self.user_inputs)
+                                                    self.user_inputs,
+                                                    first_relevant_ts=-5)
 
         with self.assertRaises(ValueError):
             population_simulation = PopulationSimulation()
@@ -106,7 +110,8 @@ class TestPopulationSimulation(unittest.TestCase):
                                                     self.test_total_population_data,
                                                     self.simulation_architecture,
                                                     ['crime'],
-                                                    self.user_inputs)
+                                                    self.user_inputs,
+                                                    first_relevant_ts=-5)
 
     def test_simulation_forces_complete_user_inputs_dict(self):
 
@@ -117,7 +122,7 @@ class TestPopulationSimulation(unittest.TestCase):
                 population_simulation = PopulationSimulation()
                 population_simulation.simulate_policies(self.test_outflows_data, self.test_transitions_data,
                                                         self.test_total_population_data, self.simulation_architecture,
-                                                        ['crime'], test_user_inputs)
+                                                        ['crime'], test_user_inputs, first_relevant_ts=-5)
 
     def test_microsim_requires_empty_policy_list(self):
         population_simulation = PopulationSimulation()
@@ -132,6 +137,7 @@ class TestPopulationSimulation(unittest.TestCase):
                 simulation_compartments=self.simulation_architecture,
                 disaggregation_axes=['crime'],
                 user_inputs=user_inputs,
+                first_relevant_ts=-5,
                 microsim=True,
                 microsim_data=self.test_outflows_data
             )
@@ -146,9 +152,10 @@ class TestPopulationSimulation(unittest.TestCase):
             simulation_compartments=self.simulation_architecture,
             disaggregation_axes=['crime'],
             user_inputs=self.user_inputs,
+            first_relevant_ts=-5
         )
 
-        assert_index_equal(projection.index.unique().sort_values(), pd.Int64Index(range(-4, 10)))
+        assert_index_equal(projection.index.unique().sort_values(), pd.Int64Index(range(-5, 10)))
 
     def test_baseline_with_backcast_projection_off(self):
         """Assert that microsim simulation results only have positive time steps"""
@@ -160,6 +167,7 @@ class TestPopulationSimulation(unittest.TestCase):
             simulation_compartments=self.simulation_architecture,
             disaggregation_axes=['crime'],
             user_inputs=self.user_inputs,
+            first_relevant_ts=0,
             microsim=True,
             microsim_data=self.test_transitions_data
         )

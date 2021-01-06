@@ -1,25 +1,32 @@
 ---
 user_inputs:
-  policy_year: 2020
-  start_year: 2017
-  projection_years: 10
+  start_year: 2021
+  projection_years: 5
+  run_date: '2021-01-01'
 
 model_architecture:
-    prison: incarcerated
-    pretrial: null
-    release: released
+    PRETRIAL: null
+    RELEASE: released
+    PRISON: incarcerated
 
-reference_date: 2016.0
+reference_date: 2019.0
 
-time_step: 1
+time_step: 0.08333333333
 
 disaggregation_axes:
-  - offense_group
-
-state_data: recidiviz/tests/calculator/modeling/population_projection/simulation_objects/microsim_preprocessed_data_test.csv
+  - gender
 
 per_ts_costs:
-  prison: 100
-  release: 0
+    RELEASE: 0
+    PRISON: 0
 
-micro_simulation: true
+big_query_inputs:
+  project_id: recidiviz-staging
+  input_dataset: population_projection_data
+  outflows_data: test_outflows
+  transitions_data: test_transitions
+  total_population_data: test_total_population
+  remaining_sentence_data: test_remaining_sentences
+  total_jail_population_data: test_total_jail_population
+  total_out_of_state_supervised_population_data: test_total_out_of_state_supervision_population
+  state_code: test_state
