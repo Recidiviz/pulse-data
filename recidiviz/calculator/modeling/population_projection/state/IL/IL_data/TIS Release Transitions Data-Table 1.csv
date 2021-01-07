@@ -1,7 +1,0 @@
-compartment,outflow_to,tis_percentage,race,compartment_duration,total_population
-release,release,100%,white,960,1
-release,release,100%,non-white,960,1
-release,release,85%,white,960,1
-release,release,85%,non-white,960,1
-release,release,75%,white,960,1
-release,release,75%,non-white,960,1
