@@ -67,6 +67,10 @@ STATE_ERROR_THRESHOLDS_WITH_FORTY_PERCENT_RATIOS = {
     }
 }
 
+STATE_CODE_TO_ENTITY_MATCHING_THRESHOLD_FORTY_PERCENT = {
+    "US_ND": 0.4,
+}
+
 
 @pytest.mark.uses_db
 @patch('recidiviz.environment.in_gae', Mock(return_value=True))
@@ -183,7 +187,16 @@ class TestStatePersistence(TestCase):
 
     @patch('recidiviz.persistence.persistence.SYSTEM_TYPE_TO_ERROR_THRESHOLD',
            STATE_ERROR_THRESHOLDS_WITH_FORTY_PERCENT_RATIOS)
+    @patch('recidiviz.persistence.persistence.REGION_CODE_TO_ENTITY_MATCHING_THRESHOLD_OVERRIDE',
+           STATE_CODE_TO_ENTITY_MATCHING_THRESHOLD_FORTY_PERCENT)
     def test_state_threeSentenceGroups_persistsTwoBelowThreshold(self):
+        """Ensure that the number of errors is below the ND specific threshold"""
+
+        # Set the ENTITY_MATCHING_THRESHOLD to 0, such that we can verify that the forty percent threshold for
+        # ENTITY_MATCHING_THRESHOLD is dictated by the state-specific override in
+        # STATE_CODE_TO_ENTITY_MATCHING_THRESHOLD_FORTY_PERCENT.
+        STATE_ERROR_THRESHOLDS_WITH_FORTY_PERCENT_RATIOS[ENTITY_MATCHING_THRESHOLD] = 0
+
         # Arrange
         ingest_info = IngestInfo()
         ingest_info.state_people.add(
