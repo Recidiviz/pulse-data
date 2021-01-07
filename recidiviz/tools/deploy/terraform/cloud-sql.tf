@@ -16,7 +16,6 @@
 # =============================================================================
 
 locals {
-  is_staging    = var.project_id == "recidiviz-staging"
   is_production = var.project_id == "recidiviz-123"
 }
 
@@ -36,13 +35,10 @@ module "jails_database" {
   base_secret_name = "sqlalchemy"
   database_version = "POSTGRES_9_6"
   region           = "us-east4"
-  zone             = local.is_staging ? "us-east4-c" : "us-east4-b"
-  # 1 vCPU, 3.75GB Memory | 4 vCPU, 15GB Memory
-  tier             = local.is_staging ? "db-custom-1-3840" : "db-custom-4-15360"
+  zone             = local.is_production ? "us-east4-b" : "us-east4-c"
+  # 4 vCPU, 15GB Memory | 1 vCPU, 3.75GB Memory
+  tier             = local.is_production ? "db-custom-4-15360" : "db-custom-1-3840"
   has_readonly_user = local.is_production
-  # TODO(#5135): Consolidate to `true` once all certificates are provisioned
-  # Hack to decouple SSL certificate / secret creation from SSL enforcement
-  require_ssl_connection = local.is_production
 }
 
 
@@ -54,9 +50,6 @@ module "justice_counts_database" {
   tier                           = "db-custom-1-3840" # 1 vCPU, 3.75GB Memory
   has_readonly_user              = local.is_production
   point_in_time_recovery_enabled = local.is_production
-  # TODO(#5135): Consolidate to `true` once all certificates are provisioned
-  # Hack to decouple SSL certificate / secret creation from SSL enforcement
-  require_ssl_connection         = local.is_production
 }
 
 
@@ -68,9 +61,6 @@ module "operations_database" {
   zone              = "us-east1-b"
   tier              = "db-custom-1-3840" # 1 vCPU, 3.75GB Memory
   has_readonly_user = local.is_production
-  # TODO(#5135): Consolidate to `true` once all certificates are provisioned
-  # Hack to decouple SSL certificate / secret creation from SSL enforcement
-  require_ssl_connection = local.is_production
 }
 
 
@@ -82,7 +72,4 @@ module "state_database" {
   zone              = "us-east1-c"
   tier              = "db-custom-4-16384" # 4 vCPUs, 16GB Memory
   has_readonly_user = local.is_production
-  # TODO(#5135): Consolidate to `true` once all certificates are provisioned
-  # Hack to decouple SSL certificate / secret creation from SSL enforcement
-  require_ssl_connection = local.is_production
 }

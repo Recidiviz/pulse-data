@@ -46,6 +46,7 @@ variable "region" {
 # Require SSL connections?
 variable "require_ssl_connection" {
   type = bool
+  default = true
 }
 
 # Preferred vCPU/Memory tier for the instance
