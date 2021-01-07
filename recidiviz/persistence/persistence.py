@@ -92,15 +92,21 @@ SYSTEM_TYPE_TO_ERROR_THRESHOLD: Dict[SystemLevel, Dict[str, float]] = {
     SystemLevel.COUNTY: {
         OVERALL_THRESHOLD: 0.5,
         ENUM_THRESHOLD: 0.5,
-        ENTITY_MATCHING_THRESHOLD: 0.5,
-        DATABASE_INVARIANT_THRESHOLD: 0,
+        ENTITY_MATCHING_THRESHOLD: 0.0,
+        DATABASE_INVARIANT_THRESHOLD: 0.0,
     },
     SystemLevel.STATE: {
         OVERALL_THRESHOLD: 0.5,
-        ENUM_THRESHOLD: 0.5,
-        ENTITY_MATCHING_THRESHOLD: 0.5,
-        DATABASE_INVARIANT_THRESHOLD: 0,
+        ENUM_THRESHOLD: 0.0,
+        ENTITY_MATCHING_THRESHOLD: 0.0,
+        DATABASE_INVARIANT_THRESHOLD: 0.0,
     },
+}
+
+REGION_CODE_TO_ENTITY_MATCHING_THRESHOLD_OVERRIDE: Dict[str, float] = {
+    "US_ID": 0.05,
+    "US_ND": 0.05,
+    "US_PA": 0.05,
 }
 
 
@@ -188,6 +194,7 @@ def _should_abort(
         total_root_entities: int,
         system_level: SystemLevel,
         conversion_result: IngestInfoConversionResult,
+        region_code: str,
         entity_matching_errors: int = 0,
         data_validation_errors: int = 0,
         database_invariant_errors: int = 0) -> bool:
@@ -208,7 +215,7 @@ def _should_abort(
             m.measure_int_put(m_aborts, 1)
         return True
 
-    error_thresholds = _get_thresholds_for_system_level(system_level)
+    error_thresholds = _get_thresholds_for_system_level(system_level, region_code)
 
     overall_error_ratio = _calculate_overall_error_ratio(conversion_result,
                                                          entity_matching_errors,
@@ -245,12 +252,19 @@ def _calculate_overall_error_ratio(conversion_result: IngestInfoConversionResult
             data_validation_errors) / total_root_entities
 
 
-def _get_thresholds_for_system_level(system_level: SystemLevel) -> Dict[str, float]:
+def _get_thresholds_for_system_level(system_level: SystemLevel, region_code: str) -> Dict[str, float]:
     """Returns the dictionary of error thresholds for a given system level."""
     error_thresholds = SYSTEM_TYPE_TO_ERROR_THRESHOLD.get(system_level)
+
     if error_thresholds is None:
         raise ValueError(f'Found no error thresholds associated with `system_level=[{system_level}]`')
 
+    # Override the entity matching threshold from the default value, if applicable.
+    if region_code in REGION_CODE_TO_ENTITY_MATCHING_THRESHOLD_OVERRIDE:
+        state_specific_threshold = REGION_CODE_TO_ENTITY_MATCHING_THRESHOLD_OVERRIDE[region_code]
+        if state_specific_threshold is None:
+            raise ValueError(f'Override unexpectedly None for region_code [{region_code}].')
+        error_thresholds[ENTITY_MATCHING_THRESHOLD] = state_specific_threshold
     return error_thresholds
 
 
@@ -349,6 +363,7 @@ def write(ingest_info: IngestInfo, metadata: IngestMetadata,
                 total_root_entities=total_people,
                 system_level=metadata.system_level,
                 conversion_result=conversion_result,
+                region_code=metadata.region,
                 data_validation_errors=data_validation_errors):
             #  TODO(#1665): remove once dangling PERSIST session investigation
             #   is complete.
@@ -377,6 +392,7 @@ def write(ingest_info: IngestInfo, metadata: IngestMetadata,
                     total_root_entities=total_root_entities,
                     system_level=metadata.system_level,
                     conversion_result=conversion_result,
+                    region_code=metadata.region,
                     entity_matching_errors=entity_matching_output.error_count):
                 #  TODO(#1665): remove once dangling PERSIST session
                 #   investigation is complete.
@@ -391,6 +407,7 @@ def write(ingest_info: IngestInfo, metadata: IngestMetadata,
                     total_root_entities=total_root_entities,
                     system_level=metadata.system_level,
                     conversion_result=conversion_result,
+                    region_code=metadata.region,
                     database_invariant_errors=database_invariant_errors):
                 logging.info("_should_abort_ was true after database invariant validation")
                 return False
