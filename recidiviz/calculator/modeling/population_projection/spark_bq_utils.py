@@ -110,22 +110,23 @@ def upload_spark_model_inputs(project_id: str, simulation_tag: str, outflows_dat
     # Set the upload timestamp for all tables
     upload_time = datetime.datetime.now()
 
-    uploads_dict = {
-        outflows_data_df: {'table': OUTFLOWS_DATA_TABLE_NAME, 'schema': OUTFLOWS_SCHEMA},
-        transitions_data_df: {'table': TRANSITIONS_DATA_TABLE_NAME, 'schema': TRANSITIONS_SCHEMA},
-        total_population_data_df: {'table': TOTAL_POPULATION_DATA_TABLE_NAME, 'schema': TOTAL_POPULATION_SCHEMA}
-    }
-    for data_df, params in uploads_dict.items():
-        if data_df.empty:
+    uploads = [
+        {'table': OUTFLOWS_DATA_TABLE_NAME, 'schema': OUTFLOWS_SCHEMA, 'data_df': outflows_data_df},
+        {'table': TRANSITIONS_DATA_TABLE_NAME, 'schema': TRANSITIONS_SCHEMA, 'data_df': transitions_data_df},
+        {'table': TOTAL_POPULATION_DATA_TABLE_NAME, 'schema': TOTAL_POPULATION_SCHEMA,
+         'data_df': total_population_data_df}
+    ]
+    for params in uploads:
+        if params['data_df'].empty:
             continue
 
-        data_df['simulation_tag'] = simulation_tag
-        data_df['date_created'] = upload_time
+        params['data_df']['simulation_tag'] = simulation_tag
+        params['data_df']['date_created'] = upload_time
         for disaggregation_axis in ['crime', 'crime_type', 'age', 'race']:
-            if disaggregation_axis not in data_df.columns:
-                data_df[disaggregation_axis] = None
+            if disaggregation_axis not in params['data_df'].columns:
+                params['data_df'][disaggregation_axis] = None
 
-        store_simulation_results(project_id, SPARK_INPUT_DATASET, params['table'], params['schema'], data_df)
+        store_simulation_results(project_id, SPARK_INPUT_DATASET, params['table'], params['schema'], params['data_df'])
 
 
 def upload_spark_results(project_id, simulation_tag, cost_avoidance_df, life_years_df, population_change_df,
