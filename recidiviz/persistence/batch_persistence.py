@@ -214,7 +214,7 @@ def persist_to_database(region_code: str,
 
         metadata = IngestMetadata(
             region=region_code, jurisdiction_id=region.jurisdiction_id,
-            ingest_time=session_start_time,
+            ingest_time=session_start_time, facility_id=region.facility_id,
             enum_overrides=overrides)
 
         did_write = persistence.write(proto, metadata)

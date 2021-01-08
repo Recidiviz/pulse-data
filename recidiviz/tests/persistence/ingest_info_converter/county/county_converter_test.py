@@ -49,7 +49,7 @@ _RELEASE_DATE = datetime.date(year=2018, month=3, day=1)
 _BIRTHDATE = datetime.date(1990, 3, 5)
 _BIRTHDATE_SCRUBBED = datetime.date(1990, 1, 1)
 _JURISDICTION_ID = 'JURISDICTION_ID'
-
+_FACILITY_ID = 'FACILITY_ID'
 
 class TestIngestInfoCountyConverter(unittest.TestCase):
     """Test converting IngestInfo objects to Persistence layer objects."""
@@ -80,7 +80,7 @@ class TestIngestInfoCountyConverter(unittest.TestCase):
 
     def testConvert_FullIngestInfo(self):
         # Arrange
-        metadata = IngestMetadata('REGION', _JURISDICTION_ID, _INGEST_TIME)
+        metadata = IngestMetadata('REGION', _JURISDICTION_ID, _INGEST_TIME, facility_id=_FACILITY_ID)
 
         ingest_info = IngestInfo()
         ingest_info.people.add(person_id='PERSON_ID',
@@ -104,6 +104,7 @@ class TestIngestInfoCountyConverter(unittest.TestCase):
             jurisdiction_id='JURISDICTION_ID',
             bookings=[Booking.new_with_defaults(
                 external_id='BOOKING_ID',
+                facility_id=_FACILITY_ID,
                 admission_date=_INGEST_TIME.date(),
                 admission_date_inferred=True,
                 first_seen_time=_INGEST_TIME,

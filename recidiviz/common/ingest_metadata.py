@@ -18,7 +18,7 @@
 
 import enum
 from datetime import datetime
-
+from typing import Optional
 import attr
 
 from recidiviz.common.attr_mixins import DefaultableAttr
@@ -52,3 +52,6 @@ class IngestMetadata(DefaultableAttr):
 
     # The system level from which data is being ingested, e.g. COUNTY or STATE
     system_level: SystemLevel = attr.ib(default=SystemLevel.COUNTY)
+
+    # The default facility id for the region e.g. 01CNT02502506100
+    facility_id: Optional[str] = attr.ib(default=None)

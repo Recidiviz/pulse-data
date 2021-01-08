@@ -98,6 +98,7 @@ message Booking {
     optional string release_reason = 5;
     optional string custody_status = 6;
     optional string facility = 7;
+    optional string facility_id = 14;
     optional string classification = 8;
     optional string total_bond_amount = 9;
 

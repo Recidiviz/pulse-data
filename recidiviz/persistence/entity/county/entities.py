@@ -83,6 +83,7 @@ class Booking(ExternalIdEntity, BuildableAttr, DefaultableAttr):
     custody_status: CustodyStatus = attr.ib()  # non-nullable
     custody_status_raw_text: Optional[str] = attr.ib()
     facility: Optional[str] = attr.ib()
+    facility_id: Optional[str] = attr.ib()
     classification: Optional[Classification] = attr.ib()
     classification_raw_text: Optional[str] = attr.ib()
     last_seen_time: datetime.datetime = attr.ib()  # non-nullable
