@@ -154,10 +154,7 @@ def get_all_validations() -> List[DataValidationCheck]:
         ExistenceDataValidationCheck(view=INCARCERATION_RELEASE_PRIOR_TO_ADMISSION_VIEW_BUILDER.build()),
         ExistenceDataValidationCheck(view=INCARCERATION_RELEASE_REASON_NO_DATE_VIEW_BUILDER.build()),
         ExistenceDataValidationCheck(view=OVERLAPPING_INCARCERATION_PERIODS_VIEW_BUILDER.build()),
-
-        # TODO(#4054): This should stop failing for MO once we fix the 600ish periods with end dates of 99999999
         ExistenceDataValidationCheck(view=INCARCERATION_RELEASE_REASON_NO_RELEASE_DATE_VIEW_BUILDER.build()),
-
         ExistenceDataValidationCheck(view=PO_REPORT_AVGS_PER_DISTRICT_STATE_VIEW_BUILDER.build()),
         ExistenceDataValidationCheck(view=PO_REPORT_DISTINCT_BY_OFFICER_MONTH_VIEW_BUILDER.build()),
         ExistenceDataValidationCheck(view=SUPERVISION_TERMINATION_PRIOR_TO_START_VIEW_BUILDER.build()),
