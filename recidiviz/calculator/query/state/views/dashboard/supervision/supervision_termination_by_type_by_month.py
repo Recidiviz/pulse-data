@@ -51,7 +51,7 @@ SUPERVISION_TERMINATION_BY_TYPE_BY_MONTH_QUERY_TEMPLATE = \
         MAX(projected_completion_count) as projected_completion_count,
         supervision_type,
         district
-      FROM `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_success_metrics`,
+      FROM `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_success_metrics_materialized`,
       {district_dimension},
       {supervision_type_dimension}
       WHERE methodology = 'EVENT'

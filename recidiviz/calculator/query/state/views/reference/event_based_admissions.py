@@ -38,7 +38,7 @@ EVENT_BASED_ADMISSIONS_QUERY_TEMPLATE = \
       person_id, state_code, year, month,
       district, facility,
       admission_reason, admission_date
-    FROM `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_admission_metrics`,
+    FROM `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_admission_metrics_materialized`,
     {district_dimension}
     WHERE methodology = 'EVENT'
       AND person_id IS NOT NULL

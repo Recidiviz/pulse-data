@@ -58,7 +58,6 @@ EVENT_BASED_REVOCATIONS_AND_ADMISSIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_id=EVENT_BASED_REVOCATIONS_AND_ADMISSIONS_VIEW_NAME,
     view_query_template=EVENT_BASED_REVOCATIONS_AND_ADMISSIONS_QUERY_TEMPLATE,
     description=EVENT_BASED_REVOCATIONS_AND_ADMISSIONS_DESCRIPTION,
-    metrics_dataset=dataset_config.DATAFLOW_METRICS_DATASET,
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
     state_specific_facility_exclusion=state_specific_query_strings.state_specific_facility_exclusion()
 )

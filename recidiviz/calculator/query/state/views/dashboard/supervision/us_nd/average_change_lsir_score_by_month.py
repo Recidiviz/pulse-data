@@ -52,7 +52,7 @@ AVERAGE_CHANGE_LSIR_SCORE_MONTH_QUERY_TEMPLATE = \
         -- Use the most recent termination per person/year/month/supervision/district
         ROW_NUMBER() OVER (PARTITION BY state_code, year, month, supervision_type, district, person_id
                            ORDER BY termination_date DESC, assessment_score_change) AS supervision_rank
-      FROM `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_termination_metrics`,
+      FROM `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_termination_metrics_materialized`,
       {district_dimension},
       {supervision_type_dimension}
       WHERE methodology = 'EVENT'

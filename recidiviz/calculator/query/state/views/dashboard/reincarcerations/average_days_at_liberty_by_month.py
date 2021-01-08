@@ -39,7 +39,7 @@ AVERAGE_DAYS_AT_LIBERTY_BY_MONTH_QUERY_TEMPLATE = \
         reincarceration_date,
         ROW_NUMBER() OVER (PARTITION BY state_code, year, month, person_id
                             ORDER BY reincarceration_date ASC, days_at_liberty) as priority_ranking
-        FROM `{project_id}.{materialized_metrics_dataset}.most_recent_recidivism_count_metrics`
+        FROM `{project_id}.{materialized_metrics_dataset}.most_recent_recidivism_count_metrics_materialized`
         WHERE methodology = 'EVENT'
           AND year >= EXTRACT(YEAR FROM DATE_SUB(CURRENT_DATE(), INTERVAL 3 YEAR))
     )

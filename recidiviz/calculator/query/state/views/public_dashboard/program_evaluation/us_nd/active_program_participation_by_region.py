@@ -51,10 +51,7 @@ ACTIVE_PROGRAM_PARTICIPATION_BY_REGION_VIEW_QUERY_TEMPLATE = \
         -- People can be counted on multiple types of supervision and enrolled in multiple regions simultaneously --
         (PARTITION BY state_code, person_id, supervision_type, region_id ORDER BY representation_priority) as inclusion_priority
       FROM
-        `{project_id}.{metrics_dataset}.program_participation_metrics`
-      INNER JOIN
-        most_recent_job_id
-      USING (state_code, job_id, date_of_participation, metric_type)
+        `{project_id}.{materialized_metrics_dataset}.most_recent_program_participation_metrics_materialized`
       LEFT JOIN
         `{project_id}.{static_reference_dataset}.program_locations`
       USING (state_code, program_location_id),
@@ -94,7 +91,6 @@ ACTIVE_PROGRAM_PARTICIPATION_BY_REGION_VIEW_BUILDER = MetricBigQueryViewBuilder(
     base_dataset=dataset_config.STATE_BASE_DATASET,
     static_reference_dataset=dataset_config.STATIC_REFERENCE_TABLES_DATASET,
     materialized_metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
-    metrics_dataset=dataset_config.DATAFLOW_METRICS_DATASET,
     current_month_condition=bq_utils.current_month_condition(),
     state_specific_race_or_ethnicity_groupings=
     state_specific_query_strings.state_specific_race_or_ethnicity_groupings(),

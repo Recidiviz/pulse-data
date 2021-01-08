@@ -47,7 +47,7 @@ EVENT_BASED_REVOCATIONS_QUERY_TEMPLATE = \
       ethnicity,
       gender,
       age_bucket
-    FROM `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_revocation_metrics` m,
+    FROM `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_revocation_metrics_materialized` m,
     {district_dimension},
     {supervision_type_dimension}
     WHERE methodology = 'EVENT'
