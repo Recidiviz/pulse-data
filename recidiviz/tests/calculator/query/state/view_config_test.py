@@ -18,10 +18,14 @@
 
 import unittest
 
-from mock import patch
+import mock
 
 from recidiviz.calculator.query.state import view_config
-from recidiviz.big_query.big_query_view import BigQueryView, BigQueryViewBuilder
+from recidiviz.big_query.big_query_view import (
+    BigQueryView,
+    BigQueryViewBuilder,
+    SimpleBigQueryViewBuilderShouldNotBuildError,
+)
 from recidiviz.persistence.database.base_schema import JailsBase
 from recidiviz.tests.utils import fakes
 
@@ -30,7 +34,7 @@ class ViewExportConfigTest(unittest.TestCase):
     """Tests for the export variables in view_config.py."""
 
     def setUp(self) -> None:
-        self.metadata_patcher = patch('recidiviz.utils.metadata.project_id')
+        self.metadata_patcher = mock.patch('recidiviz.utils.metadata.project_id')
         self.mock_project_id_fn = self.metadata_patcher.start()
         self.mock_project_id_fn.return_value = 'recidiviz-456'
 
@@ -40,7 +44,8 @@ class ViewExportConfigTest(unittest.TestCase):
         self.metadata_patcher.stop()
         fakes.teardown_in_memory_sqlite_databases()
 
-    def test_VIEW_COLLECTION_EXPORT_CONFIGS_types(self) -> None:
+    @mock.patch('google.cloud.bigquery.Client')
+    def test_VIEW_COLLECTION_EXPORT_CONFIGS_types(self, _mock_client: mock.MagicMock) -> None:
         """Make sure that all view_builders in the view_builders_to_export attribute of
         VIEW_COLLECTION_EXPORT_CONFIGS are of type BigQueryViewBuilder, and that running view_builder.build()
         produces a BigQueryView."""
@@ -48,7 +53,11 @@ class ViewExportConfigTest(unittest.TestCase):
             for view_builder in dataset_export_config.view_builders_to_export:
                 self.assertIsInstance(view_builder, BigQueryViewBuilder)
 
-                view = view_builder.build()
+                try:
+                    view = view_builder.build()
+                except SimpleBigQueryViewBuilderShouldNotBuildError:
+                    continue
+
                 self.assertIsInstance(view, BigQueryView)
 
     @staticmethod

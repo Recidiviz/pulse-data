@@ -32,6 +32,7 @@ from recidiviz.ingest.views.dataset_config import VIEWS_DATASET
 from recidiviz.ingest.views.metadata_helpers import (
     METADATA_EXCLUDED_PROPERTIES,
     METADATA_TABLES_WITH_CUSTOM_COUNTERS,
+    BigQueryTableColumnChecker,
     get_non_enum_property_names,
     get_state_tables,
 )
@@ -85,11 +86,13 @@ class StateTableNonEnumCounterBigQueryViewCollector(BigQueryViewCollector[Simple
             if table_name in METADATA_TABLES_WITH_CUSTOM_COUNTERS:
                 continue
             has_placeholders = 'external_id' in entity.get_column_property_names()
+            table_column_checker = BigQueryTableColumnChecker('state', table_name)
             for col in get_non_enum_property_names(entity):
                 if col in METADATA_EXCLUDED_PROPERTIES:
                     continue
                 template = NON_ENUM_COUNTER_WITH_PLACEHOLDERS_STATE_QUERY_TEMPLATE if has_placeholders \
                     else NON_ENUM_COUNTER_STATE_QUERY_TEMPLATE
+
                 builders.append(
                     SimpleBigQueryViewBuilder(
                         dataset_id=VIEWS_DATASET,
@@ -97,6 +100,7 @@ class StateTableNonEnumCounterBigQueryViewCollector(BigQueryViewCollector[Simple
                         view_query_template=template,
                         table_name=table_name,
                         column_name=col,
+                        should_build_predicate=table_column_checker.get_has_column_predicate(col),
                     )
                 )
         return builders

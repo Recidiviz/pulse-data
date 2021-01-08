@@ -31,13 +31,16 @@ from typing import Dict, List, Sequence, Tuple, Optional
 from opencensus.stats import measure, view as opencensus_view, aggregation
 
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
-from recidiviz.big_query.big_query_view import BigQueryView, BigQueryViewBuilder
+from recidiviz.big_query.big_query_view import (
+    BigQueryView,
+    BigQueryViewBuilder,
+    SimpleBigQueryViewBuilderShouldNotBuildError,
+)
 from recidiviz.calculator.query.county.view_config import VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE as COUNTY_VIEW_BUILDERS
 from recidiviz.calculator.query.justice_counts.view_config import VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE as \
     JUSTICE_COUNTS_VIEW_BUILDERS
 from recidiviz.calculator.query.state.view_config import VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE as STATE_VIEW_BUILDERS
-# TODO(#5226): Re-enable when a strategy for handling migrated columns has been found.
-# from recidiviz.ingest.views.view_config import VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE as INGEST_METADATA_VIEW_BUILDERS
+from recidiviz.ingest.views.view_config import VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE as INGEST_METADATA_VIEW_BUILDERS
 from recidiviz.utils import monitoring
 from recidiviz.utils.params import str_to_bool
 from recidiviz.validation.views.view_config import VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE as VALIDATION_VIEW_BUILDERS
@@ -70,8 +73,7 @@ VIEW_BUILDERS_BY_NAMESPACE: Dict[BigQueryViewNamespace, Sequence[BigQueryViewBui
     BigQueryViewNamespace.JUSTICE_COUNTS: JUSTICE_COUNTS_VIEW_BUILDERS,
     BigQueryViewNamespace.STATE: STATE_VIEW_BUILDERS,
     BigQueryViewNamespace.VALIDATION: VALIDATION_VIEW_BUILDERS,
-    # TODO(#5226): Re-enable when a strategy for handling migrated columns has been found.
-    # BigQueryViewNamespace.INGEST_METADATA: INGEST_METADATA_VIEW_BUILDERS,
+    BigQueryViewNamespace.INGEST_METADATA: INGEST_METADATA_VIEW_BUILDERS,
 }
 
 
@@ -105,7 +107,14 @@ def create_dataset_and_update_views_for_view_builders(
     try:
         views_to_update = []
         for view_builder in view_builders_to_update:
-            view = view_builder.build(dataset_overrides=dataset_overrides)
+            try:
+                view = view_builder.build(dataset_overrides=dataset_overrides)
+            except SimpleBigQueryViewBuilderShouldNotBuildError:
+                logging.warning('Condition failed for view builder %s in dataset %s. Continuing without it.',
+                                view_builder.view_id,
+                                view_builder.dataset_id)
+                continue
+
             if not materialized_views_only or view.materialized_view_table_id is not None:
                 views_to_update.append(view)
 

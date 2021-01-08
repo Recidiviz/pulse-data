@@ -34,8 +34,7 @@ from recidiviz.calculator.query.state.views.po_report.po_monthly_report_data imp
 from recidiviz.calculator.query.state.views.analyst_data.analyst_data_views import ANALYST_DATA_VIEW_BUILDERS
 from recidiviz.calculator.query.state.views.population_projection.population_projection_views import \
     POPULATION_PROJECTION_VIEW_BUILDERS
-# TODO(#5226): Re-enable when a strategy for handling migrated columns has been found.
-# from recidiviz.ingest.views.view_config import INGEST_METADATA_BUILDERS
+from recidiviz.ingest.views.view_config import INGEST_METADATA_BUILDERS
 from recidiviz.metrics.export.export_config import ExportViewCollectionConfig
 
 
@@ -83,13 +82,12 @@ VIEW_COLLECTION_EXPORT_CONFIGS: List[ExportViewCollectionConfig] = [
         export_name='COVID_DASHBOARD'
     ),
     # Ingest metadata views for admin panel
-    # TODO(#5226): Re-enable when a strategy for handling migrated columns has been found.
-    # ExportViewCollectionConfig(
-    #     view_builders_to_export=INGEST_METADATA_BUILDERS,
-    #     output_directory_uri_template=INGEST_METADATA_OUTPUT_DIRECTORY_URI,
-    #     state_code_filter=None,
-    #     export_name='INGEST_METADATA',
-    # ),
+    ExportViewCollectionConfig(
+        view_builders_to_export=INGEST_METADATA_BUILDERS,
+        output_directory_uri_template=INGEST_METADATA_OUTPUT_DIRECTORY_URI,
+        state_code_filter=None,
+        export_name='INGEST_METADATA',
+    ),
 ] + [
     # Lantern Dashboard views for all relevant states
     ExportViewCollectionConfig(
