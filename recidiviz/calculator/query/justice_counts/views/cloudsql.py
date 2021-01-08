@@ -45,6 +45,11 @@ def get_table_view_builders() -> List[SimpleBigQueryViewBuilder]:
         for column in table.columns:
             if isinstance(column.type, sqlalchemy.Enum):
                 select_columns.append(f"CAST({column.name} as VARCHAR)")
+            elif isinstance(column.type, sqlalchemy.ARRAY) and isinstance(column.type.item_type, sqlalchemy.String):
+                # BigQuery, while claiming to support NULL values in an array, actually does not. For strings, we
+                # instead replace NULL with the empty string. Arrays of other types are not modified, so if they
+                # include NULL values they will fail.
+                select_columns.append(f"ARRAY_REPLACE({column.name}, NULL, '') as {column.name}")
             else:
                 select_columns.append(column.name)
 
