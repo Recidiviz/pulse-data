@@ -79,7 +79,7 @@ FACILITY_POPULATION_BY_AGE_WITH_CAPACITY_BY_DAY_QUERY_TEMPLATE = \
               facility,
               date_of_stay,
             FROM
-              `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_population_metrics`
+              `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_population_metrics_materialized`
             WHERE methodology = 'EVENT'
             {state_specific_facility_exclusion}
             AND date_of_stay > DATE_SUB(CURRENT_DATE(), INTERVAL 1 YEAR)),

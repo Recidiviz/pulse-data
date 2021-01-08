@@ -52,7 +52,7 @@ SUPERVISION_MATRIX_BY_PERSON_QUERY_TEMPLATE = \
             supervising_officer_external_id AS officer,
             date_of_supervision,
             FALSE AS is_revocation
-        FROM `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_population_metrics`
+        FROM `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_population_metrics_materialized`
         WHERE methodology = 'EVENT'
             AND metric_period_months = 0
             AND month IS NOT NULL

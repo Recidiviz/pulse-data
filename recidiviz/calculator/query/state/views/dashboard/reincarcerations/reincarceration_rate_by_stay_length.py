@@ -49,7 +49,7 @@ REINCARCERATION_RATE_BY_STAY_LENGTH_QUERY_TEMPLATE = \
           county_of_residence,
           ROW_NUMBER() OVER (PARTITION BY state_code, release_cohort, follow_up_period, person_id
                                 ORDER BY release_date ASC, recidivated_releases DESC) as release_order
-        FROM `{project_id}.{materialized_metrics_dataset}.most_recent_recidivism_rate_metrics`
+        FROM `{project_id}.{materialized_metrics_dataset}.most_recent_recidivism_rate_metrics_materialized`
         WHERE methodology = 'EVENT'
           AND follow_up_period = 1
           AND release_cohort = EXTRACT(YEAR FROM DATE_SUB(CURRENT_DATE(), INTERVAL 2 YEAR))

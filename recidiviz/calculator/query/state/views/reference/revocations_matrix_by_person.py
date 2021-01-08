@@ -100,7 +100,6 @@ REVOCATIONS_MATRIX_BY_PERSON_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_id=REVOCATIONS_MATRIX_BY_PERSON_VIEW_NAME,
     view_query_template=REVOCATIONS_MATRIX_BY_PERSON_QUERY_TEMPLATE,
     description=REVOCATIONS_MATRIX_BY_PERSON_DESCRIPTION,
-    metrics_dataset=dataset_config.DATAFLOW_METRICS_DATASET,
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
     most_severe_violation_type_subtype_grouping=
     state_specific_query_strings.state_specific_most_severe_violation_type_subtype_grouping(),

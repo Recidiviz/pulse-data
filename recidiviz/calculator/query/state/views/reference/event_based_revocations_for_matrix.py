@@ -52,7 +52,7 @@ EVENT_BASED_REVOCATIONS_FOR_MATRIX_QUERY_TEMPLATE = \
         IFNULL(supervising_officer_external_id, 'EXTERNAL_UNKNOWN') AS officer,
         {state_specific_officer_recommendation},
         violation_history_description AS violation_record
-    FROM `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_revocation_analysis_metrics`
+    FROM `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_revocation_analysis_metrics_materialized`
     WHERE methodology = 'EVENT'
         AND metric_period_months = 1
         AND revocation_type = 'REINCARCERATION'

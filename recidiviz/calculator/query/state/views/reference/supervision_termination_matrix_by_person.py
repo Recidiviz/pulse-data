@@ -59,7 +59,7 @@ SUPERVISION_TERMINATION_MATRIX_BY_PERSON_VIEW_QUERY_TEMPLATE = \
             supervising_officer_external_id AS officer,
             termination_date,
             FALSE AS is_revocation
-        FROM `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_termination_metrics`
+        FROM `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_termination_metrics_materialized`
         WHERE methodology = 'EVENT'
             AND termination_reason IN ('DISCHARGE', 'EXPIRATION', 'SUSPENSION', 'INTERNAL_UNKNOWN', 'EXTERNAL_UNKNOWN', 'DEATH')
             AND month IS NOT NULL

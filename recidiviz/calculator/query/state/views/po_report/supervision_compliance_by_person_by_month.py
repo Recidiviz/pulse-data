@@ -41,7 +41,7 @@ SUPERVISION_COMPLIANCE_BY_PERSON_BY_MONTH_QUERY_TEMPLATE = \
         face_to_face_frequency_sufficient,
         ROW_NUMBER() OVER (PARTITION BY state_code, year, month, supervising_officer_external_id, person_id
          ORDER BY assessment_count DESC, face_to_face_count DESC, assessment_up_to_date DESC, face_to_face_frequency_sufficient DESC) as inclusion_order
-    FROM `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_case_compliance_metrics`
+    FROM `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_case_compliance_metrics_materialized`
       WHERE methodology = 'EVENT'
         AND supervising_officer_external_id IS NOT NULL
         AND date_of_evaluation = LAST_DAY(DATE(year, month, 1), MONTH)

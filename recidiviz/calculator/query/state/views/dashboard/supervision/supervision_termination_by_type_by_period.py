@@ -49,7 +49,7 @@ SUPERVISION_TERMINATION_BY_TYPE_BY_PERIOD_QUERY_TEMPLATE = \
         MAX(projected_completion_count) as projected_completion_count,
         supervision_type,
         IFNULL(district, 'EXTERNAL_UNKNOWN') as district,
-      FROM `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_success_metrics`,
+      FROM `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_success_metrics_materialized`,
       {district_dimension},
       {supervision_type_dimension},
       {metric_period_dimension}
