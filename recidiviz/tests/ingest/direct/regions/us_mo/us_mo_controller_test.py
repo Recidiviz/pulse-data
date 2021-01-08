@@ -184,7 +184,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                             ]),
             ])
 
-        self.run_parse_file_test(expected, 'tak001_offender_identification_v2')
+        self.run_parse_file_test(expected, 'tak001_offender_identification')
 
     def test_populate_data_oras_assessments_weekly(self):
         expected = IngestInfo(
@@ -229,7 +229,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                             ),
             ])
 
-        self.run_parse_file_test(expected, 'oras_assessments_weekly_v2')
+        self.run_parse_file_test(expected, 'oras_assessments_weekly')
 
     def test_populate_data_tak040_offender_identification(self):
         expected = IngestInfo(state_people=[
@@ -285,7 +285,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                         ]),
         ])
 
-        self.run_parse_file_test(expected, 'tak040_offender_cycles_v2')
+        self.run_parse_file_test(expected, 'tak040_offender_cycles')
 
     def test_populate_data_tak022_tak023_offender_sentence_institutional(self):
         expected = IngestInfo(state_people=[
@@ -503,7 +503,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                         ])
         ])
 
-        self.run_parse_file_test(expected, 'tak022_tak023_tak025_tak026_offender_sentence_institution_v2')
+        self.run_parse_file_test(expected, 'tak022_tak023_tak025_tak026_offender_sentence_institution')
 
     def test_populate_data_tak022_tak024_tak025_tak026_offender_sentence_supervision(self):
         expected = IngestInfo(state_people=[
@@ -651,7 +651,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                         ]),
         ])
 
-        self.run_parse_file_test(expected, 'tak022_tak024_tak025_tak026_offender_sentence_supervision_v2')
+        self.run_parse_file_test(expected, 'tak022_tak024_tak025_tak026_offender_sentence_supervision')
 
     def test_populate_data_tak158_tak023_tak026_incarceration_period_from_incarceration_sentence(self):
         vr_110035_19890901_3 = StateSupervisionViolationResponse(
@@ -954,7 +954,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                         ]),
         ])
 
-        self.run_parse_file_test(expected, 'tak158_tak023_tak026_incarceration_period_from_incarceration_sentence_v2')
+        self.run_parse_file_test(expected, 'tak158_tak023_tak026_incarceration_period_from_incarceration_sentence')
 
 
     def test_populate_data_tak158_tak024_tak026_incarceration_period_from_supervision_sentence(self):
@@ -1014,7 +1014,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                         ]),
         ])
 
-        self.run_parse_file_test(expected, 'tak158_tak024_tak026_incarceration_period_from_supervision_sentence_v2')
+        self.run_parse_file_test(expected, 'tak158_tak024_tak026_incarceration_period_from_supervision_sentence')
 
     def test_populate_data_tak034_tak026_tak039_apfx90_apfx91_supervision_enhancements_supervision_periods(self):
 
@@ -1321,7 +1321,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
         ])
 
         self.run_parse_file_test(
-            expected, 'tak034_tak026_tak039_apfx90_apfx91_supervision_enhancements_supervision_periods_v2')
+            expected, 'tak034_tak026_tak039_apfx90_apfx91_supervision_enhancements_supervision_periods')
 
     def test_populate_data_tak028_tak042_tak076_tak024_violation_reports(self):
         sss_110035_20040712_1 = StateSupervisionSentence(
@@ -1597,7 +1597,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                                     sis_910324_19890825_1
                                 ])])])
 
-        self.run_parse_file_test(expected, 'tak028_tak042_tak076_tak024_violation_reports_v2')
+        self.run_parse_file_test(expected, 'tak028_tak042_tak076_tak024_violation_reports')
 
     def test_populate_data_tak291_tak292_tak024_citations(self):
         sss_110035_20040712_1 = StateSupervisionSentence(
@@ -1699,7 +1699,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                                     sis_910324_19890825_1]
                             )])])
 
-        self.run_parse_file_test(expected, 'tak291_tak292_tak024_citations_v2')
+        self.run_parse_file_test(expected, 'tak291_tak292_tak024_citations')
 
     def test_run_full_ingest_all_files_specific_order(self) -> None:
         self.maxDiff = None
@@ -1886,7 +1886,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
 
         # SQL Preprocessing View
         # Act
-        self._run_ingest_job_for_filename('tak001_offender_identification_v2.csv')
+        self._run_ingest_job_for_filename('tak001_offender_identification.csv')
         # Assert
         self.assert_expected_db_people(expected_people)
 
@@ -1933,7 +1933,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
 
         # SQL Preprocessing View
         # Act
-        self._run_ingest_job_for_filename('oras_assessments_weekly_v2.csv')
+        self._run_ingest_job_for_filename('oras_assessments_weekly.csv')
 
         # Assert
         self.assert_expected_db_people(expected_people)
@@ -1962,7 +1962,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
 
         # SQL Preprocessing View
         # Act
-        self._run_ingest_job_for_filename('tak040_offender_cycles_v2.csv')
+        self._run_ingest_job_for_filename('tak040_offender_cycles.csv')
 
         # Assert
         self.assert_expected_db_people(expected_people)
@@ -2234,7 +2234,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
 
         # SQL Preprocessing View
         # Act
-        self._run_ingest_job_for_filename('tak022_tak023_tak025_tak026_offender_sentence_institution_v2.csv')
+        self._run_ingest_job_for_filename('tak022_tak023_tak025_tak026_offender_sentence_institution.csv')
 
         # Assert
         self.assert_expected_db_people(expected_people)
@@ -2437,7 +2437,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
 
         # SQL Preprocessing View
         # Act
-        self._run_ingest_job_for_filename('tak022_tak024_tak025_tak026_offender_sentence_supervision_v2.csv')
+        self._run_ingest_job_for_filename('tak022_tak024_tak025_tak026_offender_sentence_supervision.csv')
 
         # Assert
         self.assert_expected_db_people(expected_people)
@@ -2839,7 +2839,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
         # SQL Preprocessing View
         # Act
         self._run_ingest_job_for_filename(
-            'tak158_tak023_tak026_incarceration_period_from_incarceration_sentence_v2.csv')
+            'tak158_tak023_tak026_incarceration_period_from_incarceration_sentence.csv')
 
         # Assert
         self.assert_expected_db_people(expected_people)
@@ -2865,7 +2865,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
 
         # SQL Preprocessing View
         # Act
-        self._run_ingest_job_for_filename('tak158_tak024_tak026_incarceration_period_from_supervision_sentence_v2.csv')
+        self._run_ingest_job_for_filename('tak158_tak024_tak026_incarceration_period_from_supervision_sentence.csv')
 
         # Assert
         self.assert_expected_db_people(expected_people)
@@ -3329,7 +3329,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
         # SQL Preprocessing View
         # Act
         self._run_ingest_job_for_filename(
-            'tak034_tak026_tak039_apfx90_apfx91_supervision_enhancements_supervision_periods_v2.csv')
+            'tak034_tak026_tak039_apfx90_apfx91_supervision_enhancements_supervision_periods.csv')
 
         # Assert
         self.assert_expected_db_people(expected_people)
@@ -3625,7 +3625,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
 
         # SQL Preprocessing View
         # Act
-        self._run_ingest_job_for_filename('tak028_tak042_tak076_tak024_violation_reports_v2.csv')
+        self._run_ingest_job_for_filename('tak028_tak042_tak076_tak024_violation_reports.csv')
 
         # Assert
         self.assert_expected_db_people(expected_people)
@@ -3729,7 +3729,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
 
         # SQL Preprocessing View
         # Act
-        self._run_ingest_job_for_filename('tak291_tak292_tak024_citations_v2.csv')
+        self._run_ingest_job_for_filename('tak291_tak292_tak024_citations.csv')
 
         # Assert
         self.assert_expected_db_people(expected_people)
@@ -3757,7 +3757,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
 
         # SQL Preprocessing View
         self._run_ingest_job_for_filename(
-            'tak158_tak023_tak026_incarceration_period_from_incarceration_sentence_v2.csv')
+            'tak158_tak023_tak026_incarceration_period_from_incarceration_sentence.csv')
 
         session = SessionFactory.for_schema_base(StateBase)
         found_people_from_db = dao.read_people(session)

@@ -95,7 +95,7 @@ VIEW_QUERY_TEMPLATE = f"""
 
 VIEW_BUILDER = DirectIngestPreProcessedIngestViewBuilder(
     region='us_mo',
-    ingest_view_name='tak291_tak292_tak024_citations_v2',
+    ingest_view_name='tak291_tak292_tak024_citations',
     view_query_template=VIEW_QUERY_TEMPLATE,
     order_by_cols='JT_DOC, JT_CYC, JT_CSQ',
 )
