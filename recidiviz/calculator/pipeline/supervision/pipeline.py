@@ -32,9 +32,8 @@ from recidiviz.calculator.pipeline.supervision import identifier, calculator
 from recidiviz.calculator.pipeline.supervision.metrics import \
     SupervisionMetric, SupervisionPopulationMetric, SupervisionOutOfStatePopulationMetric, \
     SupervisionRevocationMetric, SupervisionSuccessMetric, \
-    SupervisionRevocationAnalysisMetric, SupervisionRevocationViolationTypeAnalysisMetric, \
-    SuccessfulSupervisionSentenceDaysServedMetric, SupervisionCaseComplianceMetric, SupervisionTerminationMetric, \
-    SupervisionStartMetric, SupervisionDowngradeMetric
+    SupervisionRevocationAnalysisMetric, SuccessfulSupervisionSentenceDaysServedMetric, \
+    SupervisionCaseComplianceMetric, SupervisionTerminationMetric, SupervisionStartMetric, SupervisionDowngradeMetric
 from recidiviz.calculator.pipeline.supervision.metrics import \
     SupervisionMetricType
 from recidiviz.calculator.pipeline.supervision.supervision_time_bucket import \
@@ -234,12 +233,6 @@ class ProduceSupervisionMetrics(beam.DoFn):
             dict_metric_key['count'] = 1
 
             supervision_metric = SupervisionRevocationAnalysisMetric.build_from_metric_key_group(
-                dict_metric_key, pipeline_job_id
-            )
-        elif metric_type == SupervisionMetricType.SUPERVISION_REVOCATION_VIOLATION_TYPE_ANALYSIS:
-            dict_metric_key['count'] = value
-
-            supervision_metric = SupervisionRevocationViolationTypeAnalysisMetric.build_from_metric_key_group(
                 dict_metric_key, pipeline_job_id
             )
         elif metric_type == SupervisionMetricType.SUPERVISION_SUCCESS:
@@ -594,7 +587,6 @@ def run(apache_beam_pipeline_options: PipelineOptions,
                                     SupervisionMetricType.SUPERVISION_POPULATION.value,
                                     SupervisionMetricType.SUPERVISION_REVOCATION.value,
                                     SupervisionMetricType.SUPERVISION_REVOCATION_ANALYSIS.value,
-                                    SupervisionMetricType.SUPERVISION_REVOCATION_VIOLATION_TYPE_ANALYSIS.value,
                                     SupervisionMetricType.SUPERVISION_START.value,
                                     SupervisionMetricType.SUPERVISION_SUCCESS.value,
                                     SupervisionMetricType.SUPERVISION_SUCCESSFUL_SENTENCE_DAYS_SERVED.value,
@@ -609,8 +601,6 @@ def run(apache_beam_pipeline_options: PipelineOptions,
         populations_table_id = DATAFLOW_METRICS_TO_TABLES[SupervisionPopulationMetric]
         revocations_table_id = DATAFLOW_METRICS_TO_TABLES[SupervisionRevocationMetric]
         revocation_analysis_table_id = DATAFLOW_METRICS_TO_TABLES[SupervisionRevocationAnalysisMetric]
-        revocation_violation_type_analysis_table_id = \
-            DATAFLOW_METRICS_TO_TABLES[SupervisionRevocationViolationTypeAnalysisMetric]
         successes_table_id = DATAFLOW_METRICS_TO_TABLES[SupervisionSuccessMetric]
         successful_sentence_lengths_table_id = DATAFLOW_METRICS_TO_TABLES[SuccessfulSupervisionSentenceDaysServedMetric]
         supervision_starts_table_id = DATAFLOW_METRICS_TO_TABLES[SupervisionStartMetric]
@@ -664,14 +654,6 @@ def run(apache_beam_pipeline_options: PipelineOptions,
              | f"Write revocation analyses metrics to BQ table: {revocation_analysis_table_id}" >>
              WriteAppendToBigQuery(
                  output_table=revocation_analysis_table_id,
-                 output_dataset=output,
-             ))
-
-        _ = (writable_metrics.SUPERVISION_REVOCATION_VIOLATION_TYPE_ANALYSIS
-             | f"Write revocation violation type analyses metrics to BQ table: "
-               f"{revocation_violation_type_analysis_table_id}" >>
-             WriteAppendToBigQuery(
-                 output_table=revocation_violation_type_analysis_table_id,
                  output_dataset=output,
              ))
 

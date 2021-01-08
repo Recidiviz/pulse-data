@@ -29,7 +29,7 @@ from recidiviz.calculator.pipeline.recidivism.metrics import ReincarcerationReci
     ReincarcerationRecidivismCountMetric, ReincarcerationRecidivismRateMetric
 from recidiviz.calculator.pipeline.supervision.metrics import SupervisionMetricType, SupervisionPopulationMetric, \
     SupervisionTerminationMetric, SupervisionRevocationMetric, \
-    SupervisionRevocationAnalysisMetric, SupervisionRevocationViolationTypeAnalysisMetric, SupervisionSuccessMetric, \
+    SupervisionRevocationAnalysisMetric, SupervisionSuccessMetric, \
     SuccessfulSupervisionSentenceDaysServedMetric, SupervisionCaseComplianceMetric, SupervisionDowngradeMetric, \
     SupervisionStartMetric, SupervisionOutOfStatePopulationMetric
 from recidiviz.calculator.pipeline.utils.metric_utils import MetricMethodologyType, json_serializable_metric_key, \
@@ -88,7 +88,7 @@ class TestJsonSerializableMetricKey(unittest.TestCase):
 
         expected_output = {'gender': 'MALE',
                            'race': 'BLACK',
-                           'ethnicity': 'HISPANIC,EXTERNAL_UNKNOWN',
+                           'ethnicity': 'EXTERNAL_UNKNOWN,HISPANIC',
                            'methodology': 'PERSON',
                            'year': 1999,
                            'month': 3,
@@ -113,6 +113,29 @@ class TestJsonSerializableMetricKey(unittest.TestCase):
                            'year': 1999,
                            'month': 3,
                            'state_code': 'CA'}
+
+        updated_metric_key = json_serializable_metric_key(metric_key)
+
+        self.assertEqual(expected_output, updated_metric_key)
+
+    def test_json_serializable_metric_key_ViolationTypeFrequencyCounter(self):
+        metric_key = {'gender': Gender.MALE,
+                      'race': [Race.BLACK, Race.WHITE],
+                      'methodology': MetricMethodologyType.PERSON,
+                      'year': 1999,
+                      'month': 3,
+                      'state_code': 'CA',
+                      'violation_type_frequency_counter': [['TECHNICAL'], ['ASC', 'EMP', 'TECHNICAL']]
+                      }
+
+        expected_output = {'gender': 'MALE',
+                           'race': 'BLACK,WHITE',
+                           'methodology': 'PERSON',
+                           'year': 1999,
+                           'month': 3,
+                           'state_code': 'CA',
+                           'violation_type_frequency_counter': '[ASC, EMP, TECHNICAL],[TECHNICAL]'
+                           }
 
         updated_metric_key = json_serializable_metric_key(metric_key)
 
@@ -195,8 +218,6 @@ class TestBQSchemaForMetricTable(unittest.TestCase):
             SupervisionMetricType.SUPERVISION_POPULATION: SupervisionPopulationMetric,
             SupervisionMetricType.SUPERVISION_REVOCATION: SupervisionRevocationMetric,
             SupervisionMetricType.SUPERVISION_REVOCATION_ANALYSIS: SupervisionRevocationAnalysisMetric,
-            SupervisionMetricType.SUPERVISION_REVOCATION_VIOLATION_TYPE_ANALYSIS:
-                SupervisionRevocationViolationTypeAnalysisMetric,
             SupervisionMetricType.SUPERVISION_START: SupervisionStartMetric,
             SupervisionMetricType.SUPERVISION_SUCCESS: SupervisionSuccessMetric,
             SupervisionMetricType.SUPERVISION_SUCCESSFUL_SENTENCE_DAYS_SERVED:

@@ -30,21 +30,18 @@ from recidiviz.calculator.pipeline.supervision.supervision_time_bucket import \
     SupervisionTimeBucket, RevocationReturnSupervisionTimeBucket, ProjectedSupervisionCompletionBucket, \
     NonRevocationReturnSupervisionTimeBucket, SupervisionTerminationBucket, SupervisionStartBucket
 from recidiviz.calculator.pipeline.utils.calculator_utils import \
-    augmented_combo_for_calculations, relevant_metric_periods, \
-    augment_combination, include_in_historical_metrics, \
+    augmented_combo_for_calculations, relevant_metric_periods, include_in_historical_metrics, \
     get_calculation_month_lower_bound_date, get_calculation_month_upper_bound_date, characteristics_dict_builder
 from recidiviz.calculator.pipeline.supervision.metrics import \
     SupervisionMetricType, SupervisionSuccessMetric, SupervisionMetric, SupervisionPopulationMetric, \
     SupervisionRevocationMetric, SupervisionTerminationMetric, SupervisionCaseComplianceMetric, \
-    SuccessfulSupervisionSentenceDaysServedMetric, SupervisionRevocationAnalysisMetric, \
-    SupervisionRevocationViolationTypeAnalysisMetric, SupervisionDowngradeMetric, SupervisionStartMetric, \
-    SupervisionOutOfStatePopulationMetric
+    SuccessfulSupervisionSentenceDaysServedMetric, SupervisionRevocationAnalysisMetric, SupervisionDowngradeMetric,\
+    SupervisionStartMetric, SupervisionOutOfStatePopulationMetric
 from recidiviz.calculator.pipeline.utils.metric_utils import MetricMethodologyType
 from recidiviz.calculator.pipeline.utils.person_utils import PersonMetadata
 from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_manager import \
     supervision_types_mutually_exclusive_for_state, supervision_period_is_out_of_state
 from recidiviz.persistence.entity.state.entities import StatePerson
-
 
 
 def map_supervision_combinations(person: StatePerson,
@@ -251,21 +248,6 @@ def map_supervision_combinations(person: StatePerson,
 
                     metrics.extend(revocation_analysis_metrics)
 
-                if (metric_inclusions.get(SupervisionMetricType.SUPERVISION_REVOCATION_VIOLATION_TYPE_ANALYSIS)
-                        and supervision_time_bucket.violation_type_frequency_counter):
-                    characteristic_combo_revocation_violation_type_analysis = characteristics_dict(
-                        person,
-                        supervision_time_bucket,
-                        SupervisionRevocationViolationTypeAnalysisMetric, person_metadata)
-
-                    revocation_violation_type_analysis_metrics = get_revocation_violation_type_analysis_metrics(
-                        supervision_time_bucket, characteristic_combo_revocation_violation_type_analysis,
-                        calculation_month_upper_bound, calculation_month_lower_bound,
-                        supervision_time_buckets, periods_and_buckets,
-                        include_metric_period_output
-                    )
-
-                    metrics.extend(revocation_violation_type_analysis_metrics)
         else:
             raise ValueError(f"Bucket is of unexpected SupervisionTimeBucket type: {supervision_time_bucket}")
 
@@ -295,15 +277,11 @@ def characteristics_dict(person: StatePerson,
             and supervision_time_bucket.case_compliance):
         event_date = supervision_time_bucket.case_compliance.date_of_evaluation
 
-    # We don't want demographic or person-level attributes on the SupervisionRevocationViolationTypeAnalysisMetrics
-    include_person_attributes = (metric_class != SupervisionRevocationViolationTypeAnalysisMetric)
-
     characteristics = characteristics_dict_builder(pipeline='supervision',
                                                    event=supervision_time_bucket,
                                                    metric_class=metric_class,
                                                    person=person,
                                                    event_date=event_date,
-                                                   include_person_attributes=include_person_attributes,
                                                    person_metadata=person_metadata)
     return characteristics
 
@@ -363,61 +341,6 @@ def map_metric_combinations(
             periods_and_buckets,
             metric_type
         ))
-
-    return metrics
-
-
-def get_revocation_violation_type_analysis_metrics(
-        supervision_time_bucket: RevocationReturnSupervisionTimeBucket,
-        characteristic_combo: Dict[str, Any],
-        calculation_month_upper_bound: date,
-        calculation_month_lower_bound: Optional[date],
-        all_buckets_sorted: List[SupervisionTimeBucket],
-        periods_and_buckets: Dict[int, List[SupervisionTimeBucket]],
-        include_metric_period_output: bool) -> List[Tuple[Dict[str, Any], Any]]:
-    """Produces metrics of the type SUPERVISION_REVOCATION_VIOLATION_TYPE_ANALYSIS. For each violation type list in the
-    bucket's violation_type_frequency_counter, produces metrics for each violation type in the list, and one with a
-    violation_count_type of 'VIOLATION' to keep track of the overall number of violations."""
-    metrics = []
-    if supervision_time_bucket.violation_type_frequency_counter:
-        for violation_type_list in supervision_time_bucket.violation_type_frequency_counter:
-            violation_type_augment_values = {'violation_count_type': 'VIOLATION'}
-
-            violation_count_characteristic_combo = augment_combination(characteristic_combo,
-                                                                       violation_type_augment_values)
-
-            revocation_analysis_metrics_violation_count = map_metric_combinations(
-                violation_count_characteristic_combo,
-                supervision_time_bucket,
-                calculation_month_upper_bound,
-                calculation_month_lower_bound,
-                all_buckets_sorted,
-                periods_and_buckets,
-                SupervisionMetricType.SUPERVISION_REVOCATION_VIOLATION_TYPE_ANALYSIS,
-                include_metric_period_output
-            )
-
-            metrics.extend(revocation_analysis_metrics_violation_count)
-
-            for violation_type_string in violation_type_list:
-
-                violation_type_augment_values = {'violation_count_type': violation_type_string}
-
-                violation_type_characteristic_combo = augment_combination(characteristic_combo,
-                                                                          violation_type_augment_values)
-
-                revocation_analysis_metrics_violation_type = map_metric_combinations(
-                    violation_type_characteristic_combo,
-                    supervision_time_bucket,
-                    calculation_month_upper_bound,
-                    calculation_month_lower_bound,
-                    all_buckets_sorted,
-                    periods_and_buckets,
-                    SupervisionMetricType.SUPERVISION_REVOCATION_VIOLATION_TYPE_ANALYSIS,
-                    include_metric_period_output
-                )
-
-                metrics.extend(revocation_analysis_metrics_violation_type)
 
     return metrics
 
@@ -537,8 +460,7 @@ def combination_supervision_monthly_metrics(
             if isinstance(bucket, SupervisionStartBucket)
             and bucket.bucket_date == supervision_time_bucket.bucket_date
         ]
-    elif metric_type in (SupervisionMetricType.SUPERVISION_REVOCATION_ANALYSIS,
-                         SupervisionMetricType.SUPERVISION_REVOCATION_VIOLATION_TYPE_ANALYSIS):
+    elif metric_type == SupervisionMetricType.SUPERVISION_REVOCATION_ANALYSIS:
         # Get all other revocation supervision buckets for the same month as this one
         buckets_in_period = [
             bucket for bucket in all_supervision_time_buckets
@@ -622,8 +544,7 @@ def combination_supervision_metric_period_metrics(
                     if (isinstance(bucket, SupervisionTerminationBucket))
                 ]
             elif metric_type in (SupervisionMetricType.SUPERVISION_REVOCATION,
-                                 SupervisionMetricType.SUPERVISION_REVOCATION_ANALYSIS,
-                                 SupervisionMetricType.SUPERVISION_REVOCATION_VIOLATION_TYPE_ANALYSIS):
+                                 SupervisionMetricType.SUPERVISION_REVOCATION_ANALYSIS):
                 # Get all other revocation return time buckets for this period
                 relevant_buckets_in_period = [
                     bucket for bucket in buckets_in_period
@@ -724,8 +645,7 @@ def include_supervision_in_count(combo: Dict[str, Any],
         return id(supervision_time_bucket) == id(relevant_buckets[-1])
 
     if metric_type in (SupervisionMetricType.SUPERVISION_REVOCATION,
-                       SupervisionMetricType.SUPERVISION_REVOCATION_ANALYSIS,
-                       SupervisionMetricType.SUPERVISION_REVOCATION_VIOLATION_TYPE_ANALYSIS):
+                       SupervisionMetricType.SUPERVISION_REVOCATION_ANALYSIS):
         return id(supervision_time_bucket) == id(revocation_buckets[-1])
 
     if metric_type in (SupervisionMetricType.SUPERVISION_START,

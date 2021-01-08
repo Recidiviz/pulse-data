@@ -73,9 +73,6 @@ MOST_RECENT_JOB_ID_BY_METRIC_AND_STATE_CODE_QUERY_TEMPLATE = \
             FROM `{project_id}.{metrics_dataset}.supervision_revocation_analysis_metrics`)
             UNION ALL
             (SELECT DISTINCT job_id, year, month, metric_period_months, state_code, metric_type
-            FROM `{project_id}.{metrics_dataset}.supervision_revocation_violation_type_analysis_metrics`)
-            UNION ALL
-            (SELECT DISTINCT job_id, year, month, metric_period_months, state_code, metric_type
             FROM `{project_id}.{metrics_dataset}.supervision_success_metrics`)
             UNION ALL
             (SELECT DISTINCT job_id, year, month, metric_period_months, state_code, metric_type

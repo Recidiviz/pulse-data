@@ -347,7 +347,6 @@ def characteristics_dict_builder(
         metric_class: Type[RecidivizMetric],
         person: StatePerson,
         event_date: datetime.date,
-        include_person_attributes: bool,
         person_metadata: PersonMetadata) -> Dict[str, Any]:
     """Builds a dictionary from the provided event and person that will eventually populate the values on the given
     metric_class. Only adds attributes to the dictionary that are relevant to the metric_class.
@@ -366,13 +365,12 @@ def characteristics_dict_builder(
     characteristics: Dict[str, Any] = {}
     metric_attributes = attr.fields_dict(metric_class).keys()
 
-    if include_person_attributes:
-        person_attributes = person_characteristics(person, event_date, person_metadata, pipeline)
+    person_attributes = person_characteristics(person, event_date, person_metadata, pipeline)
 
-        # Add relevant demographic and person-level dimensions
-        for attribute, value in person_attributes.items():
-            if attribute in metric_attributes:
-                characteristics[attribute] = value
+    # Add relevant demographic and person-level dimensions
+    for attribute, value in person_attributes.items():
+        if attribute in metric_attributes:
+            characteristics[attribute] = value
 
     fields_not_in_events = list(attr.fields_dict(RecidivizMetric).keys())
     fields_not_in_events.extend(attr.fields_dict(PersonLevelMetric).keys())

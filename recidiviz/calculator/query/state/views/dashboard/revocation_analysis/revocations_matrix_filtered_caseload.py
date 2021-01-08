@@ -78,8 +78,6 @@ REVOCATIONS_MATRIX_FILTERED_CASELOAD_VIEW_BUILDER = MetricBigQueryViewBuilder(
                 'charge_category', 'risk_level', 'violation_type', 'reported_violations', 'state_id', 'officer'],
     description=REVOCATIONS_MATRIX_FILTERED_CASELOAD_DESCRIPTION,
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
-    most_severe_violation_type_subtype_grouping=
-    state_specific_query_strings.state_specific_most_severe_violation_type_subtype_grouping(),
     state_specific_officer_recommendation=state_specific_query_strings.state_specific_officer_recommendation(),
     state_specific_supervision_level=state_specific_query_strings.state_specific_supervision_level(),
 )
