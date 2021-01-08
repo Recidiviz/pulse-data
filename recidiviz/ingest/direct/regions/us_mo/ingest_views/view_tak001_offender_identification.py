@@ -33,7 +33,7 @@ VIEW_QUERY_TEMPLATE = """
 
 VIEW_BUILDER = DirectIngestPreProcessedIngestViewBuilder(
     region='us_mo',
-    ingest_view_name='tak001_offender_identification_v2',
+    ingest_view_name='tak001_offender_identification',
     view_query_template=VIEW_QUERY_TEMPLATE,
     order_by_cols='EK_DOC',
 )

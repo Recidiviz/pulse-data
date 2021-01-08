@@ -143,7 +143,7 @@ VIEW_QUERY_TEMPLATE = f"""
 
 VIEW_BUILDER = DirectIngestPreProcessedIngestViewBuilder(
     region='us_mo',
-    ingest_view_name='tak028_tak042_tak076_tak024_violation_reports_v2',
+    ingest_view_name='tak028_tak042_tak076_tak024_violation_reports',
     view_query_template=VIEW_QUERY_TEMPLATE,
     order_by_cols='BY_DOC, BY_CYC, BY_VSN',
 )

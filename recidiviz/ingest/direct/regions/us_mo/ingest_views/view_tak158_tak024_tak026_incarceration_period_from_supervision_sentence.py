@@ -92,7 +92,7 @@ VIEW_QUERY_TEMPLATE = f"""
 
 VIEW_BUILDER = DirectIngestPreProcessedIngestViewBuilder(
     region='us_mo',
-    ingest_view_name='tak158_tak024_tak026_incarceration_period_from_supervision_sentence_v2',
+    ingest_view_name='tak158_tak024_tak026_incarceration_period_from_supervision_sentence',
     view_query_template=VIEW_QUERY_TEMPLATE,
     order_by_cols='BU_DOC, BU_CYC, BU_SEO, F1_SQN',
 )

@@ -1,66 +1,47 @@
-# TODO(#4266): Clean up backwards compatibility code
 key_mappings:
-  BY$DV: state_supervision_violation.violation_date
+  BY_DV: state_supervision_violation.violation_date
 
 child_key_mappings:
-  BY$VE: state_supervision_violation_response.response_date
-  BY$VRT: state_supervision_violation_response.response_subtype
+  BY_VE: state_supervision_violation_response.response_date
+  BY_VRT: state_supervision_violation_response.response_subtype
 
 ancestor_keys:
-  BY$DOC: state_person.state_person_id
+  BY_DOC: state_person.state_person_id
 
 keys_to_ignore:
   # TODO(#2604): Take another pass through these columns to document and ensure they should be ignored
   - VIOLATED_CONDITIONS  #  List of conditions violated - Handled manually in controller
-  - BY$CYC  # Offender Cycle Number - Handled manually in the controller
-  - BY$VSN  # Violation Sequence Number - Handled manually in the controller
-  - BY$VTY  # Violation Types - Handled manually in the controller
-  - BY$VOR  # Violation Report Recommendations - Handled manually in the controller
-  - BY$VWI  # Unused - Violation warrant flag
-  - BY$VSI  # Unused - Advised of Statements
-  - BY$VPH  # Unused - Preliminary hearing
-  - BY$VBG  # Unused - Given booklet
-  - BY$VA   # Unused - Absconsion warrant date
-  - BY$VIC  # Unused - Custody flag
-  - BY$DAX  # Unused - Detainer cross reference
-  - BY$VC   # Unused - Custody date
-  - BY$VD   # Unused - Interview date
-  - BY$VIH  # Unused - Interview hour
-  - BY$VIM  # Unused - Interview minute
-  - BY$VIL  # Unused - Interview location
-  - BY$PIN  # Unused - Designated DOC location
-  - BY$PLN  # Unused - DOC location acronym
-  - BY$PON  # Unused - Duplicate of BDGNO
-  - BY$RCA  # Unused - Requires court action
-  - BY$DCR  # Unused - Date Created (BY$* cols)
-  - BY$TCR  # Unused - Time Created (BY$* cols)
-  - BY$UID
-  - BY$DLU  # Unused - Date Last Updated (BY$* cols)
-  - BY$TLU  # Unused - Time Last Updated (BY$* cols)
-  - BY$UIU
-  - CF$DOC  # Unused - Duplicate of BY$DOC
-  - CF$CYC  # Unused - Duplicate of BY$CYC
-  - CF$VSN  # Unused - Duplicate of BY$VSN
-  - CREATE_DT  # Unused - Date Created (CF$* cols)
-  - UPDATE_DT  # Unused - Date Last Updated (CF$* cols)
-  - CZ$DOC  # Unused - Duplicate of BY$DOC
-  - CZ$CYC  # Unused - Duplicate of BY$CYC
-  - CZ$VSN  # Unused - Duplicate of BY$VSN
-  - CZ$SEO  # Sentence Key Sequence Number - Handled manually in controller
-  - CZ$FSO  # Field Sentence Sequence Number - Handled manually in controller
-  - CZ$DCR  # Unused - Date Created (CZ$* cols)
-  - CZ$TCR  # Unused - Time Created (CZ$* cols)
-  - CZ$DLU  # Unused - Date Last Updated (CZ$* cols)
-  - CZ$TLU  # Unused - Time Last Updated (CZ$* cols)
-  - E6$DOC  # Unused - Duplicate of BY$DOC
-  - E6$CYC  # Unused - Duplicate of BY$CYC
-  - E6$DOS  # Unused - Duplicate of BY$VSN
-  - FINAL_FORMED_CREATE_DATE  # Finally formed create date (E6$* cols) - Handled manually in controller
-  - FINAL_FORMED_UPDATE_DATE  # Unused - Finally formed last update date (E6$* cols)
+  - BY_CYC  # Offender Cycle Number - Handled manually in the controller
+  - BY_VSN  # Violation Sequence Number - Handled manually in the controller
+  - BY_VTY  # Violation Types - Handled manually in the controller
+  - BY_VOR  # Violation Report Recommendations - Handled manually in the controller
+  - BY_VWI  # Unused - Violation warrant flag
+  - BY_VSI  # Unused - Advised of Statements
+  - BY_VPH  # Unused - Preliminary hearing
+  - BY_VBG  # Unused - Given booklet
+  - BY_VA   # Unused - Absconsion warrant date
+  - BY_VIC  # Unused - Custody flag
+  - BY_DAX  # Unused - Detainer cross reference
+  - BY_VC   # Unused - Custody date
+  - BY_VD   # Unused - Interview date
+  - BY_VIH  # Unused - Interview hour
+  - BY_VIM  # Unused - Interview minute
+  - BY_VIL  # Unused - Interview location
+  - BY_PIN  # Unused - Designated DOC location
+  - BY_PLN  # Unused - DOC location acronym
+  - BY_PON  # Unused - Duplicate of BDGNO
+  - BY_RCA  # Unused - Requires court action
+  - BY_UID
+  - BY_UIU
+  - CZ_DOC  # Duplicate of BY_DOC - Handled manually in controller
+  - CZ_CYC  # Duplicate of BY_CYC - Handled manually in controller
+  - CZ_SEO  # Sentence Key Sequence Number - Handled manually in controller
+  - CZ_FSO  # Field Sentence Sequence Number - Handled manually in controller
+  - FINAL_FORMED_CREATE_DATE  # Finally formed create date (E6_* cols) - Handled manually in controller
+  - FINAL_FORMED_UPDATE_DATE  # Unused - Finally formed last update date (E6_* cols)
   # TODO(#1883): Update to child mappings once data extractor is flexible
   - BDGNO   # Employee Id - Handled manually in the controller
   - LNAME   # Employee Last Name - Handled manually in the controller
   - FNAME   # Employee First Name - Handled manually in the controller
   - MINTL   # Employee Middle Initial - Handled manually in the controller
   - CLSTTL  # Job role - Handled manually in controller
-  - CRTDTE  # Unused - Date Created
