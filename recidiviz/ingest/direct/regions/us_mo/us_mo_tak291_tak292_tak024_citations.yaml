@@ -1,4 +1,3 @@
-# TODO(#4266): Clean up backwards compatibility code
 key_mappings:
   # Violated conditions field is handled manually, only present to ensure we
   # update the entity to make sure it gets processed by the manual post-hook
@@ -9,23 +8,14 @@ child_key_mappings:
   MAX_DATE: state_supervision_violation_response.response_date
 
 ancestor_keys:
-  JT$DOC: state_person.state_person_id
+  JT_DOC: state_person.state_person_id
 
 keys_to_ignore:
   # TODO(#2604): Take another pass through these columns to document and ensure they should be ignored
-  - JT$CYC  # Offender Cycle Number - Handled manually in the controller
-  - JT$CSQ  # Citation Sequence Number - Handled manually in the controller
-  - CREATE_DT  # Unused - Date Created (JT$* cols)
-  - UPDATE_DT  # Unused - Date Last Updated (JT$* cols)
-  - JS$DOC  # Unused - Duplicate of JT$DOC
-  - JS$CYC  # Unused - Duplicate of JT$CYC
-  - JS$CSQ  # Unused - Duplicate of JT$CSQ
-  - JS$SEO  # Sentence Key Sequence Number - Handled manually in controller
-  - JS$FSO  # Field Sentence Sequence Number - Handled manually in controller
-  - JS$DCR  # Unused - Date Created (JS$* cols)
-  - JS$DLU  # Unused - Date Last Updated (JS$* cols)
-  - E6$DOC  # Unused - Duplicate of JT$DOC
-  - E6$CYC  # Unused - Duplicate of JT$CYC
-  - E6$DOS  # Unused - Duplicate of JT$CSQ
-  - FINAL_FORMED_CREATE_DATE  # Finally formed create date (E6$* cols) - Handled manually in controller
-  - FINAL_FORMED_UPDATE_DATE  # Unused - Finally formed last update date (E6$* cols)
+  - JT_CYC  # Offender Cycle Number - Handled manually in the controller
+  - JT_CSQ  # Citation Sequence Number - Handled manually in the controller
+  - JS_DOC  # Duplicate of JT_DOC - Handled manually in the controller
+  - JS_CYC  # Duplicate of JT_CYC - Handled manually in the controller
+  - JS_SEO  # Sentence Key Sequence Number - Handled manually in controller
+  - JS_FSO  # Field Sentence Sequence Number - Handled manually in controller
+  - FINAL_FORMED_CREATE_DATE  # Finally formed create date (E6_* cols) - Handled manually in controller

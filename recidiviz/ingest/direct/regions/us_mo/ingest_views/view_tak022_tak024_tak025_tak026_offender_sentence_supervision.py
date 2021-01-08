@@ -325,7 +325,7 @@ VIEW_QUERY_TEMPLATE = f"""
 
 VIEW_BUILDER = DirectIngestPreProcessedIngestViewBuilder(
     region='us_mo',
-    ingest_view_name='tak022_tak024_tak025_tak026_offender_sentence_supervision_v2',
+    ingest_view_name='tak022_tak024_tak025_tak026_offender_sentence_supervision',
     view_query_template=VIEW_QUERY_TEMPLATE,
     order_by_cols='BS_DOC, BS_CYC, BS_SEO',
 )

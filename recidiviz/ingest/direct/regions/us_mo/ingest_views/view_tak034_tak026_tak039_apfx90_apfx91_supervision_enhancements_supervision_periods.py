@@ -561,7 +561,7 @@ WITH field_assignments_ce AS (
 
 VIEW_BUILDER = DirectIngestPreProcessedIngestViewBuilder(
     region='us_mo',
-    ingest_view_name='tak034_tak026_tak039_apfx90_apfx91_supervision_enhancements_supervision_periods_v2',
+    ingest_view_name='tak034_tak026_tak039_apfx90_apfx91_supervision_enhancements_supervision_periods',
     view_query_template=VIEW_QUERY_TEMPLATE,
     order_by_cols='DOC, CYC',
 )

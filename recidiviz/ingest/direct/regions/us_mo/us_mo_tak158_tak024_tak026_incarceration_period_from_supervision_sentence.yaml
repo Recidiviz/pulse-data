@@ -1,47 +1,45 @@
-# TODO(#4266): Clean up backwards compatibility code
 key_mappings:
   SUB_SUBCYCLE_START_DT: state_incarceration_period.admission_date
   START_SCD_CODES: state_incarceration_period.admission_reason
   SUB_SUBCYCLE_END_DT: state_incarceration_period.release_date
-  F1$PFI: state_incarceration_period.specialized_purpose_for_incarceration
+  F1_PFI: state_incarceration_period.specialized_purpose_for_incarceration
 
 # Primary key overridden in controller, with the format: DOC-CYC-SQN-START_STATUS_SEQ_NUM
 
 ancestor_keys:
-  BU$DOC: state_person.state_person_id
+  BU_DOC: state_person.state_person_id
 
 enforced_ancestor_types:
   state_sentence: state_supervision_sentence
 
 keys_to_ignore:
-  - BU$DOC  # Offender DOC Number - Handled manually in the controller
-  - BU$CYC  # Offender Cycle Number - Handled manually in the controller
-  - BU$SEO  # Sentence Key Sequence Number - Handled manually in the controller
-  - F1$SQN  # Subcycle Sequence Number - Handled manually in the controller
-  - F1$DOC  # Unused - Duplicate of BU$DOC
-  - F1$CYC  # Unused - Duplicate of BU$CYC
-  - F1$SEO  # Unused - Duplicate of BU$SEO
-  - F1$SST  # Unused - Subcycle Status (Field, Institution, or Out of State) - Guaranteed to be 'I' by the source query
-  - F1$CD   # Unused - Subcycle Start Date - SUB_SUBCYCLE_START_DT used instead
-  - F1$ORC  # Unused - Subcycle Reason for Opening
-  - F1$OPT  # Unused - Open Reason Type
-  - F1$ARC  # Unused - Action Reason Code - END_STATUS_SUBTYPE used instead
-  - F1$CTO  # Unused - Case Type (Opening)
-  - F1$CTC  # Unused - Case Type (Current)
-  - F1$SY   # Unused - Status code change date
-  - F1$OR0  # Unused - Ordinal Date Field 0
-  - F1$WW   # Unused - Subcycle end date - SUB_SUBCYCLE_END_DT used instead
-  - F1$CTP  # Unused - Subcycle Reason for Closing - END_STATUS_CODE used instead
-  - F1$MSO  # Unused - Most Serious Offense
-  - F1$DCR  # Unused - Date Created
-  - F1$TCR  # Unused - Time Created
-  - DOC     # Unused - Duplicate of BT$DOC
-  - CYC     # Unused - Duplicate of BT$CYC
-  - SQN     # Unused - Duplicate of BT$SQN
-  - START_STATUS_CODE     # Unused - Copied when relevant from F1$ORC - Handled manually in the controller
-  - START_STATUS_SUBTYPE  # Unused - Copied when relevant from F1$OPT
-  - END_STATUS_CODE       # Copied when relevant from F1$CPT - Handled manually in the controller  TODO(#2898) - Use TAK026 statuses to populate release reason
-  - END_STATUS_SUBTYPE    # Copied when relevant from F1$ARC - Handled manually in the controller  TODO(#2898) - Use TAK026 statuses to populate release reason
-  - START_STATUS_SEQ_NUM  # Populated when valid from BW$SSO - Handled manually in the controller
-  - END_STATUS_SEQ_NUM    # Populated when valid from BW$SSO - Handled manually in the controller
+  - BU_DOC  # Offender DOC Number - Handled manually in the controller
+  - BU_CYC  # Offender Cycle Number - Handled manually in the controller
+  - BU_SEO  # Sentence Key Sequence Number - Handled manually in the controller
+  - F1_SQN  # Subcycle Sequence Number - Handled manually in the controller
+  - F1_DOC  # Unused - Duplicate of BU_DOC
+  - F1_CYC  # Unused - Duplicate of BU_CYC
+  - F1_SEO  # Unused - Duplicate of BU_SEO
+  - F1_SST  # Unused - Subcycle Status (Field, Institution, or Out of State) - Guaranteed to be 'I' by the source query
+  - F1_CD   # Unused - Subcycle Start Date - SUB_SUBCYCLE_START_DT used instead
+  - F1_ORC  # Unused - Subcycle Reason for Opening
+  - F1_OPT  # Unused - Open Reason Type
+  - F1_ARC  # Unused - Action Reason Code - END_STATUS_SUBTYPE used instead
+  - F1_CTO  # Unused - Case Type (Opening)
+  - F1_CTC  # Unused - Case Type (Current)
+  - F1_SY   # Unused - Status code change date
+  - F1_OR0  # Unused - Ordinal Date Field 0
+  - F1_WW   # Unused - Subcycle end date - SUB_SUBCYCLE_END_DT used instead
+  - F1_CTP  # Unused - Subcycle Reason for Closing - END_STATUS_CODE used instead
+  - F1_MSO  # Unused - Most Serious Offense
+  - DOC     # Unused - Duplicate of BT_DOC
+  - CYC     # Unused - Duplicate of BT_CYC
+  - SQN     # Unused - Duplicate of BT_SQN
+  - START_STATUS_CODE     # Unused - Copied when relevant from F1_ORC - Handled manually in the controller
+  - START_STATUS_SUBTYPE  # Unused - Copied when relevant from F1_OPT
+  - END_STATUS_CODE       # Copied when relevant from F1_CPT - Handled manually in the controller  TODO(#2898) - Use TAK026 statuses to populate release reason
+  - END_STATUS_SUBTYPE    # Copied when relevant from F1_ARC - Handled manually in the controller  TODO(#2898) - Use TAK026 statuses to populate release reason
+  - START_STATUS_SEQ_NUM  # Populated when valid from BW_SSO - Handled manually in the controller
+  - END_STATUS_SEQ_NUM    # Populated when valid from BW_SSO - Handled manually in the controller
   - END_SCD_CODES         # Unused - Status codes for the period end date TODO(#2898) - Use TAK026 statuses to populate release reason
+  - MOST_RECENT_SENTENCE_STATUS_DATE   # Sentence Status Code Date (Most recent)

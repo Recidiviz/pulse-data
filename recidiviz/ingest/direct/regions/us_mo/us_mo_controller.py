@@ -95,21 +95,12 @@ from recidiviz.ingest.models.ingest_info import IngestObject,\
 from recidiviz.ingest.models.ingest_object_cache import IngestObjectCache
 
 
-# TODO(#4266): Clean up backwards compatibility code
-def get_legacy_or_new_column_name(file_tag: str, str_content: str) -> str:
-    if file_tag.endswith('_v2'):  # SQL Preprocessing View
-        return str_content.replace('$', '_')
-    # Legacy
-    return str_content
-
-
 class UsMoController(CsvGcsfsDirectIngestController):
     """Direct ingest controller implementation for US_MO."""
 
     PERIOD_SEQUENCE_PRIMARY_COL_PREFIX = 'F1'
 
     PRIMARY_COL_PREFIXES_BY_FILE_TAG = {
-        # Legacy
         'tak001_offender_identification': 'EK',
         'tak040_offender_cycles': 'DQ',
         'tak022_tak023_tak025_tak026_offender_sentence_institution': 'BS',
@@ -119,17 +110,6 @@ class UsMoController(CsvGcsfsDirectIngestController):
         'tak034_tak026_tak039_apfx90_apfx91_supervision_enhancements_supervision_periods': '',
         'tak028_tak042_tak076_tak024_violation_reports': 'BY',
         'tak291_tak292_tak024_citations': 'JT',
-
-        # SQL Preprocessing View
-        'tak001_offender_identification_v2': 'EK',
-        'tak040_offender_cycles_v2': 'DQ',
-        'tak022_tak023_tak025_tak026_offender_sentence_institution_v2': 'BS',
-        'tak022_tak024_tak025_tak026_offender_sentence_supervision_v2': 'BS',
-        'tak158_tak023_tak026_incarceration_period_from_incarceration_sentence_v2': 'BT',
-        'tak158_tak024_tak026_incarceration_period_from_supervision_sentence_v2': 'BU',
-        'tak034_tak026_tak039_apfx90_apfx91_supervision_enhancements_supervision_periods_v2': '',
-        'tak028_tak042_tak076_tak024_violation_reports_v2': 'BY',
-        'tak291_tak292_tak024_citations_v2': 'JT',
     }
 
     REVOKED_PROBATION_SENTENCE_STATUS_CODES = {
@@ -425,7 +405,7 @@ class UsMoController(CsvGcsfsDirectIngestController):
             'NOREC',  # No Recommendation
         ],
         StateSupervisionViolationResponseRevocationType: [
-            # In the incarceration_period files, we use F1$PFI (StateSpecializedPurposeForIncarceration) to derive the
+            # In the incarceration_period files, we use F1_PFI (StateSpecializedPurposeForIncarceration) to derive the
             # StateSupervisionViolationResponseRevocationType. The PFI field is occasionally X (unknown).
             'X'
         ]
@@ -499,15 +479,13 @@ class UsMoController(CsvGcsfsDirectIngestController):
             ]
 
         self.row_post_processors_by_file: Dict[str, List[Callable]] = {
-            # Legacy
+            # SQL Preprocessing View
             'tak001_offender_identification': tak001_offender_identification_row_processors,
             'tak040_offender_cycles': tak040_offender_cycles_row_processors,
             'tak022_tak023_tak025_tak026_offender_sentence_institution':
-                self.get_tak022_tak023_tak025_tak026_offender_sentence_institution_row_processors(
-                    'tak022_tak023_tak025_tak026_offender_sentence_institution'),
+                self.get_tak022_tak023_tak025_tak026_offender_sentence_institution_row_processors(),
             'tak022_tak024_tak025_tak026_offender_sentence_supervision':
-                self.get_tak022_tak023_tak025_tak026_offender_sentence_supervision_row_processors(
-                    'tak022_tak024_tak025_tak026_offender_sentence_supervision'),
+                self.get_tak022_tak023_tak025_tak026_offender_sentence_supervision_row_processors(),
             'tak158_tak023_tak026_incarceration_period_from_incarceration_sentence':
                 incarceration_period_row_posthooks,
             'tak158_tak024_tak026_incarceration_period_from_supervision_sentence':
@@ -517,29 +495,10 @@ class UsMoController(CsvGcsfsDirectIngestController):
             'tak028_tak042_tak076_tak024_violation_reports':
                 tak028_tak042_tak076_tak024_violation_reports_row_processors,
             'tak291_tak292_tak024_citations': tak291_tak292_tak024_citations_row_processors,
-
-            # SQL Preprocessing View
-            'tak001_offender_identification_v2': tak001_offender_identification_row_processors,
-            'tak040_offender_cycles_v2': tak040_offender_cycles_row_processors,
-            'tak022_tak023_tak025_tak026_offender_sentence_institution_v2':
-                self.get_tak022_tak023_tak025_tak026_offender_sentence_institution_row_processors(
-                    'tak022_tak023_tak025_tak026_offender_sentence_institution_v2'),
-            'tak022_tak024_tak025_tak026_offender_sentence_supervision_v2':
-                self.get_tak022_tak023_tak025_tak026_offender_sentence_supervision_row_processors(
-                    'tak022_tak024_tak025_tak026_offender_sentence_supervision_v2'),
-            'tak158_tak023_tak026_incarceration_period_from_incarceration_sentence_v2':
-                incarceration_period_row_posthooks,
-            'tak158_tak024_tak026_incarceration_period_from_supervision_sentence_v2':
-                incarceration_period_row_posthooks,
-            'tak034_tak026_tak039_apfx90_apfx91_supervision_enhancements_supervision_periods_v2':
-                tak034_tak026_tak039_apfx90_apfx91_supervision_enhancements_supervision_periods_row_processors,
-            'tak028_tak042_tak076_tak024_violation_reports_v2':
-                tak028_tak042_tak076_tak024_violation_reports_row_processors,
-            'tak291_tak292_tak024_citations_v2': tak291_tak292_tak024_citations_row_processors,
         }
 
         self.primary_key_override_by_file: Dict[str, Callable] = {
-            # Legacy
+            # SQL Preprocessing View
             'oras_assessments_weekly':
                 self._generate_assessment_id_coords,
             'tak022_tak023_tak025_tak026_offender_sentence_institution':
@@ -556,28 +515,10 @@ class UsMoController(CsvGcsfsDirectIngestController):
                 self._generate_supervision_violation_id_coords_for_reports,
             'tak291_tak292_tak024_citations':
                 self._generate_supervision_violation_id_coords_for_citations,
-
-            # SQL Preprocessing View
-            'oras_assessments_weekly_v2':
-                self._generate_assessment_id_coords,
-            'tak022_tak023_tak025_tak026_offender_sentence_institution_v2':
-                self._generate_incarceration_sentence_id_coords,
-            'tak022_tak024_tak025_tak026_offender_sentence_supervision_v2':
-                self._generate_supervision_sentence_id_coords,
-            'tak158_tak023_tak026_incarceration_period_from_incarceration_sentence_v2':
-                self._generate_incarceration_period_id_coords,
-            'tak158_tak024_tak026_incarceration_period_from_supervision_sentence_v2':
-                self._generate_incarceration_period_id_coords,
-            'tak034_tak026_tak039_apfx90_apfx91_supervision_enhancements_supervision_periods_v2':
-                self._generate_supervision_period_id_coords,
-            'tak028_tak042_tak076_tak024_violation_reports_v2':
-                self._generate_supervision_violation_id_coords_for_reports,
-            'tak291_tak292_tak024_citations_v2':
-                self._generate_supervision_violation_id_coords_for_citations,
         }
 
         self.ancestor_chain_override_by_file: Dict[str, Callable] = {
-            # Legacy
+            # SQL Preprocessing View
             'tak022_tak023_tak025_tak026_offender_sentence_institution':
                 self._sentence_group_ancestor_chain_override,
             'tak022_tak024_tak025_tak026_offender_sentence_supervision':
@@ -592,38 +533,22 @@ class UsMoController(CsvGcsfsDirectIngestController):
                 self._supervision_violation_report_ancestor_chain_override,
             'tak291_tak292_tak024_citations':
                 self._supervision_violation_citation_ancestor_chain_override,
-
-            # SQL Preprocessing View
-            'tak022_tak023_tak025_tak026_offender_sentence_institution_v2':
-                self._sentence_group_ancestor_chain_override,
-            'tak022_tak024_tak025_tak026_offender_sentence_supervision_v2':
-                self._sentence_group_ancestor_chain_override,
-            'tak158_tak023_tak026_incarceration_period_from_incarceration_sentence_v2':
-                self._incarceration_sentence_ancestor_chain_override,
-            'tak158_tak024_tak026_incarceration_period_from_supervision_sentence_v2':
-                self._supervision_sentence_ancestor_chain_override,
-            'tak034_tak026_tak039_apfx90_apfx91_supervision_enhancements_supervision_periods_v2':
-                self._sentence_group_ancestor_chain_override,
-            'tak028_tak042_tak076_tak024_violation_reports_v2':
-                self._supervision_violation_report_ancestor_chain_override,
-            'tak291_tak292_tak024_citations_v2':
-                self._supervision_violation_citation_ancestor_chain_override,
         }
 
     @classmethod
     def get_file_tag_rank_list(cls) -> List[str]:
         file_tags = [
             # SQL Preprocessing View
-            'tak001_offender_identification_v2',
-            'oras_assessments_weekly_v2',
-            'tak040_offender_cycles_v2',
-            'tak022_tak023_tak025_tak026_offender_sentence_institution_v2',
-            'tak022_tak024_tak025_tak026_offender_sentence_supervision_v2',
-            'tak158_tak023_tak026_incarceration_period_from_incarceration_sentence_v2',
-            'tak158_tak024_tak026_incarceration_period_from_supervision_sentence_v2',
-            'tak034_tak026_tak039_apfx90_apfx91_supervision_enhancements_supervision_periods_v2',
-            'tak028_tak042_tak076_tak024_violation_reports_v2',
-            'tak291_tak292_tak024_citations_v2',
+            'tak001_offender_identification',
+            'oras_assessments_weekly',
+            'tak040_offender_cycles',
+            'tak022_tak023_tak025_tak026_offender_sentence_institution',
+            'tak022_tak024_tak025_tak026_offender_sentence_supervision',
+            'tak158_tak023_tak026_incarceration_period_from_incarceration_sentence',
+            'tak158_tak024_tak026_incarceration_period_from_supervision_sentence',
+            'tak034_tak026_tak039_apfx90_apfx91_supervision_enhancements_supervision_periods',
+            'tak028_tak042_tak076_tak024_violation_reports',
+            'tak291_tak292_tak024_citations',
         ]
         return file_tags
 
@@ -662,7 +587,7 @@ class UsMoController(CsvGcsfsDirectIngestController):
     @staticmethod
     def _get_id_type(file_tag: str) -> Optional[str]:
         if file_tag in [
-                # Legacy
+                # SQL Preprocessing View
                 'oras_assessments_weekly',
                 'tak022_tak023_tak025_tak026_offender_sentence_institution',
                 'tak022_tak024_tak025_tak026_offender_sentence_supervision',
@@ -671,16 +596,6 @@ class UsMoController(CsvGcsfsDirectIngestController):
                 'tak034_tak026_tak039_apfx90_apfx91_supervision_enhancements_supervision_periods',
                 'tak028_tak042_tak076_tak024_violation_reports',
                 'tak291_tak292_tak024_citations',
-
-                # SQL Preprocessing View
-                'oras_assessments_weekly_v2',
-                'tak022_tak023_tak025_tak026_offender_sentence_institution_v2',
-                'tak022_tak024_tak025_tak026_offender_sentence_supervision_v2',
-                'tak158_tak023_tak026_incarceration_period_from_incarceration_sentence_v2',
-                'tak158_tak024_tak026_incarceration_period_from_supervision_sentence_v2',
-                'tak034_tak026_tak039_apfx90_apfx91_supervision_enhancements_supervision_periods_v2',
-                'tak028_tak042_tak076_tak024_violation_reports_v2',
-                'tak291_tak292_tak024_citations_v2',
 
         ]:
             return US_MO_DOC
@@ -695,12 +610,12 @@ class UsMoController(CsvGcsfsDirectIngestController):
             extracted_objects: List[IngestObject],
             _cache: IngestObjectCache) -> None:
         sentence_start_date = parse_yyyymmdd_date(
-            row[get_legacy_or_new_column_name(_file_tag, INCARCERATION_SENTENCE_START_DATE)])
+            row[INCARCERATION_SENTENCE_START_DATE])
         if not sentence_start_date:
             return
 
         parole_ineligible_days = parse_days_from_duration_pieces(
-            years_str=row[get_legacy_or_new_column_name(_file_tag, INCARCERATION_SENTENCE_PAROLE_INELIGIBLE_YEARS)])
+            years_str=row[INCARCERATION_SENTENCE_PAROLE_INELIGIBLE_YEARS])
 
         date = sentence_start_date + \
             datetime.timedelta(days=parole_ineligible_days)
@@ -828,7 +743,7 @@ class UsMoController(CsvGcsfsDirectIngestController):
             extracted_objects: List[IngestObject],
             _cache: IngestObjectCache) -> None:
         """Manually adds StateSupervisionViolationTypeEntries to StateSupervisionViolations."""
-        violation_types_txt = row.get(get_legacy_or_new_column_name(_file_tag, SUPERVISION_VIOLATION_TYPES), '')
+        violation_types_txt = row.get(SUPERVISION_VIOLATION_TYPES, '')
         if violation_types_txt == '':
             return
         violation_types = list(violation_types_txt)
@@ -847,7 +762,7 @@ class UsMoController(CsvGcsfsDirectIngestController):
             _cache: IngestObjectCache) -> None:
         """Manually adds StateSupervisionViolationResponses to StateSupervisionViolations."""
         recommendation_txt = \
-            row.get(get_legacy_or_new_column_name(_file_tag, SUPERVISION_VIOLATION_RECOMMENDATIONS), '')
+            row.get(SUPERVISION_VIOLATION_RECOMMENDATIONS, '')
         # Return if there is no recommendation, or if the text explicitly refers
         # to either "No Recommendation".
         if recommendation_txt in ('', 'NOREC'):
@@ -991,7 +906,7 @@ class UsMoController(CsvGcsfsDirectIngestController):
             extracted_objects: List[IngestObject],
             _cache: IngestObjectCache) -> None:
 
-        completion_date = row[get_legacy_or_new_column_name(_file_tag, MOST_RECENT_SENTENCE_STATUS_DATE)]
+        completion_date = row[MOST_RECENT_SENTENCE_STATUS_DATE]
         for obj in extracted_objects:
             if isinstance(obj, (StateIncarcerationSentence, StateSupervisionSentence)):
                 if obj.status in (
@@ -1007,15 +922,15 @@ class UsMoController(CsvGcsfsDirectIngestController):
                              extracted_objects: List[IngestObject],
                              _cache: IngestObjectCache) -> None:
 
-        status_enum_str = self._sentence_status_enum_str_from_row(_file_tag, row)
+        status_enum_str = self._sentence_status_enum_str_from_row(row)
         for obj in extracted_objects:
             if isinstance(obj, (StateIncarcerationSentence, StateSupervisionSentence)):
                 obj.__setattr__('status', status_enum_str)
 
-    def _sentence_status_enum_str_from_row(self, file_tag: str, row: Dict[str, str]) -> str:
-        raw_status_str = row[get_legacy_or_new_column_name(file_tag, MOST_RECENT_SENTENCE_STATUS_CODE)]
-        sentence_completed_flag = row[get_legacy_or_new_column_name(file_tag, SENTENCE_COMPLETED_FLAG)]
-        supervision_sentence_type = row.get(get_legacy_or_new_column_name(file_tag, SUPERVISION_SENTENCE_TYPE), None)
+    def _sentence_status_enum_str_from_row(self, row: Dict[str, str]) -> str:
+        raw_status_str = row[MOST_RECENT_SENTENCE_STATUS_CODE]
+        sentence_completed_flag = row[SENTENCE_COMPLETED_FLAG]
+        supervision_sentence_type = row.get(SUPERVISION_SENTENCE_TYPE, None)
 
         is_probation_sentence = \
             supervision_sentence_type and \
@@ -1048,7 +963,7 @@ class UsMoController(CsvGcsfsDirectIngestController):
                                 row: Dict[str, str],
                                 extracted_objects: List[IngestObject],
                                 _cache: IngestObjectCache) -> None:
-        offense_date = row.get(get_legacy_or_new_column_name(_file_tag, SENTENCE_OFFENSE_DATE), None)
+        offense_date = row.get(SENTENCE_OFFENSE_DATE, None)
 
         if offense_date and offense_date == '0':
             for obj in extracted_objects:
@@ -1095,8 +1010,7 @@ class UsMoController(CsvGcsfsDirectIngestController):
             if isinstance(obj, StateIncarcerationPeriod):
                 revocation_admission_reason = self._revocation_admission_reason(obj.admission_reason)
                 if revocation_admission_reason:
-                    revocation_type = row.get(get_legacy_or_new_column_name(_file_tag,
-                                                                            PERIOD_PURPOSE_FOR_INCARCERATION), None)
+                    revocation_type = row.get(PERIOD_PURPOSE_FOR_INCARCERATION, None)
                     deciding_body_type = self._deciding_body_type(revocation_admission_reason)
 
                     violation_response = obj.create_state_supervision_violation_response(
@@ -1197,7 +1111,7 @@ class UsMoController(CsvGcsfsDirectIngestController):
             file_tag: str,
             row: Dict[str, str]) -> Dict[str, str]:
         group_coords = cls._generate_sentence_group_id_coords(file_tag, row)
-        if row.get(get_legacy_or_new_column_name(file_tag, f'{TAK076_PREFIX}${FIELD_KEY_SEQ}'), '0') == '0':
+        if row.get(f'{TAK076_PREFIX}_{FIELD_KEY_SEQ}', '0') == '0':
             sentence_coords = cls._generate_incarceration_sentence_id_coords(file_tag, row, TAK076_PREFIX)
         else:
             sentence_coords = cls._generate_supervision_sentence_id_coords(file_tag, row, TAK076_PREFIX)
@@ -1212,7 +1126,7 @@ class UsMoController(CsvGcsfsDirectIngestController):
             file_tag: str,
             row: Dict[str, str]) -> Dict[str, str]:
         group_coords = cls._generate_sentence_group_id_coords(file_tag, row)
-        if row.get(get_legacy_or_new_column_name(file_tag, f'{TAK291_PREFIX}${FIELD_KEY_SEQ}'), '0') == '0':
+        if row.get(f'{TAK291_PREFIX}_{FIELD_KEY_SEQ}', '0') == '0':
             sentence_coords = cls._generate_incarceration_sentence_id_coords(file_tag, row, TAK291_PREFIX)
         else:
             sentence_coords = cls._generate_supervision_sentence_id_coords(file_tag, row, TAK291_PREFIX)
@@ -1231,7 +1145,7 @@ class UsMoController(CsvGcsfsDirectIngestController):
         col_prefix = cls.primary_col_prefix_for_file_tag(file_tag)
         for obj in extracted_objects:
             if isinstance(obj, StateSentenceGroup):
-                obj.state_sentence_group_id = cls._generate_sentence_group_id(file_tag, col_prefix, row)
+                obj.state_sentence_group_id = cls._generate_sentence_group_id(col_prefix, row)
 
     @classmethod
     def _generate_assessment_id_coords(
@@ -1256,7 +1170,7 @@ class UsMoController(CsvGcsfsDirectIngestController):
         return IngestFieldCoordinates(
             'state_sentence_group',
             'state_sentence_group_id',
-            cls._generate_sentence_group_id(file_tag, col_prefix, row))
+            cls._generate_sentence_group_id(col_prefix, row))
 
     @classmethod
     def _generate_supervision_sentence_id_coords(
@@ -1269,7 +1183,7 @@ class UsMoController(CsvGcsfsDirectIngestController):
         return IngestFieldCoordinates(
             'state_supervision_sentence',
             'state_supervision_sentence_id',
-            cls._generate_sentence_id(file_tag, col_prefix, row))
+            cls._generate_sentence_id(col_prefix, row))
 
     @classmethod
     def _generate_incarceration_sentence_id_coords(
@@ -1282,7 +1196,7 @@ class UsMoController(CsvGcsfsDirectIngestController):
         return IngestFieldCoordinates(
             'state_incarceration_sentence',
             'state_incarceration_sentence_id',
-            cls._generate_sentence_id(file_tag, col_prefix, row))
+            cls._generate_sentence_id(col_prefix, row))
 
     @classmethod
     def _generate_supervision_period_id_coords(
@@ -1291,7 +1205,7 @@ class UsMoController(CsvGcsfsDirectIngestController):
             row: Dict[str, str]) -> IngestFieldCoordinates:
         col_prefix = cls.primary_col_prefix_for_file_tag(file_tag)
 
-        sentence_group_id = cls._generate_sentence_group_id(file_tag, col_prefix, row)
+        sentence_group_id = cls._generate_sentence_group_id(col_prefix, row)
 
         field_assignment_seq = row['FIELD_ASSIGNMENT_SEQ_NUM']
         start_status_seq_num = row['START_STATUS_SEQ_NUM']
@@ -1309,13 +1223,12 @@ class UsMoController(CsvGcsfsDirectIngestController):
             row: Dict[str, str]) -> IngestFieldCoordinates:
         col_prefix = cls.primary_col_prefix_for_file_tag(file_tag)
 
-        sentence_group_id = cls._generate_sentence_group_id(file_tag, col_prefix, row)
+        sentence_group_id = cls._generate_sentence_group_id(col_prefix, row)
 
         # TODO(#2728): The SQN is potentially not a stable ID if status
         #  information gets backdated and the SQN numbers generated in the
         #  roll-up shift.
-        subcycle_seq_num = row[get_legacy_or_new_column_name(file_tag,
-                                                                f'{cls.PERIOD_SEQUENCE_PRIMARY_COL_PREFIX}$SQN')]
+        subcycle_seq_num = row[f'{cls.PERIOD_SEQUENCE_PRIMARY_COL_PREFIX}_SQN']
         start_status_seq_num = row['START_STATUS_SEQ_NUM']
         incarceration_period_id = f'{sentence_group_id}-{subcycle_seq_num}-{start_status_seq_num}'
 
@@ -1333,7 +1246,7 @@ class UsMoController(CsvGcsfsDirectIngestController):
         return IngestFieldCoordinates(
             'state_supervision_violation',
             'state_supervision_violation_id',
-            cls._generate_supervision_violation_id_with_report_prefix(file_tag, col_prefix, row)
+            cls._generate_supervision_violation_id_with_report_prefix(col_prefix, row)
         )
 
     @classmethod
@@ -1345,49 +1258,48 @@ class UsMoController(CsvGcsfsDirectIngestController):
         return IngestFieldCoordinates(
             'state_supervision_violation',
             'state_supervision_violation_id',
-            cls._generate_supervision_violation_id_with_citation_prefix(file_tag, col_prefix, row)
+            cls._generate_supervision_violation_id_with_citation_prefix(col_prefix, row)
         )
 
     @classmethod
     def _generate_sentence_group_id(cls,
-                                    file_tag: str,
                                     col_prefix: str,
                                     row: Dict[str, str]) -> str:
 
         if col_prefix:
-            doc_id = row[get_legacy_or_new_column_name(file_tag, f'{col_prefix}${DOC_ID}')]
-            cyc_id = row[get_legacy_or_new_column_name(file_tag, f'{col_prefix}${CYCLE_ID}')]
+            doc_id = row[f'{col_prefix}_{DOC_ID}']
+            cyc_id = row[f'{col_prefix}_{CYCLE_ID}']
         else:
             doc_id = row[DOC_ID]
             cyc_id = row[CYCLE_ID]
         return f'{doc_id}-{cyc_id}'
 
     @classmethod
-    def _generate_sentence_id(cls, file_tag: str, col_prefix: str, row: Dict[str, str]) -> str:
-        sentence_group_id = cls._generate_sentence_group_id(file_tag, col_prefix, row)
-        sen_seq_num = row[get_legacy_or_new_column_name(file_tag, f'{col_prefix}${SENTENCE_KEY_SEQ}')]
+    def _generate_sentence_id(cls, col_prefix: str, row: Dict[str, str]) -> str:
+        sentence_group_id = cls._generate_sentence_group_id(col_prefix, row)
+        sen_seq_num = row[f'{col_prefix}_{SENTENCE_KEY_SEQ}']
         return f'{sentence_group_id}-{sen_seq_num}'
 
     @classmethod
     def _generate_supervision_violation_id_with_report_prefix(
-            cls, file_tag: str, col_prefix: str, row: Dict[str, str]) -> str:
+            cls, col_prefix: str, row: Dict[str, str]) -> str:
         return cls._generate_supervision_violation_id_with_prefix(
-            file_tag, col_prefix, row, TAK076_PREFIX, VIOLATION_REPORT_ID_PREFIX, VIOLATION_KEY_SEQ)
+            col_prefix, row, TAK076_PREFIX, VIOLATION_REPORT_ID_PREFIX, VIOLATION_KEY_SEQ)
 
     @classmethod
     def _generate_supervision_violation_id_with_citation_prefix(
-            cls, file_tag: str, col_prefix: str, row: Dict[str, str]) -> str:
+            cls, col_prefix: str, row: Dict[str, str]) -> str:
         return cls._generate_supervision_violation_id_with_prefix(
-            file_tag, col_prefix, row, TAK291_PREFIX, CITATION_ID_PREFIX, CITATION_KEY_SEQ)
+            col_prefix, row, TAK291_PREFIX, CITATION_ID_PREFIX, CITATION_KEY_SEQ)
 
     @classmethod
     def _generate_supervision_violation_id_with_prefix(
-            cls, file_tag: str, col_prefix: str, row: Dict[str, str],
+            cls, col_prefix: str, row: Dict[str, str],
             xref_prefix: str,
             violation_id_prefix: str,
             violation_key_seq: str) -> str:
-        violation_seq_num = row[get_legacy_or_new_column_name(file_tag, f'{col_prefix}${violation_key_seq}')]
-        group_id = cls._generate_sentence_group_id(file_tag, xref_prefix, row)
+        violation_seq_num = row[f'{col_prefix}_{violation_key_seq}']
+        group_id = cls._generate_sentence_group_id(xref_prefix, row)
 
         # TODO(#1883): Remove use of SEO (sentence_seq_id) and FSO (Field Seq No)
         # once extractor supports multiple paths to entities with the same id.
@@ -1397,21 +1309,20 @@ class UsMoController(CsvGcsfsDirectIngestController):
         # Currently, the SEO is removed from the violation ids as a
         # pre-processing hook in entity matching. From there, matching
         # violations can be properly merged together.
-        sentence_seq_id = row[get_legacy_or_new_column_name(file_tag, f'{xref_prefix}${SENTENCE_KEY_SEQ}')]
-        field_seq_no = row[get_legacy_or_new_column_name(file_tag, f'{xref_prefix}${FIELD_KEY_SEQ}')]
+        sentence_seq_id = row[f'{xref_prefix}_{SENTENCE_KEY_SEQ}']
+        field_seq_no = row[f'{xref_prefix}_{FIELD_KEY_SEQ}']
 
         return f'{group_id}-{violation_id_prefix}{violation_seq_num}-{sentence_seq_id}-{field_seq_no}'
 
     @classmethod
     def _generate_supervision_violation_id(
             cls,
-            file_tag: str,
             col_prefix: str,
             row: Dict[str, str],
             violation_id_prefix: str) -> str:
-        group_id = cls._generate_sentence_group_id(file_tag, TAK076_PREFIX, row)
-        sentence_seq_id = row[get_legacy_or_new_column_name(file_tag, f'{TAK076_PREFIX}${SENTENCE_KEY_SEQ}')]
-        violation_seq_num = row[get_legacy_or_new_column_name(file_tag, f'{col_prefix}${VIOLATION_KEY_SEQ}')]
+        group_id = cls._generate_sentence_group_id(TAK076_PREFIX, row)
+        sentence_seq_id = row[f'{TAK076_PREFIX}_{SENTENCE_KEY_SEQ}']
+        violation_seq_num = row[f'{col_prefix}_{VIOLATION_KEY_SEQ}']
         return f'{group_id}-{violation_id_prefix}{violation_seq_num}-{sentence_seq_id}'
 
     @classmethod
@@ -1504,24 +1415,24 @@ class UsMoController(CsvGcsfsDirectIngestController):
         return sorted_list_from_str(value)
 
     def get_tak022_tak023_tak025_tak026_offender_sentence_institution_row_processors(
-            self, file_tag: str) -> List[RowPosthookCallable]:
+            self) -> List[RowPosthookCallable]:
         return [
             gen_normalize_county_codes_posthook(self.region.region_code,
-                                                get_legacy_or_new_column_name(file_tag, CHARGE_COUNTY_CODE),
+                                                CHARGE_COUNTY_CODE,
                                                 StateCharge),
             gen_normalize_county_codes_posthook(self.region.region_code,
-                                                get_legacy_or_new_column_name(file_tag, SENTENCE_COUNTY_CODE),
+                                                SENTENCE_COUNTY_CODE,
                                                 StateIncarcerationSentence),
             gen_map_ymd_counts_to_max_length_field_posthook(
-                    get_legacy_or_new_column_name(file_tag, INCARCERATION_SENTENCE_LENGTH_YEARS),
-                    get_legacy_or_new_column_name(file_tag, INCARCERATION_SENTENCE_LENGTH_MONTHS),
-                    get_legacy_or_new_column_name(file_tag, INCARCERATION_SENTENCE_LENGTH_DAYS),
+                    INCARCERATION_SENTENCE_LENGTH_YEARS,
+                    INCARCERATION_SENTENCE_LENGTH_MONTHS,
+                    INCARCERATION_SENTENCE_LENGTH_DAYS,
                     StateIncarcerationSentence,
                     test_for_fallback=self._test_length_string,
                     fallback_parser=self._parse_days_with_long_range
             ),
             gen_set_is_life_sentence_hook(
-                    get_legacy_or_new_column_name(file_tag, INCARCERATION_SENTENCE_MIN_RELEASE_TYPE),
+                    INCARCERATION_SENTENCE_MIN_RELEASE_TYPE,
                     'LIF',
                     StateIncarcerationSentence),
             self._gen_clear_magical_date_value(
@@ -1540,18 +1451,18 @@ class UsMoController(CsvGcsfsDirectIngestController):
             ]
 
     def get_tak022_tak023_tak025_tak026_offender_sentence_supervision_row_processors(
-            self, file_tag: str) -> List[RowPosthookCallable]:
+            self) -> List[RowPosthookCallable]:
         return [
             gen_normalize_county_codes_posthook(self.region.region_code,
-                                                get_legacy_or_new_column_name(file_tag, CHARGE_COUNTY_CODE),
+                                                CHARGE_COUNTY_CODE,
                                                 StateCharge),
             gen_normalize_county_codes_posthook(self.region.region_code,
-                                                get_legacy_or_new_column_name(file_tag, SENTENCE_COUNTY_CODE),
+                                                SENTENCE_COUNTY_CODE,
                                                 StateSupervisionSentence),
             gen_map_ymd_counts_to_max_length_field_posthook(
-                get_legacy_or_new_column_name(file_tag, SUPERVISION_SENTENCE_LENGTH_YEARS),
-                get_legacy_or_new_column_name(file_tag, SUPERVISION_SENTENCE_LENGTH_MONTHS),
-                get_legacy_or_new_column_name(file_tag, SUPERVISION_SENTENCE_LENGTH_DAYS),
+                SUPERVISION_SENTENCE_LENGTH_YEARS,
+                SUPERVISION_SENTENCE_LENGTH_MONTHS,
+                SUPERVISION_SENTENCE_LENGTH_DAYS,
                 StateSupervisionSentence,
                 test_for_fallback=self._test_length_string,
                 fallback_parser=self._parse_days_with_long_range
