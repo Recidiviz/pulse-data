@@ -39,7 +39,7 @@ INCARCERATION_POPULATION_BY_PRIORITIZED_RACE_AND_ETHNICITY_BY_PERIOD_VIEW_QUERY_
         metric_period_months,
         person_id,
         race_or_ethnicity
-      FROM `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_population_metrics`,
+      FROM `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_population_metrics_materialized`,
             -- We only want a 36-month period for this view --
       UNNEST ([36]) AS metric_period_months,
       {race_or_ethnicity_dimension}

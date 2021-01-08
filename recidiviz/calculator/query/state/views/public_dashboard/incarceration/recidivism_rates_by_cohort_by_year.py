@@ -42,7 +42,7 @@ RECIDIVISM_RATES_BY_COHORT_BY_YEAR_VIEW_QUERY_TEMPLATE = \
         recidivated_releases,
         total_releases,
         ROW_NUMBER() OVER (PARTITION BY state_code, release_cohort, follow_up_period, person_id ORDER BY release_date ASC, recidivated_releases DESC) as release_order
-        FROM `{project_id}.{materialized_metrics_dataset}.most_recent_recidivism_rate_metrics`
+        FROM `{project_id}.{materialized_metrics_dataset}.most_recent_recidivism_rate_metrics_materialized`
       -- For 10 years of release cohorts that have at least 1 full year of follow-up -- 
       WHERE release_cohort >= EXTRACT(YEAR FROM CURRENT_DATE()) - 11
       -- Only include follow-up periods that have completed --

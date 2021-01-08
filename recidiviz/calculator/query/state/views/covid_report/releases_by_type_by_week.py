@@ -43,7 +43,7 @@ RELEASES_BY_TYPE_BY_WEEK_QUERY_TEMPLATE = \
         FROM
           `{project_id}.{reference_views_dataset}.covid_report_weeks` report
         JOIN
-          `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_release_metrics` releases
+          `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_release_metrics_materialized` releases
         USING (state_code)
         WHERE releases.release_date BETWEEN report.start_date AND report.end_date
           AND release_reason in ('COMMUTED', 'COMPASSIONATE', 'CONDITIONAL_RELEASE', 'SENTENCE_SERVED')

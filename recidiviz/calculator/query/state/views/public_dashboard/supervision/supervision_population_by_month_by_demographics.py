@@ -39,7 +39,7 @@ SUPERVISION_POPULATION_BY_MONTH_BY_DEMOGRAPHICS_VIEW_QUERY_TEMPLATE = \
          * EXCEPT (prioritized_race_or_ethnicity),
          ROW_NUMBER () OVER (PARTITION BY state_code, year, month, date_of_supervision, supervision_type, person_id ORDER BY representation_priority) as inclusion_priority
       FROM
-        `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_population_metrics`,
+        `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_population_metrics_materialized`,
         {race_ethnicity_dimension}
       LEFT JOIN
          `{project_id}.{static_reference_dataset}.state_race_ethnicity_population_counts`

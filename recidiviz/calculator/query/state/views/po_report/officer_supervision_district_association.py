@@ -63,7 +63,6 @@ OFFICER_SUPERVISION_DISTRICT_ASSOCIATION_VIEW_BUILDER = SimpleBigQueryViewBuilde
     should_materialize=True,
     view_query_template=OFFICER_SUPERVISION_DISTRICT_ASSOCIATION_QUERY_TEMPLATE,
     description=OFFICER_SUPERVISION_DISTRICT_ASSOCIATION_DESCRIPTION,
-    metrics_dataset=dataset_config.DATAFLOW_METRICS_DATASET,
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
 )
 

@@ -41,7 +41,7 @@ EVENT_BASED_SUPERVISION_QUERY_TEMPLATE = \
       district,
       supervising_officer_external_id AS officer_external_id,
       gender, age_bucket, race, ethnicity, assessment_score_bucket, judicial_district_code
-    FROM `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_population_metrics`,
+    FROM `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_population_metrics_materialized`,
     {district_dimension},
     {supervision_type_dimension}
     WHERE methodology = 'EVENT'

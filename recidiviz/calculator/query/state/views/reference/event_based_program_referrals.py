@@ -40,7 +40,7 @@ EVENT_BASED_PROGRAM_REFERRALS_QUERY_TEMPLATE = \
       supervision_type, district,
       participation_status,
       gender, age_bucket, race, ethnicity, assessment_score_bucket
-    FROM `{project_id}.{materialized_metrics_dataset}.most_recent_program_referral_metrics`,
+    FROM `{project_id}.{materialized_metrics_dataset}.most_recent_program_referral_metrics_materialized`,
     {district_dimension},
     {supervision_type_dimension}
     WHERE methodology = 'EVENT'
