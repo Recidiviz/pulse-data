@@ -1,45 +1,44 @@
-# TODO(#4266): Clean up backwards compatibility code
 key_mappings:
   # Only here so this section isn't empty
-  DQ$DOC: state_person.state_person_id
+  DQ_DOC: state_person.state_person_id
 
 child_key_mappings:
-  DQ$DOC: state_person_external_id.state_person_external_id_id
-  DQ$CYC: state_sentence_group.state_sentence_group_id
+  DQ_DOC: state_person_external_id.state_person_external_id_id
+  DQ_CYC: state_sentence_group.state_sentence_group_id
 
 primary_key:
-  DQ$DOC: state_person.state_person_id
+  DQ_DOC: state_person.state_person_id
 
 keys_to_ignore:
 # TODO(#2604): Take another pass through these columns to document and ensure they should be ignored
-- DQ$SSR
-- DQ$NRN
-- DQ$PND
-- DQ$CD
-- DQ$FD
-- DQ$OAB
-- DQ$OA
-- DQ$OFB
-- DQ$OF
-- DQ$TSE
-- DQ$MSO
-- DQ$NDM
-- DQ$NDO
-- DQ$NEM
-- DQ$NEO
-- DQ$NPM
-- DQ$NPO
-- DQ$NCM
-- DQ$NCO
-- DQ$NBM
-- DQ$NBO
-- DQ$OCA
-- DQ$OCL
-- DQ$OC1
-- DQ$OC2
-- DQ$OC3
-- DQ$SOP
-- DQ$DCR
-- DQ$TCR
-- DQ$DLU
-- DQ$TLU
+- DQ_SSR
+- DQ_NRN
+- DQ_PND
+- DQ_CD
+- DQ_FD
+- DQ_OAB
+- DQ_OA
+- DQ_OFB
+- DQ_OF
+- DQ_TSE
+- DQ_MSO
+- DQ_NDM
+- DQ_NDO
+- DQ_NEM
+- DQ_NEO
+- DQ_NPM
+- DQ_NPO
+- DQ_NCM
+- DQ_NCO
+- DQ_NBM
+- DQ_NBO
+- DQ_OCA
+- DQ_OCL
+- DQ_OC1
+- DQ_OC2
+- DQ_OC3
+- DQ_SOP
+- DQ_DCR
+- DQ_TCR
+- DQ_DLU
+- DQ_TLU

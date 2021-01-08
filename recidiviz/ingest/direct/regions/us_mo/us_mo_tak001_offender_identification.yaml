@@ -1,79 +1,22 @@
-# TODO(#4266): Clean up backwards compatibility code
 key_mappings:
-  EK$ALN: state_person.surname
-  EK$AFN: state_person.given_names
-  EK$AMI: state_person.middle_names
-  EK$AGS: state_person.name_suffix
-  EK$SEX: state_person.gender
+  EK_ALN: state_person.surname
+  EK_AFN: state_person.given_names
+  EK_AMI: state_person.middle_names
+  EK_AGS: state_person.name_suffix
+  EK_SEX: state_person.gender
   DOB: state_person.birthdate
 
 child_key_mappings:
-  EK$CYC: state_sentence_group.state_sentence_group_id
-  EK$RAC: state_person_race.race
-  EK$ETH: state_person_ethnicity.ethnicity
-  EK$DOC: state_person_external_id.state_person_external_id_id
+  EK_CYC: state_sentence_group.state_sentence_group_id
+  EK_RAC: state_person_race.race
+  EK_ETH: state_person_ethnicity.ethnicity
+  EK_DOC: state_person_external_id.state_person_external_id_id
 
 primary_key:
-  EK$DOC: state_person.state_person_id
+  EK_DOC: state_person.state_person_id
 
 keys_to_ignore:
-# TODO(#2604): Take another pass through these columns to document and ensure they should be ignored
-- EK$NRN
-- EK$SID  # Offender SID Number - Handled manually in the controller
-- EK$FBI  # Offender FBI Number - Handled manually in the controller
-- EK$OLN  # Offender Operator License Number - Handled manually in the controller
-- DOC_ID_DOB  # Unused - Duplicate of EK$DOC
-- DOB_VERIFIED_IND  # Unused - implied by its existence in VAK003
-- CREATE_DT  # Unused - Date Created (VAK003 cols)
-- CREATE_TM  # Unused - Time Created (VAK003 cols)
-- UPDATE_DT  # Unused - Date Last Updated (VAK003 cols)
-- UPDATE_TM  # Unused - Time Last Updated (VAK003 cols)
-- EK$OLC
-- EK$FOI
-- EK$PLC
-- EK$FLC
-- EK$OLA
-- EK$PLA
-- EK$FLA
-- EK$AV
-- EK$LE
-- EK$LTR
-- EK$TPF
-- EK$NM
-- EK$TAT
-- EK$WRF
-- EK$DTF
-- EK$WTF
-- EK$SOQ
-- EK$HTF
-- EK$HTI
-- EK$WGT
-- EK$BIL
-- EK$HAI
-- EK$EYE
-- EK$SKI
-- EK$MAS
-- EK$DEP
-- EK$SIB
-- EK$REL
-- EK$COF
-- EK$SCO
-- EK$XDM
-- EK$XDO
-- EK$XEM
-- EK$XEO
-- EK$XPM
-- EK$XPO
-- EK$XCM
-- EK$XCO
-- EK$XBM
-- EK$XBO
-- EK$PU
-- EK$PUL
-- EK$PRF
-- EK$DCR
-- EK$TCR
-- EK$DLU
-- EK$TLU
-- EK$REA
-- EK$UID
+- EK_SID  # Unused - SID Number - See #4632 for more context why we don't ingest this
+- EK_FBI  # Unused - FBI Number - See #4632 for more context why we don't ingest this
+- EK_OLN  # Unused - Operator License Number - See #4632 for more context why we don't ingest this
+- DOC_ID_DOB  # Unused - Duplicate of EK_DOC

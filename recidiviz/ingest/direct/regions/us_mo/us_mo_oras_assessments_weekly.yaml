@@ -1,27 +1,24 @@
-# TODO(#4266): Clean up backwards compatibility code
 key_mappings:
-  E10: state_assessment.assessment_date     # Date entered into UCCI system.
+  E21: state_assessment.assessment_date     # Date entered into UCCI system.
   E05: state_assessment.assessment_type
-  E18: state_assessment.assessment_level
-  E23: state_assessment.assessment_score
+  E14: state_assessment.assessment_level
+  E19: state_assessment.assessment_score
 
 ancestor_keys:
   E04: state_person.state_person_id
 
 keys_to_ignore:
-  - E01     # Unused - Date of download from UCCI
-  - E03     # Unused - Date of download from UCCI
   - E06     # Unused - Duplicate of E10
-  - E12     # Unused - First name
-  - E13     # Unused - Last name
-  - E14     # Unused - Full name
-  - E16     # Unused - Birthdate
-  - E17     # Unused - Gender
-  - E24     # Unused - Person who administered the assessment
+  - E08     # Unused - First name
+  - E09     # Unused - Last name
+  - E10     # Unused - Full name
+  - E12     # Unused - Birthdate
+  - E13     # Unused - Gender
+  - E20     # Unused - Person who administered the assessment
   - FOCLIST # Assessment Seq No - Handled manually in the controller
   # TODO(#2604): Take another pass through these columns to document and ensure they should be ignored
-  - E15     # Unused - Agency name
-  - E19     # Unused - Override risk level (not uniform in data)
-  - E20     # Unused - Override risk reason
-  - E21     # Unused - Case type information about the offender (Domestic violence, Mentally Ill, Sex offender, etc).
-  - E22     # Unused - Assessment status (all Complete)
+  - E11     # Unused - Agency name
+  - E15     # Unused - Override risk level (not uniform in data)
+  - E16     # Unused - Override risk reason
+  - E17     # Unused - Case type information about the offender (Domestic violence, Mentally Ill, Sex offender, etc).
+  - E18     # Unused - Assessment status (all Complete)

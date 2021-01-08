@@ -35,7 +35,7 @@ VIEW_QUERY_TEMPLATE = """
 
 VIEW_BUILDER = DirectIngestPreProcessedIngestViewBuilder(
     region='us_mo',
-    ingest_view_name='oras_assessments_weekly_v2',
+    ingest_view_name='oras_assessments_weekly',
     view_query_template=VIEW_QUERY_TEMPLATE,
     order_by_cols='E04'
 )
