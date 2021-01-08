@@ -36,24 +36,28 @@ US_MO_SENTENCE_STATUSES_QUERY_TEMPLATE = \
         all_statuses.*
     FROM (
         SELECT
-          CONCAT(DOC, '-', CYC, '-', SEO) as sentence_external_id,
-          CONCAT(DOC, '-', CYC, '-', SEO, '-', SSO) as sentence_status_external_id,
-          SCD AS status_code,
-          SY AS status_date,
-          SDE AS status_description
+          CONCAT(BW_DOC, '-', BW_CYC, '-', BV_SEO) as sentence_external_id,
+          CONCAT(BW_DOC, '-', BW_CYC, '-', BV_SEO, '-', BW_SSO) as sentence_status_external_id,
+          BW_SCD AS status_code,
+          BW_SY AS status_date,
+          FH_SDE AS status_description
         FROM
-          `{project_id}.{static_reference_dataset}.us_mo_tak026_sentence_status`
+          `{project_id}.us_mo_raw_data_up_to_date_views.LBAKRDTA_TAK026_latest`
         LEFT OUTER JOIN
-          `{project_id}.{static_reference_dataset}.us_mo_tak025_sentence_status_xref`
-        USING (DOC, CYC, SSO)
+          `{project_id}.us_mo_raw_data_up_to_date_views.LBAKRDTA_TAK025_latest`
+        ON
+            BW_DOC = BV_DOC
+            AND BW_CYC = BV_CYC
+            AND BW_SSO = BV_SSO
         LEFT OUTER JOIN
-          `{project_id}.{static_reference_dataset}.us_mo_tak146_status_code_descriptions`
-        USING (SCD)
+          `{project_id}.us_mo_raw_data_up_to_date_views.LBAKRCOD_TAK146_latest`
+        ON
+            BW_SCD = FH_SCD
         WHERE
-          DOC IS NOT NULL AND
-          CYC IS NOT NULL AND
-          SEO IS NOT NULL AND
-          SSO IS NOT NULL
+          BW_DOC IS NOT NULL AND
+          BW_CYC IS NOT NULL AND
+          BV_SEO IS NOT NULL AND
+          BW_SSO IS NOT NULL
     ) all_statuses
     LEFT OUTER JOIN
       `{project_id}.{base_dataset}.state_supervision_sentence` supervision_sentences
