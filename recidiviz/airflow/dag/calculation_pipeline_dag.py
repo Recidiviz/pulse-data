@@ -95,5 +95,4 @@ with models.DAG(dag_id="{}_calculation_pipeline_dag".format(project_id),
                     calculation_pipeline >> state_export
                     calculation_pipeline >> covid_export
 
-            # TODO(#5226): Re-enable when a strategy for handling migrated columns has been found.
-            # ingest_metadata_export = trigger_export_operator('INGEST_METADATA')
+            ingest_metadata_export = trigger_export_operator('INGEST_METADATA')
