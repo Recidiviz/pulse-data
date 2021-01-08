@@ -121,6 +121,10 @@ def _parse_table(_, filename: str) -> pd.DataFrame:
         # This is a typo in several reports
         if '12/' in df['Federal Inmates'].values:
             df['Federal Inmates'] = df['Federal Inmates'].replace({'12/': '12'})
+        if 'yo' in df['Federal Inmates'].values:
+            df['Federal Inmates'] = df['Federal Inmates'].replace({'yo': '0'})
+        if 'pe' in df['Federal Inmates'].values:
+            df['Federal Inmates'] = df['Federal Inmates'].replace({'pe': '0'})
 
         # Cast everything to int before summing below
         df = df.fillna(0)
