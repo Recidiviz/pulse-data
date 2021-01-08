@@ -17,7 +17,7 @@
 """Supervision metrics we calculate."""
 
 from datetime import date
-from typing import Any, Dict, Optional, cast
+from typing import Any, Dict, Optional, cast, List
 
 import attr
 
@@ -44,7 +44,6 @@ class SupervisionMetricType(RecidivizMetricType):
     SUPERVISION_OUT_OF_STATE_POPULATION = 'SUPERVISION_OUT_OF_STATE_POPULATION'
     SUPERVISION_REVOCATION = 'SUPERVISION_REVOCATION'
     SUPERVISION_REVOCATION_ANALYSIS = 'SUPERVISION_REVOCATION_ANALYSIS'
-    SUPERVISION_REVOCATION_VIOLATION_TYPE_ANALYSIS = 'SUPERVISION_REVOCATION_VIOLATION_TYPE_ANALYSIS'
     SUPERVISION_START = 'SUPERVISION_START'
     SUPERVISION_SUCCESS = 'SUPERVISION_SUCCESS'
     SUPERVISION_SUCCESSFUL_SENTENCE_DAYS_SERVED = 'SUPERVISION_SUCCESSFUL_SENTENCE_DAYS_SERVED'
@@ -247,6 +246,12 @@ class SupervisionRevocationAnalysisMetric(SupervisionRevocationMetric, PersonLev
     # number of each of the represented types separated by a semicolon
     violation_history_description: Optional[str] = attr.ib(default=None)
 
+    # A list of a list of strings for each violation type and subtype recorded during the period leading up to the
+    # revocation. The elements of the outer list represent every StateSupervisionViolation that was reported in the
+    # period leading up to the revocation. Each inner list represents all of the violation types and conditions that
+    # were listed on the given violation.
+    violation_type_frequency_counter: Optional[List[List[str]]] = attr.ib(default=None)
+
     @staticmethod
     def build_from_metric_key_group(metric_key: Dict[str, Any], job_id: str) -> \
             Optional['SupervisionRevocationAnalysisMetric']:
@@ -260,55 +265,6 @@ class SupervisionRevocationAnalysisMetric(SupervisionRevocationMetric, PersonLev
 
         supervision_metric = cast(SupervisionRevocationAnalysisMetric,
                                   SupervisionRevocationAnalysisMetric.build_from_dictionary(metric_key))
-
-        return supervision_metric
-
-
-@attr.s
-class SupervisionRevocationViolationTypeAnalysisMetric(SupervisionMetric,
-                                                       ViolationTypeSeverityMetric,
-                                                       AssessmentMetric):
-    """Subclass of SupervisionRevocationMetric that contains information for
-    analysis of the frequency of violation types reported leading up to revocation."""
-
-    # Required characteristics
-
-    # The type of SupervisionMetric
-    metric_type: SupervisionMetricType = \
-        attr.ib(init=False, default=SupervisionMetricType.SUPERVISION_REVOCATION_VIOLATION_TYPE_ANALYSIS)
-
-    # The number of violations with this type recorded
-    count: int = attr.ib(default=None)
-
-    # The violation type or subtype
-    violation_count_type: str = attr.ib(default=None)
-
-    # Optional characteristics
-
-    # The StateSupervisionViolationResponseRevocationType enum for the type of revocation of supervision that this
-    # metric describes
-    revocation_type: Optional[StateSupervisionViolationResponseRevocationType] = attr.ib(default=None)
-
-    # StateSupervisionViolationType enum for the type of violation that eventually caused the revocation of supervision
-    source_violation_type: Optional[StateSupervisionViolationType] = attr.ib(default=None)
-
-    @staticmethod
-    def build_from_metric_key_group(metric_key: Dict[str, Any],
-                                    job_id: str) -> \
-            Optional['SupervisionRevocationViolationTypeAnalysisMetric']:
-        """Builds a SupervisionRevocationViolationTypeAnalysisMetric object from the given
-         arguments.
-        """
-
-        if not metric_key:
-            raise ValueError("The metric_key is empty.")
-
-        metric_key['job_id'] = job_id
-        metric_key['created_on'] = date.today()
-
-        supervision_metric = cast(SupervisionRevocationViolationTypeAnalysisMetric,
-                                  SupervisionRevocationViolationTypeAnalysisMetric.
-                                  build_from_dictionary(metric_key))
 
         return supervision_metric
 

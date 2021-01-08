@@ -25,9 +25,9 @@ from recidiviz.calculator.pipeline.recidivism.metrics import ReincarcerationReci
     ReincarcerationRecidivismRateMetric
 from recidiviz.calculator.pipeline.supervision.metrics import \
     SupervisionPopulationMetric, SupervisionRevocationMetric, SupervisionRevocationAnalysisMetric, \
-    SupervisionRevocationViolationTypeAnalysisMetric, SupervisionSuccessMetric, \
-    SuccessfulSupervisionSentenceDaysServedMetric, SupervisionCaseComplianceMetric, SupervisionTerminationMetric, \
-    SupervisionStartMetric, SupervisionOutOfStatePopulationMetric, SupervisionDowngradeMetric
+    SupervisionSuccessMetric, SuccessfulSupervisionSentenceDaysServedMetric, SupervisionCaseComplianceMetric,\
+    SupervisionTerminationMetric, SupervisionStartMetric, SupervisionOutOfStatePopulationMetric, \
+    SupervisionDowngradeMetric
 from recidiviz.calculator.pipeline.utils.metric_utils import RecidivizMetric
 
 # The maximum number days of output that should be stored in a dataflow metrics table before being moved to cold storage
@@ -56,7 +56,6 @@ DATAFLOW_METRICS_TO_TABLES: Dict[Type[RecidivizMetric], str] = {
     SupervisionPopulationMetric: 'supervision_population_metrics',
     SupervisionRevocationMetric: 'supervision_revocation_metrics',
     SupervisionRevocationAnalysisMetric: 'supervision_revocation_analysis_metrics',
-    SupervisionRevocationViolationTypeAnalysisMetric: 'supervision_revocation_violation_type_analysis_metrics',
     SupervisionStartMetric: 'supervision_start_metrics',
     SupervisionSuccessMetric: 'supervision_success_metrics',
     SuccessfulSupervisionSentenceDaysServedMetric: 'successful_supervision_sentence_days_served_metrics',
