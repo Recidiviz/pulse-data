@@ -19,7 +19,6 @@ import itertools
 from typing import Sequence
 
 from recidiviz.big_query.big_query_view import BigQueryViewBuilder
-from recidiviz.ingest.views.column_enumerator import COLUMN_ENUMERATOR_VIEW_BUILDER
 from recidiviz.ingest.views.enum_counter import StateTableEnumCounterBigQueryViewCollector
 from recidiviz.ingest.views.non_enum_counter import StateTableNonEnumCounterBigQueryViewCollector
 from recidiviz.ingest.views.state_person_counter import StatePersonBigQueryViewCollector
@@ -29,7 +28,6 @@ INGEST_METADATA_BUILDERS: Sequence[BigQueryViewBuilder] = list(itertools.chain.f
     StateTableEnumCounterBigQueryViewCollector().collect_view_builders(),
     StateTableNonEnumCounterBigQueryViewCollector().collect_view_builders(),
     StatePersonBigQueryViewCollector().collect_view_builders(),
-    [COLUMN_ENUMERATOR_VIEW_BUILDER]
 )))
 
 VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE: Sequence[BigQueryViewBuilder] = INGEST_METADATA_BUILDERS

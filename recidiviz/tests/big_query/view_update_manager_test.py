@@ -55,9 +55,16 @@ class ViewManagerTest(unittest.TestCase):
             {'view_id': 'my_fake_view', 'view_query': 'SELECT NULL LIMIT 0', 'materialized_view_table_id': 'table_id'},
             {'view_id': 'my_other_fake_view', 'view_query': 'SELECT NULL LIMIT 0'},
         ]
-        mock_view_builders = [SimpleBigQueryViewBuilder(
-            dataset_id=_DATASET_NAME, view_query_template='a', should_materialize=False, **view)
-            for view in sample_views]
+        mock_view_builders = [
+            SimpleBigQueryViewBuilder(
+                dataset_id=_DATASET_NAME,
+                view_query_template='a',
+                should_materialize=False,
+                should_build_predicate=None,
+                **view,
+            )
+            for view in sample_views
+        ]
 
         self.mock_client.dataset_ref_for_id.return_value = dataset
 
@@ -116,9 +123,16 @@ class ViewManagerTest(unittest.TestCase):
             {'view_id': 'my_fake_view', 'view_query': 'SELECT NULL LIMIT 0', 'materialized_view_table_id': 'table_id'},
             {'view_id': 'my_other_fake_view', 'view_query': 'SELECT NULL LIMIT 0'},
         ]
-        mock_view_builders = [SimpleBigQueryViewBuilder(
-            dataset_id=_DATASET_NAME, view_query_template='a', should_materialize=False, **view)
-            for view in sample_views]
+        mock_view_builders = [
+            SimpleBigQueryViewBuilder(
+                dataset_id=_DATASET_NAME,
+                view_query_template='a',
+                should_materialize=False,
+                should_build_predicate=None,
+                **view,
+            )
+            for view in sample_views
+        ]
 
         self.mock_client.dataset_ref_for_id.return_value = dataset
 
