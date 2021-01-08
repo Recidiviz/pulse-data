@@ -84,6 +84,7 @@ class Region:
             cron job /scraper/stop.
         stripe: (string) Stripe to which this region belongs to. This is used
             further divide up a timezone
+        facility_id: (string) Default facility ID for region
     """
 
     region_code: str = attr.ib()
@@ -103,6 +104,7 @@ class Region:
     is_stoppable: Optional[bool] = attr.ib(default=False)
     is_direct_ingest: Optional[bool] = attr.ib(default=False)
     stripe: Optional[str] = attr.ib(default="0")
+    facility_id: Optional[str] = attr.ib(default=None)
 
     # TODO(#3162): Once SQL preprocessing flow is enabled for all direct ingest regions, delete these configs
     raw_vs_ingest_file_name_differentiation_enabled_env = attr.ib(default=None)
@@ -115,6 +117,8 @@ class Region:
                 'Only one of `queue` and `shared_queue` can be set.')
         if self.environment not in {*environment.GAE_ENVIRONMENTS, None}:
             raise ValueError('Invalid environment: {}'.format(self.environment))
+        if self.facility_id and len(self.facility_id) != 16:
+            raise ValueError(f'Improperly formatted FID [{self.facility_id}], should be length 16')
 
     def get_ingestor_class(self):
         """Retrieve the class for the ingest object for a particular region
