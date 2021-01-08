@@ -25,7 +25,7 @@ from freezegun import freeze_time
 from recidiviz.calculator.pipeline.supervision import calculator
 from recidiviz.calculator.pipeline.supervision.metrics import \
     SupervisionMetricType, SupervisionRevocationMetric, SupervisionCaseComplianceMetric, SupervisionPopulationMetric, \
-    SupervisionRevocationAnalysisMetric, SupervisionRevocationViolationTypeAnalysisMetric, SupervisionSuccessMetric, \
+    SupervisionRevocationAnalysisMetric, SupervisionSuccessMetric, \
     SuccessfulSupervisionSentenceDaysServedMetric, SupervisionTerminationMetric, SupervisionDowngradeMetric
 from recidiviz.calculator.pipeline.supervision.supervision_case_compliance import SupervisionCaseCompliance
 from recidiviz.calculator.pipeline.supervision.supervision_time_bucket import \
@@ -1391,8 +1391,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
 
         expected_combinations_count = expected_metric_combos_count(
             supervision_time_buckets,
-            num_relevant_periods=len(calculator_utils.METRIC_PERIOD_MONTHS),
-            include_revocation_violation_type_analysis_dimensions=True
+            num_relevant_periods=len(calculator_utils.METRIC_PERIOD_MONTHS)
         )
 
         self.assertEqual(expected_combinations_count, len(supervision_combinations))
@@ -1652,7 +1651,6 @@ class TestMapSupervisionCombinations(unittest.TestCase):
             SupervisionMetricType.SUPERVISION_SUCCESSFUL_SENTENCE_DAYS_SERVED: False,
             SupervisionMetricType.SUPERVISION_REVOCATION: False,
             SupervisionMetricType.SUPERVISION_REVOCATION_ANALYSIS: False,
-            SupervisionMetricType.SUPERVISION_REVOCATION_VIOLATION_TYPE_ANALYSIS: False,
             SupervisionMetricType.SUPERVISION_POPULATION: False
         }
 
@@ -1730,7 +1728,6 @@ class TestMapSupervisionCombinations(unittest.TestCase):
             SupervisionMetricType.SUPERVISION_SUCCESSFUL_SENTENCE_DAYS_SERVED: False,
             SupervisionMetricType.SUPERVISION_REVOCATION: False,
             SupervisionMetricType.SUPERVISION_REVOCATION_ANALYSIS: False,
-            SupervisionMetricType.SUPERVISION_REVOCATION_VIOLATION_TYPE_ANALYSIS: False,
             SupervisionMetricType.SUPERVISION_POPULATION: False
         }
 
@@ -1809,7 +1806,6 @@ class TestMapSupervisionCombinations(unittest.TestCase):
             SupervisionMetricType.SUPERVISION_SUCCESSFUL_SENTENCE_DAYS_SERVED: True,
             SupervisionMetricType.SUPERVISION_REVOCATION: False,
             SupervisionMetricType.SUPERVISION_REVOCATION_ANALYSIS: False,
-            SupervisionMetricType.SUPERVISION_REVOCATION_VIOLATION_TYPE_ANALYSIS: False,
             SupervisionMetricType.SUPERVISION_POPULATION: False
         }
 
@@ -1888,7 +1884,6 @@ class TestMapSupervisionCombinations(unittest.TestCase):
             SupervisionMetricType.SUPERVISION_SUCCESSFUL_SENTENCE_DAYS_SERVED: False,
             SupervisionMetricType.SUPERVISION_REVOCATION: True,
             SupervisionMetricType.SUPERVISION_REVOCATION_ANALYSIS: False,
-            SupervisionMetricType.SUPERVISION_REVOCATION_VIOLATION_TYPE_ANALYSIS: False,
             SupervisionMetricType.SUPERVISION_POPULATION: False
         }
 
@@ -1977,7 +1972,6 @@ class TestMapSupervisionCombinations(unittest.TestCase):
             SupervisionMetricType.SUPERVISION_SUCCESSFUL_SENTENCE_DAYS_SERVED: False,
             SupervisionMetricType.SUPERVISION_REVOCATION: False,
             SupervisionMetricType.SUPERVISION_REVOCATION_ANALYSIS: True,
-            SupervisionMetricType.SUPERVISION_REVOCATION_VIOLATION_TYPE_ANALYSIS: False,
             SupervisionMetricType.SUPERVISION_POPULATION: False
         }
 
@@ -2003,106 +1997,6 @@ class TestMapSupervisionCombinations(unittest.TestCase):
                 _combination, 'metric_type',
                 SupervisionMetricType.SUPERVISION_REVOCATION_ANALYSIS)
             for _combination, value in supervision_combinations)
-
-    def test_map_supervision_combinations_only_revocation_violation_type_analysis(self):
-        person = StatePerson.new_with_defaults(state_code='US_XX', person_id=12345,
-                                               birthdate=date(1984, 8, 31),
-                                               gender=Gender.FEMALE)
-
-        person_external_id = StatePersonExternalId.new_with_defaults(
-            external_id='SID1341',
-            id_type='US_MO_DOC',
-            state_code='US_XX'
-        )
-
-        person.external_ids = [person_external_id]
-
-        race = StatePersonRace.new_with_defaults(state_code='US_XX', race=Race.WHITE)
-
-        person.races = [race]
-
-        ethnicity = StatePersonEthnicity.new_with_defaults(state_code='US_XX', ethnicity=Ethnicity.NOT_HISPANIC)
-
-        person.ethnicities = [ethnicity]
-
-        termination_bucket = SupervisionTerminationBucket(
-            state_code='US_XX',
-            year=2010,
-            month=1,
-            bucket_date=date(2010, 1, 13),
-            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
-            assessment_score=11,
-            assessment_type=StateAssessmentType.LSIR,
-            termination_reason=
-            StateSupervisionPeriodTerminationReason.DISCHARGE,
-            assessment_score_change=-9
-        )
-
-        supervision_time_buckets = [
-            ProjectedSupervisionCompletionBucket(
-                state_code='US_XX', year=2010, month=3,
-                bucket_date=date(2010, 3, 31),
-                supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
-                successful_completion=True, supervising_officer_external_id='officer45',
-                supervising_district_external_id='district5'
-            ),
-            termination_bucket,
-            RevocationReturnSupervisionTimeBucket(
-                state_code='US_XX', year=2010, month=1,
-                bucket_date=date(2010, 1, 1),
-                is_on_supervision_last_day_of_month=False,
-                supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
-                most_severe_violation_type=StateSupervisionViolationType.FELONY,
-                most_severe_response_decision=StateSupervisionViolationResponseDecision.REVOCATION,
-                response_count=3,
-                violation_history_description='1fel;2misd',
-                violation_type_frequency_counter=[
-                    ['FELONY', 'LAW'],
-                    ['MISD', 'WEA', 'EMP'],
-                    ['MISD', 'DRG', 'ASC']
-                ]
-            ),
-            NonRevocationReturnSupervisionTimeBucket(
-                state_code='US_XX',
-                year=2010, month=2,
-                bucket_date=date(2010, 2, 2),
-                is_on_supervision_last_day_of_month=False,
-                supervision_type=StateSupervisionPeriodSupervisionType.PAROLE)
-        ]
-
-        inclusions_dict = {
-            SupervisionMetricType.SUPERVISION_TERMINATION: False,
-            SupervisionMetricType.SUPERVISION_SUCCESS: False,
-            SupervisionMetricType.SUPERVISION_SUCCESSFUL_SENTENCE_DAYS_SERVED: False,
-            SupervisionMetricType.SUPERVISION_REVOCATION: False,
-            SupervisionMetricType.SUPERVISION_REVOCATION_ANALYSIS: False,
-            SupervisionMetricType.SUPERVISION_REVOCATION_VIOLATION_TYPE_ANALYSIS: True,
-            SupervisionMetricType.SUPERVISION_POPULATION: False
-        }
-
-        supervision_combinations = calculator.map_supervision_combinations(
-            person, supervision_time_buckets, inclusions_dict,
-            calculation_end_month='2010-12',
-            calculation_month_count=12,
-            person_metadata=_DEFAULT_PERSON_METADATA
-        )
-
-        expected_combinations_count = expected_metric_combos_count(
-            supervision_time_buckets,
-            include_all_metrics=False,
-            include_revocation_violation_type_analysis_dimensions=True,
-            metric_to_include=SupervisionMetricType.SUPERVISION_REVOCATION_VIOLATION_TYPE_ANALYSIS
-        )
-
-        self.assertEqual(expected_combinations_count, len(supervision_combinations))
-        assert all(value == 1 for _combination, value in supervision_combinations)
-        assert all(combo_has_enum_value_for_key(_combination, 'metric_type',
-                                                SupervisionMetricType.SUPERVISION_REVOCATION_VIOLATION_TYPE_ANALYSIS)
-                   for _combination, value in supervision_combinations)
-        assert all(_combination.get('violation_count_type') is not None
-                   for _combination, value in supervision_combinations)
-        assert all(_combination.get('person_id') is None for _combination, value in supervision_combinations)
-        assert all('person_id' not in _combination.keys() for _combination, value in supervision_combinations)
 
     def test_map_supervision_combinations_only_population(self):
         person = StatePerson.new_with_defaults(state_code='US_XX', person_id=12345,
@@ -2162,7 +2056,6 @@ class TestMapSupervisionCombinations(unittest.TestCase):
             SupervisionMetricType.SUPERVISION_SUCCESSFUL_SENTENCE_DAYS_SERVED: False,
             SupervisionMetricType.SUPERVISION_REVOCATION: False,
             SupervisionMetricType.SUPERVISION_REVOCATION_ANALYSIS: False,
-            SupervisionMetricType.SUPERVISION_REVOCATION_VIOLATION_TYPE_ANALYSIS: False,
             SupervisionMetricType.SUPERVISION_POPULATION: True
         }
 
@@ -2349,7 +2242,6 @@ class TestMapSupervisionCombinations(unittest.TestCase):
             SupervisionMetricType.SUPERVISION_SUCCESSFUL_SENTENCE_DAYS_SERVED: True,
             SupervisionMetricType.SUPERVISION_REVOCATION: False,
             SupervisionMetricType.SUPERVISION_REVOCATION_ANALYSIS: False,
-            SupervisionMetricType.SUPERVISION_REVOCATION_VIOLATION_TYPE_ANALYSIS: False,
             SupervisionMetricType.SUPERVISION_POPULATION: False
         }
 
@@ -2464,7 +2356,6 @@ class TestMapSupervisionCombinations(unittest.TestCase):
             SupervisionMetricType.SUPERVISION_SUCCESSFUL_SENTENCE_DAYS_SERVED: False,
             SupervisionMetricType.SUPERVISION_REVOCATION: False,
             SupervisionMetricType.SUPERVISION_REVOCATION_ANALYSIS: False,
-            SupervisionMetricType.SUPERVISION_REVOCATION_VIOLATION_TYPE_ANALYSIS: False,
             SupervisionMetricType.SUPERVISION_POPULATION: False,
             SupervisionMetricType.SUPERVISION_OUT_OF_STATE_POPULATION: True,
         }
@@ -2525,7 +2416,6 @@ class TestMapSupervisionCombinations(unittest.TestCase):
             SupervisionMetricType.SUPERVISION_SUCCESSFUL_SENTENCE_DAYS_SERVED: False,
             SupervisionMetricType.SUPERVISION_REVOCATION: False,
             SupervisionMetricType.SUPERVISION_REVOCATION_ANALYSIS: False,
-            SupervisionMetricType.SUPERVISION_REVOCATION_VIOLATION_TYPE_ANALYSIS: False,
             SupervisionMetricType.SUPERVISION_POPULATION: False,
             SupervisionMetricType.SUPERVISION_OUT_OF_STATE_POPULATION: True,
         }
@@ -2729,9 +2619,11 @@ class TestCharacteristicCombinations(unittest.TestCase):
             bucket_date=date(2018, 3, 1),
             is_on_supervision_last_day_of_month=False,
             supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
-            response_count=5,
-            most_severe_violation_type=StateSupervisionViolationType.ABSCONDED,
-            most_severe_response_decision=StateSupervisionViolationResponseDecision.REVOCATION
+            response_count=2,
+            most_severe_violation_type=StateSupervisionViolationType.FELONY,
+            most_severe_response_decision=StateSupervisionViolationResponseDecision.REVOCATION,
+            violation_type_frequency_counter=[['TECHNICAL'], ['FELONY']],
+            violation_history_description='1fel;1tech'
         )
 
         characteristics_dict = calculator.characteristics_dict(
@@ -2748,42 +2640,12 @@ class TestCharacteristicCombinations(unittest.TestCase):
             'race': [Race.WHITE, Race.BLACK],
             'ethnicity': [Ethnicity.NOT_HISPANIC],
             'person_id': 12345,
-            'response_count': 5,
-            'most_severe_violation_type': StateSupervisionViolationType.ABSCONDED,
-            'most_severe_response_decision': StateSupervisionViolationResponseDecision.REVOCATION,
-            'prioritized_race_or_ethnicity': _DEFAULT_PERSON_METADATA.prioritized_race_or_ethnicity
-        }
-
-        self.assertEqual(expected_output, characteristics_dict)
-
-    def test_characteristic_combinations_revocation_violation_type_analysis(self):
-        supervision_time_bucket = RevocationReturnSupervisionTimeBucket(
-            state_code='US_XX', year=2018, month=3,
-            bucket_date=date(2018, 3, 1),
-            is_on_supervision_last_day_of_month=False,
-            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
-            response_count=5,
-            most_severe_violation_type=StateSupervisionViolationType.FELONY,
-            most_severe_response_decision=StateSupervisionViolationResponseDecision.REVOCATION,
-            violation_history_description='1fel;2misd',
-            violation_type_frequency_counter=[
-                ['FELONY', 'LAW'],
-                ['MISD', 'WEA', 'EMP'],
-                ['MISD', 'DRG', 'ASC']
-            ]
-        )
-
-        characteristics_dict = calculator.characteristics_dict(
-            self.person, supervision_time_bucket,
-            metric_class=SupervisionRevocationViolationTypeAnalysisMetric,
-            person_metadata=_DEFAULT_PERSON_METADATA
-        )
-
-        expected_output = {
-            'assessment_score_bucket': 'NOT_ASSESSED',
-            'supervision_type': StateSupervisionPeriodSupervisionType.PAROLE,
-            'response_count': 5,
+            'response_count': 2,
             'most_severe_violation_type': StateSupervisionViolationType.FELONY,
+            'most_severe_response_decision': StateSupervisionViolationResponseDecision.REVOCATION,
+            'violation_history_description': '1fel;1tech',
+            'violation_type_frequency_counter': [['TECHNICAL'], ['FELONY']],
+            'prioritized_race_or_ethnicity': _DEFAULT_PERSON_METADATA.prioritized_race_or_ethnicity
         }
 
         self.assertEqual(expected_output, characteristics_dict)
@@ -2914,17 +2776,14 @@ class TestCharacteristicCombinations(unittest.TestCase):
 
 def expected_metric_combos_count(
         supervision_time_buckets: List[SupervisionTimeBucket],
-        with_revocation_dimensions: bool = True,
         with_methodologies: bool = True,
         include_all_metrics: bool = True,
         metric_to_include: SupervisionMetricType = None,
         duplicated_months_mixed_success: bool = False,
         num_relevant_periods: int = 0,
-        include_revocation_violation_type_analysis_dimensions: bool = False,
         out_of_state_population: bool = False) -> int:
     """Calculates the expected number of characteristic combinations given the supervision time buckets,
     and the metrics and methodologies that should be included in the counts."""
-    combos_for_person = 1
 
     # Some test cases above use a different call that doesn't take methodology into account as a dimension
     methodology_multiplier = 1
@@ -3007,30 +2866,6 @@ def expected_metric_combos_count(
 
     num_supervision_downgrade_buckets = len(supervision_downgrade_buckets)
 
-    revocation_violation_type_analysis_dimension_multiplier = 1
-    num_violation_types = 0
-    if with_revocation_dimensions and include_revocation_violation_type_analysis_dimensions and revocation_buckets:
-        first_revocation_bucket = revocation_buckets[0]
-
-        if first_revocation_bucket.violation_type_frequency_counter:
-            for violation_type_list in first_revocation_bucket.violation_type_frequency_counter:
-                num_violation_types += len(violation_type_list) + 1
-
-    revocation_violation_type_analysis_combos = 0
-
-    if include_revocation_violation_type_analysis_dimensions:
-        revocation_violation_type_analysis_combos += (
-            combos_for_person * methodology_multiplier *
-            num_revocation_buckets * revocation_violation_type_analysis_dimension_multiplier *
-            num_violation_types
-        )
-
-        if num_relevant_periods > 0:
-            revocation_violation_type_analysis_combos += (
-                combos_for_person * num_revocation_buckets *
-                revocation_violation_type_analysis_dimension_multiplier * num_violation_types * num_relevant_periods
-            )
-
     # Person-level metrics for the metric types that limit to only person-output
     supervision_population_combos = (num_population_buckets +
                                      (num_population_buckets - num_duplicated_population_buckets))
@@ -3075,7 +2910,6 @@ def expected_metric_combos_count(
                    supervision_successful_sentence_length_combos +
                    supervision_termination_combos +
                    supervision_revocation_analysis_combos +
-                   revocation_violation_type_analysis_combos +
                    supervision_compliance_combos +
                    supervision_out_of_state_population_combos +
                    supervision_downgrade_combos)
@@ -3095,8 +2929,6 @@ def expected_metric_combos_count(
             return int(supervision_revocation_combos)
         if metric_to_include == SupervisionMetricType.SUPERVISION_REVOCATION_ANALYSIS:
             return int(supervision_revocation_analysis_combos)
-        if metric_to_include == SupervisionMetricType.SUPERVISION_REVOCATION_VIOLATION_TYPE_ANALYSIS:
-            return int(revocation_violation_type_analysis_combos)
         if metric_to_include == SupervisionMetricType.SUPERVISION_POPULATION:
             return int(supervision_population_combos)
         if metric_to_include == SupervisionMetricType.SUPERVISION_OUT_OF_STATE_POPULATION:

@@ -56,6 +56,7 @@ REVOCATIONS_MATRIX_BY_PERSON_QUERY_TEMPLATE = \
             officer,
             officer_recommendation,
             violation_record,
+            violation_type_frequency_counter,
             ROW_NUMBER() OVER (PARTITION BY state_code, metric_period_months, person_id
                                ORDER BY revocation_admission_date DESC,
                                supervision_type, supervision_level, case_type, level_1_supervision_location,
@@ -83,7 +84,8 @@ REVOCATIONS_MATRIX_BY_PERSON_QUERY_TEMPLATE = \
         {state_specific_assessment_bucket},
         IFNULL(prioritized_race_or_ethnicity, 'EXTERNAL_UNKNOWN') AS prioritized_race_or_ethnicity,
         officer_recommendation,
-        violation_record
+        violation_record,
+        violation_type_frequency_counter
     FROM revocations,
     {level_1_supervision_location_dimension},
     {level_2_supervision_location_dimension},

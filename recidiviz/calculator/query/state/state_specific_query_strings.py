@@ -72,28 +72,29 @@ def state_specific_officer_recommendation() -> str:
       END AS officer_recommendation"""
 
 
-def state_specific_violation_count_type_grouping() -> str:
-    return """CASE WHEN state_code = 'US_MO' AND violation_count_type = 'LAW_CITATION' THEN 'MISDEMEANOR'
-              ELSE violation_count_type
-        END as violation_count_type"""
+def state_specific_violation_type_entry() -> str:
+    return """CASE WHEN state_code = 'US_MO' AND violation_type_entry = 'LAW_CITATION' THEN 'MISDEMEANOR'
+              ELSE violation_type_entry
+        END as violation_type_entry"""
 
 
-def state_specific_violation_count_type_categories() -> str:
+def state_specific_violation_type_entry_categories() -> str:
     return """-- US_MO categories --
-        SUM(IF(state_code = 'US_MO' AND violation_count_type = 'ASC', count, 0)) AS association_count,
-        SUM(IF(state_code = 'US_MO' AND violation_count_type = 'DIR', count, 0)) AS directive_count,
-        SUM(IF(state_code = 'US_MO' AND violation_count_type = 'EMP', count, 0)) AS employment_count,
-        SUM(IF(state_code = 'US_MO' AND violation_count_type = 'INT', count, 0)) AS intervention_fee_count,
-        SUM(IF(state_code = 'US_MO' AND violation_count_type = 'RES', count, 0)) AS residency_count,
-        SUM(IF(state_code = 'US_MO' AND violation_count_type = 'SPC', count, 0)) AS special_count,
-        SUM(IF(state_code = 'US_MO' AND violation_count_type = 'SUP', count, 0)) AS supervision_strategy_count,
-        SUM(IF(state_code = 'US_MO' AND violation_count_type = 'TRA', count, 0)) AS travel_count,
-        SUM(IF(state_code = 'US_MO' AND violation_count_type = 'WEA', count, 0)) AS weapon_count,
-        -- US_PA categories --
-        SUM(IF(state_code = 'US_PA' AND violation_count_type = 'ELEC_MONITORING', count, 0)) as elec_monitoring_count,
-        SUM(IF(state_code = 'US_PA' AND violation_count_type = 'LOW_TECH', count, 0)) as low_tech_count,
-        SUM(IF(state_code = 'US_PA' AND violation_count_type = 'MED_TECH', count, 0)) as med_tech_count,
-        SUM(IF(state_code = 'US_PA' AND violation_count_type = 'HIGH_TECH', count, 0)) as high_tech_count"""
+      COUNTIF(state_code = 'US_MO' AND violation_type_entry = 'ASC') AS association_count,
+      COUNTIF(state_code = 'US_MO' AND violation_type_entry = 'DIR') AS directive_count,
+      COUNTIF(state_code = 'US_MO' AND violation_type_entry = 'EMP') AS employment_count,
+      COUNTIF(state_code = 'US_MO' AND violation_type_entry = 'INT') AS intervention_fee_count,
+      COUNTIF(state_code = 'US_MO' AND violation_type_entry = 'RES') AS residency_count,
+      COUNTIF(state_code = 'US_MO' AND violation_type_entry = 'SPC') AS special_count,
+      COUNTIF(state_code = 'US_MO' AND violation_type_entry = 'SUP') AS supervision_strategy_count,
+      COUNTIF(state_code = 'US_MO' AND violation_type_entry = 'TRA') AS travel_count,
+      COUNTIF(state_code = 'US_MO' AND violation_type_entry = 'WEA') AS weapon_count,
+      -- US_PA categories --
+      COUNTIF(state_code = 'US_PA' AND violation_type_entry = 'ELEC_MONITORING') as elec_monitoring_count,
+      COUNTIF(state_code = 'US_PA' AND violation_type_entry = 'LOW_TECH') as low_tech_count,
+      COUNTIF(state_code = 'US_PA' AND violation_type_entry = 'MED_TECH') as med_tech_count,
+      COUNTIF(state_code = 'US_PA' AND violation_type_entry = 'HIGH_TECH') as high_tech_count,
+    """
 
 
 def state_specific_supervision_level() -> str:
