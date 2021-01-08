@@ -23,22 +23,40 @@ for use in the emails.
 
 import json
 import logging
-from typing import List, Optional
+from typing import List, Optional, Tuple
 
-from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
-from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 import recidiviz.reporting.email_generation as email_generation
 import recidiviz.reporting.email_reporting_utils as utils
+from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
+from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.reporting.context.available_context import get_report_context
 from recidiviz.reporting.recipient import Recipient
 from recidiviz.reporting.region_codes import InvalidRegionCodeException, REGION_CODES
 
 
+def filter_recipients(recipients: List[Recipient],
+                      region_code: Optional[str] = None,
+                      email_allowlist: Optional[List[str]] = None) -> List[Recipient]:
+    if region_code is not None and region_code not in REGION_CODES:
+        raise InvalidRegionCodeException()
+
+    return [
+        recipient
+        for recipient in recipients
+        if all([
+            recipient.district == REGION_CODES[region_code] if region_code is not None else True,
+            recipient.email_address in email_allowlist if email_allowlist is not None else True,
+        ])
+    ]
+
+
 def start(state_code: str,
           report_type: str,
+          batch_id: Optional[str] = None,
           test_address: Optional[str] = None,
           region_code: Optional[str] = None,
-          message_body: Optional[str] = None) -> str:
+          email_allowlist: Optional[List[str]] = None,
+          message_body: Optional[str] = None) -> Tuple[int, int]:
     """Begins data retrieval for a new batch of email reports.
 
     Start with collection of data from the calculation pipelines.
@@ -49,21 +67,26 @@ def start(state_code: str,
     Args:
         state_code: The state for which to generate reports
         report_type: The type of report to send
+        batch_id: The batch id to save the newly started batch to
         test_address: Optional email address for which to generate all emails
         region_code: Optional region code which specifies the sub-region of the state in which to
             generate reports. If empty, this generates reports for all regions.
+        email_allowlist: Optional list of email_addresses to generate for; all other recipients are skipped
+        recipient_emails: Optional list of email_addresses to generate for; all other recipients are skipped
         message_body: Optional override for the message body in the email.
 
-    Returns: The batch id for the newly started batch
+    Returns: Tuple containing:
+        - Number of failed email generations
+        - Number of successful email generations
     """
-    batch_id = utils.generate_batch_id()
+    if batch_id is None:
+        batch_id = utils.generate_batch_id()
+
     logging.info("New batch started for %s (region: %s) and %s. Batch id = %s",
                  state_code, region_code, report_type, batch_id)
 
     recipients: List[Recipient] = retrieve_data(state_code, report_type, batch_id)
-
-    if region_code is not None and region_code not in REGION_CODES:
-        raise InvalidRegionCodeException()
+    recipients = filter_recipients(recipients, region_code, email_allowlist)
 
     if test_address:
         logging.info("Overriding batch emails with test address: %s", test_address)
@@ -81,14 +104,20 @@ def start(state_code: str,
             for recipient in recipients
         ]
 
+    failure_count = 0
+    success_count = 0
+
     for recipient in recipients:
-        if region_code is not None and recipient.district != REGION_CODES[region_code]:
-            continue
+        try:
+            report_context = get_report_context(state_code, report_type, recipient)
+            email_generation.generate(report_context)
+        except Exception as e:
+            failure_count += 1
+            logging.error('Failed to generate report email for %s %s', recipient, e)
+        else:
+            success_count += 1
 
-        report_context = get_report_context(state_code, report_type, recipient)
-        email_generation.generate(report_context)
-
-    return batch_id
+    return failure_count, success_count
 
 
 def retrieve_data(state_code: str, report_type: str, batch_id: str) -> List[Recipient]:
