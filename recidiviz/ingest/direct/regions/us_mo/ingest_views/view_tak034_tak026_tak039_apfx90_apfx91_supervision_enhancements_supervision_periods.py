@@ -84,7 +84,6 @@ WITH field_assignments_ce AS (
             IF(CE_EH != '0', LEAST(CE_HF, CE_EH), CE_HF) AS FLD_ASSN_BEG_DT,
             IF(CE_EH != '0', GREATEST(CE_HF, CE_EH), CE_EH)  AS FLD_ASSN_END_DT,
             CE_PLN AS LOC_ACRO,
-            SUBSTR(CE_PLN, 1,2) AS LOC_ACRO_TWO_LETTER
         FROM
             {{LBAKRDTA_TAK034}}
         -- We discard field assignments prior to 2000 due to unreliable data with a large number of overlapping periods
@@ -118,20 +117,7 @@ WITH field_assignments_ce AS (
                     ELSE FLD_ASSN_END_DT END
                 AS FLD_ASSN_END_DT
             ),
-            -- TODO(#4054): Use the RECIDIVIZ_REFERENCE_supervision_district_to_region table instead of this clause
-            CASE
-                WHEN (LOC_ACRO_TWO_LETTER IN ('EC', 'EP', '07', '08') OR LOC_ACRO = 'ERA') THEN 'EASTERN'
-                WHEN LOC_ACRO_TWO_LETTER IN ('03', '11', '16', '17', '18', '26', '38') THEN 'NORTHEAST'
-                WHEN LOC_ACRO_TWO_LETTER IN ('01', '04', '19', '24', '28', 'WN') THEN 'WESTERN'
-                WHEN LOC_ACRO_TWO_LETTER IN (
-                    '02', '05', '06', '20', '27', '29', '32', '34', '35', '39') THEN 'NORTH CENTRAL'
-                WHEN LOC_ACRO_TWO_LETTER IN ('09', '10', '13', '21', '30', '33', '42', '43', '44') THEN 'SOUTHWEST'
-                WHEN LOC_ACRO_TWO_LETTER IN (
-                    '12', '14', '15', '22', '23', '25', '31', '36', '37', '41') THEN 'SOUTHEAST'
-                WHEN LOC_ACRO = 'PPCMDCTR' THEN 'CENTRAL OFFICE'
-                WHEN LOC_ACRO IN ('SLCRC', 'TCSTL') THEN 'TCSTL'
-                ELSE 'UNCLASSED'
-            END AS REGION,
+            level_2_supervision_location_external_id AS REGION,
             ROW_NUMBER() OVER (
                 PARTITION BY DOC, CYC
                 ORDER BY
@@ -139,11 +125,15 @@ WITH field_assignments_ce AS (
                     FLD_ASSN_END_DT
             ) AS FIELD_ASSIGNMENT_SEQ_NUM
         FROM field_assignments_with_unique_date_spans
+        LEFT OUTER JOIN
+            {{RECIDIVIZ_REFERENCE_supervision_district_to_region}}
+        ON
+            LOC_ACRO = level_1_supervision_location_external_id
     ),
     field_assignments_with_valid_region AS (
         SELECT *
         FROM augmented_field_assignments
-        WHERE REGION != 'UNCLASSED'
+        WHERE REGION != 'UNCLASSIFIED_REGION'
     ),
     status_bw AS (
         SELECT
