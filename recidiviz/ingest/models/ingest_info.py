@@ -217,8 +217,8 @@ class Booking(IngestObject):
             self, booking_id=None, admission_date=None,
             admission_reason=None, projected_release_date=None,
             release_date=None, release_reason=None, custody_status=None,
-            facility=None, classification=None, total_bond_amount=None,
-            arrest=None, charges=None, holds=None):
+            facility=None, facility_id=None, classification=None,
+            total_bond_amount=None, arrest=None, charges=None, holds=None):
         self.booking_id: Optional[str] = booking_id
         self.admission_date: Optional[str] = admission_date
         self.admission_reason: Optional[str] = admission_reason
@@ -227,6 +227,7 @@ class Booking(IngestObject):
         self.release_reason: Optional[str] = release_reason
         self.custody_status: Optional[str] = custody_status
         self.facility: Optional[str] = facility
+        self.facility_id: Optional[str] = facility_id
         self.classification: Optional[str] = classification
         self.total_bond_amount: Optional[str] = total_bond_amount
 

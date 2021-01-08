@@ -26,6 +26,7 @@ from recidiviz.common.constants.county.booking import (
     ReleaseReason
 )
 from recidiviz.common.ingest_metadata import IngestMetadata
+from recidiviz.common.fid import validate_fid
 from recidiviz.persistence.ingest_info_converter.utils.converter_utils import (
     fn, parse_external_id)
 from recidiviz.persistence.ingest_info_converter.utils.enum_mappings \
@@ -63,6 +64,8 @@ def copy_fields_to_builder(booking_builder, proto, metadata):
     new.external_id = fn(parse_external_id, 'booking_id', proto)
     new.projected_release_date = fn(parse_date, 'projected_release_date', proto)
     new.facility = fn(normalize, 'facility', proto)
+    new.facility_id = fn(validate_fid, 'facility_id', proto,
+                             default=metadata.facility_id)
 
     # Inferred attributes
     new.admission_date, new.admission_date_inferred = \

@@ -17,6 +17,8 @@
 """Tests for converting bookings."""
 import unittest
 from datetime import date, datetime
+from mock import patch, Mock
+
 
 from recidiviz.common.constants.county.booking import (
     ReleaseReason,
@@ -196,3 +198,46 @@ class BookingConverterTest(unittest.TestCase):
             first_seen_time=_INGEST_TIME,
         )
         self.assertEqual(result, expected_result)
+
+    @patch('recidiviz.common.fid.fid_exists', Mock(return_value=True))
+    def testParseBooking_facilityId(self):
+        # Arrange
+        metadata = IngestMetadata.new_with_defaults(
+            ingest_time=_INGEST_TIME,
+        )
+
+        ingest_booking = ingest_info_pb2.Booking(
+            facility_id='1234567890123456'
+        )
+
+        # Act
+        booking.copy_fields_to_builder(self.subject, ingest_booking, metadata)
+        result = self.subject.build()
+
+        # Assert
+        expected_result = entities.Booking.new_with_defaults(
+            facility_id='1234567890123456',
+            admission_date=_INGEST_TIME.date(),
+            admission_date_inferred=True,
+            last_seen_time=_INGEST_TIME,
+            first_seen_time=_INGEST_TIME,
+            release_date=None,
+            release_date_inferred=None,
+            custody_status=CustodyStatus.PRESENT_WITHOUT_INFO,
+        )
+
+        self.assertEqual(result, expected_result)
+
+    @patch('recidiviz.common.fid.fid_exists', Mock(return_value=False))
+    def testParseBooking_facilityId_doesNotExist(self):
+        # Arrange
+        metadata = IngestMetadata.new_with_defaults(
+            ingest_time=_INGEST_TIME,
+        )
+
+        ingest_booking = ingest_info_pb2.Booking(
+            facility_id='1234567890123456' # invalid FID
+        )
+
+        with self.assertRaises(ValueError):
+            booking.copy_fields_to_builder(self.subject, ingest_booking, metadata)
