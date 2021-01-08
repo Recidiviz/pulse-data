@@ -243,6 +243,7 @@ class _BookingSharedColumns:
     custody_status = Column(custody_status, nullable=False)
     custody_status_raw_text = Column(String(255))
     facility = Column(String(255))
+    facility_id = Column(String(16), nullable=True)
     classification = Column(classification)
     classification_raw_text = Column(String(255))
 
@@ -250,10 +251,22 @@ class _BookingSharedColumns:
     def person_id(self):
         return Column(Integer, ForeignKey('person.person_id'), nullable=False)
 
+    @validates('facility_id')
+    def validate_facility_id(self, _, facility_id: str) -> str:
+        if facility_id and len(facility_id) != 16:
+            raise ValueError(
+                'Facility ID invalid length: {} characters, should be '
+                '16'.format(len(facility_id)))
+        return facility_id
 
 class Booking(JailsBase, _BookingSharedColumns):
     """Represents a booking in the SQL schema"""
     __tablename__ = 'booking'
+    __table_args__ = (
+        CheckConstraint(
+            'LENGTH(facility_id) = 16',
+            name='booking_facility_id_length_check'),
+    )
 
     booking_id = Column(Integer, primary_key=True)
     last_seen_time = Column(DateTime, nullable=False)
@@ -269,6 +282,11 @@ class BookingHistory(JailsBase,
                      HistoryTableSharedColumns):
     """Represents the historical state of a booking"""
     __tablename__ = 'booking_history'
+    __table_args__ = (
+        CheckConstraint(
+            'LENGTH(facility_id) = 16',
+            name='booking_history_facility_id_length_check'),
+    )
 
     # This primary key should NOT be used. It only exists because SQLAlchemy
     # requires every table to have a unique primary key.

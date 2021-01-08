@@ -530,7 +530,7 @@ def mock_region(region_code, queue_name=None, is_stoppable=False):
         names_file='names.txt',
         timezone='America/New_York',
         environment='production',
-        jurisdiction_id='jurisdiction_id',
+        jurisdiction_id='00000000', # must be 8 character numeric string
         is_stoppable=is_stoppable or False,
     )
 
