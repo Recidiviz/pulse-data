@@ -21,81 +21,8 @@ of Corrections data that we export to BQ for pre-processing.
 
 from typing import List, Tuple, Optional
 
-from recidiviz.calculator.query.state.dataset_config import STATIC_REFERENCE_TABLES_DATASET
 from recidiviz.ingest.direct.query_utils import output_sql_queries
 
-# The following reference table queries temporarily semi-duplicate the date-filtering queries below.
-US_MO_TAK025_SENTENCE_STATUS_XREF_QUERY = f"""
-/* DO NOT DROP THE RESULT OF THIS QUERY IN THE INGEST BUCKET. INSTEAD, UPLOAD IT TO THE
-`{STATIC_REFERENCE_TABLES_DATASET}` DATASETS IN PROD AND STAGING USING THE FOLLOWING COMMANDS:
-
-python -m recidiviz.tools.upload_local_file_to_bq \
-    --project-id recidiviz-staging \
-    --destination-table {STATIC_REFERENCE_TABLES_DATASET}.us_mo_tak025_sentence_status_xref \
-    --local-filepath <path>/<to>/us_mo_tak025_sentence_status_xref.csv \
-    --separator , \
-    --overwrite-if-exists True \
-    --dry-run [True|False]
-
-python -m recidiviz.tools.upload_local_file_to_bq \
-    --project-id recidiviz-123 \
-    --destination-table {STATIC_REFERENCE_TABLES_DATASET}.us_mo_tak025_sentence_status_xref \
-    --local-filepath <path>/<to>/us_mo_tak025_sentence_status_xref.csv \
-    --separator , \
-    --overwrite-if-exists True \
-    --dry-run [True|False]
-*/
-SELECT *
-FROM LBAKRDTA.TAK025;
-"""
-
-US_MO_TAK026_SENTENCE_STATUS_QUERY = f"""
-/* DO NOT DROP THE RESULT OF THIS QUERY IN THE INGEST BUCKET. INSTEAD, UPLOAD IT TO THE
-`{STATIC_REFERENCE_TABLES_DATASET}` DATASETS IN PROD AND STAGING USING THE FOLLOWING COMMANDS:
-
-python -m recidiviz.tools.upload_local_file_to_bq \
-    --project-id recidiviz-staging \
-    --destination-table {STATIC_REFERENCE_TABLES_DATASET}.us_mo_tak026_sentence_status \
-    --local-filepath <path>/<to>/us_mo_tak026_sentence_status.csv \
-    --separator , \
-    --overwrite-if-exists True
-    --dry-run [True|False]
-
-python -m recidiviz.tools.upload_local_file_to_bq \
-    --project-id recidiviz-123 \
-    --destination-table {STATIC_REFERENCE_TABLES_DATASET}.us_mo_tak026_sentence_status \
-    --local-filepath <path>/<to>/us_mo_tak026_sentence_status.csv \
-    --separator , \
-    --overwrite-if-exists True \
-    --dry-run [True|False]
-*/
-SELECT *
-FROM LBAKRDTA.TAK026;
-"""
-
-US_MO_TAK146_STATUS_CODE_DESCRIPTIONS_QUERY = f"""
-/* DO NOT DROP THE RESULT OF THIS QUERY IN THE INGEST BUCKET. INSTEAD, UPLOAD IT TO THE
-`{STATIC_REFERENCE_TABLES_DATASET}` DATASETS IN PROD AND STAGING USING THE FOLLOWING COMMANDS:
-
-python -m recidiviz.tools.upload_local_file_to_bq \
-    --project-id recidiviz-staging \
-    --destination-table {STATIC_REFERENCE_TABLES_DATASET}.us_mo_tak146_status_code_descriptions \
-    --local-filepath <path>/<to>/us_mo_tak146_status_code_descriptions.csv \
-    --separator , \
-    --overwrite-if-exists True \
-    --dry-run [True|False]
-
-python -m recidiviz.tools.upload_local_file_to_bq \
-    --project-id recidiviz-123 \
-    --destination-table {STATIC_REFERENCE_TABLES_DATASET}.us_mo_tak146_status_code_descriptions \
-    --local-filepath <path>/<to>/us_mo_tak146_status_code_descriptions.csv \
-    --separator , \
-    --overwrite-if-exists True \
-    --dry-run [True|False]
-*/
-SELECT *
-FROM LBAKRCOD.TAK146;
-"""
 
 # Y?YYddd e.g. January 1, 2016 --> 116001; November 2, 1982 --> 82306;
 julian_format_lower_bound_update_date = 0
@@ -323,15 +250,6 @@ OFNDR_PDB_FOC_SUPERVISION_ENHANCEMENTS_VW = \
 
 def get_query_name_to_query_list() -> List[Tuple[str, str]]:
     return [
-        # ~~~ START REFERENCE TABLE QUERIES ~~~ #
-        # TODO(#4054): When we transition MO to SQL pre-processing, these tables should be imported as normal raw data
-        #  imports and the calculation pipelines should pull the necessary data from
-        #  `us_mo_raw_data_up_to_date_views.<table_name>_latest`.
-        ('us_mo_tak025_sentence_status_xref', US_MO_TAK025_SENTENCE_STATUS_XREF_QUERY),
-        ('us_mo_tak026_sentence_status', US_MO_TAK026_SENTENCE_STATUS_QUERY),
-        ('us_mo_tak146_status_code_descriptions', US_MO_TAK146_STATUS_CODE_DESCRIPTIONS_QUERY),
-        # ~~~ END REFERENCE TABLE QUERIES ~~~ #
-
         ('FOCTEST_ORAS_ASSESSMENTS_WEEKLY', FOCTEST_ORAS_ASSESSMENTS_WEEKLY),
         ('LANTERN_DA_RA_LIST', LANTERN_DA_RA_LIST),
         ('LBAKRCOD_TAK146', LBAKRCOD_TAK146),
