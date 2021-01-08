@@ -33,7 +33,7 @@ SUPERVISION_DOWNGRADES_BY_PERSON_BY_MONTH_QUERY_TEMPLATE = \
             state_code, year, month, person_id,
             supervising_officer_external_id,
             MAX(date_of_downgrade) AS date_of_downgrade
-        FROM `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_downgrade_metrics`
+        FROM `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_downgrade_metrics_materialized`
         WHERE person_id IS NOT NULL
             AND supervising_officer_external_id IS NOT NULL
             AND metric_period_months = 1
@@ -47,7 +47,7 @@ SUPERVISION_DOWNGRADES_BY_PERSON_BY_MONTH_QUERY_TEMPLATE = \
         previous_supervision_level,
         supervision_level
     FROM latest_downgrade_date
-    LEFT JOIN `{project_id}.{metrics_dataset}.supervision_downgrade_metrics`
+    LEFT JOIN `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_downgrade_metrics_materialized`
         USING (state_code, year, month, person_id, supervising_officer_external_id, date_of_downgrade)
     """
 
@@ -57,7 +57,6 @@ SUPERVISION_DOWNGRADES_BY_PERSON_BY_MONTH_VIEW_BUILDER = SimpleBigQueryViewBuild
     should_materialize=True,
     view_query_template=SUPERVISION_DOWNGRADES_BY_PERSON_BY_MONTH_QUERY_TEMPLATE,
     description=SUPERVISION_DOWNGRADES_BY_PERSON_BY_MONTH_DESCRIPTION,
-    metrics_dataset=dataset_config.DATAFLOW_METRICS_DATASET,
     materialized_metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
 )
 

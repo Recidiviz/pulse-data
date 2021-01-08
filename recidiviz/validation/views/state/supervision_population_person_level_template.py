@@ -45,7 +45,7 @@ sanitized_internal_metrics AS (
       ROW_NUMBER() OVER (PARTITION BY state_code, date_of_supervision, person_external_id
                         ORDER BY supervising_officer_external_id DESC, supervision_level_raw_text DESC, supervising_district_external_id DESC)
                         AS inclusion_order
-   FROM `{{project_id}}.{{materialized_metrics_dataset}}.most_recent_supervision_population_metrics`
+   FROM `{{project_id}}.{{materialized_metrics_dataset}}.most_recent_supervision_population_metrics_materialized`
    WHERE methodology = 'EVENT'
    AND (state_code != 'US_ID' OR 
        # Idaho only gives us population numbers for folks explicitly on active probation, parole, or dual supervision.

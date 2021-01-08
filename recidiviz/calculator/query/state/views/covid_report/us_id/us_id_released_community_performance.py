@@ -53,7 +53,7 @@ US_ID_RELEASED_COMMUNITY_PERFORMANCE_QUERY_TEMPLATE = \
         END AS cohort,
         week_num, report_year, m.state_code, m.person_id, m.release_date AS start_date, NULL AS termination_date,
         ROW_NUMBER() OVER (PARTITION BY state_code, person_id, week_num, report_year, purpose_for_incarceration, release_reason ORDER BY release_date DESC) AS release_rank
-      FROM `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_release_metrics` m
+      FROM `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_release_metrics_materialized` m
       JOIN report_dates
         ON release_date BETWEEN earliest_start_date AND report_end_date
       WHERE state_code = 'US_ID'

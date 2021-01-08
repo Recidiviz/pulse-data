@@ -40,7 +40,7 @@ INCARCERATION_POPULATION_BY_PURPOSE_BY_DAY_QUERY_TEMPLATE = \
         date_of_stay,
         specialized_purpose_for_incarceration,
       FROM
-        `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_population_metrics`
+        `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_population_metrics_materialized`
       LEFT JOIN
         `{project_id}.{static_reference_dataset}.state_incarceration_facility_capacity`
       USING (state_code, facility)

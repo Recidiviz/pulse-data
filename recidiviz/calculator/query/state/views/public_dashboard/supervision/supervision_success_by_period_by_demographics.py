@@ -43,7 +43,7 @@ SUPERVISION_SUCCESS_BY_PERIOD_BY_DEMOGRAPHICS_VIEW_QUERY_TEMPLATE = \
         IFNULL(age_bucket, 'EXTERNAL_UNKNOWN') as age_bucket,
         supervision_type,
         metric_period_months
-      FROM `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_success_metrics` success_metrics,
+      FROM `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_success_metrics_materialized` success_metrics,
       {race_or_ethnicity_dimension},
       {gender_dimension},
       {age_dimension},

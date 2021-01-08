@@ -46,7 +46,7 @@ INCARCERATION_RELEASES_BY_TYPE_BY_PERIOD_VIEW_QUERY_TEMPLATE = \
           IFNULL(gender, 'EXTERNAL_UNKNOWN') as gender,
           IFNULL(age_bucket, 'EXTERNAL_UNKNOWN') as age_bucket
         FROM
-          `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_release_metrics` releases
+          `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_release_metrics_materialized` releases
         WHERE release_reason in ('COMMUTED', 'COMPASSIONATE', 'CONDITIONAL_RELEASE', 'SENTENCE_SERVED', 'TRANSFERRED_OUT_OF_STATE', 'DEATH')
           AND methodology = 'EVENT'
           AND metric_period_months = 1

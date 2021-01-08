@@ -58,7 +58,7 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_VIOLATION_QUERY_TEMPLATE = \
         {most_severe_violation_type_subtype_grouping},
         {violation_count_type_grouping},
         count
-      FROM `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_revocation_violation_type_analysis_metrics`
+      FROM `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_revocation_violation_type_analysis_metrics_materialized`
       WHERE revocation_type = 'REINCARCERATION'
         AND methodology = 'PERSON'
         AND year = EXTRACT(YEAR FROM CURRENT_DATE('US/Pacific'))
