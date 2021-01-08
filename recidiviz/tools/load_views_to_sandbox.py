@@ -43,7 +43,7 @@ def _dataset_overrides_for_all_view_datasets(view_dataset_override_prefix: str,
     dataset_overrides = {}
     for view_builders in VIEW_BUILDERS_BY_NAMESPACE.values():
         for builder in view_builders:
-            dataset_id = builder.build().dataset_id
+            dataset_id = builder.dataset_id
             dataset_overrides[dataset_id] = view_dataset_override_prefix + '_' + dataset_id
 
     if dataflow_dataset_override:

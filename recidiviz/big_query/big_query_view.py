@@ -16,7 +16,7 @@
 # =============================================================================
 """An implementation of bigquery.TableReference with extra functionality related to views."""
 import abc
-from typing import Optional, Dict, TypeVar, Generic, Any
+from typing import Any, Callable, Generic, Optional, Dict, TypeVar
 
 from google.cloud import bigquery
 
@@ -28,6 +28,7 @@ PROJECT_ID_KEY = 'project_id'
 
 class BigQueryView(bigquery.TableReference):
     """An implementation of bigquery.TableReference with extra functionality related to views."""
+
     def __init__(self,
                  *,
                  project_id: Optional[str] = None,
@@ -162,6 +163,9 @@ BigQueryViewType = TypeVar('BigQueryViewType', bound=BigQueryView)
 class BigQueryViewBuilder(Generic[BigQueryViewType]):
     """Abstract interface for a class that builds a BigQueryView."""
 
+    dataset_id: str
+    view_id: str
+
     @abc.abstractmethod
     def build(self, *, dataset_overrides: Optional[Dict[str, str]] = None) -> BigQueryViewType:
         pass
@@ -185,15 +189,20 @@ class SimpleBigQueryViewBuilder(BigQueryViewBuilder):
                  view_id: str,
                  view_query_template: str,
                  should_materialize: bool = False,
+                 should_build_predicate: Optional[Callable[[], bool]] = None,
                  # All query format kwargs args must have string values
                  **query_format_kwargs: str):
         self.dataset_id = dataset_id
         self.view_id = view_id
         self.view_query_template = view_query_template
         self.should_materialize = should_materialize
+        self.should_build_predicate = should_build_predicate
         self.query_format_kwargs = query_format_kwargs
 
     def build(self, *, dataset_overrides: Dict[str, str] = None) -> BigQueryView:
+        if self.should_build_predicate is not None and not self.should_build_predicate():
+            raise SimpleBigQueryViewBuilderShouldNotBuildError()
+
         return BigQueryView(
             dataset_id=self.dataset_id,
             view_id=self.view_id,
@@ -206,3 +215,7 @@ class SimpleBigQueryViewBuilder(BigQueryViewBuilder):
         """Builds the BigQueryView and prints the view's view_query."""
         view = self.build()
         print(view.view_query)
+
+
+class SimpleBigQueryViewBuilderShouldNotBuildError(Exception):
+    """Error thrown when the condition for a SimpleBigQueryViewBUilder fails."""

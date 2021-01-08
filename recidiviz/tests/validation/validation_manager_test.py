@@ -35,8 +35,7 @@ from recidiviz.validation.validation_models import DataValidationJob, DataValida
 from recidiviz.calculator.query.county import view_config as county_view_config
 from recidiviz.calculator.query.justice_counts import view_config as justice_counts_view_config
 from recidiviz.calculator.query.state import view_config as state_view_config
-# TODO(#5226): Re-enable when a strategy for handling migrated columns has been found.
-# from recidiviz.ingest.views import view_config as ingest_metadata_view_config
+from recidiviz.ingest.views import view_config as ingest_metadata_view_config
 from recidiviz.validation.views import view_config as validation_view_config
 
 
@@ -227,10 +226,9 @@ class TestHandleRequest(TestCase):
             call(BigQueryViewNamespace.VALIDATION, validation_view_config.VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE,
                  dataset_overrides=None,
                  materialized_views_only=False),
-            # TODO(#5226): Re-enable when a strategy for handling migrated columns has been found.
-            # call(BigQueryViewNamespace.INGEST_METADATA, ingest_metadata_view_config.VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE,
-            #      dataset_overrides=None,
-            #      materialized_views_only=False),
+            call(BigQueryViewNamespace.INGEST_METADATA, ingest_metadata_view_config.VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE,
+                 dataset_overrides=None,
+                 materialized_views_only=False),
         ]
         self.assertCountEqual(mock_update_views.call_args_list, expected_update_calls)
 
