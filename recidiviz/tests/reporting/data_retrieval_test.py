@@ -16,14 +16,15 @@
 # =============================================================================
 
 """Tests for reporting/email_generation.py."""
-import os
 import json
-
+import os
 from unittest import TestCase
 from unittest.mock import patch
 
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
-from recidiviz.reporting.data_retrieval import start, retrieve_data
+from recidiviz.reporting.data_retrieval import start, retrieve_data, filter_recipients
+from recidiviz.reporting.recipient import Recipient
+from recidiviz.reporting.region_codes import REGION_CODES, InvalidRegionCodeException
 from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 
 FIXTURE_FILE = 'po_monthly_report_data_fixture.json'
@@ -74,14 +75,27 @@ class EmailGenerationTests(TestCase):
             # Remove newlines
             self._write_test_data(json.dumps(json.loads(fixture_file.read())))
 
-        start(
+        self.mock_email_generation.side_effect = ValueError('This email failed to generate!')
+
+        failure_count, success_count = start(
             state_code='US_ID',
             report_type=self.report_type,
             region_code='US_ID_D3',
             test_address='dan@recidiviz.org'
         )
 
+        self.assertEqual(failure_count, 1)
+        self.assertEqual(success_count, 0)
+
+        # Email generated for recipient matching US_ID_3
         self.mock_email_generation.assert_called()
+
+        self.mock_email_generation.reset_mock()
+
+        start(state_code='US_ID', report_type=self.report_type, email_allowlist=['excluded@recidiviz.org'])
+
+        # No recipients to email (none match `email_allowlist`)
+        self.mock_email_generation.assert_not_called()
 
     def test_retrieve_data(self) -> None:
         batch_id = "123"
@@ -108,3 +122,21 @@ class EmailGenerationTests(TestCase):
             ),
             test_data
         )
+
+    def test_filter_recipients(self) -> None:
+        dev_from_idaho = Recipient.from_report_json({
+            'email_address': 'dev@idaho.gov', 'state_code': 'US_ID', 'district': REGION_CODES['US_ID_D3']
+        })
+        dev_from_iowa = Recipient.from_report_json({
+            'email_address': 'dev@iowa.gov', 'state_code': 'US_IA', 'district': None
+        })
+        recipients = [dev_from_idaho, dev_from_iowa]
+
+        self.assertEqual(filter_recipients(recipients), recipients)
+        self.assertEqual(filter_recipients(recipients, region_code='US_ID_D3'), [dev_from_idaho])
+        self.assertEqual(filter_recipients(recipients, region_code='US_ID_D3', email_allowlist=['dev@iowa.gov']), [])
+        self.assertEqual(filter_recipients(recipients, email_allowlist=['dev@iowa.gov']), [dev_from_iowa])
+        self.assertEqual(filter_recipients(recipients, email_allowlist=['fake@iowa.gov']), [])
+
+        with self.assertRaises(InvalidRegionCodeException):
+            filter_recipients(recipients, region_code='gibberish')

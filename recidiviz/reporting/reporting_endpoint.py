@@ -19,14 +19,17 @@
 """A single module containing all Python code related to Email Reporting.
 
 """
-from http import HTTPStatus
+import json
 import logging
-from typing import Tuple
+from http import HTTPStatus
+from json import JSONDecodeError
+from typing import Tuple, List
 
 from flask import Blueprint, request
 
 import recidiviz.reporting.data_retrieval as data_retrieval
 import recidiviz.reporting.email_delivery as email_delivery
+from recidiviz.reporting import email_reporting_utils
 from recidiviz.reporting.email_reporting_utils import validate_email_address
 from recidiviz.reporting.region_codes import InvalidRegionCodeException
 from recidiviz.utils.auth.gae import requires_gae_auth
@@ -51,6 +54,8 @@ def start_new_batch() -> Tuple[str, HTTPStatus]:
             username, for example: tester+recipient_username@tester-domain.org.
         region_code: (optional) Indicates the sub-region of the state to generate emails for. If
             omitted, we generate emails for all sub-regions of the state.
+        email_allowlist: (optional) A json list of emails we should generate emails for. Emails that do not exist in the
+            report will be silently skipped.
         message_body: (optional) If included, overrides the default message body.
 
     Returns:
@@ -64,15 +69,23 @@ def start_new_batch() -> Tuple[str, HTTPStatus]:
         report_type = get_only_str_param_value('report_type', request.args)
         test_address = get_only_str_param_value('test_address', request.args)
         region_code = get_only_str_param_value('region_code', request.args)
+        raw_email_allowlist = get_only_str_param_value('email_allowlist', request.args)
         message_body = get_only_str_param_value('message_body', request.args, preserve_case=True)
 
         validate_email_address(test_address)
-    except ValueError as error:
+
+        if raw_email_allowlist:
+            email_allowlist: List[str] = json.loads(raw_email_allowlist)
+
+            for recipient_email in email_allowlist:
+                validate_email_address(recipient_email)
+
+    except (ValueError, JSONDecodeError) as error:
         logging.error(error)
         return str(error), HTTPStatus.BAD_REQUEST
 
     if not state_code or not report_type:
-        msg = "Request does not include 'state_code' and 'report_type' parameters"
+        msg = "Request does not include 'state_code' and/or 'report_type' parameters"
         logging.error(msg)
         return msg, HTTPStatus.BAD_REQUEST
 
@@ -83,19 +96,26 @@ def start_new_batch() -> Tuple[str, HTTPStatus]:
     region_code = None if not region_code else region_code.upper()
 
     try:
-        batch_id = data_retrieval.start(
-            state_code,
-            report_type,
-            test_address,
-            region_code,
-            message_body,
+        batch_id = email_reporting_utils.generate_batch_id()
+        failure_count, success_count = data_retrieval.start(
+            state_code=state_code,
+            report_type=report_type,
+            batch_id=batch_id,
+            test_address=test_address,
+            region_code=region_code,
+            email_allowlist=email_allowlist,
+            message_body=message_body,
         )
     except InvalidRegionCodeException:
         return 'Invalid region code provided', HTTPStatus.BAD_REQUEST
     else:
         test_address_text = f"Emails generated for test address: {test_address}" if test_address else ""
+        counts_text = f"Successfully generated {success_count} email(s)"
+        if failure_count:
+            counts_text += f" Failed to generate {failure_count} email(s)"
+
         return (f"New batch started for {state_code} and {report_type}.  Batch "
-                f"id = {batch_id}. {test_address_text}"), HTTPStatus.OK
+                f"id = {batch_id}. {test_address_text} {counts_text}"), HTTPStatus.OK
 
 
 @reporting_endpoint_blueprint.route('/deliver_emails_for_batch', methods=['GET', 'POST'])
