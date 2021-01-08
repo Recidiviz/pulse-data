@@ -61,10 +61,6 @@ class SuperSimulationFactory:
     @staticmethod
     def _check_valid_yaml_config(initialization_params: Dict[str, Any]) -> None:
         # Make sure only one input setting is provided in the yaml file
-        if len(initialization_params['data_inputs']) != 1:
-            raise ValueError(
-                f"Only one data input can be set in the yaml file, not {len(initialization_params['data_inputs'])}"
-            )
 
         required_inputs = {'user_inputs', 'model_architecture', 'reference_date', 'time_step', 'data_inputs',
                            'disaggregation_axes', 'per_year_costs'}
@@ -77,6 +73,11 @@ class SuperSimulationFactory:
         unexpected_inputs = given_inputs.difference(required_inputs)
         if len(unexpected_inputs) > 0:
             raise ValueError(f"Unexpected yaml inputs: {unexpected_inputs}")
+
+        if len(initialization_params['data_inputs']) != 1:
+            raise ValueError(
+                f"Only one data input can be set in the yaml file, not {len(initialization_params['data_inputs'])}"
+            )
 
         model_architecture_yaml_key = 'model_architecture'
         compartment_costs_key = 'per_year_costs'
