@@ -60,7 +60,7 @@ SUPERVISION_MATRIX_BY_PERSON_QUERY_TEMPLATE = \
             AND year >= EXTRACT(YEAR FROM DATE_SUB(CURRENT_DATE(), INTERVAL 3 YEAR))
     ), revocations_matrix AS (
         SELECT
-            * EXCEPT(revocation_admission_date, officer_recommendation, violation_record),
+            * EXCEPT(revocation_admission_date, officer_recommendation, violation_record, violation_type_frequency_counter),
             revocation_admission_date AS date_of_supervision,
             TRUE as is_revocation
         FROM `{project_id}.{reference_views_dataset}.event_based_revocations_for_matrix`

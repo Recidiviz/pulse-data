@@ -32,7 +32,7 @@ daily_pipelines:
     job_name: us-mo-supervision-calculations-36
     state_code: US_MO
     calculation_month_count: 36
-    metric_types: SUPERVISION_POPULATION SUPERVISION_REVOCATION_ANALYSIS SUPERVISION_REVOCATION_VIOLATION_TYPE_ANALYSIS SUPERVISION_TERMINATION
+    metric_types: SUPERVISION_POPULATION SUPERVISION_REVOCATION_ANALYSIS SUPERVISION_TERMINATION
 
   # Daily US_MO calculations for automated data validation not covered by daily calculation runs
   - pipeline: incarceration
@@ -60,7 +60,7 @@ daily_pipelines:
     job_name: us-pa-supervision-calculations-36
     state_code: US_PA
     calculation_month_count: 36
-    metric_types: SUPERVISION_POPULATION SUPERVISION_REVOCATION_ANALYSIS SUPERVISION_REVOCATION_VIOLATION_TYPE_ANALYSIS SUPERVISION_TERMINATION
+    metric_types: SUPERVISION_POPULATION SUPERVISION_REVOCATION_ANALYSIS SUPERVISION_TERMINATION
 
   # Daily US_PA calculations for automated data validation not covered by daily calculation runs
   - pipeline: incarceration

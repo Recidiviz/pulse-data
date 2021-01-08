@@ -40,8 +40,7 @@ from mock import patch
 from recidiviz.calculator.pipeline.supervision import pipeline
 from recidiviz.calculator.pipeline.supervision.metrics import \
     SupervisionMetricType, SupervisionRevocationMetric, \
-    SupervisionRevocationViolationTypeAnalysisMetric, SupervisionPopulationMetric, \
-    SupervisionRevocationAnalysisMetric, \
+    SupervisionPopulationMetric, SupervisionRevocationAnalysisMetric, \
     SupervisionTerminationMetric, SupervisionSuccessMetric, \
     SuccessfulSupervisionSentenceDaysServedMetric, SupervisionCaseComplianceMetric, SupervisionStartMetric, \
     SupervisionOutOfStatePopulationMetric, SupervisionDowngradeMetric
@@ -698,7 +697,6 @@ class TestSupervisionPipeline(unittest.TestCase):
             SupervisionMetricType.SUPERVISION_POPULATION,
             SupervisionMetricType.SUPERVISION_REVOCATION,
             SupervisionMetricType.SUPERVISION_REVOCATION_ANALYSIS,
-            SupervisionMetricType.SUPERVISION_REVOCATION_VIOLATION_TYPE_ANALYSIS,
             SupervisionMetricType.SUPERVISION_TERMINATION,
             SupervisionMetricType.SUPERVISION_START,
         }
@@ -978,7 +976,6 @@ class TestSupervisionPipeline(unittest.TestCase):
             SupervisionMetricType.SUPERVISION_SUCCESS,
             SupervisionMetricType.SUPERVISION_REVOCATION,
             SupervisionMetricType.SUPERVISION_REVOCATION_ANALYSIS,
-            SupervisionMetricType.SUPERVISION_REVOCATION_VIOLATION_TYPE_ANALYSIS,
             SupervisionMetricType.SUPERVISION_TERMINATION,
             SupervisionMetricType.SUPERVISION_START,
         }
@@ -2497,8 +2494,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             SupervisionMetricType.SUPERVISION_POPULATION: SupervisionPopulationMetric,
             SupervisionMetricType.SUPERVISION_REVOCATION: SupervisionRevocationMetric,
             SupervisionMetricType.SUPERVISION_REVOCATION_ANALYSIS: SupervisionRevocationAnalysisMetric,
-            SupervisionMetricType.SUPERVISION_REVOCATION_VIOLATION_TYPE_ANALYSIS:
-                SupervisionRevocationViolationTypeAnalysisMetric,
             SupervisionMetricType.SUPERVISION_SUCCESS: SupervisionSuccessMetric,
             SupervisionMetricType.SUPERVISION_SUCCESSFUL_SENTENCE_DAYS_SERVED:
                 SuccessfulSupervisionSentenceDaysServedMetric,

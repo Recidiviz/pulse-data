@@ -159,7 +159,6 @@ def characteristics_dict(person: StatePerson,
                                                    metric_class=metric_class,
                                                    person=person,
                                                    event_date=event_date,
-                                                   include_person_attributes=True,
                                                    person_metadata=person_metadata)
     return characteristics
 

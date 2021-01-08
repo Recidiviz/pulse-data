@@ -198,17 +198,22 @@ def json_serializable_metric_key(metric_key: Dict[str, Any]) -> Dict[str, Any]:
             serializable_dict[key] = v.value
         elif isinstance(v, datetime.date) and v is not None:
             serializable_dict[key] = v.strftime('%Y-%m-%d')
-        # TODO(#4294): Remove the support of the race and ethnicity attributes, which have been replaced by
-        #  prioritized_race_or_ethnicity
         elif isinstance(v, list):
-            # These are the only two metric fields that support lists
+            # These are the only metric fields that support lists
             if key in ('race', 'ethnicity'):
+                # TODO(#4294): Remove the support of the race and ethnicity attributes, which have been replaced by
+                #  prioritized_race_or_ethnicity
                 values = [f"{entry.value}" for entry in v if entry is not None]
-
-                if values:
-                    serializable_dict[key] = ','.join(filter(None, values))
+            elif key == 'violation_type_frequency_counter':
+                values = []
+                for violation_type_list in v:
+                    values.append(f"[{', '.join(sorted(violation_type_list))}]")
             else:
                 raise ValueError(f"Unexpected list in metric_key for key: {key}")
+
+            if values:
+                serializable_dict[key] = ','.join(sorted(filter(None, values)))
+
         else:
             serializable_dict[key] = v
 

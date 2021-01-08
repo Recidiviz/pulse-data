@@ -51,7 +51,8 @@ EVENT_BASED_REVOCATIONS_FOR_MATRIX_QUERY_TEMPLATE = \
         IFNULL(level_2_supervision_location_external_id, 'EXTERNAL_UNKNOWN') AS level_2_supervision_location,
         IFNULL(supervising_officer_external_id, 'EXTERNAL_UNKNOWN') AS officer,
         {state_specific_officer_recommendation},
-        violation_history_description AS violation_record
+        violation_history_description AS violation_record,
+        violation_type_frequency_counter
     FROM `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_revocation_analysis_metrics_materialized`
     WHERE methodology = 'EVENT'
         AND metric_period_months = 1
