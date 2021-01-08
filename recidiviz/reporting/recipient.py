@@ -36,7 +36,6 @@ class Recipient:
 
         return Recipient.from_report_json(extended_data)
 
-
     @staticmethod
     def from_report_json(report_json: dict) -> 'Recipient':
         return Recipient(
