@@ -1,9 +1,135 @@
 version: 2.1
 
 orbs:
-  welcome: circleci/welcome-orb@0.4.1
+  terraform: circleci/terraform@1.1.1
+
+# This section defines variables that are used throughout the code.
+# A variable defined `&my_var` may be referenced elsewhere as `*my_var`.
+aliases:
+  # Restores the pipenv to the most recent version, either the one that is already cached for this version of Pipfile.lock, or the most current previously cached one.
+  # See: https://circleci.com/docs/2.0/caching/#restoring-cache
+  - &restore_pipenv_cache
+    restore_cache:
+      keys:
+        - pipenv-cache-v1-{{ checksum "Pipfile.lock" }}
+        - pipenv-cache-v1-
+        - pipenv-cache-
+
+  - &pipenv_sync
+    run:
+      name: Sync pipenv
+      command: |
+        pipenv sync --dev
+
+  # Caches the synced pipenv for the current version of Pipfile.lock.
+  # See: https://circleci.com/docs/2.0/caching/#basic-example-of-dependency-caching
+  - &save_pipenv_cache
+    save_cache:
+      key: pipenv-cache-v1-{{ checksum "Pipfile.lock" }}
+      paths:
+        - ~/.local/share/virtualenvs/
+
+  - &install_postgres
+    run:
+      name: Install Postgres
+      command: |
+        sudo apt-get update && sudo apt-get install postgresql-10 -y
+        echo 'export PATH=/usr/lib/postgresql/10/bin:$PATH' >> $BASH_ENV
+        sudo chown -R circleci:circleci /var/run/postgresql
+
+  - &install_emulators
+    run:
+      name: Install GCP Emulators
+      command: |
+        sudo apt-get update && sudo apt-get install -y lsb-core
+        export CLOUD_SDK_REPO="cloud-sdk-$(lsb_release -c -s)"
+        echo "deb http://packages.cloud.google.com/apt $CLOUD_SDK_REPO main" | sudo tee -a /etc/apt/sources.list.d/google-cloud-sdk.list
+        curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -
+        sudo apt-get update && sudo apt-get install google-cloud-sdk google-cloud-sdk-datastore-emulator google-cloud-sdk-pubsub-emulator -y
+
+  - &install_java
+    run:
+      name: Install Java
+      command: |
+        sudo apt-get update && sudo apt-get install default-jdk -y
+
+jobs:
+  base-unit-tests:
+    docker:
+      - image: cimg/python:3.7.9
+    steps:
+      - checkout
+      - *install_java
+      - *restore_pipenv_cache
+      - *pipenv_sync
+      - *save_pipenv_cache
+      - run:
+          name: Run unit tests in parallel
+          command: |
+            pipenv run pytest recidiviz -n 2 --test-set parallel
+
+  db-tests:
+    docker:
+      - image: cimg/python:3.7.9
+    steps:
+      - checkout
+      - *install_java
+      - *install_postgres
+      - *restore_pipenv_cache
+      - *pipenv_sync
+      - *save_pipenv_cache
+      - run:
+          name: Run db tests
+          command: |
+            pipenv run pytest recidiviz --test-set not-parallel -m 'uses_db' --with-emulator
+
+  emulator-tests:
+    docker:
+      - image: cimg/python:3.7.9
+    resource_class: large
+    steps:
+      - checkout
+      - *install_java
+      - *install_emulators
+      - *restore_pipenv_cache
+      - *pipenv_sync
+      - *save_pipenv_cache
+      - run:
+          name: Run emulator tests
+          command: |
+            pipenv run pytest recidiviz --test-set not-parallel -m 'not uses_db' --with-emulator
+
+  lint:
+    docker:
+      - image: cimg/python:3.7.9
+    resource_class: small
+    steps:
+      - checkout
+      - *restore_pipenv_cache
+      - *pipenv_sync
+      - *save_pipenv_cache
+      - run:
+          name: Install Terraform
+          command: |
+            curl -fsSL https://apt.releases.hashicorp.com/gpg | sudo apt-key add -
+            sudo apt-add-repository "deb [arch=$(dpkg --print-architecture)] https://apt.releases.hashicorp.com $(lsb_release -cs) main"
+            sudo apt install terraform
+      - terraform/validate:
+          path: ./recidiviz/tools/deploy/terraform
+      - run:
+          name: Lint
+          command: |
+            pipenv run python -m recidiviz.tools.validate_source_modifications --commit-range \
+              $(git rev-parse << pipeline.git.base_revision >>^)...<<pipeline.git.revision>>
+            pipenv run python -m recidiviz.tools.is_pipenv_locked
+            pipenv run mypy recidiviz
+            pipenv run ./recidiviz/tools/travis/run_pylint.sh
 
 workflows:
   main:
     jobs:
-      - welcome/run
+      - lint
+      - base-unit-tests
+      - db-tests
+      - emulator-tests
+# TODO(#5266): add Copybara workflow on push to master if we're committing to CircleCI
