@@ -18,7 +18,6 @@
 """Custom configuration for how pytest should run."""
 import os
 import shlex
-import signal
 import subprocess
 from time import sleep
 from typing import Dict, Optional, Tuple
@@ -86,8 +85,8 @@ def emulator(request) -> None:
     pubsub_helper.clear_subscriber()
 
     def cleanup() -> None:
-        os.killpg(datastore_emulator.pid, signal.SIGTERM)
-        os.killpg(pubsub_emulator.pid, signal.SIGTERM)
+        datastore_emulator.terminate()
+        pubsub_emulator.terminate()
 
         _restore_environs(prior_environs)
         sessions.clear_ds()
@@ -99,23 +98,19 @@ def emulator(request) -> None:
 
 def _start_emulators() -> Tuple[subprocess.Popen, subprocess.Popen]:
     """Start gcloud datastore and pubsub emulators."""
-    # Create a new process group for each subprocess to enable killing each
-    # subprocess and their subprocesses without killing ourselves
     datastore_emulator = subprocess.Popen(
         shlex.split('gcloud beta emulators datastore start --no-store-on-disk '
-                    '--consistency=1.0 --project=test-project'),
-        start_new_session=True)
+                    '--consistency=1.0 --project=test-project'))
     pubsub_emulator = subprocess.Popen(
         shlex.split('gcloud beta emulators pubsub start '
-                    '--project=test-project'),
-        start_new_session=True)
+                    '--project=test-project'))
 
     # Sleep to ensure emulators successfully start
     sleep(5)
 
     if datastore_emulator.poll() or pubsub_emulator.poll():
-        os.killpg(datastore_emulator.pid, signal.SIGTERM)
-        os.killpg(pubsub_emulator.pid, signal.SIGTERM)
+        datastore_emulator.terminate()
+        pubsub_emulator.terminate()
         raise Exception('Failed to start gcloud emulators!')
 
     return datastore_emulator, pubsub_emulator
