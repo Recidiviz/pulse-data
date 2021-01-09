@@ -151,7 +151,8 @@ def start_on_disk_postgresql_database() -> str:
     # Write logs to file so that pg_ctl closes its stdout file descriptor when it moves to the background, otherwise
     # the subprocess will hang.
     _run_command(f'pg_ctl -D {temp_db_data_dir} -l /tmp/postgres initdb', as_user=password_record)
-    _run_command(f'pg_ctl -D {temp_db_data_dir} -l /tmp/postgres start', as_user=password_record)
+    # We need to set the host to 0.0.0.0 because CircleCI doesn't let us behind to 127.0.0.1 as the default.
+    _run_command(f'pg_ctl -D {temp_db_data_dir} -l /tmp/postgres start -o "-h 0.0.0.0"', as_user=password_record)
 
     # Create a user and database within postgres.
     # These will fail if they already exist, ignore that failure and continue.
