@@ -81,7 +81,8 @@ class IngestMetadataCountsStore:
             try:
                 file_prefix, table_name, col_name = name.split('__')
             except ValueError:
-                logging.warning('Found unexpected file in ingest metadata folder: %s', path.file_name)
+                # There will be files in this directory that don't follow this structure, so it's safe
+                # to skip them without alarm.
                 continue
             if file_prefix != 'ingest_state_metadata':
                 logging.warning('Found unexpected file in ingest metadata folder: %s', path.file_name)
