@@ -33,6 +33,10 @@ from recidiviz.calculator.query.state.views.analyst_data.us_id.us_id_ppo_metrics
     import US_ID_PPO_METRICS_EARLY_DISCHARGE_REQUESTS_VIEW_BUILDER
 from recidiviz.calculator.query.state.views.analyst_data.us_id.us_id_ppo_metrics_successful_supervision_terminations \
     import US_ID_PPO_METRICS_SUCCESSFUL_SUPERVISION_TERMINATIONS_VIEW_BUILDER
+from recidiviz.calculator.query.state.views.analyst_data.po_report_impact_metrics \
+    import PO_REPORT_IMPACT_METRICS_VIEW_BUILDER
+from recidiviz.calculator.query.state.views.analyst_data.supervision_population_attributes_by_district_by_month \
+    import SUPERVISION_POPULATION_ATTRIBUTES_BY_DISTRICT_BY_MONTH_VIEW_BUILDER
 
 ANALYST_DATA_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     COMPARTMENT_SUB_SESSIONS_VIEW_BUILDER,
@@ -43,5 +47,7 @@ ANALYST_DATA_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     US_ID_PPO_METRICS_EARLY_DISCHARGE_TERMINATIONS_VIEW_BUILDER,
     US_ID_PPO_METRICS_EARLY_DISCHARGE_REDUCTION_VIEW_BUILDER,
     US_ID_PPO_METRICS_SUPERVISION_LEVEL_VIEW_BUILDER,
-    US_ID_PPO_METRICS_EARLY_DISCHARGE_REQUESTS_VIEW_BUILDER
+    US_ID_PPO_METRICS_EARLY_DISCHARGE_REQUESTS_VIEW_BUILDER,
+    SUPERVISION_POPULATION_ATTRIBUTES_BY_DISTRICT_BY_MONTH_VIEW_BUILDER,
+    PO_REPORT_IMPACT_METRICS_VIEW_BUILDER,
 ]
