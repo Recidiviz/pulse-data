@@ -28,7 +28,7 @@ from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.tests.ingest import fixtures
 
 
-class TestGcsfsCsvReaderDelegate(GcsfsCsvReaderDelegate):
+class _TestGcsfsCsvReaderDelegate(GcsfsCsvReaderDelegate):
     """Test-only GcsfsCsvReaderDelegate for tracking work done in the reader."""
 
     def __init__(self):
@@ -81,7 +81,7 @@ class GcsfsCsvReaderTest(unittest.TestCase):
         self.mock_gcsfs.open = _fake_gcsfs_open
         self.reader = GcsfsCsvReader(self.mock_gcsfs)
 
-    def _validate_empty_file_result(self, delegate: TestGcsfsCsvReaderDelegate):
+    def _validate_empty_file_result(self, delegate: _TestGcsfsCsvReaderDelegate):
         self.assertEqual(1, len(delegate.encodings_attempted))
         self.assertEqual(delegate.encodings_attempted[0], delegate.successful_encoding)
         self.assertEqual(0, len(delegate.dataframes))
@@ -91,7 +91,7 @@ class GcsfsCsvReaderTest(unittest.TestCase):
     def test_read_completely_empty_file(self):
         empty_file_path = fixtures.as_filepath('tagA.csv')
 
-        delegate = TestGcsfsCsvReaderDelegate()
+        delegate = _TestGcsfsCsvReaderDelegate()
         self.reader.streaming_read(GcsfsFilePath.from_absolute_path(empty_file_path), delegate=delegate, chunk_size=1)
         self.assertEqual(1, len(delegate.encodings_attempted))
         self.assertEqual(delegate.encodings_attempted[0], delegate.successful_encoding)
@@ -99,7 +99,7 @@ class GcsfsCsvReaderTest(unittest.TestCase):
         self.assertEqual(0, delegate.decode_errors)
         self.assertEqual(0, delegate.exceptions)
 
-        delegate = TestGcsfsCsvReaderDelegate()
+        delegate = _TestGcsfsCsvReaderDelegate()
         self.reader.streaming_read(GcsfsFilePath.from_absolute_path(empty_file_path), delegate=delegate, chunk_size=10)
         self.assertEqual(1, len(delegate.encodings_attempted))
         self.assertEqual(delegate.encodings_attempted[0], delegate.successful_encoding)
@@ -110,7 +110,7 @@ class GcsfsCsvReaderTest(unittest.TestCase):
     def test_read_file_with_columns_no_contents(self):
         empty_file_path = fixtures.as_filepath('tagB.csv')
 
-        delegate = TestGcsfsCsvReaderDelegate()
+        delegate = _TestGcsfsCsvReaderDelegate()
         self.reader.streaming_read(GcsfsFilePath.from_absolute_path(empty_file_path), delegate=delegate, chunk_size=1)
         self.assertEqual(1, len(delegate.encodings_attempted))
         self.assertEqual(delegate.encodings_attempted[0], delegate.successful_encoding)
@@ -122,7 +122,7 @@ class GcsfsCsvReaderTest(unittest.TestCase):
         self.assertEqual(0, delegate.decode_errors)
         self.assertEqual(0, delegate.exceptions)
 
-        delegate = TestGcsfsCsvReaderDelegate()
+        delegate = _TestGcsfsCsvReaderDelegate()
         self.reader.streaming_read(GcsfsFilePath.from_absolute_path(empty_file_path), delegate=delegate, chunk_size=10)
         self.assertEqual(1, len(delegate.encodings_attempted))
         self.assertEqual(delegate.encodings_attempted[0], delegate.successful_encoding)
@@ -136,7 +136,7 @@ class GcsfsCsvReaderTest(unittest.TestCase):
 
     def test_read_no_encodings_match(self):
         file_path = fixtures.as_filepath('encoded_latin_1.csv')
-        delegate = TestGcsfsCsvReaderDelegate()
+        delegate = _TestGcsfsCsvReaderDelegate()
         encodings_to_try = ['UTF-8', 'UTF-16']
         with self.assertRaises(ValueError):
             self.reader.streaming_read(GcsfsFilePath.from_absolute_path(file_path),
@@ -150,7 +150,7 @@ class GcsfsCsvReaderTest(unittest.TestCase):
 
     def test_read_with_failure_first(self):
         file_path = fixtures.as_filepath('encoded_latin_1.csv')
-        delegate = TestGcsfsCsvReaderDelegate()
+        delegate = _TestGcsfsCsvReaderDelegate()
         self.reader.streaming_read(GcsfsFilePath.from_absolute_path(file_path), delegate=delegate, chunk_size=1)
 
         index = COMMON_RAW_FILE_ENCODINGS.index('ISO-8859-1')
@@ -164,7 +164,7 @@ class GcsfsCsvReaderTest(unittest.TestCase):
 
     def test_read_with_no_failure(self):
         file_path = fixtures.as_filepath('encoded_utf_8.csv')
-        delegate = TestGcsfsCsvReaderDelegate()
+        delegate = _TestGcsfsCsvReaderDelegate()
         self.reader.streaming_read(GcsfsFilePath.from_absolute_path(file_path), delegate=delegate, chunk_size=1)
 
         self.assertEqual(1, len(delegate.encodings_attempted))
@@ -179,7 +179,7 @@ class GcsfsCsvReaderTest(unittest.TestCase):
         class _TestException(ValueError):
             pass
 
-        class _ExceptionDelegate(TestGcsfsCsvReaderDelegate):
+        class _ExceptionDelegate(_TestGcsfsCsvReaderDelegate):
             def on_dataframe(self, encoding: str, chunk_num: int, df: pd.DataFrame) -> bool:
                 should_continue = super().on_dataframe(encoding, chunk_num, df)
                 if chunk_num > 0:

@@ -21,7 +21,7 @@ from recidiviz.tests.ingest.direct.fake_async_direct_ingest_cloud_task_manager i
     SingleThreadTaskQueue
 
 
-class TestException(ValueError):
+class _TestException(ValueError):
     pass
 
 
@@ -32,11 +32,11 @@ class SingleThreadTaskQueueTest(unittest.TestCase):
         task_queue = SingleThreadTaskQueue(name='test_queue')
 
         def raise_value_error():
-            raise TestException('FOO BAR')
+            raise _TestException('FOO BAR')
 
         task_queue.add_task('my_task', raise_value_error)
 
-        with self.assertRaises(TestException):
+        with self.assertRaises(_TestException):
             task_queue.join()
 
     def test_run_many_tasks(self):

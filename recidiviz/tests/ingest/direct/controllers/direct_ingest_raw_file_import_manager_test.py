@@ -35,7 +35,7 @@ from recidiviz.persistence.entity.operations.entities import DirectIngestFileMet
 from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.tests.ingest import fixtures
 from recidiviz.tests.ingest.direct.direct_ingest_util import path_for_fixture_file_in_test_gcs_directory, \
-    TestSafeGcsCsvReader
+    _TestSafeGcsCsvReader
 from recidiviz.tests.ingest.direct import fixture_util
 from recidiviz.tests.utils.fake_region import fake_region
 
@@ -119,7 +119,7 @@ class DirectIngestRawFileImportManagerTest(unittest.TestCase):
             region_raw_file_config=self.region_raw_file_config,
             big_query_client=self.mock_big_query_client
         )
-        self.import_manager.csv_reader = TestSafeGcsCsvReader(self.fs.gcs_file_system)
+        self.import_manager.csv_reader = _TestSafeGcsCsvReader(self.fs.gcs_file_system)
 
         self.time_patcher = patch('recidiviz.ingest.direct.controllers.direct_ingest_raw_file_import_manager.time')
         self.mock_time = self.time_patcher.start()

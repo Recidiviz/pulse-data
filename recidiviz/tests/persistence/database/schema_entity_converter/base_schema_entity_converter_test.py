@@ -38,7 +38,7 @@ from recidiviz.tests.persistence.database.schema_entity_converter. \
 from recidiviz.tests.utils import fakes
 
 
-class TestSchemaEntityConverter(BaseSchemaEntityConverter):
+class _TestSchemaEntityConverter(BaseSchemaEntityConverter):
     """
     Test implementation of BaseSchemaEntityConverter which references a simple
     database schema
@@ -93,7 +93,7 @@ class TestBaseSchemaEntityConverter(TestCase):
         parent = entities.Parent.new_with_defaults(
             full_name='Krusty the Clown',
         )
-        converter = TestSchemaEntityConverter()
+        converter = _TestSchemaEntityConverter()
         schema_parent = converter.convert(parent)
 
         session = SessionFactory.for_schema_base(TestBase)
@@ -135,7 +135,7 @@ class TestBaseSchemaEntityConverter(TestCase):
         parent = entities.Parent.new_with_defaults(
             full_name='Krusty the Clown',
         )
-        converter = TestSchemaEntityConverter()
+        converter = _TestSchemaEntityConverter()
         schema_parent = converter.convert(parent)
 
         session = SessionFactory.for_schema_base(TestBase)
@@ -166,7 +166,7 @@ class TestBaseSchemaEntityConverter(TestCase):
             full_name='Krusty the Clown',
             children=[]
         )
-        converter = TestSchemaEntityConverter()
+        converter = _TestSchemaEntityConverter()
         schema_parent = converter.convert(parent)
 
         session = SessionFactory.for_schema_base(TestBase)
@@ -179,7 +179,7 @@ class TestBaseSchemaEntityConverter(TestCase):
         children = session.query(schema.Child).all()
         self.assertEqual(len(children), 0)
 
-        converted_parent = TestSchemaEntityConverter().convert(one(parents))
+        converted_parent = _TestSchemaEntityConverter().convert(one(parents))
 
         self.assertEqual(parent, converted_parent)
 
@@ -188,7 +188,7 @@ class TestBaseSchemaEntityConverter(TestCase):
             full_name='Krusty the Clown',
             children=[]
         )
-        converter = TestSchemaEntityConverter()
+        converter = _TestSchemaEntityConverter()
         schema_parent = converter.convert(parent)
 
         # Converting entity to schema won't add a primary key if there isn't
@@ -205,7 +205,7 @@ class TestBaseSchemaEntityConverter(TestCase):
         children = session.query(schema.Child).all()
         self.assertEqual(len(children), 0)
 
-        converted_parent = TestSchemaEntityConverter().convert(one(parents))
+        converted_parent = _TestSchemaEntityConverter().convert(one(parents))
 
         # ...but there will be a primary key after adding to the DB
         self.assertIsNotNone(converted_parent.parent_id)
@@ -231,7 +231,7 @@ class TestBaseSchemaEntityConverter(TestCase):
 
     def _run_nuclear_family_test(self, parent_entities, child_entities):
         schema_parents = \
-            TestSchemaEntityConverter().convert_all(parent_entities)
+            _TestSchemaEntityConverter().convert_all(parent_entities)
 
         session = SessionFactory.for_schema_base(TestBase)
         for parent in schema_parents:
@@ -244,7 +244,7 @@ class TestBaseSchemaEntityConverter(TestCase):
         db_children = session.query(schema.Child).all()
         self.assertEqual(len(db_children), len(child_entities))
 
-        converted_parents = TestSchemaEntityConverter().convert_all(db_parents)
+        converted_parents = _TestSchemaEntityConverter().convert_all(db_parents)
 
         for converted_parent in converted_parents:
             self._check_children(converted_parent, child_entities)
@@ -364,7 +364,7 @@ class TestBaseSchemaEntityConverter(TestCase):
         self.assertEqual(len(family.homer.children), 0)
         family.root.parents = [family.homer]
 
-        schema_root = TestSchemaEntityConverter().convert(family.root)
+        schema_root = _TestSchemaEntityConverter().convert(family.root)
 
         session = SessionFactory.for_schema_base(TestBase)
         session.add(schema_root)
@@ -375,7 +375,7 @@ class TestBaseSchemaEntityConverter(TestCase):
         db_parents = session.query(schema.Parent).all()
         self.assertEqual(len(db_parents), 1)
 
-        converted_root = TestSchemaEntityConverter().convert(one(db_roots))
+        converted_root = _TestSchemaEntityConverter().convert(one(db_roots))
         self.assertEqual(len(converted_root.parents), 1)
         self.assertEqual(converted_root.parents[0], family.homer)
         self.assertEqual(converted_root.parents[0].children, [])
@@ -391,7 +391,7 @@ class TestBaseSchemaEntityConverter(TestCase):
         family.homer.children = family.child_entities
         family.marge.children = family.child_entities
 
-        schema_root = TestSchemaEntityConverter().convert(family.root)
+        schema_root = _TestSchemaEntityConverter().convert(family.root)
 
         session = SessionFactory.for_schema_base(TestBase)
         session.add(schema_root)
@@ -406,7 +406,7 @@ class TestBaseSchemaEntityConverter(TestCase):
         db_children = session.query(schema.Child).all()
         self.assertEqual(len(db_children), len(family.child_entities))
 
-        converted_root = TestSchemaEntityConverter().convert(one(db_root))
+        converted_root = _TestSchemaEntityConverter().convert(one(db_root))
 
         for converted_parent in converted_root.parents:
             self._check_children(converted_parent, family.child_entities)
@@ -424,7 +424,7 @@ class TestBaseSchemaEntityConverter(TestCase):
         family.bart.favorite_toy = toy
         family.maggie.favorite_toy = toy
 
-        schema_root = TestSchemaEntityConverter().convert(family.root)
+        schema_root = _TestSchemaEntityConverter().convert(family.root)
 
         session = SessionFactory.for_schema_base(TestBase)
         session.add(schema_root)
@@ -439,7 +439,7 @@ class TestBaseSchemaEntityConverter(TestCase):
         db_toys = session.query(schema.Toy).all()
         self.assertEqual(len(db_toys), 1)
 
-        converted_root = TestSchemaEntityConverter().convert(one(db_roots))
+        converted_root = _TestSchemaEntityConverter().convert(one(db_roots))
         self.assertEqual(len(converted_root.parents), 1)
         self.assertEqual(len(converted_root.parents[0].children), 2)
         self.assertEqual(converted_root.parents[0].children[0].favorite_toy,
