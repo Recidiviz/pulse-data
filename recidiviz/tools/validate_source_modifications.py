@@ -28,6 +28,7 @@ $ python -m recidiviz.tools.validate_source_modifications [--commit-range RANGE]
 """
 
 import argparse
+import logging
 import os
 import re
 import subprocess
@@ -118,7 +119,7 @@ def check_assertions(modified_files: FrozenSet[str], sets_to_skip: FrozenSet[str
     failed_assertion_files: List[Tuple[FrozenSet[str], FrozenSet[str]]] = []
     for set_to_validate, assertion_prefixes in MODIFIED_FILE_ASSERTIONS.items():
         if set_to_validate in sets_to_skip:
-            print(f'Skipping {set_to_validate} check due to skip commits.')
+            logging.info('Skipping %s check due to skip commits.', set_to_validate)
             continue
         matched_prefixes = match_assertions(modified_files, assertion_prefixes)
         if frozenset() < matched_prefixes < assertion_prefixes:
@@ -156,6 +157,9 @@ def get_assertions_to_skip(commit_range: str) -> FrozenSet[str]:
          commit_range], stdout=subprocess.PIPE)
     skip_commits, _ = git.communicate()
     git.wait()
+    if git.returncode != 0:
+        logging.error('git log failed')
+        sys.exit(git.returncode)
     sets_to_skip = set()  # type: Set[str]
     full_validation_message = re.findall(r'\[skip validation(.*?)\]', skip_commits.decode())
     if full_validation_message:
@@ -173,7 +177,7 @@ def main(commit_range: str) -> None:
     if failures:
         return_code = 1
         for failure in failures:
-            print(format_failure(failure))
+            logging.warning(format_failure(failure))
 
     sys.exit(return_code)
 
