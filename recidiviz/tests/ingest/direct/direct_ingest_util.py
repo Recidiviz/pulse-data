@@ -57,7 +57,7 @@ from recidiviz.utils import metadata
 from recidiviz.utils.regions import Region
 
 
-class TestSafeGcsCsvReader(GcsfsCsvReader):
+class _TestSafeGcsCsvReader(GcsfsCsvReader):
     def __init__(self, fs: FakeGCSFileSystem):
         super().__init__(create_autospec(gcsfs.GCSFileSystem))
         self.fs = fs
@@ -255,7 +255,7 @@ def build_gcsfs_controller_for_tests(
                             ingest_directory_path=f'{fixture_path_prefix}/fixtures',
                             storage_directory_path='storage/path',
                             **kwargs)
-                        controller.csv_reader = TestSafeGcsCsvReader(fake_fs)
+                        controller.csv_reader = _TestSafeGcsCsvReader(fake_fs)
                         controller.raw_file_import_manager.csv_reader = controller.csv_reader
 
                         task_manager.set_controller(controller)
