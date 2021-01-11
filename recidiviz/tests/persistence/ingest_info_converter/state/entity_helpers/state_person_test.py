@@ -20,8 +20,6 @@
 import unittest
 from datetime import date, datetime
 
-from mock import patch
-
 from recidiviz.common.constants.person_characteristics import Gender, \
     ResidencyStatus
 from recidiviz.common.ingest_metadata import IngestMetadata
@@ -53,7 +51,7 @@ class StatePersonConverterTest(unittest.TestCase):
         # Act
         state_person.copy_fields_to_builder(
             self.subject, ingest_person, metadata)
-        result = self.subject.build()
+        result = self.subject.build(entities.StatePerson.deserialize)
 
         # Assert
         expected_result = entities.StatePerson.new_with_defaults(
@@ -84,7 +82,7 @@ class StatePersonConverterTest(unittest.TestCase):
 
     def testParseStatePerson_WithSurnameAndGivenNames_UsesFullNameAsJson(self):
         # Arrange
-        metadata = IngestMetadata.new_with_defaults()
+        metadata = IngestMetadata.new_with_defaults(region='us_xx')
         ingest_person = ingest_info_pb2.StatePerson(
             state_code='us_xx',
             surname='UNESCAPED,SURNAME"WITH-CHARS"',
@@ -95,7 +93,7 @@ class StatePersonConverterTest(unittest.TestCase):
         # Act
         state_person.copy_fields_to_builder(
             self.subject, ingest_person, metadata)
-        result = self.subject.build()
+        result = self.subject.build(entities.StatePerson.deserialize)
 
         # Assert
         expected_full_name = \
@@ -104,28 +102,6 @@ class StatePersonConverterTest(unittest.TestCase):
                     'UNESCAPED,SURNAME\\"WITH-CHARS\\"')
         expected_result = entities.StatePerson.new_with_defaults(
             state_code='US_XX', full_name=expected_full_name)
-
-        self.assertEqual(result, expected_result)
-
-    @patch('recidiviz.persistence.ingest_info_converter.utils.converter_utils.'
-           'datetime.datetime')
-    def testParseStatePerson_InfersBirthdateFromAge(self, mock_datetime):
-        # Arrange
-        mock_datetime.now.return_value = _NOW
-        metadata = IngestMetadata.new_with_defaults()
-        ingest_person = ingest_info_pb2.StatePerson(state_code='us_xx', age='27')
-
-        # Act
-        state_person.copy_fields_to_builder(
-            self.subject, ingest_person, metadata)
-        result = self.subject.build()
-
-        # Assert
-        expected_result = entities.StatePerson.new_with_defaults(
-            state_code='US_XX',
-            birthdate=datetime(year=_NOW.year - 27, month=1, day=1).date(),
-            birthdate_inferred_from_age=True
-        )
 
         self.assertEqual(result, expected_result)
 
@@ -139,7 +115,7 @@ class StatePersonConverterTest(unittest.TestCase):
         # Act
         state_person.copy_fields_to_builder(
             self.subject, ingest_person, metadata)
-        result = self.subject.build()
+        result = self.subject.build(entities.StatePerson.deserialize)
 
         # Assert
         expected_result = entities.StatePerson.new_with_defaults(
@@ -159,7 +135,7 @@ class StatePersonConverterTest(unittest.TestCase):
         # Act
         state_person.copy_fields_to_builder(
             self.subject, ingest_person, metadata)
-        result = self.subject.build()
+        result = self.subject.build(entities.StatePerson.deserialize)
 
         # Assert
         expected_result = entities.StatePerson.new_with_defaults(
