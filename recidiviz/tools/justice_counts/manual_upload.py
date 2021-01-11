@@ -45,6 +45,7 @@ import pandas
 from sqlalchemy import cast
 from sqlalchemy.orm.session import Session
 from sqlalchemy.sql.schema import UniqueConstraint
+import recidiviz.common.constants.person_characteristics as person_characteristics
 
 from recidiviz.common.constants import states
 from recidiviz.common.constants.enum_overrides import EnumOverrides
@@ -83,10 +84,25 @@ class Dimension:
 
     @classmethod
     @abstractmethod
+    def build_overrides(cls: Type[DimensionT], mapping_overrides: Dict[str, str]) -> EnumOverrides:
+        """
+        Builds EnumOverrides for this Dimension, based on the provided mapping_overrides.
+        Should raise an error if this Dimension is not normalized or if overrides are not supported.
+        """
+
+    @classmethod
+    @abstractmethod
+    def is_normalized(cls) -> bool:
+        """
+        Returns whether the dimensions cls is normalized
+        """
+
+    @classmethod
+    @abstractmethod
     def dimension_identifier(cls) -> str:
         """The globally unique dimension_identifier of this dimension, used when storing it in the database.
 
-        E.g. 'metric/population/type' or 'global/gender/raw'.
+        E.g. 'metric/population/type' or 'global/facility/raw'.
         """
 
     @property
@@ -112,6 +128,14 @@ class RawDimension(Dimension, metaclass=ABCMeta):
             raise ValueError(f"Unexpected enum_overrides when building raw dimension value: {enum_overrides}")
         return cls(dimension_cell_value)
 
+    @classmethod
+    def build_overrides(cls, mapping_overrides: Dict[str, str]) -> EnumOverrides:
+        raise ValueError("Can't raise override for RawDimension class")
+
+    @classmethod
+    def is_normalized(cls) -> bool:
+        return False
+
     @property
     def dimension_value(self) -> str:
         return self.value
@@ -136,13 +160,25 @@ def get_synthetic_dimension(column_name: str, source: str) -> Type[Dimension]:
 
 
 EntityEnumT = TypeVar('EntityEnumT', bound=EntityEnum)
-def parse_entity_enum(dimension_cls: Type[EntityEnumT], dimension_cell_value: str,
+def parse_entity_enum(enum_cls: Type[EntityEnumT], dimension_cell_value: str,
                       enum_overrides: Optional[EnumOverrides]) -> EntityEnumT:
-    entity_enum = dimension_cls.parse(dimension_cell_value, enum_overrides or EnumOverrides.empty())
-    if entity_enum is None or not isinstance(entity_enum, dimension_cls):
-        raise ValueError(f"Attempting to parse '{dimension_cell_value}' as {dimension_cls} returned unexpected "
+    entity_enum = enum_cls.parse(dimension_cell_value, enum_overrides or EnumOverrides.empty())
+    if entity_enum is None or not isinstance(entity_enum, enum_cls):
+        raise ValueError(f"Attempting to parse '{dimension_cell_value}' as {enum_cls} returned unexpected "
                          f"entity: {entity_enum}")
     return entity_enum
+
+
+def build_entity_overrides(enum_cls: Type[EntityEnumT], mapping_overrides: Dict[str, str]) -> EnumOverrides:
+    overrides_builder = EnumOverrides.Builder()
+    for value, mapping in mapping_overrides.items():
+        mapped = enum_cls(mapping)
+        if mapped is None:
+            raise ValueError(f"Unable to parse override value '{mapping}' as {enum_cls}")
+        overrides_builder.add(value, mapped)
+    overrides = overrides_builder.build()
+    return overrides
+
 
 class PopulationType(Dimension, EntityEnum, metaclass=EntityEnumMeta):
     PRISON = 'PRISON'
@@ -151,6 +187,14 @@ class PopulationType(Dimension, EntityEnum, metaclass=EntityEnumMeta):
     @classmethod
     def get(cls, dimension_cell_value: str, enum_overrides: Optional[EnumOverrides] = None) -> 'PopulationType':
         return parse_entity_enum(cls, dimension_cell_value, enum_overrides)
+
+    @classmethod
+    def build_overrides(cls, mapping_overrides: Dict[str, str]) -> EnumOverrides:
+        return build_entity_overrides(cls, mapping_overrides)
+
+    @classmethod
+    def is_normalized(cls) -> bool:
+        return True
 
     @classmethod
     def dimension_identifier(cls) -> str:
@@ -169,7 +213,9 @@ class PopulationType(Dimension, EntityEnum, metaclass=EntityEnumMeta):
 
 
 class ReleaseType(Dimension, EntityEnum, metaclass=EntityEnumMeta):
-
+    """
+    Release type dimension
+    """
     # Release from prison to supervision
     TO_SUPERVISION = 'TO_SUPERVISION'
 
@@ -182,6 +228,14 @@ class ReleaseType(Dimension, EntityEnum, metaclass=EntityEnumMeta):
     @classmethod
     def get(cls, dimension_cell_value: str, enum_overrides: Optional[EnumOverrides] = None) -> 'ReleaseType':
         return parse_entity_enum(cls, dimension_cell_value, enum_overrides)
+
+    @classmethod
+    def build_overrides(cls, mapping_overrides: Dict[str, str]) -> EnumOverrides:
+        return build_entity_overrides(cls, mapping_overrides)
+
+    @classmethod
+    def is_normalized(cls) -> bool:
+        return True
 
     @classmethod
     def dimension_identifier(cls) -> str:
@@ -217,6 +271,14 @@ class AdmissionType(Dimension, EntityEnum, metaclass=EntityEnumMeta):
         return parse_entity_enum(cls, dimension_cell_value, enum_overrides)
 
     @classmethod
+    def build_overrides(cls, mapping_overrides: Dict[str, str]) -> EnumOverrides:
+        return build_entity_overrides(cls, mapping_overrides)
+
+    @classmethod
+    def is_normalized(cls) -> bool:
+        return True
+
+    @classmethod
     def dimension_identifier(cls) -> str:
         return 'metric/admission/type'
 
@@ -240,6 +302,14 @@ class SupervisionViolationType(Dimension, EntityEnum, metaclass=EntityEnumMeta):
         cls, dimension_cell_value: str, enum_overrides: Optional[EnumOverrides] = None
     ) -> 'SupervisionViolationType':
         return parse_entity_enum(cls, dimension_cell_value, enum_overrides)
+
+    @classmethod
+    def build_overrides(cls, mapping_overrides: Dict[str, str]) -> EnumOverrides:
+        return build_entity_overrides(cls, mapping_overrides)
+
+    @classmethod
+    def is_normalized(cls) -> bool:
+        return True
 
     @classmethod
     def dimension_identifier(cls) -> str:
@@ -268,6 +338,14 @@ class SupervisionType(Dimension, EntityEnum, metaclass=EntityEnumMeta):
         return parse_entity_enum(cls, dimension_cell_value, enum_overrides)
 
     @classmethod
+    def build_overrides(cls, mapping_overrides: Dict[str, str]) -> EnumOverrides:
+        return build_entity_overrides(cls, mapping_overrides)
+
+    @classmethod
+    def is_normalized(cls) -> bool:
+        return True
+
+    @classmethod
     def dimension_identifier(cls) -> str:
         return 'metric/supervision/type'
 
@@ -286,13 +364,21 @@ def assert_no_overrides(dimension_cls: Type[Dimension], enum_overrides: Optional
     if enum_overrides is not None:
         raise ValueError(f'Overrides not supported for {dimension_cls} but received {enum_overrides}')
 
-class Country(Dimension, enum.Enum):
+
+class Country(Dimension, EntityEnum, metaclass=EntityEnumMeta):
     US = 'US'
 
     @classmethod
     def get(cls, dimension_cell_value: str, enum_overrides: Optional[EnumOverrides] = None) -> 'Country':
-        assert_no_overrides(cls, enum_overrides)
-        return cls(dimension_cell_value)
+        return parse_entity_enum(cls, dimension_cell_value, enum_overrides)
+
+    @classmethod
+    def build_overrides(cls, mapping_overrides: Dict[str, str]) -> EnumOverrides:
+        return build_entity_overrides(cls, mapping_overrides)
+
+    @classmethod
+    def is_normalized(cls) -> bool:
+        return True
 
     @classmethod
     def dimension_identifier(cls) -> str:
@@ -301,6 +387,10 @@ class Country(Dimension, enum.Enum):
     @property
     def dimension_value(self) -> str:
         return self.value
+
+    @classmethod
+    def _get_default_map(cls) -> Dict[str, 'Country']:
+        return {}
 
 
 @attr.s(frozen=True)
@@ -313,6 +403,14 @@ class State(Dimension):
         return cls(dimension_cell_value)
 
     @classmethod
+    def build_overrides(cls, mapping_overrides: Dict[str, str]) -> EnumOverrides:
+        raise ValueError("Can't create overrides for this class")
+
+    @classmethod
+    def is_normalized(cls) -> bool:
+        return False
+
+    @classmethod
     def dimension_identifier(cls) -> str:
         return 'global/location/state'
 
@@ -321,11 +419,18 @@ class State(Dimension):
         return self.state_code.value
 
 
-class County(Dimension, enum.Enum):
+class County(Dimension, EntityEnum, metaclass=EntityEnumMeta):
     @classmethod
     def get(cls, dimension_cell_value: str, enum_overrides: Optional[EnumOverrides] = None) -> 'County':
-        assert_no_overrides(cls, enum_overrides)
-        return cls(dimension_cell_value)
+        return parse_entity_enum(cls, dimension_cell_value, enum_overrides)
+
+    @classmethod
+    def build_overrides(cls, mapping_overrides: Dict[str, str]) -> EnumOverrides:
+        return build_entity_overrides(cls, mapping_overrides)
+
+    @classmethod
+    def is_normalized(cls) -> bool:
+        return True
 
     @classmethod
     def dimension_identifier(cls) -> str:
@@ -334,6 +439,11 @@ class County(Dimension, enum.Enum):
     @property
     def dimension_value(self) -> str:
         return self.value
+
+    @classmethod
+    def _get_default_map(cls) -> Dict[str, 'County']:
+        return {}
+
 
 Location = Union[Country, State, County]
 
@@ -348,6 +458,14 @@ class Facility(Dimension):
         return cls(dimension_cell_value)
 
     @classmethod
+    def build_overrides(cls, mapping_overrides: Dict[str, str]) -> EnumOverrides:
+        raise ValueError("Can't create overrides for this class")
+
+    @classmethod
+    def is_normalized(cls) -> bool:
+        return False
+
+    @classmethod
     def dimension_identifier(cls) -> str:
         return 'global/facility/raw'
 
@@ -355,37 +473,79 @@ class Facility(Dimension):
     def dimension_value(self) -> str:
         return self.name
 
-# TODO(#4472): Use main Race enum and normalize values
+
 @attr.s(frozen=True)
 class Race(Dimension):
     value: str = attr.ib()
 
     @classmethod
     def get(cls, dimension_cell_value: str, enum_overrides: Optional[EnumOverrides] = None) -> 'Race':
-        assert_no_overrides(cls, enum_overrides)
-        return cls(dimension_cell_value)
+        parsed_enum = parse_entity_enum(person_characteristics.Race, dimension_cell_value, enum_overrides)
+        return cls(parsed_enum.value)
+
+    @classmethod
+    def build_overrides(cls, mapping_overrides: Dict[str, str]) -> EnumOverrides:
+        return build_entity_overrides(person_characteristics.Race, mapping_overrides)
+
+    @classmethod
+    def is_normalized(cls) -> bool:
+        return True
 
     @classmethod
     def dimension_identifier(cls) -> str:
-        return 'global/race/raw'
+        return 'global/race/type'
 
     @property
     def dimension_value(self) -> str:
         return self.value
 
-# TODO(#4472): Use main Gender enum and normalize values
+
+@attr.s(frozen=True)
+class Ethnicity(Dimension):
+    value: str = attr.ib()
+
+    @classmethod
+    def get(cls, dimension_cell_value: str, enum_overrides: Optional[EnumOverrides] = None) -> 'Ethnicity':
+        parsed_enum = parse_entity_enum(person_characteristics.Ethnicity, dimension_cell_value, enum_overrides)
+        return cls(parsed_enum.value)
+
+    @classmethod
+    def build_overrides(cls, mapping_overrides: Dict[str, str]) -> EnumOverrides:
+        return build_entity_overrides(person_characteristics.Ethnicity, mapping_overrides)
+
+    @classmethod
+    def is_normalized(cls) -> bool:
+        return True
+
+    @classmethod
+    def dimension_identifier(cls) -> str:
+        return 'global/ethnicity/type'
+
+    @property
+    def dimension_value(self) -> str:
+        return self.value
+
+
 @attr.s(frozen=True)
 class Gender(Dimension):
     value: str = attr.ib()
 
     @classmethod
     def get(cls, dimension_cell_value: str, enum_overrides: Optional[EnumOverrides] = None) -> 'Gender':
-        assert_no_overrides(cls, enum_overrides)
-        return cls(dimension_cell_value)
+        parsed_enum = parse_entity_enum(person_characteristics.Gender, dimension_cell_value, enum_overrides)
+        return cls(parsed_enum.value)
+
+    @classmethod
+    def build_overrides(cls, mapping_overrides: Dict[str, str]) -> EnumOverrides:
+        return build_entity_overrides(person_characteristics.Gender, mapping_overrides)
+
+    @classmethod
+    def is_normalized(cls) -> bool:
+        return True
 
     @classmethod
     def dimension_identifier(cls) -> str:
-        return 'global/gender/raw'
+        return 'global/gender/type'
 
     @property
     def dimension_value(self) -> str:
@@ -400,6 +560,14 @@ class Age(Dimension):
     def get(cls, dimension_cell_value: str, enum_overrides: Optional[EnumOverrides] = None) -> 'Age':
         assert_no_overrides(cls, enum_overrides)
         return cls(dimension_cell_value)
+
+    @classmethod
+    def build_overrides(cls, mapping_overrides: Dict[str, str]) -> EnumOverrides:
+        raise ValueError("Can't create overrides for this class")
+
+    @classmethod
+    def is_normalized(cls) -> bool:
+        return False
 
     @classmethod
     def dimension_identifier(cls) -> str:
@@ -733,15 +901,9 @@ class ColumnDimensionMapping:
     ) -> 'ColumnDimensionMapping':
         overrides = None
         if mapping_overrides is not None:
-            if not issubclass(dimension_cls, EntityEnum):
-                raise ValueError(f"Overrides can only be specified for EntityEnum dimensions, not {dimension_cls}")
-            overrides_builder = EnumOverrides.Builder()
-            for value, mapping in mapping_overrides.items():
-                mapped = dimension_cls(mapping)
-                if mapped is None:
-                    raise ValueError(f"Unable to parse override value '{mapping}' as {dimension_cls}")
-                overrides_builder.add(value, mapped)
-            overrides = overrides_builder.build()
+            if not dimension_cls.is_normalized():
+                raise ValueError(f"Overrides can only be specified for normalized dimensions, not {dimension_cls}")
+            overrides = dimension_cls.build_overrides(mapping_overrides)
         return cls(dimension_cls, overrides, strict if strict is not None else True)
 
     @classmethod
@@ -751,7 +913,7 @@ class ColumnDimensionMapping:
 
     def get_raw_dimension_cls(self) -> Optional[Type[Dimension]]:
         # If it is an EntityEnum, it needs to be normalized.
-        if issubclass(self.dimension_cls, EntityEnum):
+        if self.dimension_cls.is_normalized():
             return raw_for_dimension_cls(self.dimension_cls)
         return None
 
