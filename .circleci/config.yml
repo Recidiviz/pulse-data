@@ -57,6 +57,7 @@ jobs:
   base-unit-tests:
     docker:
       - image: cimg/python:3.7.9
+    resource_class: medium
     steps:
       - checkout
       - *install_java
@@ -71,6 +72,7 @@ jobs:
   db-tests:
     docker:
       - image: cimg/python:3.7.9
+    resource_class: medium
     steps:
       - checkout
       - *install_java
@@ -102,7 +104,7 @@ jobs:
   lint:
     docker:
       - image: cimg/python:3.7.9
-    resource_class: small
+    resource_class: medium
     steps:
       - checkout
       - *restore_pipenv_cache
@@ -117,13 +119,23 @@ jobs:
       - terraform/validate:
           path: ./recidiviz/tools/deploy/terraform
       - run:
-          name: Lint
+          name: Validate Source Modifications
           command: |
-            pipenv run python -m recidiviz.tools.validate_source_modifications --commit-range \
-              $(git rev-parse << pipeline.git.base_revision >>^)...<<pipeline.git.revision>>
+            pipenv run python -m recidiviz.tools.validate_source_modifications \
+              --commit-range $(git merge-base origin/master HEAD)...HEAD
+      - run:
+          name: Check pipenv is locked
+          command: |
             pipenv run python -m recidiviz.tools.is_pipenv_locked
+      - run:
+          name: Mypy Check
+          command: |
             pipenv run mypy recidiviz
+      - run:
+          name: Pylint
+          command: |
             pipenv run ./recidiviz/tools/travis/run_pylint.sh
+          no_output_timeout: 20m
 
 workflows:
   main:
