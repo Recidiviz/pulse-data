@@ -5,12 +5,13 @@ publish_date: '2020-10-05'
 url: 'https://www.colorado.gov/pacific/cdoc/departmental-reports-and-statistics'
 assignee: 'Solange Knowles'
 tables:
-    - name: 'table'
+    - file: 'table.csv'
       date_range:
         fixed:
-          type: 'SNAPSHOT'
+          type: 'RANGE'
+          converter: 'YEAR'
           input:
-            - '2020-09-01'
+            - '2019'
       system: 'CORRECTIONS'
       metric:
         population:
@@ -27,7 +28,7 @@ tables:
             Black: 'BLACK'
             Native American: 'AMERICAN_INDIAN_ALASKAN_NATIVE'
             Asian: 'ASIAN'
-            Data Unavailable: 'EXTERNAL_UNKNOWN'
+            Data Unavailable: 'RANDOM'
         - column_name: 'Sex'
           dimension_name: 'GENDER'
       value_column:
