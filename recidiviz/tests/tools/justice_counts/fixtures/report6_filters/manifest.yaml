@@ -21,6 +21,22 @@ tables:
       dimension_columns:
         - column_name: 'Race'
           dimension_name: 'RACE'
+          strict: False
+          mapping_overrides:
+            White: 'WHITE'
+            Black: 'BLACK'
+            Native American: 'AMERICAN_INDIAN_ALASKAN_NATIVE'
+            Asian: 'ASIAN'
+            Data Unavailable: 'EXTERNAL_UNKNOWN'
+        - column_name: 'Race'
+          dimension_name: 'ETHNICITY'
+          mapping_overrides:
+            Hispanic: 'HISPANIC'
+            White: 'NOT_HISPANIC'
+            Black: 'NOT_HISPANIC'
+            Native American: 'NOT_HISPANIC'
+            Asian: 'NOT_HISPANIC'
+            Data Unavailable: 'EXTERNAL_UNKNOWN'
         - column_name: 'Sex'
           dimension_name: 'GENDER'
       value_column:

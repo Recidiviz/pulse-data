@@ -42,6 +42,9 @@ def manifest_filepath(report_id: str):
 
 
 class FakeType(manual_upload.Dimension, EntityEnum, metaclass=EntityEnumMeta):
+    """
+    Fake dimension used for testing
+    """
     A = 'A'
     B = 'B'
     C = 'C'
@@ -49,6 +52,21 @@ class FakeType(manual_upload.Dimension, EntityEnum, metaclass=EntityEnumMeta):
     @classmethod
     def get(cls, dimension_cell_value: str, enum_overrides: Optional[EnumOverrides] = None) -> 'FakeType':
         return manual_upload.parse_entity_enum(cls, dimension_cell_value, enum_overrides)
+
+    @classmethod
+    def build_overrides(cls, mapping_overrides: Dict[str, str]) -> EnumOverrides:
+        overrides_builder = EnumOverrides.Builder()
+        for value, mapping in mapping_overrides.items():
+            mapped = cls(mapping)
+            if mapped is None:
+                raise ValueError(f"Unable to parse override value '{mapping}' as {cls}")
+            overrides_builder.add(value, mapped)
+        overrides = overrides_builder.build()
+        return overrides
+
+    @classmethod
+    def is_normalized(cls) -> bool:
+        return True
 
     @classmethod
     def dimension_identifier(cls) -> str:
@@ -68,12 +86,30 @@ class FakeType(manual_upload.Dimension, EntityEnum, metaclass=EntityEnumMeta):
 
 
 class FakeSubtype(manual_upload.Dimension, EntityEnum, metaclass=EntityEnumMeta):
+    """
+    Fake dimension used for testing
+    """
     B_1 = 'B_1'
     B_2 = 'B_2'
 
     @classmethod
     def get(cls, dimension_cell_value: str, enum_overrides: Optional[EnumOverrides] = None) -> 'FakeSubtype':
         return manual_upload.parse_entity_enum(cls, dimension_cell_value, enum_overrides)
+
+    @classmethod
+    def build_overrides(cls, mapping_overrides: Dict[str, str]) -> EnumOverrides:
+        overrides_builder = EnumOverrides.Builder()
+        for value, mapping in mapping_overrides.items():
+            mapped = cls(mapping)
+            if mapped is None:
+                raise ValueError(f"Unable to parse override value '{mapping}' as {cls}")
+            overrides_builder.add(value, mapped)
+        overrides = overrides_builder.build()
+        return overrides
+
+    @classmethod
+    def is_normalized(cls) -> bool:
+        return True
 
     @classmethod
     def dimension_identifier(cls) -> str:
@@ -229,7 +265,8 @@ class ManualUploadTest(unittest.TestCase):
         [facility_totals_definition, facility_demographics_definition] = session.query(schema.ReportTableDefinition) \
             .order_by(sql.func.array_length(schema.ReportTableDefinition.aggregated_dimensions, 1)).all()
         self.assertEqual(['global/facility/raw'], facility_totals_definition.aggregated_dimensions)
-        self.assertEqual(['global/facility/raw', 'global/gender/raw', 'global/race/raw'],
+        self.assertEqual(['global/ethnicity/type', 'global/ethnicity/type/raw', 'global/facility/raw',
+                          'global/gender/type', 'global/gender/type/raw', 'global/race/type', 'global/race/type/raw'],
                          facility_demographics_definition.aggregated_dimensions)
 
         [facility_totals_table] = session.query(schema.ReportTableInstance) \
@@ -238,24 +275,27 @@ class ManualUploadTest(unittest.TestCase):
             .filter(schema.ReportTableInstance.report_table_definition == facility_demographics_definition).all()
 
         # Sort in Python, as postgres sort is platform dependent (case sensitivity)
-        facility_demographics = sorted([
-            (tuple(cell.aggregated_dimension_values), int(cell.value)) for cell in
-            session.query(schema.Cell)
-            .filter(schema.Cell.report_table_instance == facility_demographics_table).all()])
+        facility_demographics_result = session.query(schema.Cell) \
+            .filter(schema.Cell.report_table_instance == facility_demographics_table).all()
+        facility_demographics = [
+            (tuple(cell.aggregated_dimension_values), int(cell.value)) for cell in facility_demographics_result]
         # There are 180 cells in the `facility_with_demographics` csv
         self.assertEqual(180, len(facility_demographics))
-        self.assertEqual((('CMCF', 'Female', 'Asian'), 0), facility_demographics[0])
-        self.assertEqual((('Youthful Offender Facility', 'Male', 'White'), 2), facility_demographics[-1])
+        self.assertEqual((('EXTERNAL_UNKNOWN', 'Data Unavailable', 'CMCF', 'FEMALE',
+                           'Female', 'EXTERNAL_UNKNOWN', 'Data Unavailable'), 0), facility_demographics[0])
+        self.assertEqual(((None, 'White', 'Youthful Offender Facility', 'MALE', 'Male', 'WHITE', 'White'), 2),
+                         facility_demographics[-1])
 
         facility_totals = {cell.aggregated_dimension_values[0]: int(cell.value) for cell in
                            session.query(schema.Cell)
                                .filter(schema.Cell.report_table_instance == facility_totals_table).all()}
         facility_totals_from_demographics = {result[0]: int(result[1]) for result in
                                              session.query(
-            schema.Cell.aggregated_dimension_values[1], sql.func.sum(
-                schema.Cell.value))
-            .filter(schema.Cell.report_table_instance == facility_demographics_table)
-            .group_by(schema.Cell.aggregated_dimension_values[1]).all()}
+                                                 schema.Cell.aggregated_dimension_values[3], sql.func.sum(
+                                                     schema.Cell.value))
+                                                 .filter(
+                                                 schema.Cell.report_table_instance == facility_demographics_table)
+                                                 .group_by(schema.Cell.aggregated_dimension_values[3]).all()}
 
         EXPECTED_TOTALS = {
             'MSP': 2027,
@@ -436,23 +476,30 @@ class ManualUploadTest(unittest.TestCase):
         self.assertEqual(['global/facility/raw', 'global/location/state', 'metric/population/type'],
                          table_definition.filtered_dimensions)
         self.assertEqual(['MSP', 'US_CO', 'PRISON'], table_definition.filtered_dimension_values)
-        self.assertEqual(['global/gender/raw', 'global/race/raw'], table_definition.aggregated_dimensions)
+        self.assertEqual(['global/ethnicity/type', 'global/ethnicity/type/raw', 'global/gender/type',
+                          'global/gender/type/raw', 'global/race/type', 'global/race/type/raw'],
+                         table_definition.aggregated_dimensions)
 
         cells = session.query(schema.Cell).all()
-        self.assertEqual([
-            (['Male', 'Black'], decimal.Decimal(1370)),
-            (['Female', 'Black'], decimal.Decimal(0)),
-            (['Male', 'White'], decimal.Decimal(638)),
-            (['Female', 'White'], decimal.Decimal(0)),
-            (['Male', 'Hispanic'], decimal.Decimal(15)),
-            (['Female', 'Hispanic'], decimal.Decimal(0)),
-            (['Male', 'Native American'], decimal.Decimal(0)),
-            (['Female', 'Native American'], decimal.Decimal(0)),
-            (['Male', 'Asian'], decimal.Decimal(4)),
-            (['Female', 'Asian'], decimal.Decimal(0)),
-            (['Male', 'Data Unavailable'], decimal.Decimal(0)),
-            (['Female', 'Data Unavailable'], decimal.Decimal(0)),
-        ], [(cell.aggregated_dimension_values, cell.value) for cell in cells])
+        self.assertEqual([(['NOT_HISPANIC', 'Black', 'MALE', 'Male', 'BLACK', 'Black'], decimal.Decimal(1370)),
+                          (['NOT_HISPANIC', 'Black', 'FEMALE', 'Female', 'BLACK', 'Black'],
+                           decimal.Decimal(0)),
+                          (['NOT_HISPANIC', 'White', 'MALE', 'Male', 'WHITE', 'White'], decimal.Decimal(638)),
+                          (['NOT_HISPANIC', 'White', 'FEMALE', 'Female', 'WHITE', 'White'], decimal.Decimal(0)),
+                          (['HISPANIC', 'Hispanic', 'MALE', 'Male', None, 'Hispanic'], decimal.Decimal(15)),
+                          (['HISPANIC', 'Hispanic', 'FEMALE', 'Female', None, 'Hispanic'], decimal.Decimal(0)),
+                          (['NOT_HISPANIC', 'Native American', 'MALE', 'Male', 'AMERICAN_INDIAN_ALASKAN_NATIVE',
+                            'Native American'], decimal.Decimal(0)),
+                          (['NOT_HISPANIC', 'Native American', 'FEMALE', 'Female', 'AMERICAN_INDIAN_ALASKAN_NATIVE',
+                            'Native American'], decimal.Decimal(0)),
+                          (['NOT_HISPANIC', 'Asian', 'MALE', 'Male', 'ASIAN', 'Asian'], decimal.Decimal(4)),
+                          (['NOT_HISPANIC', 'Asian', 'FEMALE', 'Female', 'ASIAN', 'Asian'], decimal.Decimal(0)),
+                          (['EXTERNAL_UNKNOWN', 'Data Unavailable', 'MALE', 'Male', 'EXTERNAL_UNKNOWN',
+                            'Data Unavailable'], decimal.Decimal(0)),
+                          (['EXTERNAL_UNKNOWN', 'Data Unavailable', 'FEMALE', 'Female', 'EXTERNAL_UNKNOWN',
+                            'Data Unavailable'], decimal.Decimal(0))
+                          ],
+                         [(cell.aggregated_dimension_values, cell.value) for cell in cells])
 
     def test_supportCommaNumbers_isPersisted(self):
         # Act
@@ -464,18 +511,18 @@ class ManualUploadTest(unittest.TestCase):
         cells = session.query(schema.Cell).all()
 
         assertion_values = [
-            (['Male', 'Black'], decimal.Decimal(1370)),
-            (['Female', 'Black'], decimal.Decimal(0)),
-            (['Male', 'White'], decimal.Decimal(6384123)),
-            (['Female', 'White'], decimal.Decimal(0)),
-            (['Male', 'Hispanic'], decimal.Decimal(15)),
-            (['Female', 'Hispanic'], decimal.Decimal(0)),
-            (['Male', 'Native American'], decimal.Decimal(0)),
-            (['Female', 'Native American'], decimal.Decimal(0)),
-            (['Male', 'Asian'], decimal.Decimal(4)),
-            (['Female', 'Asian'], decimal.Decimal(0)),
-            (['Male', 'Data Unavailable'], decimal.Decimal(0)),
-            (['Female', 'Data Unavailable'], decimal.Decimal(0)),
+            (['MALE', 'Male', 'BLACK', 'Black'], decimal.Decimal(1370)),
+            (['FEMALE', 'Female', 'BLACK', 'Black'], decimal.Decimal(0)),
+            (['MALE', 'Male', 'WHITE', 'White'], decimal.Decimal(6384123)),
+            (['FEMALE', 'Female', 'WHITE', 'White'], decimal.Decimal(0)),
+            (['MALE', 'Male', None, 'Hispanic'], decimal.Decimal(15)),
+            (['FEMALE', 'Female', None, 'Hispanic'], decimal.Decimal(0)),
+            (['MALE', 'Male', 'AMERICAN_INDIAN_ALASKAN_NATIVE', 'Native American'], decimal.Decimal(0)),
+            (['FEMALE', 'Female', 'AMERICAN_INDIAN_ALASKAN_NATIVE', 'Native American'], decimal.Decimal(0)),
+            (['MALE', 'Male', 'ASIAN', 'Asian'], decimal.Decimal(4)),
+            (['FEMALE', 'Female', 'ASIAN', 'Asian'], decimal.Decimal(0)),
+            (['MALE', 'Male', 'EXTERNAL_UNKNOWN', 'Data Unavailable'], decimal.Decimal(0)),
+            (['FEMALE', 'Female', 'EXTERNAL_UNKNOWN', 'Data Unavailable'], decimal.Decimal(0))
         ]
         actual_values = [(cell.aggregated_dimension_values, cell.value) for cell in cells]
 
@@ -630,16 +677,16 @@ class ManualUploadTest(unittest.TestCase):
         self.assertEqual(['global/location/state', 'metric/admission/type', 'metric/supervision/type'],
                          table_definition.filtered_dimensions)
         self.assertEqual(['US_MI', 'FROM_SUPERVISION', 'PAROLE'], table_definition.filtered_dimension_values)
-        self.assertEqual(['global/gender/raw', 'metric/supervision_violation/type',
+        self.assertEqual(['global/gender/type', 'global/gender/type/raw', 'metric/supervision_violation/type',
                           'metric/supervision_violation/type/raw'], table_definition.aggregated_dimensions)
 
         self.assertEqual(schema.MeasurementType.DELTA, table_definition.measurement_type)
 
         violation_type_values = {
             result[0]: int(result[1]) for result in
-            session.query(schema.Cell.aggregated_dimension_values[2], sql.func.sum(schema.Cell.value))
-            .group_by(schema.Cell.aggregated_dimension_values[2])
-            .all()}
+            session.query(schema.Cell.aggregated_dimension_values[3], sql.func.sum(schema.Cell.value))
+                .group_by(schema.Cell.aggregated_dimension_values[3])
+                .all()}
         EXPECTED_TOTALS = {
             'TECHNICAL': 19_926,
             'NEW_CRIME': 13_625,
@@ -671,6 +718,16 @@ class ManualUploadTest(unittest.TestCase):
             (datetime.date(2019, 1, 1), datetime.date(2020, 1, 1)),
         ], [(row.time_window_start, row.time_window_end) for row in report_table])
 
+    def test_raiseError_race_not_properly_mapped(self):
+        # Act
+        with pytest.raises(EnumParsingError) as exception_info:
+            manual_upload.ingest(self.fs,
+                                 test_utils.prepare_files(self.fs,
+                                                          manifest_filepath('report6_wrong_race_map')))
+
+        # Assert
+        assert "Could not parse RANDOM" in str(exception_info.value)
+
     def test_ingestReport_synthetic_column(self):
         # Act
         manual_upload.ingest(self.fs, test_utils.prepare_files(self.fs, manifest_filepath('report_synthetic_column')))
@@ -698,16 +755,17 @@ class ManualUploadTest(unittest.TestCase):
         session = SessionFactory.for_schema_base(JusticeCountsBase)
 
         [table_definition] = session.query(schema.ReportTableDefinition).all()
-        self.assertEqual(['global/age/raw', 'global/gender/raw'], table_definition.aggregated_dimensions)
+        self.assertEqual(['global/age/raw', 'global/gender/type', 'global/gender/type/raw'],
+                         table_definition.aggregated_dimensions)
 
         cells = session.query(schema.Cell).all()
         self.assertEqual([
-            (['0-24', 'Male'], decimal.Decimal(1370)),
-            (['0-24', 'Female'], decimal.Decimal(0)),
-            (['25-34', 'Male'], decimal.Decimal(638)),
-            (['25-34', 'Female'], decimal.Decimal(0)),
-            (['35-44', 'Male'], decimal.Decimal(15)),
-            (['35-44', 'Female'], decimal.Decimal(0)),
-            (['45+', 'Male'], decimal.Decimal(0)),
-            (['45+', 'Female'], decimal.Decimal(0)),
+            (['0-24', 'MALE', 'Male'], decimal.Decimal(1370)),
+            (['0-24', 'FEMALE', 'Female'], decimal.Decimal(0)),
+            (['25-34', 'MALE', 'Male'], decimal.Decimal(638)),
+            (['25-34', 'FEMALE', 'Female'], decimal.Decimal(0)),
+            (['35-44', 'MALE', 'Male'], decimal.Decimal(15)),
+            (['35-44', 'FEMALE', 'Female'], decimal.Decimal(0)),
+            (['45+', 'MALE', 'Male'], decimal.Decimal(0)),
+            (['45+', 'FEMALE', 'Female'], decimal.Decimal(0))
         ], [(cell.aggregated_dimension_values, cell.value) for cell in cells])
