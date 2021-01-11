@@ -203,7 +203,7 @@ class StateConverter(BaseConverter[entities.StatePerson]):
             state_person_builder.supervising_officer = \
                 converted_supervising_officer
 
-        return state_person_builder.build()
+        return state_person_builder.build(entities.StatePerson.deserialize)  # type: ignore[attr-defined]
 
     def _convert_sentence_group(self,
                                 ingest_sentence_group: StateSentenceGroup) \

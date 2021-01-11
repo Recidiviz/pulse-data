@@ -18,5 +18,3 @@
 """
 Code for converting scraped IngestInfo data to persistence layer entities.
 """
-
-from recidiviz.persistence.ingest_info_converter import ingest_info_converter
