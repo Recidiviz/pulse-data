@@ -33,7 +33,7 @@ function scp_to_data_client() {
   cat | gcloud compute ssh prod-data-client \
     --project $PRODUCTION_PROJECT \
     --zone="us-east4-c" \
-    --command="cat | sudo tee -a $directory/$file > /dev/null"
+    --command="cat | sudo tee $directory/$file > /dev/null"
 }
 
 function copy_secret() {
@@ -55,20 +55,18 @@ copy_secret $STAGING_PROJECT case_triage_db_client_key "private" "dev-case-triag
 copy_secret $STAGING_PROJECT case_triage_db_server_cert "certs" "dev-case-triage-server-ca.pem"
 copy_secret $STAGING_PROJECT case_triage_db_client_cert "certs" "dev-case-triage-client-cert.pem"
 
-# TODO(#5202) Uncomment once production certificates are provisioned
-#copy_secret $PRODUCTION_PROJECT case_triage_db_client_key  "private" "case-triage-client-key.pem"
-#copy_secret $PRODUCTION_PROJECT case_triage_db_server_cert "certs"   "case-triage-server-ca.pem"
-#copy_secret $PRODUCTION_PROJECT case_triage_db_client_cert "certs"   "case-triage-client-cert.pem"
+copy_secret $PRODUCTION_PROJECT case_triage_db_client_key  "private" "case-triage-client-key.pem"
+copy_secret $PRODUCTION_PROJECT case_triage_db_server_cert "certs"   "case-triage-server-ca.pem"
+copy_secret $PRODUCTION_PROJECT case_triage_db_client_cert "certs"   "case-triage-client-cert.pem"
 
 # Jails certs:
 copy_secret $STAGING_PROJECT sqlalchemy_db_client_key "private" "dev-client-key.pem"
 copy_secret $STAGING_PROJECT sqlalchemy_db_server_cert "certs" "dev-server-ca.pem"
 copy_secret $STAGING_PROJECT sqlalchemy_db_client_cert "certs" "dev-client-cert.pem"
 
-# TODO(#5202) Uncomment once production certificates are provisioned
-#copy_secret $PRODUCTION_PROJECT sqlalchemy_db_client_key   "private" "client-key.pem"
-#copy_secret $PRODUCTION_PROJECT sqlalchemy_db_server_cert  "certs"   "server-ca.pem"
-#copy_secret $PRODUCTION_PROJECT sqlalchemy_db_client_cert  "certs"   "client-cert.pem"
+copy_secret $PRODUCTION_PROJECT sqlalchemy_db_client_key   "private" "client-key.pem"
+copy_secret $PRODUCTION_PROJECT sqlalchemy_db_server_cert  "certs"   "server-ca.pem"
+copy_secret $PRODUCTION_PROJECT sqlalchemy_db_client_cert  "certs"   "client-cert.pem"
 
 
 # Justice Counts certs:
@@ -76,10 +74,9 @@ copy_secret $STAGING_PROJECT justice_counts_db_client_key   "private" "dev-justi
 copy_secret $STAGING_PROJECT justice_counts_db_server_cert  "certs" "dev-justice-counts-server-ca.pem"
 copy_secret $STAGING_PROJECT justice_counts_db_client_cert  "certs" "dev-justice-counts-client-cert.pem"
 
-# TODO(#5202) Uncomment once production certificates are provisioned
-#copy_secret $PRODUCTION_PROJECT justice_counts_db_client_key   "private" "justice-counts-client-key.pem"
-#copy_secret $PRODUCTION_PROJECT justice_counts_db_server_cert  "certs"   "justice-counts-server-ca.pem"
-#copy_secret $PRODUCTION_PROJECT justice_counts_db_client_cert  "certs"   "justice-counts-client-cert.pem"
+copy_secret $PRODUCTION_PROJECT justice_counts_db_client_key   "private" "justice-counts-client-key.pem"
+copy_secret $PRODUCTION_PROJECT justice_counts_db_server_cert  "certs"   "justice-counts-server-ca.pem"
+copy_secret $PRODUCTION_PROJECT justice_counts_db_client_cert  "certs"   "justice-counts-client-cert.pem"
 
 
 # Operations certs:
@@ -87,10 +84,9 @@ copy_secret $STAGING_PROJECT operations_db_client_key   "private" "dev-operation
 copy_secret $STAGING_PROJECT operations_db_server_cert  "certs" "dev-operations-server-ca.pem"
 copy_secret $STAGING_PROJECT operations_db_client_cert  "certs" "dev-operations-client-cert.pem"
 
-# TODO(#5202) Uncomment once production certificates are provisioned
-#copy_secret $PRODUCTION_PROJECT operations_db_client_key   "private" "operations-client-key.pem"
-#copy_secret $PRODUCTION_PROJECT operations_db_server_cert  "certs"   "operations-server-ca.pem"
-#copy_secret $PRODUCTION_PROJECT operations_db_client_cert  "certs"   "operations-client-cert.pem"
+copy_secret $PRODUCTION_PROJECT operations_db_client_key   "private" "operations-client-key.pem"
+copy_secret $PRODUCTION_PROJECT operations_db_server_cert  "certs"   "operations-server-ca.pem"
+copy_secret $PRODUCTION_PROJECT operations_db_client_cert  "certs"   "operations-client-cert.pem"
 
 
 # State certs:
@@ -98,7 +94,6 @@ copy_secret $STAGING_PROJECT state_db_client_key   "private" "dev-state-client-k
 copy_secret $STAGING_PROJECT state_db_server_cert  "certs" "dev-state-server-ca.pem"
 copy_secret $STAGING_PROJECT state_db_client_cert  "certs" "dev-state-client-cert.pem"
 
-# TODO(#5202) Uncomment once production certificates are provisioned
-#copy_secret $PRODUCTION_PROJECT state_db_client_key   "private" "state-client-key.pem"
-#copy_secret $PRODUCTION_PROJECT state_db_server_cert  "certs"   "state-server-ca.pem"
-#copy_secret $PRODUCTION_PROJECT state_db_client_cert  "certs"   "state-client-cert.pem"
+copy_secret $PRODUCTION_PROJECT state_db_client_key   "private" "state-client-key.pem"
+copy_secret $PRODUCTION_PROJECT state_db_server_cert  "certs"   "state-server-ca.pem"
+copy_secret $PRODUCTION_PROJECT state_db_client_cert  "certs"   "state-client-cert.pem"
