@@ -18,18 +18,4 @@
 
 from typing import TypeVar
 
-# A type variable intended for use in generic class methods that return an object with the `cls` type.
-# For example:
-#
-# class MySuperClassOrMixin:
-#     @classmethod
-#     def make_object(cls: Type[ClsT]) -> ClsT:
-#         return cls()
-#
-# class MySubClass(MySuperClassOrMixin):
-#     def print_foo(self):
-#         print('foo')
-#
-# obj = MySubClass.make_object()
-# obj.print_foo()  <- mypy understand the type of obj is MySubClass and doesn't complain here
-ClsT = TypeVar('ClsT', bound=object)
+ClsType = TypeVar('ClsType', bound=object)
