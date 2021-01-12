@@ -21,19 +21,22 @@ from datetime import date
 import logging
 from typing import List, Optional, Tuple, Callable, Union,  Dict, Any
 
-from recidiviz.calculator.pipeline.supervision.supervision_case_compliance import SupervisionCaseCompliance
 from recidiviz.calculator.pipeline.supervision.supervision_time_bucket import \
     NonRevocationReturnSupervisionTimeBucket, RevocationReturnSupervisionTimeBucket
 from recidiviz.calculator.pipeline.utils.calculator_utils import safe_list_index
+from recidiviz.calculator.pipeline.utils.supervision_case_compliance_manager import \
+    StateSupervisionCaseComplianceManager
 from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_revocation_identification import \
     us_id_filter_supervision_periods_for_revocation_identification, us_id_get_pre_revocation_supervision_type, \
     us_id_is_revocation_admission, us_id_revoked_supervision_period_if_revocation_occurred
 from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_supervision_compliance import \
-    us_id_case_compliance_on_date
+    UsIdSupervisionCaseCompliance
 from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_supervision_type_identification import \
     us_id_get_pre_incarceration_supervision_type, us_id_get_post_incarceration_supervision_type, \
     us_id_get_supervision_period_admission_override, us_id_supervision_period_is_out_of_state
 from recidiviz.calculator.pipeline.utils.state_utils.us_mo import us_mo_violation_utils
+from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_supervision_compliance import \
+    UsNdSupervisionCaseCompliance
 from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_supervision_type_identification import \
     us_nd_get_post_incarceration_supervision_type
 from recidiviz.calculator.pipeline.utils.state_utils.us_pa import us_pa_violation_utils
@@ -53,6 +56,7 @@ from recidiviz.common.constants.state.state_incarceration_period import is_revoc
 from recidiviz.common.constants.state.state_supervision import StateSupervisionType
 from recidiviz.common.constants.state.state_supervision_period import StateSupervisionPeriodSupervisionType
 from recidiviz.common.constants.state.state_supervision_violation import StateSupervisionViolationType
+from recidiviz.common.constants.states import StateCode
 from recidiviz.common.date import DateRange, DateRangeDiff
 from recidiviz.persistence.entity.state.entities import StateSupervisionSentence, StateIncarcerationSentence, \
     StateSupervisionPeriod, StateIncarcerationPeriod, StateSupervisionViolationResponse, StateAssessment, \
@@ -87,6 +91,7 @@ def temporary_custody_periods_under_state_authority(state_code: str) -> bool:
 
 def non_prison_periods_under_state_authority(state_code: str) -> bool:
     """Whether or not incarceration periods that aren't in a STATE_PRISON are considered under the state authority.
+
         - US_ID: True
         - US_MO: False
         - US_ND: True
@@ -110,6 +115,7 @@ def investigation_periods_in_supervision_population(_state_code: str) -> bool:
 def should_collapse_transfers_different_purpose_for_incarceration(state_code: str) -> bool:
     """Whether or not incarceration periods that are connected by a TRANSFER release and a TRANSFER admission should
     be collapsed into one period if they have different specialized_purpose_for_incarceration values.
+
         - US_ID: False
             We need the dates of transfers from parole board holds and treatment custody to identify revocations
             in US_ID.
@@ -123,6 +129,7 @@ def should_collapse_transfers_different_purpose_for_incarceration(state_code: st
 def filter_out_federal_and_other_country_supervision_periods(state_code: str) -> bool:
     """Whether or not only to filter supervision periods whose custodial authority is out of the country or in federal
     prison.
+
         - US_ID: True
         - US_MO: False
         - US_ND: False
@@ -388,21 +395,26 @@ def supervision_period_counts_towards_supervision_population_in_date_range_state
     return True
 
 
-def get_case_compliance_on_date(supervision_period: StateSupervisionPeriod,
-                                case_type: StateSupervisionCaseType,
-                                start_of_supervision: date,
-                                compliance_evaluation_date: date,
-                                assessments: List[StateAssessment],
-                                supervision_contacts: List[StateSupervisionContact]) -> \
-        Optional[SupervisionCaseCompliance]:
-    """Returns the SupervisionCaseCompliance object containing information about whether the given supervision case is
-    in compliance with state-specific standards on the compliance_evaluation_date. If the state of the
+def get_state_specific_case_compliance_manager(supervision_period: StateSupervisionPeriod,
+                                               case_type: StateSupervisionCaseType,
+                                               start_of_supervision: date,
+                                               assessments: List[StateAssessment],
+                                               supervision_contacts: List[StateSupervisionContact]) -> \
+        Optional[StateSupervisionCaseComplianceManager]:
+    """Returns a state-specific SupervisionCaseComplianceManager object, containing information about whether the
+    given supervision case is in compliance with state-specific standards. If the state of the
     supervision_period does not have state-specific compliance calculations, returns None."""
-    if supervision_period.state_code.upper() == 'US_ID':
-        return us_id_case_compliance_on_date(supervision_period,
+    state_code = supervision_period.state_code.upper()
+    if state_code == StateCode.US_ID.value:
+        return UsIdSupervisionCaseCompliance(supervision_period,
                                              case_type,
                                              start_of_supervision,
-                                             compliance_evaluation_date,
+                                             assessments,
+                                             supervision_contacts)
+    if state_code == StateCode.US_ND.value:
+        return UsNdSupervisionCaseCompliance(supervision_period,
+                                             case_type,
+                                             start_of_supervision,
                                              assessments,
                                              supervision_contacts)
 
