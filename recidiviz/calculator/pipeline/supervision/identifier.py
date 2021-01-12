@@ -42,7 +42,7 @@ from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_ma
     should_collapse_transfers_different_purpose_for_incarceration, incarceration_period_is_from_revocation, \
     filter_supervision_periods_for_revocation_identification, get_pre_revocation_supervision_type, \
     should_produce_supervision_time_bucket_for_period, \
-    get_case_compliance_on_date, include_decisions_on_follow_up_responses, \
+    get_state_specific_case_compliance_manager, include_decisions_on_follow_up_responses, \
     second_assessment_on_supervision_is_more_reliable, \
     get_supervising_officer_and_location_info_from_supervision_period, \
     revoked_supervision_periods_if_revocation_occurred, \
@@ -274,7 +274,6 @@ def find_time_buckets_for_supervision_period(
 ) -> List[SupervisionTimeBucket]:
     """Finds days that this person was on supervision for the given StateSupervisionPeriod, where the person was not
     incarcerated and did not have a revocation admission that day.
-
     Args:
         - supervision_sentences: List of StateSupervisionSentences for a person
         - incarceration_sentences: List of StateIncarcerationSentence for a person
@@ -298,6 +297,29 @@ def find_time_buckets_for_supervision_period(
         return supervision_day_buckets
 
     bucket_date = start_date
+
+    (supervising_officer_external_id,
+     level_1_supervision_location_external_id,
+     level_2_supervision_location_external_id) = \
+        get_supervising_officer_and_location_info_from_supervision_period(
+            supervision_period, supervision_period_to_agent_associations)
+    case_type = _identify_most_severe_case_type(supervision_period)
+
+    if not supervision_period.supervision_period_id:
+        raise ValueError("Unexpected supervision period without a supervision_period_id.")
+
+    start_of_supervision = supervision_period_index.supervision_start_dates_by_period_id.get(
+        supervision_period.supervision_period_id)
+
+    if not start_of_supervision:
+        raise ValueError("SupervisionPeriodIndex.supervision_start_dates_by_period_id incomplete.")
+
+    state_specific_case_compliance_manager = get_state_specific_case_compliance_manager(
+        supervision_period,
+        case_type,
+        start_of_supervision,
+        assessments,
+        supervision_contacts)
 
     end_date = termination_date if termination_date else date.today() + relativedelta(days=1)
 
@@ -328,14 +350,6 @@ def find_time_buckets_for_supervision_period(
                 assessment_level = most_recent_assessment.assessment_level
                 assessment_type = most_recent_assessment.assessment_type
 
-            (supervising_officer_external_id,
-             level_1_supervision_location_external_id,
-             level_2_supervision_location_external_id) = \
-                get_supervising_officer_and_location_info_from_supervision_period(
-                    supervision_period, supervision_period_to_agent_associations)
-
-            case_type = _identify_most_severe_case_type(supervision_period)
-
             violation_history = get_violation_and_response_history(supervision_period.state_code,
                                                                    bucket_date,
                                                                    violation_responses)
@@ -346,21 +360,10 @@ def find_time_buckets_for_supervision_period(
 
             # For now, we are only calculating case compliance at the end of each month
             if is_on_supervision_last_day_of_month:
-                if not supervision_period.supervision_period_id:
-                    raise ValueError("Unexpected supervision period without a supervision_period_id.")
+                case_compliance = None
 
-                start_of_supervision = supervision_period_index.supervision_start_dates_by_period_id.get(
-                    supervision_period.supervision_period_id)
-
-                if not start_of_supervision:
-                    raise ValueError("SupervisionPeriodIndex.supervision_start_dates_by_period_id incomplete.")
-
-                case_compliance = get_case_compliance_on_date(supervision_period,
-                                                              case_type,
-                                                              start_of_supervision,
-                                                              bucket_date,
-                                                              assessments,
-                                                              supervision_contacts)
+                if state_specific_case_compliance_manager:
+                    case_compliance = state_specific_case_compliance_manager.get_case_compliance_on_date(bucket_date)
 
             deprecated_supervising_district_external_id = \
                 level_2_supervision_location_external_id or level_1_supervision_location_external_id
