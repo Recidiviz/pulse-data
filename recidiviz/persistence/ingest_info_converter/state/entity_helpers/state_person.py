@@ -18,30 +18,41 @@
 
 from recidiviz.common.constants.person_characteristics import Gender
 from recidiviz.common.ingest_metadata import IngestMetadata
+from recidiviz.common.str_field_utils import normalize
 from recidiviz.ingest.models.ingest_info_pb2 import StatePerson
 from recidiviz.persistence.entity.state import entities
-from recidiviz.common.constants.enum_parser import EnumParser
+from recidiviz.persistence.ingest_info_converter.utils.converter_utils import \
+    fn, parse_residency_status, parse_birthdate, parse_region_code_with_override
+from recidiviz.persistence.ingest_info_converter.utils.enum_mappings import \
+    EnumMappings
 from recidiviz.persistence.ingest_info_converter.utils.names import parse_name
 
 
 def copy_fields_to_builder(state_person_builder: entities.StatePerson.Builder,
                            proto: StatePerson,
-                           metadata: IngestMetadata) -> None:
+                           metadata: IngestMetadata):
     """Mutates the provided |state_person_builder| by converting an
     ingest_info proto StatePerson.
 
     Note: This will not copy children into the Builder!
     """
+    enum_fields = {
+        'gender': Gender,
+    }
+    enum_mappings = EnumMappings(proto, enum_fields, metadata.enum_overrides)
+
     new = state_person_builder
 
     # Enum mappings
-    new.gender = EnumParser(getattr(proto, 'gender'), Gender, metadata.enum_overrides)
-    new.gender_raw_text = getattr(proto, 'gender')
+    new.gender = enum_mappings.get(Gender)
+    new.gender_raw_text = fn(normalize, 'gender', proto)
 
     # 1-to-1 mappings
     new.full_name = parse_name(proto)
-    new.birthdate = getattr(proto, 'birthdate')
-    new.birthdate_inferred_from_age = 'False' if new.birthdate else None
-    new.current_address = getattr(proto, 'current_address')
-    new.residency_status = getattr(proto, 'current_address')
-    new.state_code = metadata.region
+    new.birthdate, new.birthdate_inferred_from_age = parse_birthdate(
+        proto, 'birthdate', 'age')
+    new.current_address = fn(normalize, 'current_address', proto)
+    new.residency_status = fn(
+        parse_residency_status, 'current_address', proto)
+    new.state_code = parse_region_code_with_override(
+        proto, 'state_code', metadata)
