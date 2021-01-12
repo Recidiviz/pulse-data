@@ -63,8 +63,8 @@ def create_parser() -> argparse.ArgumentParser:
                         required=True)
     parser.add_argument('--ssl-cert-path',
                         type=str,
-                        help='The path to the folder where the certs live. '
-                             'This argument is required if running against production.')
+                        help='The path to the folder where the certs live. ',
+                        required=True)
     return parser
 
 
@@ -75,13 +75,6 @@ def main(database: SchemaType, repo_root: str, ssl_cert_path: str) -> None:
     This checks for user validations that the database and branches are correct and then runs the downgrade
     migration.
     """
-
-    requires_ssl = SQLAlchemyEngineManager.database_requires_ssl(metadata.project_id())
-
-    if requires_ssl and not ssl_cert_path:
-        logging.error('Specifying an argument to --ssl-cert-path is required for the specified database.')
-        logging.error('Exiting...')
-        sys.exit(1)
 
     is_prod = metadata.project_id() == GCP_PROJECT_PRODUCTION
     if is_prod:
