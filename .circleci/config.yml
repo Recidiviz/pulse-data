@@ -29,38 +29,13 @@ aliases:
       paths:
         - ~/.local/share/virtualenvs/
 
-  - &install_postgres
-    run:
-      name: Install Postgres
-      command: |
-        sudo apt-get update && sudo apt-get install postgresql-10 -y
-        echo 'export PATH=/usr/lib/postgresql/10/bin:$PATH' >> $BASH_ENV
-        sudo chown -R circleci:circleci /var/run/postgresql
-
-  - &install_emulators
-    run:
-      name: Install GCP Emulators
-      command: |
-        sudo apt-get update && sudo apt-get install -y lsb-core
-        export CLOUD_SDK_REPO="cloud-sdk-$(lsb_release -c -s)"
-        echo "deb http://packages.cloud.google.com/apt $CLOUD_SDK_REPO main" | sudo tee -a /etc/apt/sources.list.d/google-cloud-sdk.list
-        curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -
-        sudo apt-get update && sudo apt-get install google-cloud-sdk google-cloud-sdk-datastore-emulator google-cloud-sdk-pubsub-emulator -y
-
-  - &install_java
-    run:
-      name: Install Java
-      command: |
-        sudo apt-get update && sudo apt-get install default-jdk -y
-
 jobs:
   base-unit-tests:
     docker:
-      - image: cimg/python:3.7.9
+      - image: recidiviz/circleci-build-img
     resource_class: medium
     steps:
       - checkout
-      - *install_java
       - *restore_pipenv_cache
       - *pipenv_sync
       - *save_pipenv_cache
@@ -71,12 +46,10 @@ jobs:
 
   db-tests:
     docker:
-      - image: cimg/python:3.7.9
+      - image: recidiviz/circleci-build-img
     resource_class: medium
     steps:
       - checkout
-      - *install_java
-      - *install_postgres
       - *restore_pipenv_cache
       - *pipenv_sync
       - *save_pipenv_cache
@@ -87,12 +60,10 @@ jobs:
 
   emulator-tests:
     docker:
-      - image: cimg/python:3.7.9
+      - image: recidiviz/circleci-build-img
     resource_class: large
     steps:
       - checkout
-      - *install_java
-      - *install_emulators
       - *restore_pipenv_cache
       - *pipenv_sync
       - *save_pipenv_cache
@@ -103,19 +74,13 @@ jobs:
 
   lint:
     docker:
-      - image: cimg/python:3.7.9
+      - image: recidiviz/circleci-build-img
     resource_class: medium
     steps:
       - checkout
       - *restore_pipenv_cache
       - *pipenv_sync
       - *save_pipenv_cache
-      - run:
-          name: Install Terraform
-          command: |
-            curl -fsSL https://apt.releases.hashicorp.com/gpg | sudo apt-key add -
-            sudo apt-add-repository "deb [arch=$(dpkg --print-architecture)] https://apt.releases.hashicorp.com $(lsb_release -cs) main"
-            sudo apt install terraform
       - terraform/validate:
           path: ./recidiviz/tools/deploy/terraform
       - run:
