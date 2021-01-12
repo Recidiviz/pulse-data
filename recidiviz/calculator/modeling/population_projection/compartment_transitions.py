@@ -329,9 +329,10 @@ class CompartmentTransitions(ABC):
         for sentence_length in self.transition_dfs[state].index.sort_values(ascending=False):
             for shorter_sentence in range(1, sentence_length):
                 self.transition_dfs[state].loc[sentence_length] *= \
-                    self.transition_dfs[state].loc[shorter_sentence].drop('remaining').sum()
+                    1 - self.transition_dfs[state].loc[shorter_sentence].drop('remaining').sum()
 
-        self.transition_dfs[state] = self.transition_dfs[state].drop('remaining', axis=1).to_dict()
+        self.transition_dfs[state] = {outflow: list(self.transition_dfs[state][outflow])
+                                      for outflow in self.transition_dfs[state] if outflow != 'remaining'}
 
     def use_alternate_transitions_data(self, alternate_historical_transitions: pd.DataFrame, retroactive: bool):
         """Replace the historical admission data for this specific group with another data from a different set"""
@@ -401,18 +402,20 @@ class CompartmentTransitions(ABC):
                 raise ValueError(f"All `{state}` probabilities for outflow `{outflow}` must be between 0 and 1\n"
                                  f"{probabilities}")
 
-    def apply_reduction(self, reduction_dict: Dict[str, Dict[str, float]], reduction_type: str,
+    def apply_reduction(self, reduction_df: pd.DataFrame, reduction_type: str,
                         retroactive: bool = False):
         """
         scale down outflow compartment_duration distributions either multiplicatively or additively
         NOTE: does not change other outflows, ie their normalized values will be different!
-        `reduction_dict` should be a dict of affected outflows and their corresponding reduction
-            sub-dicts should have keys 'reduction_size' and 'affected_fraction'
-            if `reduction_type` = '*', units is fractional reduction in compartment durations
-                (0.2, 1 --> 10 year sentence becomes 8 years)
-            if `reduction_type` = '+', unit is time steps
-                (0.5, 1 --> 10 year sentence becomes 9.5 years)
-        """
+        `reduction_df` should be a df with the following columns
+            'outflow': str --> affected outflow
+            'affected_fraction': float --> fraction of outflow to shift
+            'reduction_size': float'
+                if `reduction_type` = '*', units is fractional reduction in compartment durations
+                    (0.2 --> 10 year sentence becomes 8 years)
+                if `reduction_type` = '+', units of time steps
+                    (0.5 --> 10 year sentence becomes 9.5 years)
+            """
         # ensure tables haven't been normalized already
         if 'remaining' in self.transition_dfs['before']:
             raise ValueError("Reduction policy cannot be applied to a normalized transition table")
@@ -422,20 +425,19 @@ class CompartmentTransitions(ABC):
 
         df_name = self.get_df_name_from_retroactive(retroactive)
 
-        for outflow, sub_dict in reduction_dict.items():
+        for _, row in reduction_df.iterrows():
             for sentence_length in range(2, self.max_sentence + 1):
                 # record population to re-distribute
-                sentence_count = \
-                    self.transition_dfs[df_name][outflow][sentence_length - 1] * reduction_dict['affected_fraction']
+                sentence_count = self.transition_dfs[df_name][row.outflow][sentence_length - 1] * row.affected_fraction
 
                 # start by clearing df entry that's getting re-distributed
-                self.transition_dfs[df_name][outflow][sentence_length - 1] *= 1 - sub_dict['affected_fraction']
+                self.transition_dfs[df_name][row.outflow][sentence_length - 1] *= 1 - row.affected_fraction
 
                 # calculate new sentence length
                 if reduction_type == '*':
-                    new_sentence_length = max([sentence_length * (1 - sub_dict['reduction_size']), 1])
+                    new_sentence_length = max([sentence_length * (1 - row.reduction_size), 1])
                 elif reduction_type == '+':
-                    new_sentence_length = max([sentence_length - sub_dict['reduction_size'], 1])
+                    new_sentence_length = max([sentence_length - row.reduction_size, 1])
 
                 # separate out non-integer sentence length into one chunk rounded up and one chunk rounded down,
                 #   weighted by where in the middle actual sentence falls
@@ -443,8 +445,8 @@ class CompartmentTransitions(ABC):
                 shorter_bit = sentence_count - longer_bit
 
                 # add in new sentence length probabilities to the df
-                self.transition_dfs[df_name][outflow][int(new_sentence_length) - 1] += shorter_bit
-                self.transition_dfs[df_name][outflow][int(new_sentence_length)] += longer_bit
+                self.transition_dfs[df_name][row.outflow][int(new_sentence_length) - 1] += shorter_bit
+                self.transition_dfs[df_name][row.outflow][int(new_sentence_length)] += longer_bit
 
     def reallocate_outflow(self, reallocation_df: pd.DataFrame, retroactive: bool = False):
         """

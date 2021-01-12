@@ -81,4 +81,7 @@ class IncarceratedTransitions(CompartmentTransitions):
 
         mm_factor = affected_ratio * std
 
-        self.apply_reduction(reduction_dict={outflow: mm_factor}, reduction_type='+', retroactive=retroactive)
+        self.apply_reduction(reduction_df=pd.DataFrame({'outflow': [outflow], 'affected_fraction': [1],
+                                                        'reduction_size': [mm_factor]}),
+                             reduction_type='+',
+                             retroactive=retroactive)

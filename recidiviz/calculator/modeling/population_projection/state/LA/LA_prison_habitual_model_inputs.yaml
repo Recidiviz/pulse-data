@@ -1,0 +1,32 @@
+user_inputs:
+    policy_year: 2021
+    start_year: 2020
+    projection_years: 12
+    speed_run: true
+
+
+model_architecture:
+    pretrial: null
+    prison: incarcerated
+    probation: incarcerated
+    release: released
+# probation represents good time/parole supervision in this case
+
+
+reference_date: 2013
+# january
+time_step: 0.083333333 
+# one month
+
+
+disaggregation_axes: 
+- crime_type
+
+data_inputs:
+  big_query_simulation_tag: LA_HB_364
+
+
+per_year_costs:
+  prison: 2056.92
+  probation: 102.79
+  release: 0
