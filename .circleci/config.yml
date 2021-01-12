@@ -109,4 +109,3 @@ workflows:
       - base-unit-tests
       - db-tests
       - emulator-tests
-# TODO(#5266): add Copybara workflow on push to master if we're committing to CircleCI
