@@ -20,7 +20,6 @@ normalizing, etc).
 """
 
 import datetime
-import json
 import locale
 import re
 import string
@@ -338,25 +337,3 @@ def sorted_list_from_str(value: str, delimiter: str = ',') -> List[str]:
 
     unsorted = [result_str.strip() for result_str in value.split(delimiter) if result_str.strip()]
     return sorted(unsorted)
-
-
-def normalize_flat_json(json_str: str) -> str:
-    """Parses a JSON string and returns a JSON string where the values are normalized, but their keys remain intact.
-
-    NOTE: This only supports un-nested JSON where all values are optional strings. Throws if values have a
-    non-string type.
-    """
-
-    normalized_values_dict = {}
-    loaded_json = json.loads(json_str)
-    if not isinstance(loaded_json, dict):
-        raise ValueError(f'JSON must have top-level type dict, found [{type(loaded_json)}].')
-    for k, v in loaded_json.items():
-        normalized_value = None
-        if v:
-            if not isinstance(v, str):
-                raise ValueError(f'Unexpected value type [{type(v)}] for field [{k}]. Expected value type str.')
-            normalized_value = normalize(v)
-        normalized_values_dict[k] = normalized_value
-
-    return json.dumps(normalized_values_dict, sort_keys=True)
