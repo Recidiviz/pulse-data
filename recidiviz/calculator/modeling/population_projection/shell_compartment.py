@@ -79,19 +79,12 @@ class ShellCompartment(SparkCompartment):
             e.g. if reallocation_fraction is 0.2 and an outflow is 100 in a given ts, it will become 80 to that outflow
             20 added to `new_outflow`
         """
-        # pylint: disable=unused-argument
 
         # generate new outflows
-        # new_outflow_data = self.after_data.loc[self.after_data.outflow_to == outflow]
-        # new_outflow_data.loc[:, new_outflow_data.columns != 'outflow_to'] *= reallocation_fraction
-        # new_outflow_data.loc[:, 'outflow_to'] = new_outflow
-        #
-        # # scale down old outflows
-        # self.after_data.loc[self.after_data.outflow_to == outflow, self.after_data.columns != 'outflow_to'] *= \
-        #     1 - reallocation_fraction
-        #
-        # self.after_data = self.after_data.append(new_outflow_data)
+        if new_outflow in self.after_data.index:
+            self.after_data.loc[new_outflow] += self.after_data.loc[outflow] * reallocation_fraction
+        else:
+            self.after_data.loc[new_outflow] = self.after_data.loc[outflow] * reallocation_fraction
 
-        return
-        # for outflow_compartment, row in self.after_data.iterrows():
-        #     if outflow_ocmp
+        # scale down old outflows
+        self.after_data.loc[outflow] *= (1 - reallocation_fraction)

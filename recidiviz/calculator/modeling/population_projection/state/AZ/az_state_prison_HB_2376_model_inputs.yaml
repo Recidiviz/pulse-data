@@ -1,0 +1,25 @@
+---
+user_inputs:
+  policy_year: 2020
+  start_year: 2019
+  projection_years: 14
+  speed_run: true
+
+model_architecture:
+    pre-trial: null
+    prison: incarcerated
+    release: released
+
+reference_date: 2020
+
+time_step: 0.08333333
+
+disaggregation_axes:
+  - crime_type
+
+data_inputs:
+  big_query_simulation_tag: AZ_HB_2376
+
+per_year_costs:
+  prison: 25962.45
+  release: 0
