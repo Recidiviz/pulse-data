@@ -26,11 +26,10 @@ from sqlalchemy.ext.declarative import DeclarativeMeta
 
 from recidiviz.persistence.database import SQLALCHEMY_DB_NAME, SQLALCHEMY_DB_HOST, SQLALCHEMY_DB_USER, \
     SQLALCHEMY_DB_PASSWORD, SQLALCHEMY_USE_SSL, SQLALCHEMY_SSL_CERT_PATH, SQLALCHEMY_SSL_KEY_PATH
+from recidiviz.persistence.database import migrations
 from recidiviz.persistence.database.base_schema import JailsBase, \
     StateBase, OperationsBase, JusticeCountsBase
-from recidiviz.persistence.database import migrations
 from recidiviz.utils import secrets, environment
-from recidiviz.utils.environment import GCP_PROJECT_PRODUCTION
 
 
 @enum.unique
@@ -295,10 +294,6 @@ class SQLAlchemyEngineManager:
             os.environ[SQLALCHEMY_SSL_KEY_PATH] = os.path.join(ssl_cert_path, 'client-key.pem')
 
         return original_values
-
-    @classmethod
-    def database_requires_ssl(cls, project_id: str) -> bool:
-        return project_id == GCP_PROJECT_PRODUCTION
 
     @classmethod
     def _get_server_postgres_instance_url(cls, *, schema_type: SchemaType) -> str:

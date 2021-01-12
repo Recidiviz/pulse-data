@@ -25,7 +25,17 @@ are being run before executing them.
 
 Example usage (run from `pipenv shell`):
 
-python -m recidiviz.tools.migrations.run_migrations_to_head --database JAILS --project-id recidiviz-staging --dry-run
+# Dry run on the jails database:
+python -m recidiviz.tools.migrations.run_migrations_to_head \
+    --database JAILS \
+    --project-id recidiviz-staging \
+    --dry-run
+
+# Run against the live jails database:
+python -m recidiviz.tools.migrations.run_migrations_to_head \
+    --database JAILS \
+    --project-id recidiviz-staging \
+    --ssl-cert-path=~/dev_data_certs
 """
 import argparse
 import logging
@@ -63,8 +73,9 @@ def create_parser() -> argparse.ArgumentParser:
     parser.add_argument('--ssl-cert-path',
                         type=str,
                         help='The path to the folder where the certs live. '
-                             'This argument is required if running against production.')
+                             'This argument is required if running against live databases.')
     return parser
+
 
 
 def main(database: SchemaType, repo_root: str, ssl_cert_path: str, dry_run: bool) -> None:
@@ -74,20 +85,18 @@ def main(database: SchemaType, repo_root: str, ssl_cert_path: str, dry_run: bool
     This checks for user validations that the database and branches are correct and then runs existing pending
     migrations.
     """
-
-    requires_ssl = SQLAlchemyEngineManager.database_requires_ssl(metadata.project_id())
-
-    if requires_ssl and not ssl_cert_path:
-        logging.error('Specifying an argument to --ssl-cert-path is required for the specified database.')
-        logging.error('Exiting...')
-        sys.exit(1)
-
     if dry_run:
         if not local_postgres_helpers.can_start_on_disk_postgresql_database():
             logging.error('pg_ctl is not installed. Cannot perform a dry-run.')
             logging.error('Exiting...')
             sys.exit(1)
         logging.info('Creating a dry-run...\n')
+    else:
+        if not ssl_cert_path:
+            logging.error("SSL certificates are required when running against live databases")
+            logging.error('Exiting...')
+            sys.exit(1)
+        logging.info('Using SSL certificate path: %s', ssl_cert_path)
 
     is_prod = metadata.project_id() == GCP_PROJECT_PRODUCTION
     if is_prod:
