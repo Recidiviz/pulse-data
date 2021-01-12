@@ -95,13 +95,9 @@ from recidiviz.common.constants.state.state_supervision_violation_response \
     StateSupervisionViolationResponseType
 
 from recidiviz.common.date import DateRange, DurationMixin
-from recidiviz.common.str_field_utils import normalize_flat_json
-from recidiviz.persistence.ingest_info_converter.utils.converter_utils import parse_residency_status
 from recidiviz.persistence.entity.base_entity import Entity, ExternalIdEntity
 
 # **** Entity Types for convenience *****:
-from recidiviz.persistence.entity.entity_decorators import add_deserialize_constructor
-
 SentenceType = TypeVar('SentenceType', 'StateSupervisionSentence', 'StateIncarcerationSentence')
 PeriodType = TypeVar('PeriodType', 'StateSupervisionPeriod', 'StateIncarcerationPeriod')
 
@@ -123,7 +119,6 @@ PeriodType = TypeVar('PeriodType', 'StateSupervisionPeriod', 'StateIncarceration
 # Cross-entity relationships
 
 
-@add_deserialize_constructor()
 @attr.s(eq=False)
 class StatePersonExternalId(Entity, BuildableAttr, DefaultableAttr):
     """Models an external id associated with a particular StatePerson."""
@@ -194,10 +189,6 @@ class StatePersonEthnicity(Entity, BuildableAttr, DefaultableAttr):
     person: Optional['StatePerson'] = attr.ib(default=None)
 
 
-@add_deserialize_constructor({
-    'residency_status': parse_residency_status,
-    'full_name': normalize_flat_json,
-})
 @attr.s(eq=False)
 class StatePerson(Entity, BuildableAttr, DefaultableAttr):
     """Models a StatePerson moving through the criminal justice system."""

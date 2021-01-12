@@ -27,7 +27,7 @@ from recidiviz.common.common_utils import get_trace_id_from_flask
 from recidiviz.ingest.models.ingest_info import IngestInfo
 from recidiviz.common.common_utils import retry_grpc
 from recidiviz.utils import environment
-from recidiviz.utils.types import ClsT
+from recidiviz.utils.types import ClsType
 
 _ds = None
 
@@ -116,7 +116,7 @@ class BatchIngestInfoData:
         return cattr.unstructure(self)
 
     @classmethod
-    def from_serializable(cls: Type[ClsT], serializable: str) -> ClsT:
+    def from_serializable(cls: Type[ClsType], serializable: str) -> ClsType:
         return cattr.structure(serializable, cls)
 
 _DatastoreIngestInfoType = TypeVar('_DatastoreIngestInfoType', bound='_DatastoreIngestInfo')
