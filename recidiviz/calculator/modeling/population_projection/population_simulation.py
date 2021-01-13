@@ -186,7 +186,6 @@ class PopulationSimulation:
         for simulation_obj in self.sub_simulations.values():
             simulation_obj.scale_total_populations()
 
-
     def _populate_sub_group_ids_dict(self, transitions_data: pd.DataFrame, disaggregation_axes: List[str]):
         """Helper function for initialize_simulation"""
         # populate self.sub_group_ids_dict so we can recover sub-group properties during validation
@@ -198,6 +197,10 @@ class PopulationSimulation:
             else:
                 self.sub_group_ids_dict[sub_group_id] = \
                     {disaggregation_axes[i]: simulation_group_name[i] for i in range(len(disaggregation_axes))}
+
+        # Raise an error if the sub_group_ids_dict was not constructed
+        if not self.sub_group_ids_dict:
+            raise ValueError(f"Could not define sub groups across the disaggregations: {disaggregation_axes}")
 
     def _populate_sub_simulations(self, outflows_data: pd.DataFrame,
                                   transitions_data: pd.DataFrame,

@@ -56,6 +56,9 @@ class CompartmentTransitions(ABC):
             if any(self.historical_outflows[column] < 0):
                 negative_rows = self.historical_outflows[self.historical_outflows[column] < 0]
                 raise ValueError(f"Transition data '{column}' column cannot contain negative values {negative_rows}")
+            if any(self.historical_outflows[column].isnull()):
+                null_rows = self.historical_outflows[self.historical_outflows[column].isnull()]
+                raise ValueError(f"Transition data '{column}' column cannot contain NULL values {null_rows}")
 
         if max_sentence <= 0:
             if self.historical_outflows.empty:
