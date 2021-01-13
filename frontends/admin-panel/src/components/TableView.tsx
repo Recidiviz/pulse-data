@@ -35,7 +35,7 @@ const TableView = (): JSX.Element => {
   const fetchValues = React.useCallback(async (): Promise<Response> => {
     return fetchTableNonNullCountsByColumn(table);
   }, [table]);
-  const { loading, data } = useFetchedData(fetchValues);
+  const { loading, data } = useFetchedData<MetadataAPIResult>(fetchValues);
 
   if (loading) {
     return (
@@ -49,14 +49,14 @@ const TableView = (): JSX.Element => {
     <>
       <Breadcrumb>
         <Breadcrumb.Item>
-          <Link to={IngestMetadata.ROOT_ROUTE}>state</Link>
+          <Link to={IngestMetadata.STATE_METADATA_ROUTE}>state</Link>
         </Breadcrumb.Item>
         <Breadcrumb.Item>{table}</Breadcrumb.Item>
       </Breadcrumb>
       <PageHeader
         title="Table View"
         onBack={() => {
-          history.push(IngestMetadata.ROOT_ROUTE);
+          history.push(IngestMetadata.STATE_METADATA_ROUTE);
         }}
       />
       <MetadataTable

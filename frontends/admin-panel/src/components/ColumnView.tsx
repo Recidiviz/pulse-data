@@ -36,7 +36,7 @@ const ColumnView = (): JSX.Element => {
   const fetchValues = React.useCallback(async () => {
     return fetchColumnObjectCountsByValue(table, column);
   }, [table, column]);
-  const { loading, data } = useFetchedData(fetchValues);
+  const { loading, data } = useFetchedData<MetadataAPIResult>(fetchValues);
 
   if (loading) {
     return (
@@ -50,7 +50,7 @@ const ColumnView = (): JSX.Element => {
     <>
       <Breadcrumb>
         <Breadcrumb.Item>
-          <Link to={IngestMetadata.ROOT_ROUTE}>state</Link>
+          <Link to={IngestMetadata.STATE_METADATA_ROUTE}>state</Link>
         </Breadcrumb.Item>
         <Breadcrumb.Item>
           <Link to={IngestMetadata.routeForTable(table)}>{table}</Link>

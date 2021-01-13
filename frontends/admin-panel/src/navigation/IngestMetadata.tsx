@@ -14,14 +14,17 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
-export const ROOT_ROUTE = "/admin/ingest_metadata";
-export const DB_ROUTE_TEMPLATE = "/admin/ingest_metadata/:table";
-export const COLUMN_ROUTE_TEMPLATE = "/admin/ingest_metadata/:table/:column";
+export const STATE_METADATA_ROUTE = "/admin/ingest_metadata/state";
+export const DB_ROUTE_TEMPLATE = "/admin/ingest_metadata/state/:table";
+export const COLUMN_ROUTE_TEMPLATE =
+  "/admin/ingest_metadata/state/:table/:column";
 
 export const routeForTable = (table: string): string => {
-  return `${ROOT_ROUTE}/${table}`;
+  return `${STATE_METADATA_ROUTE}/${table}`;
 };
 
 export const routeForColumn = (table: string, column: string): string => {
-  return `${ROOT_ROUTE}/${table}/${column}`;
+  return `${STATE_METADATA_ROUTE}/${table}/${column}`;
 };
+
+export const DATA_FRESHNESS_ROUTE = "/admin/ingest_metadata/data_freshness";

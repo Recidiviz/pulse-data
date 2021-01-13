@@ -17,16 +17,16 @@
 import * as React from "react";
 import { message } from "antd";
 
-interface FetchedDataResponse {
+interface FetchedDataResponse<T> {
   loading: boolean;
-  data: MetadataAPIResult;
+  data?: T;
 }
 
-const useFetchedData = (
+function useFetchedData<T>(
   fetchReq: () => Promise<Response>
-): FetchedDataResponse => {
+): FetchedDataResponse<T> {
   const [loading, setLoading] = React.useState<boolean>(true);
-  const [data, setData] = React.useState<MetadataAPIResult>({});
+  const [data, setData] = React.useState<T>();
 
   React.useEffect(() => {
     const fetchData = async (req: () => Promise<Response>): Promise<void> => {
@@ -44,6 +44,6 @@ const useFetchedData = (
   }, [fetchReq]);
 
   return { loading, data };
-};
+}
 
 export default useFetchedData;

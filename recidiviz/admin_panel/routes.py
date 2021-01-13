@@ -57,6 +57,7 @@ def jsonify_ingest_metadata_result(result: IngestMetadataResult) -> str:
     return jsonify(results_dict)
 
 
+# State dataset column counts
 @admin_panel.route('/api/ingest_metadata/fetch_column_object_counts_by_value', methods=['POST'])
 @requires_gae_auth
 def fetch_column_object_counts_by_value() -> str:
@@ -78,6 +79,14 @@ def fetch_object_counts_by_table() -> str:
     return jsonify_ingest_metadata_result(ingest_metadata_store.fetch_object_counts_by_table())
 
 
+# Data freshness
+@admin_panel.route('/api/ingest_metadata/data_freshness', methods=['POST'])
+@requires_gae_auth
+def fetch_data_freshness() -> str:
+    return jsonify(ingest_metadata_store.data_freshness_results)
+
+
+# Frontend configuration
 @admin_panel.route('/runtime_env_vars.js')
 @requires_gae_auth
 def runtime_env_vars() -> str:
