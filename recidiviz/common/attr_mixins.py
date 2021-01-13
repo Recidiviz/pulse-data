@@ -16,13 +16,13 @@
 # ============================================================================
 """Logic for Attr objects that can be built with a Builder."""
 from enum import Enum
-from typing import Any, Dict, Optional, Type, Set, TypeVar
+from typing import Any, Dict, Optional, Type, Set, TypeVar, Callable
 import datetime
 import attr
 
 from recidiviz.common.attr_utils import is_enum, is_forward_ref, get_enum_cls, is_date
 from recidiviz.common.str_field_utils import is_yyyymmdd_date, parse_yyyymmdd_date
-from recidiviz.utils.types import ClsType
+from recidiviz.utils.types import ClsT
 
 DefaultableAttrType = TypeVar('DefaultableAttrType', bound='DefaultableAttr')
 
@@ -91,10 +91,21 @@ class BuildableAttr:
             raise AttributeError("{} object has no attribute {}".format(
                 self.__class__.__name__, key))
 
-        def build(self) -> Any:
+        def build(self, constructor_fn_override: Optional[Callable] = None) -> Any:
             """Builds the given Attr class after verifying that all fields
-            without a default value are set and that no extra fields are set."""
+            without a default value are set and that no extra fields are set.
+
+            If a constructor_fn_override is set, uses that function as a constructor
+            for the Attr class.
+            """
             self._verify_has_all_and_only_required_fields()
+
+            if constructor_fn_override:
+                obj = constructor_fn_override(**self.fields)
+                if not isinstance(obj, self.cls):
+                    raise ValueError(f'Overridden constructor function returned value of type [{type(obj)}], '
+                                     f'expected type [{type(self.cls)}].')
+                return obj
             return self.cls(**self.fields)
 
         def _verify_has_all_and_only_required_fields(self) -> None:
@@ -195,14 +206,14 @@ class BuilderException(Exception):
     """Exception raised if the Attr object cannot be built."""
 
     def __init__(self,
-                 cls: ClsType,
+                 cls: Type[ClsT],
                  required_fields: Set[str],
                  fields_with_value: Set[str]) -> None:
         message = _error_message(cls, required_fields, fields_with_value)
         super().__init__(message)
 
 
-def _error_message(cls: ClsType,
+def _error_message(cls: Type[ClsT],
                    required_fields: Set[str],
                    fields_with_value: Set[str]) -> str:
     return \

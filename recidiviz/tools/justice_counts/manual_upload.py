@@ -49,7 +49,7 @@ import recidiviz.common.constants.person_characteristics as person_characteristi
 
 from recidiviz.common.constants import states
 from recidiviz.common.constants.enum_overrides import EnumOverrides
-from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta, EnumParsingError
+from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta, EnumParsingError, EntityEnumT
 from recidiviz.common.date import DateRange, first_day_of_month, last_day_of_month
 from recidiviz.common.str_field_utils import to_snake_case
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
@@ -159,7 +159,6 @@ def get_synthetic_dimension(column_name: str, source: str) -> Type[Dimension]:
     return synthetic_dimension
 
 
-EntityEnumT = TypeVar('EntityEnumT', bound=EntityEnum)
 def parse_entity_enum(enum_cls: Type[EntityEnumT], dimension_cell_value: str,
                       enum_overrides: Optional[EnumOverrides]) -> EntityEnumT:
     entity_enum = enum_cls.parse(dimension_cell_value, enum_overrides or EnumOverrides.empty())
