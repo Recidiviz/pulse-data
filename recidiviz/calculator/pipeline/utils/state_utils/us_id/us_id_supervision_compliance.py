@@ -166,7 +166,7 @@ class UsIdSupervisionCaseCompliance(StateSupervisionCaseComplianceManager):
                     most_recent_assessment.assessment_date)
         return True
 
-    def _face_to_face_contact_frequency_is_sufficient(self, compliance_evaluation_date: date) -> bool:
+    def _face_to_face_contact_frequency_is_sufficient(self, compliance_evaluation_date: date) -> Optional[bool]:
         """Calculates whether the frequency of face-to-face contacts between the officer and the person on supervision
         is sufficient with respect to the state standards for the level of supervision of the case.
         """
