@@ -45,11 +45,11 @@ class UsNdSupervisionCaseCompliance(StateSupervisionCaseComplianceManager):
         return self._compliance_evaluation_date_before_reassessment_deadline(compliance_evaluation_date,
                                                                              most_recent_assessment.assessment_date)
 
-    def _face_to_face_contact_frequency_is_sufficient(self, compliance_evaluation_date: date) -> bool:
+    def _face_to_face_contact_frequency_is_sufficient(self, compliance_evaluation_date: date) -> Optional[bool]:
         """Returns whether the frequency of face-to-face contacts between the officer and the person on supervision
         is sufficient with respect to the state standards for the level of supervision of the case."""
         # TODO(#5199): Update, once face to face contacts are ingested for US_ND.
-        return False
+        return None
 
     def _compliance_evaluation_date_before_reassessment_deadline(self, compliance_evaluation_date: date,
                                                                  most_recent_assessment_date: Optional[date]) \
