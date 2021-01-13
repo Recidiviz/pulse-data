@@ -2,7 +2,7 @@
 user_inputs:
     policy_year: 2021
     start_year: 2018
-    projection_years: 10
+    projection_years: 13
     speed_run: true
 
 model_architecture:
