@@ -16,7 +16,7 @@ daily_pipelines:
     job_name: us-nd-supervision-calculations-36
     state_code: US_ND
     calculation_month_count: 36
-    metric_types: SUPERVISION_POPULATION SUPERVISION_REVOCATION SUPERVISION_SUCCESS SUPERVISION_TERMINATION
+    metric_types: SUPERVISION_POPULATION SUPERVISION_REVOCATION SUPERVISION_SUCCESS SUPERVISION_TERMINATION SUPERVISION_COMPLIANCE
   - pipeline: incarceration
     job_name: us-nd-incarceration-calculations-36
     state_code: US_ND
