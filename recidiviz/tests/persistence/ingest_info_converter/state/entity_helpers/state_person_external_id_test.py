@@ -24,13 +24,15 @@ from recidiviz.persistence.entity.state import entities
 from recidiviz.persistence.ingest_info_converter.state.entity_helpers import \
     state_person_external_id
 
-_EMPTY_METADATA = IngestMetadata.new_with_defaults()
+_EMPTY_METADATA = IngestMetadata.new_with_defaults(
+    region='us_nd'
+)
 
 
 class StatePersonExternalIdConverterTest(unittest.TestCase):
     """Tests for converting state person external ids."""
 
-    def testParseStatePersonExternalId(self):
+    def testParseStatePersonExternalId(self) -> None:
         # Arrange
         ingest_external_id = ingest_info_pb2.StatePersonExternalId(
             state_person_external_id_id='state_id:12345',
@@ -51,10 +53,10 @@ class StatePersonExternalIdConverterTest(unittest.TestCase):
 
         self.assertEqual(result, expected_result)
 
-    def testParseStatePersonExternalIdWithWhitespace(self):
+    def testParseStatePersonExternalIdWithWhitespace(self) -> None:
         # Arrange
         ingest_external_id = ingest_info_pb2.StatePersonExternalId(
-            state_person_external_id_id='state_id: 123A',
+            state_person_external_id_id='state_id: 123a',
             id_type='state_id',
             state_code='us_nd',
         )

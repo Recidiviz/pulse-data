@@ -16,13 +16,14 @@
 # =============================================================================
 """Tests for str_field_utils.py"""
 import datetime
+from json.decoder import JSONDecodeError
 from unittest import TestCase
 
 import pytest
 
 from recidiviz.common.str_field_utils import parse_days, parse_dollars, \
     parse_bool, parse_date, parse_datetime, parse_days_from_duration_pieces, parse_int, parse_date_from_date_pieces, \
-    safe_parse_date_from_date_pieces
+    safe_parse_date_from_date_pieces, normalize_flat_json
 
 
 class TestStrFieldUtils(TestCase):
@@ -176,3 +177,28 @@ class TestStrFieldUtils(TestCase):
     def test_parseBadDate(self):
         with pytest.raises(ValueError):
             parse_datetime('ABC')
+
+    def test_parseJSON(self):
+        self.assertEqual('{}', normalize_flat_json('{}'))
+        self.assertEqual('{"foo": "HELLO"}', normalize_flat_json('{"foo": "hello"}'))
+        self.assertEqual('{"bar": "123", "foo": "HELLO"}', normalize_flat_json('{"foo": "hello", "bar": "123"}'))
+        self.assertEqual('{"bar": "123", "foo": "HELLO"}', normalize_flat_json('{"bar": "123", "foo": "hello"}'))
+        self.assertEqual('{"foo": "A &&&"}', normalize_flat_json('{"foo": "a    &&& "}'))
+
+    def test_parseJSON_NotFlatStringJSON(self):
+        with pytest.raises(ValueError):
+            normalize_flat_json('{"foo": "hello", "bar": 123}')
+        with pytest.raises(ValueError):
+            normalize_flat_json('{"foo": "hello", "bar": []]}')
+        with pytest.raises(ValueError):
+            normalize_flat_json('[{"foo": "hello"}]')
+
+    def test_parseJSON_Malformed(self):
+        with pytest.raises(TypeError):
+            normalize_flat_json(None)
+        with pytest.raises(TypeError):
+            normalize_flat_json({'foo': 'bar'})
+        with pytest.raises(JSONDecodeError):
+            normalize_flat_json("")
+        with pytest.raises(JSONDecodeError):
+            normalize_flat_json("{")
