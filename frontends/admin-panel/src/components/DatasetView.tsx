@@ -24,7 +24,9 @@ import { fetchObjectCountsByTable } from "../AdminPanelAPI";
 import useFetchedData from "../hooks";
 
 const DatasetView = (): JSX.Element => {
-  const { loading, data } = useFetchedData(fetchObjectCountsByTable);
+  const { loading, data } = useFetchedData<MetadataAPIResult>(
+    fetchObjectCountsByTable
+  );
 
   if (loading) {
     return (

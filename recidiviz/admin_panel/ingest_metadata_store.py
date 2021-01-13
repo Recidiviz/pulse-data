@@ -19,13 +19,15 @@ import json
 import logging
 import os
 from collections import defaultdict
-from typing import Dict, Optional
+from typing import Dict, List, Optional, Union
 
 import attr
 
 from recidiviz.cloud_storage.gcs_file_system import GCSBlobDoesNotExistError
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
+from recidiviz.persistence.database.bq_refresh.cloud_sql_to_bq_refresh_config import CloudSqlToBQConfig
+from recidiviz.persistence.database.sqlalchemy_engine_manager import SchemaType
 from recidiviz.utils import metadata
 
 
@@ -63,16 +65,23 @@ class IngestMetadataCountsStore:
         self.gcs_fs = GcsfsFactory.build()
         self.override_project_id = override_project_id
 
+        self.data_freshness_results: List[Dict[str, Union[str, bool]]] = []
+
         # This class takes heavy advantage of the fact that python dicts are thread-safe.
         self.store: InternalMetadataBackingStore = defaultdict(lambda: defaultdict(dict))
+
+    @property
+    def project_id(self) -> str:
+        return metadata.project_id() if self.override_project_id is None else self.override_project_id
 
     def recalculate_store(self) -> None:
         """
         Recalculates the internal store of ingest metadata counts.
         """
-        project_id = metadata.project_id() if self.override_project_id is None else self.override_project_id
+        self.update_data_freshness_results()
+
         file_paths = [f for f in self.gcs_fs.ls_with_blob_prefix(
-            f'{project_id}-ingest-metadata', '') if isinstance(f, GcsfsFilePath)]
+            f'{self.project_id}-ingest-metadata', '') if isinstance(f, GcsfsFilePath)]
         for path in file_paths:
             name, extension = os.path.splitext(path.file_name)
             if extension != '.json':
@@ -104,6 +113,30 @@ class IngestMetadataCountsStore:
                 col_store[struct[col_name]][struct['state_code'].upper()] = IngestMetadataCounts.from_json(struct)
             self.store[table_name][col_name] = col_store
         logging.info('DONE PROCESSING')
+
+    def update_data_freshness_results(self) -> None:
+        bq_export_config = CloudSqlToBQConfig.for_schema_type(
+            SchemaType.STATE,
+            yaml_path=GcsfsFilePath.from_absolute_path(f'gs://{self.project_id}-configs/cloud_sql_to_bq_config.yaml')
+        )
+        regions_paused = [] if bq_export_config is None else bq_export_config.region_codes_to_exclude
+
+        latest_upper_bounds_path = GcsfsFilePath.from_absolute_path(
+            f'gs://{self.project_id}-ingest-metadata/ingest_metadata_latest_ingested_upper_bounds.json')
+        latest_upper_bounds_json = self.gcs_fs.download_as_string(latest_upper_bounds_path)
+        latest_upper_bounds = []
+
+        for line in latest_upper_bounds_json.splitlines():
+            line = line.strip()
+            if not line:
+                continue
+            struct = json.loads(line)
+            latest_upper_bounds.append({
+                'state': struct['state_code'],
+                'date': struct['processed_date'],
+                'ingestPaused': struct['state_code'] in regions_paused,
+            })
+        self.data_freshness_results = latest_upper_bounds
 
     def fetch_object_counts_by_table(self) -> IngestMetadataResult:
         """

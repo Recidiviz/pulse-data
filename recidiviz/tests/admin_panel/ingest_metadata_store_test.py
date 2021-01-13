@@ -36,7 +36,32 @@ class TestIngestMetadataStore(TestCase):
 
     def setUp(self) -> None:
         self.gcs_factory_patcher = mock.patch('recidiviz.admin_panel.ingest_metadata_store.GcsfsFactory.build')
+
         fake_gcs = FakeGCSFileSystem()
+        fake_gcs.upload_from_string(
+            path=GcsfsFilePath.from_absolute_path('gs://recidiviz-456-configs/cloud_sql_to_bq_config.yaml'),
+            contents="""
+region_codes_to_exclude:
+  - US_ND
+state_history_tables_to_include:
+  - state_person_history
+county_columns_to_exclude:
+  person:
+    - full_name
+    - birthdate_inferred_from_age
+""",
+            content_type="text/yaml")
+        fake_gcs.upload_from_string(
+            path=GcsfsFilePath.from_absolute_path(
+                'gs://recidiviz-456-ingest-metadata/ingest_metadata_latest_ingested_upper_bounds.json'),
+            contents="""
+{"state_code":"US_PA","processed_date":"2020-11-25"}
+{"state_code":"US_ID","processed_date":"2021-01-04"}
+{"state_code":"US_MO","processed_date":"2020-12-21"}
+{"state_code":"US_ND","processed_date":"2020-12-16"}
+""",
+            content_type="text/text")
+
         fixture_folder = os.path.join(
             os.path.dirname(os.path.realpath(__file__)),
             'fixtures',
