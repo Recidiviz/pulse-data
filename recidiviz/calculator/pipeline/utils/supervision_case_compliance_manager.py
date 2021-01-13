@@ -51,7 +51,6 @@ class StateSupervisionCaseComplianceManager:
         self.supervision_contacts = supervision_contacts
 
         self.guidelines_applicable_for_case = self._guidelines_applicable_for_case()
-        self.initial_assessment_number_of_days = self._get_initial_assessment_number_of_days()
 
     def get_case_compliance_on_date(self, compliance_evaluation_date: date) -> Optional[SupervisionCaseCompliance]:
         """
@@ -74,8 +73,8 @@ class StateSupervisionCaseComplianceManager:
         assessment_count = self._assessments_in_compliance_month(compliance_evaluation_date)
         face_to_face_count = self._face_to_face_contacts_in_compliance_month(compliance_evaluation_date)
 
-        assessment_is_up_to_date = False
-        face_to_face_frequency_sufficient = False
+        assessment_is_up_to_date = None
+        face_to_face_frequency_sufficient = None
 
         if self.guidelines_applicable_for_case:
             most_recent_assessment = find_most_recent_applicable_assessment_of_class_for_state(
@@ -203,7 +202,8 @@ class StateSupervisionCaseComplianceManager:
         """Returns whether the requirements for reassessment have been met."""
 
     @abc.abstractmethod
-    def _face_to_face_contact_frequency_is_sufficient(self, compliance_evaluation_date: date) -> bool:
+    def _face_to_face_contact_frequency_is_sufficient(self, compliance_evaluation_date: date) -> Optional[bool]:
+        # TODO(#5199): Update to return `bool` once face to face contacts are ingested for US_ND.
         """Returns whether the frequency of face-to-face contacts between the officer and the person on supervision
         is sufficient with respect to the state standards for the level of supervision of the case."""
 
