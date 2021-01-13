@@ -40,11 +40,11 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
   background-color: #ffffff;
 }
 
-.ant-table-tbody > tr > td.ant-table-cell {
+.ant-table-tbody > tr.metadata-table-row > td.ant-table-cell {
   padding: 0px;
 }
 
-td.ant-table-cell > div {
+tr.metadata-table-row > td.ant-table-cell > div {
   padding: 16px;
 }
 

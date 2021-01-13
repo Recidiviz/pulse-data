@@ -14,6 +14,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
+
+// Ingest Metadata Column Counts
 interface MetadataAPIResult {
   [name: string]: {
     [stateCode: string]: MetadataCount;
@@ -30,4 +32,11 @@ interface MetadataRecord {
 interface MetadataCount {
   placeholderCount: number;
   totalCount: number;
+}
+
+// Ingest Metadata Freshness
+interface DataFreshnessResult {
+  state: string;
+  date: string;
+  ingestPaused: boolean;
 }

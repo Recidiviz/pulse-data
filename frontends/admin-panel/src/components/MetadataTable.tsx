@@ -32,9 +32,9 @@ const stateColumnsForBreakdown = (
 };
 
 interface MetadataTableProps {
-  data: MetadataAPIResult;
   initialColumnTitle: string;
   initialColumnLink?: (name: string) => string;
+  data: MetadataAPIResult | undefined;
 }
 
 const MetadataTable = (props: MetadataTableProps): JSX.Element => {
@@ -42,6 +42,10 @@ const MetadataTable = (props: MetadataTableProps): JSX.Element => {
   const [nonplaceholdersOnly, setNonplaceholdersOnly] = React.useState<boolean>(
     true
   );
+
+  if (data === undefined) {
+    return <Empty className="buffer" />;
+  }
   const metadataRecords = Object.keys(data)
     .sort()
     .map(
@@ -100,6 +104,7 @@ const MetadataTable = (props: MetadataTableProps): JSX.Element => {
       </Checkbox>
       <div className="center">
         <Table
+          className="metadata-table"
           dataSource={metadataRecords}
           columns={columns}
           pagination={{
@@ -107,6 +112,7 @@ const MetadataTable = (props: MetadataTableProps): JSX.Element => {
             showSizeChanger: true,
             size: "small",
           }}
+          rowClassName="metadata-table-row"
           rowKey="name"
         />
       </div>
