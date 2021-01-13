@@ -18,13 +18,14 @@
 """Contains logic related to EntityEnums."""
 
 import re
-from typing import Dict, Optional
+from typing import Dict, Optional, Type, TypeVar
 
 from aenum import Enum, EnumMeta
 from opencensus.stats import aggregation, measure, view
 
 from recidiviz.common.str_field_utils import normalize
 from recidiviz.utils import monitoring
+from recidiviz.utils.types import ClsT
 
 m_enum_errors = measure.MeasureInt("converter/enum_error_count",
                                    "The number of enum errors", "1")
@@ -45,7 +46,6 @@ class EnumParsingError(Exception):
         self.entity_type = cls
         super().__init__(msg)
 
-
 class EntityEnumMeta(EnumMeta):
     """Metaclass for mappable enums."""
 
@@ -53,9 +53,9 @@ class EntityEnumMeta(EnumMeta):
     # https://stackoverflow.com/questions/47615318/
     # what-is-the-best-practice-for-metaclass-methods-that-call-each-other
     # pylint: disable=no-value-for-parameter, not-an-iterable
-    def parse(cls,
+    def parse(cls: Type[ClsT],
               label: str,
-              enum_overrides: 'EnumOverrides') -> Optional['EntityEnum']:
+              enum_overrides: 'EnumOverrides') -> Optional[ClsT]:
         try:
             return cls._parse_to_enum(label, enum_overrides)
         except EnumParsingError:
@@ -64,7 +64,7 @@ class EntityEnumMeta(EnumMeta):
                 m.measure_int_put(m_enum_errors, 1)
             raise
 
-    def can_parse(cls, label: str, enum_overrides: 'EnumOverrides') -> bool:
+    def can_parse(cls: Type[ClsT], label: str, enum_overrides: 'EnumOverrides') -> bool:
         """Checks if the given string will parse into this enum.
 
         Convenience method to be used by a child scraper to tell if a given
@@ -76,7 +76,7 @@ class EntityEnumMeta(EnumMeta):
         except EnumParsingError:
             return False
 
-    def find_in_string(cls, text: Optional[str]) -> Optional['EntityEnum']:
+    def find_in_string(cls: Type[ClsT], text: Optional[str]) -> Optional[ClsT]:
         if not text:
             return None
         for inst in cls:
@@ -84,7 +84,7 @@ class EntityEnumMeta(EnumMeta):
                 return inst
         return None
 
-    def _parse_to_enum(cls, label: str, enum_overrides: 'EnumOverrides') -> Optional['EntityEnum']:
+    def _parse_to_enum(cls: Type[ClsT], label: str, enum_overrides: 'EnumOverrides') -> Optional['EntityEnum']:
         """Attempts to parse |label| using the default map of |cls| and the
         provided |override_map|. Ignores punctuation by treating punctuation as
         a separator, e.g. `(N/A)` will map to the same value as `N A`."""
@@ -110,8 +110,7 @@ class EntityEnumMeta(EnumMeta):
         except KeyError as e:
             raise EnumParsingError(cls, label) from e
 
-    def parse_from_canonical_string(cls: EnumMeta, label: Optional[str]) \
-            -> Optional['EntityEnum']:
+    def parse_from_canonical_string(cls: Type[ClsT], label: Optional[str]) -> Optional[ClsT]:
         """Attempts to parse |label| using the enum canonical strings.
         Only accepts exact, case-sensitive matches. Returns `None` if
         |label| is empty."""
@@ -138,3 +137,6 @@ class EntityEnum(Enum, metaclass=EntityEnumMeta):
     @classmethod
     def _missing_value_(cls, name: str):
         return cls.parse_from_canonical_string(name.upper())
+
+
+EntityEnumT = TypeVar('EntityEnumT', bound=EntityEnum)
