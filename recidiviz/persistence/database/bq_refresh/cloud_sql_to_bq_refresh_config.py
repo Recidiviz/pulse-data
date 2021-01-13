@@ -214,15 +214,19 @@ class CloudSqlToBQConfig:
         return project_id
 
     @classmethod
-    def for_schema_type(cls, schema_type: SchemaType) -> Optional['CloudSqlToBQConfig']:
+    def for_schema_type(cls,
+                        schema_type: SchemaType,
+                        yaml_path: Optional[GcsfsFilePath] = None) -> Optional['CloudSqlToBQConfig']:
         """Logic for instantiating a config object for a schema type."""
         gcs_fs = GcsfsFactory.build()
-        path = GcsfsFilePath.from_absolute_path(f'gs://{cls._get_project_id()}-configs/cloud_sql_to_bq_config.yaml')
-        yaml_string = gcs_fs.download_as_string(path)
+        if not yaml_path:
+            yaml_path = GcsfsFilePath.from_absolute_path(
+                f'gs://{cls._get_project_id()}-configs/cloud_sql_to_bq_config.yaml')
+        yaml_string = gcs_fs.download_as_string(yaml_path)
         try:
             yaml_config = yaml.safe_load(yaml_string)
         except yaml.YAMLError as e:
-            raise ValueError(f'Could not parse YAML in [{path.abs_path()}]') from e
+            raise ValueError(f'Could not parse YAML in [{yaml_path.abs_path()}]') from e
 
         if schema_type == SchemaType.JAILS:
             return CloudSqlToBQConfig(

@@ -19,8 +19,9 @@ import { Layout, Menu, Typography } from "antd";
 import { Link, Redirect, Route, Switch, useLocation } from "react-router-dom";
 
 import ColumnView from "./ColumnView";
-import TableView from "./TableView";
 import DatasetView from "./DatasetView";
+import DataFreshnessView from "./DataFreshnessView";
+import TableView from "./TableView";
 
 import * as IngestMetadata from "../navigation/IngestMetadata";
 
@@ -37,9 +38,18 @@ const App = (): JSX.Element => {
           {title.toUpperCase()}
         </Typography.Title>
         <Menu mode="inline" selectedKeys={selectedMenuKeys(location.pathname)}>
-          <Menu.Item key={IngestMetadata.ROOT_ROUTE}>
-            <Link to={IngestMetadata.ROOT_ROUTE}>Ingest Metadata</Link>
-          </Menu.Item>
+          <Menu.ItemGroup title="Ingest Metadata">
+            <Menu.Item key={IngestMetadata.STATE_METADATA_ROUTE}>
+              <Link to={IngestMetadata.STATE_METADATA_ROUTE}>
+                State Dataset
+              </Link>
+            </Menu.Item>
+            <Menu.Item key={IngestMetadata.DATA_FRESHNESS_ROUTE}>
+              <Link to={IngestMetadata.DATA_FRESHNESS_ROUTE}>
+                Data Freshness
+              </Link>
+            </Menu.Item>
+          </Menu.ItemGroup>
         </Menu>
       </Layout.Sider>
       <div className="main-content">
@@ -54,10 +64,14 @@ const App = (): JSX.Element => {
           />
           <Route
             exact
-            path={IngestMetadata.ROOT_ROUTE}
+            path={IngestMetadata.STATE_METADATA_ROUTE}
             component={DatasetView}
           />
-          <Redirect from="/" to={IngestMetadata.ROOT_ROUTE} />
+          <Route
+            path={IngestMetadata.DATA_FRESHNESS_ROUTE}
+            component={DataFreshnessView}
+          />
+          <Redirect from="/" to={IngestMetadata.STATE_METADATA_ROUTE} />
         </Switch>
       </div>
     </Layout>
@@ -65,8 +79,11 @@ const App = (): JSX.Element => {
 };
 
 function selectedMenuKeys(pathname: string): string[] {
-  if (pathname.startsWith(IngestMetadata.ROOT_ROUTE)) {
-    return [IngestMetadata.ROOT_ROUTE];
+  if (pathname.startsWith(IngestMetadata.STATE_METADATA_ROUTE)) {
+    return [IngestMetadata.STATE_METADATA_ROUTE];
+  }
+  if (pathname.startsWith(IngestMetadata.DATA_FRESHNESS_ROUTE)) {
+    return [IngestMetadata.DATA_FRESHNESS_ROUTE];
   }
   return [];
 }

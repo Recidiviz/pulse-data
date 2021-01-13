@@ -27,6 +27,7 @@ const postWithURLAndBody = async (
   });
 };
 
+// Fetch state dataset info
 export const fetchColumnObjectCountsByValue = async (
   table: string,
   column: string
@@ -51,4 +52,9 @@ export const fetchObjectCountsByTable = async (): Promise<Response> => {
     "/api/ingest_metadata/fetch_object_counts_by_table",
     {}
   );
+};
+
+// Fetch data freshness
+export const fetchDataFreshness = async (): Promise<Response> => {
+  return postWithURLAndBody("/api/ingest_metadata/data_freshness", {});
 };
