@@ -145,6 +145,10 @@ class FullCompartment(SparkCompartment):
 
     def scale_cohorts(self, total_populations: pd.DataFrame):
 
+        if len(total_populations[total_populations['time_step'] == self.current_ts]) == 0:
+            raise ValueError(f"Total population data must have the time step {self.current_ts}")
+
+        # Use the total population for the latest time step to compute the scale factor
         total_population = total_populations.set_index('time_step').loc[self.current_ts, 'total_population']
 
         scale_factor = total_population / self.get_current_population()
