@@ -142,6 +142,7 @@ class PredictedAdmissions:
             predictions_df = predictions_df.append(predictions_df_sub)
 
         # If predictions are made more than once on an overlapping set of periods we will get duplicates. Drop those.
+        predictions_df = pd.concat([predictions_df, self.predictions_df])
         predictions_df = predictions_df[~predictions_df.index.duplicated(keep='first')].sort_index()
 
         # combine historical and preds

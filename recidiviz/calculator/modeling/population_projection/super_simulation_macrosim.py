@@ -118,13 +118,13 @@ class MacroSuperSimulation(SuperSimulation):
 
         first_relevant_ts = self._get_first_relevant_ts()
 
-        self.pop_simulations['policy'].simulate_policies(*simulation_data_inputs, self.user_inputs, first_relevant_ts)
+        self.pop_simulations['policy'].simulate_policies(*simulation_data_inputs, user_inputs=self.user_inputs,
+                                                         first_relevant_ts=first_relevant_ts)
 
         control_user_inputs = deepcopy(self.user_inputs)
         control_user_inputs['policy_list'] = []
-        self.pop_simulations['control'].simulate_policies(*simulation_data_inputs, control_user_inputs,
-                                                          first_relevant_ts)
-
+        self.pop_simulations['control'].simulate_policies(*simulation_data_inputs, user_inputs=control_user_inputs,
+                                                          first_relevant_ts=first_relevant_ts)
         results = {scenario: self.pop_simulations[scenario].population_projections for scenario in self.pop_simulations}
         results = {i: results[i][results[i]['time_step'] >= self.user_inputs['start_time_step']] for i in results}
         self.output_data['policy_simulation'] = self._graph_results(results, output_compartment)
