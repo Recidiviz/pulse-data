@@ -301,70 +301,70 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                     assessment_count=0,
                     assessment_up_to_date=True,
                     face_to_face_count=0,
-                    face_to_face_frequency_sufficient=False
+                    face_to_face_frequency_sufficient=None
                 ),
                 date(2018, 4, 30): SupervisionCaseCompliance(
                     date_of_evaluation=date(2018, 4, 30),
                     assessment_count=0,
                     assessment_up_to_date=True,
                     face_to_face_count=0,
-                    face_to_face_frequency_sufficient=False
+                    face_to_face_frequency_sufficient=None
                 ),
                 date(2018, 5, 31): SupervisionCaseCompliance(
                     date_of_evaluation=date(2018, 5, 31),
                     assessment_count=0,
                     assessment_up_to_date=True,
                     face_to_face_count=0,
-                    face_to_face_frequency_sufficient=False
+                    face_to_face_frequency_sufficient=None
                 ),
                 date(2018, 6, 30): SupervisionCaseCompliance(
                     date_of_evaluation=date(2018, 6, 30),
                     assessment_count=0,
                     assessment_up_to_date=True,
                     face_to_face_count=0,
-                    face_to_face_frequency_sufficient=False
+                    face_to_face_frequency_sufficient=None
                 ),
                 date(2018, 7, 31): SupervisionCaseCompliance(
                     date_of_evaluation=date(2018, 7, 31),
                     assessment_count=0,
                     assessment_up_to_date=True,
                     face_to_face_count=0,
-                    face_to_face_frequency_sufficient=False
+                    face_to_face_frequency_sufficient=None
                 ),
                 date(2018, 8, 31): SupervisionCaseCompliance(
                     date_of_evaluation=date(2018, 8, 31),
                     assessment_count=0,
                     assessment_up_to_date=True,
                     face_to_face_count=0,
-                    face_to_face_frequency_sufficient=False
+                    face_to_face_frequency_sufficient=None
                 ),
                 date(2018, 9, 30): SupervisionCaseCompliance(
                     date_of_evaluation=date(2018, 9, 30),
                     assessment_count=0,
                     assessment_up_to_date=False,
                     face_to_face_count=0,
-                    face_to_face_frequency_sufficient=False
+                    face_to_face_frequency_sufficient=None
                 ),
                 date(2018, 10, 31): SupervisionCaseCompliance(
                     date_of_evaluation=date(2018, 10, 31),
                     assessment_count=0,
                     assessment_up_to_date=False,
                     face_to_face_count=0,
-                    face_to_face_frequency_sufficient=False
+                    face_to_face_frequency_sufficient=None
                 ),
                 date(2018, 11, 30): SupervisionCaseCompliance(
                     date_of_evaluation=date(2018, 11, 30),
                     assessment_count=0,
                     assessment_up_to_date=False,
                     face_to_face_count=0,
-                    face_to_face_frequency_sufficient=False
+                    face_to_face_frequency_sufficient=None
                 ),
                 date(2018, 12, 31): SupervisionCaseCompliance(
                     date_of_evaluation=date(2018, 12, 31),
                     assessment_count=0,
                     assessment_up_to_date=False,
                     face_to_face_count=0,
-                    face_to_face_frequency_sufficient=False
+                    face_to_face_frequency_sufficient=None
                 ),
             }
         ))
@@ -465,14 +465,14 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                     assessment_count=0,
                     assessment_up_to_date=True,
                     face_to_face_count=0,
-                    face_to_face_frequency_sufficient=False
+                    face_to_face_frequency_sufficient=None
                 ),
                 date(2018, 4, 30): SupervisionCaseCompliance(
                     date_of_evaluation=date(2018, 4, 30),
                     assessment_count=0,
                     assessment_up_to_date=True,
                     face_to_face_count=0,
-                    face_to_face_frequency_sufficient=False
+                    face_to_face_frequency_sufficient=None
                 ),
             }
         ))
@@ -486,28 +486,28 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                     assessment_count=0,
                     assessment_up_to_date=False,
                     face_to_face_count=0,
-                    face_to_face_frequency_sufficient=False
+                    face_to_face_frequency_sufficient=None
                 ),
                 date(2019, 9, 30): SupervisionCaseCompliance(
                     date_of_evaluation=date(2019, 9, 30),
                     assessment_count=0,
                     assessment_up_to_date=False,
                     face_to_face_count=0,
-                    face_to_face_frequency_sufficient=False
+                    face_to_face_frequency_sufficient=None
                 ),
                 date(2019, 10, 31): SupervisionCaseCompliance(
                     date_of_evaluation=date(2019, 10, 31),
                     assessment_count=0,
                     assessment_up_to_date=False,
                     face_to_face_count=0,
-                    face_to_face_frequency_sufficient=False
+                    face_to_face_frequency_sufficient=None
                 ),
                 date(2019, 11, 30): SupervisionCaseCompliance(
                     date_of_evaluation=date(2019, 11, 30),
                     assessment_count=0,
                     assessment_up_to_date=False,
                     face_to_face_count=0,
-                    face_to_face_frequency_sufficient=False
+                    face_to_face_frequency_sufficient=None
                 ),
             }
         ))
@@ -609,14 +609,14 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                     assessment_count=0,
                     assessment_up_to_date=True,
                     face_to_face_count=0,
-                    face_to_face_frequency_sufficient=False
+                    face_to_face_frequency_sufficient=None
                 ),
                 date(2018, 4, 30): SupervisionCaseCompliance(
                     date_of_evaluation=date(2018, 4, 30),
                     assessment_count=0,
                     assessment_up_to_date=True,
                     face_to_face_count=0,
-                    face_to_face_frequency_sufficient=False
+                    face_to_face_frequency_sufficient=None
                 ),
             }
         ))
@@ -630,21 +630,21 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                     assessment_count=0,
                     assessment_up_to_date=True,
                     face_to_face_count=0,
-                    face_to_face_frequency_sufficient=False
+                    face_to_face_frequency_sufficient=None
                 ),
                 date(2018, 5, 31): SupervisionCaseCompliance(
                     date_of_evaluation=date(2018, 5, 31),
                     assessment_count=0,
                     assessment_up_to_date=True,
                     face_to_face_count=0,
-                    face_to_face_frequency_sufficient=False
+                    face_to_face_frequency_sufficient=None
                 ),
                 date(2018, 6, 30): SupervisionCaseCompliance(
                     date_of_evaluation=date(2018, 6, 30),
                     assessment_count=0,
                     assessment_up_to_date=True,
                     face_to_face_count=0,
-                    face_to_face_frequency_sufficient=False
+                    face_to_face_frequency_sufficient=None
                 )
             }
         ))
@@ -747,14 +747,14 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                     assessment_count=0,
                     assessment_up_to_date=True,
                     face_to_face_count=0,
-                    face_to_face_frequency_sufficient=False
+                    face_to_face_frequency_sufficient=None
                 ),
                 date(2018, 4, 30): SupervisionCaseCompliance(
                     date_of_evaluation=date(2018, 4, 30),
                     assessment_count=0,
                     assessment_up_to_date=True,
                     face_to_face_count=0,
-                    face_to_face_frequency_sufficient=False
+                    face_to_face_frequency_sufficient=None
                 )
             }
         ))
@@ -768,21 +768,21 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                     assessment_count=0,
                     assessment_up_to_date=True,
                     face_to_face_count=0,
-                    face_to_face_frequency_sufficient=False
+                    face_to_face_frequency_sufficient=None
                 ),
                 date(2018, 5, 31): SupervisionCaseCompliance(
                     date_of_evaluation=date(2018, 5, 31),
                     assessment_count=0,
                     assessment_up_to_date=True,
                     face_to_face_count=0,
-                    face_to_face_frequency_sufficient=False
+                    face_to_face_frequency_sufficient=None
                 ),
                 date(2018, 6, 30): SupervisionCaseCompliance(
                     date_of_evaluation=date(2018, 6, 30),
                     assessment_count=0,
                     assessment_up_to_date=True,
                     face_to_face_count=0,
-                    face_to_face_frequency_sufficient=False
+                    face_to_face_frequency_sufficient=None
                 )
             }
         ))
@@ -884,14 +884,14 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                     assessment_count=0,
                     assessment_up_to_date=True,
                     face_to_face_count=0,
-                    face_to_face_frequency_sufficient=False
+                    face_to_face_frequency_sufficient=None
                 ),
                 date(2017, 4, 30): SupervisionCaseCompliance(
                     date_of_evaluation=date(2017, 4, 30),
                     assessment_count=0,
                     assessment_up_to_date=True,
                     face_to_face_count=0,
-                    face_to_face_frequency_sufficient=False
+                    face_to_face_frequency_sufficient=None
                 )
             }
         ))
@@ -2091,14 +2091,14 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                     assessment_count=0,
                     assessment_up_to_date=True,
                     face_to_face_count=0,
-                    face_to_face_frequency_sufficient=False
+                    face_to_face_frequency_sufficient=None
                 ),
                 date(2017, 4, 30): SupervisionCaseCompliance(
                     date_of_evaluation=date(2017, 4, 30),
                     assessment_count=0,
                     assessment_up_to_date=True,
                     face_to_face_count=0,
-                    face_to_face_frequency_sufficient=False
+                    face_to_face_frequency_sufficient=None
                 )
             }
         ))
@@ -2112,28 +2112,28 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                     assessment_count=0,
                     assessment_up_to_date=False,
                     face_to_face_count=0,
-                    face_to_face_frequency_sufficient=False
+                    face_to_face_frequency_sufficient=None
                 ),
                 date(2018, 9, 30): SupervisionCaseCompliance(
                     date_of_evaluation=date(2018, 9, 30),
                     assessment_count=0,
                     assessment_up_to_date=False,
                     face_to_face_count=0,
-                    face_to_face_frequency_sufficient=False
+                    face_to_face_frequency_sufficient=None
                 ),
                 date(2018, 10, 31): SupervisionCaseCompliance(
                     date_of_evaluation=date(2018, 10, 31),
                     assessment_count=0,
                     assessment_up_to_date=False,
                     face_to_face_count=0,
-                    face_to_face_frequency_sufficient=False
+                    face_to_face_frequency_sufficient=None
                 ),
                 date(2018, 11, 30): SupervisionCaseCompliance(
                     date_of_evaluation=date(2018, 11, 30),
                     assessment_count=0,
                     assessment_up_to_date=False,
                     face_to_face_count=0,
-                    face_to_face_frequency_sufficient=False
+                    face_to_face_frequency_sufficient=None
                 )
             }
         ))
@@ -2250,14 +2250,14 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                     assessment_count=0,
                     assessment_up_to_date=True,
                     face_to_face_count=0,
-                    face_to_face_frequency_sufficient=False
+                    face_to_face_frequency_sufficient=None
                 ),
                 date(2017, 4, 30): SupervisionCaseCompliance(
                     date_of_evaluation=date(2017, 4, 30),
                     assessment_count=0,
                     assessment_up_to_date=True,
                     face_to_face_count=0,
-                    face_to_face_frequency_sufficient=False
+                    face_to_face_frequency_sufficient=None
                 )
             }
         ))
@@ -2381,14 +2381,14 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                     assessment_count=0,
                     assessment_up_to_date=True,
                     face_to_face_count=0,
-                    face_to_face_frequency_sufficient=False
+                    face_to_face_frequency_sufficient=None
                 ),
                 date(2017, 4, 30): SupervisionCaseCompliance(
                     date_of_evaluation=date(2017, 4, 30),
                     assessment_count=0,
                     assessment_up_to_date=True,
                     face_to_face_count=0,
-                    face_to_face_frequency_sufficient=False
+                    face_to_face_frequency_sufficient=None
                 )
             }
         ))
@@ -2402,28 +2402,28 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                     assessment_count=0,
                     assessment_up_to_date=False,
                     face_to_face_count=0,
-                    face_to_face_frequency_sufficient=False
+                    face_to_face_frequency_sufficient=None
                 ),
                 date(2017, 9, 30): SupervisionCaseCompliance(
                     date_of_evaluation=date(2017, 9, 30),
                     assessment_count=0,
                     assessment_up_to_date=False,
                     face_to_face_count=0,
-                    face_to_face_frequency_sufficient=False
+                    face_to_face_frequency_sufficient=None
                 ),
                 date(2017, 10, 31): SupervisionCaseCompliance(
                     date_of_evaluation=date(2017, 10, 31),
                     assessment_count=0,
                     assessment_up_to_date=False,
                     face_to_face_count=0,
-                    face_to_face_frequency_sufficient=False
+                    face_to_face_frequency_sufficient=None
                 ),
                 date(2017, 11, 30): SupervisionCaseCompliance(
                     date_of_evaluation=date(2017, 11, 30),
                     assessment_count=0,
                     assessment_up_to_date=False,
                     face_to_face_count=0,
-                    face_to_face_frequency_sufficient=False
+                    face_to_face_frequency_sufficient=None
                 )
             }
         ))
@@ -2637,14 +2637,14 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                     assessment_count=0,
                     assessment_up_to_date=True,
                     face_to_face_count=0,
-                    face_to_face_frequency_sufficient=False
+                    face_to_face_frequency_sufficient=None
                 ),
                 date(2018, 4, 30): SupervisionCaseCompliance(
                     date_of_evaluation=date(2018, 4, 30),
                     assessment_count=0,
                     assessment_up_to_date=True,
                     face_to_face_count=0,
-                    face_to_face_frequency_sufficient=False
+                    face_to_face_frequency_sufficient=None
                 )
             }
         ))
@@ -2658,7 +2658,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                     assessment_count=0,
                     assessment_up_to_date=True,
                     face_to_face_count=0,
-                    face_to_face_frequency_sufficient=False
+                    face_to_face_frequency_sufficient=None
                 )
             }
         ))
@@ -2789,14 +2789,14 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                     assessment_count=0,
                     assessment_up_to_date=True,
                     face_to_face_count=0,
-                    face_to_face_frequency_sufficient=False
+                    face_to_face_frequency_sufficient=None
                 ),
                 date(2017, 4, 30): SupervisionCaseCompliance(
                     date_of_evaluation=date(2017, 4, 30),
                     assessment_count=0,
                     assessment_up_to_date=True,
                     face_to_face_count=0,
-                    face_to_face_frequency_sufficient=False
+                    face_to_face_frequency_sufficient=None
                 )
             }
         ))
@@ -2811,63 +2811,63 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                     assessment_count=0,
                     assessment_up_to_date=True,
                     face_to_face_count=0,
-                    face_to_face_frequency_sufficient=False
+                    face_to_face_frequency_sufficient=None
                 ),
                 date(2017, 4, 30): SupervisionCaseCompliance(
                     date_of_evaluation=date(2017, 4, 30),
                     assessment_count=0,
                     assessment_up_to_date=True,
                     face_to_face_count=0,
-                    face_to_face_frequency_sufficient=False
+                    face_to_face_frequency_sufficient=None
                 ),
                 date(2017, 5, 31): SupervisionCaseCompliance(
                     date_of_evaluation=date(2017, 5, 31),
                     assessment_count=0,
                     assessment_up_to_date=True,
                     face_to_face_count=0,
-                    face_to_face_frequency_sufficient=False
+                    face_to_face_frequency_sufficient=None
                 ),
                 date(2017, 6, 30): SupervisionCaseCompliance(
                     date_of_evaluation=date(2017, 6, 30),
                     assessment_count=0,
                     assessment_up_to_date=True,
                     face_to_face_count=0,
-                    face_to_face_frequency_sufficient=False
+                    face_to_face_frequency_sufficient=None
                 ),
                 date(2017, 7, 31): SupervisionCaseCompliance(
                     date_of_evaluation=date(2017, 7, 31),
                     assessment_count=0,
                     assessment_up_to_date=True,
                     face_to_face_count=0,
-                    face_to_face_frequency_sufficient=False
+                    face_to_face_frequency_sufficient=None
                 ),
                 date(2017, 8, 31): SupervisionCaseCompliance(
                     date_of_evaluation=date(2017, 8, 31),
                     assessment_count=0,
                     assessment_up_to_date=True,
                     face_to_face_count=0,
-                    face_to_face_frequency_sufficient=False
+                    face_to_face_frequency_sufficient=None
                 ),
                 date(2017, 9, 30): SupervisionCaseCompliance(
                     date_of_evaluation=date(2017, 9, 30),
                     assessment_count=0,
                     assessment_up_to_date=True,
                     face_to_face_count=0,
-                    face_to_face_frequency_sufficient=False
+                    face_to_face_frequency_sufficient=None
                 ),
                 date(2017, 10, 31): SupervisionCaseCompliance(
                     date_of_evaluation=date(2017, 10, 31),
                     assessment_count=0,
                     assessment_up_to_date=False,
                     face_to_face_count=0,
-                    face_to_face_frequency_sufficient=False
+                    face_to_face_frequency_sufficient=None
                 ),
                 date(2017, 11, 30): SupervisionCaseCompliance(
                     date_of_evaluation=date(2017, 1, 30),
                     assessment_count=0,
                     assessment_up_to_date=False,
                     face_to_face_count=0,
-                    face_to_face_frequency_sufficient=False
+                    face_to_face_frequency_sufficient=None
                 )
             }
         ))
@@ -2881,21 +2881,21 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                     assessment_count=0,
                     assessment_up_to_date=False,
                     face_to_face_count=0,
-                    face_to_face_frequency_sufficient=False
+                    face_to_face_frequency_sufficient=None
                 ),
                 date(2017, 10, 31): SupervisionCaseCompliance(
                     date_of_evaluation=date(2017, 10, 31),
                     assessment_count=0,
                     assessment_up_to_date=False,
                     face_to_face_count=0,
-                    face_to_face_frequency_sufficient=False
+                    face_to_face_frequency_sufficient=None
                 ),
                 date(2017, 11, 30): SupervisionCaseCompliance(
                     date_of_evaluation=date(2017, 11, 30),
                     assessment_count=0,
                     assessment_up_to_date=False,
                     face_to_face_count=0,
-                    face_to_face_frequency_sufficient=False
+                    face_to_face_frequency_sufficient=None
                 )
             }
         ))
@@ -3016,14 +3016,14 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                     assessment_count=0,
                     assessment_up_to_date=True,
                     face_to_face_count=0,
-                    face_to_face_frequency_sufficient=False
+                    face_to_face_frequency_sufficient=None
                 ),
                 date(2018, 4, 30): SupervisionCaseCompliance(
                     date_of_evaluation=date(2018, 4, 30),
                     assessment_count=0,
                     assessment_up_to_date=True,
                     face_to_face_count=0,
-                    face_to_face_frequency_sufficient=False
+                    face_to_face_frequency_sufficient=None
                 ),
             }
         ))
@@ -3144,14 +3144,14 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                     assessment_count=0,
                     assessment_up_to_date=True,
                     face_to_face_count=0,
-                    face_to_face_frequency_sufficient=False
+                    face_to_face_frequency_sufficient=None
                 ),
                 date(2018, 4, 30): SupervisionCaseCompliance(
                     date_of_evaluation=date(2018, 4, 30),
                     assessment_count=0,
                     assessment_up_to_date=True,
                     face_to_face_count=0,
-                    face_to_face_frequency_sufficient=False
+                    face_to_face_frequency_sufficient=None
                 ),
             }
         ))
@@ -3272,14 +3272,14 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                     assessment_count=0,
                     assessment_up_to_date=True,
                     face_to_face_count=0,
-                    face_to_face_frequency_sufficient=False
+                    face_to_face_frequency_sufficient=None
                 ),
                 date(2018, 11, 30): SupervisionCaseCompliance(
                     date_of_evaluation=date(2018, 11, 30),
                     assessment_count=0,
                     assessment_up_to_date=True,
                     face_to_face_count=0,
-                    face_to_face_frequency_sufficient=False
+                    face_to_face_frequency_sufficient=None
                 )
             }
         ))
@@ -3375,14 +3375,14 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                     assessment_count=0,
                     assessment_up_to_date=True,
                     face_to_face_count=0,
-                    face_to_face_frequency_sufficient=False
+                    face_to_face_frequency_sufficient=None
                 ),
                 date(2018, 4, 30): SupervisionCaseCompliance(
                     date_of_evaluation=date(2018, 4, 30),
                     assessment_count=0,
                     assessment_up_to_date=True,
                     face_to_face_count=0,
-                    face_to_face_frequency_sufficient=False
+                    face_to_face_frequency_sufficient=None
                 )
             }
         ))
@@ -3478,14 +3478,14 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                     assessment_count=0,
                     assessment_up_to_date=True,
                     face_to_face_count=0,
-                    face_to_face_frequency_sufficient=False
+                    face_to_face_frequency_sufficient=None
                 ),
                 date(2015, 4, 30): SupervisionCaseCompliance(
                     date_of_evaluation=date(2015, 4, 30),
                     assessment_count=0,
                     assessment_up_to_date=True,
                     face_to_face_count=0,
-                    face_to_face_frequency_sufficient=False
+                    face_to_face_frequency_sufficient=None
                 )
             }
         ))
@@ -3606,21 +3606,21 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                     assessment_count=0,
                     assessment_up_to_date=True,
                     face_to_face_count=0,
-                    face_to_face_frequency_sufficient=False
+                    face_to_face_frequency_sufficient=None
                 ),
                 date(2018, 2, 28): SupervisionCaseCompliance(
                     date_of_evaluation=date(2018, 2, 28),
                     assessment_count=0,
                     assessment_up_to_date=True,
                     face_to_face_count=0,
-                    face_to_face_frequency_sufficient=False
+                    face_to_face_frequency_sufficient=None
                 ),
                 date(2018, 8, 31): SupervisionCaseCompliance(
                     date_of_evaluation=date(2018, 8, 31),
                     assessment_count=0,
                     assessment_up_to_date=False,
                     face_to_face_count=0,
-                    face_to_face_frequency_sufficient=False
+                    face_to_face_frequency_sufficient=None
                 )
             }
         ))
@@ -3635,7 +3635,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                     assessment_count=0,
                     assessment_up_to_date=False,
                     face_to_face_count=0,
-                    face_to_face_frequency_sufficient=False
+                    face_to_face_frequency_sufficient=None
                 )
             }
         ))
@@ -3797,21 +3797,21 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                     assessment_count=0,
                     assessment_up_to_date=True,
                     face_to_face_count=0,
-                    face_to_face_frequency_sufficient=False
+                    face_to_face_frequency_sufficient=None
                 ),
                 date(2018, 2, 28): SupervisionCaseCompliance(
                     date_of_evaluation=date(2018, 2, 28),
                     assessment_count=0,
                     assessment_up_to_date=True,
                     face_to_face_count=0,
-                    face_to_face_frequency_sufficient=False
+                    face_to_face_frequency_sufficient=None
                 ),
                 date(2018, 8, 31): SupervisionCaseCompliance(
                     date_of_evaluation=date(2018, 8, 31),
                     assessment_count=0,
                     assessment_up_to_date=False,
                     face_to_face_count=0,
-                    face_to_face_frequency_sufficient=False
+                    face_to_face_frequency_sufficient=None
                 )
             }
         ))
@@ -3826,7 +3826,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                     assessment_count=0,
                     assessment_up_to_date=False,
                     face_to_face_count=0,
-                    face_to_face_frequency_sufficient=False
+                    face_to_face_frequency_sufficient=None
                 )
             }
         ))
@@ -3940,14 +3940,14 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                     assessment_count=0,
                     assessment_up_to_date=True,
                     face_to_face_count=0,
-                    face_to_face_frequency_sufficient=False
+                    face_to_face_frequency_sufficient=None
                 ),
                 date(2018, 4, 30): SupervisionCaseCompliance(
                     date_of_evaluation=date(2018, 4, 30),
                     assessment_count=0,
                     assessment_up_to_date=True,
                     face_to_face_count=0,
-                    face_to_face_frequency_sufficient=False
+                    face_to_face_frequency_sufficient=None
                 )
             }
         ))
@@ -4264,14 +4264,14 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 assessment_count=0,
                 assessment_up_to_date=True,
                 face_to_face_count=0,
-                face_to_face_frequency_sufficient=False
+                face_to_face_frequency_sufficient=None
             ),
             date(2018, 4, 30): SupervisionCaseCompliance(
                 date_of_evaluation=date(2018, 4, 30),
                 assessment_count=0,
                 assessment_up_to_date=True,
                 face_to_face_count=0,
-                face_to_face_frequency_sufficient=False
+                face_to_face_frequency_sufficient=None
             )
             }
         ))
@@ -4373,14 +4373,14 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                     assessment_count=1,
                     assessment_up_to_date=True,
                     face_to_face_count=0,
-                    face_to_face_frequency_sufficient=False
+                    face_to_face_frequency_sufficient=None
                 ),
                 date(2018, 4, 30): SupervisionCaseCompliance(
                     date_of_evaluation=date(2018, 4, 30),
                     assessment_count=0,
                     assessment_up_to_date=True,
                     face_to_face_count=0,
-                    face_to_face_frequency_sufficient=False
+                    face_to_face_frequency_sufficient=None
                 )
             }
         ))
@@ -4717,14 +4717,14 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                     assessment_count=1,
                     assessment_up_to_date=True,
                     face_to_face_count=0,
-                    face_to_face_frequency_sufficient=False
+                    face_to_face_frequency_sufficient=None
                 ),
                 date(2018, 4, 30): SupervisionCaseCompliance(
                     date_of_evaluation=date(2018, 4, 30),
                     assessment_count=0,
                     assessment_up_to_date=True,
                     face_to_face_count=0,
-                    face_to_face_frequency_sufficient=False
+                    face_to_face_frequency_sufficient=None
                 )
             }
         ))
@@ -4742,14 +4742,14 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                     assessment_count=1,
                     assessment_up_to_date=True,
                     face_to_face_count=0,
-                    face_to_face_frequency_sufficient=False
+                    face_to_face_frequency_sufficient=None
                 ),
                 date(2018, 4, 30): SupervisionCaseCompliance(
                     date_of_evaluation=date(2018, 4, 30),
                     assessment_count=0,
                     assessment_up_to_date=True,
                     face_to_face_count=0,
-                    face_to_face_frequency_sufficient=False
+                    face_to_face_frequency_sufficient=None
                 )
             }
         ))
@@ -4767,14 +4767,14 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                     assessment_count=1,
                     assessment_up_to_date=True,
                     face_to_face_count=0,
-                    face_to_face_frequency_sufficient=False
+                    face_to_face_frequency_sufficient=None
                 ),
                 date(2018, 4, 30): SupervisionCaseCompliance(
                     date_of_evaluation=date(2018, 4, 30),
                     assessment_count=0,
                     assessment_up_to_date=True,
                     face_to_face_count=0,
-                    face_to_face_frequency_sufficient=False
+                    face_to_face_frequency_sufficient=None
                 )
             }
         ))
@@ -4910,21 +4910,21 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                     assessment_count=0,
                     assessment_up_to_date=True,
                     face_to_face_count=0,
-                    face_to_face_frequency_sufficient=False
+                    face_to_face_frequency_sufficient=None
                 ),
                 date(2019, 7, 31): SupervisionCaseCompliance(
                     date_of_evaluation=date(2019, 7, 31),
                     assessment_count=0,
                     assessment_up_to_date=True,
                     face_to_face_count=0,
-                    face_to_face_frequency_sufficient=False
+                    face_to_face_frequency_sufficient=None
                 ),
                 date(2019, 8, 31): SupervisionCaseCompliance(
                     date_of_evaluation=date(2019, 8, 31),
                     assessment_count=0,
                     assessment_up_to_date=True,
                     face_to_face_count=0,
-                    face_to_face_frequency_sufficient=False
+                    face_to_face_frequency_sufficient=None
                 )},
 
         ))
@@ -5034,21 +5034,21 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                     assessment_count=0,
                     assessment_up_to_date=True,
                     face_to_face_count=0,
-                    face_to_face_frequency_sufficient=False
+                    face_to_face_frequency_sufficient=None
                 ),
                 date(2018, 4, 30): SupervisionCaseCompliance(
                     date_of_evaluation=date(2018, 4, 30),
                     assessment_count=0,
                     assessment_up_to_date=True,
                     face_to_face_count=0,
-                    face_to_face_frequency_sufficient=False
+                    face_to_face_frequency_sufficient=None
                 ),
                 date(2018, 5, 31): SupervisionCaseCompliance(
                     date_of_evaluation=date(2018, 5, 31),
                     assessment_count=0,
                     assessment_up_to_date=True,
                     face_to_face_count=0,
-                    face_to_face_frequency_sufficient=False
+                    face_to_face_frequency_sufficient=None
                 ),
             }
         ))
@@ -6707,21 +6707,21 @@ class TestFindTimeBucketsForSupervisionPeriod(unittest.TestCase):
                     assessment_count=0,
                     assessment_up_to_date=True,
                     face_to_face_count=0,
-                    face_to_face_frequency_sufficient=False
+                    face_to_face_frequency_sufficient=None
                 ),
                 date(2003, 8, 31): SupervisionCaseCompliance(
                     date_of_evaluation=date(2003, 8, 31),
                     assessment_count=0,
                     assessment_up_to_date=True,
                     face_to_face_count=0,
-                    face_to_face_frequency_sufficient=False
+                    face_to_face_frequency_sufficient=None
                 ),
                 date(2003, 9, 30): SupervisionCaseCompliance(
                     date_of_evaluation=date(2003, 9, 30),
                     assessment_count=0,
                     assessment_up_to_date=True,
                     face_to_face_count=0,
-                    face_to_face_frequency_sufficient=False
+                    face_to_face_frequency_sufficient=None
                 )
             }
         ))
@@ -6796,7 +6796,7 @@ class TestFindTimeBucketsForSupervisionPeriod(unittest.TestCase):
                     assessment_count=0,
                     assessment_up_to_date=True,
                     face_to_face_count=0,
-                    face_to_face_frequency_sufficient=False
+                    face_to_face_frequency_sufficient=None
                 )
             }
         )
@@ -6871,14 +6871,14 @@ class TestFindTimeBucketsForSupervisionPeriod(unittest.TestCase):
                     assessment_count=0,
                     assessment_up_to_date=True,
                     face_to_face_count=0,
-                    face_to_face_frequency_sufficient=False
+                    face_to_face_frequency_sufficient=None
                 ),
                 date(2019, 4, 30): SupervisionCaseCompliance(
                     date_of_evaluation=date(2019, 4, 30),
                     assessment_count=0,
                     assessment_up_to_date=True,
                     face_to_face_count=0,
-                    face_to_face_frequency_sufficient=False
+                    face_to_face_frequency_sufficient=None
                 )
             }
         )
@@ -6893,7 +6893,7 @@ class TestFindTimeBucketsForSupervisionPeriod(unittest.TestCase):
                         assessment_count=0,
                         assessment_up_to_date=False,
                         face_to_face_count=0,
-                        face_to_face_frequency_sufficient=False
+                        face_to_face_frequency_sufficient=None
                     )
                 }
             )
@@ -6971,21 +6971,21 @@ class TestFindTimeBucketsForSupervisionPeriod(unittest.TestCase):
                     assessment_count=0,
                     assessment_up_to_date=True,
                     face_to_face_count=0,
-                    face_to_face_frequency_sufficient=False
+                    face_to_face_frequency_sufficient=None
                 ),
                 date(2018, 4, 30): SupervisionCaseCompliance(
                     date_of_evaluation=date(2018, 4, 30),
                     assessment_count=0,
                     assessment_up_to_date=True,
                     face_to_face_count=0,
-                    face_to_face_frequency_sufficient=False
+                    face_to_face_frequency_sufficient=None
                 ),
                 date(2018, 5, 31): SupervisionCaseCompliance(
                     date_of_evaluation=date(2018, 5, 31),
                     assessment_count=0,
                     assessment_up_to_date=True,
                     face_to_face_count=0,
-                    face_to_face_frequency_sufficient=False
+                    face_to_face_frequency_sufficient=None
                 )
             }
         )
@@ -7065,21 +7065,21 @@ class TestFindTimeBucketsForSupervisionPeriod(unittest.TestCase):
                     assessment_count=0,
                     assessment_up_to_date=True,
                     face_to_face_count=0,
-                    face_to_face_frequency_sufficient=False
+                    face_to_face_frequency_sufficient=None
                 ),
                 date(2008, 4, 30): SupervisionCaseCompliance(
                     date_of_evaluation=date(2008, 4, 30),
                     assessment_count=0,
                     assessment_up_to_date=True,
                     face_to_face_count=0,
-                    face_to_face_frequency_sufficient=False
+                    face_to_face_frequency_sufficient=None
                 ),
                 date(2008, 5, 31): SupervisionCaseCompliance(
                     date_of_evaluation=date(2008, 5, 31),
                     assessment_count=0,
                     assessment_up_to_date=True,
                     face_to_face_count=0,
-                    face_to_face_frequency_sufficient=False
+                    face_to_face_frequency_sufficient=None
                 )
             }
         )
@@ -7094,21 +7094,21 @@ class TestFindTimeBucketsForSupervisionPeriod(unittest.TestCase):
                         assessment_count=0,
                         assessment_up_to_date=False,
                         face_to_face_count=0,
-                        face_to_face_frequency_sufficient=False
+                        face_to_face_frequency_sufficient=None
                     ),
                     date(2010, 1, 31): SupervisionCaseCompliance(
                         date_of_evaluation=date(2010, 1, 31),
                         assessment_count=0,
                         assessment_up_to_date=False,
                         face_to_face_count=0,
-                        face_to_face_frequency_sufficient=False
+                        face_to_face_frequency_sufficient=None
                     ),
                     date(2010, 2, 28): SupervisionCaseCompliance(
                         date_of_evaluation=date(2010, 2, 28),
                         assessment_count=0,
                         assessment_up_to_date=False,
                         face_to_face_count=0,
-                        face_to_face_frequency_sufficient=False
+                        face_to_face_frequency_sufficient=None
                     )
                 }
             )
@@ -7177,42 +7177,42 @@ class TestFindTimeBucketsForSupervisionPeriod(unittest.TestCase):
                     assessment_count=0,
                     assessment_up_to_date=True,
                     face_to_face_count=0,
-                    face_to_face_frequency_sufficient=False
+                    face_to_face_frequency_sufficient=None
                 ),
                 date(2001, 2, 28): SupervisionCaseCompliance(
                     date_of_evaluation=date(2001, 2, 28),
                     assessment_count=0,
                     assessment_up_to_date=True,
                     face_to_face_count=0,
-                    face_to_face_frequency_sufficient=False
+                    face_to_face_frequency_sufficient=None
                 ),
                 date(2001, 3, 31): SupervisionCaseCompliance(
                     date_of_evaluation=date(2001, 3, 31),
                     assessment_count=0,
                     assessment_up_to_date=True,
                     face_to_face_count=0,
-                    face_to_face_frequency_sufficient=False
+                    face_to_face_frequency_sufficient=None
                 ),
                 date(2001, 4, 30): SupervisionCaseCompliance(
                     date_of_evaluation=date(2001, 4, 30),
                     assessment_count=0,
                     assessment_up_to_date=True,
                     face_to_face_count=0,
-                    face_to_face_frequency_sufficient=False
+                    face_to_face_frequency_sufficient=None
                 ),
                 date(2001, 5, 31): SupervisionCaseCompliance(
                     date_of_evaluation=date(2001, 5, 31),
                     assessment_count=0,
                     assessment_up_to_date=True,
                     face_to_face_count=0,
-                    face_to_face_frequency_sufficient=False
+                    face_to_face_frequency_sufficient=None
                 ),
                 date(2001, 6, 30): SupervisionCaseCompliance(
                     date_of_evaluation=date(2001, 6, 30),
                     assessment_count=0,
                     assessment_up_to_date=True,
                     face_to_face_count=0,
-                    face_to_face_frequency_sufficient=False
+                    face_to_face_frequency_sufficient=None
                 )
             }
         )
@@ -7230,7 +7230,7 @@ class TestFindTimeBucketsForSupervisionPeriod(unittest.TestCase):
                                 assessment_count=0,
                                 assessment_up_to_date=True,
                                 face_to_face_count=0,
-                                face_to_face_frequency_sufficient=False
+                                 face_to_face_frequency_sufficient=None
                              )))
 
         self.assertCountEqual(supervision_time_buckets, expected_buckets)
@@ -7296,35 +7296,35 @@ class TestFindTimeBucketsForSupervisionPeriod(unittest.TestCase):
                     assessment_count=0,
                     assessment_up_to_date=True,
                     face_to_face_count=0,
-                    face_to_face_frequency_sufficient=False
+                    face_to_face_frequency_sufficient=None
                 ),
                 date(2001, 2, 28): SupervisionCaseCompliance(
                     date_of_evaluation=date(2001, 2, 28),
                     assessment_count=0,
                     assessment_up_to_date=True,
                     face_to_face_count=0,
-                    face_to_face_frequency_sufficient=False
+                    face_to_face_frequency_sufficient=None
                 ),
                 date(2001, 3, 31): SupervisionCaseCompliance(
                     date_of_evaluation=date(2001, 3, 31),
                     assessment_count=0,
                     assessment_up_to_date=True,
                     face_to_face_count=0,
-                    face_to_face_frequency_sufficient=False
+                    face_to_face_frequency_sufficient=None
                 ),
                 date(2001, 4, 30): SupervisionCaseCompliance(
                     date_of_evaluation=date(2001, 4, 30),
                     assessment_count=0,
                     assessment_up_to_date=True,
                     face_to_face_count=0,
-                    face_to_face_frequency_sufficient=False
+                    face_to_face_frequency_sufficient=None
                 ),
                 date(2001, 5, 31): SupervisionCaseCompliance(
                     date_of_evaluation=date(2001, 5, 31),
                     assessment_count=0,
                     assessment_up_to_date=True,
                     face_to_face_count=0,
-                    face_to_face_frequency_sufficient=False
+                    face_to_face_frequency_sufficient=None
                 )
             }
         )
@@ -7554,14 +7554,14 @@ class TestFindTimeBucketsForSupervisionPeriod(unittest.TestCase):
                     assessment_count=0,
                     assessment_up_to_date=True,
                     face_to_face_count=0,
-                    face_to_face_frequency_sufficient=False
+                    face_to_face_frequency_sufficient=None
                 ),
                 date(2018, 2, 28): SupervisionCaseCompliance(
                     date_of_evaluation=date(2018, 2, 28),
                     assessment_count=0,
                     assessment_up_to_date=True,
                     face_to_face_count=0,
-                    face_to_face_frequency_sufficient=False
+                    face_to_face_frequency_sufficient=None
                 )
             }
         )
@@ -7640,7 +7640,7 @@ class TestFindTimeBucketsForSupervisionPeriod(unittest.TestCase):
                     assessment_count=0,
                     assessment_up_to_date=True,
                     face_to_face_count=0,
-                    face_to_face_frequency_sufficient=False
+                    face_to_face_frequency_sufficient=None
                 )
             }
         )
@@ -7716,7 +7716,7 @@ class TestFindTimeBucketsForSupervisionPeriod(unittest.TestCase):
                     assessment_count=0,
                     assessment_up_to_date=False,
                     face_to_face_count=0,
-                    face_to_face_frequency_sufficient=False
+                    face_to_face_frequency_sufficient=None
                 )
             }
         )

@@ -1319,31 +1319,30 @@ class TestGuidelinesApplicableForCase(unittest.TestCase):
         self.assertFalse(applicable)
 
     def test_guidelines_applicable_for_case_invalid_case_type(self):
-        with self.assertRaises(ValueError):
-            supervision_period = StateSupervisionPeriod.new_with_defaults(
-                supervision_period_id=111,
-                external_id='sp1',
-                state_code='US_ID',
-                custodial_authority='US_ID_DOC',
-                start_date=date(2018, 3, 5),
-                termination_date=date(2018, 5, 19),
-                admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
-                termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-                supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
-                supervision_level=StateSupervisionLevel.HIGH,
-                supervision_level_raw_text='LEVEL 3'
-            )
+        supervision_period = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=111,
+            external_id='sp1',
+            state_code='US_ID',
+            custodial_authority='US_ID_DOC',
+            start_date=date(2018, 3, 5),
+            termination_date=date(2018, 5, 19),
+            admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
+            termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+            supervision_level=StateSupervisionLevel.HIGH,
+            supervision_level_raw_text='LEVEL 3'
+        )
 
-            case_type = StateSupervisionCaseType.SERIOUS_MENTAL_ILLNESS
+        case_type = StateSupervisionCaseType.SERIOUS_MENTAL_ILLNESS
 
-            start_date = supervision_period.start_date
-            us_id_supervision_compliance = UsIdSupervisionCaseCompliance(supervision_period=supervision_period,
-                                                                         case_type=case_type,
-                                                                         start_of_supervision=start_date,
-                                                                         assessments=[],
-                                                                         supervision_contacts=[])
+        start_date = supervision_period.start_date
+        us_id_supervision_compliance = UsIdSupervisionCaseCompliance(supervision_period=supervision_period,
+                                                                     case_type=case_type,
+                                                                     start_of_supervision=start_date,
+                                                                     assessments=[],
+                                                                     supervision_contacts=[])
 
-            us_id_supervision_compliance._guidelines_applicable_for_case()
+        self.assertFalse(us_id_supervision_compliance._guidelines_applicable_for_case())
 
     def test_guidelines_applicable_for_case_sex_offense(self):
         supervision_period = StateSupervisionPeriod.new_with_defaults(
@@ -1402,31 +1401,30 @@ class TestGuidelinesApplicableForCase(unittest.TestCase):
         self.assertFalse(applicable)
 
     def test_guidelines_not_applicable_for_case_invalid_supervision_type_sex_offense(self):
-        with self.assertRaises(ValueError):
-            supervision_period = StateSupervisionPeriod.new_with_defaults(
-                supervision_period_id=111,
-                external_id='sp1',
-                state_code='US_ID',
-                custodial_authority='US_ID_DOC',
-                start_date=date(2018, 3, 5),
-                termination_date=date(2018, 5, 19),
-                admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
-                termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-                supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.INVESTIGATION,
-                supervision_level=StateSupervisionLevel.MAXIMUM,
-                supervision_level_raw_text='SO MAXIMUM', # Fake string, not actually possible to have max sex offense.
-            )
+        supervision_period = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=111,
+            external_id='sp1',
+            state_code='US_ID',
+            custodial_authority='US_ID_DOC',
+            start_date=date(2018, 3, 5),
+            termination_date=date(2018, 5, 19),
+            admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
+            termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.INVESTIGATION,
+            supervision_level=StateSupervisionLevel.MAXIMUM,
+            supervision_level_raw_text='SO MAXIMUM', # Fake string, not actually possible to have max sex offense.
+        )
 
-            case_type = StateSupervisionCaseType.SEX_OFFENSE
+        case_type = StateSupervisionCaseType.SEX_OFFENSE
 
-            start_date = supervision_period.start_date
-            us_id_supervision_compliance = UsIdSupervisionCaseCompliance(supervision_period=supervision_period,
-                                                                         case_type=case_type,
-                                                                         start_of_supervision=start_date,
-                                                                         assessments=[],
-                                                                         supervision_contacts=[])
+        start_date = supervision_period.start_date
+        us_id_supervision_compliance = UsIdSupervisionCaseCompliance(supervision_period=supervision_period,
+                                                                     case_type=case_type,
+                                                                     start_of_supervision=start_date,
+                                                                     assessments=[],
+                                                                     supervision_contacts=[])
 
-            us_id_supervision_compliance._guidelines_applicable_for_case()
+        self.assertFalse(us_id_supervision_compliance._guidelines_applicable_for_case())
 
 
 class TestReassessmentRequirementAreMet(unittest.TestCase):

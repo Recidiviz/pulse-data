@@ -79,7 +79,7 @@ class TestCaseCompliance(unittest.TestCase):
                 assessment_count=0,
                 assessment_up_to_date=True,
                 face_to_face_count=0,
-                face_to_face_frequency_sufficient=False
+                face_to_face_frequency_sufficient=None
             ), compliance)
 
     def test_us_nd_get_case_compliance_on_date_with_assessments_within_six_months(self):
@@ -124,7 +124,7 @@ class TestCaseCompliance(unittest.TestCase):
                 assessment_count=1,
                 assessment_up_to_date=True,
                 face_to_face_count=0,
-                face_to_face_frequency_sufficient=False
+                face_to_face_frequency_sufficient=None
             ), compliance)
 
     def test_us_nd_get_case_compliance_on_date_with_assessments_outside_six_months(self):
@@ -169,7 +169,7 @@ class TestCaseCompliance(unittest.TestCase):
                 assessment_count=0,
                 assessment_up_to_date=False,
                 face_to_face_count=0,
-                face_to_face_frequency_sufficient=False
+                face_to_face_frequency_sufficient=None
             ), compliance)
 
     def test_us_id_get_case_compliance_on_date(self):
@@ -355,7 +355,7 @@ class TestCaseCompliance(unittest.TestCase):
             status=StateSupervisionContactStatus.COMPLETED
         )]
 
-        case_type = StateSupervisionCaseType.GENERAL
+        case_type = StateSupervisionCaseType.DRUG_COURT
 
         start_of_supervision = date(2018, 1, 5)
         compliance_evaluation_date = date(2018, 3, 31)
@@ -371,9 +371,9 @@ class TestCaseCompliance(unittest.TestCase):
             SupervisionCaseCompliance(
                 date_of_evaluation=compliance_evaluation_date,
                 assessment_count=1,
-                assessment_up_to_date=False,
+                assessment_up_to_date=None,
                 face_to_face_count=1,
-                face_to_face_frequency_sufficient=False
+                face_to_face_frequency_sufficient=None
             ), compliance)
 
 
