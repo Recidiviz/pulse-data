@@ -46,18 +46,16 @@ raw_files:
     #      - BdActionID
     primary_key_cols: []
   - file_tag: dbo_BdActionType
-    # Best initial (unconfirmed) guess at primary keys for this table:
-    #      - ParoleNumber
-    #      - ParoleCountID
-    #      - BdActionID
-    #      - BdActionTypeID
-    primary_key_cols: []
+    primary_key_cols:
+      - ParoleNumber
+      - ParoleCountID
+      - BdActionID
+      - BdActionTypeID
   - file_tag: dbo_BoardAction
-    # Best initial (unconfirmed) guess at primary keys for this table:
-    #      - ParoleNumber
-    #      - ParoleCountID
-    #      - BdActionID
-    primary_key_cols: []
+    primary_key_cols:
+      - ParoleNumber
+      - ParoleCountID
+      - BdActionID
   - file_tag: dbo_ConditionCode
     primary_key_cols:
       - ParoleNumber
