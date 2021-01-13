@@ -48,7 +48,8 @@ REQUIRED_PACKAGES = [
     'opencensus-ext-stackdriver',
     # Must stay up-to-date with latest protobuf version in the Pipfile
     'protobuf==3.14.0',
-    'SQLAlchemy'
+    'SQLAlchemy',
+    'us',
 ]
 
 setuptools.setup(
