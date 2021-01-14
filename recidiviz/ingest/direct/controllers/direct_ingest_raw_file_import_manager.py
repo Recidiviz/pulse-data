@@ -25,7 +25,6 @@ from typing import List, Dict, Any, Set, Optional, Tuple
 import attr
 import gcsfs
 import pandas as pd
-import yaml
 from google.api_core.exceptions import BadRequest
 from google.cloud import bigquery
 
@@ -41,6 +40,7 @@ from recidiviz.ingest.direct.controllers.gcsfs_csv_reader_delegates import ReadO
 from recidiviz.persistence.entity.operations.entities import DirectIngestFileMetadata
 from recidiviz.utils import metadata
 from recidiviz.utils.regions import Region
+from recidiviz.utils.yaml_dict import YAMLDict
 
 
 @attr.s(frozen=True)
@@ -97,16 +97,32 @@ class DirectIngestRawFileConfig:
                                   if encoding.upper() != self.encoding.upper()]
 
     @classmethod
-    def from_dict(cls, file_config_dict: Dict[str, Any]) -> 'DirectIngestRawFileConfig':
+    def from_yaml_dict(cls,
+                       file_tag: str,
+                       default_encoding: str,
+                       default_separator: str,
+                       file_config_dict: YAMLDict) -> 'DirectIngestRawFileConfig':
+        primary_key_cols = file_config_dict.pop('primary_key_cols', list)
+        datetime_cols = file_config_dict.pop_optional('datetime_cols', list)
+        supplemental_order_by_clause = file_config_dict.pop_optional('supplemental_order_by_clause', str)
+        encoding = file_config_dict.pop_optional('encoding', str)
+        separator = file_config_dict.pop_optional('separator', str)
+        ignore_quotes = file_config_dict.pop_optional('ignore_quotes', bool)
+        always_historical_export = file_config_dict.pop_optional('always_historical_export', bool)
+
+        if len(file_config_dict) > 0:
+            raise ValueError(f'Found unexpected config values for raw file'
+                             f'[{file_tag}]: {repr(file_config_dict.get())}')
+
         return DirectIngestRawFileConfig(
-            file_tag=file_config_dict['file_tag'],
-            primary_key_cols=file_config_dict['primary_key_cols'],
-            datetime_cols=file_config_dict.get('datetime_cols', []),
-            supplemental_order_by_clause=file_config_dict.get('supplemental_order_by_clause', ''),
-            encoding=file_config_dict['encoding'],
-            separator=file_config_dict['separator'],
-            ignore_quotes=file_config_dict.get('ignore_quotes', False),
-            always_historical_export=file_config_dict.get('always_historical_export', False),
+            file_tag=file_tag,
+            primary_key_cols=primary_key_cols,
+            datetime_cols=datetime_cols if datetime_cols else [],
+            supplemental_order_by_clause=supplemental_order_by_clause if supplemental_order_by_clause else '',
+            encoding=encoding if encoding else default_encoding,
+            separator=separator if separator else default_separator,
+            ignore_quotes=ignore_quotes if ignore_quotes else False,
+            always_historical_export=always_historical_export if always_historical_export else False
         )
 
 
@@ -115,17 +131,25 @@ class DirectIngestRegionRawFileConfig:
     """Class that parses and stores raw data import configs for a region"""
 
     region_code: str = attr.ib()
-    yaml_config_file_path: str = attr.ib()
+    legacy_yaml_config_file_path: str = attr.ib()
+    yaml_config_file_dir: str = attr.ib()
 
-    @yaml_config_file_path.default
-    def _config_file_path(self):
-        return os.path.join(os.path.dirname(__file__),
-                            '..',
-                            'regions',
-                            f'{self.region_code.lower()}',
+    @legacy_yaml_config_file_path.default
+    def _legacy_config_file_path(self) -> str:
+        return os.path.join(self._region_ingest_dir(),
                             f'{self.region_code.lower()}_raw_data_files.yaml')
 
     raw_file_configs: Dict[str, DirectIngestRawFileConfig] = attr.ib()
+
+    def _region_ingest_dir(self) -> str:
+        return os.path.join(os.path.dirname(__file__),
+                            '..',
+                            'regions',
+                            f'{self.region_code.lower()}')
+
+    @yaml_config_file_dir.default
+    def _config_file_dir(self) -> str:
+        return os.path.join(self._region_ingest_dir(), 'raw_data')
 
     @raw_file_configs.default
     def _raw_data_file_configs(self) -> Dict[str, DirectIngestRawFileConfig]:
@@ -133,39 +157,36 @@ class DirectIngestRegionRawFileConfig:
 
     def _get_raw_data_file_configs(self) -> Dict[str, DirectIngestRawFileConfig]:
         """Returns list of file tags we expect to see on raw files for this region."""
-        with open(self.yaml_config_file_path, 'r') as yaml_file:
-            file_contents = yaml.full_load(yaml_file)
-            if not isinstance(file_contents, dict):
-                raise ValueError(
-                    f'File contents for [{self.yaml_config_file_path}] have unexpected type [{type(file_contents)}].')
+        if os.path.exists(self.legacy_yaml_config_file_path):
+            file_contents = YAMLDict.from_path(self.legacy_yaml_config_file_path)
 
             raw_data_configs = {}
-            default_encoding = file_contents['default_encoding']
-            default_separator = file_contents['default_separator']
+            default_encoding = file_contents.pop('default_encoding', str)
+            default_separator = file_contents.pop('default_separator', str)
 
             last_tag = None
-            for file_info in file_contents['raw_files']:
-                file_tag = file_info['file_tag']
+            for file_info in file_contents.pop_dicts('raw_files'):
+                file_tag = file_info.pop('file_tag', str)
 
                 if not file_tag:
                     raise ValueError(f'Found empty file tag in entry after [{last_tag}]')
 
                 if file_tag in raw_data_configs:
-                    raise ValueError(f'Found duplicate file tag [{file_tag}] in [{self.yaml_config_file_path}]')
+                    raise ValueError(f'Found duplicate file tag [{file_tag}] in [{self.legacy_yaml_config_file_path}]')
 
                 if last_tag and file_tag < last_tag:
                     raise ValueError(
                         f'Tags out of ASCII alphabetical order - [{file_tag}] should come before [{last_tag}]')
 
-                config = {
-                    'encoding': default_encoding,
-                    'separator': default_separator,
-                    **file_info
-                }
-
-                raw_data_configs[file_tag] = DirectIngestRawFileConfig.from_dict(config)
+                raw_data_configs[file_tag] = DirectIngestRawFileConfig.from_yaml_dict(file_tag,
+                                                                                      default_encoding,
+                                                                                      default_separator,
+                                                                                      file_info)
                 last_tag = file_tag
-
+        elif os.path.isdir(self.yaml_config_file_dir):
+            raise NotImplementedError
+        else:
+            raise ValueError(f'Missing raw data configs for region: {self.region_code}')
         return raw_data_configs
 
     raw_file_tags: Set[str] = attr.ib()

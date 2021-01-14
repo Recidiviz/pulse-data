@@ -210,7 +210,7 @@ class DirectIngestBigQueryViewTypesTest(unittest.TestCase):
     def test_direct_ingest_preprocessed_view(self) -> None:
         region_config = DirectIngestRegionRawFileConfig(
             region_code='us_xx',
-            yaml_config_file_path=fixtures.as_filepath('us_xx_raw_data_files.yaml'),
+            legacy_yaml_config_file_path=fixtures.as_filepath('us_xx_raw_data_files.yaml'),
         )
 
         view_query_template = """SELECT * FROM {file_tag_first}
@@ -294,7 +294,7 @@ ORDER BY col1, col2;"""
     def test_direct_ingest_preprocessed_view_detect_row_deletion_no_historical_table(self) -> None:
         region_config = DirectIngestRegionRawFileConfig(
             region_code='us_xx',
-            yaml_config_file_path=fixtures.as_filepath('us_xx_raw_data_files.yaml'),
+            legacy_yaml_config_file_path=fixtures.as_filepath('us_xx_raw_data_files.yaml'),
         )
 
         view_query_template = """SELECT * FROM {file_tag_first}
@@ -318,7 +318,7 @@ USING (col1);"""
     def test_direct_ingest_preprocessed_view_detect_row_deletion_no_pk_tables_specified(self) -> None:
         region_config = DirectIngestRegionRawFileConfig(
             region_code='us_xx',
-            yaml_config_file_path=fixtures.as_filepath('us_xx_raw_data_files.yaml'),
+            legacy_yaml_config_file_path=fixtures.as_filepath('us_xx_raw_data_files.yaml'),
         )
 
         view_query_template = """SELECT * FROM {file_tag_first}
@@ -342,7 +342,7 @@ USING (col1);"""
     def test_direct_ingest_preprocessed_view_detect_row_deletion_unknown_pk_table_specified(self) -> None:
         region_config = DirectIngestRegionRawFileConfig(
             region_code='us_xx',
-            yaml_config_file_path=fixtures.as_filepath('us_xx_raw_data_files.yaml'),
+            legacy_yaml_config_file_path=fixtures.as_filepath('us_xx_raw_data_files.yaml'),
         )
 
         view_query_template = """SELECT * FROM {file_tag_first}
@@ -366,7 +366,7 @@ USING (col1);"""
     def test_direct_ingest_preprocessed_view_detect_row_deletion(self) -> None:
         region_config = DirectIngestRegionRawFileConfig(
             region_code='us_xx',
-            yaml_config_file_path=fixtures.as_filepath('us_xx_raw_data_files.yaml'),
+            legacy_yaml_config_file_path=fixtures.as_filepath('us_xx_raw_data_files.yaml'),
         )
 
         view_query_template = """SELECT * FROM {file_tag_first}
@@ -464,7 +464,7 @@ ORDER BY col1, col2;"""
     def test_direct_ingest_preprocessed_view_with_reference_table(self) -> None:
         region_config = DirectIngestRegionRawFileConfig(
             region_code='us_xx',
-            yaml_config_file_path=fixtures.as_filepath('us_xx_raw_data_files.yaml'),
+            legacy_yaml_config_file_path=fixtures.as_filepath('us_xx_raw_data_files.yaml'),
         )
 
         view_query_template = """SELECT * FROM {file_tag_first}
@@ -527,7 +527,7 @@ ORDER BY col1, col2;"""
     def test_direct_ingest_preprocessed_view_same_table_multiple_places(self) -> None:
         region_config = DirectIngestRegionRawFileConfig(
             region_code='us_xx',
-            yaml_config_file_path=fixtures.as_filepath('us_xx_raw_data_files.yaml'),
+            legacy_yaml_config_file_path=fixtures.as_filepath('us_xx_raw_data_files.yaml'),
         )
 
         view_query_template = """SELECT * FROM {file_tag_first}
@@ -560,7 +560,7 @@ ORDER BY col1, col2;"""
     def test_direct_ingest_preprocessed_view_with_subqueries(self) -> None:
         region_config = DirectIngestRegionRawFileConfig(
             region_code='us_xx',
-            yaml_config_file_path=fixtures.as_filepath('us_xx_raw_data_files.yaml'),
+            legacy_yaml_config_file_path=fixtures.as_filepath('us_xx_raw_data_files.yaml'),
         )
 
         view_query_template = """WITH
@@ -662,7 +662,7 @@ ORDER BY col1, col2;"""
     def test_direct_ingest_preprocessed_view_throws_for_unexpected_tag(self) -> None:
         region_config = DirectIngestRegionRawFileConfig(
             region_code='us_xx',
-            yaml_config_file_path=fixtures.as_filepath('us_xx_raw_data_files.yaml'),
+            legacy_yaml_config_file_path=fixtures.as_filepath('us_xx_raw_data_files.yaml'),
         )
 
         view_query_template = """SELECT * FROM {file_tag_first}
@@ -682,7 +682,7 @@ USING (col1);"""
     def test_direct_ingest_preprocessed_view_materialized_raw_table_subqueries(self) -> None:
         region_config = DirectIngestRegionRawFileConfig(
             region_code='us_xx',
-            yaml_config_file_path=fixtures.as_filepath('us_xx_raw_data_files.yaml'),
+            legacy_yaml_config_file_path=fixtures.as_filepath('us_xx_raw_data_files.yaml'),
         )
 
         view_query_template = """SELECT * FROM {file_tag_first}
@@ -770,7 +770,7 @@ ORDER BY col1, col2;"""
     def test_direct_ingest_preprocessed_view_other_materialized_subquery_fails(self) -> None:
         region_config = DirectIngestRegionRawFileConfig(
             region_code='us_xx',
-            yaml_config_file_path=fixtures.as_filepath('us_xx_raw_data_files.yaml'),
+            legacy_yaml_config_file_path=fixtures.as_filepath('us_xx_raw_data_files.yaml'),
         )
 
         view_query_template = """
@@ -794,7 +794,7 @@ SELECT * FROM my_subquery;"""
     def test_direct_ingest_preprocessed_view_materialized_raw_table_views(self) -> None:
         region_config = DirectIngestRegionRawFileConfig(
             region_code='us_xx',
-            yaml_config_file_path=fixtures.as_filepath('us_xx_raw_data_files.yaml'),
+            legacy_yaml_config_file_path=fixtures.as_filepath('us_xx_raw_data_files.yaml'),
         )
 
         view_query_template = """WITH
@@ -898,7 +898,7 @@ ORDER BY col1, col2;"""
     def test_direct_ingest_preprocessed_view_materialized_raw_table_views_temp_output_table(self) -> None:
         region_config = DirectIngestRegionRawFileConfig(
             region_code='us_xx',
-            yaml_config_file_path=fixtures.as_filepath('us_xx_raw_data_files.yaml'),
+            legacy_yaml_config_file_path=fixtures.as_filepath('us_xx_raw_data_files.yaml'),
         )
 
         view_query_template = """WITH
@@ -996,7 +996,7 @@ ORDER BY col1, col2
     def test_direct_ingest_preprocessed_view_materialized_raw_table_views_permanent_expiring_output_table(self) -> None:
         region_config = DirectIngestRegionRawFileConfig(
             region_code='us_xx',
-            yaml_config_file_path=fixtures.as_filepath('us_xx_raw_data_files.yaml'),
+            legacy_yaml_config_file_path=fixtures.as_filepath('us_xx_raw_data_files.yaml'),
         )
 
         view_query_template = """WITH
