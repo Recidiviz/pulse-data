@@ -84,7 +84,8 @@ function calculation_pipeline_changes_since_last_deploy {
 # have checked out the commit for the version that will be deployed.
 function pre_deploy_configure_infrastructure {
     PROJECT=$1
-    DEBUG_BUILD_NAME=$2
+    DOCKER_IMAGE_TAG=$2
+    DEBUG_BUILD_NAME=$3
 
     echo "Deploying cron.yaml"
     run_cmd gcloud -q app deploy cron.yaml --project=${PROJECT}
@@ -117,7 +118,7 @@ function pre_deploy_configure_infrastructure {
     fi
 
     if [[ -z ${DEBUG_BUILD_NAME} ]]; then
-        deploy_terraform_infrastructure ${PROJECT} $(git rev-parse HEAD) || exit_on_fail
+        deploy_terraform_infrastructure ${PROJECT} $(git rev-parse HEAD) ${DOCKER_IMAGE_TAG} || exit_on_fail
     else
         echo "Skipping terraform changes for debug build."
     fi
@@ -233,13 +234,14 @@ function reconfigure_terraform_backend {
 function deploy_terraform_infrastructure {
     PROJECT_ID=$1
     GIT_HASH=$2
+    DOCKER_IMAGE_TAG=$3
 
     echo "Starting terraform deployment..."
     reconfigure_terraform_backend $PROJECT_ID
 
     while true
     do
-        run_cmd terraform plan -var="project_id=${PROJECT_ID}" -var="git_hash=${GIT_HASH}" -out=tfplan ${BASH_SOURCE_DIR}/terraform
+        run_cmd terraform plan -var="project_id=${PROJECT_ID}" -var="git_hash=${GIT_HASH}" -var="docker_image_tag=${DOCKER_IMAGE_TAG}" -out=tfplan ${BASH_SOURCE_DIR}/terraform
         script_prompt "Does the generated terraform plan look correct? [You can inspect it with \`terraform show tfplan\`]"
 
         echo "Applying the terraform plan..."

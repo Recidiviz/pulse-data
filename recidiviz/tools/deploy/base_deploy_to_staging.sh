@@ -56,26 +56,20 @@ fi
 echo "Performing pre-deploy verification"
 run_cmd verify_can_deploy recidiviz-staging
 
-if [[ ! -z ${PROMOTE} || ! -z ${DEBUG_BUILD_NAME} ]]; then
-    pre_deploy_configure_infrastructure 'recidiviz-staging' "${DEBUG_BUILD_NAME}"
-else
-    echo "Skipping configuration and pipeline deploy steps for no promote release build."
-fi
-
 echo "Building docker image"
 export DOCKER_BUILDKIT=1
 run_cmd docker build -t recidiviz-image .
 
 if [[ ! -z ${DEBUG_BUILD_NAME} ]]; then
-    DOCKER_VERSION=${VERSION_TAG}-${DEBUG_BUILD_NAME}
+    DOCKER_IMAGE_TAG=${VERSION_TAG}-${DEBUG_BUILD_NAME}
     GAE_VERSION=$(echo $VERSION_TAG | tr '.' '-')-${DEBUG_BUILD_NAME}
 else
-    DOCKER_VERSION=${VERSION_TAG}
+    DOCKER_IMAGE_TAG=${VERSION_TAG}
     GAE_VERSION=$(echo $VERSION_TAG | tr '.' '-')
 fi
 
 IMAGE_BASE=us.gcr.io/recidiviz-staging/appengine/default
-IMAGE_URL=$IMAGE_BASE:${DOCKER_VERSION} || exit_on_fail
+IMAGE_URL=$IMAGE_BASE:${DOCKER_IMAGE_TAG} || exit_on_fail
 
 echo "Tagging image url [$IMAGE_URL] as recidiviz-image"
 run_cmd docker tag recidiviz-image ${IMAGE_URL}
@@ -88,6 +82,12 @@ if [[ ! -z ${PROMOTE} ]]; then
     echo "Updating :latest tag on remote docker image."
     run_cmd docker tag recidiviz-image $IMAGE_BASE:latest
     run_cmd docker push $IMAGE_BASE:latest
+fi
+
+if [[ ! -z ${PROMOTE} || ! -z ${DEBUG_BUILD_NAME} ]]; then
+    pre_deploy_configure_infrastructure 'recidiviz-staging' "${DOCKER_IMAGE_TAG}" "${DEBUG_BUILD_NAME}"
+else
+    echo "Skipping configuration and pipeline deploy steps for no promote release build."
 fi
 
 echo "Deploying application"
