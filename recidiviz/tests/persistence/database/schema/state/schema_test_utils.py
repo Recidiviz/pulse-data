@@ -254,3 +254,24 @@ def generate_parole_decision(person, **kwargs) -> schema.StateParoleDecision:
     }
     args.update(kwargs)
     return schema.StateParoleDecision(person=person, **args)
+
+def generate_early_discharge(person, **kwargs) -> schema.StateEarlyDischarge:
+    args = {
+        'state_code': _STATE_CODE,
+    }
+    args.update(kwargs)
+    return schema.StateEarlyDischarge(person=person, **args)
+
+def generate_program_assignment(person, **kwargs) -> schema.StateProgramAssignment:
+    args = {
+        'state_code': _STATE_CODE,
+    }
+    args.update(kwargs)
+    return schema.StateProgramAssignment(person=person, **args)
+
+def generate_supervision_contact(person, **kwargs) -> schema.StateSupervisionContact:
+    args = {
+        'state_code': _STATE_CODE,
+    }
+    args.update(kwargs)
+    return schema.StateSupervisionContact(person=person, **args)
