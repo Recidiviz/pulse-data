@@ -71,8 +71,9 @@ class SupervisionMetric(RecidivizMetric, SupervisionLocationMetric):
 
     # Optional characteristics
 
+    # TODO(#5242): Delete this attribute
     # The number of months this metric describes, starting with the month of the metric and going back in time.
-    metric_period_months: Optional[int] = attr.ib(default=None)
+    metric_period_months: Optional[int] = attr.ib(default=1)
 
     # TODO(#2891): Consider moving this out of the base class, and making the supervision type specific to each
     #   metric type
@@ -249,7 +250,8 @@ class SupervisionRevocationAnalysisMetric(SupervisionRevocationMetric, PersonLev
     # A list of a list of strings for each violation type and subtype recorded during the period leading up to the
     # revocation. The elements of the outer list represent every StateSupervisionViolation that was reported in the
     # period leading up to the revocation. Each inner list represents all of the violation types and conditions that
-    # were listed on the given violation.
+    # were listed on the given violation. For example, 3 violations may be represented as:
+    # [['FELONY', 'TECHNICAL'], ['MISDEMEANOR'], ['ABSCONDED', 'MUNICIPAL']]
     violation_type_frequency_counter: Optional[List[List[str]]] = attr.ib(default=None)
 
     @staticmethod

@@ -45,7 +45,6 @@ EVENT_BASED_SUPERVISION_QUERY_TEMPLATE = \
     {district_dimension},
     {supervision_type_dimension}
     WHERE methodology = 'EVENT'
-      AND metric_period_months = 0
       AND person_id IS NOT NULL
       AND district IS NOT NULL
       AND month IS NOT NULL

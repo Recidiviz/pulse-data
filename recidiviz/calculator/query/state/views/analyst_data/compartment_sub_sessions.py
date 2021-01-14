@@ -67,8 +67,7 @@ COMPARTMENT_SUB_SESSIONS_QUERY_TEMPLATE = \
         CAST(NULL AS STRING) AS assessment_score_bucket
     FROM
         `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_population_metrics_materialized`
-    WHERE metric_period_months = 0
-        AND methodology = 'EVENT'
+    WHERE methodology = 'EVENT'
         AND state_code in ('US_ND','US_ID')
     UNION ALL
     SELECT 
@@ -87,8 +86,7 @@ COMPARTMENT_SUB_SESSIONS_QUERY_TEMPLATE = \
         assessment_score_bucket
     FROM
         `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_population_metrics_materialized`
-    WHERE metric_period_months = 0
-        AND methodology = 'EVENT'
+    WHERE methodology = 'EVENT'
         AND state_code in ('US_ND','US_ID')
     UNION ALL
     SELECT 
@@ -106,8 +104,7 @@ COMPARTMENT_SUB_SESSIONS_QUERY_TEMPLATE = \
         CONCAT(COALESCE(level_1_supervision_location_external_id,'EXTERNAL_UNKNOWN'),'|', COALESCE(level_2_supervision_location_external_id,'EXTERNAL_UNKNOWN')),
         assessment_score_bucket
     FROM `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_out_of_state_population_metrics_materialized`
-    WHERE metric_period_months = 0
-        AND methodology = 'EVENT'
+    WHERE methodology = 'EVENT'
         AND state_code in ('US_ND','US_ID')  
     )
     ,
@@ -399,7 +396,6 @@ COMPARTMENT_SUB_SESSIONS_QUERY_TEMPLATE = \
       ON d.data_source = 'SUPERVISION'
       AND d.start_reason = m.admission_reason
     WHERE methodology = 'EVENT'
-        AND metric_period_months = 0
     )
     ,
     release_metric_cte AS

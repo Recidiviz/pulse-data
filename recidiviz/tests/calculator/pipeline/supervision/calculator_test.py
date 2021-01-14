@@ -17,12 +17,15 @@
 """Tests for supervision/calculator.py."""
 # pylint: disable=unused-import,wrong-import-order,protected-access
 import unittest
+from collections import defaultdict
 from datetime import date
-from typing import List, Tuple, Set, Sequence
+from typing import List, Dict
+from unittest import mock
 
 from freezegun import freeze_time
 
 from recidiviz.calculator.pipeline.supervision import calculator
+from recidiviz.calculator.pipeline.supervision.identifier import BUCKET_TYPES_FOR_METRIC
 from recidiviz.calculator.pipeline.supervision.metrics import \
     SupervisionMetricType, SupervisionRevocationMetric, SupervisionCaseComplianceMetric, SupervisionPopulationMetric, \
     SupervisionRevocationAnalysisMetric, SupervisionSuccessMetric, \
@@ -87,7 +90,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         supervision_time_buckets = [
             NonRevocationReturnSupervisionTimeBucket(
                 state_code='US_XX', year=2018, month=3,
-                bucket_date=date(2018, 3, 31),
+                event_date=date(2018, 3, 31),
                 is_on_supervision_last_day_of_month=True,
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
                 case_type=StateSupervisionCaseType.GENERAL,
@@ -96,7 +99,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
             ),
             NonRevocationReturnSupervisionTimeBucket(
                 state_code='US_XX', year=2018, month=4,
-                bucket_date=date(2018, 4, 1),
+                event_date=date(2018, 4, 1),
                 is_on_supervision_last_day_of_month=True,
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
                 case_type=StateSupervisionCaseType.GENERAL,
@@ -138,7 +141,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
                 state_code='US_XX',
                 year=2018,
                 month=3,
-                bucket_date=date(2018, 3, 31),
+                event_date=date(2018, 3, 31),
                 is_on_supervision_last_day_of_month=True,
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
                 case_type=StateSupervisionCaseType.GENERAL,
@@ -149,7 +152,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
                 state_code='US_XX',
                 year=2018,
                 month=4,
-                bucket_date=date(2018, 4, 1),
+                event_date=date(2018, 4, 1),
                 is_on_supervision_last_day_of_month=False,
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
                 case_type=StateSupervisionCaseType.GENERAL,
@@ -192,7 +195,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
                 state_code='US_XX',
                 year=2018,
                 month=3,
-                bucket_date=date(2018, 3, 31),
+                event_date=date(2018, 3, 31),
                 is_on_supervision_last_day_of_month=True,
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
                 case_type=StateSupervisionCaseType.GENERAL,
@@ -203,7 +206,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
                 state_code='US_XX',
                 year=2018,
                 month=4,
-                bucket_date=date(2018, 4, 1),
+                event_date=date(2018, 4, 1),
                 is_on_supervision_last_day_of_month=False,
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
                 case_type=StateSupervisionCaseType.GENERAL,
@@ -246,7 +249,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
                 state_code='US_XX',
                 year=2018,
                 month=3,
-                bucket_date=date(2018, 3, 31),
+                event_date=date(2018, 3, 31),
                 is_on_supervision_last_day_of_month=True,
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
                 assessment_score=31,
@@ -258,7 +261,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
                 state_code='US_XX',
                 year=2018,
                 month=4,
-                bucket_date=date(2018, 4, 1),
+                event_date=date(2018, 4, 1),
                 is_on_supervision_last_day_of_month=False,
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
                 assessment_score=31,
@@ -309,7 +312,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
                 state_code='US_XX',
                 year=2018,
                 month=3,
-                bucket_date=date(2018, 3, 31),
+                event_date=date(2018, 3, 31),
                 is_on_supervision_last_day_of_month=True,
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
                 case_type=StateSupervisionCaseType.GENERAL,
@@ -361,7 +364,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         supervision_time_buckets = [
             ProjectedSupervisionCompletionBucket(
                 state_code='US_XX', year=2018, month=3,
-                bucket_date=date(2018, 3, 31),
+                event_date=date(2018, 3, 31),
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
                 case_type=StateSupervisionCaseType.GENERAL,
                 successful_completion=True,
@@ -372,7 +375,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
             ),
             NonRevocationReturnSupervisionTimeBucket(
                 state_code='US_XX', year=2018, month=3,
-                bucket_date=date(2018, 3, 31),
+                event_date=date(2018, 3, 31),
                 is_on_supervision_last_day_of_month=True,
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
                 case_type=StateSupervisionCaseType.GENERAL,
@@ -381,7 +384,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
             ),
             NonRevocationReturnSupervisionTimeBucket(
                 state_code='US_XX', year=2018, month=4,
-                bucket_date=date(2018, 4, 1),
+                event_date=date(2018, 4, 1),
                 is_on_supervision_last_day_of_month=False,
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
                 case_type=StateSupervisionCaseType.GENERAL,
@@ -427,7 +430,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         supervision_time_buckets = [
             ProjectedSupervisionCompletionBucket(
                 state_code='US_XX', year=2018, month=3,
-                bucket_date=date(2018, 3, 31),
+                event_date=date(2018, 3, 31),
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
                 case_type=StateSupervisionCaseType.GENERAL,
                 successful_completion=False,
@@ -437,7 +440,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
             ),
             NonRevocationReturnSupervisionTimeBucket(
                 state_code='US_XX', year=2018, month=3,
-                bucket_date=date(2018, 3, 31),
+                event_date=date(2018, 3, 31),
                 is_on_supervision_last_day_of_month=True,
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
                 case_type=StateSupervisionCaseType.GENERAL,
@@ -446,7 +449,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
             ),
             NonRevocationReturnSupervisionTimeBucket(
                 state_code='US_XX', year=2018, month=4,
-                bucket_date=date(2018, 4, 1),
+                event_date=date(2018, 4, 1),
                 is_on_supervision_last_day_of_month=False,
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
                 case_type=StateSupervisionCaseType.GENERAL,
@@ -495,7 +498,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         supervision_time_buckets = [
             ProjectedSupervisionCompletionBucket(
                 state_code='US_ND', year=2010, month=2,
-                bucket_date=date(2010, 2, 2),
+                event_date=date(2010, 2, 2),
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
                 successful_completion=False,
                 incarcerated_during_sentence=True,
@@ -504,7 +507,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
             ),
             ProjectedSupervisionCompletionBucket(
                 state_code='US_ND', year=2010, month=2,
-                bucket_date=date(2010, 2, 2),
+                event_date=date(2010, 2, 2),
                 supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
                 successful_completion=True,
                 incarcerated_during_sentence=False,
@@ -514,12 +517,12 @@ class TestMapSupervisionCombinations(unittest.TestCase):
             ),
             NonRevocationReturnSupervisionTimeBucket(
                 state_code='US_ND', year=2010, month=2,
-                bucket_date=date(2010, 2, 2),
+                event_date=date(2010, 2, 2),
                 is_on_supervision_last_day_of_month=False,
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE),
             NonRevocationReturnSupervisionTimeBucket(
                 state_code='US_ND', year=2018, month=4,
-                bucket_date=date(2010, 4, 2),
+                event_date=date(2010, 4, 2),
                 is_on_supervision_last_day_of_month=False,
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE)
         ]
@@ -532,8 +535,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         )
 
         expected_combinations_count = expected_metric_combos_count(
-            supervision_time_buckets,
-            duplicated_months_mixed_success=True
+            supervision_time_buckets
         )
 
         self.assertEqual(expected_combinations_count, len(supervision_combinations))
@@ -578,18 +580,18 @@ class TestMapSupervisionCombinations(unittest.TestCase):
 
         supervision_time_buckets = [
             ProjectedSupervisionCompletionBucket(
-                state_code='US_XX', year=2017, month=6, bucket_date=date(2017, 6, 30),
+                state_code='US_XX', year=2017, month=6, event_date=date(2017, 6, 30),
                 supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
                 successful_completion=False,
             ),
             ProjectedSupervisionCompletionBucket(
-                state_code='US_XX', year=2020, month=1, bucket_date=date(2020, 1, 30),
+                state_code='US_XX', year=2020, month=1, event_date=date(2020, 1, 30),
                 supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
                 successful_completion=False,
                 supervising_officer_external_id='officer45', supervising_district_external_id='district5'
             ),
             ProjectedSupervisionCompletionBucket(
-                state_code='US_XX', year=2018, month=12, bucket_date=date(2018, 12, 31),
+                state_code='US_XX', year=2018, month=12, event_date=date(2018, 12, 31),
                 supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
                 successful_completion=False
             )
@@ -602,22 +604,10 @@ class TestMapSupervisionCombinations(unittest.TestCase):
             person_metadata=_DEFAULT_PERSON_METADATA
         )
 
-        tested_metric_period_months = set()
+        expected_combinations_count = expected_metric_combos_count(supervision_time_buckets)
 
-        for combo, value in supervision_combinations:
-            metric_period_months = combo.get('metric_period_months')
-
-            # Track the metric period months where the officer & district data is set for the most recent 2020 metrics
-            if ((combo.get('supervising_district_external_id') is not None)
-                    and (combo.get('supervising_officer_external_id') is not None)):
-                tested_metric_period_months.add(metric_period_months)
-
-            self.assertEqual(0, value,
-                             f'Expected supervision success value 0'
-                             f' but got {value} for metric period months {metric_period_months}')
-
-        # Validate the most recent 2020 metrics have officer & district for all metric period months
-        self.assertEqual(len(tested_metric_period_months), len([1, 3, 6, 12, 36]))
+        self.assertEqual(expected_combinations_count, len(supervision_combinations))
+        assert all(value == 0 for _combination, value in supervision_combinations)
 
     def test_map_supervision_combinations_revocation_and_not(self):
         """Tests the map_supervision_combinations function."""
@@ -646,7 +636,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         supervision_time_buckets = [
             NonRevocationReturnSupervisionTimeBucket(
                 state_code='US_XX', year=2018, month=2,
-                bucket_date=date(2018, 2, 1),
+                event_date=date(2018, 2, 1),
                 is_on_supervision_last_day_of_month=False,
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
                 assessment_score=13,
@@ -659,7 +649,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
             ),
             NonRevocationReturnSupervisionTimeBucket(
                 state_code='US_XX', year=2018, month=3,
-                bucket_date=date(2018, 3, 31),
+                event_date=date(2018, 3, 31),
                 is_on_supervision_last_day_of_month=True,
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
                 assessment_score=13,
@@ -672,7 +662,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
             ),
             RevocationReturnSupervisionTimeBucket(
                 state_code='US_XX', year=2018, month=4,
-                bucket_date=date(2018, 4, 1),
+                event_date=date(2018, 4, 1),
                 is_on_supervision_last_day_of_month=False,
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
                 assessment_score=13,
@@ -719,20 +709,36 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         supervision_time_buckets = [
             NonRevocationReturnSupervisionTimeBucket(
                 state_code='US_XX', year=2018, month=3,
-                bucket_date=date(2018, 3, 31),
+                event_date=date(2018, 3, 31),
                 is_on_supervision_last_day_of_month=True,
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE),
             NonRevocationReturnSupervisionTimeBucket(
-                'US_MO', 2018, 4, date(2018, 4, 1), StateSupervisionPeriodSupervisionType.PAROLE,
+                state_code='US_MO',
+                event_date=date(2018, 4, 1),
+                year=2018,
+                month=4,
+                supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
                 is_on_supervision_last_day_of_month=False),
             NonRevocationReturnSupervisionTimeBucket(
-                'US_MO', 2018, 4, date(2018, 4, 2), StateSupervisionPeriodSupervisionType.PAROLE,
+                state_code='US_MO',
+                event_date=date(2018, 4, 2),
+                year=2018,
+                month=4,
+                supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
                 is_on_supervision_last_day_of_month=False),
             NonRevocationReturnSupervisionTimeBucket(
-                'US_MO', 2018, 4, date(2018, 4, 3), StateSupervisionPeriodSupervisionType.PAROLE,
+                state_code='US_MO',
+                event_date=date(2018, 4, 3),
+                year=2018,
+                month=4,
+                supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
                 is_on_supervision_last_day_of_month=False),
             NonRevocationReturnSupervisionTimeBucket(
-                'US_MO', 2018, 4, date(2018, 4, 4), StateSupervisionPeriodSupervisionType.PAROLE,
+                state_code='US_MO',
+                event_date=date(2018, 4, 4),
+                year=2018,
+                month=4,
+                supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
                 is_on_supervision_last_day_of_month=False),
         ]
 
@@ -767,13 +773,25 @@ class TestMapSupervisionCombinations(unittest.TestCase):
 
         supervision_time_buckets = [
             NonRevocationReturnSupervisionTimeBucket(
-                'US_MO', 2018, 3, date(2018, 3, 1), StateSupervisionPeriodSupervisionType.PROBATION,
+                state_code='US_MO',
+                year=2018,
+                month=3,
+                event_date=date(2018, 3, 1),
+                supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
                 is_on_supervision_last_day_of_month=False),
             NonRevocationReturnSupervisionTimeBucket(
-                'US_MO', 2018, 3, date(2018, 3, 1), StateSupervisionPeriodSupervisionType.PROBATION,
+                state_code='US_MO',
+                year=2018,
+                month=3,
+                event_date=date(2018, 3, 1),
+                supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
                 is_on_supervision_last_day_of_month=False),
             NonRevocationReturnSupervisionTimeBucket(
-                'US_MO', 2018, 4, date(2018, 4, 1), StateSupervisionPeriodSupervisionType.PROBATION,
+                state_code='US_MO',
+                year=2018,
+                month=4,
+                event_date=date(2018, 4, 1),
+                supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
                 is_on_supervision_last_day_of_month=False)
         ]
 
@@ -809,22 +827,22 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         supervision_time_buckets = [
             NonRevocationReturnSupervisionTimeBucket(
                 state_code='US_ND', year=2018, month=3,
-                bucket_date=date(2018, 3, 31),
+                event_date=date(2018, 3, 31),
                 is_on_supervision_last_day_of_month=True,
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE),
             NonRevocationReturnSupervisionTimeBucket(
                 state_code='US_ND', year=2010, month=3,
-                bucket_date=date(2010, 3, 31),
+                event_date=date(2010, 3, 31),
                 is_on_supervision_last_day_of_month=True,
                 supervision_type=StateSupervisionPeriodSupervisionType.PROBATION),
             NonRevocationReturnSupervisionTimeBucket(
                 state_code='US_ND', year=2018, month=4,
-                bucket_date=date(2010, 4, 2),
+                event_date=date(2010, 4, 2),
                 is_on_supervision_last_day_of_month=False,
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE),
             NonRevocationReturnSupervisionTimeBucket(
                 state_code='US_ND', year=2018, month=5,
-                bucket_date=date(2010, 5, 1),
+                event_date=date(2010, 5, 1),
                 is_on_supervision_last_day_of_month=False,
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE),
         ]
@@ -863,32 +881,32 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         supervision_time_buckets = [
             NonRevocationReturnSupervisionTimeBucket(
                 state_code='US_ND', year=2010, month=2,
-                bucket_date=date(2010, 2, 2),
+                event_date=date(2010, 2, 2),
                 is_on_supervision_last_day_of_month=False,
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE),
             NonRevocationReturnSupervisionTimeBucket(
                 state_code='US_ND', year=2010, month=2,
-                bucket_date=date(2010, 2, 2),
+                event_date=date(2010, 2, 2),
                 is_on_supervision_last_day_of_month=False,
                 supervision_type=StateSupervisionPeriodSupervisionType.PROBATION),
             NonRevocationReturnSupervisionTimeBucket(
                 state_code='US_ND', year=2010, month=2,
-                bucket_date=date(2010, 2, 2),
+                event_date=date(2010, 2, 2),
                 is_on_supervision_last_day_of_month=False,
                 supervision_type=StateSupervisionPeriodSupervisionType.DUAL),
             NonRevocationReturnSupervisionTimeBucket(
                 state_code='US_ND', year=2018, month=4,
-                bucket_date=date(2010, 4, 2),
+                event_date=date(2010, 4, 2),
                 is_on_supervision_last_day_of_month=False,
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE),
             NonRevocationReturnSupervisionTimeBucket(
                 state_code='US_ND', year=2018, month=4,
-                bucket_date=date(2010, 4, 2),
+                event_date=date(2010, 4, 2),
                 is_on_supervision_last_day_of_month=False,
                 supervision_type=StateSupervisionPeriodSupervisionType.PROBATION),
             NonRevocationReturnSupervisionTimeBucket(
                 state_code='US_ND', year=2018, month=4,
-                bucket_date=date(2010, 4, 2),
+                event_date=date(2010, 4, 2),
                 is_on_supervision_last_day_of_month=False,
                 supervision_type=StateSupervisionPeriodSupervisionType.DUAL),
         ]
@@ -906,10 +924,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
 
         self.assertEqual(expected_combinations_count, len(supervision_combinations))
         assert all(value == 1 for _combination, value in supervision_combinations)
-        assert all(_combination.get('supervision_type') == StateSupervisionPeriodSupervisionType.DUAL
-                   for _combination, _ in supervision_combinations
-                   if _combination.get('person_id') is not None
-                   and _combination.get('methodology') == MetricMethodologyType.PERSON)
+
 
     def test_map_supervision_combinations_two_revocations_in_month_sort_date(self):
         """Tests the map_supervision_combinations function where the person was revoked twice in a given month. Asserts
@@ -931,14 +946,14 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         supervision_time_buckets = [
             RevocationReturnSupervisionTimeBucket(
                 state_code='US_ND', year=2018, month=3,
-                bucket_date=date(2018, 3, 13),
+                event_date=date(2018, 3, 13),
                 is_on_supervision_last_day_of_month=False,
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
                 supervising_officer_external_id='FAKE_ID_1'
             ),
             RevocationReturnSupervisionTimeBucket(
                 state_code='US_ND', year=2018, month=3,
-                bucket_date=date(2018, 3, 29),
+                event_date=date(2018, 3, 29),
                 is_on_supervision_last_day_of_month=False,
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
                 supervising_officer_external_id='FAKE_ID_2'
@@ -958,455 +973,6 @@ class TestMapSupervisionCombinations(unittest.TestCase):
 
         self.assertEqual(expected_combinations_count, len(supervision_combinations))
         assert all(value == 1 for _combination, value in supervision_combinations)
-        assert all(_combination.get('supervising_officer_external_id') == 'FAKE_ID_2'
-                   or _combination.get('supervising_officer_external_id') is None
-                   for _combination, _ in supervision_combinations
-                   if _combination.get('methodology') == MetricMethodologyType.PERSON
-                   and _combination.get('metric_type') != SupervisionMetricType.SUPERVISION_POPULATION)
-
-    @freeze_time('2010-01-31')
-    def test_map_supervision_combinations_relevant_periods(self):
-        person = StatePerson.new_with_defaults(state_code='US_XX', person_id=12345,
-                                               birthdate=date(1984, 8, 31),
-                                               gender=Gender.FEMALE)
-
-        race = StatePersonRace.new_with_defaults(state_code='US_XX', race=Race.WHITE)
-
-        person.races = [race]
-
-        ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code='US_XX',
-            ethnicity=Ethnicity.NOT_HISPANIC)
-
-        person.ethnicities = [ethnicity]
-
-        supervision_time_buckets = [
-            NonRevocationReturnSupervisionTimeBucket(
-                'US_MO', 2010, 1, date(2010, 1, 1), StateSupervisionPeriodSupervisionType.PAROLE,
-                is_on_supervision_last_day_of_month=False)
-        ]
-
-        supervision_combinations = calculator.map_supervision_combinations(
-            person, supervision_time_buckets, ALL_METRICS_INCLUSIONS_DICT,
-            calculation_end_month=None,
-            calculation_month_count=-1,
-            person_metadata=_DEFAULT_PERSON_METADATA
-        )
-
-        expected_combinations_count = expected_metric_combos_count(
-            supervision_time_buckets,
-            num_relevant_periods=len(calculator_utils.METRIC_PERIOD_MONTHS),
-        )
-
-        self.assertEqual(expected_combinations_count, len(supervision_combinations))
-        assert all(value == 1 for _combination, value in supervision_combinations)
-
-    @freeze_time('2010-01-31')
-    def test_map_supervision_combinations_one_non_relevant_period(self):
-        person = StatePerson.new_with_defaults(state_code='US_XX', person_id=12345, birthdate=date(1984, 8, 31),
-                                               gender=Gender.FEMALE)
-
-        race = StatePersonRace.new_with_defaults(state_code='US_XX', race=Race.WHITE)
-
-        person.races = [race]
-
-        ethnicity = StatePersonEthnicity.new_with_defaults(state_code='US_XX', ethnicity=Ethnicity.NOT_HISPANIC)
-
-        person.ethnicities = [ethnicity]
-
-        relevant_bucket = NonRevocationReturnSupervisionTimeBucket(
-            state_code='US_XX',
-            year=2010,
-            month=1,
-            bucket_date=date(2010, 1, 1),
-            is_on_supervision_last_day_of_month=False,
-            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE)
-        not_relevant_bucket = RevocationReturnSupervisionTimeBucket(
-            state_code='US_XX',
-            year=1980,
-            month=1,
-            bucket_date=date(1980, 1, 1),
-            is_on_supervision_last_day_of_month=False,
-            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE)
-
-        supervision_time_buckets = [relevant_bucket, not_relevant_bucket]
-
-        supervision_combinations = calculator.map_supervision_combinations(
-            person, supervision_time_buckets, ALL_METRICS_INCLUSIONS_DICT,
-            calculation_end_month=None,
-            calculation_month_count=-1,
-            person_metadata=_DEFAULT_PERSON_METADATA
-        )
-
-        # Get the expected count for the relevant bucket without revocation analysis metrics
-        expected_combinations_count = expected_metric_combos_count(
-            [relevant_bucket], num_relevant_periods=len(calculator_utils.METRIC_PERIOD_MONTHS),
-        )
-        # Get the expected count for the non-relevant revocation bucket with revocation analysis metrics
-        expected_combinations_count_not_relevant = expected_metric_combos_count([not_relevant_bucket])
-
-        expected_combinations_count += expected_combinations_count_not_relevant
-
-        self.assertEqual(expected_combinations_count, len(supervision_combinations))
-        assert all(value == 1 for _combination, value in supervision_combinations)
-
-    @freeze_time('2010-01-31')
-    def test_map_supervision_combinations_relevant_periods_revocation(self):
-        person = StatePerson.new_with_defaults(state_code='US_XX', person_id=12345,
-                                               birthdate=date(1984, 8, 31),
-                                               gender=Gender.FEMALE)
-
-        person_external_id = StatePersonExternalId.new_with_defaults(
-            external_id='SID1341',
-            id_type='US_MO_DOC',
-            state_code='US_XX'
-        )
-
-        person.external_ids = [person_external_id]
-
-        race = StatePersonRace.new_with_defaults(state_code='US_XX', race=Race.WHITE)
-
-        person.races = [race]
-
-        ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code='US_XX',
-            ethnicity=Ethnicity.NOT_HISPANIC)
-
-        person.ethnicities = [ethnicity]
-
-        supervision_time_buckets = [
-            RevocationReturnSupervisionTimeBucket(
-                state_code='US_XX',
-                year=2010,
-                month=1,
-                bucket_date=date(1980, 1, 1),
-                is_on_supervision_last_day_of_month=False,
-                supervision_type=StateSupervisionPeriodSupervisionType.PAROLE)
-        ]
-
-        supervision_combinations = calculator.map_supervision_combinations(
-            person, supervision_time_buckets, ALL_METRICS_INCLUSIONS_DICT,
-            calculation_end_month=None,
-            calculation_month_count=-1,
-            person_metadata=_DEFAULT_PERSON_METADATA
-        )
-
-        expected_combinations_count = expected_metric_combos_count(
-            supervision_time_buckets,
-            num_relevant_periods=len(calculator_utils.METRIC_PERIOD_MONTHS),
-        )
-
-        self.assertEqual(expected_combinations_count, len(supervision_combinations))
-        assert all(value == 1 for _combination, value in supervision_combinations)
-
-    @freeze_time('2010-01-31')
-    def test_map_supervision_combinations_relevant_periods_duplicates(self):
-        person = StatePerson.new_with_defaults(state_code='US_XX', person_id=12345,
-                                               birthdate=date(1984, 8, 31),
-                                               gender=Gender.FEMALE)
-
-        race = StatePersonRace.new_with_defaults(state_code='US_XX', race=Race.WHITE)
-
-        person.races = [race]
-
-        ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code='US_XX',
-            ethnicity=Ethnicity.NOT_HISPANIC)
-
-        person.ethnicities = [ethnicity]
-
-        supervision_time_buckets = [
-            NonRevocationReturnSupervisionTimeBucket(
-                'US_MO', 2010, 1, date(2010, 1, 1), StateSupervisionPeriodSupervisionType.PAROLE,
-                is_on_supervision_last_day_of_month=False),
-            NonRevocationReturnSupervisionTimeBucket(
-                'US_MO', 2010, 1, date(2010, 1, 1), StateSupervisionPeriodSupervisionType.PAROLE,
-                is_on_supervision_last_day_of_month=False)
-        ]
-
-        supervision_combinations = calculator.map_supervision_combinations(
-            person, supervision_time_buckets, ALL_METRICS_INCLUSIONS_DICT,
-            calculation_end_month=None,
-            calculation_month_count=-1,
-            person_metadata=_DEFAULT_PERSON_METADATA
-        )
-
-        expected_combinations_count = expected_metric_combos_count(
-            supervision_time_buckets,
-            num_relevant_periods=len(calculator_utils.METRIC_PERIOD_MONTHS)
-        )
-
-        self.assertEqual(expected_combinations_count, len(supervision_combinations))
-        assert all(value == 1 for _combination, value in supervision_combinations)
-
-    @freeze_time('2010-01-31')
-    def test_map_supervision_combinations_relevant_periods_duplicate_month_mixed_success(self):
-        person = StatePerson.new_with_defaults(state_code='US_XX', person_id=12345,
-                                               birthdate=date(1984, 8, 31),
-                                               gender=Gender.FEMALE)
-
-        race = StatePersonRace.new_with_defaults(state_code='US_XX', race=Race.WHITE)
-
-        person.races = [race]
-
-        ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code='US_XX',
-            ethnicity=Ethnicity.NOT_HISPANIC)
-
-        person.ethnicities = [ethnicity]
-
-        supervision_time_buckets = [
-            ProjectedSupervisionCompletionBucket(
-                state_code='US_XX',
-                year=2010,
-                month=1,
-                bucket_date=date(2010, 1, 31),
-                supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
-                successful_completion=True,
-                incarcerated_during_sentence=False,
-                sentence_days_served=190
-            ),
-            ProjectedSupervisionCompletionBucket(
-                state_code='US_XX',
-                year=2010,
-                month=1,
-                bucket_date=date(2010, 1, 31),
-                supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
-                successful_completion=False,
-                incarcerated_during_sentence=False,
-                sentence_days_served=195
-            )
-        ]
-
-        supervision_combinations = calculator.map_supervision_combinations(
-            person, supervision_time_buckets, ALL_METRICS_INCLUSIONS_DICT,
-            calculation_end_month=None,
-            calculation_month_count=-1,
-            person_metadata=_DEFAULT_PERSON_METADATA
-        )
-
-        expected_combinations_count = expected_metric_combos_count(
-            supervision_time_buckets,
-            num_relevant_periods=len(calculator_utils.METRIC_PERIOD_MONTHS),
-            duplicated_months_mixed_success=True
-        )
-
-        self.assertEqual(expected_combinations_count, len(supervision_combinations))
-        assert all(not value for _combination, value in supervision_combinations
-                   if _combination.get('methodology') == MetricMethodologyType.PERSON)
-        assert all(_combination.get('methodology') == MetricMethodologyType.EVENT
-                   and value == 190
-                   for _combination, value in supervision_combinations
-                   if combo_has_enum_value_for_key(
-                       _combination, 'metric_type', SupervisionMetricType.SUPERVISION_SUCCESSFUL_SENTENCE_DAYS_SERVED))
-
-    @freeze_time('2010-01-31')
-    def test_map_supervision_combinations_relevant_periods_supervision_types(self):
-        person = StatePerson.new_with_defaults(state_code='US_XX', person_id=12345,
-                                               birthdate=date(1984, 8, 31),
-                                               gender=Gender.FEMALE)
-
-        person_external_id = StatePersonExternalId.new_with_defaults(
-            external_id='SID1341',
-            id_type='US_ND_DOC',
-            state_code='US_ND'
-        )
-
-        person.external_ids = [person_external_id]
-
-        race = StatePersonRace.new_with_defaults(state_code='US_ND', race=Race.WHITE)
-
-        person.races = [race]
-
-        ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code='US_ND',
-            ethnicity=Ethnicity.NOT_HISPANIC)
-
-        person.ethnicities = [ethnicity]
-
-        supervision_time_buckets = [
-            NonRevocationReturnSupervisionTimeBucket(
-                'US_ND', 2010, 1, date(2010, 1, 1), StateSupervisionPeriodSupervisionType.PROBATION,
-                is_on_supervision_last_day_of_month=False),
-            NonRevocationReturnSupervisionTimeBucket(
-                'US_ND', 2010, 1, date(2010, 1, 1), StateSupervisionPeriodSupervisionType.PAROLE,
-                is_on_supervision_last_day_of_month=False),
-            NonRevocationReturnSupervisionTimeBucket(
-                'US_ND', 2010, 1, date(2010, 1, 1), StateSupervisionPeriodSupervisionType.DUAL,
-                is_on_supervision_last_day_of_month=False)
-        ]
-
-        supervision_combinations = calculator.map_supervision_combinations(
-            person, supervision_time_buckets, ALL_METRICS_INCLUSIONS_DICT,
-            calculation_end_month=None,
-            calculation_month_count=-1,
-            person_metadata=_DEFAULT_PERSON_METADATA
-        )
-
-        expected_combinations_count = expected_metric_combos_count(
-            supervision_time_buckets, num_relevant_periods=len(calculator_utils.METRIC_PERIOD_MONTHS)
-        )
-
-        self.assertEqual(expected_combinations_count, len(supervision_combinations))
-        assert all(value == 1 for _combination, value in supervision_combinations)
-        assert all(_combination.get('supervision_type') == StateSupervisionPeriodSupervisionType.DUAL
-                   for _combination, _ in supervision_combinations
-                   if _combination.get('person_id') is not None
-                   and _combination.get('methodology') == MetricMethodologyType.PERSON)
-
-    @freeze_time('2010-01-31')
-    def test_map_supervision_combinations_relevant_periods_duplicate_termination(self):
-        person = StatePerson.new_with_defaults(state_code='US_XX', person_id=12345,
-                                               birthdate=date(1984, 8, 31),
-                                               gender=Gender.FEMALE)
-
-        race = StatePersonRace.new_with_defaults(state_code='US_XX', race=Race.WHITE)
-
-        person.races = [race]
-
-        ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code='US_XX',
-            ethnicity=Ethnicity.NOT_HISPANIC)
-
-        person.ethnicities = [ethnicity]
-
-        supervision_time_buckets = [
-            SupervisionTerminationBucket(
-                state_code='US_ND',
-                year=2010,
-                month=1,
-                bucket_date=date(2010, 1, 1),
-                supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
-                assessment_type=StateAssessmentType.LSIR,
-                assessment_score=12,
-                assessment_score_change=-3
-            ),
-            SupervisionTerminationBucket(
-                state_code='US_ND',
-                year=2010,
-                month=1,
-                bucket_date=date(2010, 1, 3),
-                supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
-                assessment_type=StateAssessmentType.LSIR,
-                assessment_score=12,
-                assessment_score_change=-3
-            ),
-        ]
-
-        supervision_combinations = calculator.map_supervision_combinations(
-            person, supervision_time_buckets, ALL_METRICS_INCLUSIONS_DICT,
-            calculation_end_month=None,
-            calculation_month_count=-1,
-            person_metadata=_DEFAULT_PERSON_METADATA
-        )
-
-        expected_combinations_count = expected_metric_combos_count(
-            supervision_time_buckets,
-            num_relevant_periods=len(calculator_utils.METRIC_PERIOD_MONTHS)
-        )
-
-        self.assertEqual(expected_combinations_count, len(supervision_combinations))
-        assert all(_combination['assessment_score_change'] == -3 for _combination, _
-                   in supervision_combinations)
-
-    @freeze_time('2010-01-31')
-    def test_map_supervision_combinations_relevant_periods_all_metrics(self):
-        person = StatePerson.new_with_defaults(state_code='US_XX', person_id=12345,
-                                               birthdate=date(1984, 8, 31),
-                                               gender=Gender.FEMALE)
-
-        person_external_id = StatePersonExternalId.new_with_defaults(
-            external_id='SID1341',
-            id_type='US_MO_DOC',
-            state_code='US_XX'
-        )
-
-        person.external_ids = [person_external_id]
-
-        race = StatePersonRace.new_with_defaults(state_code='US_XX', race=Race.WHITE)
-
-        person.races = [race]
-
-        ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code='US_XX',
-            ethnicity=Ethnicity.NOT_HISPANIC)
-
-        person.ethnicities = [ethnicity]
-
-        supervision_time_buckets = [
-            NonRevocationReturnSupervisionTimeBucket(
-                state_code='US_XX', year=2010, month=1,
-                bucket_date=date(2010, 1, 1),
-                is_on_supervision_last_day_of_month=False,
-                case_compliance=SupervisionCaseCompliance(
-                    date_of_evaluation=date(2010, 1, 31),
-                    assessment_up_to_date=True,
-                    face_to_face_frequency_sufficient=True
-                )
-            ),
-            RevocationReturnSupervisionTimeBucket(
-                state_code='US_XX', year=2010, month=1,
-                bucket_date=date(2010, 1, 1),
-                is_on_supervision_last_day_of_month=False,
-                supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
-                most_severe_violation_type=StateSupervisionViolationType.FELONY,
-                most_severe_response_decision=StateSupervisionViolationResponseDecision.REVOCATION,
-                response_count=3,
-                violation_history_description='1fel;2misd',
-                violation_type_frequency_counter=[
-                    ['FELONY', 'LAW'],
-                    ['MISD', 'WEA', 'EMP'],
-                    ['MISD', 'DRG', 'ASC']
-                ]
-            ),
-            SupervisionTerminationBucket(
-                state_code='US_XX',
-                year=2010,
-                month=1,
-                bucket_date=date(2010, 1, 16),
-                supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
-                assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
-                assessment_level=StateAssessmentLevel.LOW,
-                assessment_score=12,
-                assessment_score_change=-3
-            ),
-            ProjectedSupervisionCompletionBucket(
-                state_code='US_XX',
-                year=2010,
-                month=1,
-                bucket_date=date(2010, 1, 31),
-                supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
-                successful_completion=True,
-                incarcerated_during_sentence=False,
-                sentence_days_served=234
-            )
-        ]
-
-        supervision_combinations = calculator.map_supervision_combinations(
-            person, supervision_time_buckets, ALL_METRICS_INCLUSIONS_DICT,
-            calculation_end_month=None,
-            calculation_month_count=-1,
-            person_metadata=_DEFAULT_PERSON_METADATA
-        )
-
-        expected_combinations_count = expected_metric_combos_count(
-            supervision_time_buckets,
-            num_relevant_periods=len(calculator_utils.METRIC_PERIOD_MONTHS)
-        )
-
-        self.assertEqual(expected_combinations_count, len(supervision_combinations))
-        assert all(value == 1 for _combination, value
-                   in supervision_combinations
-                   if not combo_has_enum_value_for_key(
-                       _combination, 'metric_type', SupervisionMetricType.SUPERVISION_SUCCESSFUL_SENTENCE_DAYS_SERVED))
-        assert all(_combination['assessment_score_change'] == -3 for _combination, value
-                   in supervision_combinations
-                   if combo_has_enum_value_for_key(
-                       _combination, 'metric_type', SupervisionMetricType.SUPERVISION_TERMINATION))
-        assert all(value == 234 for _combination, value
-                   in supervision_combinations
-                   if combo_has_enum_value_for_key(
-                       _combination, 'metric_type', SupervisionMetricType.SUPERVISION_SUCCESSFUL_SENTENCE_DAYS_SERVED))
 
     def test_map_supervision_combinations_start_bucket(self):
         """Tests the map_supervision_combinations when there are SupervisionStartBuckets sent to the calculator."""
@@ -1421,7 +987,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
             state_code='US_XX',
             year=2000,
             month=1,
-            bucket_date=date(2000, 1, 13),
+            event_date=date(2000, 1, 13),
             supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
             assessment_score=11,
             assessment_type=StateAssessmentType.LSIR,
@@ -1466,7 +1032,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
             state_code='US_ND',
             year=2000,
             month=1,
-            bucket_date=date(2000, 1, 13),
+            event_date=date(2000, 1, 13),
             supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
             assessment_score=11,
             assessment_type=StateAssessmentType.LSIR,
@@ -1511,7 +1077,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
             state_code='US_XX',
             year=2000,
             month=1,
-            bucket_date=date(2000, 1, 13),
+            event_date=date(2000, 1, 13),
             supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
             assessment_score=11,
             assessment_type=StateAssessmentType.LSIR,
@@ -1559,7 +1125,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
             state_code='US_ND',
             year=2000,
             month=1,
-            bucket_date=date(2000, 1, 13),
+            event_date=date(2000, 1, 13),
             supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
             assessment_score=11,
             assessment_type=StateAssessmentType.LSIR,
@@ -1572,7 +1138,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
             state_code='US_ND',
             year=2000,
             month=1,
-            bucket_date=date(2000, 1, 13),
+            event_date=date(2000, 1, 13),
             supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
             assessment_score=11,
             assessment_type=StateAssessmentType.LSIR,
@@ -1616,7 +1182,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
             state_code='US_XX',
             year=2010,
             month=1,
-            bucket_date=date(2010, 1, 13),
+            event_date=date(2010, 1, 13),
             supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
             assessment_score=11,
             assessment_level=StateAssessmentLevel.LOW,
@@ -1629,7 +1195,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         supervision_time_buckets = [
             ProjectedSupervisionCompletionBucket(
                 state_code='US_XX', year=2010, month=3,
-                bucket_date=date(2010, 3, 31),
+                event_date=date(2010, 3, 31),
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
                 successful_completion=True, incarcerated_during_sentence=False,
                 sentence_days_served=398,
@@ -1638,20 +1204,24 @@ class TestMapSupervisionCombinations(unittest.TestCase):
             ),
             termination_bucket,
             NonRevocationReturnSupervisionTimeBucket(
-                'US_MO', 2010, 1, date(2010, 1, 1), StateSupervisionPeriodSupervisionType.PROBATION,
+                state_code='US_MO',
+                year=2010,
+                month=1,
+                event_date=date(2010, 1, 1),
+                supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
                 is_on_supervision_last_day_of_month=False),
             NonRevocationReturnSupervisionTimeBucket(
-                'US_MO', 2010, 1, date(2010, 1, 2), StateSupervisionPeriodSupervisionType.PAROLE,
+                state_code='US_MO',
+                year=2010,
+                month=1,
+                event_date=date(2010, 1, 1),
+                supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
                 is_on_supervision_last_day_of_month=False)
         ]
 
         inclusions_dict = {
-            SupervisionMetricType.SUPERVISION_TERMINATION: True,
-            SupervisionMetricType.SUPERVISION_SUCCESS: False,
-            SupervisionMetricType.SUPERVISION_SUCCESSFUL_SENTENCE_DAYS_SERVED: False,
-            SupervisionMetricType.SUPERVISION_REVOCATION: False,
-            SupervisionMetricType.SUPERVISION_REVOCATION_ANALYSIS: False,
-            SupervisionMetricType.SUPERVISION_POPULATION: False
+            metric_type: (metric_type == SupervisionMetricType.SUPERVISION_TERMINATION)
+            for metric_type in SupervisionMetricType
         }
 
         supervision_combinations = calculator.map_supervision_combinations(
@@ -1696,7 +1266,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
             state_code='US_XX',
             year=2010,
             month=1,
-            bucket_date=date(2010, 1, 13),
+            event_date=date(2010, 1, 13),
             supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
             assessment_score=11,
             assessment_type=StateAssessmentType.LSIR,
@@ -1708,27 +1278,31 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         supervision_time_buckets = [
             ProjectedSupervisionCompletionBucket(
                 state_code='US_XX', year=2010, month=3,
-                bucket_date=date(2010, 3, 31),
+                event_date=date(2010, 3, 31),
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
                 successful_completion=True, supervising_officer_external_id='officer45',
                 supervising_district_external_id='district5'
             ),
             termination_bucket,
             NonRevocationReturnSupervisionTimeBucket(
-                'US_MO', 2010, 1, date(2010, 1, 1), StateSupervisionPeriodSupervisionType.PROBATION,
+                state_code='US_MO',
+                year=2010,
+                month=1,
+                event_date=date(2010, 1, 1),
+                supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
                 is_on_supervision_last_day_of_month=False),
             NonRevocationReturnSupervisionTimeBucket(
-                'US_MO', 2010, 1, date(2010, 1, 2), StateSupervisionPeriodSupervisionType.PAROLE,
+                state_code='US_MO',
+                year=2010,
+                month=1,
+                event_date=date(2010, 1, 2),
+                supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
                 is_on_supervision_last_day_of_month=False)
         ]
 
         inclusions_dict = {
-            SupervisionMetricType.SUPERVISION_TERMINATION: False,
-            SupervisionMetricType.SUPERVISION_SUCCESS: True,
-            SupervisionMetricType.SUPERVISION_SUCCESSFUL_SENTENCE_DAYS_SERVED: False,
-            SupervisionMetricType.SUPERVISION_REVOCATION: False,
-            SupervisionMetricType.SUPERVISION_REVOCATION_ANALYSIS: False,
-            SupervisionMetricType.SUPERVISION_POPULATION: False
+            metric_type: (metric_type == SupervisionMetricType.SUPERVISION_SUCCESS)
+            for metric_type in SupervisionMetricType
         }
 
         supervision_combinations = calculator.map_supervision_combinations(
@@ -1773,7 +1347,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
             state_code='US_XX',
             year=2010,
             month=1,
-            bucket_date=date(2010, 1, 13),
+            event_date=date(2010, 1, 13),
             supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
             assessment_score=11,
             assessment_type=StateAssessmentType.LSIR,
@@ -1785,7 +1359,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         supervision_time_buckets = [
             ProjectedSupervisionCompletionBucket(
                 state_code='US_XX', year=2010, month=3,
-                bucket_date=date(2010, 3, 31),
+                event_date=date(2010, 3, 31),
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
                 successful_completion=True, incarcerated_during_sentence=False,
                 sentence_days_served=500,
@@ -1793,20 +1367,24 @@ class TestMapSupervisionCombinations(unittest.TestCase):
             ),
             termination_bucket,
             NonRevocationReturnSupervisionTimeBucket(
-                'US_MO', 2010, 1, date(2010, 1, 1), StateSupervisionPeriodSupervisionType.PROBATION,
+                state_code='US_MO',
+                year=2010,
+                month=1,
+                event_date=date(2010, 1, 1),
+                supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
                 is_on_supervision_last_day_of_month=False),
             NonRevocationReturnSupervisionTimeBucket(
-                'US_MO', 2010, 1, date(2010, 1, 2), StateSupervisionPeriodSupervisionType.PAROLE,
+                state_code='US_MO',
+                year=2010,
+                month=1,
+                event_date=date(2010, 1, 2),
+                supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
                 is_on_supervision_last_day_of_month=False)
         ]
 
         inclusions_dict = {
-            SupervisionMetricType.SUPERVISION_TERMINATION: False,
-            SupervisionMetricType.SUPERVISION_SUCCESS: False,
-            SupervisionMetricType.SUPERVISION_SUCCESSFUL_SENTENCE_DAYS_SERVED: True,
-            SupervisionMetricType.SUPERVISION_REVOCATION: False,
-            SupervisionMetricType.SUPERVISION_REVOCATION_ANALYSIS: False,
-            SupervisionMetricType.SUPERVISION_POPULATION: False
+            metric_type: (metric_type == SupervisionMetricType.SUPERVISION_SUCCESSFUL_SENTENCE_DAYS_SERVED)
+            for metric_type in SupervisionMetricType
         }
 
         supervision_combinations = calculator.map_supervision_combinations(
@@ -1847,7 +1425,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
             state_code='US_XX',
             year=2010,
             month=1,
-            bucket_date=date(2010, 1, 13),
+            event_date=date(2010, 1, 13),
             supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
             assessment_score=11,
             assessment_type=StateAssessmentType.LSIR,
@@ -1859,7 +1437,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         supervision_time_buckets = [
             ProjectedSupervisionCompletionBucket(
                 state_code='US_XX', year=2010, month=3,
-                bucket_date=date(2010, 3, 31),
+                event_date=date(2010, 3, 31),
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
                 successful_completion=True, supervising_officer_external_id='officer45',
                 supervising_district_external_id='district5'
@@ -1867,24 +1445,20 @@ class TestMapSupervisionCombinations(unittest.TestCase):
             termination_bucket,
             RevocationReturnSupervisionTimeBucket(
                 state_code='US_XX', year=2010, month=1,
-                bucket_date=date(2010, 1, 1),
+                event_date=date(2010, 1, 1),
                 is_on_supervision_last_day_of_month=False,
                 supervision_type=StateSupervisionPeriodSupervisionType.PROBATION),
             NonRevocationReturnSupervisionTimeBucket(
                 state_code='US_XX',
                 year=2010, month=2,
-                bucket_date=date(2010, 2, 2),
+                event_date=date(2010, 2, 2),
                 is_on_supervision_last_day_of_month=False,
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE)
         ]
 
         inclusions_dict = {
-            SupervisionMetricType.SUPERVISION_TERMINATION: False,
-            SupervisionMetricType.SUPERVISION_SUCCESS: False,
-            SupervisionMetricType.SUPERVISION_SUCCESSFUL_SENTENCE_DAYS_SERVED: False,
-            SupervisionMetricType.SUPERVISION_REVOCATION: True,
-            SupervisionMetricType.SUPERVISION_REVOCATION_ANALYSIS: False,
-            SupervisionMetricType.SUPERVISION_POPULATION: False
+            metric_type: (metric_type == SupervisionMetricType.SUPERVISION_REVOCATION)
+            for metric_type in SupervisionMetricType
         }
 
         supervision_combinations = calculator.map_supervision_combinations(
@@ -1935,7 +1509,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
             state_code='US_XX',
             year=2010,
             month=1,
-            bucket_date=date(2010, 1, 13),
+            event_date=date(2010, 1, 13),
             supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
             assessment_score=11,
             assessment_type=StateAssessmentType.LSIR,
@@ -1947,7 +1521,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         supervision_time_buckets = [
             ProjectedSupervisionCompletionBucket(
                 state_code='US_XX', year=2010, month=3,
-                bucket_date=date(2010, 3, 31),
+                event_date=date(2010, 3, 31),
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
                 successful_completion=True, supervising_officer_external_id='officer45',
                 supervising_district_external_id='district5'
@@ -1955,24 +1529,20 @@ class TestMapSupervisionCombinations(unittest.TestCase):
             termination_bucket,
             RevocationReturnSupervisionTimeBucket(
                 state_code='US_XX', year=2010, month=1,
-                bucket_date=date(2010, 1, 1),
+                event_date=date(2010, 1, 1),
                 is_on_supervision_last_day_of_month=False,
                 supervision_type=StateSupervisionPeriodSupervisionType.PROBATION),
             NonRevocationReturnSupervisionTimeBucket(
                 state_code='US_XX',
                 year=2010, month=2,
-                bucket_date=date(2010, 2, 2),
+                event_date=date(2010, 2, 2),
                 is_on_supervision_last_day_of_month=False,
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE)
         ]
 
         inclusions_dict = {
-            SupervisionMetricType.SUPERVISION_TERMINATION: False,
-            SupervisionMetricType.SUPERVISION_SUCCESS: False,
-            SupervisionMetricType.SUPERVISION_SUCCESSFUL_SENTENCE_DAYS_SERVED: False,
-            SupervisionMetricType.SUPERVISION_REVOCATION: False,
-            SupervisionMetricType.SUPERVISION_REVOCATION_ANALYSIS: True,
-            SupervisionMetricType.SUPERVISION_POPULATION: False
+            metric_type: (metric_type == SupervisionMetricType.SUPERVISION_REVOCATION_ANALYSIS)
+            for metric_type in SupervisionMetricType
         }
 
         supervision_combinations = calculator.map_supervision_combinations(
@@ -2017,7 +1587,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
             state_code='US_XX',
             year=2010,
             month=1,
-            bucket_date=date(2010, 1, 13),
+            event_date=date(2010, 1, 13),
             supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
             assessment_score=11,
             assessment_type=StateAssessmentType.LSIR,
@@ -2028,7 +1598,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
 
         supervision_time_buckets = [
             ProjectedSupervisionCompletionBucket(
-                state_code='US_XX', year=2010, month=3, bucket_date=date(2010, 3, 31),
+                state_code='US_XX', year=2010, month=3, event_date=date(2010, 3, 31),
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
                 successful_completion=True, supervising_officer_external_id='officer45',
                 supervising_district_external_id='district5'
@@ -2038,25 +1608,21 @@ class TestMapSupervisionCombinations(unittest.TestCase):
                 state_code='US_XX',
                 year=2010,
                 month=1,
-                bucket_date=date(2010, 1, 1),
+                event_date=date(2010, 1, 1),
                 is_on_supervision_last_day_of_month=False,
                 supervision_type=StateSupervisionPeriodSupervisionType.PROBATION),
             NonRevocationReturnSupervisionTimeBucket(
                 state_code='US_XX',
                 year=2010,
                 month=2,
-                bucket_date=date(2010, 2, 22),
+                event_date=date(2010, 2, 22),
                 is_on_supervision_last_day_of_month=False,
                 supervision_type=StateSupervisionPeriodSupervisionType.PROBATION)
         ]
 
         inclusions_dict = {
-            SupervisionMetricType.SUPERVISION_TERMINATION: False,
-            SupervisionMetricType.SUPERVISION_SUCCESS: False,
-            SupervisionMetricType.SUPERVISION_SUCCESSFUL_SENTENCE_DAYS_SERVED: False,
-            SupervisionMetricType.SUPERVISION_REVOCATION: False,
-            SupervisionMetricType.SUPERVISION_REVOCATION_ANALYSIS: False,
-            SupervisionMetricType.SUPERVISION_POPULATION: True
+            metric_type: (metric_type == SupervisionMetricType.SUPERVISION_POPULATION)
+            for metric_type in SupervisionMetricType
         }
 
         supervision_combinations = calculator.map_supervision_combinations(
@@ -2082,126 +1648,6 @@ class TestMapSupervisionCombinations(unittest.TestCase):
                 SupervisionMetricType.SUPERVISION_POPULATION)
             for _combination, value in supervision_combinations)
 
-    @freeze_time('2010-01-31')
-    def test_map_supervision_combinations_relevant_periods_calculation_month_count_12(self):
-        person = StatePerson.new_with_defaults(state_code='US_XX', person_id=12345,
-                                               birthdate=date(1984, 8, 31),
-                                               gender=Gender.FEMALE)
-
-        race = StatePersonRace.new_with_defaults(state_code='US_XX',
-                                                 race=Race.WHITE)
-
-        person.races = [race]
-
-        ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code='US_XX',
-            ethnicity=Ethnicity.NOT_HISPANIC)
-
-        person.ethnicities = [ethnicity]
-
-        included_bucket = RevocationReturnSupervisionTimeBucket(
-            'US_MO', 2010, 1, date(2010, 1, 1),
-            StateSupervisionPeriodSupervisionType.PAROLE,
-            is_on_supervision_last_day_of_month=False
-        )
-
-        not_included_bucket = RevocationReturnSupervisionTimeBucket(
-            'US_MO', 2005, 1, date(2010, 1, 3),
-            StateSupervisionPeriodSupervisionType.PAROLE,
-            is_on_supervision_last_day_of_month=False
-        )
-
-        supervision_time_buckets = [included_bucket, not_included_bucket]
-
-        supervision_combinations = calculator.map_supervision_combinations(
-            person, supervision_time_buckets, ALL_METRICS_INCLUSIONS_DICT,
-            calculation_end_month=None,
-            calculation_month_count=12,
-            person_metadata=_DEFAULT_PERSON_METADATA
-        )
-
-        expected_combinations_count = expected_metric_combos_count(
-            [included_bucket], num_relevant_periods=len(calculator_utils.METRIC_PERIOD_MONTHS),
-        )
-
-        self.assertEqual(expected_combinations_count,
-                         len(supervision_combinations))
-        assert all(value == 1 for _combination, value
-                   in supervision_combinations)
-
-    @freeze_time('2010-12-31')
-    def test_map_supervision_combinations_relevant_periods_calculation_month_count_37(self):
-        person = StatePerson.new_with_defaults(state_code='US_XX', person_id=12345,
-                                               birthdate=date(1984, 8, 31),
-                                               gender=Gender.FEMALE)
-
-        race = StatePersonRace.new_with_defaults(state_code='US_XX',
-                                                 race=Race.WHITE)
-
-        person.races = [race]
-
-        ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code='US_XX',
-            ethnicity=Ethnicity.NOT_HISPANIC)
-
-        person.ethnicities = [ethnicity]
-
-        # This bucket will be included in the MoM metrics, but does not fall in any of the metric_period_months metrics
-        included_bucket = RevocationReturnSupervisionTimeBucket(
-            'US_MO', 2007, 12, date(2007, 12, 1),
-            StateSupervisionPeriodSupervisionType.PAROLE,
-            is_on_supervision_last_day_of_month=False)
-
-        supervision_time_buckets = [included_bucket]
-
-        supervision_combinations = calculator.map_supervision_combinations(
-            person, supervision_time_buckets, ALL_METRICS_INCLUSIONS_DICT,
-            calculation_end_month=None,
-            calculation_month_count=37,
-            person_metadata=_DEFAULT_PERSON_METADATA
-        )
-
-        expected_combinations_count = expected_metric_combos_count([included_bucket])
-
-        self.assertEqual(expected_combinations_count,
-                         len(supervision_combinations))
-        assert all(value == 1 for _combination, value
-                   in supervision_combinations)
-
-    @freeze_time('2010-12-31')
-    def test_map_supervision_combinations_relevant_periods_calculation_month_no_output(self):
-        person = StatePerson.new_with_defaults(state_code='US_XX', person_id=12345,
-                                               birthdate=date(1984, 8, 31),
-                                               gender=Gender.FEMALE)
-
-        race = StatePersonRace.new_with_defaults(state_code='US_XX',
-                                                 race=Race.WHITE)
-
-        person.races = [race]
-
-        ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code='US_XX',
-            ethnicity=Ethnicity.NOT_HISPANIC)
-
-        person.ethnicities = [ethnicity]
-
-        # This bucket will be included in the MoM metrics, but does not fall in any of the metric_period_months metrics
-        included_bucket = RevocationReturnSupervisionTimeBucket(
-            'US_MO', 2007, 12, date(2007, 12, 8),
-            StateSupervisionPeriodSupervisionType.PAROLE, is_on_supervision_last_day_of_month=False)
-
-        supervision_time_buckets = [included_bucket]
-
-        supervision_combinations = calculator.map_supervision_combinations(
-            person, supervision_time_buckets, ALL_METRICS_INCLUSIONS_DICT,
-            calculation_end_month=None,
-            calculation_month_count=12,
-            person_metadata=_DEFAULT_PERSON_METADATA
-        )
-
-        self.assertEqual(0, len(supervision_combinations))
-        assert all(value == 1 for _combination, value in supervision_combinations)
-
     def test_map_supervision_combinations_only_successful_sentence_length_duplicate_month_longer_sentence(self):
         person = StatePerson.new_with_defaults(state_code='US_XX', person_id=12345,
                                                birthdate=date(1984, 8, 31),
@@ -2220,7 +1666,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         supervision_time_buckets = [
             ProjectedSupervisionCompletionBucket(
                 state_code='US_XX', year=2018, month=3,
-                bucket_date=date(2018, 3, 31),
+                event_date=date(2018, 3, 31),
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
                 successful_completion=True, incarcerated_during_sentence=False,
                 sentence_days_served=500,
@@ -2228,7 +1674,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
             ),
             ProjectedSupervisionCompletionBucket(
                 state_code='US_XX', year=2018, month=3,
-                bucket_date=date(2018, 3, 31),
+                event_date=date(2018, 3, 31),
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
                 successful_completion=True, incarcerated_during_sentence=False,
                 sentence_days_served=501,
@@ -2237,12 +1683,8 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         ]
 
         inclusions_dict = {
-            SupervisionMetricType.SUPERVISION_TERMINATION: False,
-            SupervisionMetricType.SUPERVISION_SUCCESS: False,
-            SupervisionMetricType.SUPERVISION_SUCCESSFUL_SENTENCE_DAYS_SERVED: True,
-            SupervisionMetricType.SUPERVISION_REVOCATION: False,
-            SupervisionMetricType.SUPERVISION_REVOCATION_ANALYSIS: False,
-            SupervisionMetricType.SUPERVISION_POPULATION: False
+            metric_type: (metric_type == SupervisionMetricType.SUPERVISION_SUCCESSFUL_SENTENCE_DAYS_SERVED)
+            for metric_type in SupervisionMetricType
         }
 
         supervision_combinations = calculator.map_supervision_combinations(
@@ -2259,8 +1701,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         )
 
         self.assertEqual(expected_combinations_count, len(supervision_combinations))
-        assert all(value == 501 for _combination, value in supervision_combinations
-                   if _combination.get('methodology') == MetricMethodologyType.PERSON)
+        assert all(value in (500, 501) for _combination, value in supervision_combinations)
         assert all(combo_has_enum_value_for_key(_combination, 'metric_type',
                                                 SupervisionMetricType.SUPERVISION_SUCCESSFUL_SENTENCE_DAYS_SERVED)
                    for _combination, value in supervision_combinations)
@@ -2284,7 +1725,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         supervision_time_buckets = [
             NonRevocationReturnSupervisionTimeBucket(
                 state_code='US_XX', year=2018, month=3,
-                bucket_date=date(2018, 3, 31),
+                event_date=date(2018, 3, 31),
                 is_on_supervision_last_day_of_month=True,
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
                 case_type=StateSupervisionCaseType.GENERAL,
@@ -2298,7 +1739,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
             ),
             NonRevocationReturnSupervisionTimeBucket(
                 state_code='US_XX', year=2018, month=4,
-                bucket_date=date(2018, 4, 1),
+                event_date=date(2018, 4, 1),
                 is_on_supervision_last_day_of_month=False,
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
                 case_type=StateSupervisionCaseType.GENERAL,
@@ -2344,20 +1785,15 @@ class TestMapSupervisionCombinations(unittest.TestCase):
                 state_code='US_ID',
                 year=2010,
                 month=1,
-                bucket_date=date(2010, 1, 1),
+                event_date=date(2010, 1, 1),
                 is_on_supervision_last_day_of_month=False,
                 supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
                 supervising_district_external_id='INTERSTATE PROBATION - 123'),
         ]
 
         inclusions_dict = {
-            SupervisionMetricType.SUPERVISION_TERMINATION: False,
-            SupervisionMetricType.SUPERVISION_SUCCESS: False,
-            SupervisionMetricType.SUPERVISION_SUCCESSFUL_SENTENCE_DAYS_SERVED: False,
-            SupervisionMetricType.SUPERVISION_REVOCATION: False,
-            SupervisionMetricType.SUPERVISION_REVOCATION_ANALYSIS: False,
-            SupervisionMetricType.SUPERVISION_POPULATION: False,
-            SupervisionMetricType.SUPERVISION_OUT_OF_STATE_POPULATION: True,
+            metric_type: (metric_type == SupervisionMetricType.SUPERVISION_OUT_OF_STATE_POPULATION)
+            for metric_type in SupervisionMetricType
         }
 
         supervision_combinations = calculator.map_supervision_combinations(
@@ -2404,20 +1840,15 @@ class TestMapSupervisionCombinations(unittest.TestCase):
                 state_code='US_ID',
                 year=2010,
                 month=1,
-                bucket_date=date(2010, 1, 1),
+                event_date=date(2010, 1, 1),
                 is_on_supervision_last_day_of_month=False,
                 supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
                 supervising_district_external_id='INVALID - 123'),
         ]
 
         inclusions_dict = {
-            SupervisionMetricType.SUPERVISION_TERMINATION: False,
-            SupervisionMetricType.SUPERVISION_SUCCESS: False,
-            SupervisionMetricType.SUPERVISION_SUCCESSFUL_SENTENCE_DAYS_SERVED: False,
-            SupervisionMetricType.SUPERVISION_REVOCATION: False,
-            SupervisionMetricType.SUPERVISION_REVOCATION_ANALYSIS: False,
-            SupervisionMetricType.SUPERVISION_POPULATION: False,
-            SupervisionMetricType.SUPERVISION_OUT_OF_STATE_POPULATION: True,
+            metric_type: (metric_type == SupervisionMetricType.SUPERVISION_OUT_OF_STATE_POPULATION)
+            for metric_type in SupervisionMetricType
         }
 
         supervision_combinations = calculator.map_supervision_combinations(
@@ -2451,7 +1882,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         supervision_time_buckets = [
             NonRevocationReturnSupervisionTimeBucket(
                 state_code='US_XX', year=2018, month=3,
-                bucket_date=date(2018, 3, 31),
+                event_date=date(2018, 3, 31),
                 is_on_supervision_last_day_of_month=True,
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
                 case_type=StateSupervisionCaseType.GENERAL,
@@ -2460,7 +1891,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
             ),
             NonRevocationReturnSupervisionTimeBucket(
                 state_code='US_XX', year=2018, month=4,
-                bucket_date=date(2018, 4, 1),
+                event_date=date(2018, 4, 1),
                 is_on_supervision_last_day_of_month=False,
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
                 case_type=StateSupervisionCaseType.GENERAL,
@@ -2484,484 +1915,258 @@ class TestMapSupervisionCombinations(unittest.TestCase):
         assert all(value == 1 for _combination, value in supervision_combinations)
 
 
-class TestCharacteristicCombinations(unittest.TestCase):
-    """Tests the characteristic_combinations function."""
+class TestIncludeEventInMetric(unittest.TestCase):
+    """Tests the include_event_in_metric function."""
 
-    def setUp(self) -> None:
-        self.person = StatePerson.new_with_defaults(state_code='US_XX', person_id=12345,
-                                               birthdate=date(1984, 8, 31),
-                                               gender=Gender.FEMALE)
-
-        race_white = StatePersonRace.new_with_defaults(state_code='US_XX', race=Race.WHITE)
-        race_black = StatePersonRace.new_with_defaults(state_code='US_XX', race=Race.BLACK)
-
-        self.person.races = [race_white, race_black]
-
-        ethnicity = StatePersonEthnicity.new_with_defaults(
-            state_code='US_XX',
-            ethnicity=Ethnicity.NOT_HISPANIC)
-
-        self.person.ethnicities = [ethnicity]
-
-    def test_characteristic_combinations_compliance(self):
-        supervision_time_bucket = NonRevocationReturnSupervisionTimeBucket(
+    def test_include_event_in_metric_compliance_no_compliance(self):
+        event = NonRevocationReturnSupervisionTimeBucket(
             state_code='US_XX', year=2018, month=3,
-            bucket_date=date(2018, 3, 1),
-            is_on_supervision_last_day_of_month=False,
+            event_date=date(2018, 3, 31),
+            is_on_supervision_last_day_of_month=True,
             supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
-            response_count=5,
-            most_severe_violation_type=StateSupervisionViolationType.ABSCONDED,
+            case_type=StateSupervisionCaseType.GENERAL,
+            supervision_level=StateSupervisionLevel.HIGH,
+            supervision_level_raw_text='HIGH'
+        )
+
+        self.assertFalse(calculator.include_event_in_metric(event, SupervisionMetricType.SUPERVISION_COMPLIANCE))
+
+    def test_include_event_in_metric_compliance_with_compliance(self):
+        event = NonRevocationReturnSupervisionTimeBucket(
+            state_code='US_XX', year=2018, month=3,
+            event_date=date(2018, 3, 31),
+            is_on_supervision_last_day_of_month=True,
+            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+            case_type=StateSupervisionCaseType.GENERAL,
+            supervision_level=StateSupervisionLevel.HIGH,
+            supervision_level_raw_text='HIGH',
             case_compliance=SupervisionCaseCompliance(
-                date_of_evaluation=date(2018, 3, 1),
-                assessment_count=1,
+                date_of_evaluation=date(2018, 3, 31),
                 assessment_up_to_date=True,
-                face_to_face_count=1,
-                face_to_face_frequency_sufficient=True
+                face_to_face_frequency_sufficient=False
             )
         )
 
-        characteristics_dict = calculator.characteristics_dict(
-            self.person, supervision_time_bucket,
-            metric_class=SupervisionCaseComplianceMetric,
-            person_metadata=_DEFAULT_PERSON_METADATA
-        )
+        self.assertTrue(calculator.include_event_in_metric(event, SupervisionMetricType.SUPERVISION_COMPLIANCE))
 
-        expected_output = {
-            'age_bucket': '30-34',
-            'assessment_score_bucket': 'NOT_ASSESSED',
-            'assessment_count': 1,
-            'assessment_up_to_date': True,
-            'ethnicity': [Ethnicity.NOT_HISPANIC],
-            'face_to_face_count': 1,
-            'face_to_face_frequency_sufficient': True,
-            'gender': Gender.FEMALE,
-            'most_severe_violation_type': StateSupervisionViolationType.ABSCONDED,
-            'person_id': 12345,
-            'race': [Race.WHITE, Race.BLACK],
-            'response_count': 5,
-            'supervision_type': StateSupervisionPeriodSupervisionType.PAROLE,
-            'date_of_evaluation': date(2018, 3, 1),
-            'date_of_supervision': date(2018, 3, 1),
-            'is_on_supervision_last_day_of_month': False,
-            'prioritized_race_or_ethnicity': _DEFAULT_PERSON_METADATA.prioritized_race_or_ethnicity
-        }
-
-        self.assertEqual(expected_output, characteristics_dict)
-
-    def test_characteristic_combinations_population(self):
-        supervision_time_bucket = NonRevocationReturnSupervisionTimeBucket(
+    def test_include_event_in_metric_downgrade_no_downgrade(self):
+        event = NonRevocationReturnSupervisionTimeBucket(
             state_code='US_XX', year=2018, month=3,
-            bucket_date=date(2018, 3, 1),
-            is_on_supervision_last_day_of_month=False,
+            event_date=date(2018, 3, 31),
+            is_on_supervision_last_day_of_month=True,
             supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
-            response_count=5,
-            most_severe_violation_type=StateSupervisionViolationType.ABSCONDED,
-            assessment_type=StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
-            assessment_score=33,
-            assessment_level=StateAssessmentLevel.HIGH
+            case_type=StateSupervisionCaseType.GENERAL,
+            supervision_level=StateSupervisionLevel.HIGH,
+            supervision_level_raw_text='HIGH',
+            supervision_level_downgrade_occurred=False
         )
 
-        characteristics_dict = calculator.characteristics_dict(
-            self.person, supervision_time_bucket, metric_class=SupervisionPopulationMetric,
-            person_metadata=_DEFAULT_PERSON_METADATA
-        )
+        self.assertFalse(calculator.include_event_in_metric(event, SupervisionMetricType.SUPERVISION_DOWNGRADE))
 
-        expected_output = {
-            'supervision_type': StateSupervisionPeriodSupervisionType.PAROLE,
-            'assessment_score_bucket': 'HIGH',
-            'assessment_type': StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
-            'age_bucket': '30-34',
-            'gender': Gender.FEMALE,
-            'race': [Race.WHITE, Race.BLACK],
-            'ethnicity': [Ethnicity.NOT_HISPANIC],
-            'person_id': 12345,
-            'is_on_supervision_last_day_of_month': False,
-            'date_of_supervision': date(2018, 3, 1),
-            'response_count': 5,
-            'most_severe_violation_type': StateSupervisionViolationType.ABSCONDED,
-            'prioritized_race_or_ethnicity': _DEFAULT_PERSON_METADATA.prioritized_race_or_ethnicity
-        }
-
-        self.assertEqual(expected_output, characteristics_dict)
-
-    def test_characteristic_combinations_revocation(self):
-        supervision_time_bucket = RevocationReturnSupervisionTimeBucket(
+    def test_include_event_in_metric_downgrade_with_downgrade(self):
+        event = NonRevocationReturnSupervisionTimeBucket(
             state_code='US_XX', year=2018, month=3,
-            bucket_date=date(2018, 3, 1),
-            is_on_supervision_last_day_of_month=False,
+            event_date=date(2018, 3, 31),
+            is_on_supervision_last_day_of_month=True,
             supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
-            response_count=5,
-            most_severe_violation_type=StateSupervisionViolationType.ABSCONDED
+            case_type=StateSupervisionCaseType.GENERAL,
+            supervision_level=StateSupervisionLevel.HIGH,
+            supervision_level_raw_text='HIGH',
+            supervision_level_downgrade_occurred=True
         )
 
-        characteristics_dict = calculator.characteristics_dict(
-            self.person, supervision_time_bucket, metric_class=SupervisionRevocationMetric,
-            person_metadata=_DEFAULT_PERSON_METADATA
-        )
+        self.assertTrue(calculator.include_event_in_metric(event, SupervisionMetricType.SUPERVISION_DOWNGRADE))
 
-        expected_output = {
-            'revocation_admission_date': date(2018, 3, 1),
-            'supervision_type': StateSupervisionPeriodSupervisionType.PAROLE,
-            'assessment_score_bucket': 'NOT_ASSESSED',
-            'age_bucket': '30-34',
-            'gender': Gender.FEMALE,
-            'race': [Race.WHITE, Race.BLACK],
-            'ethnicity': [Ethnicity.NOT_HISPANIC],
-            'person_id': 12345,
-            'prioritized_race_or_ethnicity': _DEFAULT_PERSON_METADATA.prioritized_race_or_ethnicity
-        }
+    @mock.patch('recidiviz.calculator.pipeline.supervision.calculator.supervision_period_is_out_of_state')
+    def test_include_event_in_metric_not_out_of_state(self, mock_is_out_of_state):
+        mock_is_out_of_state.return_value = False
 
-        self.assertEqual(expected_output, characteristics_dict)
-
-    def test_characteristic_combinations_revocation_analysis(self):
-        supervision_time_bucket = RevocationReturnSupervisionTimeBucket(
+        event = NonRevocationReturnSupervisionTimeBucket(
             state_code='US_XX', year=2018, month=3,
-            bucket_date=date(2018, 3, 1),
-            is_on_supervision_last_day_of_month=False,
+            event_date=date(2018, 3, 31),
+            is_on_supervision_last_day_of_month=True,
             supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
-            response_count=2,
-            most_severe_violation_type=StateSupervisionViolationType.FELONY,
-            most_severe_response_decision=StateSupervisionViolationResponseDecision.REVOCATION,
-            violation_type_frequency_counter=[['TECHNICAL'], ['FELONY']],
-            violation_history_description='1fel;1tech'
+            case_type=StateSupervisionCaseType.GENERAL,
+            supervision_level=StateSupervisionLevel.HIGH,
+            supervision_level_raw_text='HIGH',
         )
 
-        characteristics_dict = calculator.characteristics_dict(
-            self.person, supervision_time_bucket, metric_class=SupervisionRevocationAnalysisMetric,
-            person_metadata=_DEFAULT_PERSON_METADATA
-        )
+        self.assertFalse(calculator.include_event_in_metric(event,
+                                                            SupervisionMetricType.SUPERVISION_OUT_OF_STATE_POPULATION))
 
-        expected_output = {
-            'revocation_admission_date': date(2018, 3, 1),
-            'supervision_type': StateSupervisionPeriodSupervisionType.PAROLE,
-            'assessment_score_bucket': 'NOT_ASSESSED',
-            'age_bucket': '30-34',
-            'gender': Gender.FEMALE,
-            'race': [Race.WHITE, Race.BLACK],
-            'ethnicity': [Ethnicity.NOT_HISPANIC],
-            'person_id': 12345,
-            'response_count': 2,
-            'most_severe_violation_type': StateSupervisionViolationType.FELONY,
-            'most_severe_response_decision': StateSupervisionViolationResponseDecision.REVOCATION,
-            'violation_history_description': '1fel;1tech',
-            'violation_type_frequency_counter': [['TECHNICAL'], ['FELONY']],
-            'prioritized_race_or_ethnicity': _DEFAULT_PERSON_METADATA.prioritized_race_or_ethnicity
-        }
+    @mock.patch('recidiviz.calculator.pipeline.supervision.calculator.supervision_period_is_out_of_state')
+    def test_include_event_in_metric_out_of_state(self, mock_is_out_of_state):
+        mock_is_out_of_state.return_value = True
 
-        self.assertEqual(expected_output, characteristics_dict)
-
-    def test_characteristic_combinations_supervision_success(self):
-        supervision_time_bucket = ProjectedSupervisionCompletionBucket(
+        event = NonRevocationReturnSupervisionTimeBucket(
             state_code='US_XX', year=2018, month=3,
-            bucket_date=date(2018, 3, 1),
-            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE
-        )
-
-        characteristics_dict = calculator.characteristics_dict(
-            self.person, supervision_time_bucket, metric_class=SupervisionSuccessMetric,
-            person_metadata=_DEFAULT_PERSON_METADATA
-        )
-
-        expected_output = {
-            'age_bucket': '30-34',
-            'supervision_type': StateSupervisionPeriodSupervisionType.PAROLE,
-            'ethnicity': [Ethnicity.NOT_HISPANIC],
-            'gender': Gender.FEMALE,
-            'person_id': 12345,
-            'race': [Race.WHITE, Race.BLACK],
-            'prioritized_race_or_ethnicity': _DEFAULT_PERSON_METADATA.prioritized_race_or_ethnicity
-        }
-
-        self.assertEqual(expected_output, characteristics_dict)
-
-    def test_characteristic_combinations_supervision_successful_sentence_days_served(self):
-        supervision_time_bucket = ProjectedSupervisionCompletionBucket(
-            state_code='US_XX', year=2018, month=3,
-            bucket_date=date(2018, 3, 1),
-            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE
-        )
-
-        characteristics_dict = calculator.characteristics_dict(
-            self.person, supervision_time_bucket, metric_class=SuccessfulSupervisionSentenceDaysServedMetric,
-            person_metadata=_DEFAULT_PERSON_METADATA
-        )
-
-        expected_output = {
-            'age_bucket': '30-34',
-            'supervision_type': StateSupervisionPeriodSupervisionType.PAROLE,
-            'ethnicity': [Ethnicity.NOT_HISPANIC],
-            'gender': Gender.FEMALE,
-            'person_id': 12345,
-            'race': [Race.WHITE, Race.BLACK],
-            'prioritized_race_or_ethnicity': _DEFAULT_PERSON_METADATA.prioritized_race_or_ethnicity
-        }
-
-        self.assertEqual(expected_output, characteristics_dict)
-
-    def test_characteristic_combinations_termination(self):
-        supervision_time_bucket = SupervisionTerminationBucket(
-            state_code='US_XX', year=2018, month=3,
-            bucket_date=date(2018, 3, 1),
+            event_date=date(2018, 3, 31),
+            is_on_supervision_last_day_of_month=True,
             supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
-            response_count=5,
-            most_severe_violation_type=StateSupervisionViolationType.ABSCONDED,
+            case_type=StateSupervisionCaseType.GENERAL,
+            supervision_level=StateSupervisionLevel.HIGH,
+            supervision_level_raw_text='HIGH',
+            supervision_level_downgrade_occurred=True
         )
 
-        characteristics_dict = calculator.characteristics_dict(
-            self.person, supervision_time_bucket, metric_class=SupervisionTerminationMetric,
-            person_metadata=_DEFAULT_PERSON_METADATA
+        self.assertTrue(calculator.include_event_in_metric(event,
+                                                           SupervisionMetricType.SUPERVISION_OUT_OF_STATE_POPULATION))
+
+    @mock.patch('recidiviz.calculator.pipeline.supervision.calculator.supervision_period_is_out_of_state')
+    def test_include_event_in_metric_not_in_state(self, mock_is_out_of_state):
+        mock_is_out_of_state.return_value = True
+
+        event = NonRevocationReturnSupervisionTimeBucket(
+            state_code='US_XX', year=2018, month=3,
+            event_date=date(2018, 3, 31),
+            is_on_supervision_last_day_of_month=True,
+            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+            case_type=StateSupervisionCaseType.GENERAL,
+            supervision_level=StateSupervisionLevel.HIGH,
+            supervision_level_raw_text='HIGH',
         )
 
-        expected_output = {
-            'assessment_score_bucket': 'NOT_ASSESSED',
-            'age_bucket': '30-34',
-            'supervision_type': StateSupervisionPeriodSupervisionType.PAROLE,
-            'ethnicity': [Ethnicity.NOT_HISPANIC],
-            'gender': Gender.FEMALE,
-            'person_id': 12345,
-            'race': [Race.WHITE, Race.BLACK],
-            'termination_date': date(2018, 3, 1),
-            'response_count': 5,
-            'most_severe_violation_type': StateSupervisionViolationType.ABSCONDED,
-            'prioritized_race_or_ethnicity': _DEFAULT_PERSON_METADATA.prioritized_race_or_ethnicity
-        }
+        self.assertFalse(calculator.include_event_in_metric(event,
+                                                            SupervisionMetricType.SUPERVISION_POPULATION))
 
-        self.assertEqual(expected_output, characteristics_dict)
+    @mock.patch('recidiviz.calculator.pipeline.supervision.calculator.supervision_period_is_out_of_state')
+    def test_include_event_in_metric_in_state(self, mock_is_out_of_state):
+        mock_is_out_of_state.return_value = False
 
-    def test_characteristic_combinations_supervision_downgrade(self):
-        supervision_time_buckets = [
-            NonRevocationReturnSupervisionTimeBucket(
+        event = NonRevocationReturnSupervisionTimeBucket(
+            state_code='US_XX', year=2018, month=3,
+            event_date=date(2018, 3, 31),
+            is_on_supervision_last_day_of_month=True,
+            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+            case_type=StateSupervisionCaseType.GENERAL,
+            supervision_level=StateSupervisionLevel.HIGH,
+            supervision_level_raw_text='HIGH',
+            supervision_level_downgrade_occurred=True
+        )
+
+        self.assertTrue(calculator.include_event_in_metric(event,
+                                                           SupervisionMetricType.SUPERVISION_POPULATION))
+
+    def test_include_in_metric_supervision_successful_days_served(self):
+        event = ProjectedSupervisionCompletionBucket(
                 state_code='US_XX', year=2018, month=3,
-                bucket_date=date(2018, 3, 31),
-                is_on_supervision_last_day_of_month=True,
+                event_date=date(2018, 3, 31),
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
                 case_type=StateSupervisionCaseType.GENERAL,
-                supervision_level=StateSupervisionLevel.HIGH,
-                supervision_level_raw_text='HIGH'
-            ),
-            NonRevocationReturnSupervisionTimeBucket(
-                state_code='US_XX', year=2018, month=4,
-                bucket_date=date(2018, 4, 1),
-                is_on_supervision_last_day_of_month=False,
+                successful_completion=True,
+                incarcerated_during_sentence=False,
+                sentence_days_served=998,
+                supervising_officer_external_id='officer45',
+                supervising_district_external_id='district5'
+            )
+
+        self.assertTrue(calculator.include_event_in_metric(
+            event, SupervisionMetricType.SUPERVISION_SUCCESSFUL_SENTENCE_DAYS_SERVED))
+
+    def test_include_in_metric_supervision_successful_days_served_unsuccessful(self):
+        event = ProjectedSupervisionCompletionBucket(
+                state_code='US_XX', year=2018, month=3,
+                event_date=date(2018, 3, 31),
                 supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
                 case_type=StateSupervisionCaseType.GENERAL,
-                supervision_level=StateSupervisionLevel.MINIMUM,
-                supervision_level_raw_text='MINIMUM',
-                previous_supervision_level=StateSupervisionLevel.HIGH
-            ),
-        ]
+                successful_completion=False,
+                incarcerated_during_sentence=False,
+                sentence_days_served=998,
+                supervising_officer_external_id='officer45',
+                supervising_district_external_id='district5'
+            )
 
-        characteristics_dict = calculator.characteristics_dict(
-            self.person, supervision_time_buckets[1], metric_class=SupervisionDowngradeMetric,
-            person_metadata=_DEFAULT_PERSON_METADATA
-        )
+        self.assertFalse(calculator.include_event_in_metric(
+            event, SupervisionMetricType.SUPERVISION_SUCCESSFUL_SENTENCE_DAYS_SERVED))
 
-        expected_output = {
-            'date_of_downgrade': date(2018, 4, 1),
-            'supervision_type': StateSupervisionPeriodSupervisionType.PAROLE,
-            'age_bucket': '30-34',
-            'gender': Gender.FEMALE,
-            'race': [Race.WHITE, Race.BLACK],
-            'ethnicity': [Ethnicity.NOT_HISPANIC],
-            'person_id': 12345,
-            'prioritized_race_or_ethnicity': _DEFAULT_PERSON_METADATA.prioritized_race_or_ethnicity,
-            'previous_supervision_level': StateSupervisionLevel.HIGH,
-            'supervision_level':  StateSupervisionLevel.MINIMUM,
-            'supervision_level_raw_text': 'MINIMUM',
-            'case_type': StateSupervisionCaseType.GENERAL,
-        }
+    def test_include_in_metric_supervision_successful_days_served_incarcerated_in_sentence(self):
+        event = ProjectedSupervisionCompletionBucket(
+                state_code='US_XX', year=2018, month=3,
+                event_date=date(2018, 3, 31),
+                supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+                case_type=StateSupervisionCaseType.GENERAL,
+                successful_completion=True,
+                incarcerated_during_sentence=True,
+                sentence_days_served=998,
+                supervising_officer_external_id='officer45',
+                supervising_district_external_id='district5'
+            )
 
-        self.assertEqual(expected_output, characteristics_dict)
+        self.assertFalse(calculator.include_event_in_metric(
+            event, SupervisionMetricType.SUPERVISION_SUCCESSFUL_SENTENCE_DAYS_SERVED))
+
+    def test_include_in_metric_supervision_successful_days_served_no_days_served(self):
+        event = ProjectedSupervisionCompletionBucket(
+                state_code='US_XX', year=2018, month=3,
+                event_date=date(2018, 3, 31),
+                supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+                case_type=StateSupervisionCaseType.GENERAL,
+                successful_completion=True,
+                incarcerated_during_sentence=False,
+                supervising_officer_external_id='officer45',
+                supervising_district_external_id='district5'
+            )
+
+        self.assertFalse(calculator.include_event_in_metric(
+            event, SupervisionMetricType.SUPERVISION_SUCCESSFUL_SENTENCE_DAYS_SERVED))
 
 
 def expected_metric_combos_count(
         supervision_time_buckets: List[SupervisionTimeBucket],
-        with_methodologies: bool = True,
         include_all_metrics: bool = True,
         metric_to_include: SupervisionMetricType = None,
-        duplicated_months_mixed_success: bool = False,
-        num_relevant_periods: int = 0,
         out_of_state_population: bool = False) -> int:
-    """Calculates the expected number of characteristic combinations given the supervision time buckets,
-    and the metrics and methodologies that should be included in the counts."""
+    """Calculates the expected number of characteristic combinations given the supervision time buckets
+    and the metrics that should be included in the counts."""
+    output_count_by_metric_type: Dict[SupervisionMetricType, int] = defaultdict(int)
 
-    # Some test cases above use a different call that doesn't take methodology into account as a dimension
-    methodology_multiplier = 1
-    if with_methodologies:
-        methodology_multiplier *= CALCULATION_METHODOLOGIES
+    for metric_type in SupervisionMetricType:
+        if not include_all_metrics and metric_type != metric_to_include:
+            continue
 
-    # Organize buckets by type of metrics they contribute to
-    projected_completion_buckets = [
-        bucket for bucket in supervision_time_buckets if isinstance(bucket, ProjectedSupervisionCompletionBucket)
-    ]
+        if metric_type == SupervisionMetricType.SUPERVISION_COMPLIANCE:
+            output_count_by_metric_type[metric_type] = len([
+                bucket for bucket in supervision_time_buckets
+                if isinstance(bucket, NonRevocationReturnSupervisionTimeBucket)
+                and bucket.case_compliance is not None
+            ])
+        elif metric_type == SupervisionMetricType.SUPERVISION_DOWNGRADE:
+            output_count_by_metric_type[metric_type] = len([
+                bucket for bucket in supervision_time_buckets
+                if isinstance(bucket, NonRevocationReturnSupervisionTimeBucket)
+                and bucket.supervision_level_downgrade_occurred
+            ])
+        elif metric_type == SupervisionMetricType.SUPERVISION_SUCCESSFUL_SENTENCE_DAYS_SERVED:
+            output_count_by_metric_type[metric_type] = len([
+                bucket for bucket in supervision_time_buckets
+                if isinstance(bucket, ProjectedSupervisionCompletionBucket)
+                and bucket.sentence_days_served is not None
+                and bucket.successful_completion
+                and not bucket.incarcerated_during_sentence
+            ])
+        elif metric_type == SupervisionMetricType.SUPERVISION_OUT_OF_STATE_POPULATION:
+            output_count_by_metric_type[metric_type] = len([
+                bucket for bucket in supervision_time_buckets
+                if isinstance(bucket, (RevocationReturnSupervisionTimeBucket, NonRevocationReturnSupervisionTimeBucket))
+                and out_of_state_population
+            ])
+        elif metric_type == SupervisionMetricType.SUPERVISION_POPULATION:
+            output_count_by_metric_type[metric_type] = len([
+                bucket for bucket in supervision_time_buckets
+                if isinstance(bucket, (RevocationReturnSupervisionTimeBucket, NonRevocationReturnSupervisionTimeBucket))
+                and not out_of_state_population
+            ])
+        else:
+            for bucket_type in BUCKET_TYPES_FOR_METRIC[metric_type]:
+                output_count_by_metric_type[metric_type] += len([
+                    bucket for bucket in supervision_time_buckets
+                    if isinstance(bucket, bucket_type)
+                ])
 
-    successful_completion_sentence_length_buckets = [
-        bucket for bucket in projected_completion_buckets
-        if bucket.sentence_days_served is not None
-        and bucket.successful_completion
-        and not bucket.incarcerated_during_sentence
-    ]
-
-    population_buckets = [
-        bucket for bucket in supervision_time_buckets
-        if isinstance(bucket, (RevocationReturnSupervisionTimeBucket, NonRevocationReturnSupervisionTimeBucket)) and not
-        out_of_state_population
-    ]
-
-    out_of_state_population_buckets = [
-        bucket for bucket in supervision_time_buckets
-        if isinstance(bucket, (RevocationReturnSupervisionTimeBucket, NonRevocationReturnSupervisionTimeBucket)) and
-        out_of_state_population
-    ]
-
-    revocation_buckets = [
-        bucket for bucket in supervision_time_buckets
-        if isinstance(bucket, RevocationReturnSupervisionTimeBucket)
-    ]
-
-    compliance_buckets = [
-        bucket for bucket in supervision_time_buckets
-        if isinstance(bucket, NonRevocationReturnSupervisionTimeBucket)
-        and bucket.case_compliance is not None
-    ]
-
-    termination_buckets = [
-        bucket for bucket in supervision_time_buckets if isinstance(bucket, SupervisionTerminationBucket)
-    ]
-
-    start_buckets = [
-        bucket for bucket in supervision_time_buckets if isinstance(bucket, SupervisionStartBucket)
-    ]
-
-    supervision_downgrade_buckets = [
-        bucket for bucket in supervision_time_buckets if isinstance(bucket, NonRevocationReturnSupervisionTimeBucket)
-        and bucket.supervision_level_downgrade_occurred
-    ]
-
-    # Count number of buckets and number of buckets in the same month
-    num_projected_completion_sentence_length_buckets = len(successful_completion_sentence_length_buckets)
-    num_duplicated_projected_completion_sentence_length_months = _duplicated_months(
-        successful_completion_sentence_length_buckets)
-
-    num_projected_completion_buckets = len(projected_completion_buckets)
-    num_duplicated_projected_completion_months = _duplicated_months(projected_completion_buckets)
-
-    num_population_buckets = len(population_buckets)
-    num_duplicated_population_buckets = _duplicated_days(population_buckets)
-
-    num_out_of_state_population_buckets = len(out_of_state_population_buckets)
-    num_duplicated_out_of_state_population_buckets = _duplicated_days(out_of_state_population_buckets)
-
-    num_compliance_buckets = len(compliance_buckets)
-    num_duplicated_compliance_buckets = _duplicated_months(compliance_buckets)
-
-    num_revocation_buckets = len(revocation_buckets)
-    num_duplicated_revocation_buckets = _duplicated_months(revocation_buckets)
-
-    num_termination_buckets = len(termination_buckets)
-    num_duplicated_termination_buckets = _duplicated_months(termination_buckets)
-
-    num_start_buckets = len(start_buckets)
-    num_duplicated_start_buckets = _duplicated_months(start_buckets)
-
-    num_supervision_downgrade_buckets = len(supervision_downgrade_buckets)
-
-    # Person-level metrics for the metric types that limit to only person-output
-    supervision_population_combos = (num_population_buckets +
-                                     (num_population_buckets - num_duplicated_population_buckets))
-    supervision_out_of_state_population_combos = (num_out_of_state_population_buckets +
-                                                 (num_out_of_state_population_buckets -
-                                                  num_duplicated_out_of_state_population_buckets))
-    supervision_start_combos = (num_start_buckets + (num_start_buckets - num_duplicated_start_buckets))
-    supervision_compliance_combos = (num_compliance_buckets +
-                                     (num_compliance_buckets - num_duplicated_compliance_buckets))
-    supervision_revocation_combos = (num_revocation_buckets +
-                                     (num_revocation_buckets - num_duplicated_revocation_buckets)*(
-                                         num_relevant_periods + 1))
-    supervision_success_combos = (num_projected_completion_buckets +
-                                  (num_projected_completion_buckets - num_duplicated_projected_completion_months)*(
-                                      num_relevant_periods + 1))
-    supervision_downgrade_combos = num_supervision_downgrade_buckets
-
-    if duplicated_months_mixed_success:
-        # Only add event-based counts for each successful completion bucket
-        supervision_successful_sentence_length_combos = len(successful_completion_sentence_length_buckets)
-    else:
-        supervision_successful_sentence_length_combos = (
-            num_projected_completion_sentence_length_buckets +
-            (num_projected_completion_sentence_length_buckets -
-             num_duplicated_projected_completion_sentence_length_months) *
-            (num_relevant_periods + 1))
-
-    supervision_termination_combos = (num_termination_buckets +
-                                      (num_termination_buckets - num_duplicated_termination_buckets)*(
-                                          num_relevant_periods + 1))
-    supervision_revocation_analysis_combos = (num_revocation_buckets +
-                                              (num_revocation_buckets - num_duplicated_revocation_buckets)*(
-                                                  num_relevant_periods + 1))
-
-    # Pick which one is relevant for the test case: some tests above use a different call that only looks at combos for
-    # either population or revocation, but not both
     if include_all_metrics:
-        return int(supervision_population_combos +
-                   supervision_revocation_combos +
-                   supervision_start_combos +
-                   supervision_success_combos +
-                   supervision_successful_sentence_length_combos +
-                   supervision_termination_combos +
-                   supervision_revocation_analysis_combos +
-                   supervision_compliance_combos +
-                   supervision_out_of_state_population_combos +
-                   supervision_downgrade_combos)
+        return sum(value for value in output_count_by_metric_type.values())
 
-    if metric_to_include:
-        if metric_to_include == SupervisionMetricType.SUPERVISION_TERMINATION:
-            return int(supervision_termination_combos)
-        if metric_to_include == SupervisionMetricType.SUPERVISION_COMPLIANCE:
-            return int(supervision_compliance_combos)
-        if metric_to_include == SupervisionMetricType.SUPERVISION_START:
-            return int(supervision_start_combos)
-        if metric_to_include == SupervisionMetricType.SUPERVISION_SUCCESS:
-            return int(supervision_success_combos)
-        if metric_to_include == SupervisionMetricType.SUPERVISION_SUCCESSFUL_SENTENCE_DAYS_SERVED:
-            return int(supervision_successful_sentence_length_combos)
-        if metric_to_include == SupervisionMetricType.SUPERVISION_REVOCATION:
-            return int(supervision_revocation_combos)
-        if metric_to_include == SupervisionMetricType.SUPERVISION_REVOCATION_ANALYSIS:
-            return int(supervision_revocation_analysis_combos)
-        if metric_to_include == SupervisionMetricType.SUPERVISION_POPULATION:
-            return int(supervision_population_combos)
-        if metric_to_include == SupervisionMetricType.SUPERVISION_OUT_OF_STATE_POPULATION:
-            return int(supervision_out_of_state_population_combos)
-        if metric_to_include == SupervisionMetricType.SUPERVISION_DOWNGRADE:
-            return int(supervision_downgrade_combos)
+    if metric_to_include not in output_count_by_metric_type:
+        raise ValueError(f"Metric {metric_to_include} not a valid metric type for pipeline.")
 
-    return 0
-
-
-def _duplicated_months(supervision_time_buckets: Sequence[SupervisionTimeBucket]) -> int:
-    duplicated_months = 0
-    months: Set[Tuple[int, int]] = set()
-
-    for bucket in supervision_time_buckets:
-        year = bucket.year
-        month = 0 if bucket.month is None else bucket.month
-        if (year, month) in months:
-            duplicated_months += 1
-        if month is not None:
-            months.add((year, month))
-
-    return duplicated_months
-
-
-def _duplicated_days(supervision_time_buckets: Sequence[SupervisionTimeBucket]) -> int:
-    duplicated_days = 0
-    days: Set[date] = set()
-
-    for bucket in supervision_time_buckets:
-        if bucket.bucket_date in days:
-            duplicated_days += 1
-        if bucket.bucket_date is not None:
-            days.add(bucket.bucket_date)
-
-    return duplicated_days
+    return output_count_by_metric_type[metric_to_include]
