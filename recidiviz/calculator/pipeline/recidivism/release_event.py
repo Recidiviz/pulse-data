@@ -63,7 +63,7 @@ class ReleaseEvent(IdentifierEvent):
     county_of_residence: Optional[str] = attr.ib(default=None)
 
     @property
-    def release_cohort(self):
+    def release_cohort(self) -> int:
         return self.release_date.year
 
     @property

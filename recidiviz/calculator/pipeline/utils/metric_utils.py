@@ -34,6 +34,7 @@ class RecidivizMetricType(Enum):
     """Enum describing the type of metric described in the metric class."""
 
 
+# TODO(#5242): Delete this enum
 class MetricMethodologyType(Enum):
     """Methods for counting criminal justice metrics.
 
@@ -42,13 +43,8 @@ class MetricMethodologyType(Enum):
         is released from and returned to a facility twice in a given window,
         then that counts as two separate instances of recidivism for
         measurement, even though it includes only a single individual.
-     Person-based: a method for measuring wherein the person is the
-        unit of analysis. That is, if Allison is revoked from supervision twice
-        in one window, then that counts as only one instance for measurement.
      """
-
     EVENT = 'EVENT'
-    PERSON = 'PERSON'
 
 
 @attr.s
@@ -70,6 +66,7 @@ class RecidivizMetric(BuildableAttr):
     # The state code of the metric this describes
     state_code: str = attr.ib()
 
+    # TODO(#5242): Delete this attribute
     # MetricMethodologyType enum for the calculation of the metric
     methodology: MetricMethodologyType = \
         attr.ib(default=None)  # non-nullable

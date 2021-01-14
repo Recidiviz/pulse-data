@@ -15,12 +15,11 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Events related to incarceration."""
-from datetime import date
 from typing import Optional
 
 import attr
 
-from recidiviz.calculator.pipeline.utils.event_utils import IdentifierEvent
+from recidiviz.calculator.pipeline.utils.event_utils import IdentifierEventWithSingularDate
 from recidiviz.common.constants.state.state_incarceration_period import \
     StateIncarcerationPeriodAdmissionReason, \
     StateIncarcerationPeriodReleaseReason, StateSpecializedPurposeForIncarceration
@@ -28,16 +27,12 @@ from recidiviz.common.constants.state.state_supervision_period import StateSuper
 
 
 @attr.s(frozen=True)
-class IncarcerationEvent(IdentifierEvent):
+class IncarcerationEvent(IdentifierEventWithSingularDate):
     """Models details related to an incarceration event.
 
     Describes a date on which a person interacted with incarceration. This includes the information pertaining to the
     interaction that we will want to track when calculating incarceration metrics.
     """
-
-    # Event date when the interaction took place
-    event_date: date = attr.ib()
-
     # Facility
     facility: Optional[str] = attr.ib(default=None)
 

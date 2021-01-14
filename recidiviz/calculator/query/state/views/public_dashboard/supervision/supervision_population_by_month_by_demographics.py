@@ -44,8 +44,7 @@ SUPERVISION_POPULATION_BY_MONTH_BY_DEMOGRAPHICS_VIEW_QUERY_TEMPLATE = \
       LEFT JOIN
          `{project_id}.{static_reference_dataset}.state_race_ethnicity_population_counts`
       USING (state_code, race_or_ethnicity)
-      WHERE metric_period_months = 0
-        AND methodology = 'EVENT'
+      WHERE methodology = 'EVENT'
         AND date_of_supervision = DATE(year, month, 1)
         -- 20 years worth of monthly population metrics --
         AND date_of_supervision >= DATE_SUB(DATE_TRUNC(CURRENT_DATE('US/Pacific'), MONTH), INTERVAL 239 MONTH)

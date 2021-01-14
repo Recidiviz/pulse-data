@@ -296,7 +296,7 @@ def find_time_buckets_for_supervision_period(
     if start_date is None:
         return supervision_day_buckets
 
-    bucket_date = start_date
+    event_date = start_date
 
     (supervising_officer_external_id,
      level_1_supervision_location_external_id,
@@ -323,23 +323,23 @@ def find_time_buckets_for_supervision_period(
 
     end_date = termination_date if termination_date else date.today() + relativedelta(days=1)
 
-    while bucket_date < end_date:
+    while event_date < end_date:
         if on_supervision_on_date(
-                bucket_date,
+                event_date,
                 supervision_sentences,
                 incarceration_sentences,
                 supervision_period,
                 incarceration_period_index):
 
             supervision_type = get_month_supervision_type(
-                bucket_date, supervision_sentences, incarceration_sentences, supervision_period)
+                event_date, supervision_sentences, incarceration_sentences, supervision_period)
 
             assessment_score = None
             assessment_level = None
             assessment_type = None
 
             most_recent_assessment = assessment_utils.find_most_recent_applicable_assessment_of_class_for_state(
-                bucket_date,
+                event_date,
                 assessments,
                 assessment_class=StateAssessmentClass.RISK,
                 state_code=supervision_period.state_code
@@ -351,10 +351,10 @@ def find_time_buckets_for_supervision_period(
                 assessment_type = most_recent_assessment.assessment_type
 
             violation_history = get_violation_and_response_history(supervision_period.state_code,
-                                                                   bucket_date,
+                                                                   event_date,
                                                                    violation_responses)
 
-            is_on_supervision_last_day_of_month = (bucket_date == last_day_of_month(bucket_date))
+            is_on_supervision_last_day_of_month = (event_date == last_day_of_month(event_date))
 
             case_compliance: Optional[SupervisionCaseCompliance] = None
 
@@ -363,14 +363,14 @@ def find_time_buckets_for_supervision_period(
                 case_compliance = None
 
                 if state_specific_case_compliance_manager:
-                    case_compliance = state_specific_case_compliance_manager.get_case_compliance_on_date(bucket_date)
+                    case_compliance = state_specific_case_compliance_manager.get_case_compliance_on_date(event_date)
 
             deprecated_supervising_district_external_id = \
                 level_2_supervision_location_external_id or level_1_supervision_location_external_id
 
             supervision_level_downgrade_occurred = False
             previous_supervision_level = None
-            if bucket_date == supervision_period.start_date:
+            if event_date == supervision_period.start_date:
                 supervision_level_downgrade_occurred, previous_supervision_level = \
                     _get_supervision_downgrade_details_if_downgrade_occurred(supervision_period_index,
                                                                              supervision_period)
@@ -378,9 +378,9 @@ def find_time_buckets_for_supervision_period(
             supervision_day_buckets.append(
                 NonRevocationReturnSupervisionTimeBucket(
                     state_code=supervision_period.state_code,
-                    year=bucket_date.year,
-                    month=bucket_date.month,
-                    bucket_date=bucket_date,
+                    year=event_date.year,
+                    month=event_date.month,
+                    event_date=event_date,
                     supervision_type=supervision_type,
                     case_type=case_type,
                     assessment_score=assessment_score,
@@ -403,7 +403,7 @@ def find_time_buckets_for_supervision_period(
                 )
             )
 
-        bucket_date = bucket_date + relativedelta(days=1)
+        event_date = event_date + relativedelta(days=1)
 
     return supervision_day_buckets
 
@@ -520,7 +520,7 @@ def find_supervision_start_bucket(
     return SupervisionStartBucket(
         state_code=supervision_period.state_code,
         admission_reason=admission_reason,
-        bucket_date=start_date,
+        event_date=start_date,
         year=start_date.year,
         month=start_date.month,
         supervision_type=supervision_period.supervision_period_supervision_type,
@@ -611,7 +611,7 @@ def find_supervision_termination_bucket(
 
         return SupervisionTerminationBucket(
             state_code=supervision_period.state_code,
-            bucket_date=termination_date,
+            event_date=termination_date,
             year=termination_date.year,
             month=termination_date.month,
             supervision_type=supervision_type,
@@ -908,7 +908,7 @@ def find_revocation_return_buckets(supervision_sentences: List[StateSupervisionS
                         state_code=incarceration_period.state_code,
                         year=admission_year,
                         month=admission_month,
-                        bucket_date=admission_date,
+                        event_date=admission_date,
                         supervision_type=pre_revocation_supervision_type,
                         case_type=case_type,
                         assessment_score=assessment_score,
@@ -961,7 +961,7 @@ def find_revocation_return_buckets(supervision_sentences: List[StateSupervisionS
                     state_code=incarceration_period.state_code,
                     year=admission_year,
                     month=admission_month,
-                    bucket_date=admission_date,
+                    event_date=admission_date,
                     supervision_type=pre_revocation_supervision_type,
                     case_type=case_type,
                     supervision_level=None,
@@ -1100,7 +1100,7 @@ def _get_projected_completion_bucket(
         state_code=supervision_period.state_code,
         year=projected_completion_date.year,
         month=projected_completion_date.month,
-        bucket_date=last_day_of_projected_month,
+        event_date=last_day_of_projected_month,
         supervision_type=supervision_type,
         supervision_level=supervision_period.supervision_level,
         supervision_level_raw_text=supervision_period.supervision_level_raw_text,
@@ -1246,8 +1246,8 @@ def _convert_buckets_to_dual(supervision_time_buckets: List[SupervisionTimeBucke
     buckets_by_date: Dict[date, List[SupervisionTimeBucket]] = defaultdict(list)
 
     for bucket in supervision_time_buckets:
-        bucket_date = bucket.bucket_date
-        buckets_by_date[bucket_date].append(bucket)
+        event_date = bucket.event_date
+        buckets_by_date[event_date].append(bucket)
 
     day_bucket_groups = list(buckets_by_date.values())
 

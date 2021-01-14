@@ -878,15 +878,14 @@ class TestCalculateRecidivismMetricCombinations(unittest.TestCase):
         periods_with_single = 6
         periods_with_double = periods - periods_with_single
 
-        expected_combinations_count_2010 = ((2 * periods_with_single) +
-                                            (3 * periods_with_double))
+        expected_combinations_count_2010 = (periods_with_single + (2 * periods_with_double))
 
         periods = relativedelta(date.today(), date(2014, 4, 14)).years + 1
 
-        expected_combinations_count_2014 = (2 * periods)
+        expected_combinations_count_2014 = periods
 
-        # Add person-level counts for the 2 events and 2 methodologies
-        expected_count_metric_combinations = 4
+        # Add count metrics for the 2 events
+        expected_count_metric_combinations = 2
 
         expected_combination_counts = {
             2010: expected_combinations_count_2010,
@@ -965,7 +964,7 @@ class TestProduceReincarcerationRecidivismMetric(unittest.TestCase):
         pipeline."""
 
         metric_key_dict = {'stay_length_bucket': '36-48', 'gender': Gender.MALE,
-                           'methodology': MetricMethodologyType.PERSON,
+                           'methodology': MetricMethodologyType.EVENT,
                            'start_date': date(2010, 1, 1),
                            'end_date': date(2010, 12, 31),
                            'metric_type': MetricType.REINCARCERATION_COUNT, 'state_code': 'US_XX',}
@@ -996,7 +995,7 @@ class TestProduceReincarcerationRecidivismMetric(unittest.TestCase):
          pipeline."""
         metric_key_dict = {'stay_length_bucket': '36-48', 'gender': Gender.MALE,
                            'release_cohort': 2014,
-                           'methodology': MetricMethodologyType.PERSON,
+                           'methodology': MetricMethodologyType.EVENT,
                            'follow_up_period': 1,
                            'metric_type': MetricType.REINCARCERATION_RATE, 'state_code': 'US_XX',}
 
@@ -1026,7 +1025,7 @@ class TestProduceReincarcerationRecidivismMetric(unittest.TestCase):
         pipeline when the number of returns is 0."""
 
         metric_key_dict = {'stay_length_bucket': '36-48', 'gender': Gender.MALE,
-                           'methodology': MetricMethodologyType.PERSON,
+                           'methodology': MetricMethodologyType.EVENT,
                            'start_date': date(2010, 1, 1),
                            'end_date': date(2010, 12, 31),
                            'metric_type': MetricType.REINCARCERATION_COUNT, 'state_code': 'US_XX',}
@@ -1147,44 +1146,44 @@ class MetricGroup:
     dimension filtering."""
     recidivism_metric_with_age = ReincarcerationRecidivismRateMetric(
         job_id='12345', state_code='US_XX', release_cohort=2015,
-        follow_up_period=1, methodology=MetricMethodologyType.PERSON,
+        follow_up_period=1, methodology=MetricMethodologyType.EVENT,
         age_bucket='25-29', total_releases=1000, recidivated_releases=900,
         recidivism_rate=0.9)
 
     recidivism_metric_with_gender = ReincarcerationRecidivismRateMetric(
         job_id='12345', state_code='US_XX', release_cohort=2015,
-        follow_up_period=1, methodology=MetricMethodologyType.PERSON,
+        follow_up_period=1, methodology=MetricMethodologyType.EVENT,
         gender=Gender.MALE, total_releases=1000, recidivated_releases=875,
         recidivism_rate=0.875)
 
     recidivism_metric_with_race = ReincarcerationRecidivismRateMetric(
         job_id='12345', state_code='US_XX', release_cohort=2015,
-        follow_up_period=1, methodology=MetricMethodologyType.PERSON,
+        follow_up_period=1, methodology=MetricMethodologyType.EVENT,
         race=[Race.BLACK], total_releases=1000, recidivated_releases=875,
         recidivism_rate=0.875)
 
     recidivism_metric_with_ethnicity = ReincarcerationRecidivismRateMetric(
         job_id='12345', state_code='US_XX', release_cohort=2015,
-        follow_up_period=1, methodology=MetricMethodologyType.PERSON,
+        follow_up_period=1, methodology=MetricMethodologyType.EVENT,
         ethnicity=[Ethnicity.HISPANIC], total_releases=1000,
         recidivated_releases=875, recidivism_rate=0.875)
 
     recidivism_metric_with_release_facility = \
         ReincarcerationRecidivismRateMetric(
             job_id='12345', state_code='US_XX', release_cohort=2015,
-            follow_up_period=1, methodology=MetricMethodologyType.PERSON,
+            follow_up_period=1, methodology=MetricMethodologyType.EVENT,
             release_facility='Red',
             total_releases=1000, recidivated_releases=300, recidivism_rate=0.30)
 
     recidivism_metric_with_stay_length = ReincarcerationRecidivismRateMetric(
         job_id='12345', state_code='US_XX', release_cohort=2015,
-        follow_up_period=1, methodology=MetricMethodologyType.PERSON,
+        follow_up_period=1, methodology=MetricMethodologyType.EVENT,
         stay_length_bucket='12-24', total_releases=1000,
         recidivated_releases=300, recidivism_rate=0.30)
 
     recidivism_metric_without_dimensions = ReincarcerationRecidivismRateMetric(
         job_id='12345', state_code='US_XX', release_cohort=2015,
-        follow_up_period=1, methodology=MetricMethodologyType.PERSON,
+        follow_up_period=1, methodology=MetricMethodologyType.EVENT,
         total_releases=1500, recidivated_releases=1200, recidivism_rate=0.80)
 
     recidivism_metric_event_based = ReincarcerationRecidivismRateMetric(
