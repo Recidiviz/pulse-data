@@ -41,6 +41,8 @@ from recidiviz.common.constants.state.state_person_alias import StatePersonAlias
 from recidiviz.common.constants.state.state_program_assignment import StateProgramAssignmentParticipationStatus
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.state.state_supervision import StateSupervisionType
+from recidiviz.common.constants.state.state_supervision_contact import StateSupervisionContactType, \
+    StateSupervisionContactReason, StateSupervisionContactLocation
 from recidiviz.common.constants.state.state_supervision_period import StateSupervisionPeriodStatus, \
     StateSupervisionPeriodTerminationReason
 from recidiviz.common.constants.state.state_supervision_violation import StateSupervisionViolationType
@@ -55,7 +57,7 @@ from recidiviz.ingest.models.ingest_info import IngestInfo, StateSentenceGroup, 
     StateIncarcerationPeriod, StatePersonRace, StatePersonExternalId, StateAssessment, StatePersonEthnicity, \
     StateSupervisionPeriod, StateSupervisionViolation, StateSupervisionViolationResponse, StateAgent, \
     StateIncarcerationIncident, StateIncarcerationIncidentOutcome, StateProgramAssignment, \
-    StateSupervisionViolationTypeEntry, StateSupervisionCaseTypeEntry
+    StateSupervisionViolationTypeEntry, StateSupervisionCaseTypeEntry, StateSupervisionContact
 from recidiviz.persistence.entity.state import entities
 from recidiviz.tests.ingest.direct.regions.base_state_direct_ingest_controller_tests import \
     BaseStateDirectIngestControllerTests
@@ -963,6 +965,29 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
                                                                       state_supervision_case_type_entry_id='92307')])
                                 ])
                             ])
+                        ]),
+            StatePerson(state_person_id='40404',
+                        surname='Hopper',
+                        given_names='Grace',
+                        birthdate='1-Jul-85',
+                        gender='1',
+                        current_address='111 8th ST S #5, FARGO, ND, 58103',
+                        state_person_ethnicities=[StatePersonEthnicity(ethnicity='HISPANIC')],
+                        state_person_external_ids=[
+                            StatePersonExternalId(state_person_external_id_id='40404', id_type=US_ND_SID)
+                        ],
+                        state_aliases=[
+                            StateAlias(surname='Hopper', given_names='Grace', alias_type='GIVEN_NAME')
+                        ],
+                        supervising_officer=StateAgent(state_agent_id='22', agent_type='SUPERVISION_OFFICER'),
+                        state_sentence_groups=[
+                            StateSentenceGroup(state_supervision_sentences=[
+                                StateSupervisionSentence(state_supervision_periods=[
+                                    StateSupervisionPeriod(state_supervision_case_type_entries=[
+                                        StateSupervisionCaseTypeEntry(case_type='0',
+                                                                      state_supervision_case_type_entry_id='40404')])
+                                ])
+                            ])
                         ])
         ])
 
@@ -1421,6 +1446,42 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
                         ),
         ])
         self.run_parse_file_test(expected, 'docstars_ftr_episode')
+
+    def test_populate_docstars_contacts(self):
+        agent_22 = StateAgent(
+            state_agent_id='22',
+            agent_type='SUPERVISION_OFFICER',
+            full_name='FIRSTNAME LASTNAME'
+        )
+
+        state_supervision_contact = StateSupervisionContact(
+            state_supervision_contact_id='1231',
+            contact_date='4/15/2020 12:00:00AM',
+            contact_type='OO',
+            location='PLACE_OF_EMPLOYMENT',
+            contacted_agent=agent_22,
+            contact_reason='Supervision'
+        )
+
+        expected = IngestInfo(state_people=[
+            StatePerson(state_person_id='40404',
+                        state_person_external_ids=[
+                            StatePersonExternalId(state_person_external_id_id='40404', id_type=US_ND_SID)
+                        ],
+                        state_sentence_groups=[
+                            StateSentenceGroup(
+                                state_supervision_sentences=[
+                                    StateSupervisionSentence(
+                                        state_supervision_periods=[
+                                            StateSupervisionPeriod (
+                                                state_supervision_contacts=[state_supervision_contact]
+                                            )
+                                        ],
+                                    )]
+                            )])
+        ])
+
+        self.run_parse_file_test(expected, 'docstars_contacts')
 
     # TODO(#2157): Move into integration specific file
     def test_run_full_ingest_all_files_specific_order(self) -> None:
@@ -2595,6 +2656,79 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
 
         expected_people.append(person_6)
 
+        person_7 = entities.StatePerson.new_with_defaults(
+            full_name='{"given_names": "GRACE", "surname": "HOPPER"}',
+            birthdate=datetime.date(year=1985, month=7, day=1),
+            birthdate_inferred_from_age=False,
+            current_address='111 8TH ST S #5, FARGO, ND, 58103',
+            residency_status=ResidencyStatus.PERMANENT,
+            gender=Gender.MALE,
+            gender_raw_text='1',
+            state_code=_STATE_CODE,
+        )
+
+        person_7_external_id = entities.StatePersonExternalId.new_with_defaults(
+            external_id='40404',
+            id_type=US_ND_SID,
+            state_code=_STATE_CODE,
+            person=person_7)
+
+        person_7_alias = entities.StatePersonAlias.new_with_defaults(
+            full_name='{"given_names": "GRACE", "surname": "HOPPER"}',
+            alias_type=StatePersonAliasType.GIVEN_NAME,
+            alias_type_raw_text='GIVEN_NAME',
+            state_code=_STATE_CODE,
+            person=person_7)
+
+        person_7_ethnicity = entities.StatePersonEthnicity.new_with_defaults(
+            state_code=_STATE_CODE, ethnicity=Ethnicity.HISPANIC,
+            ethnicity_raw_text='HISPANIC',
+            person=person_7)
+
+        person_7_sentence_group_placeholder = entities.StateSentenceGroup.new_with_defaults(
+            state_code=_STATE_CODE,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+            person=person_7)
+        person_7_supervision_sentence_placeholder = entities.StateSupervisionSentence.new_with_defaults(
+            state_code=_STATE_CODE,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+            sentence_group=person_7_sentence_group_placeholder,
+            person=person_7)
+        person_7_supervision_period_placeholder = entities.StateSupervisionPeriod.new_with_defaults(
+            state_code=_STATE_CODE,
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
+            supervision_sentences=[person_7_supervision_sentence_placeholder],
+            person=person_7
+        )
+
+        person_7_supervising_officer = entities.StateAgent.new_with_defaults(
+            agent_type=StateAgentType.SUPERVISION_OFFICER,
+            agent_type_raw_text='SUPERVISION_OFFICER',
+            external_id='22',
+            state_code=_STATE_CODE
+        )
+
+        person_7_case_type = entities.StateSupervisionCaseTypeEntry.new_with_defaults(
+            state_code=_STATE_CODE,
+            case_type=StateSupervisionCaseType.GENERAL,
+            case_type_raw_text='0',
+            supervision_period=person_7_supervision_period_placeholder,
+            person=person_7,
+            external_id='40404'
+        )
+
+        person_7.external_ids = [person_7_external_id]
+        person_7.aliases = [person_7_alias]
+        person_7.ethnicities = [person_7_ethnicity]
+        person_7.supervising_officer = person_7_supervising_officer
+
+        person_7_supervision_period_placeholder.case_type_entries = [person_7_case_type]
+        person_7_supervision_sentence_placeholder.supervision_periods = [person_7_supervision_period_placeholder]
+        person_7_sentence_group_placeholder.supervision_sentences = [person_7_supervision_sentence_placeholder]
+        person_7.sentence_groups = [person_7_sentence_group_placeholder]
+
+        expected_people.append(person_7)
+
         # Act
         self._run_ingest_job_for_filename('docstars_offenders.csv')
 
@@ -3200,10 +3334,65 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
         # Assert
         self.assert_expected_db_people(expected_people)
 
+        ######################################
+        # DOCSTARS CONTACTS
+        ######################################
+
+        # Arrange
+        supervision_period_1231 = entities.StateSupervisionPeriod.new_with_defaults(
+            state_code=_STATE_CODE,
+            person=person_7,
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
+        )
+
+        person_7.supervising_officer.full_name = '{"full_name": "FIRSTNAME LASTNAME"}'
+
+        supervision_contact_1231 = entities.StateSupervisionContact.new_with_defaults(
+            external_id='1231',
+            state_code=_STATE_CODE,
+            contact_date=datetime.date(year=2020, month=4, day=15),
+            contacted_agent=person_7_supervising_officer,
+            contact_type=StateSupervisionContactType.FACE_TO_FACE,
+            location=StateSupervisionContactLocation.PLACE_OF_EMPLOYMENT,
+            location_raw_text='PLACE_OF_EMPLOYMENT',
+            contact_type_raw_text='OO',
+            contact_reason=StateSupervisionContactReason.GENERAL_CONTACT,
+            contact_reason_raw_text='SUPERVISION',
+            person=person_7,
+            supervision_periods=[supervision_period_1231],
+        )
+
+        sentence_group_1231 = entities.StateSentenceGroup.new_with_defaults(
+            state_code=_STATE_CODE,
+            person=person_7,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+        )
+
+        supervision_sentence_1231 = entities.StateSupervisionSentence.new_with_defaults(
+            state_code=_STATE_CODE,
+            person=person_7,
+            supervision_periods=[supervision_period_1231],
+            sentence_group=sentence_group_1231,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+            charges=[]
+        )
+
+        supervision_period_1231.supervision_contacts = [supervision_contact_1231]
+        supervision_period_1231.supervision_sentences = [supervision_sentence_1231]
+        sentence_group_1231.supervision_sentences.append(supervision_sentence_1231)
+        person_7.sentence_groups.append(sentence_group_1231)
+
+        # Act
+        self._run_ingest_job_for_filename('docstars_contacts.csv')
+
+        # Assert
+        self.assert_expected_db_people(expected_people)
+
         # Rerun for sanity
         self._do_ingest_job_rerun_for_tags(self.controller.get_file_tag_rank_list())
 
         self.assert_expected_db_people(expected_people)
+
 
     def test_runOutOfOrder_mergeTwoDatabasePeople(self) -> None:
         """Tests that our system correctly handles the situation where we commit

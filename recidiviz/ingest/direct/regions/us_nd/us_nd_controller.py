@@ -42,6 +42,8 @@ from recidiviz.common.constants.state.state_person_alias import StatePersonAlias
 from recidiviz.common.constants.state.state_program_assignment import StateProgramAssignmentParticipationStatus
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.state.state_supervision import StateSupervisionType
+from recidiviz.common.constants.state.state_supervision_contact import StateSupervisionContactType, \
+    StateSupervisionContactReason, StateSupervisionContactLocation
 from recidiviz.common.constants.state.state_supervision_period import StateSupervisionLevel, \
     StateSupervisionPeriodTerminationReason
 from recidiviz.common.constants.state.state_supervision_violation import StateSupervisionViolationType
@@ -64,7 +66,8 @@ from recidiviz.ingest.models.ingest_info import IngestObject, StatePerson, State
     StateSentenceGroup, StateIncarcerationPeriod, StatePersonExternalId, StateAssessment, StateCharge, \
     StateSupervisionViolation, StateSupervisionViolationResponse, StateAgent, StateIncarcerationIncidentOutcome, \
     StateIncarcerationIncident, StateSupervisionSentence, StateCourtCase, StateSupervisionPeriod, \
-    StateProgramAssignment, StatePersonEthnicity, StateSupervisionViolationTypeEntry, StateSupervisionCaseTypeEntry
+    StateProgramAssignment, StatePersonEthnicity, StateSupervisionViolationTypeEntry, StateSupervisionCaseTypeEntry, \
+    StateSupervisionContact
 from recidiviz.ingest.models.ingest_object_cache import IngestObjectCache
 from recidiviz.utils import environment
 
@@ -152,6 +155,11 @@ class UsNdController(CsvGcsfsDirectIngestController):
             ],
             'docstars_lsi_chronology': [self._process_lsir_assessments],
             'docstars_ftr_episode': [self._process_ftr_episode],
+            'docstars_contacts': [
+                self._add_supervision_officer_to_contact,
+                gen_set_agent_type(StateAgentType.SUPERVISION_OFFICER),
+                self._add_location_to_contact,
+            ],
         }
 
         self.primary_key_override_hook_by_file: Dict[str, Callable] = {
@@ -186,10 +194,13 @@ class UsNdController(CsvGcsfsDirectIngestController):
             'elite_externalmovements',
         ]
 
-        # TODO(#2399): Once we are capable of handling historical and nightly ingest of
-        #  'elite_offense_in_custody_and_pos_report_data', remove this check.
-        if not environment.in_gae_production() and not environment.in_gae_staging():
-            tags.append('elite_offense_in_custody_and_pos_report_data')
+        if not environment.in_gae_production():
+            # TODO(#5049): Remove once contacts have successfully run in staging.
+            tags.append('docstars_contacts')
+            # TODO(#2399): Once we are capable of handling historical and nightly ingest of
+            #  'elite_offense_in_custody_and_pos_report_data', remove this check.
+            if not environment.in_gae_staging():
+                tags.append('elite_offense_in_custody_and_pos_report_data')
 
         tags += [
             # Docstars - supervision-focused
@@ -259,6 +270,41 @@ class UsNdController(CsvGcsfsDirectIngestController):
             return US_ND_SID
 
         raise ValueError(f"File [{file_tag}] doesn't have a known external id type")
+
+    @staticmethod
+    def _add_supervision_officer_to_contact(_file_tag: str,
+                                            row: Dict[str, str],
+                                            extracted_objects: List[IngestObject],
+                                            _cache: IngestObjectCache) -> None:
+        """Adds the current supervising officer onto the extracted supervision contact."""
+        supervising_officer_last_name = row.get('LNAME')
+        supervising_officer_first_name = row.get('FNAME')
+        supervising_officer_id = row.get('OFFICER')
+        if not supervising_officer_last_name or not supervising_officer_first_name or not supervising_officer_id:
+            return
+        for extracted_object in extracted_objects:
+            if isinstance(extracted_object, StateSupervisionContact):
+                agent_to_create = StateAgent(
+                    full_name=f'{supervising_officer_first_name} {supervising_officer_last_name}',
+                    state_agent_id=supervising_officer_id,
+                    agent_type=StateAgentType.SUPERVISION_OFFICER.value)
+                create_if_not_exists(agent_to_create, extracted_object, 'contacted_agent')
+
+    def _add_location_to_contact(self,
+                                 _file_tag: str,
+                                 row: Dict[str, str],
+                                 extracted_objects: List[IngestObject],
+                                 _cache: IngestObjectCache) -> None:
+        """Adds a contact location to the extracted supervision contact."""
+        contact_location_from_code = row.get('CONTACT_CODE')
+        if contact_location_from_code:
+            contact_location = self.get_enum_overrides().parse(contact_location_from_code,
+                                                               StateSupervisionContactLocation)
+            if contact_location is not None:
+                for extracted_object in extracted_objects:
+                    if isinstance(extracted_object, StateSupervisionContact):
+                        extracted_object.location = contact_location.value
+
 
     @staticmethod
     def _add_supervising_officer(_file_tag: str,
@@ -903,7 +949,29 @@ class UsNdController(CsvGcsfsDirectIngestController):
             StateSupervisionCaseType.GENERAL: ['0'],
             StateSupervisionCaseType.SEX_OFFENSE: ['-1'],
 
-            StateAssessmentLevel.EXTERNAL_UNKNOWN: ['NOT APPLICABLE', 'UNDETERMINED']
+            StateAssessmentLevel.EXTERNAL_UNKNOWN: ['NOT APPLICABLE', 'UNDETERMINED'],
+
+            StateSupervisionContactReason.GENERAL_CONTACT: [
+                'SUPERVISION'
+            ],
+
+            StateSupervisionContactType.FACE_TO_FACE: [
+                'HV',  # Visit at Supervisee's Home
+                'OO',  # Visit at Supervisee's Work or Public Area
+                'OV'  # Visit at Supervision Agent's Office
+            ],
+
+            StateSupervisionContactLocation.SUPERVISION_OFFICE: [
+                'OV'  # Visit at Supervision Agent's Office
+            ],
+
+            StateSupervisionContactLocation.RESIDENCE: [
+                'HV'  # Visit at Supervisee's Home
+            ],
+
+            StateSupervisionContactLocation.PLACE_OF_EMPLOYMENT: [
+                'OO'  # Visit at Supervisee's Work or Public Area
+            ],
         }
 
         ignores: Dict[EntityEnumMeta, List[str]] = {
