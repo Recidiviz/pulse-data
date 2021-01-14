@@ -32,3 +32,7 @@ variable "zone" {
 variable "git_hash" {
   type = string
 }
+
+variable "docker_image_tag" {
+  type = string
+}

@@ -63,6 +63,13 @@ ENV PATH_PREFIX=${DEV_MODE:+/usr/lib/postgresql/10/bin/:}
 # Then prepend our path with whatever is in PATH_PREFIX.
 ENV PATH="$PATH_PREFIX$PATH"
 
+# In order to use this Dockerfile with Cloud Run, PIPENV_VENV_IN_PROJECT must be set.
+# If not, Cloud Run will try to "helpfully" create a new virtualenv for us which will not match our
+# expected set of dependencies.
+# The main effect of this variable is to create the pipenv environment in the `.venv` folder in the
+# root of the project.
+ENV PIPENV_VENV_IN_PROJECT="1"
+
 # Add only the Pipfiles first to ensure we cache `pipenv sync` when application code is updated but not the Pipfiles
 ADD Pipfile /app/
 ADD Pipfile.lock /app/
