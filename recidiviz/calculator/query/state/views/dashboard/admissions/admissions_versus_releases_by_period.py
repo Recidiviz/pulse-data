@@ -81,9 +81,9 @@ ADMISSIONS_VERSUS_RELEASES_BY_PERIOD_QUERY_TEMPLATE = \
       {metric_period_dimension}
       WHERE methodology = 'EVENT'
         AND person_id IS NOT NULL
-        AND {prior_month_metric_period_dimension}
-        -- Get population count for the last day of the month
-        AND date_of_stay = DATE_SUB(DATE_ADD(DATE(year, month, 1), INTERVAL 1 MONTH), INTERVAL 1 DAY)
+        AND m.metric_period_months = 0
+         -- Get population count for first day of the period
+        AND date_of_stay = DATE_SUB(DATE_TRUNC(CURRENT_DATE('US/Pacific'), MONTH), INTERVAL metric_period_months - 1 MONTH)
       GROUP BY state_code, district, metric_period_months
     ) inc_pop
     USING (state_code, district, metric_period_months)
@@ -103,8 +103,6 @@ ADMISSIONS_VERSUS_RELEASES_BY_PERIOD_VIEW_BUILDER = MetricBigQueryViewBuilder(
         district_column='county_of_residence'),
     metric_period_dimension=bq_utils.unnest_metric_period_months(),
     metric_period_condition=bq_utils.metric_period_condition(month_offset=1),
-    prior_month_metric_period_dimension=bq_utils.metric_period_condition(
-        month_offset=0),
 )
 
 if __name__ == '__main__':
