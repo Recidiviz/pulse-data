@@ -172,10 +172,7 @@ class TestContactFrequencySufficient(unittest.TestCase):
                                                                      assessments=[],
                                                                      supervision_contacts=supervision_contacts)
 
-        face_to_face_frequency_sufficient = us_nd_supervision_compliance.\
-            _face_to_face_contact_frequency_is_sufficient(evaluation_date)
-
-        self.assertFalse(face_to_face_frequency_sufficient)
+        self.assertIsNone(us_nd_supervision_compliance._face_to_face_contact_frequency_is_sufficient(evaluation_date))
 
 
 class TestReassessmentRequirementAreMet(unittest.TestCase):
