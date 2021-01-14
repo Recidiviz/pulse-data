@@ -750,7 +750,8 @@ class StatePersonExternalId(StateBase,
     __tablename__ = 'state_person_external_id'
     __table_args__ = (
         UniqueConstraint('state_code', 'id_type', 'external_id',
-                         name='external_ids_unique_within_type_and_region', deferrable=True, initially='DEFERRED'),
+                name='person_external_ids_unique_within_type_and_region',
+                deferrable=True, initially='DEFERRED'),
     )
 
     person_external_id_id = Column(Integer, primary_key=True)
@@ -998,7 +999,10 @@ class StateBond(StateBase,
                 _StateBondSharedColumns):
     """Represents a StateBond in the SQL schema"""
     __tablename__ = 'state_bond'
-
+    __table_args__ = (
+        UniqueConstraint('state_code', 'external_id',
+                     name='bond_external_ids_unique_within_state', deferrable=True, initially='DEFERRED'),
+    )
     bond_id = Column(Integer, primary_key=True)
 
     person = relationship('StatePerson', uselist=False)
@@ -1467,7 +1471,11 @@ class StateFine(StateBase,
                 _StateFineSharedColumns):
     """Represents a StateFine in the SQL schema"""
     __tablename__ = 'state_fine'
-
+    __table_args__ = (
+        UniqueConstraint('state_code', 'external_id',
+                name='fine_external_ids_unique_within_state',
+                deferrable=True, initially='DEFERRED'),
+    )
     fine_id = Column(Integer, primary_key=True)
 
     person = relationship('StatePerson', uselist=False)
@@ -1551,7 +1559,11 @@ class StateIncarcerationPeriod(StateBase,
                                _StateIncarcerationPeriodSharedColumns):
     """Represents a StateIncarcerationPeriod in the SQL schema"""
     __tablename__ = 'state_incarceration_period'
-
+    __table_args__ = (
+        UniqueConstraint('state_code', 'external_id',
+                         name='incarceration_period_external_ids_unique_within_state',
+                         deferrable=True, initially='DEFERRED'),
+    )
     incarceration_period_id = Column(Integer, primary_key=True)
 
     person = relationship('StatePerson', uselist=False)
@@ -1718,6 +1730,11 @@ class StateSupervisionCaseTypeEntry(
         StateBase, _StateSupervisionCaseTypeEntrySharedColumns):
     """Represents a StateSupervisionCaseTypeEntry in the SQL schema"""
     __tablename__ = 'state_supervision_case_type_entry'
+    __table_args__ = (
+        UniqueConstraint('state_code', 'external_id',
+            name='supervision_case_type_entry_external_ids_unique_within_state',
+            deferrable=True, initially='DEFERRED'),
+    )
 
     supervision_case_type_entry_id = Column(Integer, primary_key=True)
 
@@ -1922,7 +1939,11 @@ class StateParoleDecision(StateBase,
                           _StateParoleDecisionSharedColumns):
     """Represents a StateParoleDecision in the SQL schema"""
     __tablename__ = 'state_parole_decision'
-
+    __table_args__ = (
+        UniqueConstraint('state_code', 'external_id',
+            name='parole_decision_external_ids_unique_within_state',
+            deferrable=True, initially='DEFERRED'),
+    )
     parole_decision_id = Column(Integer, primary_key=True)
 
     person = relationship('StatePerson', uselist=False)
@@ -2110,6 +2131,11 @@ class StateSupervisionViolation(StateBase,
                                 _StateSupervisionViolationSharedColumns):
     """Represents a StateSupervisionViolation in the SQL schema"""
     __tablename__ = 'state_supervision_violation'
+    __table_args__ = (
+        UniqueConstraint('state_code', 'external_id',
+            name='supervision_violation_external_ids_unique_within_state',
+            deferrable=True, initially='DEFERRED'),
+    )
 
     supervision_violation_id = Column(Integer, primary_key=True)
 
@@ -2259,6 +2285,11 @@ class StateSupervisionViolationResponse(
         _StateSupervisionViolationResponseSharedColumns):
     """Represents a StateSupervisionViolationResponse in the SQL schema"""
     __tablename__ = 'state_supervision_violation_response'
+    __table_args__ = (
+        UniqueConstraint('state_code', 'external_id',
+            name='supervision_violation_response_external_ids_unique_within_state',
+            deferrable=True, initially='DEFERRED'),
+    )
 
     supervision_violation_response_id = Column(Integer, primary_key=True)
 
@@ -2378,6 +2409,11 @@ class _StateProgramAssignmentSharedColumns(_ReferencesStatePersonSharedColumns):
 class StateProgramAssignment(StateBase, _StateProgramAssignmentSharedColumns):
     """Represents a StateProgramAssignment in the SQL schema."""
     __tablename__ = 'state_program_assignment'
+    __table_args__ = (
+        UniqueConstraint('state_code', 'external_id',
+            name='program_assignment_external_ids_unique_within_state',
+            deferrable=True, initially='DEFERRED'),
+    )
 
     program_assignment_id = Column(Integer, primary_key=True)
     referring_agent = relationship('StateAgent', uselist=False, lazy='selectin')
@@ -2447,6 +2483,11 @@ class _StateEarlyDischargeSharedColumns(_ReferencesStatePersonSharedColumns):
 class StateEarlyDischarge(StateBase, _StateEarlyDischargeSharedColumns):
     """Represents a StateEarlyDischarge in the SQL schema."""
     __tablename__ = 'state_early_discharge'
+    __table_args__ = (
+        UniqueConstraint('state_code', 'external_id',
+            name='early_discharge_external_ids_unique_within_state',
+            deferrable=True, initially='DEFERRED'),
+    )
 
     early_discharge_id = Column(Integer, primary_key=True)
 
@@ -2501,6 +2542,11 @@ class _StateSupervisionContactSharedColumns(_ReferencesStatePersonSharedColumns)
 class StateSupervisionContact(StateBase, _StateSupervisionContactSharedColumns):
     """Represents a StateSupervisionContact in the SQL schema."""
     __tablename__ = 'state_supervision_contact'
+    __table_args__ = (
+        UniqueConstraint('state_code', 'external_id',
+            name='supervision_contact_external_ids_unique_within_state',
+            deferrable=True, initially='DEFERRED'),
+    )
 
     supervision_contact_id = Column(Integer, primary_key=True)
 

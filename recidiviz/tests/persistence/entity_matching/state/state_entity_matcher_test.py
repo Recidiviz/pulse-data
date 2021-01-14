@@ -1162,13 +1162,12 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
             external_id=_EXTERNAL_ID,
             county_code='county_code',
             charges=[db_charge_1, db_charge_2])
-        db_incarceration_sentence = \
-            generate_incarceration_sentence(
-                person=db_person,
-                incarceration_sentence_id=_ID,
-                status=StateSentenceStatus.SERVING.value,
-                external_id=_EXTERNAL_ID,
-                state_code=_STATE_CODE, county_code='county_code')
+        db_incarceration_sentence = generate_incarceration_sentence(
+            person=db_person,
+            incarceration_sentence_id=_ID,
+            status=StateSentenceStatus.SERVING.value,
+            external_id=_EXTERNAL_ID,
+            state_code=_STATE_CODE, county_code='county_code')
         db_sentence_group = generate_sentence_group(
             person=db_person,
             sentence_group_id=_ID,

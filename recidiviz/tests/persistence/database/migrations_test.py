@@ -29,7 +29,6 @@ from sqlalchemy import create_engine
 from recidiviz.persistence.database.sqlalchemy_engine_manager import SQLAlchemyEngineManager, SchemaType
 from recidiviz.tools.postgres import local_postgres_helpers
 
-
 @pytest.mark.uses_db
 class MigrationsTestBase:
     """This is the base class for testing that migrations work.
@@ -154,7 +153,6 @@ class MigrationsTestBase:
         with runner(self.default_config(), self.engine) as r:
             r.migrate_up_to('head')
             r.generate_revision(message="test_rev", autogenerate=True, process_revision_directives=verify_is_empty)
-
 
 class TestJailsMigrations(MigrationsTestBase, TestCase):
     @property
