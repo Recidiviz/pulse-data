@@ -38,12 +38,8 @@ from freezegun import freeze_time
 from mock import patch
 
 from recidiviz.calculator.pipeline.supervision import pipeline
-from recidiviz.calculator.pipeline.supervision.metrics import \
-    SupervisionMetricType, SupervisionRevocationMetric, \
-    SupervisionPopulationMetric, SupervisionRevocationAnalysisMetric, \
-    SupervisionTerminationMetric, SupervisionSuccessMetric, \
-    SuccessfulSupervisionSentenceDaysServedMetric, SupervisionCaseComplianceMetric, SupervisionStartMetric, \
-    SupervisionOutOfStatePopulationMetric, SupervisionDowngradeMetric
+from recidiviz.calculator.pipeline.supervision.calculator import METRIC_TYPE_TO_CLASS
+from recidiviz.calculator.pipeline.supervision.metrics import SupervisionMetricType
 from recidiviz.calculator.pipeline.supervision.supervision_case_compliance import SupervisionCaseCompliance
 from recidiviz.calculator.pipeline.supervision.supervision_time_bucket import \
     NonRevocationReturnSupervisionTimeBucket, \
@@ -1607,7 +1603,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             ProjectedSupervisionCompletionBucket(
                 state_code=supervision_period.state_code,
                 year=2015, month=5,
-                bucket_date=date(2015, 5, 31),
+                event_date=date(2015, 5, 31),
                 supervision_type=supervision_period_supervision_type,
                 case_type=StateSupervisionCaseType.GENERAL,
                 supervising_officer_external_id='OFFICER0009',
@@ -1640,7 +1636,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             state_code=supervision_period.state_code,
             year=supervision_period.termination_date.year,
             month=supervision_period.termination_date.month,
-            bucket_date=supervision_period.termination_date,
+            event_date=supervision_period.termination_date,
             supervision_type=supervision_period_supervision_type,
             case_type=StateSupervisionCaseType.GENERAL,
             termination_reason=supervision_period.termination_reason,
@@ -1792,7 +1788,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 state_code=supervision_period.state_code,
                 year=supervision_period.termination_date.year,
                 month=supervision_period.termination_date.month,
-                bucket_date=supervision_period.termination_date,
+                event_date=supervision_period.termination_date,
                 supervision_type=supervision_period_supervision_type,
                 case_type=StateSupervisionCaseType.GENERAL,
                 supervision_level=supervision_period.supervision_level,
@@ -1812,7 +1808,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             RevocationReturnSupervisionTimeBucket(
                 state_code=supervision_period.state_code,
                 year=2015, month=5,
-                bucket_date=incarceration_period.admission_date,
+                event_date=incarceration_period.admission_date,
                 supervision_type=supervision_period_supervision_type,
                 most_severe_violation_type=StateSupervisionViolationType.MISDEMEANOR,
                 most_severe_violation_type_subtype=StateSupervisionViolationType.MISDEMEANOR.value,
@@ -1995,7 +1991,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 state_code=supervision_period.state_code,
                 year=supervision_period.termination_date.year,
                 month=supervision_period.termination_date.month,
-                bucket_date=supervision_period.termination_date,
+                event_date=supervision_period.termination_date,
                 supervision_type=supervision_period_supervision_type,
                 case_type=StateSupervisionCaseType.GENERAL,
                 supervision_level=supervision_period.supervision_level,
@@ -2011,7 +2007,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             RevocationReturnSupervisionTimeBucket(
                 state_code=supervision_period.state_code,
                 year=2015, month=5,
-                bucket_date=incarceration_period.admission_date,
+                event_date=incarceration_period.admission_date,
                 supervision_type=supervision_period_supervision_type,
                 most_severe_violation_type=StateSupervisionViolationType.MISDEMEANOR,
                 most_severe_violation_type_subtype=StateSupervisionViolationType.MISDEMEANOR.value,
@@ -2122,7 +2118,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 state_code=supervision_period.state_code,
                 year=supervision_period.termination_date.year,
                 month=supervision_period.termination_date.month,
-                bucket_date=supervision_period.termination_date,
+                event_date=supervision_period.termination_date,
                 supervision_type=supervision_period_supervision_type,
                 case_type=StateSupervisionCaseType.GENERAL,
                 termination_reason=supervision_period.termination_reason,
@@ -2217,7 +2213,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 state_code=supervision_period.state_code,
                 year=supervision_period.termination_date.year,
                 month=supervision_period.termination_date.month,
-                bucket_date=supervision_period.termination_date,
+                event_date=supervision_period.termination_date,
                 supervision_type=supervision_period_supervision_type,
                 case_type=StateSupervisionCaseType.GENERAL,
                 termination_reason=supervision_period.termination_reason,
@@ -2331,7 +2327,7 @@ class TestCalculateSupervisionMetricCombinations(unittest.TestCase):
             NonRevocationReturnSupervisionTimeBucket(
                 state_code='US_XX',
                 year=2015, month=3,
-                bucket_date=date(2015, 3, 31),
+                event_date=date(2015, 3, 31),
                 supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
                 supervision_level=StateSupervisionLevel.MINIMUM,
                 supervision_level_raw_text='MIN',
@@ -2343,9 +2339,8 @@ class TestCalculateSupervisionMetricCombinations(unittest.TestCase):
             ),
         ]
 
-        # Each characteristic combination will be tracked for each of the months and the two methodology types
-        expected_population_metric_count = len(supervision_time_buckets) * 2
-        expected_compliance_metric_count = len(supervision_time_buckets) * 2
+        expected_population_metric_count = len(supervision_time_buckets)
+        expected_compliance_metric_count = len(supervision_time_buckets)
 
         expected_combination_counts = \
             {SupervisionMetricType.SUPERVISION_POPULATION.value: expected_population_metric_count,
@@ -2386,22 +2381,21 @@ class TestCalculateSupervisionMetricCombinations(unittest.TestCase):
         supervision_time_buckets = [
             RevocationReturnSupervisionTimeBucket(
                 state_code='US_XX', year=2015, month=2,
-                bucket_date=date(2015, 2, 1),
+                event_date=date(2015, 2, 1),
                 supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
                 revocation_type=RevocationType.REINCARCERATION,
                 source_violation_type=ViolationType.TECHNICAL,
                 is_on_supervision_last_day_of_month=False),
             RevocationReturnSupervisionTimeBucket(
                 state_code='US_XX', year=2015, month=3,
-                bucket_date=date(2015, 3, 1),
+                event_date=date(2015, 3, 1),
                 supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
                 revocation_type=RevocationType.REINCARCERATION,
                 source_violation_type=ViolationType.TECHNICAL,
                 is_on_supervision_last_day_of_month=False),
         ]
 
-        # Multiply by the number of months and by 2 (to account for methodology)
-        expected_metric_count = len(supervision_time_buckets) * 2
+        expected_metric_count = len(supervision_time_buckets)
 
         expected_combination_counts = {
             SupervisionMetricType.SUPERVISION_REVOCATION.value: expected_metric_count,
@@ -2487,25 +2481,11 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
     """Tests the ProduceSupervisionMetrics DoFn in the pipeline."""
 
     def testProduceSupervisionMetrics(self):
-        metric_value_to_metric_type = {
-            SupervisionMetricType.SUPERVISION_TERMINATION: SupervisionTerminationMetric,
-            SupervisionMetricType.SUPERVISION_START: SupervisionStartMetric,
-            SupervisionMetricType.SUPERVISION_COMPLIANCE: SupervisionCaseComplianceMetric,
-            SupervisionMetricType.SUPERVISION_POPULATION: SupervisionPopulationMetric,
-            SupervisionMetricType.SUPERVISION_REVOCATION: SupervisionRevocationMetric,
-            SupervisionMetricType.SUPERVISION_REVOCATION_ANALYSIS: SupervisionRevocationAnalysisMetric,
-            SupervisionMetricType.SUPERVISION_SUCCESS: SupervisionSuccessMetric,
-            SupervisionMetricType.SUPERVISION_SUCCESSFUL_SENTENCE_DAYS_SERVED:
-                SuccessfulSupervisionSentenceDaysServedMetric,
-            SupervisionMetricType.SUPERVISION_OUT_OF_STATE_POPULATION: SupervisionOutOfStatePopulationMetric,
-            SupervisionMetricType.SUPERVISION_DOWNGRADE: SupervisionDowngradeMetric,
-        }
-
         for metric_type in SupervisionMetricType:
-            assert metric_type in metric_value_to_metric_type.keys()
+            assert metric_type in METRIC_TYPE_TO_CLASS.keys()
 
         metric_key_dict = {'gender': Gender.MALE,
-                           'methodology': MetricMethodologyType.PERSON,
+                           'methodology': MetricMethodologyType.EVENT,
                            'year': 1999,
                            'month': 3,
                            'state_code': 'CA'}
@@ -2517,7 +2497,7 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
         job_timestamp = datetime.datetime.now().strftime('%Y-%m-%d_%H_%M_%S.%f')
         all_pipeline_options['job_timestamp'] = job_timestamp
 
-        for metric_value, metric_type in metric_value_to_metric_type.items():
+        for metric_value, metric_type in METRIC_TYPE_TO_CLASS.items():
             metric_key_dict['metric_type'] = metric_value
 
             test_pipeline = TestPipeline()

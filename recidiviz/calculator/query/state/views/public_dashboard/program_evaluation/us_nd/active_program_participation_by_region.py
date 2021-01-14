@@ -61,7 +61,6 @@ ACTIVE_PROGRAM_PARTICIPATION_BY_REGION_VIEW_QUERY_TEMPLATE = \
       USING (state_code, race_or_ethnicity)
       WHERE state_code = 'US_ND'
         AND methodology = 'EVENT'
-        AND metric_period_months = 0
         AND person_id IS NOT NULL
         AND supervision_type IN ('PAROLE', 'PROBATION')
     )

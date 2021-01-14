@@ -788,8 +788,7 @@ class TestCalculateProgramMetricCombinations(unittest.TestCase):
                 program_id='program'
             )]
 
-        # Each event will be have an output for each methodology type
-        expected_metric_count = 2
+        expected_metric_count = 1
 
         expected_combination_counts = \
             {'referrals': expected_metric_count,
@@ -868,7 +867,7 @@ class TestProduceProgramMetric(unittest.TestCase):
 
     def testProduceProgramMetric(self):
         metric_key = {'gender': Gender.MALE,
-                      'methodology': MetricMethodologyType.PERSON,
+                      'methodology': MetricMethodologyType.EVENT,
                       'year': 1999,
                       'month': 3,
                       'metric_type':

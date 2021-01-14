@@ -16,18 +16,14 @@
 # =============================================================================
 """Utils for the various calculation pipelines."""
 import datetime
-from typing import Optional, List, Any, Dict, Type, Union
+from typing import Optional, List, Any, Dict, Type, Tuple, TypeVar
 
-import dateutil
 import attr
 from dateutil.relativedelta import relativedelta
 
-from recidiviz.calculator.pipeline.incarceration.incarceration_event import IncarcerationEvent
-from recidiviz.calculator.pipeline.program.program_event import ProgramEvent
-from recidiviz.calculator.pipeline.recidivism.release_event import ReleaseEvent
-from recidiviz.calculator.pipeline.supervision.supervision_time_bucket import SupervisionTimeBucket
+from recidiviz.calculator.pipeline.utils.event_utils import IdentifierEventWithSingularDate, IdentifierEvent
 from recidiviz.calculator.pipeline.utils.metric_utils import MetricMethodologyType, RecidivizMetric, \
-    PersonLevelMetric
+    PersonLevelMetric, RecidivizMetricType
 from recidiviz.calculator.pipeline.utils.person_utils import PersonMetadata
 from recidiviz.common.constants.state.external_id_types import US_ID_DOC, US_MO_DOC, US_PA_CONTROL, US_PA_PBPP, \
     US_ND_ELITE
@@ -35,9 +31,6 @@ from recidiviz.common.constants.state.state_supervision_violation_response \
     import StateSupervisionViolationResponseDecision
 from recidiviz.common.date import first_day_of_month, last_day_of_month, year_and_month_for_today
 from recidiviz.persistence.entity.state.entities import StatePerson
-
-# Relevant metric period month lengths for dashboard person-based calculations
-METRIC_PERIOD_MONTHS = [36, 12, 6, 3]
 
 PERSON_EXTERNAL_ID_TYPES_TO_INCLUDE = {
     'incarceration': {
@@ -74,6 +67,12 @@ DECISION_SEVERITY_ORDER = [
         StateSupervisionViolationResponseDecision.WARNING,
         StateSupervisionViolationResponseDecision.CONTINUANCE,
     ]
+
+
+RecidivizMetricT = TypeVar('RecidivizMetricT', bound=RecidivizMetric)
+RecidivizMetricTypeT = TypeVar('RecidivizMetricTypeT', bound=RecidivizMetricType)
+IdentifierEventT = TypeVar('IdentifierEventT', bound=IdentifierEvent)
+IdentifierEventWithSingularDateT = TypeVar('IdentifierEventWithSingularDateT', bound=IdentifierEventWithSingularDate)
 
 
 def person_characteristics(person: StatePerson,
@@ -191,72 +190,34 @@ def identify_most_severe_response_decision(
                  if decision in decisions), None)
 
 
-def relevant_metric_periods(event_date: datetime.date,
-                            end_year: int, end_month: int) -> List[int]:
-    """Given the year and month when this metric period ends, returns the
-    relevant metric period months lengths for the given event_date.
-
-    For example, if the end_year is 2009 and the end_month is 10, then we are
-    looking for events that occurred since the start of the following months:
-        - 10-2009 (metric_period = 1)
-        - 08-2009 (metric_period = 3)
-        - 05-2009 (metric_period = 6)
-        - 11-2008 (metric_period = 12)
-        - 11-2006 (metric_period = 36)
-
-
-    If the event happened in 11-2008, then this function will return:
-    [12, 36], because the event occurred within the 12-month metric period and
-    the 36-month metric period of the given month.
-    """
-    start_of_month = datetime.date(end_year, end_month, 1)
-    end_of_month = last_day_of_month(start_of_month)
-
-    relevant_periods = []
-
-    for metric_period in METRIC_PERIOD_MONTHS:
-        start_of_bucket_boundary_month = \
-            start_of_month - \
-            dateutil.relativedelta.relativedelta(months=metric_period)
-
-        boundary_date = last_day_of_month(start_of_bucket_boundary_month)
-
-        if boundary_date < event_date <= end_of_month:
-            relevant_periods.append(metric_period)
-        else:
-            break
-
-    return relevant_periods
-
-
 def augmented_combo_for_calculations(combo: Dict[str, Any],
                                      state_code: str,
-                                     year: int,
-                                     month: Optional[int],
+                                     metric_type: RecidivizMetricType,
                                      methodology: MetricMethodologyType,
-                                     metric_period_months: Optional[int]) -> Dict[str, Any]:
+                                     year: Optional[int] = None,
+                                     month: Optional[int] = None) -> Dict[str, Any]:
     """Augments the given combo dictionary with the given parameters of the calculation.
 
     Args:
         combo: the base combo to be augmented with methodology and period
         state_code: the state code of the metric combo
+        metric_type: the metric_type of the metric
+        methodology: the MetricMethodologyType to add to each combo
         year: the year this metric describes
         month: the month this metric describes
-        methodology: the MetricMethodologyType to add to each combo
-        metric_period_months: the metric_period_months value to add to each
-            combo
 
     Returns: Returns a dictionary that has been augmented with necessary parameters.
     """
     parameters: Dict[str, Any] = {'state_code': state_code,
                                   'methodology': methodology,
-                                  'year': year}
+                                  'metric_type': metric_type
+                                  }
+
+    if year:
+        parameters['year'] = year
 
     if month:
         parameters['month'] = month
-
-    if metric_period_months is not None:
-        parameters['metric_period_months'] = metric_period_months
 
     return augment_combination(combo, parameters)
 
@@ -297,11 +258,11 @@ def person_external_id_to_include(pipeline: str,
     return sorted(external_ids_with_type)[0]
 
 
-def include_in_historical_metrics(year: int,
-                                  month: int,
-                                  calculation_month_upper_bound: datetime.date,
-                                  calculation_month_lower_bound: Optional[datetime.date]) -> bool:
-    """Determines whether the event with the given year and month should be included in the historical metric output.
+def include_in_output(year: int,
+                      month: int,
+                      calculation_month_upper_bound: datetime.date,
+                      calculation_month_lower_bound: Optional[datetime.date]) -> bool:
+    """Determines whether the event with the given year and month should be included in the metric output.
     If the calculation_month_lower_bound is None, then includes the bucket if it occurred in or before the month of the
     calculation_month_upper_bound. If the calculation_month_lower_bound is set, then includes the event if it happens
     in a month between the calculation_month_lower_bound and the calculation_month_upper_bound (inclusive). The
@@ -343,7 +304,7 @@ def get_calculation_month_lower_bound_date(calculation_month_upper_bound: dateti
 
 def characteristics_dict_builder(
         pipeline: str,
-        event: Union[IncarcerationEvent, ProgramEvent, ReleaseEvent, SupervisionTimeBucket],
+        event: IdentifierEventT,
         metric_class: Type[RecidivizMetric],
         person: StatePerson,
         event_date: datetime.date,
@@ -418,3 +379,59 @@ def safe_list_index(list_of_values: List[Any], value: Any, default: int) -> int:
         return list_of_values.index(value)
     except ValueError:
         return default
+
+
+def produce_standard_metric_combinations(
+        pipeline: str,
+        person: StatePerson,
+        identifier_events: List[IdentifierEventWithSingularDateT],
+        metric_inclusions: Dict[RecidivizMetricTypeT, bool],
+        calculation_end_month: Optional[str],
+        calculation_month_count: int,
+        person_metadata: PersonMetadata,
+        event_to_metric_types: Dict[Type[IdentifierEventWithSingularDateT], RecidivizMetricTypeT],
+        event_to_metric_classes: Dict[Type[IdentifierEventWithSingularDateT], Type[RecidivizMetricT]]
+) -> List[Tuple[Dict[str, Any], Any]]:
+    """Produces metric combinations for pipelines with a standard 1:1 mapping of event to metric type, and the value for
+    all metrics is 1."""
+    metrics: List[Tuple[Dict[str, Any], Any]] = []
+
+    calculation_month_upper_bound = get_calculation_month_upper_bound_date(calculation_end_month)
+
+    calculation_month_lower_bound = get_calculation_month_lower_bound_date(
+        calculation_month_upper_bound, calculation_month_count)
+
+    for event in identifier_events:
+        event_date = event.event_date
+        event_year = event.event_date.year
+        event_month = event.event_date.month
+
+        if not include_in_output(event_year, event_month, calculation_month_upper_bound, calculation_month_lower_bound):
+            continue
+
+        metric_type = event_to_metric_types.get(type(event))
+        metric_class = event_to_metric_classes.get((type(event)))
+        if not metric_type:
+            raise ValueError(
+                'No metric type mapped to event of type {}'.format(type(event)))
+
+        if not metric_class:
+            raise ValueError(
+                'No metric class mapped to event of type {}'.format(type(event)))
+
+        if metric_inclusions.get(metric_type):
+            characteristic_combo = characteristics_dict_builder(pipeline=pipeline,
+                                                                event=event,
+                                                                metric_class=metric_class,
+                                                                person=person,
+                                                                event_date=event_date,
+                                                                person_metadata=person_metadata)
+
+            augmented_combo = augmented_combo_for_calculations(
+                characteristic_combo, event.state_code,
+                metric_type, MetricMethodologyType.EVENT, event_year, event_month
+            )
+
+            metrics.append((augmented_combo, 1))
+
+    return metrics

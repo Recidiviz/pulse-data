@@ -54,7 +54,6 @@ SUPERVISION_MATRIX_BY_PERSON_QUERY_TEMPLATE = \
             FALSE AS is_revocation
         FROM `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_population_metrics_materialized`
         WHERE methodology = 'EVENT'
-            AND metric_period_months = 0
             AND month IS NOT NULL
             AND person_id IS NOT NULL
             AND year >= EXTRACT(YEAR FROM DATE_SUB(CURRENT_DATE(), INTERVAL 3 YEAR))

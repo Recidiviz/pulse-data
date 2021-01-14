@@ -15,13 +15,12 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Buckets of time on supervision that may have included a revocation."""
-from datetime import date
 from typing import Optional, List
 
 import attr
 
 from recidiviz.calculator.pipeline.supervision.supervision_case_compliance import SupervisionCaseCompliance
-from recidiviz.calculator.pipeline.utils.event_utils import AssessmentEventMixin, IdentifierEvent
+from recidiviz.calculator.pipeline.utils.event_utils import AssessmentEventMixin, IdentifierEventWithSingularDate
 from recidiviz.common.attr_mixins import BuildableAttr
 from recidiviz.common.constants.state.state_assessment import \
     StateAssessmentType, StateAssessmentLevel
@@ -37,8 +36,9 @@ from recidiviz.common.constants.state.state_supervision_violation_response \
     StateSupervisionViolationResponseDecision
 
 
+# TODO(#5307): Convert all "bucket" language to use "event"
 @attr.s(frozen=True)
-class SupervisionTimeBucket(IdentifierEvent, AssessmentEventMixin):
+class SupervisionTimeBucket(IdentifierEventWithSingularDate, AssessmentEventMixin):
     """Models details related to a bucket of time on supervision.
 
     Describes a month in which a person spent any amount of time on supervision. This includes the information
@@ -49,9 +49,6 @@ class SupervisionTimeBucket(IdentifierEvent, AssessmentEventMixin):
 
     # Month for when the person was on supervision
     month: int = attr.ib()
-
-    # Date of the supervision bucket
-    bucket_date: date = attr.ib()
 
     # TODO(#2891): Consider moving this out of the base class, and making the supervision type specific to each
     #   bucket type
@@ -104,7 +101,7 @@ class SupervisionTimeBucket(IdentifierEvent, AssessmentEventMixin):
 
     @property
     def date_of_evaluation(self):
-        return self.bucket_date
+        return self.event_date
 
     @property
     def assessment_count(self):
@@ -184,11 +181,11 @@ class RevocationReturnSupervisionTimeBucket(SupervisionTimeBucket, ViolationType
 
     @property
     def revocation_admission_date(self):
-        return self.bucket_date
+        return self.event_date
 
     @property
     def date_of_supervision(self):
-        return self.bucket_date
+        return self.event_date
 
 
 @attr.s(frozen=True)
@@ -206,11 +203,11 @@ class NonRevocationReturnSupervisionTimeBucket(SupervisionTimeBucket, ViolationT
 
     @property
     def date_of_supervision(self):
-        return self.bucket_date
+        return self.event_date
 
     @property
     def date_of_downgrade(self):
-        return self.bucket_date
+        return self.event_date
 
 
 @attr.s(frozen=True)
@@ -239,7 +236,7 @@ class SupervisionStartBucket(SupervisionTimeBucket):
 
     @property
     def start_date(self):
-        return self.bucket_date
+        return self.event_date
 
 
 @attr.s(frozen=True)
@@ -258,4 +255,4 @@ class SupervisionTerminationBucket(SupervisionTimeBucket, ViolationTypeSeverityB
 
     @property
     def termination_date(self):
-        return self.bucket_date
+        return self.event_date
