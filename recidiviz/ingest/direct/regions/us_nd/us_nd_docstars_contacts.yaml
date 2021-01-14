@@ -1,0 +1,32 @@
+# This file associates the columns outputted from the query in `view_docstars_contacts` to corresponding Ingest Object
+# fields.
+
+# For detailed information about each of the columns present in the original table, `docstars_contacts`, please see
+# http://go/us-nd-docstars-contacts-raw-table.
+key_mappings:
+  RecID: state_supervision_contact.state_supervision_contact_id
+  CONTACT_CODE: state_supervision_contact.contact_type
+  CONTACT_DATE: state_supervision_contact.contact_date
+  CATEGORY: state_supervision_contact.contact_reason
+
+primary_key:
+  RecID: state_supervision_contact.state_supervision_contact_id
+
+ancestor_keys:
+  SID: state_person.state_person_id
+
+enforced_ancestor_types:
+  state_sentence: state_supervision_sentence
+
+keys_to_ignore:
+  - LNAME # The last name of the supervising officer. Handled manually in controller.
+  - FNAME # The first name of the supervising officer. Handled manually in controller.
+  - OFFICER # The id of the supervising officer. Handled manually in controller.
+  - CONTACT_CODE_2 # TODO(#5057) - Ingest these optional codes specifying further information about the contact
+  - CONTACT_CODE_3 # TODO(#5057) - Ingest these optional codes specifying further information about the contact
+  - CONTACT_CODE_4 # TODO(#5057) - Ingest these optional codes specifying further information about the contact
+  - CONTACT_CODE_5 # TODO(#5057) - Ingest these optional codes specifying further information about the contact
+  - CONTACT_CODE_6 # TODO(#5057) - Ingest these optional codes specifying further information about the contact
+
+
+
