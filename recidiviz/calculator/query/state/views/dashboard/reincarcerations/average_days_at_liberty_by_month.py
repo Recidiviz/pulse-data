@@ -47,7 +47,7 @@ AVERAGE_DAYS_AT_LIBERTY_BY_MONTH_QUERY_TEMPLATE = \
     SELECT
       state_code, year, month,
       COUNT(DISTINCT person_id) AS returns,
-      AVG(days_at_liberty) AS avg_liberty
+      ROUND(AVG(days_at_liberty), 2) AS avg_liberty
     FROM returns
     WHERE priority_ranking = 1
     GROUP BY state_code, year, month
