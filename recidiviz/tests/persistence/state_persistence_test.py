@@ -42,10 +42,10 @@ from recidiviz.tools.postgres import local_postgres_helpers
 EXTERNAL_ID = 'EXTERNAL_ID'
 EXTERNAL_ID_2 = 'EXTERNAL_ID_2'
 FULL_NAME_1 = 'TEST_FULL_NAME_1'
-REGION_CODE = 'US_ND'
+STATE_CODE = 'US_ND'
 COUNTY_CODE = 'COUNTY'
 DEFAULT_METADATA = IngestMetadata.new_with_defaults(
-    region='US_ND',
+    region='us_nd',
     jurisdiction_id='12345678',
     system_level=SystemLevel.STATE,
     ingest_time=datetime(year=1000, month=1, day=1))
@@ -134,19 +134,19 @@ class TestStatePersistence(TestCase):
         db_person = schema.StatePerson(
             person_id=ID,
             full_name=FULL_NAME_1,
-            state_code=REGION_CODE)
+            state_code=STATE_CODE)
         db_sentence_group = schema.StateSentenceGroup(
             sentence_group_id=ID,
             status=StateSentenceStatus.EXTERNAL_UNKNOWN.value,
             external_id=SENTENCE_GROUP_ID,
-            state_code=REGION_CODE)
+            state_code=STATE_CODE)
         db_sentence_group_2 = schema.StateSentenceGroup(
             sentence_group_id=ID_2,
             status=StateSentenceStatus.EXTERNAL_UNKNOWN.value,
             external_id=SENTENCE_GROUP_ID_2,
-            state_code=REGION_CODE)
+            state_code=STATE_CODE)
         db_external_id = schema.StatePersonExternalId(
-            person_external_id_id=ID, state_code=REGION_CODE,
+            person_external_id_id=ID, state_code=STATE_CODE,
             external_id=EXTERNAL_ID, id_type=ID_TYPE)
         db_person.sentence_groups = [
             db_sentence_group, db_sentence_group_2]
@@ -155,14 +155,14 @@ class TestStatePersistence(TestCase):
         db_person_2 = schema.StatePerson(
             person_id=ID_2,
             full_name=FULL_NAME_1,
-            state_code=REGION_CODE)
+            state_code=STATE_CODE)
         db_sentence_group_2_dup = schema.StateSentenceGroup(
             sentence_group_id=ID_3,
             status=StateSentenceStatus.EXTERNAL_UNKNOWN.value,
             external_id=SENTENCE_GROUP_ID_2,
-            state_code=REGION_CODE)
+            state_code=STATE_CODE)
         db_external_id_2 = schema.StatePersonExternalId(
-            person_external_id_id=ID_2, state_code=REGION_CODE,
+            person_external_id_id=ID_2, state_code=STATE_CODE,
             external_id=EXTERNAL_ID_2, id_type=ID_TYPE)
         db_person_2.sentence_groups = [db_sentence_group_2_dup]
         db_person_2.external_ids = [db_external_id_2]
@@ -187,7 +187,7 @@ class TestStatePersistence(TestCase):
 
     @patch('recidiviz.persistence.persistence.SYSTEM_TYPE_TO_ERROR_THRESHOLD',
            STATE_ERROR_THRESHOLDS_WITH_FORTY_PERCENT_RATIOS)
-    @patch('recidiviz.persistence.persistence.REGION_CODE_TO_ENTITY_MATCHING_THRESHOLD_OVERRIDE',
+    @patch('recidiviz.persistence.persistence.STATE_CODE_TO_ENTITY_MATCHING_THRESHOLD_OVERRIDE',
            STATE_CODE_TO_ENTITY_MATCHING_THRESHOLD_FORTY_PERCENT)
     def test_state_threeSentenceGroups_persistsTwoBelowThreshold(self):
         """Ensure that the number of errors is below the ND specific threshold"""
@@ -216,24 +216,24 @@ class TestStatePersistence(TestCase):
         db_person = schema.StatePerson(
             person_id=ID,
             full_name=FULL_NAME_1,
-            state_code=REGION_CODE)
+            state_code=STATE_CODE)
         db_sentence_group = schema.StateSentenceGroup(
             sentence_group_id=ID,
             status=StateSentenceStatus.EXTERNAL_UNKNOWN.value,
             external_id=SENTENCE_GROUP_ID,
-            state_code=REGION_CODE)
+            state_code=STATE_CODE)
         db_sentence_group_2 = schema.StateSentenceGroup(
             sentence_group_id=ID_2,
             status=StateSentenceStatus.EXTERNAL_UNKNOWN.value,
             external_id=SENTENCE_GROUP_ID_2,
-            state_code=REGION_CODE)
+            state_code=STATE_CODE)
         db_sentence_group_3 = schema.StateSentenceGroup(
             sentence_group_id=ID_3,
             status=StateSentenceStatus.EXTERNAL_UNKNOWN.value,
             external_id=SENTENCE_GROUP_ID_3,
-            state_code=REGION_CODE)
+            state_code=STATE_CODE)
         db_external_id = schema.StatePersonExternalId(
-            person_external_id_id=ID, state_code=REGION_CODE,
+            person_external_id_id=ID, state_code=STATE_CODE,
             external_id=EXTERNAL_ID, id_type=ID_TYPE)
         db_person.sentence_groups = [
             db_sentence_group, db_sentence_group_2, db_sentence_group_3]
@@ -242,39 +242,39 @@ class TestStatePersistence(TestCase):
         db_person_2 = schema.StatePerson(
             person_id=ID_2,
             full_name=FULL_NAME_1,
-            state_code=REGION_CODE)
+            state_code=STATE_CODE)
         db_sentence_group_3_dup = schema.StateSentenceGroup(
             sentence_group_id=ID_4,
             status=StateSentenceStatus.EXTERNAL_UNKNOWN.value,
             external_id=SENTENCE_GROUP_ID_3,
-            state_code=REGION_CODE)
+            state_code=STATE_CODE)
         db_external_id_2 = schema.StatePersonExternalId(
-            person_external_id_id=ID_2, state_code=REGION_CODE,
+            person_external_id_id=ID_2, state_code=STATE_CODE,
             external_id=EXTERNAL_ID_2, id_type=ID_TYPE)
         db_person_2.sentence_groups = [db_sentence_group_3_dup]
         db_person_2.external_ids = [db_external_id_2]
 
         expected_person = StatePerson.new_with_defaults(
             person_id=ID, full_name=FULL_NAME_1, external_ids=[],
-            sentence_groups=[], state_code=REGION_CODE)
+            sentence_groups=[], state_code=STATE_CODE)
         expected_external_id = StatePersonExternalId.new_with_defaults(
-            person_external_id_id=ID, state_code=REGION_CODE,
+            person_external_id_id=ID, state_code=STATE_CODE,
             external_id=EXTERNAL_ID,
             id_type=ID_TYPE, person=expected_person)
         expected_sentence_group = StateSentenceGroup.new_with_defaults(
             sentence_group_id=ID, status=StateSentenceStatus.EXTERNAL_UNKNOWN,
-            external_id=SENTENCE_GROUP_ID, state_code=REGION_CODE,
+            external_id=SENTENCE_GROUP_ID, state_code=STATE_CODE,
             county_code=COUNTY_CODE,
             person=expected_person)
         expected_sentence_group_2 = StateSentenceGroup.new_with_defaults(
             sentence_group_id=ID_2, status=StateSentenceStatus.EXTERNAL_UNKNOWN,
-            external_id=SENTENCE_GROUP_ID_2, state_code=REGION_CODE,
+            external_id=SENTENCE_GROUP_ID_2, state_code=STATE_CODE,
             county_code=COUNTY_CODE,
             person=expected_person)
         # No county code because errors during match
         expected_sentence_group_3 = StateSentenceGroup.new_with_defaults(
             sentence_group_id=ID_3, status=StateSentenceStatus.EXTERNAL_UNKNOWN,
-            external_id=SENTENCE_GROUP_ID_3, state_code=REGION_CODE,
+            external_id=SENTENCE_GROUP_ID_3, state_code=STATE_CODE,
             person=expected_person)
         expected_person.external_ids = [expected_external_id]
         expected_person.sentence_groups = [expected_sentence_group,
@@ -282,15 +282,15 @@ class TestStatePersistence(TestCase):
                                            expected_sentence_group_3]
 
         expected_person_2 = StatePerson.new_with_defaults(
-            person_id=ID_2, full_name=FULL_NAME_1, state_code=REGION_CODE)
+            person_id=ID_2, full_name=FULL_NAME_1, state_code=STATE_CODE)
         expected_external_id_2 = StatePersonExternalId.new_with_defaults(
-            person_external_id_id=ID_2, state_code=REGION_CODE,
+            person_external_id_id=ID_2, state_code=STATE_CODE,
             external_id=EXTERNAL_ID_2,
             id_type=ID_TYPE, person=expected_person_2)
         # No county code because unmatched
         expected_sentence_group_3_dup = StateSentenceGroup.new_with_defaults(
             sentence_group_id=ID_4, status=StateSentenceStatus.EXTERNAL_UNKNOWN,
-            external_id=SENTENCE_GROUP_ID_3, state_code=REGION_CODE,
+            external_id=SENTENCE_GROUP_ID_3, state_code=STATE_CODE,
             person=expected_person_2)
         expected_person_2.sentence_groups = [expected_sentence_group_3_dup]
         expected_person_2.external_ids = [expected_external_id_2]

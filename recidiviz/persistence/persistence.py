@@ -103,7 +103,7 @@ SYSTEM_TYPE_TO_ERROR_THRESHOLD: Dict[SystemLevel, Dict[str, float]] = {
     },
 }
 
-REGION_CODE_TO_ENTITY_MATCHING_THRESHOLD_OVERRIDE: Dict[str, float] = {
+STATE_CODE_TO_ENTITY_MATCHING_THRESHOLD_OVERRIDE: Dict[str, float] = {
     "US_ID": 0.05,
     "US_ND": 0.05,
     "US_PA": 0.05,
@@ -259,11 +259,13 @@ def _get_thresholds_for_system_level(system_level: SystemLevel, region_code: str
     if error_thresholds is None:
         raise ValueError(f'Found no error thresholds associated with `system_level=[{system_level}]`')
 
+    state_code: str = region_code.upper()
+
     # Override the entity matching threshold from the default value, if applicable.
-    if region_code in REGION_CODE_TO_ENTITY_MATCHING_THRESHOLD_OVERRIDE:
-        state_specific_threshold = REGION_CODE_TO_ENTITY_MATCHING_THRESHOLD_OVERRIDE[region_code]
+    if state_code in STATE_CODE_TO_ENTITY_MATCHING_THRESHOLD_OVERRIDE:
+        state_specific_threshold = STATE_CODE_TO_ENTITY_MATCHING_THRESHOLD_OVERRIDE[state_code]
         if state_specific_threshold is None:
-            raise ValueError(f'Override unexpectedly None for region_code [{region_code}].')
+            raise ValueError(f'Override unexpectedly None for state_code [{state_code}].')
         error_thresholds[ENTITY_MATCHING_THRESHOLD] = state_specific_threshold
     return error_thresholds
 
