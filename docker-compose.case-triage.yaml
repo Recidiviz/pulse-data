@@ -20,7 +20,7 @@ services:
       - "5000:5000"
     command: pipenv run flask run -h 0.0.0.0
     environment:
-      - FLASK_APP=/app/recidiviz/case_triage/backend/server.py
+      - FLASK_APP=/app/recidiviz/case_triage/server.py
       - FLASK_ENV=development
       - PG_HOST=db
       - PG_DBNAME=postgres
