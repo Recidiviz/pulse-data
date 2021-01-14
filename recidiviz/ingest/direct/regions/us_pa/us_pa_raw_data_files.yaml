@@ -143,6 +143,8 @@ raw_files:
       - ParoleCountID
       - SetID
       - SequenceID
+  - file_tag: dbo_Hist_Treatment
+    primary_key_cols: []
   - file_tag: dbo_Hist_tblHIPHrngRqs
     # Best initial (unconfirmed) guess at primary keys for this table:
     #      - HrngID
@@ -198,6 +200,8 @@ raw_files:
     # Best initial (unconfirmed) guess at primary keys for this table:
     #      - ParoleNumber
     #      - PBPP30ID
+    primary_key_cols: []
+  - file_tag: dbo_LSIHistory
     primary_key_cols: []
   - file_tag: dbo_LSIR
     primary_key_cols:
