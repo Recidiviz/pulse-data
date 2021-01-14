@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Utils for events that are a product of each pipeline's identifier step."""
+import datetime
 import logging
 
 import attr
@@ -28,6 +29,14 @@ class IdentifierEvent(BuildableAttr):
     """Base class for events created by the identifier step of each pipeline."""
     # The state where the event took place
     state_code: str = attr.ib()
+
+
+@attr.s
+class IdentifierEventWithSingularDate(IdentifierEvent):
+    """Base class for events created by the identifier step of each pipeline, where the event has a singular date it
+    can be associated with."""
+    # Date of the event
+    event_date: datetime.date = attr.ib()
 
 
 @attr.s

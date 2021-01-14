@@ -42,14 +42,14 @@ class TestJsonSerializableMetricKey(unittest.TestCase):
     def test_json_serializable_metric_key(self):
         metric_key = {'gender': Gender.MALE,
                       'race': [Race.BLACK, Race.WHITE],
-                      'methodology': MetricMethodologyType.PERSON,
+                      'methodology': MetricMethodologyType.EVENT,
                       'year': 1999,
                       'month': 3,
                       'state_code': 'CA'}
 
         expected_output = {'gender': 'MALE',
                            'race': 'BLACK,WHITE',
-                           'methodology': 'PERSON',
+                           'methodology': 'EVENT',
                            'year': 1999,
                            'month': 3,
                            'state_code': 'CA'}
@@ -61,14 +61,14 @@ class TestJsonSerializableMetricKey(unittest.TestCase):
     def test_json_serializable_metric_key_OneRace(self):
         metric_key = {'gender': Gender.MALE,
                       'race': [Race.BLACK],
-                      'methodology': MetricMethodologyType.PERSON,
+                      'methodology': MetricMethodologyType.EVENT,
                       'year': 1999,
                       'month': 3,
                       'state_code': 'CA'}
 
         expected_output = {'gender': 'MALE',
                            'race': 'BLACK',
-                           'methodology': 'PERSON',
+                           'methodology': 'EVENT',
                            'year': 1999,
                            'month': 3,
                            'state_code': 'CA'}
@@ -81,7 +81,7 @@ class TestJsonSerializableMetricKey(unittest.TestCase):
         metric_key = {'gender': Gender.MALE,
                       'race': [Race.BLACK],
                       'ethnicity': [Ethnicity.HISPANIC, Ethnicity.EXTERNAL_UNKNOWN],
-                      'methodology': MetricMethodologyType.PERSON,
+                      'methodology': MetricMethodologyType.EVENT,
                       'year': 1999,
                       'month': 3,
                       'state_code': 'CA'}
@@ -89,7 +89,7 @@ class TestJsonSerializableMetricKey(unittest.TestCase):
         expected_output = {'gender': 'MALE',
                            'race': 'BLACK',
                            'ethnicity': 'EXTERNAL_UNKNOWN,HISPANIC',
-                           'methodology': 'PERSON',
+                           'methodology': 'EVENT',
                            'year': 1999,
                            'month': 3,
                            'state_code': 'CA'}
@@ -103,13 +103,13 @@ class TestJsonSerializableMetricKey(unittest.TestCase):
         metric_key = {'gender': Gender.MALE,
                       'race': [None],
                       'ethnicity': [None],
-                      'methodology': MetricMethodologyType.PERSON,
+                      'methodology': MetricMethodologyType.EVENT,
                       'year': 1999,
                       'month': 3,
                       'state_code': 'CA'}
 
         expected_output = {'gender': 'MALE',
-                           'methodology': 'PERSON',
+                           'methodology': 'EVENT',
                            'year': 1999,
                            'month': 3,
                            'state_code': 'CA'}
@@ -121,7 +121,7 @@ class TestJsonSerializableMetricKey(unittest.TestCase):
     def test_json_serializable_metric_key_ViolationTypeFrequencyCounter(self):
         metric_key = {'gender': Gender.MALE,
                       'race': [Race.BLACK, Race.WHITE],
-                      'methodology': MetricMethodologyType.PERSON,
+                      'methodology': MetricMethodologyType.EVENT,
                       'year': 1999,
                       'month': 3,
                       'state_code': 'CA',
@@ -130,7 +130,7 @@ class TestJsonSerializableMetricKey(unittest.TestCase):
 
         expected_output = {'gender': 'MALE',
                            'race': 'BLACK,WHITE',
-                           'methodology': 'PERSON',
+                           'methodology': 'EVENT',
                            'year': 1999,
                            'month': 3,
                            'state_code': 'CA',

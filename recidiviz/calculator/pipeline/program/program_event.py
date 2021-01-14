@@ -15,28 +15,23 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Events related to programs."""
-from datetime import date
 from typing import Optional
 
 import attr
 
-from recidiviz.calculator.pipeline.utils.event_utils import AssessmentEventMixin, IdentifierEvent
+from recidiviz.calculator.pipeline.utils.event_utils import AssessmentEventMixin, IdentifierEventWithSingularDate
 from recidiviz.common.constants.state.state_assessment import StateAssessmentType, StateAssessmentLevel
 from recidiviz.common.constants.state.state_program_assignment import StateProgramAssignmentParticipationStatus
 from recidiviz.common.constants.state.state_supervision import StateSupervisionType
 
 
 @attr.s(frozen=True)
-class ProgramEvent(IdentifierEvent):
+class ProgramEvent(IdentifierEventWithSingularDate):
     """Models details related to an event related to a program.
 
     Describes a date on which a person interacted with a
     program. This includes the information pertaining to the interaction
     that we will want to track when calculating program metrics."""
-
-    # Event date when the interaction took place
-    event_date: date = attr.ib()
-
     # Program ID
     program_id: str = attr.ib()
 

@@ -418,7 +418,7 @@ class TestSupervisionPeriodIsOutOfState(unittest.TestCase):
             state_code=state_code,
             year=2010,
             month=1,
-            bucket_date=date(2010, 1, 1),
+            event_date=date(2010, 1, 1),
             is_on_supervision_last_day_of_month=False,
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervising_district_external_id=supervising_district_external_id

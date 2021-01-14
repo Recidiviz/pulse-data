@@ -38,8 +38,6 @@ from recidiviz.calculator.pipeline.incarceration.incarceration_event import \
 from recidiviz.calculator.pipeline.incarceration.metrics import \
     IncarcerationMetric, IncarcerationMetricType, IncarcerationAdmissionMetric, IncarcerationPopulationMetric, \
     IncarcerationReleaseMetric
-from recidiviz.calculator.pipeline.utils.beam_utils import \
-    ConvertDictToKVTuple
 from recidiviz.calculator.pipeline.utils.person_utils import PersonMetadata, \
     ExtractPersonEventsMetadata
 from recidiviz.common.constants.state.state_incarceration import \
@@ -703,8 +701,7 @@ class TestCalculateIncarcerationMetricCombinations(unittest.TestCase):
             )
         ]
 
-        # One metric per methodology for each event
-        expected_metric_count = 2
+        expected_metric_count = 1
 
         expected_combination_counts = \
             {'admissions': expected_metric_count,
