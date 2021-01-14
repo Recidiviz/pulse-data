@@ -43,10 +43,10 @@ from recidiviz.tests.utils.fake_region import fake_region
 class DirectIngestRegionRawFileConfigTest(unittest.TestCase):
     """Tests for DirectIngestRegionRawFileConfig."""
 
-    def test_parse_yaml(self):
+    def test_legacy_parse_yaml(self):
         region_config = DirectIngestRegionRawFileConfig(
             region_code='us_xx',
-            yaml_config_file_path=fixtures.as_filepath('us_xx_raw_data_files.yaml'),
+            legacy_yaml_config_file_path=fixtures.as_filepath('us_xx_raw_data_files.yaml'),
         )
 
         self.assertEqual(7, len(region_config.raw_file_configs))
@@ -83,8 +83,17 @@ class DirectIngestRegionRawFileConfigTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             _ = DirectIngestRegionRawFileConfig(
                 region_code='us_xx',
-                yaml_config_file_path=fixtures.as_filepath('empty_raw_data_files.yaml'),
+                legacy_yaml_config_file_path=fixtures.as_filepath('empty_raw_data_files.yaml'),
             )
+
+    def test_missing_configs_for_region(self):
+        with self.assertRaises(ValueError) as e:
+            region_config = DirectIngestRegionRawFileConfig(
+                region_code='us_yy',
+                legacy_yaml_config_file_path=fixtures.as_filepath('does_not_exist.yaml'),
+            )
+            _configs = region_config.raw_file_configs
+        self.assertEqual(str(e.exception), 'Missing raw data configs for region: us_yy')
 
 
 class DirectIngestRawFileImportManagerTest(unittest.TestCase):
@@ -102,7 +111,7 @@ class DirectIngestRawFileImportManagerTest(unittest.TestCase):
 
         self.region_raw_file_config = DirectIngestRegionRawFileConfig(
             region_code='us_xx',
-            yaml_config_file_path=fixtures.as_filepath('us_xx_raw_data_files.yaml'),
+            legacy_yaml_config_file_path=fixtures.as_filepath('us_xx_raw_data_files.yaml'),
         )
 
         self.mock_big_query_client = create_autospec(BigQueryClient)
