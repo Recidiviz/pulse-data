@@ -12,7 +12,7 @@ liveness_check:
   check_interval_sec: 5
   initial_delay_sec: 30
 readiness_check:
-  app_start_timeout_sec: 60
+  app_start_timeout_sec: 120
 
 beta_settings:
   cloud_sql_instances: recidiviz-staging:us-east4:dev-data, recidiviz-123:us-east1:usmamiddlesex-redundant, recidiviz-staging:us-east1:dev-state-data, recidiviz-staging:us-east1:dev-operations-data, recidiviz-staging:us-east1:dev-justice-counts-data
