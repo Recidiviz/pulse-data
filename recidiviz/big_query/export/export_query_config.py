@@ -16,7 +16,7 @@
 # =============================================================================
 
 """Defines configuration for a BigQuery query whose results should be exported somewhere."""
-
+from enum import Enum
 from typing import List, TypeVar, Generic, Optional
 
 import attr
@@ -24,6 +24,13 @@ from google.cloud import bigquery
 
 from recidiviz.big_query.big_query_view import BigQueryView
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath, GcsfsDirectoryPath
+from recidiviz.metrics.metric_big_query_view import MetricBigQueryView
+
+
+class ExportOutputFormatType(Enum):
+    METRIC = 'metric'
+    CSV = 'csv'
+    JSON = 'json'
 
 
 @attr.s(frozen=True)
@@ -83,8 +90,17 @@ class ExportBigQueryViewConfig(Generic[BigQueryViewType]):
     # The desired path to the output directory.
     output_directory: GcsfsDirectoryPath = attr.ib()
 
+    # The output format types that are preferred for this view
+    export_output_formats: List[ExportOutputFormatType] = attr.ib()
+
     # The filter clause that should be used to filter the view
     view_filter_clause: Optional[str] = attr.ib(default=None)
+
+    @export_output_formats.default
+    def _default_export_output_formats(self) -> List[ExportOutputFormatType]:
+        if isinstance(self.view, MetricBigQueryView):
+            return [ExportOutputFormatType.JSON, ExportOutputFormatType.METRIC]
+        return [ExportOutputFormatType.JSON]
 
     def output_path(self, extension: str) -> GcsfsFilePath:
         file_name = f'{self.view.view_id}.{extension}'
@@ -136,4 +152,5 @@ class ExportBigQueryViewConfig(Generic[BigQueryViewType]):
             view_filter_clause=self.view_filter_clause,
             intermediate_table_name=self.intermediate_table_name,
             output_directory=GcsfsDirectoryPath.from_absolute_path(f'{bucket_name}/staging/{relative_path}'),
+            export_output_formats=self.export_output_formats,
         )

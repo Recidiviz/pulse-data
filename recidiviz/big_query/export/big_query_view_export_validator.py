@@ -36,13 +36,6 @@ class BigQueryViewExportValidator:
 
 class ExistsBigQueryViewExportValidator(BigQueryViewExportValidator):
     """View validator which purely validates that a path exists."""
+
     def validate(self, path: GcsfsFilePath) -> bool:
         return self.fs.exists(path)
-
-
-class JsonLinesBigQueryViewExportValidator(BigQueryViewExportValidator):
-    """View validator which checks whether the exported view results are simply non-empty."""
-
-    def validate(self, path: GcsfsFilePath) -> bool:
-        size = self.fs.get_file_size(path)
-        return size is not None and size > 0

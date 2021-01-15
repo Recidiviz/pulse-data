@@ -20,9 +20,10 @@ from unittest import mock
 
 from google.cloud import bigquery
 
+from recidiviz.big_query.export.export_query_config import ExportOutputFormatType
 from recidiviz.big_query.view_update_manager import BigQueryViewNamespace
 from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath
-from recidiviz.metrics.export.export_config import ExportViewCollectionConfig, ExportMetricBigQueryViewConfig
+from recidiviz.metrics.export.export_config import ExportBigQueryViewConfig, ExportViewCollectionConfig
 from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
 
 
@@ -59,7 +60,7 @@ class TestExportViewCollectionConfig(unittest.TestCase):
             output_directory_uri_template="gs://{project_id}-bucket",
             state_code_filter='US_XX',
             export_name='EXPORT',
-            bq_view_namespace=self.mock_big_query_view_namespace
+            bq_view_namespace=self.mock_big_query_view_namespace,
         )
         self.assertTrue(state_dataset_export_config.matches_filter('US_XX'))
 
@@ -68,7 +69,7 @@ class TestExportViewCollectionConfig(unittest.TestCase):
             output_directory_uri_template="gs://{project_id}-bucket",
             state_code_filter=None,
             export_name='VALID_EXPORT_NAME',
-            bq_view_namespace=self.mock_big_query_view_namespace
+            bq_view_namespace=self.mock_big_query_view_namespace,
         )
         self.assertTrue(dataset_export_config.matches_filter('VALID_EXPORT_NAME'))
         self.assertFalse(dataset_export_config.matches_filter('INVALID_EXPORT_NAME'))
@@ -80,7 +81,7 @@ class TestExportViewCollectionConfig(unittest.TestCase):
             output_directory_uri_template="gs://{project_id}-bucket",
             state_code_filter='US_XX',
             export_name='OTHER_EXPORT',
-            bq_view_namespace=self.mock_big_query_view_namespace
+            bq_view_namespace=self.mock_big_query_view_namespace,
         )
         self.assertTrue(state_dataset_export_config.matches_filter('US_xx'))
 
@@ -89,7 +90,7 @@ class TestExportViewCollectionConfig(unittest.TestCase):
             output_directory_uri_template="gs://{project_id}-bucket",
             state_code_filter=None,
             export_name='VALID_EXPORT_NAME',
-            bq_view_namespace=self.mock_big_query_view_namespace
+            bq_view_namespace=self.mock_big_query_view_namespace,
         )
         self.assertTrue(dataset_export_config.matches_filter('valid_export_name'))
 
@@ -101,7 +102,7 @@ class TestExportViewCollectionConfig(unittest.TestCase):
             output_directory_uri_template="gs://{project_id}-bucket-without-state-codes",
             state_code_filter=None,
             export_name='ALL_STATE_TEST_PRODUCT',
-            bq_view_namespace=self.mock_big_query_view_namespace
+            bq_view_namespace=self.mock_big_query_view_namespace,
         )
 
         view_configs_to_export = state_agnostic_dataset_export_config.export_configs_for_views_to_export(
@@ -110,7 +111,7 @@ class TestExportViewCollectionConfig(unittest.TestCase):
 
         expected_view = self.mock_view_builder.build()
 
-        expected_view_export_configs = [ExportMetricBigQueryViewConfig(
+        expected_view_export_configs = [ExportBigQueryViewConfig(
             view=expected_view,
             view_filter_clause=None,
             intermediate_table_name=f"{expected_view.view_id}_table",
@@ -118,7 +119,8 @@ class TestExportViewCollectionConfig(unittest.TestCase):
                 state_agnostic_dataset_export_config.output_directory_uri_template.format(
                     project_id=self.mock_project_id,
                 )
-            )
+            ),
+            export_output_formats=[ExportOutputFormatType.JSON, ExportOutputFormatType.METRIC],
         )]
 
         self.assertEqual(expected_view_export_configs, view_configs_to_export)
@@ -131,7 +133,7 @@ class TestExportViewCollectionConfig(unittest.TestCase):
             output_directory_uri_template="gs://{project_id}-bucket",
             state_code_filter='US_XX',
             export_name='TEST_REPORT',
-            bq_view_namespace=self.mock_big_query_view_namespace
+            bq_view_namespace=self.mock_big_query_view_namespace,
         )
 
         view_configs_to_export = specific_state_dataset_export_config.export_configs_for_views_to_export(
@@ -140,13 +142,14 @@ class TestExportViewCollectionConfig(unittest.TestCase):
 
         expected_view = self.mock_view_builder.build()
 
-        expected_view_export_configs = [ExportMetricBigQueryViewConfig(
+        expected_view_export_configs = [ExportBigQueryViewConfig(
             view=expected_view,
             view_filter_clause=" WHERE state_code = 'US_XX'",
             intermediate_table_name=f"{expected_view.view_id}_table_US_XX",
             output_directory=GcsfsDirectoryPath.from_absolute_path(
                 f"gs://{self.mock_project_id}-bucket/US_XX"
-            )
+            ),
+            export_output_formats=[ExportOutputFormatType.JSON, ExportOutputFormatType.METRIC],
         )]
 
         self.assertEqual(expected_view_export_configs, view_configs_to_export)
@@ -159,7 +162,7 @@ class TestExportViewCollectionConfig(unittest.TestCase):
             output_directory_uri_template="gs://{project_id}-bucket-without-state-codes",
             state_code_filter=None,
             export_name="TEST_EXPORT",
-            bq_view_namespace=self.mock_big_query_view_namespace
+            bq_view_namespace=self.mock_big_query_view_namespace,
         )
 
         view_configs_to_export = lantern_dashboard_dataset_export_config.export_configs_for_views_to_export(
@@ -168,7 +171,7 @@ class TestExportViewCollectionConfig(unittest.TestCase):
 
         expected_view = self.mock_view_builder.build()
 
-        expected_view_export_configs = [ExportMetricBigQueryViewConfig(
+        expected_view_export_configs = [ExportBigQueryViewConfig(
             view=expected_view,
             view_filter_clause=None,
             intermediate_table_name=f"{expected_view.view_id}_table",
@@ -176,7 +179,8 @@ class TestExportViewCollectionConfig(unittest.TestCase):
                 lantern_dashboard_dataset_export_config.output_directory_uri_template.format(
                     project_id=self.mock_project_id,
                 )
-            )
+            ),
+            export_output_formats=[ExportOutputFormatType.JSON, ExportOutputFormatType.METRIC],
         )]
 
         self.assertEqual(expected_view_export_configs, view_configs_to_export)
@@ -189,7 +193,7 @@ class TestExportViewCollectionConfig(unittest.TestCase):
             output_directory_uri_template="gs://{project_id}-bucket",
             state_code_filter="US_XX",
             export_name="TEST_EXPORT",
-            bq_view_namespace=self.mock_big_query_view_namespace
+            bq_view_namespace=self.mock_big_query_view_namespace,
         )
 
         view_configs_to_export = lantern_dashboard_with_state_dataset_export_config.export_configs_for_views_to_export(
@@ -198,13 +202,14 @@ class TestExportViewCollectionConfig(unittest.TestCase):
 
         expected_view = self.mock_view_builder.build()
 
-        expected_view_export_configs = [ExportMetricBigQueryViewConfig(
+        expected_view_export_configs = [ExportBigQueryViewConfig(
             view=expected_view,
             view_filter_clause=" WHERE state_code = 'US_XX'",
             intermediate_table_name=f"{expected_view.view_id}_table_US_XX",
             output_directory=GcsfsDirectoryPath.from_absolute_path(
                 f"gs://{self.mock_project_id}-bucket/US_XX"
-            )
+            ),
+            export_output_formats=[ExportOutputFormatType.JSON, ExportOutputFormatType.METRIC],
         )]
 
         self.assertEqual(expected_view_export_configs, view_configs_to_export)

@@ -24,12 +24,13 @@ from google.cloud import bigquery
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.big_query.export.big_query_view_exporter import ViewExportValidationError
-from recidiviz.big_query.export.export_query_config import ExportBigQueryViewConfig
+from recidiviz.big_query.export.export_query_config import ExportBigQueryViewConfig, ExportOutputFormatType
 from recidiviz.big_query.view_update_manager import BigQueryViewNamespace
-from recidiviz.metrics.export.export_config import ExportMetricBigQueryViewConfig, ExportViewCollectionConfig
+from recidiviz.metrics.export.export_config import ExportViewCollectionConfig
 from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath
 from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
 from recidiviz.metrics.export import view_export_manager
+from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 
 
 class ViewCollectionExportManagerTest(unittest.TestCase):
@@ -77,7 +78,7 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
                 output_directory_uri_template="gs://{project_id}-dataset-location/subdirectory",
                 state_code_filter=self.mock_state_code,
                 export_name=self.mock_export_name,
-                bq_view_namespace=self.mock_big_query_view_namespace
+                bq_view_namespace=self.mock_big_query_view_namespace,
             )
         ]
 
@@ -90,11 +91,15 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
             'recidiviz.metrics.export.view_export_manager.export_config', **export_config_values)
         self.mock_export_config = self.export_config_patcher.start()
 
+        self.gcs_factory_patcher = mock.patch(
+            'recidiviz.metrics.export.view_export_manager.GcsfsFactory.build')
+        self.gcs_factory_patcher.start().return_value = FakeGCSFileSystem()
+
     def tearDown(self):
         self.client_patcher.stop()
         self.export_config_patcher.stop()
         self.metadata_patcher.stop()
-        # self.view_builders_by_namespace_patcher.stop()
+        self.gcs_factory_patcher.stop()
 
     @mock.patch('recidiviz.big_query.view_update_manager.create_dataset_and_update_views_for_view_builders')
     @mock.patch('recidiviz.big_query.export.big_query_view_exporter.BigQueryViewExporter')
@@ -115,9 +120,10 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
                         project_id=self.mock_project_id,
                         state_code='US_XX',
                     )
-                )
+                ),
+                export_output_formats=[ExportOutputFormatType.JSON],
             ),
-            ExportMetricBigQueryViewConfig(
+            ExportBigQueryViewConfig(
                 view=metric_view,
                 view_filter_clause=" WHERE state_code = 'US_XX'",
                 intermediate_table_name=f"{view.view_id}_table_US_XX",
@@ -126,12 +132,17 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
                         project_id=self.mock_project_id,
                         state_code='US_XX',
                     )
-                )
+                ),
+                export_output_formats=[ExportOutputFormatType.JSON, ExportOutputFormatType.METRIC],
             ),
         ]
 
         mock_view_update_manager.assert_called()
-        mock_view_exporter.export_and_validate.assert_called_with(view_export_configs)
+        mock_view_exporter.export_and_validate.assert_has_calls([
+            mock.call([]),  # CSV export
+            mock.call([view_export_configs[1].pointed_to_staging_subdirectory()]),  # JSON export
+            mock.call([conf.pointed_to_staging_subdirectory() for conf in view_export_configs]),  # METRIC export
+        ], any_order=True)
 
     @mock.patch('recidiviz.big_query.view_update_manager.create_dataset_and_update_views_for_view_builders')
     @mock.patch('recidiviz.big_query.export.big_query_view_exporter.BigQueryViewExporter')
@@ -158,7 +169,7 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
                 output_directory_uri_template="gs://{project_id}-bucket-without-state-codes",
                 state_code_filter=None,
                 export_name=self.mock_export_name,
-                bq_view_namespace=self.mock_big_query_view_namespace
+                bq_view_namespace=self.mock_big_query_view_namespace,
             ),
         ]
 
@@ -179,9 +190,10 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
                     "gs://{project_id}-bucket-without-state-codes".format(
                         project_id=self.mock_project_id,
                     )
-                )
+                ),
+                export_output_formats=[ExportOutputFormatType.JSON],
             ),
-            ExportMetricBigQueryViewConfig(
+            ExportBigQueryViewConfig(
                 view=metric_view,
                 view_filter_clause=None,
                 intermediate_table_name=f"{view.view_id}_table",
@@ -189,12 +201,17 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
                     "gs://{project_id}-bucket-without-state-codes".format(
                         project_id=self.mock_project_id,
                     )
-                )
+                ),
+                export_output_formats=[ExportOutputFormatType.JSON, ExportOutputFormatType.METRIC],
             ),
         ]
 
         mock_view_update_manager.assert_called()
-        mock_view_exporter.export_and_validate.assert_called_with(view_export_configs)
+        mock_view_exporter.export_and_validate.assert_has_calls([
+            mock.call([]),  # CSV export
+            mock.call([view_export_configs[1].pointed_to_staging_subdirectory()]),  # JSON export
+            mock.call([conf.pointed_to_staging_subdirectory() for conf in view_export_configs]),  # METRIC export
+        ], any_order=True)
 
     @mock.patch('recidiviz.big_query.view_update_manager.create_dataset_and_update_views_for_view_builders')
     @mock.patch('recidiviz.big_query.export.big_query_view_exporter.BigQueryViewExporter')
@@ -205,36 +222,8 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             view_export_manager.export_view_data_to_cloud_storage(self.mock_state_code, mock_view_exporter)
 
-        view = self.mock_view_builder.build()
-        metric_view = self.mock_metric_view_builder.build()
-
-        view_export_configs = [
-            ExportBigQueryViewConfig(
-                view=view,
-                view_filter_clause=" WHERE state_code = 'US_XX'",
-                intermediate_table_name=f"{view.view_id}_table_US_XX",
-                output_directory=GcsfsDirectoryPath.from_absolute_path(
-                    "gs://{project_id}-dataset-location/subdirectory/{state_code}".format(
-                        project_id=self.mock_project_id,
-                        state_code='US_XX',
-                    )
-                )
-            ),
-            ExportMetricBigQueryViewConfig(
-                view=metric_view,
-                view_filter_clause=" WHERE state_code = 'US_XX'",
-                intermediate_table_name=f"{view.view_id}_table_US_XX",
-                output_directory=GcsfsDirectoryPath.from_absolute_path(
-                    "gs://{project_id}-dataset-location/subdirectory/{state_code}".format(
-                        project_id=self.mock_project_id,
-                        state_code='US_XX',
-                    )
-                )
-            ),
-        ]
-
-        mock_view_update_manager.assert_called()
-        mock_view_exporter.export_and_validate.assert_called_with(view_export_configs)
+        # Just the metric export is attempted and then the raise stops subsequent checks from happening
+        mock_view_update_manager.assert_called_once()
 
     @mock.patch('recidiviz.big_query.view_update_manager.create_dataset_and_update_views_for_view_builders')
     @mock.patch('recidiviz.big_query.export.big_query_view_exporter.BigQueryViewExporter')
@@ -248,36 +237,8 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
         # Should not throw
         view_export_manager.export_view_data_to_cloud_storage(self.mock_state_code, mock_view_exporter)
 
-        view = self.mock_view_builder.build()
-        metric_view = self.mock_metric_view_builder.build()
-
-        view_export_configs = [
-            ExportBigQueryViewConfig(
-                view=view,
-                view_filter_clause=" WHERE state_code = 'US_XX'",
-                intermediate_table_name=f"{view.view_id}_table_US_XX",
-                output_directory=GcsfsDirectoryPath.from_absolute_path(
-                    "gs://{project_id}-dataset-location/subdirectory/{state_code}".format(
-                        project_id=self.mock_project_id,
-                        state_code='US_XX',
-                    )
-                )
-            ),
-            ExportMetricBigQueryViewConfig(
-                view=metric_view,
-                view_filter_clause=" WHERE state_code = 'US_XX'",
-                intermediate_table_name=f"{view.view_id}_table_US_XX",
-                output_directory=GcsfsDirectoryPath.from_absolute_path(
-                    "gs://{project_id}-dataset-location/subdirectory/{state_code}".format(
-                        project_id=self.mock_project_id,
-                        state_code='US_XX',
-                    )
-                )
-            ),
-        ]
-
-        mock_view_update_manager.assert_called()
-        mock_view_exporter.export_and_validate.assert_called_with(view_export_configs)
+        # Just the metric export is attempted and then the raise stops subsequent checks from happening
+        mock_view_update_manager.assert_called_once()
 
     @mock.patch('recidiviz.big_query.view_update_manager.create_dataset_and_update_views_for_view_builders')
     @mock.patch('recidiviz.big_query.export.big_query_view_exporter.BigQueryViewExporter')

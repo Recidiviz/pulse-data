@@ -20,7 +20,7 @@ from typing import Optional, Sequence, List
 import attr
 
 from recidiviz.big_query.big_query_view import BigQueryViewBuilder
-from recidiviz.big_query.export.export_query_config import ExportBigQueryViewConfig
+from recidiviz.big_query.export.export_query_config import ExportBigQueryViewConfig, ExportOutputFormatType
 from recidiviz.big_query.view_update_manager import BigQueryViewNamespace
 from recidiviz.calculator.query.state.views.covid_dashboard.covid_dashboard_views import COVID_DASHBOARD_VIEW_BUILDERS
 from recidiviz.calculator.query.state.views.dashboard.dashboard_views import LANTERN_DASHBOARD_VIEW_BUILDERS, \
@@ -30,11 +30,6 @@ from recidiviz.calculator.query.state.views.public_dashboard.public_dashboard_vi
     PUBLIC_DASHBOARD_VIEW_BUILDERS
 from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath
 from recidiviz.ingest.views.view_config import INGEST_METADATA_BUILDERS
-from recidiviz.metrics.metric_big_query_view import MetricBigQueryView, MetricBigQueryViewBuilder
-
-
-class ExportMetricBigQueryViewConfig(ExportBigQueryViewConfig[MetricBigQueryView]):
-    """Extends the ExportBigQueryViewConfig specifically for MetricBigQueryView."""
 
 
 @attr.s(frozen=True)
@@ -56,6 +51,9 @@ class ExportViewCollectionConfig:
 
     # The category of BigQuery views of which this export belongs
     bq_view_namespace: BigQueryViewNamespace = attr.ib()
+
+    # List of output formats for these configs
+    export_output_formats: Optional[List[ExportOutputFormatType]] = attr.ib(default=None)
 
     def matches_filter(self, export_job_filter: Optional[str] = None) -> bool:
         if export_job_filter is None:
@@ -84,16 +82,18 @@ class ExportViewCollectionConfig:
         configs = []
         for vb in self.view_builders_to_export:
             view = vb.build()
-            constructor = ExportMetricBigQueryViewConfig if isinstance(
-                vb, MetricBigQueryViewBuilder) else ExportBigQueryViewConfig
+            optional_args = {}
+            if self.export_output_formats is not None:
+                optional_args['export_output_formats'] = self.export_output_formats
             configs.append(
-                constructor(
+                ExportBigQueryViewConfig(
                     view=view,
                     view_filter_clause=view_filter_clause,
                     intermediate_table_name=intermediate_table_name.format(
                         export_view_name=view.view_id
                     ),
                     output_directory=GcsfsDirectoryPath.from_absolute_path(output_directory),
+                    **optional_args,
                 )
             )
         return configs
@@ -114,7 +114,7 @@ VIEW_COLLECTION_EXPORT_CONFIGS: List[ExportViewCollectionConfig] = [
         output_directory_uri_template=PO_REPORT_OUTPUT_DIRECTORY_URI,
         state_code_filter='US_ID',
         export_name='PO_MONTHLY',
-        bq_view_namespace=BigQueryViewNamespace.STATE
+        bq_view_namespace=BigQueryViewNamespace.STATE,
     ),
     # Public Dashboard views for US_ND
     ExportViewCollectionConfig(
@@ -122,7 +122,7 @@ VIEW_COLLECTION_EXPORT_CONFIGS: List[ExportViewCollectionConfig] = [
         output_directory_uri_template=PUBLIC_DASHBOARD_VIEWS_OUTPUT_DIRECTORY_URI,
         state_code_filter='US_ND',
         export_name='PUBLIC_DASHBOARD',
-        bq_view_namespace=BigQueryViewNamespace.STATE
+        bq_view_namespace=BigQueryViewNamespace.STATE,
     ),
     # COVID Dashboard views (not state-specific)
     ExportViewCollectionConfig(
@@ -130,7 +130,7 @@ VIEW_COLLECTION_EXPORT_CONFIGS: List[ExportViewCollectionConfig] = [
         output_directory_uri_template=COVID_DASHBOARD_OUTPUT_DIRECTORY_URI,
         state_code_filter=None,
         export_name='COVID_DASHBOARD',
-        bq_view_namespace=BigQueryViewNamespace.STATE
+        bq_view_namespace=BigQueryViewNamespace.STATE,
     ),
     # Ingest metadata views for admin panel
     ExportViewCollectionConfig(
@@ -138,7 +138,7 @@ VIEW_COLLECTION_EXPORT_CONFIGS: List[ExportViewCollectionConfig] = [
         output_directory_uri_template=INGEST_METADATA_OUTPUT_DIRECTORY_URI,
         state_code_filter=None,
         export_name='INGEST_METADATA',
-        bq_view_namespace=BigQueryViewNamespace.INGEST_METADATA
+        bq_view_namespace=BigQueryViewNamespace.INGEST_METADATA,
     ),
 ] + [
     # Lantern Dashboard views for all relevant states
@@ -148,7 +148,7 @@ VIEW_COLLECTION_EXPORT_CONFIGS: List[ExportViewCollectionConfig] = [
         output_directory_uri_template=DASHBOARD_VIEWS_OUTPUT_DIRECTORY_URI,
         state_code_filter=state_code,
         export_name='LANTERN',
-        bq_view_namespace=BigQueryViewNamespace.STATE
+        bq_view_namespace=BigQueryViewNamespace.STATE,
     )
     for state_code in ['US_MO', 'US_PA']
 ] + [
@@ -158,7 +158,7 @@ VIEW_COLLECTION_EXPORT_CONFIGS: List[ExportViewCollectionConfig] = [
         output_directory_uri_template=DASHBOARD_VIEWS_OUTPUT_DIRECTORY_URI,
         state_code_filter=state_code,
         export_name='CORE',
-        bq_view_namespace=BigQueryViewNamespace.STATE
+        bq_view_namespace=BigQueryViewNamespace.STATE,
     )
     for state_code in ['US_ND']
 ]
