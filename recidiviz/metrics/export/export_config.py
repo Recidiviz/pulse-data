@@ -162,3 +162,5 @@ VIEW_COLLECTION_EXPORT_CONFIGS: List[ExportViewCollectionConfig] = [
     )
     for state_code in ['US_ND']
 ]
+
+NAMESPACES_REQUIRING_FULL_UPDATE: List[BigQueryViewNamespace] = [BigQueryViewNamespace.INGEST_METADATA]
