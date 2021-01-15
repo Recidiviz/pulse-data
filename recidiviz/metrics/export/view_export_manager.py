@@ -157,11 +157,16 @@ def export_view_data_to_cloud_storage(export_job_filter: str,
     if not export_configs_for_filter:
         raise ValueError("Export filter did not match any export configs: ", export_job_filter)
 
-    if update_materialized_views:
-        for bq_view_namespace_to_update in bq_view_namespaces_to_update:
-            view_builders_for_views_to_update = view_update_manager.VIEW_BUILDERS_BY_NAMESPACE[
-                bq_view_namespace_to_update]
+    for bq_view_namespace_to_update in bq_view_namespaces_to_update:
+        view_builders_for_views_to_update = view_update_manager.VIEW_BUILDERS_BY_NAMESPACE[
+            bq_view_namespace_to_update]
 
+        # TODO(#5125): Once view update is consistently trivial, always update all views in namespace
+        if bq_view_namespace_to_update in export_config.NAMESPACES_REQUIRING_FULL_UPDATE:
+            view_update_manager.create_dataset_and_update_views_for_view_builders(bq_view_namespace_to_update,
+                                                                                  view_builders_for_views_to_update,
+                                                                                  materialized_views_only=False)
+        elif update_materialized_views:
             view_update_manager.create_dataset_and_update_views_for_view_builders(bq_view_namespace_to_update,
                                                                                   view_builders_for_views_to_update,
                                                                                   materialized_views_only=True)
