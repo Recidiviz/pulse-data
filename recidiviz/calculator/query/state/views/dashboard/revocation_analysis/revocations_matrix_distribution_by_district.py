@@ -45,7 +45,7 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_DISTRICT_QUERY_TEMPLATE = \
       level_1_supervision_location,
       level_2_supervision_location,
       metric_period_months    
-    FROM `{project_id}.{reference_views_dataset}.supervision_matrix_by_person`
+    FROM `{project_id}.{reference_views_dataset}.supervision_matrix_by_person_materialized`
     GROUP BY state_code, violation_type, reported_violations, supervision_type, supervision_level, charge_category,
         level_1_supervision_location, level_2_supervision_location, metric_period_months
   ), termination_counts AS (
@@ -60,7 +60,7 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_DISTRICT_QUERY_TEMPLATE = \
       level_1_supervision_location,
       level_2_supervision_location,
       metric_period_months    
-    FROM `{project_id}.{reference_views_dataset}.supervision_termination_matrix_by_person` 
+    FROM `{project_id}.{reference_views_dataset}.supervision_termination_matrix_by_person_materialized` 
     GROUP BY state_code, violation_type, reported_violations, supervision_type, supervision_level, charge_category,
         level_1_supervision_location, level_2_supervision_location, metric_period_months
   ), revocation_counts AS (
@@ -75,7 +75,7 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_DISTRICT_QUERY_TEMPLATE = \
       level_1_supervision_location,
       level_2_supervision_location,
       metric_period_months
-    FROM `{project_id}.{reference_views_dataset}.revocations_matrix_by_person`
+    FROM `{project_id}.{reference_views_dataset}.revocations_matrix_by_person_materialized`
     GROUP BY state_code, violation_type, reported_violations, supervision_type, supervision_level, charge_category,
         level_1_supervision_location, level_2_supervision_location, metric_period_months
   )

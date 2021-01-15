@@ -71,7 +71,7 @@ SUPERVISION_TERMINATION_MATRIX_BY_PERSON_VIEW_QUERY_TEMPLATE = \
             * EXCEPT(revocation_admission_date, officer_recommendation, violation_record, violation_type_frequency_counter),
             revocation_admission_date AS termination_date,
             TRUE as is_revocation
-        FROM `{project_id}.{reference_views_dataset}.event_based_revocations_for_matrix`
+        FROM `{project_id}.{reference_views_dataset}.event_based_revocations_for_matrix_materialized`
     ), revocations_and_terminations AS (
       SELECT * FROM terminations_matrix 
         UNION ALL
@@ -120,6 +120,7 @@ SUPERVISION_TERMINATION_MATRIX_BY_PERSON_VIEW_QUERY_TEMPLATE = \
 SUPERVISION_TERMINATION_MATRIX_BY_PERSON_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=dataset_config.REFERENCE_VIEWS_DATASET,
     view_id=SUPERVISION_TERMINATION_MATRIX_BY_PERSON_VIEW_NAME,
+    should_materialize=True,
     view_query_template=SUPERVISION_TERMINATION_MATRIX_BY_PERSON_VIEW_QUERY_TEMPLATE,
     description=SUPERVISION_TERMINATION_MATRIX_BY_PERSON_VIEW_DESCRIPTION,
     materialized_metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,

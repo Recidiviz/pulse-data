@@ -61,7 +61,7 @@ REVOCATIONS_MATRIX_BY_PERSON_QUERY_TEMPLATE = \
                                ORDER BY revocation_admission_date DESC,
                                supervision_type, supervision_level, case_type, level_1_supervision_location,
                                level_2_supervision_location, officer) as ranking
-        FROM `{project_id}.{reference_views_dataset}.event_based_revocations_for_matrix`,
+        FROM `{project_id}.{reference_views_dataset}.event_based_revocations_for_matrix_materialized`,
         {metric_period_dimension}
         WHERE {metric_period_condition}
     )
@@ -100,6 +100,7 @@ REVOCATIONS_MATRIX_BY_PERSON_QUERY_TEMPLATE = \
 REVOCATIONS_MATRIX_BY_PERSON_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=dataset_config.REFERENCE_VIEWS_DATASET,
     view_id=REVOCATIONS_MATRIX_BY_PERSON_VIEW_NAME,
+    should_materialize=True,
     view_query_template=REVOCATIONS_MATRIX_BY_PERSON_QUERY_TEMPLATE,
     description=REVOCATIONS_MATRIX_BY_PERSON_DESCRIPTION,
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
