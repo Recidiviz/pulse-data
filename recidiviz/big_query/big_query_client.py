@@ -478,7 +478,8 @@ class BigQueryClient:
 
     @abc.abstractmethod
     def remove_unused_fields_from_schema(self, dataset_id: str, table_id: str,
-                                         desired_schema_fields: List[bigquery.SchemaField]) -> None:
+                                         desired_schema_fields: List[bigquery.SchemaField]) -> \
+            Optional[bigquery.QueryJob]:
         """Updates the schema of the table to drop any columns not in desired_schema_fields. This will not add any
         fields to the table's schema.
 
@@ -486,6 +487,10 @@ class BigQueryClient:
             dataset_id: The name of the dataset where the table lives.
             table_id: The name of the table to drop fields from.
             desired_schema_fields: A list of fields to keep in the table. Any field not in this list will be dropped.
+
+        Returns:
+            If there are fields to be removed, returns a QueryJob which will contain the results once the query is
+            complete.
         """
 
     @abc.abstractmethod
@@ -1028,7 +1033,8 @@ class BigQueryClientImpl(BigQueryClient):
         self.client.update_table(table, ['schema'])
 
     def remove_unused_fields_from_schema(self, dataset_id: str, table_id: str,
-                                         desired_schema_fields: List[bigquery.SchemaField]) -> None:
+                                         desired_schema_fields: List[bigquery.SchemaField]) -> \
+            Optional[bigquery.QueryJob]:
         """Compares the schema of the given table to the desired schema fields and drops any unused columns."""
         dataset_ref = self.dataset_ref_for_id(dataset_id)
 
@@ -1041,7 +1047,7 @@ class BigQueryClientImpl(BigQueryClient):
 
         if not deprecated_fields:
             logging.info("Schema for table %s.%s has no excess fields to drop.", dataset_id, table_id)
-            return
+            return None
 
         columns_to_drop = ', '.join([field.name for field in deprecated_fields])
 
@@ -1050,7 +1056,7 @@ class BigQueryClientImpl(BigQueryClient):
             FROM `{dataset_id}.{table_id}`
         """
 
-        self.insert_into_table_from_query(
+        return self.insert_into_table_from_query(
             destination_table_id=table_id,
             destination_dataset_id=dataset_id,
             query=rebuild_query,
@@ -1082,5 +1088,10 @@ class BigQueryClientImpl(BigQueryClient):
                     raise ValueError(f"Cannot change the mode of field {desired_field} to {field.mode}.")
 
         # Remove any deprecated fields first as it involves copying the entire view
-        self.remove_unused_fields_from_schema(dataset_id, table_id, desired_schema_fields)
+        removal_job = self.remove_unused_fields_from_schema(dataset_id, table_id, desired_schema_fields)
+
+        if removal_job:
+            # Wait for the removal job to complete before running the job to add fields
+            removal_job.result()
+
         self.add_missing_fields_to_schema(dataset_id, table_id, desired_schema_fields)

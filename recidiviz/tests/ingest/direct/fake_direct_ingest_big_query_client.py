@@ -176,7 +176,8 @@ class FakeDirectIngestBigQueryClient(BigQueryClient):
         raise ValueError('Must be implemented for use in tests.')
 
     def remove_unused_fields_from_schema(self, dataset_id: str, table_id: str,
-                                         desired_schema_fields: List[bigquery.SchemaField]) -> None:
+                                         desired_schema_fields: List[bigquery.SchemaField]) -> \
+            Optional[bigquery.QueryJob]:
         raise ValueError('Must be implemented for use in tests.')
 
     def update_schema(self, dataset_id: str, table_id: str,
