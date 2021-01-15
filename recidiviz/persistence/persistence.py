@@ -105,7 +105,8 @@ SYSTEM_TYPE_TO_ERROR_THRESHOLD: Dict[SystemLevel, Dict[str, float]] = {
 
 STATE_CODE_TO_ENTITY_MATCHING_THRESHOLD_OVERRIDE: Dict[str, float] = {
     "US_ID": 0.05,
-    "US_ND": 0.05,
+    # TODO(#5313): Decrease back to 5% once entity matching issues are resolved for ND.
+    "US_ND": 0.20,
     "US_PA": 0.05,
 }
 
