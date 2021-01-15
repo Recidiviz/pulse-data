@@ -188,7 +188,8 @@ function check_for_too_many_deployed_versions {
 
     # Query for the deployed versions in YAML format, select the IDs, count the number of lines and trim whitespace
     DEPLOYED_VERSIONS=$(gcloud app versions list --project=${PROJECT_ID} --service=default --format=yaml | pipenv run yq .id | wc -l | xargs) || exit_on_fail
-    MAX_ALLOWED_DEPLOYED_VERSIONS=210
+    # Our actual limit is 210 versions, but we safeguard against other versions being deployed before this deploy succeeds
+    MAX_ALLOWED_DEPLOYED_VERSIONS=200
     if [[ "$DEPLOYED_VERSIONS" -ge "$MAX_ALLOWED_DEPLOYED_VERSIONS" ]]; then
         echo_error "Found [$DEPLOYED_VERSIONS] already deployed versions. You must delete at least one version to proceed"
         echo_error "in order to avoid maxing out the number of allowed deployed versions."
