@@ -28,16 +28,13 @@ from recidiviz.calculator.pipeline.incarceration.incarceration_event import \
     IncarcerationEvent, IncarcerationAdmissionEvent,\
     IncarcerationReleaseEvent, IncarcerationStayEvent
 from recidiviz.calculator.pipeline.incarceration import calculator
-from recidiviz.calculator.pipeline.incarceration.metrics import IncarcerationMetricType, IncarcerationAdmissionMetric, \
-    IncarcerationPopulationMetric, IncarcerationReleaseMetric
-from recidiviz.calculator.pipeline.utils.metric_utils import \
-    MetricMethodologyType
+from recidiviz.calculator.pipeline.incarceration.metrics import IncarcerationMetricType
 from recidiviz.calculator.pipeline.utils.person_utils import PersonMetadata
 from recidiviz.common.constants.person_characteristics import Gender, Race, \
     Ethnicity
 from recidiviz.common.constants.state.state_incarceration_period import \
     StateIncarcerationPeriodAdmissionReason as AdmissionReason, StateSpecializedPurposeForIncarceration, \
-    StateIncarcerationPeriodAdmissionReason, StateIncarcerationPeriodReleaseReason
+    StateIncarcerationPeriodAdmissionReason
 from recidiviz.common.constants.state.state_supervision_period import StateSupervisionPeriodSupervisionType
 from recidiviz.persistence.entity.state.entities import StatePerson, \
     StatePersonRace, StatePersonEthnicity
@@ -48,7 +45,6 @@ ALL_METRICS_INCLUSIONS_DICT = {
     IncarcerationMetricType.INCARCERATION_RELEASE: True
 }
 
-CALCULATION_METHODOLOGIES = len(MetricMethodologyType)
 _COUNTY_OF_RESIDENCE = 'county'
 _STATUTE = 'XXXX'
 _NCIC_CODE = '1234'

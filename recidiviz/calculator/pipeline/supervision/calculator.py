@@ -35,7 +35,6 @@ from recidiviz.calculator.pipeline.supervision.metrics import \
     SupervisionRevocationMetric, SupervisionTerminationMetric, SupervisionCaseComplianceMetric, \
     SuccessfulSupervisionSentenceDaysServedMetric, SupervisionRevocationAnalysisMetric, SupervisionDowngradeMetric,\
     SupervisionStartMetric, SupervisionOutOfStatePopulationMetric
-from recidiviz.calculator.pipeline.utils.metric_utils import MetricMethodologyType
 from recidiviz.calculator.pipeline.utils.person_utils import PersonMetadata
 from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_manager import \
     supervision_period_is_out_of_state
@@ -144,7 +143,7 @@ def map_supervision_combinations(person: StatePerson,
 
                 metric_combo = augmented_combo_for_calculations(
                     characteristic_combo, supervision_time_bucket.state_code,
-                    metric_type, MetricMethodologyType.EVENT, event_year, event_month)
+                    metric_type, event_year, event_month)
 
                 value = value_for_metric_combo(supervision_time_bucket, metric_type)
 

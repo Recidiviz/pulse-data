@@ -53,10 +53,7 @@ SUPERVISION_MATRIX_BY_PERSON_QUERY_TEMPLATE = \
             date_of_supervision,
             FALSE AS is_revocation
         FROM `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_population_metrics_materialized`
-        WHERE methodology = 'EVENT'
-            AND month IS NOT NULL
-            AND person_id IS NOT NULL
-            AND year >= EXTRACT(YEAR FROM DATE_SUB(CURRENT_DATE(), INTERVAL 3 YEAR))
+        WHERE year >= EXTRACT(YEAR FROM DATE_SUB(CURRENT_DATE(), INTERVAL 3 YEAR))
     ), revocations_matrix AS (
         SELECT
             * EXCEPT(revocation_admission_date, officer_recommendation, violation_record, violation_type_frequency_counter),

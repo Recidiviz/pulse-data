@@ -34,9 +34,7 @@ SUPERVISION_DOWNGRADES_BY_PERSON_BY_MONTH_QUERY_TEMPLATE = \
             supervising_officer_external_id,
             MAX(date_of_downgrade) AS date_of_downgrade
         FROM `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_downgrade_metrics_materialized`
-        WHERE person_id IS NOT NULL
-            AND supervising_officer_external_id IS NOT NULL
-            AND metric_period_months = 1
+        WHERE supervising_officer_external_id IS NOT NULL
             AND year >= EXTRACT(YEAR FROM DATE_SUB(CURRENT_DATE('US/Pacific'), INTERVAL 3 YEAR))
         GROUP BY state_code, year, month, person_id, supervising_officer_external_id
     )

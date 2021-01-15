@@ -55,12 +55,8 @@ AVERAGE_CHANGE_LSIR_SCORE_MONTH_QUERY_TEMPLATE = \
       FROM `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_termination_metrics_materialized`,
       {district_dimension},
       {supervision_type_dimension}
-      WHERE methodology = 'EVENT'
-        AND metric_period_months = 1
-        AND assessment_type = 'LSIR'
+      WHERE assessment_type = 'LSIR'
         AND assessment_score_change IS NOT NULL
-        AND person_id IS NOT NULL
-        AND month IS NOT NULL
         AND year >= EXTRACT(YEAR FROM DATE_SUB(CURRENT_DATE(), INTERVAL 3 YEAR))
     )
     WHERE supervision_type IN ('ALL', 'PAROLE', 'PROBATION')

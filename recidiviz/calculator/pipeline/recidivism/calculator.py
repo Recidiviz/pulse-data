@@ -37,8 +37,6 @@ from recidiviz.calculator.pipeline.recidivism.metrics import \
     ReincarcerationRecidivismRateMetric
 from recidiviz.calculator.pipeline.recidivism.release_event import \
     ReleaseEvent, RecidivismReleaseEvent, NonRecidivismReleaseEvent
-from recidiviz.calculator.pipeline.utils.metric_utils import \
-    MetricMethodologyType
 from recidiviz.calculator.pipeline.utils.calculator_utils import characteristics_dict_builder, \
     augmented_combo_for_calculations
 from recidiviz.calculator.pipeline.utils.person_utils import PersonMetadata
@@ -126,8 +124,7 @@ def map_recidivism_combinations(person: StatePerson,
                 state_code=reincarceration_event.state_code,
                 year=event_date.year,
                 month=event_date.month,
-                metric_type=ReincarcerationRecidivismMetricType.REINCARCERATION_COUNT,
-                methodology=MetricMethodologyType.EVENT)
+                metric_type=ReincarcerationRecidivismMetricType.REINCARCERATION_COUNT)
 
             metrics.append((augmented_combo, 1))
 
@@ -283,14 +280,12 @@ def combination_rate_metrics(combo: Dict[str, Any],
     for period, reincarceration_admissions in reincarcerations_by_follow_up_period.items():
         augmented_combo = augmented_combo_for_calculations(
             combo, event.state_code,
-            metric_type=ReincarcerationRecidivismMetricType.REINCARCERATION_RATE,
-            methodology=MetricMethodologyType.EVENT)
+            metric_type=ReincarcerationRecidivismMetricType.REINCARCERATION_RATE)
         augmented_combo['follow_up_period'] = period
 
         # If they didn't recidivate at all or not yet for this period (or they didn't recidivate until 10 years had
         # passed), assign a value of 0.
         if isinstance(event, NonRecidivismReleaseEvent) or not reincarceration_admissions:
-            # Add event-based count
             metrics.append((augmented_combo, 0))
 
         # If they recidivated, each unique release of a given person within a follow-up period after the year of release

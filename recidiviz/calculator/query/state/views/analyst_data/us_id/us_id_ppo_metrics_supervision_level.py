@@ -42,10 +42,7 @@ US_ID_PPO_METRICS_SUPERVISION_LEVEL_QUERY_TEMPLATE = \
       (
         SELECT state_code, person_id, supervision_type, supervision_level, date_of_supervision
         FROM `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_population_metrics_materialized`
-        JOIN `{project_id}.{materialized_metrics_dataset}.most_recent_job_id_by_metric_and_state_code_materialized`
-            USING (job_id, state_code, year, month, metric_period_months, metric_type)
-        WHERE methodology = 'EVENT'
-          AND (date_of_supervision = CURRENT_DATE() OR is_on_supervision_last_day_of_month)      
+        WHERE (date_of_supervision = CURRENT_DATE() OR is_on_supervision_last_day_of_month)      
       )
       
       WHERE state_code = 'US_ID'

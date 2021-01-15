@@ -53,10 +53,7 @@ ADMISSIONS_VERSUS_RELEASES_BY_MONTH_QUERY_TEMPLATE = \
         COUNT(DISTINCT person_id) AS release_count
       FROM `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_release_metrics_materialized`,
       {district_dimension}
-      WHERE methodology = 'EVENT'
-        AND metric_period_months = 1
-        AND person_id IS NOT NULL
-        AND year >= EXTRACT(YEAR FROM DATE_SUB(CURRENT_DATE(), INTERVAL 3 YEAR))
+      WHERE year >= EXTRACT(YEAR FROM DATE_SUB(CURRENT_DATE(), INTERVAL 3 YEAR))
       GROUP BY state_code, year, month, district
     ) releases
     USING (state_code, year, month, district)
@@ -71,10 +68,9 @@ ADMISSIONS_VERSUS_RELEASES_BY_MONTH_QUERY_TEMPLATE = \
         -- Convert the "month end" data in the incarceration_population_metrics to the "prior month end" by adding 1 month to the date
         UNNEST([DATE_ADD(DATE(year, month, 1), INTERVAL 1 MONTH)]) AS incarceration_month_end_date,
       {district_dimension}
-      WHERE methodology = 'EVENT'
-        AND year >= EXTRACT(YEAR FROM DATE_SUB(CURRENT_DATE(), INTERVAL 4 YEAR))
+      WHERE year >= EXTRACT(YEAR FROM DATE_SUB(CURRENT_DATE(), INTERVAL 4 YEAR))
         -- Get population count for the last day of the month
-        AND date_of_stay = DATE_SUB(DATE_ADD(DATE(year, month, 1), INTERVAL 1 MONTH), INTERVAL 1 DAY)
+        AND date_of_stay = LAST_DAY(DATE(year, month, 1), MONTH)
       GROUP BY state_code, year, month, district
     ) inc_pop
     USING (state_code, year, month, district)

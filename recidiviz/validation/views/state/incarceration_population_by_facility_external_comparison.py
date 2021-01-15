@@ -45,7 +45,6 @@ INCARCERATION_POPULATION_BY_FACILITY_EXTERNAL_COMPARISON_QUERY_TEMPLATE = \
             IFNULL(facility, 'EXTERNAL_UNKNOWN') as facility,
             COUNT(DISTINCT(person_id)) as internal_population_count
         FROM `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_population_metrics_materialized`
-        WHERE methodology = 'EVENT'
         GROUP BY state_code, date_of_stay, facility
     ), relevant_internal_incarceration_population AS (
         SELECT * FROM

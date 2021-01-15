@@ -46,8 +46,7 @@ sanitized_internal_metrics AS (
                         ORDER BY supervising_officer_external_id DESC, supervision_level_raw_text DESC, supervising_district_external_id DESC)
                         AS inclusion_order
    FROM `{{project_id}}.{{materialized_metrics_dataset}}.most_recent_supervision_population_metrics_materialized`
-   WHERE methodology = 'EVENT'
-   AND (state_code != 'US_ID' OR 
+   WHERE (state_code != 'US_ID' OR 
        # Idaho only gives us population numbers for folks explicitly on active probation, parole, or dual supervision.
        # The following groups are folks we consider a part of the SupervisionPopulation even though ID does not:
        #    - `INFORMAL_PROBATION` - although IDOC does not actively supervise these folks, they can be revoked 

@@ -39,7 +39,7 @@ EVENT_BASED_REVOCATIONS_AND_ADMISSIONS_QUERY_TEMPLATE = \
         'NEW_ADMISSION' AS incarceration_type
       FROM `{project_id}.{reference_views_dataset}.event_based_admissions`
       WHERE admission_reason = 'NEW_ADMISSION'
-      {state_specific_facility_exclusion}
+      AND {state_specific_facility_exclusion}
 
       UNION ALL
 

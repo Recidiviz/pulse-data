@@ -67,8 +67,7 @@ COMPARTMENT_SUB_SESSIONS_QUERY_TEMPLATE = \
         CAST(NULL AS STRING) AS assessment_score_bucket
     FROM
         `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_population_metrics_materialized`
-    WHERE methodology = 'EVENT'
-        AND state_code in ('US_ND','US_ID')
+    WHERE state_code in ('US_ND','US_ID')
     UNION ALL
     SELECT 
         DISTINCT
@@ -86,8 +85,7 @@ COMPARTMENT_SUB_SESSIONS_QUERY_TEMPLATE = \
         assessment_score_bucket
     FROM
         `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_population_metrics_materialized`
-    WHERE methodology = 'EVENT'
-        AND state_code in ('US_ND','US_ID')
+    WHERE state_code in ('US_ND','US_ID')
     UNION ALL
     SELECT 
         DISTINCT
@@ -104,8 +102,7 @@ COMPARTMENT_SUB_SESSIONS_QUERY_TEMPLATE = \
         CONCAT(COALESCE(level_1_supervision_location_external_id,'EXTERNAL_UNKNOWN'),'|', COALESCE(level_2_supervision_location_external_id,'EXTERNAL_UNKNOWN')),
         assessment_score_bucket
     FROM `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_out_of_state_population_metrics_materialized`
-    WHERE methodology = 'EVENT'
-        AND state_code in ('US_ND','US_ID')  
+    WHERE state_code in ('US_ND','US_ID')  
     )
     ,
     last_day_of_data_cte AS
@@ -364,9 +361,7 @@ COMPARTMENT_SUB_SESSIONS_QUERY_TEMPLATE = \
         --"NEW_ADMISSION", therefore there is no 'order by' in the window function below
         ROW_NUMBER() OVER(PARTITION BY person_id, admission_date) AS rn
     FROM `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_admission_metrics_materialized`
-    WHERE methodology = 'EVENT'
-        AND metric_period_months = 1
-        AND admission_reason = 'NEW_ADMISSION' 
+    WHERE admission_reason = 'NEW_ADMISSION' 
     UNION ALL 
     SELECT 
         person_id,
@@ -379,8 +374,6 @@ COMPARTMENT_SUB_SESSIONS_QUERY_TEMPLATE = \
         --records has a null reason, so here I dedup prioritizing the non-null one.
         ROW_NUMBER() OVER(PARTITION BY person_id, revocation_admission_date ORDER BY IF(source_violation_type IS NULL, 1, 0)) AS rn
     FROM `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_revocation_metrics_materialized`
-    WHERE methodology = 'EVENT'
-        AND metric_period_months = 1
     UNION ALL
     SELECT 
         person_id,
@@ -395,7 +388,6 @@ COMPARTMENT_SUB_SESSIONS_QUERY_TEMPLATE = \
     LEFT JOIN `static_reference_tables.admission_start_reason_dedup_priority` d
       ON d.data_source = 'SUPERVISION'
       AND d.start_reason = m.admission_reason
-    WHERE methodology = 'EVENT'
     )
     ,
     release_metric_cte AS
@@ -415,9 +407,7 @@ COMPARTMENT_SUB_SESSIONS_QUERY_TEMPLATE = \
     LEFT JOIN `{project_id}.{static_reference_views_dataset}.release_termination_reason_dedup_priority` AS p
         ON m.release_reason = p.end_reason
         AND p.data_source = 'INCARCERATION'
-    WHERE metric_period_months = 1
-        AND methodology = 'EVENT'
-        AND end_reason IS NOT NULL
+    WHERE end_reason IS NOT NULL
     UNION ALL  
     SELECT 
         person_id,
@@ -430,9 +420,7 @@ COMPARTMENT_SUB_SESSIONS_QUERY_TEMPLATE = \
     LEFT JOIN `{project_id}.{static_reference_views_dataset}.release_termination_reason_dedup_priority` AS p
         ON m.termination_reason = p.end_reason
         AND p.data_source = 'SUPERVISION'
-    WHERE metric_period_months = 1
-        AND methodology = 'EVENT'
-        AND end_reason IS NOT NULL
+    WHERE end_reason IS NOT NULL
     )
     ,
     final_sessions_prep_cte AS

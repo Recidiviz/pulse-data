@@ -49,8 +49,7 @@ SUPERVISION_POPULATION_ATTRIBUTES_BY_DISTRICT_BY_MONTH_QUERY_TEMPLATE = \
         COUNT (DISTINCT(IF(assessment_score_bucket = '39+', person_id, NULL)))/COUNT(DISTINCT person_id) AS risk_score_over_39_population,
         COUNT (DISTINCT(IF(assessment_score_bucket = '0-23', person_id, NULL)))/COUNT(DISTINCT person_id) AS risk_score_under_24_population
     FROM `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_population_metrics_materialized`
-    WHERE methodology = 'EVENT'
-      AND supervision_type IN ('DUAL', 'PROBATION', 'PAROLE', 'INTERNAL_UNKNOWN')
+    WHERE supervision_type IN ('DUAL', 'PROBATION', 'PAROLE', 'INTERNAL_UNKNOWN')
     GROUP BY state_code, year, month, supervising_district_external_id
     """
 
