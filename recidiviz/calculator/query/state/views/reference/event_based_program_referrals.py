@@ -43,11 +43,7 @@ EVENT_BASED_PROGRAM_REFERRALS_QUERY_TEMPLATE = \
     FROM `{project_id}.{materialized_metrics_dataset}.most_recent_program_referral_metrics_materialized`,
     {district_dimension},
     {supervision_type_dimension}
-    WHERE methodology = 'EVENT'
-      AND person_id IS NOT NULL
-      AND district IS NOT NULL
-      AND metric_period_months = 1
-      AND month IS NOT NULL
+    WHERE district IS NOT NULL
       AND year >= EXTRACT(YEAR FROM DATE_SUB(CURRENT_DATE(), INTERVAL 3 YEAR))
     """
 

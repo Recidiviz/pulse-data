@@ -51,10 +51,7 @@ SUPERVISION_SUCCESS_BY_PERIOD_BY_DEMOGRAPHICS_VIEW_QUERY_TEMPLATE = \
       UNNEST ([{grouped_districts}, 'ALL']) AS district,
       -- We only want a 36-month period for this view --
       UNNEST ([36]) AS metric_period_months
-      WHERE success_metrics.metric_period_months = 1
-        AND {metric_period_condition}
-        AND methodology = 'EVENT'
-        AND person_id IS NOT NULL
+      WHERE {metric_period_condition}
       GROUP BY state_code, person_id, metric_period_months, district, gender, race_or_ethnicity, age_bucket, supervision_type
     ), terminations_with_race_or_ethnicity_priorities AS (
        SELECT

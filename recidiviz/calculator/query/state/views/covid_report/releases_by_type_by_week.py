@@ -47,8 +47,6 @@ RELEASES_BY_TYPE_BY_WEEK_QUERY_TEMPLATE = \
         USING (state_code)
         WHERE releases.release_date BETWEEN report.start_date AND report.end_date
           AND release_reason in ('COMMUTED', 'COMPASSIONATE', 'CONDITIONAL_RELEASE', 'SENTENCE_SERVED')
-          AND methodology = 'EVENT'
-          AND metric_period_months = 1
     )
     , releases_by_week AS (
       SELECT

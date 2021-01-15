@@ -50,11 +50,7 @@ EVENT_BASED_REVOCATIONS_QUERY_TEMPLATE = \
     FROM `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_revocation_metrics_materialized` m,
     {district_dimension},
     {supervision_type_dimension}
-    WHERE methodology = 'EVENT'
-      AND m.metric_period_months = 1
-      AND person_id IS NOT NULL
-      AND district IS NOT NULL
-      AND month IS NOT NULL
+    WHERE district IS NOT NULL
       AND year >= EXTRACT(YEAR FROM DATE_SUB(CURRENT_DATE(), INTERVAL 3 YEAR))
     """
 

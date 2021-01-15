@@ -32,8 +32,7 @@ from recidiviz.calculator.pipeline.supervision.metrics import SupervisionMetricT
     SupervisionRevocationAnalysisMetric, SupervisionSuccessMetric, \
     SuccessfulSupervisionSentenceDaysServedMetric, SupervisionCaseComplianceMetric, SupervisionDowngradeMetric, \
     SupervisionStartMetric, SupervisionOutOfStatePopulationMetric
-from recidiviz.calculator.pipeline.utils.metric_utils import MetricMethodologyType, json_serializable_metric_key, \
-    RecidivizMetric
+from recidiviz.calculator.pipeline.utils.metric_utils import json_serializable_metric_key, RecidivizMetric
 from recidiviz.common.constants.person_characteristics import Gender, Race, Ethnicity
 
 
@@ -42,14 +41,12 @@ class TestJsonSerializableMetricKey(unittest.TestCase):
     def test_json_serializable_metric_key(self):
         metric_key = {'gender': Gender.MALE,
                       'race': [Race.BLACK, Race.WHITE],
-                      'methodology': MetricMethodologyType.EVENT,
                       'year': 1999,
                       'month': 3,
                       'state_code': 'CA'}
 
         expected_output = {'gender': 'MALE',
                            'race': 'BLACK,WHITE',
-                           'methodology': 'EVENT',
                            'year': 1999,
                            'month': 3,
                            'state_code': 'CA'}
@@ -61,14 +58,12 @@ class TestJsonSerializableMetricKey(unittest.TestCase):
     def test_json_serializable_metric_key_OneRace(self):
         metric_key = {'gender': Gender.MALE,
                       'race': [Race.BLACK],
-                      'methodology': MetricMethodologyType.EVENT,
                       'year': 1999,
                       'month': 3,
                       'state_code': 'CA'}
 
         expected_output = {'gender': 'MALE',
                            'race': 'BLACK',
-                           'methodology': 'EVENT',
                            'year': 1999,
                            'month': 3,
                            'state_code': 'CA'}
@@ -81,7 +76,6 @@ class TestJsonSerializableMetricKey(unittest.TestCase):
         metric_key = {'gender': Gender.MALE,
                       'race': [Race.BLACK],
                       'ethnicity': [Ethnicity.HISPANIC, Ethnicity.EXTERNAL_UNKNOWN],
-                      'methodology': MetricMethodologyType.EVENT,
                       'year': 1999,
                       'month': 3,
                       'state_code': 'CA'}
@@ -89,7 +83,6 @@ class TestJsonSerializableMetricKey(unittest.TestCase):
         expected_output = {'gender': 'MALE',
                            'race': 'BLACK',
                            'ethnicity': 'EXTERNAL_UNKNOWN,HISPANIC',
-                           'methodology': 'EVENT',
                            'year': 1999,
                            'month': 3,
                            'state_code': 'CA'}
@@ -103,13 +96,11 @@ class TestJsonSerializableMetricKey(unittest.TestCase):
         metric_key = {'gender': Gender.MALE,
                       'race': [None],
                       'ethnicity': [None],
-                      'methodology': MetricMethodologyType.EVENT,
                       'year': 1999,
                       'month': 3,
                       'state_code': 'CA'}
 
         expected_output = {'gender': 'MALE',
-                           'methodology': 'EVENT',
                            'year': 1999,
                            'month': 3,
                            'state_code': 'CA'}
@@ -121,7 +112,6 @@ class TestJsonSerializableMetricKey(unittest.TestCase):
     def test_json_serializable_metric_key_ViolationTypeFrequencyCounter(self):
         metric_key = {'gender': Gender.MALE,
                       'race': [Race.BLACK, Race.WHITE],
-                      'methodology': MetricMethodologyType.EVENT,
                       'year': 1999,
                       'month': 3,
                       'state_code': 'CA',
@@ -130,7 +120,6 @@ class TestJsonSerializableMetricKey(unittest.TestCase):
 
         expected_output = {'gender': 'MALE',
                            'race': 'BLACK,WHITE',
-                           'methodology': 'EVENT',
                            'year': 1999,
                            'month': 3,
                            'state_code': 'CA',
@@ -159,7 +148,6 @@ class TestBQSchemaForMetricTable(unittest.TestCase):
             SchemaField('metric_type', bigquery.enums.SqlTypeNames.STRING.value),
             SchemaField('job_id', bigquery.enums.SqlTypeNames.STRING.value),
             SchemaField('state_code', bigquery.enums.SqlTypeNames.STRING.value),
-            SchemaField('methodology', bigquery.enums.SqlTypeNames.STRING.value),
             SchemaField('age_bucket', bigquery.enums.SqlTypeNames.STRING.value),
             SchemaField('race', bigquery.enums.SqlTypeNames.STRING.value),
             SchemaField('ethnicity', bigquery.enums.SqlTypeNames.STRING.value),

@@ -26,18 +26,12 @@ from freezegun import freeze_time
 
 from recidiviz.calculator.pipeline.supervision import calculator
 from recidiviz.calculator.pipeline.supervision.identifier import BUCKET_TYPES_FOR_METRIC
-from recidiviz.calculator.pipeline.supervision.metrics import \
-    SupervisionMetricType, SupervisionRevocationMetric, SupervisionCaseComplianceMetric, SupervisionPopulationMetric, \
-    SupervisionRevocationAnalysisMetric, SupervisionSuccessMetric, \
-    SuccessfulSupervisionSentenceDaysServedMetric, SupervisionTerminationMetric, SupervisionDowngradeMetric
+from recidiviz.calculator.pipeline.supervision.metrics import SupervisionMetricType
 from recidiviz.calculator.pipeline.supervision.supervision_case_compliance import SupervisionCaseCompliance
 from recidiviz.calculator.pipeline.supervision.supervision_time_bucket import \
     NonRevocationReturnSupervisionTimeBucket, SupervisionTimeBucket, \
     RevocationReturnSupervisionTimeBucket, ProjectedSupervisionCompletionBucket, SupervisionTerminationBucket, \
     SupervisionStartBucket
-from recidiviz.calculator.pipeline.utils import calculator_utils
-from recidiviz.calculator.pipeline.utils.metric_utils import \
-    MetricMethodologyType
 from recidiviz.calculator.pipeline.utils.person_utils import PersonMetadata
 from recidiviz.common.constants.person_characteristics import Gender, Race, \
     Ethnicity
@@ -61,8 +55,6 @@ from recidiviz.tests.calculator.calculator_test_utils import combo_has_enum_valu
 ALL_METRICS_INCLUSIONS_DICT = {
     metric_type: True for metric_type in SupervisionMetricType
 }
-
-CALCULATION_METHODOLOGIES = len(MetricMethodologyType)
 
 _DEFAULT_PERSON_METADATA = PersonMetadata(prioritized_race_or_ethnicity='BLACK')
 

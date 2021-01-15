@@ -57,7 +57,6 @@ MOST_RECENT_DAILY_SUPERVISION_POPULATION_QUERY_TEMPLATE = \
       LEFT JOIN
          `{project_id}.{static_reference_dataset}.state_race_ethnicity_population_counts`
       USING (state_code, race_or_ethnicity)
-      WHERE methodology = 'EVENT'
     )
         
     SELECT

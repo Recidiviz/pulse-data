@@ -42,7 +42,6 @@ usage: python -m recidiviz.tools.run_calculation_pipelines.py
           [--include_gender INCLUDE_GENDER] \
           [--include_race INCLUDE_RACE] \
           [--include_ethnicity INCLUDE_ETHNICITY] \
-          [--methodology METHODOLOGY] \
           [--output OUTPUT]
 
           ..and any other pipeline-specific args

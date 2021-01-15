@@ -53,10 +53,7 @@ SUPERVISION_TERMINATION_BY_TYPE_BY_PERIOD_QUERY_TEMPLATE = \
       {district_dimension},
       {supervision_type_dimension},
       {metric_period_dimension}
-      WHERE methodology = 'EVENT'
-        AND person_id IS NOT NULL
-        AND DATE(year, month, 1) >= DATE_SUB(DATE_TRUNC(CURRENT_DATE('US/Pacific'), MONTH),
-                                             INTERVAL metric_period_months - 1 MONTH)
+      WHERE {metric_period_condition}
       GROUP BY state_code, metric_period_months, supervision_type, district, person_id
     )
     WHERE supervision_type in ('ALL', 'PAROLE', 'PROBATION')
@@ -75,6 +72,7 @@ SUPERVISION_TERMINATION_BY_TYPE_BY_PERIOD_VIEW_BUILDER = MetricBigQueryViewBuild
     district_dimension=bq_utils.unnest_district(),
     supervision_type_dimension=bq_utils.unnest_supervision_type(),
     metric_period_dimension=bq_utils.unnest_metric_period_months(),
+    metric_period_condition=bq_utils.metric_period_condition()
 )
 
 if __name__ == '__main__':

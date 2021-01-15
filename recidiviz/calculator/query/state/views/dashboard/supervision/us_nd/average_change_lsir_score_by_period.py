@@ -56,11 +56,8 @@ AVERAGE_CHANGE_LSIR_SCORE_BY_PERIOD_QUERY_TEMPLATE = \
       {district_dimension},
       {supervision_type_dimension},
       {metric_period_dimension}
-      WHERE methodology = 'EVENT'
-        AND m.metric_period_months = 1
-        AND assessment_type = 'LSIR'
+      WHERE assessment_type = 'LSIR'
         AND assessment_score_change IS NOT NULL
-        AND person_id IS NOT NULL
         AND {metric_period_condition}
     )
     WHERE supervision_type IN ('ALL', 'PAROLE', 'PROBATION')

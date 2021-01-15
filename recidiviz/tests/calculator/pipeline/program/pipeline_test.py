@@ -37,7 +37,6 @@ from recidiviz.calculator.pipeline.program.metrics import ProgramMetric, \
     ProgramMetricType, ProgramReferralMetric
 from recidiviz.calculator.pipeline.program.program_event import \
     ProgramReferralEvent, ProgramParticipationEvent
-from recidiviz.calculator.pipeline.utils.metric_utils import MetricMethodologyType
 from recidiviz.calculator.pipeline.utils.person_utils import PersonMetadata, ExtractPersonEventsMetadata
 from recidiviz.common.constants.state.state_assessment import \
     StateAssessmentType
@@ -867,7 +866,6 @@ class TestProduceProgramMetric(unittest.TestCase):
 
     def testProduceProgramMetric(self):
         metric_key = {'gender': Gender.MALE,
-                      'methodology': MetricMethodologyType.EVENT,
                       'year': 1999,
                       'month': 3,
                       'metric_type':

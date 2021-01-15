@@ -47,7 +47,6 @@ REINCARCERATIONS_BY_PERIOD_QUERY_TEMPLATE = \
         county_of_residence,
         person_id
       FROM `{project_id}.{materialized_metrics_dataset}.most_recent_recidivism_count_metrics_materialized`
-        WHERE methodology = 'EVENT'
     ), reincarcerations_with_metric_periods AS (
       SELECT
         state_code, metric_period_months,

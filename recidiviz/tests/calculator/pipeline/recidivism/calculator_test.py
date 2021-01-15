@@ -31,20 +31,16 @@ from recidiviz.calculator.pipeline.recidivism.calculator \
     import FOLLOW_UP_PERIODS
 from recidiviz.calculator.pipeline.recidivism.release_event import \
     ReleaseEvent, RecidivismReleaseEvent, NonRecidivismReleaseEvent
-from recidiviz.calculator.pipeline.utils.metric_utils import \
-    MetricMethodologyType
 from recidiviz.calculator.pipeline.recidivism.release_event import \
     ReincarcerationReturnType
 from recidiviz.calculator.pipeline.utils.person_utils import PersonMetadata
-from recidiviz.common.constants.state.external_id_types import US_ND_ELITE
 from recidiviz.common.constants.state.state_supervision_period import StateSupervisionPeriodSupervisionType
 from recidiviz.common.constants.state.state_supervision_violation import \
     StateSupervisionViolationType
 from recidiviz.persistence.entity.state.entities import StatePerson, Gender, \
-    StatePersonRace, Race, StatePersonEthnicity, Ethnicity, StatePersonExternalId
+    StatePersonRace, Race, StatePersonEthnicity, Ethnicity
 from recidiviz.calculator.pipeline.recidivism.metrics import \
-    ReincarcerationRecidivismMetricType as MetricType, ReincarcerationRecidivismCountMetric, \
-    ReincarcerationRecidivismRateMetric
+    ReincarcerationRecidivismMetricType as MetricType
 
 _COUNTY_OF_RESIDENCE = 'county'
 

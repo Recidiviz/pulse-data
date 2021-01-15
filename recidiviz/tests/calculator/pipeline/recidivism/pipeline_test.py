@@ -41,9 +41,7 @@ from recidiviz.calculator.pipeline.recidivism.metrics import \
     ReincarcerationRecidivismRateMetric, ReincarcerationRecidivismMetricType
 from recidiviz.calculator.pipeline.recidivism.metrics import \
     ReincarcerationRecidivismMetricType as MetricType
-from recidiviz.calculator.pipeline.utils.beam_utils import ConvertDictToKVTuple, RecidivizMetricWritableDict
-from recidiviz.calculator.pipeline.utils.metric_utils import \
-    MetricMethodologyType
+from recidiviz.calculator.pipeline.utils.beam_utils import RecidivizMetricWritableDict
 from recidiviz.calculator.pipeline.recidivism.release_event import \
     ReincarcerationReturnType, RecidivismReleaseEvent, \
     NonRecidivismReleaseEvent
@@ -1049,44 +1047,36 @@ class MetricGroup:
     dimension filtering."""
     recidivism_metric_with_age = ReincarcerationRecidivismRateMetric(
         job_id='12345', state_code='US_XX', release_cohort=2015,
-        follow_up_period=1, methodology=MetricMethodologyType.EVENT,
-        age_bucket='25-29', did_recidivate=True)
+        follow_up_period=1, age_bucket='25-29', did_recidivate=True)
 
     recidivism_metric_with_gender = ReincarcerationRecidivismRateMetric(
         job_id='12345', state_code='US_XX', release_cohort=2015,
-        follow_up_period=1, methodology=MetricMethodologyType.EVENT,
-        gender=Gender.MALE, did_recidivate=True)
+        follow_up_period=1, gender=Gender.MALE, did_recidivate=True)
 
     recidivism_metric_with_race = ReincarcerationRecidivismRateMetric(
         job_id='12345', state_code='US_XX', release_cohort=2015,
-        follow_up_period=1, methodology=MetricMethodologyType.EVENT,
-        race=[Race.BLACK], did_recidivate=True)
+        follow_up_period=1, race=[Race.BLACK], did_recidivate=True)
 
     recidivism_metric_with_ethnicity = ReincarcerationRecidivismRateMetric(
         job_id='12345', state_code='US_XX', release_cohort=2015,
-        follow_up_period=1, methodology=MetricMethodologyType.EVENT,
-        ethnicity=[Ethnicity.HISPANIC], did_recidivate=True)
+        follow_up_period=1, ethnicity=[Ethnicity.HISPANIC], did_recidivate=True)
 
     recidivism_metric_with_release_facility = \
         ReincarcerationRecidivismRateMetric(
             job_id='12345', state_code='US_XX', release_cohort=2015,
-            follow_up_period=1, methodology=MetricMethodologyType.EVENT,
-            release_facility='Red', did_recidivate=True)
+            follow_up_period=1, release_facility='Red', did_recidivate=True)
 
     recidivism_metric_with_stay_length = ReincarcerationRecidivismRateMetric(
         job_id='12345', state_code='US_XX', release_cohort=2015,
-        follow_up_period=1, methodology=MetricMethodologyType.EVENT,
-        stay_length_bucket='12-24', did_recidivate=True)
+        follow_up_period=1, stay_length_bucket='12-24', did_recidivate=True)
 
     recidivism_metric_without_dimensions = ReincarcerationRecidivismRateMetric(
         job_id='12345', state_code='US_XX', release_cohort=2015,
-        follow_up_period=1, methodology=MetricMethodologyType.EVENT,
-        did_recidivate=True)
+        follow_up_period=1, did_recidivate=True)
 
     recidivism_metric_event_based = ReincarcerationRecidivismRateMetric(
         job_id='12345', state_code='US_XX', release_cohort=2015,
-        follow_up_period=1, methodology=MetricMethodologyType.EVENT,
-        did_recidivate=True)
+        follow_up_period=1, did_recidivate=True)
 
     @staticmethod
     def get_list():

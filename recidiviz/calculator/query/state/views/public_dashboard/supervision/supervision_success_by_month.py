@@ -42,11 +42,7 @@ SUPERVISION_SUCCESS_BY_MONTH_VIEW_QUERY_TEMPLATE = \
         person_id,
       FROM `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_success_metrics_materialized`,
       UNNEST ([{grouped_districts}, 'ALL']) AS district
-      WHERE methodology = 'EVENT'
-        AND metric_period_months = 1
-        AND person_id IS NOT NULL
-        AND month IS NOT NULL
-        AND year >= EXTRACT(YEAR FROM DATE_SUB(CURRENT_DATE(), INTERVAL 3 YEAR))
+      WHERE year >= EXTRACT(YEAR FROM DATE_SUB(CURRENT_DATE(), INTERVAL 3 YEAR))
       GROUP BY state_code, projected_year, projected_month, district, supervision_type, person_id
     ), success_counts AS (
       SELECT

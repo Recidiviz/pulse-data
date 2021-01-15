@@ -45,8 +45,7 @@ from recidiviz.calculator.pipeline.supervision.supervision_time_bucket import \
     NonRevocationReturnSupervisionTimeBucket, \
     RevocationReturnSupervisionTimeBucket, \
     ProjectedSupervisionCompletionBucket, SupervisionTerminationBucket, SupervisionTimeBucket
-from recidiviz.calculator.pipeline.utils.metric_utils import \
-    MetricMethodologyType, RecidivizMetricType
+from recidiviz.calculator.pipeline.utils.metric_utils import RecidivizMetricType
 from recidiviz.calculator.pipeline.utils.person_utils import PersonMetadata, ExtractPersonEventsMetadata
 from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_sentence_classification import SupervisionTypeSpan
 from recidiviz.common.constants.person_characteristics import Race
@@ -2485,7 +2484,6 @@ class TestProduceSupervisionMetrics(unittest.TestCase):
             assert metric_type in METRIC_TYPE_TO_CLASS.keys()
 
         metric_key_dict = {'gender': Gender.MALE,
-                           'methodology': MetricMethodologyType.EVENT,
                            'year': 1999,
                            'month': 3,
                            'state_code': 'CA'}
