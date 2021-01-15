@@ -51,7 +51,7 @@ REVOCATIONS_MATRIX_SUPERVISION_DISTRIBUTION_BY_DISTRICT_QUERY_TEMPLATE = \
       violation_type,
       reported_violations,
       metric_period_months
-    FROM `{project_id}.{reference_views_dataset}.supervision_matrix_by_person`
+    FROM `{project_id}.{reference_views_dataset}.supervision_matrix_by_person_materialized`
     GROUP BY state_code, level_1_supervision_location, level_2_supervision_location, supervision_type,
         supervision_level, charge_category, violation_type, reported_violations, metric_period_months
     """

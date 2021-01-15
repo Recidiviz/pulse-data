@@ -56,7 +56,7 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_VIOLATION_QUERY_TEMPLATE = \
           reported_violations AS violation_count,
           -- Rows that count towards the number of violations don't count towards any violation type entry counts --
           '' as violation_type_entry
-        FROM `{project_id}.{reference_views_dataset}.revocations_matrix_by_person`
+        FROM `{project_id}.{reference_views_dataset}.revocations_matrix_by_person_materialized`
     ) , unnested_violation_type_entries AS (
       SELECT
         state_code,
@@ -71,7 +71,7 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_VIOLATION_QUERY_TEMPLATE = \
         -- Rows with violation type entries don't count towards the number of violations --
         0 as violation_count,
         TRIM(violation_type_entry) as violation_type_entry
-      FROM `{project_id}.{reference_views_dataset}.revocations_matrix_by_person`,
+      FROM `{project_id}.{reference_views_dataset}.revocations_matrix_by_person_materialized`,
         -- Unnest each violation type listed on each violation --
         UNNEST(
             -- Translates a string like "[TECHNICAL, FELONY],[ABSCONSION, MISDEMEANOR],[MISDEMEANOR]" to
