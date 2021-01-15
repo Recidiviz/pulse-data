@@ -26,7 +26,7 @@ import argparse
 import logging
 import sys
 from http import HTTPStatus
-from typing import Tuple, List, Optional, Set
+from typing import Dict, List, Optional, Sequence, Set, Tuple
 
 from flask import Blueprint, request
 from opencensus.stats import measure, view as opencensus_view, aggregation
@@ -37,11 +37,13 @@ from recidiviz.big_query import view_update_manager
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.big_query.export.big_query_view_exporter import BigQueryViewExporter, JsonLinesBigQueryViewExporter, \
     ViewExportValidationError
-from recidiviz.big_query.export.big_query_view_export_validator import JsonLinesBigQueryViewExportValidator
-
-from recidiviz.big_query.export.composite_big_query_view_exporter import CompositeBigQueryViewExporter
+from recidiviz.big_query.export.big_query_view_export_validator import ExistsBigQueryViewExportValidator
+from recidiviz.big_query.export.export_query_config import ExportOutputFormatType
+from recidiviz.big_query.view_update_manager import BigQueryViewNamespace
+from recidiviz.cloud_storage.gcs_file_system import GCSFileSystem
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
-from recidiviz.metrics.export.export_config import ExportMetricBigQueryViewConfig, ExportViewCollectionConfig
+from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
+from recidiviz.metrics.export.export_config import ExportBigQueryViewConfig, ExportViewCollectionConfig
 from recidiviz.metrics.export.optimized_metric_big_query_view_exporter import OptimizedMetricBigQueryViewExporter
 from recidiviz.metrics.export.optimized_metric_big_query_view_export_validator import \
     OptimizedMetricBigQueryViewExportValidator
@@ -174,22 +176,30 @@ def export_view_data_to_cloud_storage(export_job_filter: str,
     json_exporter = None
     metric_exporter = None
 
+    gcsfs_client = GcsfsFactory.build()
     if override_view_exporter is None:
         bq_client = BigQueryClientImpl()
-        gcsfs_client = GcsfsFactory.build()
 
+        # Some our views intentionally export empty files (e.g. some of the ingest_metadata views)
+        # so we just check for existence
+        csv_exporter = JsonLinesBigQueryViewExporter(bq_client,
+                                                     ExistsBigQueryViewExportValidator(gcsfs_client))
         json_exporter = JsonLinesBigQueryViewExporter(bq_client,
-                                                      JsonLinesBigQueryViewExportValidator(gcsfs_client))
-
-        optimized_exporter = OptimizedMetricBigQueryViewExporter(
+                                                      ExistsBigQueryViewExportValidator(gcsfs_client))
+        metric_exporter = OptimizedMetricBigQueryViewExporter(
             bq_client, OptimizedMetricBigQueryViewExportValidator(gcsfs_client))
-        delegates = [json_exporter, optimized_exporter]
 
-        metric_exporter = CompositeBigQueryViewExporter(
-            bq_client,
-            gcsfs_client,
-            delegates
-        )
+        delegate_export_map = {
+            ExportOutputFormatType.CSV: csv_exporter,
+            ExportOutputFormatType.JSON: json_exporter,
+            ExportOutputFormatType.METRIC: metric_exporter,
+        }
+    else:
+        delegate_export_map = {
+            ExportOutputFormatType.CSV: override_view_exporter,
+            ExportOutputFormatType.JSON: override_view_exporter,
+            ExportOutputFormatType.METRIC: override_view_exporter,
+        }
 
     project_id = metadata.project_id()
 
@@ -202,22 +212,7 @@ def export_view_data_to_cloud_storage(export_job_filter: str,
         # The export will error if the validations fail for the set of view_export_configs. We want to log this failure
         # as a warning, but not block on the rest of the exports.
         try:
-            if override_view_exporter is not None:
-                override_view_exporter.export_and_validate(view_export_configs)
-            elif json_exporter and metric_exporter:
-                metric_configs = [
-                    conf for conf in view_export_configs if isinstance(
-                        conf, ExportMetricBigQueryViewConfig)]
-                nonmetric_configs = [
-                    conf for conf in view_export_configs if not isinstance(
-                        conf, ExportMetricBigQueryViewConfig)]
-
-                metric_exporter.export_and_validate(metric_configs)
-                json_exporter.export_and_validate(nonmetric_configs)
-            else:
-                raise ValueError("No instantiated BigQueryViewExporter. Either override_view_exporter or "
-                                 "both json_exporter and metric_exporter are expected to be instantiated at this "
-                                 "point.")
+            export_views_with_exporters(gcsfs_client, view_export_configs, delegate_export_map)
         except ViewExportValidationError:
             warning_message = f"Export validation failed for {dataset_export_config.export_name}"
 
@@ -240,6 +235,45 @@ def export_view_data_to_cloud_storage(export_job_filter: str,
             }) as measurements:
                 measurements.measure_int_put(m_failed_metric_export_job, 1)
             raise e
+
+
+def export_views_with_exporters(gcsfs: GCSFileSystem,
+                                export_configs: Sequence[ExportBigQueryViewConfig],
+                                delegate_exporter_for_output: Dict[ExportOutputFormatType, BigQueryViewExporter]) -> \
+        List[GcsfsFilePath]:
+    """Runs all exporters on relevant export configs, first placing contents into a staging/ directory
+    before copying all results over when everything is seen to have succeeded."""
+    if not export_configs or not delegate_exporter_for_output:
+        return []
+
+    logging.info("Starting composite BigQuery view export.")
+    all_staging_paths: List[GcsfsFilePath] = []
+
+    for export_type, view_exporter in delegate_exporter_for_output.items():
+        staging_configs = [config.pointed_to_staging_subdirectory()
+                           for config in export_configs if export_type in config.export_output_formats]
+
+        logging.info("Beginning staged export of results for view exporter delegate [%s]", view_exporter.__class__)
+
+        staging_paths = view_exporter.export_and_validate(staging_configs)
+        all_staging_paths.extend(staging_paths)
+
+        logging.info("Completed staged export of results for view exporter delegate [%s]", view_exporter.__class__)
+
+        logging.info("Copying staged export results to final location")
+
+    final_paths = []
+    for staging_path in all_staging_paths:
+        final_path = ExportBigQueryViewConfig.revert_staging_path_to_original(staging_path)
+        gcsfs.copy(staging_path, final_path)
+        final_paths.append(final_path)
+
+    logging.info("Deleting staged copies of the final output paths")
+    for staging_path in all_staging_paths:
+        gcsfs.delete(staging_path)
+
+    logging.info("Completed composite BigQuery view export.")
+    return final_paths
 
 
 def parse_arguments(argv: List[str]) -> Tuple[argparse.Namespace, List[str]]:

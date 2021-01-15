@@ -87,3 +87,17 @@ class JsonLinesBigQueryViewExporter(BigQueryViewExporter):
         self.bq_client.export_query_results_to_cloud_storage(export_query_configs)
 
         return [GcsfsFilePath.from_absolute_path(config.output_uri) for config in export_query_configs]
+
+
+class CSVBigQueryViewExporter(BigQueryViewExporter):
+    """View exporter which produces results in CSV format and exports to Google Cloud Storage.
+
+    This format is natively supported by the BigQuery Export API so this is a thin wrapper around that call.
+    """
+
+    def export(self, export_configs: Sequence[ExportBigQueryViewConfig]) -> List[GcsfsFilePath]:
+        export_query_configs = [c.as_export_query_config(bigquery.DestinationFormat.CSV)
+                                for c in export_configs]
+        self.bq_client.export_query_results_to_cloud_storage(export_query_configs)
+
+        return [GcsfsFilePath.from_absolute_path(config.output_uri) for config in export_query_configs]
