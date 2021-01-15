@@ -40,6 +40,7 @@ from recidiviz.calculator.query.state.dataset_config import DATAFLOW_METRICS_DAT
 
 from recidiviz.utils.environment import GCP_PROJECT_STAGING, GCP_PROJECT_PRODUCTION
 from recidiviz.utils.metadata import local_project_id_override
+from recidiviz.utils.params import str_to_bool
 
 
 def main(dry_run: bool) -> None:
@@ -114,7 +115,7 @@ def parse_arguments(argv: List[str]) -> Tuple[argparse.Namespace, List[str]]:
 
     parser.add_argument('--dry_run',
                         dest='dry_run',
-                        type=bool,
+                        type=str_to_bool,
                         required=True)
 
     return parser.parse_known_args(argv)
