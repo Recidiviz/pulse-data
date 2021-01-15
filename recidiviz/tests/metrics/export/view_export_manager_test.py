@@ -291,3 +291,47 @@ class ViewCollectionExportManagerTest(unittest.TestCase):
 
         mock_view_update_manager.assert_not_called()
         mock_view_exporter.export_and_validate.assert_called()
+
+    @mock.patch('recidiviz.metrics.export.view_export_manager.view_update_manager.VIEW_BUILDERS_BY_NAMESPACE')
+    @mock.patch('recidiviz.big_query.view_update_manager.create_dataset_and_update_views_for_view_builders')
+    @mock.patch('recidiviz.big_query.export.big_query_view_exporter.BigQueryViewExporter')
+    def test_export_dashboard_data_to_cloud_storage_update_all_views(self,
+                                                                     mock_view_exporter,
+                                                                     mock_view_update_manager,
+                                                                     mock_view_builders_by_namespace):
+        """Tests that all views in the namespace are updated before the export when the export name is in
+        export_config.NAMESPACES_REQUIRING_FULL_UPDATE."""
+        self.mock_export_config.NAMESPACES_REQUIRING_FULL_UPDATE = [self.mock_big_query_view_namespace]
+
+        mock_view_builders_by_namespace.return_value = {
+            self.mock_big_query_view_namespace: self.view_buidlers_for_dataset
+        }
+
+        view_export_manager.export_view_data_to_cloud_storage(self.mock_state_code, mock_view_exporter)
+
+        mock_view_update_manager.assert_called_with(
+            self.mock_big_query_view_namespace,
+            mock_view_builders_by_namespace[self.mock_big_query_view_namespace],
+            materialized_views_only=False)
+
+    @mock.patch('recidiviz.metrics.export.view_export_manager.view_update_manager.VIEW_BUILDERS_BY_NAMESPACE')
+    @mock.patch('recidiviz.big_query.view_update_manager.create_dataset_and_update_views_for_view_builders')
+    @mock.patch('recidiviz.big_query.export.big_query_view_exporter.BigQueryViewExporter')
+    def test_export_dashboard_data_to_cloud_storage_update_materialized_views_only(self,
+                                                                                   mock_view_exporter,
+                                                                                   mock_view_update_manager,
+                                                                                   mock_view_builders_by_namespace):
+        """Tests that only materialized views in the namespace are updated before the export when the export name is not
+        in export_config.NAMESPACES_REQUIRING_FULL_UPDATE."""
+        self.mock_export_config.NAMESPACES_REQUIRING_FULL_UPDATE = ['OTHER_NAMESPACE']
+
+        mock_view_builders_by_namespace.return_value = {
+            self.mock_big_query_view_namespace: self.view_buidlers_for_dataset
+        }
+
+        view_export_manager.export_view_data_to_cloud_storage(self.mock_state_code, mock_view_exporter)
+
+        mock_view_update_manager.assert_called_with(
+            self.mock_big_query_view_namespace,
+            mock_view_builders_by_namespace[self.mock_big_query_view_namespace],
+            materialized_views_only=True)
