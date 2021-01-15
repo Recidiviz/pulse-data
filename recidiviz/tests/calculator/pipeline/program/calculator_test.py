@@ -25,33 +25,24 @@ from freezegun import freeze_time
 
 from recidiviz.calculator.pipeline.program import calculator
 from recidiviz.calculator.pipeline.program.calculator import EVENT_TO_METRIC_TYPES
-from recidiviz.calculator.pipeline.program.metrics import ProgramMetricType, ProgramReferralMetric, \
-    ProgramParticipationMetric
+from recidiviz.calculator.pipeline.program.metrics import ProgramMetricType
 from recidiviz.calculator.pipeline.program.program_event import \
     ProgramReferralEvent, ProgramEvent, ProgramParticipationEvent
-from recidiviz.calculator.pipeline.utils import calculator_utils
-from recidiviz.calculator.pipeline.utils.metric_utils import \
-    MetricMethodologyType
 from recidiviz.calculator.pipeline.utils.person_utils import PersonMetadata
 from recidiviz.common.constants.person_characteristics import Gender, Race, \
     Ethnicity
 from recidiviz.common.constants.state.state_assessment import \
     StateAssessmentType
-from recidiviz.common.constants.state.state_program_assignment import StateProgramAssignmentParticipationStatus
 from recidiviz.common.constants.state.state_supervision import \
     StateSupervisionType
-from recidiviz.common.date import last_day_of_month
 from recidiviz.persistence.entity.state.entities import StatePerson, \
     StatePersonRace, StatePersonEthnicity
-from recidiviz.tests.calculator.calculator_test_utils import combo_has_enum_value_for_key
 
 ALL_METRICS_INCLUSIONS_DICT = {
     metric_type: True for metric_type in ProgramMetricType
 }
 
 _DEFAULT_PERSON_METADATA = PersonMetadata(prioritized_race_or_ethnicity='BLACK')
-
-CALCULATION_METHODOLOGIES = len(MetricMethodologyType)
 
 
 class TestMapProgramCombinations(unittest.TestCase):

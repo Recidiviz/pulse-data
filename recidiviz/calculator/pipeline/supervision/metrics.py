@@ -71,10 +71,6 @@ class SupervisionMetric(RecidivizMetric, SupervisionLocationMetric):
 
     # Optional characteristics
 
-    # TODO(#5242): Delete this attribute
-    # The number of months this metric describes, starting with the month of the metric and going back in time.
-    metric_period_months: Optional[int] = attr.ib(default=1)
-
     # TODO(#2891): Consider moving this out of the base class, and making the supervision type specific to each
     #   metric type
     # Supervision Type

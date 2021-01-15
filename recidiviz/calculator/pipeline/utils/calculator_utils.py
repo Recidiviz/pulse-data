@@ -22,7 +22,7 @@ import attr
 from dateutil.relativedelta import relativedelta
 
 from recidiviz.calculator.pipeline.utils.event_utils import IdentifierEventWithSingularDate, IdentifierEvent
-from recidiviz.calculator.pipeline.utils.metric_utils import MetricMethodologyType, RecidivizMetric, \
+from recidiviz.calculator.pipeline.utils.metric_utils import RecidivizMetric, \
     PersonLevelMetric, RecidivizMetricType
 from recidiviz.calculator.pipeline.utils.person_utils import PersonMetadata
 from recidiviz.common.constants.state.external_id_types import US_ID_DOC, US_MO_DOC, US_PA_CONTROL, US_PA_PBPP, \
@@ -193,23 +193,20 @@ def identify_most_severe_response_decision(
 def augmented_combo_for_calculations(combo: Dict[str, Any],
                                      state_code: str,
                                      metric_type: RecidivizMetricType,
-                                     methodology: MetricMethodologyType,
                                      year: Optional[int] = None,
                                      month: Optional[int] = None) -> Dict[str, Any]:
     """Augments the given combo dictionary with the given parameters of the calculation.
 
     Args:
-        combo: the base combo to be augmented with methodology and period
+        combo: the base combo to be augmented
         state_code: the state code of the metric combo
         metric_type: the metric_type of the metric
-        methodology: the MetricMethodologyType to add to each combo
         year: the year this metric describes
         month: the month this metric describes
 
     Returns: Returns a dictionary that has been augmented with necessary parameters.
     """
     parameters: Dict[str, Any] = {'state_code': state_code,
-                                  'methodology': methodology,
                                   'metric_type': metric_type
                                   }
 
@@ -340,7 +337,6 @@ def characteristics_dict_builder(
         'year',
         'month',
         'follow_up_period',
-        'metric_period_months',
 
         # This is set by the contents of the `violation_type_frequency_counter` on
         # RevocationReturnSupervisionTimeBuckets
@@ -421,7 +417,7 @@ def produce_standard_metric_combinations(
 
             augmented_combo = augmented_combo_for_calculations(
                 characteristic_combo, event.state_code,
-                metric_type, MetricMethodologyType.EVENT, event_year, event_month
+                metric_type, event_year, event_month
             )
 
             metrics.append((augmented_combo, 1))

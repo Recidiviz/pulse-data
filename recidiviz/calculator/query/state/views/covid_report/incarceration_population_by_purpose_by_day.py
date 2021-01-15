@@ -18,7 +18,7 @@
 # pylint: disable=trailing-whitespace
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder, SimpleBigQueryViewBuilder
 from recidiviz.calculator.query import bq_utils
-from recidiviz.calculator.query.state import dataset_config
+from recidiviz.calculator.query.state import dataset_config, state_specific_query_strings
 from recidiviz.calculator.query.state.dataset_config import STATE_BASE_DATASET, DATAFLOW_METRICS_MATERIALIZED_DATASET, \
     STATIC_REFERENCE_TABLES_DATASET
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
@@ -44,9 +44,7 @@ INCARCERATION_POPULATION_BY_PURPOSE_BY_DAY_QUERY_TEMPLATE = \
       LEFT JOIN
         `{project_id}.{static_reference_dataset}.state_incarceration_facility_capacity`
       USING (state_code, facility)
-      WHERE methodology = 'EVENT'
-      -- Revisit these exclusions when #3657 and #3723 are complete --
-      AND (state_code != 'US_ND' OR facility not in ('OOS', 'CPP'))
+      WHERE {state_specific_facility_exclusion}
       AND EXTRACT(YEAR FROM date_of_stay) > EXTRACT(YEAR FROM DATE_SUB(CURRENT_DATE(), INTERVAL 1 YEAR))
     )
     
@@ -74,6 +72,7 @@ INCARCERATION_POPULATION_BY_PURPOSE_BY_DAY_VIEW_BUILDER = SimpleBigQueryViewBuil
     static_reference_dataset=STATIC_REFERENCE_TABLES_DATASET,
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
     facility_dimension=bq_utils.unnest_column('facility', 'facility'),
+    state_specific_facility_exclusion=state_specific_query_strings.state_specific_facility_exclusion()
 )
 
 if __name__ == '__main__':

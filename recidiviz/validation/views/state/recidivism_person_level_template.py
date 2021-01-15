@@ -34,7 +34,6 @@ RECIDIVISM_PERSON_LEVEL_EXTERNAL_COMPARISON_QUERY_TEMPLATE = \
         ROW_NUMBER() OVER (PARTITION BY state_code, release_cohort, follow_up_period, person_id
           ORDER BY release_date ASC, did_recidivate DESC) as release_order
         FROM `{{project_id}}.{{materialized_metrics_dataset}}.most_recent_recidivism_rate_metrics_materialized`
-      WHERE methodology = 'EVENT'
     ), internal_metrics AS (
       SELECT
         state_code AS region_code,

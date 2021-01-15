@@ -48,7 +48,6 @@ RECIDIVISM_RATES_BY_COHORT_BY_YEAR_VIEW_QUERY_TEMPLATE = \
       WHERE release_cohort >= EXTRACT(YEAR FROM CURRENT_DATE()) - 11
       -- Only include follow-up periods that have completed --
       AND (release_cohort + follow_up_period < EXTRACT(YEAR FROM CURRENT_DATE()))
-      AND methodology = 'EVENT'
   ), recidivism_numbers AS (
       SELECT
         state_code,

@@ -60,8 +60,6 @@ ACTIVE_PROGRAM_PARTICIPATION_BY_REGION_VIEW_QUERY_TEMPLATE = \
          `{project_id}.{static_reference_dataset}.state_race_ethnicity_population_counts`
       USING (state_code, race_or_ethnicity)
       WHERE state_code = 'US_ND'
-        AND methodology = 'EVENT'
-        AND person_id IS NOT NULL
         AND supervision_type IN ('PAROLE', 'PROBATION')
     )
 

@@ -34,19 +34,6 @@ class RecidivizMetricType(Enum):
     """Enum describing the type of metric described in the metric class."""
 
 
-# TODO(#5242): Delete this enum
-class MetricMethodologyType(Enum):
-    """Methods for counting criminal justice metrics.
-
-     Event-Based: a method for measuring wherein the event, such as
-        release from a facility, is the unit of analysis. That is, if Allison
-        is released from and returned to a facility twice in a given window,
-        then that counts as two separate instances of recidivism for
-        measurement, even though it includes only a single individual.
-     """
-    EVENT = 'EVENT'
-
-
 @attr.s
 class RecidivizMetric(BuildableAttr):
     """Base class for modeling a single metric.
@@ -65,11 +52,6 @@ class RecidivizMetric(BuildableAttr):
 
     # The state code of the metric this describes
     state_code: str = attr.ib()
-
-    # TODO(#5242): Delete this attribute
-    # MetricMethodologyType enum for the calculation of the metric
-    methodology: MetricMethodologyType = \
-        attr.ib(default=None)  # non-nullable
 
     # Optional characteristics
 

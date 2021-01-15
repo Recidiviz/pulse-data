@@ -25,7 +25,7 @@ from recidiviz.calculator.query.state.dataset_config import DATAFLOW_METRICS_MAT
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-DEFAULT_JOIN_INDICES: str = 'job_id, state_code, year, month, metric_period_months, metric_type'
+DEFAULT_JOIN_INDICES: str = 'job_id, state_code, year, month, metric_type'
 
 METRIC_TABLES_JOIN_OVERRIDES: Dict[str, str] = {
     'recidivism_rate_metrics': 'job_id, state_code, metric_type',

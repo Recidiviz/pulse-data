@@ -63,10 +63,7 @@ ADMISSIONS_VERSUS_RELEASES_BY_PERIOD_QUERY_TEMPLATE = \
       FROM `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_release_metrics_materialized` m,
       {district_dimension},
       {metric_period_dimension}
-      WHERE methodology = 'EVENT'
-        AND person_id IS NOT NULL
-        AND m.metric_period_months = 1
-        AND {metric_period_condition}
+      WHERE {metric_period_condition}
       GROUP BY state_code, metric_period_months, district
     ) releases
     USING (state_code, district, metric_period_months)
@@ -79,10 +76,9 @@ ADMISSIONS_VERSUS_RELEASES_BY_PERIOD_QUERY_TEMPLATE = \
       FROM `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_population_metrics_materialized` m,
       {district_dimension},
       {metric_period_dimension}
-      WHERE methodology = 'EVENT'
-        AND person_id IS NOT NULL
+      WHERE 
          -- Get population count for first day of the period
-        AND date_of_stay = DATE_SUB(DATE_TRUNC(CURRENT_DATE('US/Pacific'), MONTH), INTERVAL metric_period_months - 1 MONTH)
+        date_of_stay = DATE_SUB(DATE_TRUNC(CURRENT_DATE('US/Pacific'), MONTH), INTERVAL metric_period_months - 1 MONTH)
       GROUP BY state_code, district, metric_period_months
     ) inc_pop
     USING (state_code, district, metric_period_months)

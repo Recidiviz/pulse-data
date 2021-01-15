@@ -109,7 +109,7 @@ def state_specific_supervision_level() -> str:
 
 def state_specific_facility_exclusion() -> str:
     return """-- Revisit these exclusions when #3657 and #3723 are complete --
-      AND (state_code != 'US_ND' OR facility not in ('OOS', 'CPP'))"""
+      (state_code != 'US_ND' OR facility not in ('OOS', 'CPP'))"""
 
 
 def state_specific_external_id_type(state_code_table_prefix: str) -> str:

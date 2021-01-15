@@ -57,8 +57,6 @@ US_ID_RELEASED_COMMUNITY_PERFORMANCE_QUERY_TEMPLATE = \
       JOIN report_dates
         ON release_date BETWEEN earliest_start_date AND report_end_date
       WHERE state_code = 'US_ID'
-        AND methodology = 'EVENT'
-        AND metric_period_months = 1
         AND release_reason NOT IN ('RELEASED_FROM_TEMPORARY_CUSTODY', 'TRANSFER')
     ),
     most_recent_release AS (

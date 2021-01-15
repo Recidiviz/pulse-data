@@ -54,11 +54,7 @@ EVENT_BASED_REVOCATIONS_FOR_MATRIX_QUERY_TEMPLATE = \
         violation_history_description AS violation_record,
         violation_type_frequency_counter
     FROM `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_revocation_analysis_metrics_materialized`
-    WHERE methodology = 'EVENT'
-        AND metric_period_months = 1
-        AND revocation_type = 'REINCARCERATION'
-        AND month IS NOT NULL
-        AND person_id IS NOT NULL
+    WHERE revocation_type = 'REINCARCERATION'
     """
 
 EVENT_BASED_REVOCATIONS_FOR_MATRIX_VIEW_BUILDER = SimpleBigQueryViewBuilder(

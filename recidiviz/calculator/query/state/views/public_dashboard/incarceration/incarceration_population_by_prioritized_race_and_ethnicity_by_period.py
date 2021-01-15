@@ -44,9 +44,7 @@ INCARCERATION_POPULATION_BY_PRIORITIZED_RACE_AND_ETHNICITY_BY_PERIOD_VIEW_QUERY_
       UNNEST ([36]) AS metric_period_months,
       {race_or_ethnicity_dimension}
       WHERE {metric_period_condition}
-        AND methodology = 'EVENT'
-        AND person_id IS NOT NULL
-        {state_specific_facility_exclusion}
+        AND {state_specific_facility_exclusion}
     ), population_with_race_or_ethnicity_priorities AS (
       SELECT
         *,

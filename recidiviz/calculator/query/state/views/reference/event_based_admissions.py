@@ -40,11 +40,7 @@ EVENT_BASED_ADMISSIONS_QUERY_TEMPLATE = \
       admission_reason, admission_date
     FROM `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_admission_metrics_materialized`,
     {district_dimension}
-    WHERE methodology = 'EVENT'
-      AND person_id IS NOT NULL
-      AND metric_period_months = 1
-      AND month IS NOT NULL
-      AND year >= EXTRACT(YEAR FROM DATE_SUB(CURRENT_DATE(), INTERVAL 3 YEAR))
+    WHERE year >= EXTRACT(YEAR FROM DATE_SUB(CURRENT_DATE(), INTERVAL 3 YEAR))
     """
 
 EVENT_BASED_ADMISSIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
