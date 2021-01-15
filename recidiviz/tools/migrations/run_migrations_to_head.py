@@ -35,7 +35,7 @@ python -m recidiviz.tools.migrations.run_migrations_to_head \
 python -m recidiviz.tools.migrations.run_migrations_to_head \
     --database JAILS \
     --project-id recidiviz-staging \
-    --ssl-cert-path=~/dev_data_certs
+    --ssl-cert-path ~/dev_data_certs
 """
 import argparse
 import logging
@@ -77,7 +77,6 @@ def create_parser() -> argparse.ArgumentParser:
     return parser
 
 
-
 def main(database: SchemaType, repo_root: str, ssl_cert_path: str, dry_run: bool) -> None:
     """
     Invokes the main code path for running migrations.
@@ -108,7 +107,11 @@ def main(database: SchemaType, repo_root: str, ssl_cert_path: str, dry_run: bool
     if dry_run:
         overriden_env_vars = local_postgres_helpers.update_local_sqlalchemy_postgres_env_vars()
     else:
-        overriden_env_vars = SQLAlchemyEngineManager.update_sqlalchemy_env_vars(database, ssl_cert_path=ssl_cert_path)
+        overriden_env_vars = SQLAlchemyEngineManager.update_sqlalchemy_env_vars(
+            database,
+            ssl_cert_path=ssl_cert_path,
+            migration_user=True,
+        )
 
     # Run migrations
     try:
