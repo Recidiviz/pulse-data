@@ -16,14 +16,14 @@
 # =============================================================================
 
 # The base name for our database-related secrets per `recidiviz.persistence.database.sqlalchemy_engine_manager`
-variable "base_secret_name"  {
+variable "base_secret_name" {
   type = string
 }
 
 # Postgres database version
 # See also https://cloud.google.com/sql/docs/postgres/create-instance#create-2nd-gen
-variable "database_version"  {
-  type = string
+variable "database_version" {
+  type    = string
   default = "POSTGRES_13"
 }
 
@@ -45,7 +45,7 @@ variable "region" {
 
 # Require SSL connections?
 variable "require_ssl_connection" {
-  type = bool
+  type    = bool
   default = true
 }
 
@@ -68,24 +68,24 @@ data "google_secret_manager_secret_version" "prod_data_client_cidr" { secret = "
 # The following secrets are used to configure the instance:
 # =========================================================
 # Instance ID i.e. `recidiviz-staging:us-east1:dev-case-triage-data`
-data "google_secret_manager_secret_version" "cloudsql_instance_id"  { secret = "${var.base_secret_name}_cloudsql_instance_id" }
+data "google_secret_manager_secret_version" "cloudsql_instance_id" { secret = "${var.base_secret_name}_cloudsql_instance_id" }
 
 # Default username
-data "google_secret_manager_secret_version" "db_user"               { secret = "${var.base_secret_name}_db_user" }
+data "google_secret_manager_secret_version" "db_user" { secret = "${var.base_secret_name}_db_user" }
 
 # Password for the default user
-data "google_secret_manager_secret_version" "db_password"           { secret = "${var.base_secret_name}_db_password" }
+data "google_secret_manager_secret_version" "db_password" { secret = "${var.base_secret_name}_db_password" }
 
 # (Optional) Readonly user name
-data "google_secret_manager_secret_version" "db_readonly_user"      {
+data "google_secret_manager_secret_version" "db_readonly_user" {
   secret = "${var.base_secret_name}_db_readonly_user"
-  count = var.has_readonly_user ? 1 : 0
+  count  = var.has_readonly_user ? 1 : 0
 }
 
 # (Optional) Readonly user password
-data "google_secret_manager_secret_version" "db_readonly_password"  {
+data "google_secret_manager_secret_version" "db_readonly_password" {
   secret = "${var.base_secret_name}_db_readonly_password"
-  count = var.has_readonly_user ? 1 : 0
+  count  = var.has_readonly_user ? 1 : 0
 }
 
 locals {
@@ -103,7 +103,7 @@ resource "google_sql_database_instance" "data" {
 
   settings {
     disk_autoresize = true
-    tier = var.tier
+    tier            = var.tier
 
     backup_configuration {
       enabled                        = true
@@ -130,6 +130,11 @@ resource "google_sql_database_instance" "data" {
       hour = 0
     }
   }
+}
+
+resource "google_project_iam_member" "gcs-access" {
+  role   = "roles/storage.objectViewer"
+  member = "serviceAccount:${google_sql_database_instance.data.service_account_email_address}"
 }
 
 resource "google_sql_user" "postgres" {
@@ -164,7 +169,7 @@ resource "google_secret_manager_secret" "secret_client_key" {
 }
 
 resource "google_secret_manager_secret_version" "secret_version_client_key" {
-  secret = google_secret_manager_secret.secret_client_key.name
+  secret      = google_secret_manager_secret.secret_client_key.name
   secret_data = google_sql_ssl_cert.client_cert.private_key
 }
 
@@ -175,7 +180,7 @@ resource "google_secret_manager_secret" "secret_client_cert" {
 }
 
 resource "google_secret_manager_secret_version" "secret_version_client_cert" {
-  secret = google_secret_manager_secret.secret_client_cert.name
+  secret      = google_secret_manager_secret.secret_client_cert.name
   secret_data = google_sql_ssl_cert.client_cert.cert
 }
 
@@ -186,6 +191,6 @@ resource "google_secret_manager_secret" "secret_server_cert" {
 }
 
 resource "google_secret_manager_secret_version" "secret_version_server_cert" {
-  secret = google_secret_manager_secret.secret_server_cert.name
+  secret      = google_secret_manager_secret.secret_server_cert.name
   secret_data = google_sql_database_instance.data.server_ca_cert[0].cert
 }
