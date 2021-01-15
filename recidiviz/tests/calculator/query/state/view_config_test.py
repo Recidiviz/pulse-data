@@ -20,6 +20,7 @@ import unittest
 
 import mock
 
+from recidiviz.metrics.export import export_config
 from recidiviz.calculator.query.state import view_config
 from recidiviz.big_query.big_query_view import (
     BigQueryView,
@@ -49,7 +50,7 @@ class ViewExportConfigTest(unittest.TestCase):
         """Make sure that all view_builders in the view_builders_to_export attribute of
         VIEW_COLLECTION_EXPORT_CONFIGS are of type BigQueryViewBuilder, and that running view_builder.build()
         produces a BigQueryView."""
-        for dataset_export_config in view_config.VIEW_COLLECTION_EXPORT_CONFIGS:
+        for dataset_export_config in export_config.VIEW_COLLECTION_EXPORT_CONFIGS:
             for view_builder in dataset_export_config.view_builders_to_export:
                 self.assertIsInstance(view_builder, BigQueryViewBuilder)
 

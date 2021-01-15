@@ -18,7 +18,6 @@
 
 import datetime
 import uuid
-from typing import Optional
 
 from recidiviz.common.google_cloud.cloud_task_queue_manager import CloudTaskQueueManager, CloudTaskQueueInfo
 from recidiviz.common.google_cloud.google_cloud_tasks_shared_queues import BIGQUERY_QUEUE_V2
@@ -31,18 +30,14 @@ class ViewExportCloudTaskManager:
         self.cloud_task_queue_manager = CloudTaskQueueManager(queue_info_cls=CloudTaskQueueInfo,
                                                               queue_name=BIGQUERY_QUEUE_V2)
 
-    def create_metric_view_data_export_task(self, export_job_filter: Optional[str]) -> None:
+    def create_metric_view_data_export_task(self, export_job_filter: str) -> None:
         """Create a BigQuery table export path.
 
         Args:
             export_job_filter: Kind of jobs to initiate export for. Can either be an export_name (e.g. LANTERN)
                 or a state_code (e.g. US_ND)
         """
-        base_uri = '/export/metric_view_data'
-        if export_job_filter:
-            uri = f'{base_uri}?export_job_filter={export_job_filter}'
-        else:
-            uri = base_uri
+        uri = f'/export/metric_view_data?export_job_filter={export_job_filter}'
 
         task_id = 'view_export-{}-{}-{}'.format(
             export_job_filter,

@@ -18,7 +18,6 @@
 
 import json
 import unittest
-from typing import Optional
 
 from google.cloud import tasks_v2
 from mock import patch
@@ -55,14 +54,14 @@ class ViewExportCloudTaskManagerTest(unittest.TestCase):
         self.metadata_patcher.stop()
 
     @parameterized.expand([
-        ('with_filter', None, '/export/metric_view_data'),
-        ('without_filter', 'US_MO', '/export/metric_view_data?export_job_filter=US_MO'),
+        ('with_export_name_filter', 'CORE', '/export/metric_view_data?export_job_filter=CORE'),
+        ('with_state_filter', 'US_MO', '/export/metric_view_data?export_job_filter=US_MO'),
     ])
     @freeze_time('2019-04-12')
     def test_create_metric_view_data_export_task(
             self,
             _name: str,
-            export_job_filter: Optional[str],
+            export_job_filter: str,
             expected_url: str) -> None:
         # Arrange
         uuid = 'random-uuid'
