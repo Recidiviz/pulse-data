@@ -24,6 +24,7 @@ from recidiviz.utils import metadata
 from recidiviz.utils.environment import GCP_PROJECTS
 
 PROJECT_ID_KEY = 'project_id'
+MATERIALIZED_SUFFIX = '_materialized'
 
 
 class BigQueryView(bigquery.TableReference):
@@ -140,7 +141,7 @@ class BigQueryView(bigquery.TableReference):
     @property
     def materialized_view_table_id(self) -> Optional[str]:
         """The table_id for a table that contains the result of the view_query if this view were to be materialized."""
-        return self.view_id + '_materialized' if self._should_materialize else None
+        return self.view_id + MATERIALIZED_SUFFIX if self._should_materialize else None
 
     def __repr__(self) -> str:
         return f'{self.__class__.__name__}(' \

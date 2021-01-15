@@ -30,19 +30,26 @@ from typing import Dict, List, Sequence, Tuple, Optional
 
 from opencensus.stats import measure, view as opencensus_view, aggregation
 
-from recidiviz.big_query.big_query_client import BigQueryClientImpl
+from recidiviz.big_query.big_query_client import BigQueryClientImpl, BigQueryClient
 from recidiviz.big_query.big_query_view import (
     BigQueryView,
     BigQueryViewBuilder,
     SimpleBigQueryViewBuilderShouldNotBuildError,
 )
+from recidiviz.big_query.big_query_view_dag_walker import BigQueryViewDagWalker
+from recidiviz.calculator.query.county.dataset_config import COUNTY_BASE_DATASET
 from recidiviz.calculator.query.county.view_config import VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE as COUNTY_VIEW_BUILDERS
+from recidiviz.calculator.query.county.views.vera.vera_view_constants import VERA_DATASET
 from recidiviz.calculator.query.justice_counts.view_config import VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE as \
     JUSTICE_COUNTS_VIEW_BUILDERS
+from recidiviz.calculator.query.operations.dataset_config import OPERATIONS_BASE_DATASET
+from recidiviz.calculator.query.state.dataset_config import STATE_BASE_DATASET, STATIC_REFERENCE_TABLES_DATASET, \
+    DATAFLOW_METRICS_DATASET, COVID_DASHBOARD_REFERENCE_DATASET
 from recidiviz.calculator.query.state.view_config import VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE as STATE_VIEW_BUILDERS
 from recidiviz.ingest.views.view_config import VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE as INGEST_METADATA_VIEW_BUILDERS
 from recidiviz.utils import monitoring
 from recidiviz.utils.params import str_to_bool
+from recidiviz.validation.views.dataset_config import EXTERNAL_ACCURACY_DATASET
 from recidiviz.validation.views.view_config import VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE as VALIDATION_VIEW_BUILDERS
 from recidiviz.utils.environment import GCP_PROJECT_STAGING, GCP_PROJECT_PRODUCTION
 from recidiviz.utils.metadata import local_project_id_override
@@ -76,6 +83,20 @@ VIEW_BUILDERS_BY_NAMESPACE: Dict[BigQueryViewNamespace, Sequence[BigQueryViewBui
     BigQueryViewNamespace.INGEST_METADATA: INGEST_METADATA_VIEW_BUILDERS,
 }
 
+# These datasets should only contain tables that provide the source data for our view graph.
+VIEW_SOURCE_TABLE_DATASETS = {
+    # TODO(#5200): Add the population projection raw data dataset to this list once raw data tables have been separated
+    #  from views.
+    COUNTY_BASE_DATASET,
+    COVID_DASHBOARD_REFERENCE_DATASET,
+    DATAFLOW_METRICS_DATASET,
+    EXTERNAL_ACCURACY_DATASET,
+    OPERATIONS_BASE_DATASET,
+    STATE_BASE_DATASET,
+    STATIC_REFERENCE_TABLES_DATASET,
+    VERA_DATASET
+}
+
 
 # When creating temporary datasets with prefixed names, set the default table expiration to 24 hours
 TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS = 24 * 60 * 60 * 1000
@@ -107,6 +128,10 @@ def create_dataset_and_update_views_for_view_builders(
     try:
         views_to_update = []
         for view_builder in view_builders_to_update:
+            if view_builder.dataset_id in VIEW_SOURCE_TABLE_DATASETS:
+                raise ValueError(
+                    f'Found view [{view_builder.view_id}] in source-table-only dataset [{view_builder.dataset_id}]')
+
             try:
                 view = view_builder.build(dataset_overrides=dataset_overrides)
             except SimpleBigQueryViewBuilderShouldNotBuildError:
@@ -150,10 +175,21 @@ def _create_dataset_and_update_views(views_to_update: List[BigQueryView],
             bq_client.create_dataset_if_necessary(views_dataset_ref, new_dataset_table_expiration_ms)
             dataset_ids.add(view.dataset_id)
 
-        bq_client.create_or_update_view(views_dataset_ref, view)
+    dag_walker = BigQueryViewDagWalker(views_to_update)
 
-        if view.materialized_view_table_id:
-            bq_client.materialize_view_to_table(view)
+    def process_fn(v: BigQueryView) -> None:
+        _create_or_update_view_and_materialize(bq_client, v)
+
+    dag_walker.process_dag(process_fn)
+
+
+def _create_or_update_view_and_materialize(bq_client: BigQueryClient, view: BigQueryView) -> None:
+    """Creates or updates the provided view in BigQuery and materializes that view into a table when appropriate."""
+    dataset_ref = bq_client.dataset_ref_for_id(view.dataset_id)
+    bq_client.create_or_update_view(dataset_ref, view)
+
+    if view.materialized_view_table_id:
+        bq_client.materialize_view_to_table(view)
 
 
 def parse_arguments(argv: List[str]) -> Tuple[argparse.Namespace, List[str]]:
