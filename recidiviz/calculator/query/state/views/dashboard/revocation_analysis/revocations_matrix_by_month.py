@@ -51,7 +51,7 @@ REVOCATIONS_MATRIX_BY_MONTH_QUERY_TEMPLATE = \
         level_1_supervision_location,
         level_2_supervision_location,
         COUNT(DISTINCT person_id) AS total_revocations
-    FROM `{project_id}.{reference_views_dataset}.revocations_matrix_by_person`
+    FROM `{project_id}.{reference_views_dataset}.revocations_matrix_by_person_materialized`
     -- We want MoM revocation admissions for the last 36 months
     WHERE revocation_admission_date >= DATE_SUB(DATE_TRUNC(CURRENT_DATE('US/Pacific'), MONTH), INTERVAL 35 MONTH)
     GROUP BY state_code, year, month, violation_type, reported_violations, supervision_type, supervision_level,

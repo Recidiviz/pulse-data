@@ -50,7 +50,7 @@ REVOCATIONS_MATRIX_FILTERED_CASELOAD_QUERY_TEMPLATE = \
       violation_type,
       reported_violations,
       metric_period_months
-    FROM `{project_id}.{reference_views_dataset}.revocations_matrix_by_person` 
+    FROM `{project_id}.{reference_views_dataset}.revocations_matrix_by_person_materialized` 
     WHERE CASE
         -- TODO(#4524): Once the front end supports the file size increase of multi-district breakdowns and we stop 
         -- filtering out hydrated level_1_supervision_location breakdown rows, we can remove this PA special case.
