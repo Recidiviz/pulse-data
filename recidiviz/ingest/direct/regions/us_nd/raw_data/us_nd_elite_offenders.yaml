@@ -1,0 +1,7 @@
+file_tag: elite_offenders
+primary_key_cols:
+  - ROOT_OFFENDER_ID
+datetime_cols:
+  - BIRTH_DATE
+  - CREATE_DATETIME
+  - MODIFY_DATETIME

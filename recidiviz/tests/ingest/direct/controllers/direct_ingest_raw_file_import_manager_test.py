@@ -86,14 +86,41 @@ class DirectIngestRegionRawFileConfigTest(unittest.TestCase):
                 legacy_yaml_config_file_path=fixtures.as_filepath('empty_raw_data_files.yaml'),
             )
 
+    def test_parse_yaml(self):
+        region_config = DirectIngestRegionRawFileConfig(
+            region_code='us_yy',
+            yaml_config_file_dir=fixtures.as_filepath('us_yy'),
+        )
+        self.assertEqual(3, len(region_config.raw_file_configs))
+        self.assertEqual({'file_tag_first', 'file_tag_second', 'tagC'},
+                         region_config.raw_file_configs.keys())
+
+        config_1 = region_config.raw_file_configs['file_tag_first']
+        self.assertEqual('file_tag_first', config_1.file_tag)
+        self.assertEqual(['col_name_1a', 'col_name_1b'], config_1.primary_key_cols)
+        self.assertEqual('ISO-456-7', config_1.encoding)
+        self.assertEqual(',', config_1.separator)
+
+        config_2 = region_config.raw_file_configs['file_tag_second']
+        self.assertEqual('file_tag_second', config_2.file_tag)
+        self.assertEqual(['col_name_2a'], config_2.primary_key_cols)
+        self.assertEqual('UTF-8', config_2.encoding)
+        self.assertEqual('$', config_2.separator)
+
+        config_3 = region_config.raw_file_configs['tagC']
+        self.assertEqual('tagC', config_3.file_tag)
+        self.assertEqual(['COL1'], config_3.primary_key_cols)
+        self.assertEqual('UTF-8', config_3.encoding)
+        self.assertEqual(',', config_3.separator)
+
     def test_missing_configs_for_region(self):
         with self.assertRaises(ValueError) as e:
             region_config = DirectIngestRegionRawFileConfig(
-                region_code='us_yy',
+                region_code='us_xy',
                 legacy_yaml_config_file_path=fixtures.as_filepath('does_not_exist.yaml'),
             )
             _configs = region_config.raw_file_configs
-        self.assertEqual(str(e.exception), 'Missing raw data configs for region: us_yy')
+        self.assertEqual(str(e.exception), 'Missing raw data configs for region: us_xy')
 
 
 class DirectIngestRawFileImportManagerTest(unittest.TestCase):

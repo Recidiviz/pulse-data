@@ -1,0 +1,12 @@
+file_tag: elite_offendersentences
+primary_key_cols:
+  - OFFENDER_BOOK_ID
+  - SENTENCE_SEQ
+datetime_cols:
+  - EFFECTIVE_DATE
+  - EIGHTYFIVE_PERCENT_DATE
+  - PROBABLE_RELEASE_DATE
+  - SENTENCE_EXPIRY_DATE
+  - START_DATE
+  - CREATE_DATETIME
+  - MODIFY_DATETIME

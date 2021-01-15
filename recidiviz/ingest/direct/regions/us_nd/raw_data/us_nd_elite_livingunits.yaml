@@ -1,0 +1,5 @@
+file_tag: elite_livingunits
+primary_key_cols:
+  - LIVING_UNIT_ID
+datetime_cols:
+  - DEACTIVATE_DATE

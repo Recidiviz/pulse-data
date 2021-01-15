@@ -1,0 +1,4 @@
+file_tag: file_tag_second
+primary_key_cols:
+  - col_name_2a
+separator: '$'
