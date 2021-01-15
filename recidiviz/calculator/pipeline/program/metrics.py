@@ -86,14 +86,11 @@ class ProgramMetric(RecidivizMetric, PersonLevelMetric):
 
 @attr.s
 class ProgramReferralMetric(ProgramMetric, AssessmentMetric, SupervisionLocationMetric):
-    """Subclass of ProgramMetric that contains program referral counts."""
+    """Subclass of ProgramMetric that contains program referral information."""
     # Required characteristics
 
     # The type of ProgramMetric
     metric_type: ProgramMetricType = attr.ib(init=False, default=ProgramMetricType.PROGRAM_REFERRAL)
-
-    # Referral count
-    count: int = attr.ib(default=None)
 
     # Optional characteristics
 
@@ -130,14 +127,11 @@ class ProgramReferralMetric(ProgramMetric, AssessmentMetric, SupervisionLocation
 
 @attr.s
 class ProgramParticipationMetric(ProgramMetric):
-    """Subclass of ProgramMetric that contains program participation counts."""
+    """Subclass of ProgramMetric that contains program participation information."""
     # Required characteristics
 
     # The type of ProgramMetric
     metric_type: ProgramMetricType = attr.ib(init=False, default=ProgramMetricType.PROGRAM_PARTICIPATION)
-
-    # Participation count
-    count: int = attr.ib(default=None)
 
     # Date of active participation
     date_of_participation: date = attr.ib(default=None)

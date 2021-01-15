@@ -129,14 +129,11 @@ class ViolationTypeSeverityMetric(BuildableAttr):
 
 @attr.s
 class SupervisionPopulationMetric(SupervisionMetric, PersonLevelMetric, ViolationTypeSeverityMetric, AssessmentMetric):
-    """Subclass of SupervisionMetric that contains supervision population counts."""
+    """Subclass of SupervisionMetric that contains supervision population information."""
     # Required characteristics
 
     # The type of SupervisionMetric
     metric_type: SupervisionMetricType = attr.ib(init=False, default=SupervisionMetricType.SUPERVISION_POPULATION)
-
-    # Population count
-    count: int = attr.ib(default=None)
 
     # Date of the supervision population count
     date_of_supervision: date = attr.ib(default=None)
@@ -165,7 +162,7 @@ class SupervisionPopulationMetric(SupervisionMetric, PersonLevelMetric, Violatio
 
 @attr.s
 class SupervisionOutOfStatePopulationMetric(SupervisionPopulationMetric):
-    """Subclass of SupervisionPopulationMetric that contains supervision counts for people who are serving their
+    """Subclass of SupervisionPopulationMetric that contains supervision information for people who are serving their
     supervisions in another state."""
     # Required characteristics
 
@@ -192,14 +189,11 @@ class SupervisionOutOfStatePopulationMetric(SupervisionPopulationMetric):
 
 @attr.s
 class SupervisionRevocationMetric(SupervisionMetric, PersonLevelMetric, AssessmentMetric):
-    """Subclass of SupervisionMetric that contains supervision revocation counts."""
+    """Subclass of SupervisionMetric that contains supervision revocation information."""
     # Required characteristics
 
     # The type of SupervisionMetric
     metric_type: SupervisionMetricType = attr.ib(init=False, default=SupervisionMetricType.SUPERVISION_REVOCATION)
-
-    # Revocation count
-    count: int = attr.ib(default=None)
 
     # Optional characteristics
 
@@ -279,11 +273,8 @@ class SupervisionSuccessMetric(SupervisionMetric, PersonLevelMetric):
     # The type of SupervisionMetric
     metric_type: SupervisionMetricType = attr.ib(init=False, default=SupervisionMetricType.SUPERVISION_SUCCESS)
 
-    # Number of successful completions
-    successful_completion_count: int = attr.ib(default=None)
-
-    # Total number of projected completions
-    projected_completion_count: int = attr.ib(default=None)
+    # Whether this represents a successful completion
+    successful_completion: bool = attr.ib(default=None)
 
     @staticmethod
     def build_from_metric_key_group(metric_key: Dict[str, Any], job_id: str) -> Optional['SupervisionSuccessMetric']:
@@ -311,11 +302,8 @@ class SuccessfulSupervisionSentenceDaysServedMetric(SupervisionMetric, PersonLev
     metric_type: SupervisionMetricType = \
         attr.ib(init=False, default=SupervisionMetricType.SUPERVISION_SUCCESSFUL_SENTENCE_DAYS_SERVED)
 
-    # Number of successful completions with projected completion dates in the metric month
-    successful_completion_count: int = attr.ib(default=None)
-
-    # Average days served among the successfully completed sentences
-    average_days_served: float = attr.ib(default=None)
+    # Days served for this sentence
+    days_served: int = attr.ib(default=None)
 
     @staticmethod
     def build_from_metric_key_group(metric_key: Dict[str, Any], job_id: str) -> \
@@ -336,15 +324,12 @@ class SuccessfulSupervisionSentenceDaysServedMetric(SupervisionMetric, PersonLev
 
 @attr.s
 class SupervisionTerminationMetric(SupervisionMetric, PersonLevelMetric, ViolationTypeSeverityMetric, AssessmentMetric):
-    """Subclass of SupervisionMetric that contains counts of supervision that have been terminated, the reason for the
-    termination, and the change in assessment score between the last assessment and the first reassessment."""
+    """Subclass of SupervisionMetric that contains information about a supervision that has been terminated, the reason
+    for the termination, and the change in assessment score between the last assessment and the first reassessment."""
     # Required characteristics
 
     # The type of SupervisionMetric
     metric_type: SupervisionMetricType = attr.ib(init=False, default=SupervisionMetricType.SUPERVISION_TERMINATION)
-
-    # Number of terminated supervisions
-    count: int = attr.ib(default=None)
 
     # Optional characteristics
 

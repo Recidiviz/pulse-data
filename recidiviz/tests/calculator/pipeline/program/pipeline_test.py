@@ -34,7 +34,7 @@ from freezegun import freeze_time
 
 from recidiviz.calculator.pipeline.program import pipeline
 from recidiviz.calculator.pipeline.program.metrics import ProgramMetric, \
-    ProgramMetricType
+    ProgramMetricType, ProgramReferralMetric
 from recidiviz.calculator.pipeline.program.program_event import \
     ProgramReferralEvent, ProgramParticipationEvent
 from recidiviz.calculator.pipeline.utils.metric_utils import MetricMethodologyType
@@ -892,7 +892,7 @@ class TestProduceProgramMetric(unittest.TestCase):
                   )
 
         assert_that(output, AssertMatchers.
-                    validate_program_referral_metric(value))
+                    validate_program_referral_metric())
 
         test_pipeline.run()
 
@@ -965,9 +965,9 @@ class AssertMatchers:
         return _count_combinations
 
     @staticmethod
-    def validate_program_referral_metric(expected_referral_count):
-        """Asserts that the count on the ProgramReferral produced by the
-        pipeline matches the expected referral count."""
+    def validate_program_referral_metric():
+        """Asserts that the ProgramReferral produced by the
+        pipeline matches the expected class."""
         def _validate_program_referral_metric(output):
             if len(output) != 1:
                 raise BeamAssertException('Failed assert. Should be only one '
@@ -975,8 +975,8 @@ class AssertMatchers:
 
             program_referral_metric = output[0]
 
-            if program_referral_metric.count != expected_referral_count:
-                raise BeamAssertException('Failed assert. Referral count '
-                                          'does not match expected value.')
+            if not isinstance(program_referral_metric, ProgramReferralMetric):
+                raise BeamAssertException('Failed assert. Produced metric '
+                                          'is not of the expected type.')
 
         return _validate_program_referral_metric

@@ -209,58 +209,28 @@ class ProduceSupervisionMetrics(beam.DoFn):
 
         metric_type = dict_metric_key.pop('metric_type')
 
-        if metric_type == SupervisionMetricType.SUPERVISION_START:
-            dict_metric_key['count'] = 1
+        metrics_without_changes = {
+            SupervisionMetricType.SUPERVISION_COMPLIANCE: SupervisionCaseComplianceMetric,
+            SupervisionMetricType.SUPERVISION_DOWNGRADE: SupervisionDowngradeMetric,
+            SupervisionMetricType.SUPERVISION_OUT_OF_STATE_POPULATION: SupervisionOutOfStatePopulationMetric,
+            SupervisionMetricType.SUPERVISION_POPULATION: SupervisionPopulationMetric,
+            SupervisionMetricType.SUPERVISION_REVOCATION: SupervisionRevocationMetric,
+            SupervisionMetricType.SUPERVISION_REVOCATION_ANALYSIS: SupervisionRevocationAnalysisMetric,
+            SupervisionMetricType.SUPERVISION_START: SupervisionStartMetric,
+            SupervisionMetricType.SUPERVISION_TERMINATION: SupervisionTerminationMetric,
+            SupervisionMetricType.SUPERVISION_SUCCESS: SupervisionSuccessMetric,
+        }
 
-            supervision_metric = SupervisionStartMetric.build_from_metric_key_group(
-                dict_metric_key, pipeline_job_id)
-        elif metric_type == SupervisionMetricType.SUPERVISION_TERMINATION:
-            dict_metric_key['count'] = 1
-
-            supervision_metric = SupervisionTerminationMetric.build_from_metric_key_group(
-                dict_metric_key, pipeline_job_id)
-        elif metric_type == SupervisionMetricType.SUPERVISION_POPULATION:
-            dict_metric_key['count'] = 1
-
-            supervision_metric = SupervisionPopulationMetric.build_from_metric_key_group(
-                dict_metric_key, pipeline_job_id)
-        elif metric_type == SupervisionMetricType.SUPERVISION_REVOCATION:
-            dict_metric_key['count'] = 1
-
-            supervision_metric = SupervisionRevocationMetric.build_from_metric_key_group(
-                dict_metric_key, pipeline_job_id)
-        elif metric_type == SupervisionMetricType.SUPERVISION_REVOCATION_ANALYSIS:
-            dict_metric_key['count'] = 1
-
-            supervision_metric = SupervisionRevocationAnalysisMetric.build_from_metric_key_group(
+        if metric_type in metrics_without_changes:
+            supervision_metric = metrics_without_changes[metric_type].build_from_metric_key_group(
                 dict_metric_key, pipeline_job_id
             )
-        elif metric_type == SupervisionMetricType.SUPERVISION_SUCCESS:
-            dict_metric_key['successful_completion_count'] = value
-            dict_metric_key['projected_completion_count'] = 1
-
-            supervision_metric = SupervisionSuccessMetric.build_from_metric_key_group(
-                dict_metric_key, pipeline_job_id)
         elif metric_type == SupervisionMetricType.SUPERVISION_SUCCESSFUL_SENTENCE_DAYS_SERVED:
-            dict_metric_key['successful_completion_count'] = 1
-            dict_metric_key['average_days_served'] = value
+            dict_metric_key['days_served'] = value
 
             supervision_metric = SuccessfulSupervisionSentenceDaysServedMetric.build_from_metric_key_group(
                 dict_metric_key, pipeline_job_id
             )
-        elif metric_type == SupervisionMetricType.SUPERVISION_COMPLIANCE:
-            dict_metric_key['count'] = 1
-
-            supervision_metric = SupervisionCaseComplianceMetric.build_from_metric_key_group(
-                dict_metric_key, pipeline_job_id)
-        elif metric_type == SupervisionMetricType.SUPERVISION_OUT_OF_STATE_POPULATION:
-            dict_metric_key['count'] = 1
-
-            supervision_metric = SupervisionOutOfStatePopulationMetric.build_from_metric_key_group(
-                dict_metric_key, pipeline_job_id)
-        elif metric_type == SupervisionMetricType.SUPERVISION_DOWNGRADE:
-            supervision_metric = SupervisionDowngradeMetric.build_from_metric_key_group(
-                dict_metric_key, pipeline_job_id)
         else:
             logging.error("Unexpected metric of type: %s", metric_type)
             return

@@ -218,23 +218,13 @@ class ProduceIncarcerationMetric(beam.DoFn):
 
         pipeline_job_id = job_id(pipeline_options)
 
-        (dict_metric_key, value) = element
-
-        if value is None:
-            # Due to how the pipeline arrives at this function, this should be impossible.
-            raise ValueError("No value associated with this metric key.")
+        (dict_metric_key, _) = element
 
         if not dict_metric_key:
             # Due to how the pipeline arrives at this function, this should be impossible.
             raise ValueError("Empty dict_metric_key.")
 
         metric_type = dict_metric_key.pop('metric_type')
-
-        if dict_metric_key.get('person_id') is not None:
-            # The count value for all person-level metrics should be 1
-            value = 1
-
-        dict_metric_key['count'] = value
 
         if metric_type == IncarcerationMetricType.INCARCERATION_ADMISSION:
             incarceration_metric = IncarcerationAdmissionMetric.build_from_metric_key_group(
