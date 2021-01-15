@@ -16,6 +16,7 @@
 # =============================================================================
 """Tests for BigQueryClientImpl"""
 
+# pylint: disable=protected-access
 from concurrent import futures
 import unittest
 from unittest import mock
@@ -218,7 +219,7 @@ class BigQueryClientImplTest(unittest.TestCase):
     def test_insert_into_table_from_table_async_hydrate_missing_columns(self, mock_job_config: mock.MagicMock) -> None:
         """Tests that the insert_into_table_from_table_async generates a query with missing columns as NULL."""
         with mock.patch('recidiviz.big_query.big_query_client.BigQueryClientImpl'
-                        '._get_schema_fields_missing_from_table') as mock_missing:
+                        '._get_excess_schema_fields') as mock_missing:
             mock_missing.return_value = [bigquery.SchemaField('state_code', 'STRING', 'REQUIRED'),
                                          bigquery.SchemaField('new_column_name', 'INTEGER', 'REQUIRED')]
             self.mock_destination_id = 'fake_table_temp'
@@ -391,6 +392,144 @@ class BigQueryClientImplTest(unittest.TestCase):
             self.bq_client.add_missing_fields_to_schema(self.mock_dataset_id, self.mock_table_id, new_schema_fields)
 
         self.mock_client.update_table.assert_not_called()
+
+    def test_remove_unused_fields_from_schema(self) -> None:
+        """Tests that remove_unused_fields_from_schema() calls the client to update the table with a query."""
+        table_ref = bigquery.TableReference(self.mock_dataset_ref, self.mock_table_id)
+        schema_fields = [bigquery.SchemaField('field_1', 'STRING'), bigquery.SchemaField('field_2', 'STRING')]
+        table = bigquery.Table(table_ref, schema_fields)
+        self.mock_client.get_table.return_value = table
+
+        new_schema_fields = [bigquery.SchemaField('field_1', 'STRING')]
+
+        self.bq_client.remove_unused_fields_from_schema(self.mock_dataset_id, self.mock_table_id, new_schema_fields)
+
+        self.mock_client.query.assert_called()
+
+    def test_remove_unused_fields_from_schema_no_missing_fields(self) -> None:
+        """Tests that remove_unused_fields_from_schema() does nothing if there are no missing fields."""
+        table_ref = bigquery.TableReference(self.mock_dataset_ref, self.mock_table_id)
+        schema_fields = [bigquery.SchemaField('field_1', 'STRING')]
+        table = bigquery.Table(table_ref, schema_fields)
+        self.mock_client.get_table.return_value = table
+
+        new_schema_fields = [bigquery.SchemaField('field_1', 'STRING')]
+
+        self.bq_client.remove_unused_fields_from_schema(self.mock_dataset_id, self.mock_table_id, new_schema_fields)
+
+        self.mock_client.query.assert_not_called()
+
+    def test_remove_unused_fields_from_schema_ignore_excess_desired_fields(self) -> None:
+        """Tests that remove_unused_fields_from_schema() drops columns even when there are excess desired fields."""
+        table_ref = bigquery.TableReference(self.mock_dataset_ref, self.mock_table_id)
+        schema_fields = [bigquery.SchemaField('field_1', 'STRING'), bigquery.SchemaField('field_2', 'STRING')]
+        table = bigquery.Table(table_ref, schema_fields)
+        self.mock_client.get_table.return_value = table
+
+        new_schema_fields = [bigquery.SchemaField('field_1', 'STRING'), bigquery.SchemaField('field_3', 'STRING')]
+
+        self.bq_client.remove_unused_fields_from_schema(self.mock_dataset_id, self.mock_table_id, new_schema_fields)
+
+        self.mock_client.query.assert_called()
+
+    @mock.patch('recidiviz.big_query.big_query_client.BigQueryClientImpl.remove_unused_fields_from_schema')
+    @mock.patch('recidiviz.big_query.big_query_client.BigQueryClientImpl.add_missing_fields_to_schema')
+    def test_update_schema(self, remove_unused_mock: mock.MagicMock, add_missing_mock: mock.MagicMock) -> None:
+        """Tests that update_schema() calls both field updaters if the inputs are valid."""
+        table_ref = bigquery.TableReference(self.mock_dataset_ref, self.mock_table_id)
+        schema_fields = [bigquery.SchemaField('field_1', 'STRING'), bigquery.SchemaField('field_2', 'STRING')]
+        table = bigquery.Table(table_ref, schema_fields)
+        self.mock_client.get_table.return_value = table
+
+        new_schema_fields = [bigquery.SchemaField('field_1', 'STRING'), bigquery.SchemaField('field_3', 'STRING')]
+
+        self.bq_client.update_schema(self.mock_dataset_id, self.mock_table_id, new_schema_fields)
+
+        remove_unused_mock.assert_called()
+        add_missing_mock.assert_called()
+
+    @mock.patch('recidiviz.big_query.big_query_client.BigQueryClientImpl.remove_unused_fields_from_schema')
+    @mock.patch('recidiviz.big_query.big_query_client.BigQueryClientImpl.add_missing_fields_to_schema')
+    def test_update_schema_fails_on_changed_type(self, remove_unused_mock: mock.MagicMock,
+                                                 add_missing_mock: mock.MagicMock) -> None:
+        """Tests that update_schema() throws if we try to change a field type."""
+        table_ref = bigquery.TableReference(self.mock_dataset_ref, self.mock_table_id)
+        schema_fields = [bigquery.SchemaField('field_1', 'STRING'), bigquery.SchemaField('field_2', 'STRING')]
+        table = bigquery.Table(table_ref, schema_fields)
+        self.mock_client.get_table.return_value = table
+
+        new_schema_fields = [bigquery.SchemaField('field_1', 'STRING'), bigquery.SchemaField('field_2', 'INT')]
+
+        with pytest.raises(ValueError):
+            self.bq_client.update_schema(self.mock_dataset_id, self.mock_table_id, new_schema_fields)
+
+        remove_unused_mock.assert_not_called()
+        add_missing_mock.assert_not_called()
+
+    @mock.patch('recidiviz.big_query.big_query_client.BigQueryClientImpl.remove_unused_fields_from_schema')
+    @mock.patch('recidiviz.big_query.big_query_client.BigQueryClientImpl.add_missing_fields_to_schema')
+    def test_update_schema_fails_on_changed_mode(self, remove_unused_mock: mock.MagicMock,
+                                                 add_missing_mock: mock.MagicMock) -> None:
+        """Tests that update_schema() throws if we try to change a field mode."""
+        table_ref = bigquery.TableReference(self.mock_dataset_ref, self.mock_table_id)
+        schema_fields = [bigquery.SchemaField('field_1', 'STRING', 'NULLABLE'),
+                         bigquery.SchemaField('field_2', 'STRING')]
+        table = bigquery.Table(table_ref, schema_fields)
+        self.mock_client.get_table.return_value = table
+
+        new_schema_fields = [bigquery.SchemaField('field_1', 'STRING', 'REQUIRED'),
+                             bigquery.SchemaField('field_2', 'INT')]
+
+        with pytest.raises(ValueError):
+            self.bq_client.update_schema(self.mock_dataset_id, self.mock_table_id, new_schema_fields)
+
+        remove_unused_mock.assert_not_called()
+        add_missing_mock.assert_not_called()
+
+    def test__get_excess_schema_fields_simple_excess(self) -> None:
+        """Tests _get_excess_schema_fields() when extended_schema is a strict superset of base_schema."""
+        base_schema = [bigquery.SchemaField('field_1', 'INT')]
+        extended_schema = [
+            bigquery.SchemaField('field_1', 'INT'),
+            bigquery.SchemaField('field_2', 'INT'),
+            bigquery.SchemaField('field_3', 'INT'),
+        ]
+
+        excess_fields = BigQueryClientImpl._get_excess_schema_fields(base_schema, extended_schema)
+
+        self.assertEqual(excess_fields, [bigquery.SchemaField('field_2', 'INT'),
+                                         bigquery.SchemaField('field_3', 'INT')])
+
+    def test__get_excess_schema_fields_with_extra_base_schema(self) -> None:
+        """Tests _get_excess_schema_fields() when base_schema has fields not in extended_schema."""
+        base_schema = [bigquery.SchemaField('field_1', 'INT'), bigquery.SchemaField('field_2', 'INT')]
+        extended_schema = [
+            bigquery.SchemaField('field_1', 'INT'),
+            bigquery.SchemaField('field_3', 'INT'),
+            bigquery.SchemaField('field_4', 'INT'),
+        ]
+
+        excess_fields = BigQueryClientImpl._get_excess_schema_fields(base_schema, extended_schema)
+
+        self.assertEqual(excess_fields, [bigquery.SchemaField('field_3', 'INT'),
+                                         bigquery.SchemaField('field_4', 'INT')])
+
+    def test__get_excess_schema_fields_with_matching_schema(self) -> None:
+        """Tests _get_excess_schema_fields() when base_schema is the same as extended_schema."""
+        base_schema = [bigquery.SchemaField('field_1', 'INT'), bigquery.SchemaField('field_2', 'INT')]
+
+        excess_fields = BigQueryClientImpl._get_excess_schema_fields(base_schema, base_schema)
+
+        self.assertListEqual(excess_fields, [])
+
+    def test__get_excess_schema_fields_no_excess(self) -> None:
+        """Tests _get_excess_schema_fields() when base_schema is a superset of extended_schema."""
+        base_schema = [bigquery.SchemaField('field_1', 'INT'), bigquery.SchemaField('field_2', 'INT')]
+        extended_schema = [bigquery.SchemaField('field_2', 'INT')]
+
+        excess_fields = BigQueryClientImpl._get_excess_schema_fields(base_schema, extended_schema)
+
+        self.assertListEqual(excess_fields, [])
 
     def test_delete_table(self) -> None:
         """Tests that our delete table function calls the correct client method."""

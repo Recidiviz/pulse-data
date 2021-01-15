@@ -21,9 +21,10 @@ or some personal unique identifier so it's easy for others to tell who created t
 
 Run locally with the following command:
 
-    python -m recidiviz.tools.create_dataflow_metrics_sandbox \
+    python -m recidiviz.tools.create_or_update_dataflow_metrics_sandbox \
         --project_id [PROJECT_ID] \
-        --sandbox_dataset_prefix [SANDBOX_DATASET_PREFIX]
+        --sandbox_dataset_prefix [SANDBOX_DATASET_PREFIX] \
+        [--allow-overwrite]
 """
 import argparse
 import logging
@@ -41,15 +42,20 @@ from recidiviz.utils.metadata import local_project_id_override
 TEMP_DATAFLOW_DATASET_DEFAULT_TABLE_EXPIRATION_MS = 72 * 60 * 60 * 1000
 
 
-def create_dataflow_metrics_sandbox(sandbox_dataset_prefix: str) -> None:
+def create_or_update_dataflow_metrics_sandbox(sandbox_dataset_prefix: str, allow_overwrite: bool = False) -> None:
     sandbox_dataset_id = sandbox_dataset_prefix + '_' + dataset_config.DATAFLOW_METRICS_DATASET
 
     bq_client = BigQueryClientImpl()
     sandbox_dataset_ref = bq_client.dataset_ref_for_id(sandbox_dataset_id)
 
-    if bq_client.dataset_exists(sandbox_dataset_ref):
-        raise ValueError(f"{sandbox_dataset_id} already exists in project {bq_client.project_id}. Cannot create a "
-                         f"Dataflow sandbox in an existing dataset.")
+    if bq_client.dataset_exists(sandbox_dataset_ref) and not allow_overwrite:
+        if __name__ == '__main__':
+            logging.error("Dataset %s already exists in project %s. To overwrite, set --allow_overwrite.",
+                          sandbox_dataset_id, bq_client.project_id)
+            sys.exit(1)
+        else:
+            raise ValueError(f"{sandbox_dataset_id} already exists in project {bq_client.project_id}. Cannot create a "
+                             f"Dataflow sandbox in an existing dataset.")
 
     logging.info("Creating dataflow metrics sandbox in dataset %s. Tables will expire after 72 hours.",
                  sandbox_dataset_ref)
@@ -74,6 +80,11 @@ def parse_arguments(argv: List[str]) -> Tuple[argparse.Namespace, List[str]]:
                         help="A prefix to append to the dataflow_metrics dataset where the sandbox metrics tables will"
                              " be loaded. Should be your github username or some personal unique identifier so it's"
                              " easy for others to tell who created the dataset.")
+    parser.add_argument('--allow_overwrite',
+                        dest='allow_overwrite',
+                        action='store_true',
+                        default=False,
+                        help="Allow existing table to be overwritten.")
 
     return parser.parse_known_args(argv)
 
@@ -83,4 +94,4 @@ if __name__ == '__main__':
     known_args, _ = parse_arguments(sys.argv)
 
     with local_project_id_override(known_args.project_id):
-        create_dataflow_metrics_sandbox(known_args.sandbox_dataset_prefix)
+        create_or_update_dataflow_metrics_sandbox(known_args.sandbox_dataset_prefix, known_args.allow_overwrite)

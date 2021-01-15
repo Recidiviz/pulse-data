@@ -16,12 +16,12 @@
 # =============================================================================
 """Manages the structure of tables that store Dataflow metrics.
 
-See recidiviz.tools.create_dataflow_metrics_sandbox.py for running this locally when developing metrics.
+See recidiviz.tools.create_or_update_dataflow_metrics_sandbox.py for running this locally when developing metrics.
 """
 import argparse
 import logging
 import sys
-from typing import Tuple, List, Optional
+from typing import Tuple, List
 
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.calculator.dataflow_output_storage_config import DATAFLOW_METRICS_TO_TABLES
@@ -30,14 +30,11 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING, GCP_PROJECT_PRODUCT
 from recidiviz.utils.metadata import local_project_id_override
 
 
-def update_dataflow_metric_tables_schemas(dataflow_metrics_dataset_id: Optional[str] = None) -> \
-        None:
+def update_dataflow_metric_tables_schemas(dataflow_metrics_dataset_id: str = DATAFLOW_METRICS_DATASET) -> None:
     """For each table that stores Dataflow metric output in the |dataflow_metrics_dataset_id|, ensures that all
     attributes on the corresponding metric are present in the table in BigQuery. If no |dataflow_metrics_dataset_id| is
     provided, defaults to the DATAFLOW_METRICS_DATASET."""
     bq_client = BigQueryClientImpl()
-    dataflow_metrics_dataset_id = (dataflow_metrics_dataset_id
-                                   if dataflow_metrics_dataset_id else DATAFLOW_METRICS_DATASET)
     dataflow_metrics_dataset_ref = bq_client.dataset_ref_for_id(dataflow_metrics_dataset_id)
 
     bq_client.create_dataset_if_necessary(dataflow_metrics_dataset_ref)
@@ -46,8 +43,8 @@ def update_dataflow_metric_tables_schemas(dataflow_metrics_dataset_id: Optional[
         schema_for_metric_class = metric_class.bq_schema_for_metric_table()
 
         if bq_client.table_exists(dataflow_metrics_dataset_ref, table_id):
-            # Add any missing fields to the table's schema
-            bq_client.add_missing_fields_to_schema(dataflow_metrics_dataset_id, table_id, schema_for_metric_class)
+            # Compare schema derived from metric class to existing dataflow views and update if necessary.
+            bq_client.update_schema(dataflow_metrics_dataset_id, table_id, schema_for_metric_class)
         else:
             # Create a table with this schema
             bq_client.create_table_with_schema(dataflow_metrics_dataset_id, table_id, schema_for_metric_class)
