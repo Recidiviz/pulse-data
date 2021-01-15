@@ -65,7 +65,7 @@ class CalculationDataStorageManagerTest(unittest.TestCase):
         tables."""
         dataflow_metric_table_manager.update_dataflow_metric_tables_schemas()
 
-        self.mock_client.add_missing_fields_to_schema.assert_called()
+        self.mock_client.update_schema.assert_called()
 
     def test_update_dataflow_metric_tables_schemas_create_table(self):
         """Test that update_dataflow_metric_tables_schemas calls the client to create a new table when the table

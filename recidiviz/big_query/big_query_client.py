@@ -477,6 +477,31 @@ class BigQueryClient:
         """
 
     @abc.abstractmethod
+    def remove_unused_fields_from_schema(self, dataset_id: str, table_id: str,
+                                         desired_schema_fields: List[bigquery.SchemaField]) -> None:
+        """Updates the schema of the table to drop any columns not in desired_schema_fields. This will not add any
+        fields to the table's schema.
+
+        Args:
+            dataset_id: The name of the dataset where the table lives.
+            table_id: The name of the table to drop fields from.
+            desired_schema_fields: A list of fields to keep in the table. Any field not in this list will be dropped.
+        """
+
+    @abc.abstractmethod
+    def update_schema(self, dataset_id: str, table_id: str,
+                      desired_schema_fields: List[bigquery.SchemaField]) -> None:
+        """Updates the schema of the table to match the desired_schema_fields. This may result in both adding and
+        dropping fields from the table's schema. Raises an exception if fields in desired_schema_fields conflict with
+        existing fields' modes or types.
+
+        Args:
+            dataset_id: The name of the dataset where the table lives.
+            table_id: The name of the table to modify.
+            desired_schema_fields: A list of fields describing the desired table schema.
+        """
+
+    @abc.abstractmethod
     def delete_table(self, dataset_id: str, table_id: str) -> None:
         """Provided the |dataset_id| and |table_id|, attempts to delete the given table from BigQuery.
 
@@ -817,9 +842,9 @@ class BigQueryClientImpl(BigQueryClient):
         select_columns = "*"
 
         if hydrate_missing_columns_with_null:
-            schema_fields_missing_from_source = self._get_schema_fields_missing_from_table(source_table,
-                                                                                           destination_table.schema)
-            if len(schema_fields_missing_from_source) > 0:
+            schema_fields_missing_from_source = self._get_excess_schema_fields(source_table.schema,
+                                                                               destination_table.schema)
+            if schema_fields_missing_from_source:
                 missing_columns = [f'CAST(NULL AS {missing_column.field_type}) AS {missing_column.name}'
                                    for missing_column in schema_fields_missing_from_source]
                 select_columns += ", {null_columns}".format(null_columns=', '.join(missing_columns))
@@ -946,20 +971,16 @@ class BigQueryClientImpl(BigQueryClient):
         logging.info("Creating table %s.%s", dataset_id, table_id)
         return self.client.create_table(table)
 
-    def _get_schema_fields_missing_from_table(
-            self,
-            table: bigquery.Table,
-            desired_schema_fields: List[bigquery.SchemaField]
+    @staticmethod
+    def _get_excess_schema_fields(
+        base_schema: List[bigquery.SchemaField],
+        extended_schema: List[bigquery.SchemaField],
     ) -> List[bigquery.SchemaField]:
-        """Returns the schema fields in the desired set that are missing from the table."""
-        table_schema_field_names = [field.name for field in table.schema]
-        desired_schema_field_names = [field.name for field in desired_schema_fields]
-        missing_desired_field_names = set(set(desired_schema_field_names).difference(table_schema_field_names))
-        desired_schema_fields_by_name = {
-            field.name: field for field in desired_schema_fields
-        }
-        return [desired_schema_fields_by_name[field_name]
-                for field_name in missing_desired_field_names]
+        """Returns any fields from extended_schema not named in base_schema."""
+        table_schema_field_names = {field.name for field in base_schema}
+        desired_schema_field_names = {field.name for field in extended_schema}
+        missing_desired_field_names = desired_schema_field_names - table_schema_field_names
+        return [field for field in extended_schema if field.name in missing_desired_field_names]
 
     def add_missing_fields_to_schema(self, dataset_id: str, table_id: str,
                                      desired_schema_fields: List[bigquery.SchemaField]) -> None:
@@ -971,7 +992,7 @@ class BigQueryClientImpl(BigQueryClient):
         table = self.get_table(dataset_ref, table_id)
         existing_table_schema = table.schema
 
-        missing_fields = self._get_schema_fields_missing_from_table(table, desired_schema_fields)
+        missing_fields = self._get_excess_schema_fields(table.schema, desired_schema_fields)
 
         updated_table_schema = existing_table_schema.copy()
 
@@ -1005,3 +1026,61 @@ class BigQueryClientImpl(BigQueryClient):
         logging.info("Updating schema of table %s to: %s", table_id, updated_table_schema)
         table.schema = updated_table_schema
         self.client.update_table(table, ['schema'])
+
+    def remove_unused_fields_from_schema(self, dataset_id: str, table_id: str,
+                                         desired_schema_fields: List[bigquery.SchemaField]) -> None:
+        """Compares the schema of the given table to the desired schema fields and drops any unused columns."""
+        dataset_ref = self.dataset_ref_for_id(dataset_id)
+
+        if not self.table_exists(dataset_ref, table_id):
+            raise ValueError(f"Cannot remove schema fields from a table that does not exist: {dataset_id}.{table_id}")
+
+        table = self.get_table(dataset_ref, table_id)
+
+        deprecated_fields = self._get_excess_schema_fields(desired_schema_fields, table.schema)
+
+        if not deprecated_fields:
+            logging.info("Schema for table %s.%s has no excess fields to drop.", dataset_id, table_id)
+            return
+
+        columns_to_drop = ', '.join([field.name for field in deprecated_fields])
+
+        rebuild_query = f"""
+            SELECT * EXCEPT({columns_to_drop})
+            FROM `{dataset_id}.{table_id}`
+        """
+
+        self.insert_into_table_from_query(
+            destination_table_id=table_id,
+            destination_dataset_id=dataset_id,
+            query=rebuild_query,
+            allow_field_additions=False,
+            write_disposition=bigquery.WriteDisposition.WRITE_TRUNCATE,
+        )
+
+    def update_schema(self, dataset_id: str, table_id: str, desired_schema_fields: List[bigquery.SchemaField]) -> None:
+        dataset_ref = self.dataset_ref_for_id(dataset_id)
+
+        if not self.table_exists(dataset_ref, table_id):
+            raise ValueError(f"Cannot update schema fields for a table that does not exist: {dataset_id}.{table_id}")
+
+        table = self.get_table(dataset_ref, table_id)
+
+        existing_schema = table.schema
+
+        desired_schema_map = {field.name: field for field in desired_schema_fields}
+
+        for field in existing_schema:
+            if field.name in desired_schema_map:
+                desired_field = desired_schema_map[field.name]
+                if field.field_type != desired_field.field_type:
+                    raise ValueError("Trying to change the field type of an existing field. Existing field "
+                                     f"{desired_field.name} has type {desired_field.field_type}. "
+                                     f"Cannot change this type to {field.field_type}.")
+
+                if field.mode != desired_field.mode:
+                    raise ValueError(f"Cannot change the mode of field {desired_field} to {field.mode}.")
+
+        # Remove any deprecated fields first as it involves copying the entire view
+        self.remove_unused_fields_from_schema(dataset_id, table_id, desired_schema_fields)
+        self.add_missing_fields_to_schema(dataset_id, table_id, desired_schema_fields)
