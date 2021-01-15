@@ -39,7 +39,7 @@ def client(project_id: str) -> bigquery.Client:
 
 class BigQueryClient:
     """Interface for a wrapper around the bigquery.Client with convenience functions for querying, creating, copying and
-     exporting BigqQuery tables and views.
+     exporting BigQuery tables and views.
     """
 
     @property

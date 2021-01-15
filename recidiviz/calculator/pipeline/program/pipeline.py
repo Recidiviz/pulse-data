@@ -207,11 +207,7 @@ class ProduceProgramMetrics(beam.DoFn):
 
         pipeline_job_id = job_id(pipeline_options)
 
-        (dict_metric_key, value) = element
-
-        if value is None:
-            # Due to how the pipeline arrives at this function, this should be impossible.
-            raise ValueError("No value associated with this metric key.")
+        (dict_metric_key, _) = element
 
         if not dict_metric_key:
             # Due to how the pipeline arrives at this function, this should be impossible.
@@ -219,17 +215,9 @@ class ProduceProgramMetrics(beam.DoFn):
 
         metric_type = dict_metric_key.pop('metric_type')
 
-        if dict_metric_key.get('person_id') is not None:
-            # The count value for all person-level metrics should be 1
-            value = 1
-
         if metric_type == ProgramMetricType.PROGRAM_REFERRAL:
-            dict_metric_key['count'] = value
-
             program_metric = ProgramReferralMetric.build_from_metric_key_group(dict_metric_key, pipeline_job_id)
         elif metric_type == ProgramMetricType.PROGRAM_PARTICIPATION:
-            dict_metric_key['count'] = value
-
             program_metric = ProgramParticipationMetric.build_from_metric_key_group(dict_metric_key, pipeline_job_id)
         else:
             logging.error("Unexpected metric of type: %s", metric_type)

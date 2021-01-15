@@ -37,8 +37,8 @@ SUPERVISION_SUCCESS_BY_MONTH_VIEW_QUERY_TEMPLATE = \
         supervision_type,
         IFNULL(district, 'EXTERNAL_UNKNOWN') as district,
         -- Only count as success if all completed periods were successful per person
-        -- Take the MIN so that successful_termination is 1 only if all periods were 1 (successful)
-        MIN(successful_completion_count) as successful_termination,
+        -- successful_termination is True only if all periods were successfully completed
+        LOGICAL_AND(successful_completion) as successful_termination,
         person_id,
       FROM `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_success_metrics_materialized`,
       UNNEST ([{grouped_districts}, 'ALL']) AS district
@@ -55,7 +55,7 @@ SUPERVISION_SUCCESS_BY_MONTH_VIEW_QUERY_TEMPLATE = \
         projected_month,
         district,
         supervision_type,
-        COUNT(DISTINCT IF(successful_termination = 1, person_id, NULL)) AS successful_termination_count,
+        COUNT(DISTINCT IF(successful_termination, person_id, NULL)) AS successful_termination_count,
         COUNT(DISTINCT(person_id)) AS projected_completion_count
       FROM success_classifications
       GROUP BY state_code, projected_year, projected_month, district, supervision_type

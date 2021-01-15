@@ -254,19 +254,10 @@ class ProduceReincarcerationRecidivismMetric(beam.DoFn):
         metric_type = dict_metric_key.pop('metric_type')
 
         if metric_type == ReincarcerationRecidivismMetricType.REINCARCERATION_COUNT:
-            if dict_metric_key.get('person_id') is not None:
-                # The count value for all person-level metrics should be 1
-                value = 1
-
-            # For count metrics, the value is the number of returns
-            dict_metric_key['returns'] = value
-
             recidivism_metric = ReincarcerationRecidivismCountMetric.build_from_metric_key_group(
                 dict_metric_key, pipeline_job_id)
         elif metric_type == ReincarcerationRecidivismMetricType.REINCARCERATION_RATE:
-            dict_metric_key['total_releases'] = 1
-            dict_metric_key['recidivated_releases'] = value
-            dict_metric_key['recidivism_rate'] = value
+            dict_metric_key['did_recidivate'] = bool(value)
 
             recidivism_metric = ReincarcerationRecidivismRateMetric.build_from_metric_key_group(
                 dict_metric_key, pipeline_job_id)
