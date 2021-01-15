@@ -24,7 +24,7 @@ ACCEPTABLE_RETURN_CODES=(0 4)
 # TODO(#5305) Remove `--ignore-noop` flag
 run_cmd docker run -e COPYBARA_CONFIG='mirror/copy.bara.sky' \
            -e COPYBARA_WORKFLOW='exportSourceToPublic' \
-           -e COPYBARA_OPTIONS='--ignore-noop'
+           -e COPYBARA_OPTIONS='--ignore-noop' \
            -v "$(pwd)/.git/config":/root/.gitconfig \
            -v "$(pwd)/.git/credentials":/root/.git-credentials \
            -v "$(pwd)":/usr/src/app \
