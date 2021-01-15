@@ -130,6 +130,7 @@ class DirectIngestRawFileConfig:
 class DirectIngestRegionRawFileConfig:
     """Class that parses and stores raw data import configs for a region"""
 
+    # TODO(#5262): Add documentation for the structure of the raw data yaml files
     region_code: str = attr.ib()
     legacy_yaml_config_file_path: str = attr.ib()
     yaml_config_file_dir: str = attr.ib()
@@ -184,7 +185,33 @@ class DirectIngestRegionRawFileConfig:
                                                                                       file_info)
                 last_tag = file_tag
         elif os.path.isdir(self.yaml_config_file_dir):
-            raise NotImplementedError
+            default_filename = f'{self.region_code}_default.yaml'
+            default_file_path = os.path.join(self.yaml_config_file_dir, default_filename)
+            if not os.path.exists(default_file_path):
+                raise ValueError(f'Missing default raw data configs for region: {self.region_code}')
+
+            default_contents = YAMLDict.from_path(default_file_path)
+            default_encoding = default_contents.pop('default_encoding', str)
+            default_separator = default_contents.pop('default_separator', str)
+
+            raw_data_configs = {}
+            for filename in os.listdir(self.yaml_config_file_dir):
+                if filename == default_filename:
+                    continue
+                yaml_file_path = os.path.join(self.yaml_config_file_dir, filename)
+                yaml_contents = YAMLDict.from_path(yaml_file_path)
+
+                file_tag = yaml_contents.pop('file_tag', str)
+                if not file_tag:
+                    raise ValueError(f'Missing file_tag in [{yaml_file_path}]')
+                if file_tag in raw_data_configs:
+                    raise ValueError(f'Found file tag [{file_tag}] in [{yaml_file_path}]'
+                                     f' that is already defined in another yaml file.')
+
+                raw_data_configs[file_tag] = DirectIngestRawFileConfig.from_yaml_dict(file_tag,
+                                                                                      default_encoding,
+                                                                                      default_separator,
+                                                                                      yaml_contents)
         else:
             raise ValueError(f'Missing raw data configs for region: {self.region_code}')
         return raw_data_configs

@@ -1,0 +1,7 @@
+file_tag: elite_offenderidentifier
+primary_key_cols:
+  - ROOT_OFFENDER_ID
+  - IDENTIFIER
+datetime_cols:
+  - CREATE_DATETIME
+  - MODIFY_DATETIME

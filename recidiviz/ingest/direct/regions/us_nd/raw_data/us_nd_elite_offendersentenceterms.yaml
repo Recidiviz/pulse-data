@@ -1,0 +1,10 @@
+file_tag: elite_offendersentenceterms
+primary_key_cols:
+  - OFFENDER_BOOK_ID
+  - SENTENCE_SEQ
+  - TERM_SEQ
+datetime_cols:
+  - START_DATE
+  - END_DATE
+  - CREATE_DATETIME
+  - MODIFY_DATETIME

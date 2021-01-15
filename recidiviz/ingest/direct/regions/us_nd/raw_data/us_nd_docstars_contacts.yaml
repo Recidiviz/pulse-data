@@ -1,0 +1,8 @@
+file_tag: docstars_contacts
+primary_key_cols:
+  - RecID
+datetime_cols:
+  - TIME_STAMP
+  - CONTACT_DATE
+  - RecDate
+  - LASTUPDATE

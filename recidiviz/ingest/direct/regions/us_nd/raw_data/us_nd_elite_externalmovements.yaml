@@ -1,0 +1,8 @@
+file_tag: elite_externalmovements
+primary_key_cols:
+  - OFFENDER_BOOK_ID
+  - MOVEMENT_SEQ
+datetime_cols:
+  - MOVEMENT_DATE
+  - CREATE_DATETIME
+  - MODIFY_DATETIME

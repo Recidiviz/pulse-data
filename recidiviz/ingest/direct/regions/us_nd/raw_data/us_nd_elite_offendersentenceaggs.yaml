@@ -1,0 +1,12 @@
+file_tag: elite_offendersentenceaggs
+primary_key_cols:
+  - OFFENDER_BOOK_ID
+datetime_cols:
+  - EARLIEST_SENT_START_DATE
+  - FINAL_SENT_EXP_DATE
+  - CALC_POS_REL_DATE
+  - OVR_POS_REL_DATE
+  - PAROLE_DATE
+  - PAROLE_REVIEW_DATE
+  - CREATE_DATETIME
+  - MODIFY_DATETIME
