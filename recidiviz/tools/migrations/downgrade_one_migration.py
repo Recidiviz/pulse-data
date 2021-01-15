@@ -84,7 +84,11 @@ def main(database: SchemaType, repo_root: str, ssl_cert_path: str) -> None:
     confirm_correct_db(database)
     confirm_correct_git_branch(repo_root, is_prod=is_prod)
 
-    overriden_env_vars = SQLAlchemyEngineManager.update_sqlalchemy_env_vars(database, ssl_cert_path=ssl_cert_path)
+    overriden_env_vars = SQLAlchemyEngineManager.update_sqlalchemy_env_vars(
+        database,
+        ssl_cert_path=ssl_cert_path,
+        migration_user=True,
+    )
 
     # Run downgrade
     try:
