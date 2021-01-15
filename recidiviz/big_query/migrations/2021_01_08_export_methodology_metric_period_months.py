@@ -58,7 +58,7 @@ def main(dry_run: bool) -> None:
 
         # Every metric except this one has a metric_period_months column
         if table_id != DATAFLOW_METRICS_TO_TABLES[ReincarcerationRecidivismRateMetric]:
-            filter_clause += " OR metric_period_months > 1"
+            filter_clause += " OR metric_period_months != 1"
 
         # Query for rows to be moved to the cold storage table
         insert_query = """
