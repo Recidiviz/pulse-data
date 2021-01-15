@@ -28,9 +28,10 @@ import logging
 import sys
 from typing import List, Tuple, Dict, Optional
 
-from recidiviz.big_query.view_update_manager import create_dataset_and_update_all_views, \
-    VIEW_BUILDERS_BY_NAMESPACE
-from recidiviz.calculator.query.state.dataset_config import DATAFLOW_METRICS_DATASET
+from recidiviz.big_query.view_update_manager import VIEW_BUILDERS_BY_NAMESPACE, \
+    create_dataset_and_update_views_for_view_builders
+from recidiviz.calculator.query.state.dataset_config import DATAFLOW_METRICS_DATASET, \
+    DATAFLOW_METRICS_MATERIALIZED_DATASET
 from recidiviz.utils.environment import GCP_PROJECT_STAGING, GCP_PROJECT_PRODUCTION
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -44,6 +45,12 @@ def _dataset_overrides_for_all_view_datasets(view_dataset_override_prefix: str,
     for view_builders in VIEW_BUILDERS_BY_NAMESPACE.values():
         for builder in view_builders:
             dataset_id = builder.dataset_id
+
+            if dataset_id == DATAFLOW_METRICS_MATERIALIZED_DATASET and dataflow_dataset_override is None:
+                # Only override the DATAFLOW_METRICS_MATERIALIZED_DATASET if the DATAFLOW_METRICS_DATASET will also
+                # be overridden
+                continue
+
             dataset_overrides[dataset_id] = view_dataset_override_prefix + '_' + dataset_id
 
     if dataflow_dataset_override:
@@ -60,8 +67,18 @@ def load_views_to_sandbox(sandbox_dataset_prefix: str, dataflow_dataset_override
         _dataset_overrides_for_all_view_datasets(view_dataset_override_prefix=sandbox_dataset_prefix,
                                                  dataflow_dataset_override=dataflow_dataset_override)
 
-    create_dataset_and_update_all_views(dataset_overrides=sandbox_dataset_overrides,
-                                        materialized_views_only=False)
+    for namespace, builders in VIEW_BUILDERS_BY_NAMESPACE.items():
+        builders_to_update = [
+            builder for builder in builders
+            if dataflow_dataset_override is not None
+            # Only update views in the DATAFLOW_METRICS_MATERIALIZED_DATASET if the dataflow_dataset_override is set
+            or builder.dataset_id != DATAFLOW_METRICS_MATERIALIZED_DATASET
+        ]
+
+        create_dataset_and_update_views_for_view_builders(namespace,
+                                                          builders_to_update,
+                                                          dataset_overrides=sandbox_dataset_overrides,
+                                                          materialized_views_only=False)
 
 
 def parse_arguments(argv: List[str]) -> Tuple[argparse.Namespace, List[str]]:
