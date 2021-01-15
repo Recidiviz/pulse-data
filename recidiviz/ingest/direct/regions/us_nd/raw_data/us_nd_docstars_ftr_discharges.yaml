@@ -1,0 +1,6 @@
+file_tag: docstars_ftr_discharges
+primary_key_cols:
+  - DISCHARGE_ID
+datetime_cols:
+  - DISCHARGE_DATE
+  - STATUS_DATE

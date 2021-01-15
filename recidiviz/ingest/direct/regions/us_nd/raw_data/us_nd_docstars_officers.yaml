@@ -1,0 +1,5 @@
+file_tag: docstars_officers
+primary_key_cols:
+  - OFFICER
+datetime_cols:
+  - RecDate

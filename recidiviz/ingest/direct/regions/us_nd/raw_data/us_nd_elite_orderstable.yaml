@@ -1,0 +1,10 @@
+file_tag: elite_orderstable
+primary_key_cols:
+  - ORDER_ID
+datetime_cols:
+  - CONVICTION_DATE
+  - COURT_DATE
+  - EFFECTIVE_DATE
+  - SENTENCE_START_DATE
+  - CREATE_DATETIME
+  - MODIFY_DATETIME

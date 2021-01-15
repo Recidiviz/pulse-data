@@ -1,0 +1,12 @@
+file_tag: elite_institutionalactivities
+# Using these primary keys, there's a few dupes, only differing by end_date and offender_end_reason.
+primary_key_cols:
+  - OFFENDER_BOOK_ID
+  - PROGRAM_ID
+  - START_DATE
+datetime_cols:
+  - START_DATE
+  - END_DATE
+  - CREATE_DATETIME
+  - MODIFY_DATETIME
+  - REJECT_DATE

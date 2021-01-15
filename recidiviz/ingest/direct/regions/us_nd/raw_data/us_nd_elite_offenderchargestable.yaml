@@ -1,0 +1,8 @@
+file_tag: elite_offenderchargestable
+primary_key_cols:
+  - OFFENDER_BOOK_ID
+  - CHARGE_SEQ
+datetime_cols:
+  - OFFENSE_DATE
+  - CREATE_DATETIME
+  - MODIFY_DATETIME
