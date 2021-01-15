@@ -324,7 +324,6 @@ class TestSupervisionPipeline(unittest.TestCase):
             'agent_id': 1010,
             'person_id': fake_person_id,
             'agent_external_id': 'OFFICER0009',
-            'district_external_id': None,
             'supervision_period_id': fake_supervision_period_id
         }]
 
@@ -648,7 +647,6 @@ class TestSupervisionPipeline(unittest.TestCase):
             'agent_id': 1010,
             'person_id': fake_person_id,
             'agent_external_id': 'OFFICER0009',
-            'district_external_id': None,
             'supervision_period_id': supervision_period.supervision_period_id
         }]
 
@@ -926,7 +924,6 @@ class TestSupervisionPipeline(unittest.TestCase):
             'agent_id': 1010,
             'person_id': fake_person_id,
             'agent_external_id': 'OFFICER0009',
-            'district_external_id': None,
             'supervision_period_id': supervision_period.supervision_period_id
         }]
 
@@ -1180,7 +1177,6 @@ class TestSupervisionPipeline(unittest.TestCase):
             'agent_id': 1010,
             'person_id': fake_person_id,
             'agent_external_id': 'OFFICER0009',
-            'district_external_id': None,
             'supervision_period_id': supervision_period.supervision_period_id
         }]
 
@@ -1413,7 +1409,6 @@ class TestSupervisionPipeline(unittest.TestCase):
             'agent_id': 1010,
             'person_id': supervision_period__1.person_id,
             'agent_external_id': 'OFFICER0009',
-            'district_external_id': None,
             'supervision_period_id': supervision_period__1.supervision_period_id
         }]
 
@@ -1581,7 +1576,6 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             'agent_id': 1010,
             'person_id': fake_person_id,
             'agent_external_id': 'OFFICER0009',
-            'district_external_id': None,
             'supervision_period_id':
                 supervision_period.supervision_period_id
         }
@@ -1742,7 +1736,6 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             'agent_id': 1010,
             'person_id': fake_person_id,
             'agent_external_id': 'OFFICER0009',
-            'district_external_id': None,
             'supervision_period_id':
                 supervision_period.supervision_period_id
         }
@@ -1928,7 +1921,6 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             'agent_id': 1010,
             'person_id': fake_person_id,
             'agent_external_id': 'OFFICER0009',
-            'district_external_id': None,
             'supervision_period_id':
                 supervision_period.supervision_period_id
         }
@@ -2087,7 +2079,6 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             'agent_id': 1010,
             'person_id': fake_person_id,
             'agent_external_id': 'OFFICER0009',
-            'district_external_id': None,
             'supervision_period_id':
                 supervision_period.supervision_period_id
         }
@@ -2186,7 +2177,6 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             'agent_id': 1010,
             'person_id': fake_person_id,
             'agent_external_id': 'OFFICER0009',
-            'district_external_id': None,
             'supervision_period_id':
                 supervision_period.supervision_period_id
         }
@@ -2276,7 +2266,6 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             'agent_id': 1010,
             'person_id': fake_person_id,
             'agent_external_id': 'OFFICER0009',
-            'district_external_id': None,
             'supervision_period_id': 9999
         }
 

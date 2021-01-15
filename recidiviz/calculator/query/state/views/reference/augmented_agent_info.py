@@ -57,24 +57,16 @@ AUGMENTED_AGENT_INFO_QUERY_TEMPLATE = \
           agent_type, 
           external_id,
           CASE 
-            WHEN state_code = 'US_ND' THEN COALESCE(given_names, FNAME)
             -- TODO(#4159) Remove this state-specific logic once we have given and surnames set in ingest --
             WHEN state_code IN ('US_ID', 'US_PA') THEN TRIM(SPLIT(full_name, ',')[SAFE_OFFSET(1)])
             ELSE given_names
           END AS given_names,
           CASE 
-            WHEN state_code = 'US_ND' THEN COALESCE(surname, LNAME)
             -- TODO(#4159) Remove this state-specific logic once we have given and surnames set in ingest --
             WHEN state_code IN ('US_ID', 'US_PA') THEN TRIM(SPLIT(full_name, ',')[SAFE_OFFSET(0)])
             ELSE surname
           END AS surname, 
-          CASE 
-            WHEN state_code = 'US_ND' THEN CAST(SITEID AS STRING)
-            ELSE NULL
-          END AS latest_district_external_id
         FROM agents_base
-        LEFT JOIN `{project_id}.{static_reference_dataset}.nd_officers_temp` off
-        ON agents_base.state_code = 'US_ND' AND agents_base.external_id = CAST(off.OFFICER as STRING)
     )
     SELECT
       *,

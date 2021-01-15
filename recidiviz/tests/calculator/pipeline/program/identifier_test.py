@@ -42,7 +42,6 @@ DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS = {
     999: {
         'agent_id': 000,
         'agent_external_id': 'XXX',
-        'district_external_id': None,
         'supervision_period_id': 999
     }
 }
@@ -400,7 +399,8 @@ class TestFindProgramReferrals(unittest.TestCase):
                 start_date=date(2008, 3, 5),
                 termination_date=date(2010, 5, 19),
                 termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-                supervision_type=StateSupervisionType.PAROLE
+                supervision_type=StateSupervisionType.PAROLE,
+                supervision_site='DISTRICT8'
             )
 
         assessments = [assessment]
@@ -410,7 +410,6 @@ class TestFindProgramReferrals(unittest.TestCase):
             supervision_period.supervision_period_id: {
                 'agent_id': 000,
                 'agent_external_id': 'OFFICER10',
-                'district_external_id': 'DISTRICT8',
                 'supervision_period_id':
                     supervision_period.supervision_period_id
             }
@@ -420,7 +419,7 @@ class TestFindProgramReferrals(unittest.TestCase):
             program_assignment, assessments, supervision_periods,
             supervision_period_agent_associations
         )
-
+        self.maxDiff = None
         self.assertListEqual([ProgramReferralEvent(
             state_code=program_assignment.state_code,
             program_id=program_assignment.program_id,
@@ -478,7 +477,6 @@ class TestFindProgramParticipationEvents(unittest.TestCase):
             program_location_id=program_assignment.program_location_id,
             supervision_type=supervision_period.supervision_type
         )]
-
         self.assertListEqual(expected_events, participation_events)
 
     def test_find_program_participation_events_not_actively_participating(self):
