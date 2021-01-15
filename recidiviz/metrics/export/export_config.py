@@ -15,13 +15,21 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Config classes for exporting metric views to Google Cloud Storage."""
-from typing import Optional, Sequence
+from typing import Optional, Sequence, List
 
 import attr
 
 from recidiviz.big_query.big_query_view import BigQueryViewBuilder
 from recidiviz.big_query.export.export_query_config import ExportBigQueryViewConfig
+from recidiviz.big_query.view_update_manager import BigQueryViewNamespace
+from recidiviz.calculator.query.state.views.covid_dashboard.covid_dashboard_views import COVID_DASHBOARD_VIEW_BUILDERS
+from recidiviz.calculator.query.state.views.dashboard.dashboard_views import LANTERN_DASHBOARD_VIEW_BUILDERS, \
+    LANTERN_VIEW_BUILDERS_EXCLUDED_FROM_EXPORT, CORE_DASHBOARD_VIEW_BUILDERS
+from recidiviz.calculator.query.state.views.po_report.po_monthly_report_data import PO_MONTHLY_REPORT_DATA_VIEW_BUILDER
+from recidiviz.calculator.query.state.views.public_dashboard.public_dashboard_views import \
+    PUBLIC_DASHBOARD_VIEW_BUILDERS
 from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath
+from recidiviz.ingest.views.view_config import INGEST_METADATA_BUILDERS
 from recidiviz.metrics.metric_big_query_view import MetricBigQueryView, MetricBigQueryViewBuilder
 
 
@@ -44,12 +52,15 @@ class ExportViewCollectionConfig:
     state_code_filter: Optional[str] = attr.ib()
 
     # The name of the export config, used to filter to exports with specific names
-    export_name: Optional[str] = attr.ib()
+    export_name: str = attr.ib()
+
+    # The category of BigQuery views of which this export belongs
+    bq_view_namespace: BigQueryViewNamespace = attr.ib()
 
     def matches_filter(self, export_job_filter: Optional[str] = None) -> bool:
         if export_job_filter is None:
             return True
-        if self.export_name and self.export_name.upper() == export_job_filter.upper():
+        if self.export_name.upper() == export_job_filter.upper():
             return True
         if self.state_code_filter and self.state_code_filter.upper() == export_job_filter.upper():
             return True
@@ -86,3 +97,68 @@ class ExportViewCollectionConfig:
                 )
             )
         return configs
+
+
+# The format for the destination of the files in the export
+COVID_DASHBOARD_OUTPUT_DIRECTORY_URI = "gs://{project_id}-covid-dashboard-data"
+DASHBOARD_VIEWS_OUTPUT_DIRECTORY_URI = "gs://{project_id}-dashboard-data"
+PO_REPORT_OUTPUT_DIRECTORY_URI = "gs://{project_id}-report-data/po_monthly_report"
+PUBLIC_DASHBOARD_VIEWS_OUTPUT_DIRECTORY_URI = "gs://{project_id}-public-dashboard-data"
+INGEST_METADATA_OUTPUT_DIRECTORY_URI = "gs://{project_id}-ingest-metadata"
+
+# The configurations for exporting BigQuery views from various datasets to GCS buckets
+VIEW_COLLECTION_EXPORT_CONFIGS: List[ExportViewCollectionConfig] = [
+    # PO Report views for US_ID
+    ExportViewCollectionConfig(
+        view_builders_to_export=[PO_MONTHLY_REPORT_DATA_VIEW_BUILDER],
+        output_directory_uri_template=PO_REPORT_OUTPUT_DIRECTORY_URI,
+        state_code_filter='US_ID',
+        export_name='PO_MONTHLY',
+        bq_view_namespace=BigQueryViewNamespace.STATE
+    ),
+    # Public Dashboard views for US_ND
+    ExportViewCollectionConfig(
+        view_builders_to_export=PUBLIC_DASHBOARD_VIEW_BUILDERS,
+        output_directory_uri_template=PUBLIC_DASHBOARD_VIEWS_OUTPUT_DIRECTORY_URI,
+        state_code_filter='US_ND',
+        export_name='PUBLIC_DASHBOARD',
+        bq_view_namespace=BigQueryViewNamespace.STATE
+    ),
+    # COVID Dashboard views (not state-specific)
+    ExportViewCollectionConfig(
+        view_builders_to_export=COVID_DASHBOARD_VIEW_BUILDERS,
+        output_directory_uri_template=COVID_DASHBOARD_OUTPUT_DIRECTORY_URI,
+        state_code_filter=None,
+        export_name='COVID_DASHBOARD',
+        bq_view_namespace=BigQueryViewNamespace.STATE
+    ),
+    # Ingest metadata views for admin panel
+    ExportViewCollectionConfig(
+        view_builders_to_export=INGEST_METADATA_BUILDERS,
+        output_directory_uri_template=INGEST_METADATA_OUTPUT_DIRECTORY_URI,
+        state_code_filter=None,
+        export_name='INGEST_METADATA',
+        bq_view_namespace=BigQueryViewNamespace.INGEST_METADATA
+    ),
+] + [
+    # Lantern Dashboard views for all relevant states
+    ExportViewCollectionConfig(
+        view_builders_to_export=[b for b in LANTERN_DASHBOARD_VIEW_BUILDERS
+                                 if b not in LANTERN_VIEW_BUILDERS_EXCLUDED_FROM_EXPORT],
+        output_directory_uri_template=DASHBOARD_VIEWS_OUTPUT_DIRECTORY_URI,
+        state_code_filter=state_code,
+        export_name='LANTERN',
+        bq_view_namespace=BigQueryViewNamespace.STATE
+    )
+    for state_code in ['US_MO', 'US_PA']
+] + [
+    # Core Dashboard views for all relevant states
+    ExportViewCollectionConfig(
+        view_builders_to_export=CORE_DASHBOARD_VIEW_BUILDERS,
+        output_directory_uri_template=DASHBOARD_VIEWS_OUTPUT_DIRECTORY_URI,
+        state_code_filter=state_code,
+        export_name='CORE',
+        bq_view_namespace=BigQueryViewNamespace.STATE
+    )
+    for state_code in ['US_ND']
+]

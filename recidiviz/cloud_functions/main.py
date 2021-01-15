@@ -176,7 +176,8 @@ def export_metric_view_data(event, _context) -> None:
         url = _METRIC_VIEW_EXPORT_CLOUD_FUNCTION_URL.format(project_id) + '?export_job_filter=' + \
             b64decode(event['data']).decode('utf-8')
     else:
-        url = _METRIC_VIEW_EXPORT_CLOUD_FUNCTION_URL.format(project_id)
+        logging.error("Missing required export_job_filter in data of the Pub/Sub message.")
+        return
 
     logging.info("project_id: %s", project_id)
     logging.info("Calling URL: %s", url)
