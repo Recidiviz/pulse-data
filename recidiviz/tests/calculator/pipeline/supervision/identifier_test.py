@@ -82,7 +82,6 @@ DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS = {
     999: {
         'agent_id': 000,
         'agent_external_id': 'XXX',
-        'district_external_id': None,
         'supervision_period_id': 999
     }
 }
@@ -91,7 +90,6 @@ US_ND_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS = {
     999: {
         'agent_id': 000,
         'agent_external_id': 'XXX',
-        'district_external_id': 'X',
         'supervision_period_id': 999
     }
 }
@@ -1292,7 +1290,6 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             {
                 'agent_id': 123,
                 'agent_external_id': 'Officer1',
-                'district_external_id': None,
                 'supervision_period_id': 111
             },
         ]
@@ -2915,7 +2912,8 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 state_code='US_ND',
                 start_date=date(2018, 3, 5),
                 termination_date=date(2018, 5, 26),
-                supervision_type=StateSupervisionType.PROBATION
+                supervision_type=StateSupervisionType.PROBATION,
+                supervision_site='X'
             )
 
         incarceration_period = \
@@ -3044,7 +3042,8 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 state_code='US_ND',
                 start_date=date(2018, 3, 5),
                 termination_date=date(2018, 5, 19),
-                supervision_type=StateSupervisionType.PROBATION
+                supervision_type=StateSupervisionType.PROBATION,
+                supervision_site='X'
             )
 
         incarceration_period = \
@@ -3172,7 +3171,8 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 state_code='US_ND',
                 start_date=date(2018, 10, 5),
                 termination_date=date(2018, 12, 19),
-                supervision_type=StateSupervisionType.PROBATION
+                supervision_type=StateSupervisionType.PROBATION,
+                supervision_site='X'
             )
 
         incarceration_period = \
@@ -5072,7 +5072,6 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             {
                 'agent_id': 000,
                 'agent_external_id': 'AGENTX',
-                'district_external_id': None,
                 'supervision_period_id': 111
             }
         ]
@@ -5306,7 +5305,6 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             {
                 'agent_id': 000,
                 'agent_external_id': 'AGENTX',
-                'district_external_id': None,
                 'supervision_period_id': 111
             }
         ]
@@ -5539,7 +5537,6 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             {
                 'agent_id': 000,
                 'agent_external_id': 'AGENTX',
-                'district_external_id': None,
                 'supervision_period_id': 111
             }
         ]
@@ -5779,7 +5776,6 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             {
                 'agent_id': 000,
                 'agent_external_id': 'AGENTX',
-                'district_external_id': None,
                 'supervision_period_id': 111
             }
         ]
@@ -5997,7 +5993,6 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             {
                 'agent_id': 000,
                 'agent_external_id': 'AGENTX',
-                'district_external_id': None,
                 'supervision_period_id': 111
             }
         ]
@@ -8116,7 +8111,8 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
                 start_date=date(2018, 1, 5),
                 termination_date=date(2018, 12, 19),
                 termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-                supervision_type=StateSupervisionType.PAROLE
+                supervision_type=StateSupervisionType.PAROLE,
+                supervision_site='DISTRICTX'
             )
 
         supervision_sentence = \
@@ -8136,7 +8132,6 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
             111: {
                 'agent_id': 000,
                 'agent_external_id': 'AGENTX',
-                'district_external_id': 'DISTRICTX',
                 'supervision_period_id': 111
             }
         }
@@ -8211,7 +8206,6 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
             111: {
                 'agent_id': None,
                 'agent_external_id': None,
-                'district_external_id': None,
                 'supervision_period_id': 111
             }
         }
@@ -10144,6 +10138,7 @@ class TestGetRevocationDetails(unittest.TestCase):
             start_date=date(2018, 3, 5),
             termination_date=date(2018, 5, 19),
             supervision_type=StateSupervisionType.PROBATION,
+            supervision_site='X'
         )
 
         supervision_violation = StateSupervisionViolation.new_with_defaults(
@@ -10193,8 +10188,7 @@ class TestGetRevocationDetails(unittest.TestCase):
                          identifier.RevocationDetails(
                              revocation_type=StateSupervisionViolationResponseRevocationType.SHOCK_INCARCERATION,
                              source_violation_type=StateSupervisionViolationType.MISDEMEANOR,
-                             level_1_supervision_location_external_id=US_ND_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS.get(
-                                 supervision_period.supervision_period_id).get('district_external_id'),
+                             level_1_supervision_location_external_id=supervision_period.supervision_site,
                              level_2_supervision_location_external_id=None,
                              supervising_officer_external_id=US_ND_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS.get(
                                  supervision_period.supervision_period_id).get('agent_external_id')
@@ -10328,6 +10322,7 @@ class TestGetRevocationDetails(unittest.TestCase):
             start_date=date(2018, 3, 5),
             termination_date=date(2018, 5, 19),
             supervision_type=StateSupervisionType.PROBATION,
+            supervision_site='X'
         )
 
         supervision_violation = StateSupervisionViolation.new_with_defaults(
@@ -10368,8 +10363,7 @@ class TestGetRevocationDetails(unittest.TestCase):
                          identifier.RevocationDetails(
                              revocation_type=StateSupervisionViolationResponseRevocationType.REINCARCERATION,
                              source_violation_type=StateSupervisionViolationType.MISDEMEANOR,
-                             level_1_supervision_location_external_id=US_ND_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS.get(
-                                 supervision_period.supervision_period_id).get('district_external_id'),
+                             level_1_supervision_location_external_id=supervision_period.supervision_site,
                              level_2_supervision_location_external_id=None,
                              supervising_officer_external_id=US_ND_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS.get(
                                  supervision_period.supervision_period_id).get('agent_external_id')

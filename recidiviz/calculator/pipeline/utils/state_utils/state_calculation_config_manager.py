@@ -443,11 +443,6 @@ def get_supervising_officer_and_location_info_from_supervision_period(
         # district info.
         if supervision_period.supervision_site:
             level_2_supervision_location, level_1_supervision_location = supervision_period.supervision_site.split('|')
-    elif supervision_period.state_code == 'US_ND':
-        # TODO(#4547): Remove this ND-specific logic once we hydrate the supervision site on supervision periods
-        agent_info = supervision_period_to_agent_associations.get(supervision_period.supervision_period_id)
-        if agent_info:
-            level_1_supervision_location = agent_info['district_external_id']
     else:
         level_1_supervision_location = supervision_period.supervision_site
 

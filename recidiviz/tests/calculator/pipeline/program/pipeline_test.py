@@ -163,7 +163,6 @@ class TestProgramPipeline(unittest.TestCase):
             'person_id': fake_person_id,
             'state_code': 'US_XX',
             'agent_external_id': 'OFFICER0009',
-            'district_external_id': None,
             'supervision_period_id': fake_supervision_period_id
         }]
 
@@ -342,7 +341,6 @@ class TestProgramPipeline(unittest.TestCase):
             'person_id': fake_person_id,
             'state_code': 'US_XX',
             'agent_external_id': 'OFFICER0009',
-            'district_external_id': None,
             'supervision_period_id': supervision_period.supervision_period_id
         }]
 
@@ -432,7 +430,6 @@ class TestClassifyProgramAssignments(unittest.TestCase):
             'agent_id': 1010,
             'person_id': fake_person_id,
             'agent_external_id': 'OFFICER0009',
-            'district_external_id': None,
             'supervision_period_id':
                 supervision_period.supervision_period_id
         }
@@ -514,13 +511,13 @@ class TestClassifyProgramAssignments(unittest.TestCase):
                 state_code='US_ND',
                 start_date=date(2008, 3, 5),
                 supervision_type=StateSupervisionType.PAROLE,
+                supervision_site='10'
             )
 
         supervision_period_to_agent_map = {
             'agent_id': 1010,
             'person_id': fake_person_id,
             'agent_external_id': 'OFFICER0009',
-            'district_external_id': '10',
             'supervision_period_id':
                 supervision_period.supervision_period_id
         }
@@ -601,7 +598,6 @@ class TestClassifyProgramAssignments(unittest.TestCase):
             'agent_id': 1010,
             'person_id': fake_person_id,
             'agent_external_id': 'OFFICER0009',
-            'district_external_id': None,
             'supervision_period_id':
                 supervision_period.supervision_period_id
         }
@@ -662,7 +658,6 @@ class TestClassifyProgramAssignments(unittest.TestCase):
             'agent_id': 1010,
             'person_id': fake_person_id,
             'agent_external_id': 'OFFICER0009',
-            'district_external_id': None,
             'supervision_period_id':
                 supervision_period.supervision_period_id
         }
