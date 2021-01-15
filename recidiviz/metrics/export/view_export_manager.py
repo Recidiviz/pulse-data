@@ -26,22 +26,22 @@ import argparse
 import logging
 import sys
 from http import HTTPStatus
-from typing import Tuple, List, Optional
+from typing import Tuple, List, Optional, Set
 
 from flask import Blueprint, request
 from opencensus.stats import measure, view as opencensus_view, aggregation
 
+from recidiviz.big_query.view_update_manager import BigQueryViewNamespace
+from recidiviz.metrics.export import export_config
 from recidiviz.big_query import view_update_manager
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
 from recidiviz.big_query.export.big_query_view_exporter import BigQueryViewExporter, JsonLinesBigQueryViewExporter, \
     ViewExportValidationError
 from recidiviz.big_query.export.big_query_view_export_validator import JsonLinesBigQueryViewExportValidator
-from recidiviz.big_query.view_update_manager import BigQueryViewNamespace
 
-from recidiviz.calculator.query.state import view_config
 from recidiviz.big_query.export.composite_big_query_view_exporter import CompositeBigQueryViewExporter
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
-from recidiviz.metrics.export.export_config import ExportMetricBigQueryViewConfig
+from recidiviz.metrics.export.export_config import ExportMetricBigQueryViewConfig, ExportViewCollectionConfig
 from recidiviz.metrics.export.optimized_metric_big_query_view_exporter import OptimizedMetricBigQueryViewExporter
 from recidiviz.metrics.export.optimized_metric_big_query_view_export_validator import \
     OptimizedMetricBigQueryViewExportValidator
@@ -99,6 +99,9 @@ def create_metric_view_data_export_task() -> Tuple[str, HTTPStatus]:
 
     export_job_filter = get_str_param_value("export_job_filter", request.args)
 
+    if not export_job_filter:
+        return 'missing required export_job_filter URL parameter', HTTPStatus.BAD_REQUEST
+
     ViewExportCloudTaskManager().create_metric_view_data_export_task(export_job_filter=export_job_filter)
 
     return '', HTTPStatus.OK
@@ -123,13 +126,16 @@ def metric_view_data_export() -> Tuple[str, HTTPStatus]:
 
     export_job_filter = get_str_param_value("export_job_filter", request.args)
 
+    if not export_job_filter:
+        return 'missing required export_job_filter URL parameter', HTTPStatus.BAD_REQUEST
+
     export_view_data_to_cloud_storage(export_job_filter)
 
     return '', HTTPStatus.OK
 
 
-def export_view_data_to_cloud_storage(export_job_filter: Optional[str] = None,
-                                      override_view_exporter: BigQueryViewExporter = None,
+def export_view_data_to_cloud_storage(export_job_filter: str,
+                                      override_view_exporter: Optional[BigQueryViewExporter] = None,
                                       update_materialized_views: bool = True) -> None:
     """Exports data in BigQuery metric views to cloud storage buckets.
 
@@ -137,11 +143,31 @@ def export_view_data_to_cloud_storage(export_job_filter: Optional[str] = None,
     to using a CompositeBigQueryViewExporter with delegates of JsonLinesBigQueryViewExporter and
     OptimizedMetricBigQueryViewExporter.
     """
+    export_configs_for_filter: List[ExportViewCollectionConfig] = []
+    bq_view_namespaces_to_update: Set[BigQueryViewNamespace] = set()
+    for dataset_export_config in export_config.VIEW_COLLECTION_EXPORT_CONFIGS:
+        if not dataset_export_config.matches_filter(export_job_filter):
+            logging.info("Skipped metric export for config [%s] with filter [%s]", dataset_export_config,
+                         export_job_filter)
+            continue
+
+        export_configs_for_filter.append(dataset_export_config)
+        bq_view_namespaces_to_update.add(dataset_export_config.bq_view_namespace)
+
+    if not export_configs_for_filter:
+        raise ValueError("Export filter did not match any export configs: ", export_job_filter)
+
     if update_materialized_views:
-        view_builders_for_views_to_update = view_config.VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE
-        view_update_manager.create_dataset_and_update_views_for_view_builders(BigQueryViewNamespace.STATE,
-                                                                              view_builders_for_views_to_update,
-                                                                              materialized_views_only=True)
+        for bq_view_namespace_to_update in bq_view_namespaces_to_update:
+            view_builders_for_views_to_update = view_update_manager.VIEW_BUILDERS_BY_NAMESPACE[
+                bq_view_namespace_to_update]
+
+            view_update_manager.create_dataset_and_update_views_for_view_builders(bq_view_namespace_to_update,
+                                                                                  view_builders_for_views_to_update,
+                                                                                  materialized_views_only=True)
+
+    json_exporter = None
+    metric_exporter = None
 
     if override_view_exporter is None:
         bq_client = BigQueryClientImpl()
@@ -162,16 +188,7 @@ def export_view_data_to_cloud_storage(export_job_filter: Optional[str] = None,
 
     project_id = metadata.project_id()
 
-    # If the state code is set to COVID then it will match when the state_filter is None in
-    # view_config.VIEW_COLLECTION_EXPORT_CONFIGS
-    matched_export_config = False
-    for dataset_export_config in view_config.VIEW_COLLECTION_EXPORT_CONFIGS:
-        if not dataset_export_config.matches_filter(export_job_filter):
-            logging.info("Skipped metric export for config [%s] with filter [%s]", dataset_export_config,
-                         export_job_filter)
-            continue
-
-        matched_export_config = True
+    for dataset_export_config in export_configs_for_filter:
         logging.info("Starting metric export for dataset_config [%s] with filter [%s]", dataset_export_config,
                      export_job_filter)
 
@@ -182,7 +199,7 @@ def export_view_data_to_cloud_storage(export_job_filter: Optional[str] = None,
         try:
             if override_view_exporter is not None:
                 override_view_exporter.export_and_validate(view_export_configs)
-            else:
+            elif json_exporter and metric_exporter:
                 metric_configs = [
                     conf for conf in view_export_configs if isinstance(
                         conf, ExportMetricBigQueryViewConfig)]
@@ -192,6 +209,10 @@ def export_view_data_to_cloud_storage(export_job_filter: Optional[str] = None,
 
                 metric_exporter.export_and_validate(metric_configs)
                 json_exporter.export_and_validate(nonmetric_configs)
+            else:
+                raise ValueError("No instantiated BigQueryViewExporter. Either override_view_exporter or "
+                                 "both json_exporter and metric_exporter are expected to be instantiated at this "
+                                 "point.")
         except ViewExportValidationError:
             warning_message = f"Export validation failed for {dataset_export_config.export_name}"
 
@@ -215,9 +236,6 @@ def export_view_data_to_cloud_storage(export_job_filter: Optional[str] = None,
                 measurements.measure_int_put(m_failed_metric_export_job, 1)
             raise e
 
-    if not matched_export_config:
-        raise ValueError("Export filter did not match any export configs: ", export_job_filter)
-
 
 def parse_arguments(argv: List[str]) -> Tuple[argparse.Namespace, List[str]]:
     """Parses the required arguments."""
@@ -232,9 +250,11 @@ def parse_arguments(argv: List[str]) -> Tuple[argparse.Namespace, List[str]]:
     parser.add_argument('--export_job_filter',
                         dest='export_job_filter',
                         type=str,
-                        choices=([c.state_code_filter for c in view_config.VIEW_COLLECTION_EXPORT_CONFIGS] +
-                                 [c.export_name for c in view_config.VIEW_COLLECTION_EXPORT_CONFIGS]),
-                        required=False)
+                        choices=([c.state_code_filter for c in
+                                  export_config.VIEW_COLLECTION_EXPORT_CONFIGS] +
+                                 [c.export_name for c in
+                                  export_config.VIEW_COLLECTION_EXPORT_CONFIGS]),
+                        required=True)
     parser.add_argument('--update_materialized_views',
                         default=True,
                         type=str_to_bool,
