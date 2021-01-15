@@ -18,7 +18,6 @@
 """Recidivism metrics we calculate."""
 
 from datetime import date
-from math import isnan
 from typing import Any, Dict, Optional, cast
 
 import attr
@@ -112,9 +111,6 @@ class ReincarcerationRecidivismCountMetric(ReincarcerationRecidivismMetric):
     # The number of months this metric describes, starting with the month of the metric and going back in time
     metric_period_months: Optional[int] = attr.ib(default=1)
 
-    # Number of reincarceration returns
-    returns: int = attr.ib(default=None)
-
     # For person-level metrics only, the days at liberty between release and reincarceration
     days_at_liberty: int = attr.ib(default=None)
 
@@ -127,10 +123,6 @@ class ReincarcerationRecidivismCountMetric(ReincarcerationRecidivismMetric):
 
         if not metric_key:
             raise ValueError("The metric_key is empty.")
-
-        # Don't write metrics with no returns
-        if metric_key['returns'] == 0:
-            return None
 
         metric_key['job_id'] = job_id
         metric_key['created_on'] = date.today()
@@ -162,15 +154,8 @@ class ReincarcerationRecidivismRateMetric(ReincarcerationRecidivismMetric):
 
     # Required metric values
 
-    # The integer number of releases from incarceration that the characteristics in this metric describe
-    total_releases: int = attr.ib(default=None)  # non-nullable
-
-    # The total number of releases from incarceration that led to recidivism that the characteristics in this metric
-    # describe
-    recidivated_releases: int = attr.ib(default=None)  # non-nullable
-
-    # The float rate of recidivism for the releases that the characteristics in this metric describe
-    recidivism_rate: float = attr.ib(default=None)  # non-nullable
+    # Whether or not the person recidivated
+    did_recidivate: bool = attr.ib(default=None)  # non-nullable
 
     # Date of release
     release_date: date = attr.ib(default=None)  # non-nullable
@@ -185,10 +170,6 @@ class ReincarcerationRecidivismRateMetric(ReincarcerationRecidivismMetric):
 
         if not metric_key:
             raise ValueError("The metric_key is empty.")
-
-        # Don't create metrics with invalid recidivism rates
-        if isnan(metric_key['recidivism_rate']):
-            return None
 
         metric_key['job_id'] = job_id
         metric_key['created_on'] = date.today()

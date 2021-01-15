@@ -33,15 +33,16 @@ RECIDIVISM_RATES_BY_COHORT_BY_YEAR_VIEW_QUERY_TEMPLATE = \
     /*{description}*/
     WITH releases AS (
       SELECT
+        person_id,
         state_code,
         release_cohort,
         follow_up_period,
         gender,
         age_bucket,
         prioritized_race_or_ethnicity,
-        recidivated_releases,
-        total_releases,
-        ROW_NUMBER() OVER (PARTITION BY state_code, release_cohort, follow_up_period, person_id ORDER BY release_date ASC, recidivated_releases DESC) as release_order
+        did_recidivate,
+        ROW_NUMBER() OVER (PARTITION BY state_code, release_cohort, follow_up_period, person_id
+          ORDER BY release_date ASC, did_recidivate DESC) as release_order
         FROM `{project_id}.{materialized_metrics_dataset}.most_recent_recidivism_rate_metrics_materialized`
       -- For 10 years of release cohorts that have at least 1 full year of follow-up -- 
       WHERE release_cohort >= EXTRACT(YEAR FROM CURRENT_DATE()) - 11
@@ -56,8 +57,8 @@ RECIDIVISM_RATES_BY_COHORT_BY_YEAR_VIEW_QUERY_TEMPLATE = \
         IFNULL(gender, 'EXTERNAL_UNKNOWN') as gender,
         IFNULL(age_bucket, 'EXTERNAL_UNKNOWN') as age_bucket,
         {state_specific_race_or_ethnicity_groupings},
-        SUM(recidivated_releases) as recidivated_releases,
-        SUM(total_releases) as releases
+        COUNTIF(did_recidivate) as recidivated_releases,
+        COUNT(DISTINCT(person_id)) as releases
       FROM releases,
         {gender_dimension},
         {age_dimension},

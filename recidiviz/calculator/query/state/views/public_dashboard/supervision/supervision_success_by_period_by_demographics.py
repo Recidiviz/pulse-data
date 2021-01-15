@@ -35,7 +35,8 @@ SUPERVISION_SUCCESS_BY_PERIOD_BY_DEMOGRAPHICS_VIEW_QUERY_TEMPLATE = \
     WITH supervision_completions AS (
       SELECT 
         state_code,
-        MIN(successful_completion_count) as successful_termination,
+        -- successful_termination is True only if all periods were successfully completed
+        LOGICAL_AND(successful_completion) as successful_termination,
         person_id,
         IFNULL(district, 'EXTERNAL_UNKNOWN') as district,
         IFNULL(gender, 'EXTERNAL_UNKNOWN') as gender,
@@ -77,7 +78,7 @@ SUPERVISION_SUCCESS_BY_PERIOD_BY_DEMOGRAPHICS_VIEW_QUERY_TEMPLATE = \
           {state_specific_race_or_ethnicity_groupings},
           gender,
           age_bucket,
-          COUNT(DISTINCT IF(successful_termination = 1, person_id, NULL)) as successful_termination_count,
+          COUNT(DISTINCT IF(successful_termination, person_id, NULL)) as successful_termination_count,
           COUNT(DISTINCT person_id) as projected_completion_count
       FROM
           terminations_with_race_or_ethnicity_priorities,

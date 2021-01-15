@@ -44,11 +44,11 @@ REINCARCERATION_RATE_BY_STAY_LENGTH_QUERY_TEMPLATE = \
           release_cohort,
           follow_up_period,
           person_id,
-          recidivated_releases,
+          did_recidivate,
           stay_length_bucket,
           county_of_residence,
           ROW_NUMBER() OVER (PARTITION BY state_code, release_cohort, follow_up_period, person_id
-                                ORDER BY release_date ASC, recidivated_releases DESC) as release_order
+                                ORDER BY release_date ASC, did_recidivate DESC) as release_order
         FROM `{project_id}.{materialized_metrics_dataset}.most_recent_recidivism_rate_metrics_materialized`
         WHERE methodology = 'EVENT'
           AND follow_up_period = 1
@@ -59,8 +59,8 @@ REINCARCERATION_RATE_BY_STAY_LENGTH_QUERY_TEMPLATE = \
       state_code,
       release_cohort,
       follow_up_period,
-      SUM(recidivated_releases) AS reincarceration_count,
-      SUM(recidivated_releases)/COUNT(*) AS recidivism_rate,
+      COUNTIF(did_recidivate) AS reincarceration_count,
+      COUNTIF(did_recidivate)/COUNT(*) AS recidivism_rate,
       stay_length_bucket,
       district
     FROM releases,

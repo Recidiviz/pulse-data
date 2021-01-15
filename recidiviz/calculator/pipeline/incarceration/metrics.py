@@ -86,14 +86,11 @@ class IncarcerationMetric(RecidivizMetric, PersonLevelMetric):
 
 @attr.s
 class IncarcerationPopulationMetric(IncarcerationMetric):
-    """Subclass of IncarcerationMetric that contains incarceration population counts on a given date."""
+    """Subclass of IncarcerationMetric that contains incarceration population information on a given date."""
     # Required characteristics
 
     # The type of IncarcerationMetric
     metric_type: IncarcerationMetricType = attr.ib(init=False, default=IncarcerationMetricType.INCARCERATION_POPULATION)
-
-    # Population count
-    count: int = attr.ib(default=None)
 
     # Date of the incarceration population count
     date_of_stay: date = attr.ib(default=None)
@@ -144,14 +141,11 @@ class IncarcerationPopulationMetric(IncarcerationMetric):
 
 @attr.s
 class IncarcerationAdmissionMetric(IncarcerationMetric):
-    """Subclass of IncarcerationMetric that contains admission counts."""
+    """Subclass of IncarcerationMetric that contains admission information."""
     # Required characteristics
 
     # The type of IncarcerationMetric
     metric_type: IncarcerationMetricType = attr.ib(init=False, default=IncarcerationMetricType.INCARCERATION_ADMISSION)
-
-    # Admission count
-    count: int = attr.ib(default=None)
 
     # Most relevant admission reason for a continuous stay in prison. For example, in some states, if the initial
     # incarceration period has an admission reason of TEMPORARY_CUSTODY, the admission reason is drawn from the
@@ -191,14 +185,11 @@ class IncarcerationAdmissionMetric(IncarcerationMetric):
 
 @attr.s
 class IncarcerationReleaseMetric(IncarcerationMetric):
-    """Subclass of IncarcerationMetric that contains release counts."""
+    """Subclass of IncarcerationMetric that contains release information."""
     # Required characteristics
 
     # The type of IncarcerationMetric
     metric_type: IncarcerationMetricType = attr.ib(init=False, default=IncarcerationMetricType.INCARCERATION_RELEASE)
-
-    # Release count
-    count: int = attr.ib(default=None)
 
     # Release date
     release_date: Optional[date] = attr.ib(default=None)

@@ -37,16 +37,16 @@ SUPERVISION_TERMINATION_BY_TYPE_BY_PERIOD_QUERY_TEMPLATE = \
     /*{description}*/
     SELECT
         state_code, metric_period_months,
-        SUM(successful_termination) AS successful_termination,
-        SUM(projected_completion_count - successful_termination) AS revocation_termination,
+        COUNTIF(successful_termination) AS successful_termination,
+        COUNTIF(NOT(successful_termination)) AS revocation_termination,
         supervision_type,
         district    
     FROM (
       SELECT 
         state_code, metric_period_months, 
         -- Only count as success if all completed periods were successful per person
-        MIN(successful_completion_count) as successful_termination,
-        MAX(projected_completion_count) as projected_completion_count,
+        -- successful_termination is True only if all periods were successfully completed
+        LOGICAL_AND(successful_completion) as successful_termination,
         supervision_type,
         IFNULL(district, 'EXTERNAL_UNKNOWN') as district,
       FROM `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_success_metrics_materialized`,
