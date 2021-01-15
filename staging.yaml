@@ -1,5 +1,6 @@
 runtime: custom
 env: flex
+service: default
 
 resources:
   cpu: 4
