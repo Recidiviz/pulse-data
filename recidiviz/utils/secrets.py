@@ -62,7 +62,7 @@ def get_secret(secret_id: str) -> Optional[str]:
     try:
         response = _sm().access_secret_version(name=secret_name)
     except exceptions.NotFound:
-        logging.error("Couldn't locate secret: [%s].", secret_id)
+        logging.warning("Couldn't locate secret: [%s].", secret_id)
         return None
     except Exception:
         logging.error("Couldn't successfully connect to secret manager to retrieve secret: [%s].",

@@ -187,6 +187,28 @@ class SQLAlchemyEngineManager:
         return password
 
     @classmethod
+    def get_db_migration_password_key(cls, schema_type: SchemaType) -> str:
+        return f'{cls._SCHEMA_TO_SECRET_MANAGER_PREFIX[schema_type]}_db_migration_password'
+
+    @classmethod
+    def get_db_migration_password(cls, schema_type: SchemaType) -> str:
+        password = secrets.get_secret(cls.get_db_migration_password_key(schema_type))
+        if password is None:
+            raise ValueError(f"Unable to retrieve database migration password for schema type [{schema_type}]")
+        return password
+
+    @classmethod
+    def get_db_migration_user_key(cls, schema_type: SchemaType) -> str:
+        return f'{cls._SCHEMA_TO_SECRET_MANAGER_PREFIX[schema_type]}_db_migration_user'
+
+    @classmethod
+    def get_db_migration_user(cls, schema_type: SchemaType) -> str:
+        user = secrets.get_secret(cls.get_db_migration_user_key(schema_type))
+        if user is None:
+            raise ValueError(f"Unable to retrieve database migration user for schema type [{schema_type}]")
+        return user
+
+    @classmethod
     def get_db_readonly_password_key(cls, schema_type: SchemaType) -> str:
         return f'{cls._SCHEMA_TO_SECRET_MANAGER_PREFIX[schema_type]}_db_readonly_password'
 
@@ -259,11 +281,15 @@ class SQLAlchemyEngineManager:
     @classmethod
     def update_sqlalchemy_env_vars(cls, schema_type: SchemaType,
                                    ssl_cert_path: Optional[str] = None,
+                                   migration_user: bool = False,
                                    readonly_user: bool = False) -> Dict[str, Optional[str]]:
         """Updates the appropriate env vars for SQLAlchemy to talk to the postgres instance associated with the schema.
 
         It returns the old set of env variables that were overridden.
         """
+        if migration_user and readonly_user:
+            raise ValueError("Both migration user and readonly user cannot be set")
+
         sqlalchemy_vars = [
             SQLALCHEMY_DB_NAME,
             SQLALCHEMY_DB_HOST,
@@ -279,6 +305,14 @@ class SQLAlchemyEngineManager:
         if readonly_user:
             os.environ[SQLALCHEMY_DB_USER] = cls.get_db_readonly_user(schema_type)
             os.environ[SQLALCHEMY_DB_PASSWORD] = cls.get_db_readonly_password(schema_type)
+        elif migration_user:
+            try:
+                os.environ[SQLALCHEMY_DB_USER] = cls.get_db_migration_user(schema_type)
+                os.environ[SQLALCHEMY_DB_PASSWORD] = cls.get_db_migration_password(schema_type)
+            except ValueError:
+                logging.info('No explicit migration user defined. Falling back to default user.')
+                os.environ[SQLALCHEMY_DB_USER] = cls.get_db_user(schema_type)
+                os.environ[SQLALCHEMY_DB_PASSWORD] = cls.get_db_password(schema_type)
         else:
             os.environ[SQLALCHEMY_DB_USER] = cls.get_db_user(schema_type)
             os.environ[SQLALCHEMY_DB_PASSWORD] = cls.get_db_password(schema_type)
