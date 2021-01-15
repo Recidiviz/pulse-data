@@ -241,7 +241,6 @@ class TestGetSupervisingOfficerAndLocationInfoFromSupervisionPeriod(unittest.Tes
         111: {
             'agent_id': 123,
             'agent_external_id': 'agent_external_id_1',
-            'district_external_id': None,
             'supervision_period_id': 111
         }
     }
@@ -358,7 +357,6 @@ class TestGetSupervisingOfficerAndLocationInfoFromSupervisionPeriod(unittest.Tes
             111: {
                 'agent_id': 123,
                 'agent_external_id': 'agent_external_id_1',
-                'district_external_id': 'reftable_district',
                 'supervision_period_id': 111
             }
         }
@@ -372,7 +370,7 @@ class TestGetSupervisingOfficerAndLocationInfoFromSupervisionPeriod(unittest.Tes
                 supervision_period, nd_supervision_period_agent_associations)
 
         self.assertEqual('agent_external_id_1', supervising_officer_external_id)
-        self.assertEqual('reftable_district', level_1_supervision_location)
+        self.assertEqual('SITE_1', level_1_supervision_location)
         self.assertEqual(None, level_2_supervision_location)
 
     def test_get_supervising_officer_and_location_info_from_supervision_period_US_MO(self) -> None:

@@ -52,10 +52,11 @@ def _get_query_prep_statement(reference_views_dataset: str) -> str:
           {supervision_type_dimension}
           WHERE termination_date IS NOT NULL
         )
+
     """.format(
         reference_views_dataset=reference_views_dataset,
         district_dimension=bq_utils.unnest_district(
-            district_column='agent.district_external_id'),
+            district_column='supervision_site'),
         supervision_type_dimension=bq_utils.unnest_supervision_type(
             supervision_type_column='supervision_period.supervision_type'),
     )
