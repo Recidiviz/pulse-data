@@ -34,6 +34,7 @@ FTR_REFERRALS_BY_LSIR_BY_PERIOD_DESCRIPTION = """
  period months, broken down by LSIR score.
 """
 
+# TODO(#5334): Make this view deterministic by sorting by date_of_supervision and date_of_referral
 FTR_REFERRALS_BY_LSIR_BY_PERIOD_QUERY_TEMPLATE = \
     """
     /*{description}*/

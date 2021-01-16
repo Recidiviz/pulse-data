@@ -16,6 +16,7 @@
 # =============================================================================
 """Average days at liberty for reincarcerations by month."""
 # pylint: disable=trailing-whitespace
+from recidiviz.calculator.query import bq_utils
 from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
@@ -40,7 +41,7 @@ AVERAGE_DAYS_AT_LIBERTY_BY_MONTH_QUERY_TEMPLATE = \
         ROW_NUMBER() OVER (PARTITION BY state_code, year, month, person_id
                             ORDER BY reincarceration_date ASC, days_at_liberty) as priority_ranking
         FROM `{project_id}.{materialized_metrics_dataset}.most_recent_recidivism_count_metrics_materialized`
-        WHERE year >= EXTRACT(YEAR FROM DATE_SUB(CURRENT_DATE(), INTERVAL 3 YEAR))
+        WHERE {thirty_six_month_filter}
     )
 
     SELECT
@@ -60,6 +61,7 @@ AVERAGE_DAYS_AT_LIBERTY_BY_MONTH_VIEW_BUILDER = MetricBigQueryViewBuilder(
     description=AVERAGE_DAYS_AT_LIBERTY_BY_MONTH_DESCRIPTION,
     materialized_metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
+    thirty_six_month_filter=bq_utils.thirty_six_month_filter()
 )
 
 

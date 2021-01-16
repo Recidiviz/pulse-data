@@ -50,8 +50,7 @@ EVENT_BASED_REVOCATIONS_QUERY_TEMPLATE = \
     FROM `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_revocation_metrics_materialized` m,
     {district_dimension},
     {supervision_type_dimension}
-    WHERE district IS NOT NULL
-      AND year >= EXTRACT(YEAR FROM DATE_SUB(CURRENT_DATE(), INTERVAL 3 YEAR))
+    WHERE {thirty_six_month_filter}
     """
 
 EVENT_BASED_REVOCATIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
@@ -63,6 +62,7 @@ EVENT_BASED_REVOCATIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
     district_dimension=bq_utils.unnest_district(),
     supervision_type_dimension=bq_utils.unnest_supervision_type(),
+    thirty_six_month_filter=bq_utils.thirty_six_month_filter()
 )
 
 if __name__ == '__main__':
