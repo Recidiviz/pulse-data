@@ -52,7 +52,7 @@ SUPERVISION_TERMINATION_BY_TYPE_BY_MONTH_QUERY_TEMPLATE = \
       FROM `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_success_metrics_materialized`,
       {district_dimension},
       {supervision_type_dimension}
-      WHERE year >= EXTRACT(YEAR FROM DATE_SUB(CURRENT_DATE(), INTERVAL 3 YEAR))
+      WHERE {thirty_six_month_filter}
       GROUP BY state_code, year, month, supervision_type, district, person_id
     )
     WHERE supervision_type in ('ALL', 'PAROLE', 'PROBATION')
@@ -70,6 +70,7 @@ SUPERVISION_TERMINATION_BY_TYPE_BY_MONTH_VIEW_BUILDER = MetricBigQueryViewBuilde
     materialized_metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
     district_dimension=bq_utils.unnest_district(),
     supervision_type_dimension=bq_utils.unnest_supervision_type(),
+    thirty_six_month_filter=bq_utils.thirty_six_month_filter()
 )
 
 if __name__ == '__main__':

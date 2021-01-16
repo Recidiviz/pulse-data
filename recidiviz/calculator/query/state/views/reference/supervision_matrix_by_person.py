@@ -53,7 +53,7 @@ SUPERVISION_MATRIX_BY_PERSON_QUERY_TEMPLATE = \
             date_of_supervision,
             FALSE AS is_revocation
         FROM `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_population_metrics_materialized`
-        WHERE year >= EXTRACT(YEAR FROM DATE_SUB(CURRENT_DATE(), INTERVAL 3 YEAR))
+        WHERE {thirty_six_month_filter}
     ), revocations_matrix AS (
         SELECT
             * EXCEPT(revocation_admission_date, officer_recommendation, violation_record, violation_type_frequency_counter),
@@ -126,7 +126,8 @@ SUPERVISION_MATRIX_BY_PERSON_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     metric_period_dimension=bq_utils.unnest_metric_period_months(),
     metric_period_condition=bq_utils.metric_period_condition(),
     state_specific_supervision_location_optimization_filter=
-    state_specific_query_strings.state_specific_supervision_location_optimization_filter()
+    state_specific_query_strings.state_specific_supervision_location_optimization_filter(),
+    thirty_six_month_filter=bq_utils.thirty_six_month_filter(),
 )
 
 if __name__ == '__main__':

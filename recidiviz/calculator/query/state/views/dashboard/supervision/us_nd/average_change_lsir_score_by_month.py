@@ -57,7 +57,7 @@ AVERAGE_CHANGE_LSIR_SCORE_MONTH_QUERY_TEMPLATE = \
       {supervision_type_dimension}
       WHERE assessment_type = 'LSIR'
         AND assessment_score_change IS NOT NULL
-        AND year >= EXTRACT(YEAR FROM DATE_SUB(CURRENT_DATE(), INTERVAL 3 YEAR))
+        AND {thirty_six_month_filter}
     )
     WHERE supervision_type IN ('ALL', 'PAROLE', 'PROBATION')
       AND supervision_rank = 1
@@ -75,6 +75,7 @@ AVERAGE_CHANGE_LSIR_SCORE_MONTH_VIEW_BUILDER = MetricBigQueryViewBuilder(
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
     district_dimension=bq_utils.unnest_district(),
     supervision_type_dimension=bq_utils.unnest_supervision_type(),
+    thirty_six_month_filter=bq_utils.thirty_six_month_filter()
 )
 
 if __name__ == '__main__':

@@ -40,7 +40,7 @@ EVENT_BASED_ADMISSIONS_QUERY_TEMPLATE = \
       admission_reason, admission_date
     FROM `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_admission_metrics_materialized`,
     {district_dimension}
-    WHERE year >= EXTRACT(YEAR FROM DATE_SUB(CURRENT_DATE(), INTERVAL 3 YEAR))
+    WHERE {thirty_six_month_filter}
     """
 
 EVENT_BASED_ADMISSIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
@@ -50,8 +50,8 @@ EVENT_BASED_ADMISSIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     description=EVENT_BASED_ADMISSIONS_DESCRIPTION,
     materialized_metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
-    district_dimension=bq_utils.unnest_district(
-        district_column='county_of_residence'),
+    district_dimension=bq_utils.unnest_district(district_column='county_of_residence'),
+    thirty_six_month_filter=bq_utils.thirty_six_month_filter()
 )
 
 if __name__ == '__main__':

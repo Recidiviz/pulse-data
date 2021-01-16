@@ -18,6 +18,7 @@
 # pylint: disable=trailing-whitespace, line-too-long
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+from recidiviz.calculator.query import bq_utils
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -44,7 +45,7 @@ OFFICER_SUPERVISION_DISTRICT_ASSOCIATION_QUERY_TEMPLATE = \
                 -- Only the following states are supported for the PO report --
                 AND state_code = 'US_ID'
                 AND officer_external_id IS NOT NULL
-                AND year >= EXTRACT(YEAR FROM DATE_SUB(CURRENT_DATE(), INTERVAL 3 YEAR))
+                AND {thirty_six_month_filter}
              GROUP BY state_code, year, month, officer_external_id, district_name),
     filtered_officers_to_person_count AS (
         SELECT  
@@ -64,6 +65,7 @@ OFFICER_SUPERVISION_DISTRICT_ASSOCIATION_VIEW_BUILDER = SimpleBigQueryViewBuilde
     view_query_template=OFFICER_SUPERVISION_DISTRICT_ASSOCIATION_QUERY_TEMPLATE,
     description=OFFICER_SUPERVISION_DISTRICT_ASSOCIATION_DESCRIPTION,
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
+    thirty_six_month_filter=bq_utils.thirty_six_month_filter()
 )
 
 if __name__ == '__main__':
