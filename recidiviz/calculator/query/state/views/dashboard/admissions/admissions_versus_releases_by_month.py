@@ -53,7 +53,7 @@ ADMISSIONS_VERSUS_RELEASES_BY_MONTH_QUERY_TEMPLATE = \
         COUNT(DISTINCT person_id) AS release_count
       FROM `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_release_metrics_materialized`,
       {district_dimension}
-      WHERE year >= EXTRACT(YEAR FROM DATE_SUB(CURRENT_DATE(), INTERVAL 3 YEAR))
+      WHERE {thirty_six_month_filter}
       GROUP BY state_code, year, month, district
     ) releases
     USING (state_code, year, month, district)
@@ -74,7 +74,7 @@ ADMISSIONS_VERSUS_RELEASES_BY_MONTH_QUERY_TEMPLATE = \
       GROUP BY state_code, year, month, district
     ) inc_pop
     USING (state_code, year, month, district)
-    WHERE year >= EXTRACT(YEAR FROM DATE_SUB(CURRENT_DATE(), INTERVAL 3 YEAR))
+    WHERE {thirty_six_month_filter}
       AND district IS NOT NULL
     ORDER BY state_code, district, year, month 
 """
@@ -89,6 +89,7 @@ ADMISSIONS_VERSUS_RELEASES_BY_MONTH_VIEW_BUILDER = MetricBigQueryViewBuilder(
     materialized_metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
     district_dimension=bq_utils.unnest_district(
         district_column='county_of_residence'),
+    thirty_six_month_filter=bq_utils.thirty_six_month_filter()
 )
 
 if __name__ == '__main__':

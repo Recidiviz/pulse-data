@@ -42,7 +42,7 @@ SUPERVISION_SUCCESS_BY_MONTH_VIEW_QUERY_TEMPLATE = \
         person_id,
       FROM `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_success_metrics_materialized`,
       UNNEST ([{grouped_districts}, 'ALL']) AS district
-      WHERE year >= EXTRACT(YEAR FROM DATE_SUB(CURRENT_DATE(), INTERVAL 3 YEAR))
+      WHERE {thirty_six_month_filter}
       GROUP BY state_code, projected_year, projected_month, district, supervision_type, person_id
     ), success_counts AS (
       SELECT
@@ -77,6 +77,7 @@ SUPERVISION_SUCCESS_BY_MONTH_VIEW_BUILDER = MetricBigQueryViewBuilder(
     state_specific_query_strings.state_supervision_specific_district_groupings('supervising_district_external_id',
                                                                                'judicial_district_code'),
     district_dimension=bq_utils.unnest_district(),
+    thirty_six_month_filter=bq_utils.thirty_six_month_filter(),
 )
 
 if __name__ == '__main__':

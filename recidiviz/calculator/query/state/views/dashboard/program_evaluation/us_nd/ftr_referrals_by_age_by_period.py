@@ -33,6 +33,7 @@ FTR_REFERRALS_BY_AGE_BY_PERIOD_DESCRIPTION = """
  period months, broken down by age.
 """
 
+# TODO(#5334): Make this view deterministic by sorting by date_of_supervision and date_of_referral
 FTR_REFERRALS_BY_AGE_BY_PERIOD_QUERY_TEMPLATE = \
     """
     /*{description}*/
