@@ -1,0 +1,7 @@
+# Sentence / Violation Xref. Column prefix: CZ.
+file_tag: LBAKRDTA_TAK076
+primary_key_cols:
+  - CZ_DOC
+  - CZ_CYC
+  - CZ_VSN
+  - CZ_SEO
