@@ -22,14 +22,13 @@ from concurrent import futures
 from typing import Callable, Dict, List, Set, Tuple, TypeVar
 
 from recidiviz.big_query.big_query_view import BigQueryView, MATERIALIZED_SUFFIX
+from recidiviz.utils import structured_logging
 
 # We set this to 10 because urllib3 (used by the Google BigQuery client) has an default limit of 10 connections and
 # we were seeing "urllib3.connectionpool:Connection pool is full, discarding connection" errors when this number
 # increased.
 # In the future, we could increase the worker number by playing around with increasing the pool size per this post:
 # https://github.com/googleapis/python-storage/issues/253
-from recidiviz.utils import structured_logging
-
 DAG_WALKER_MAX_WORKERS = 10
 
 DagKey = Tuple[str, str]
