@@ -19,7 +19,7 @@ asynchronously on background threads."""
 import logging
 from queue import Queue, Empty
 from threading import Thread, Lock, Condition
-from typing import Callable, List, Tuple, Optional
+from typing import Callable, List, Tuple, Optional, Any
 
 from recidiviz.ingest.direct.controllers.direct_ingest_types import \
     IngestArgsType
@@ -45,7 +45,7 @@ class SingleThreadTaskQueue(Queue):
 
     MAX_TASKS = 100
 
-    def __init__(self, name: str, max_tasks=MAX_TASKS):
+    def __init__(self, name: str, max_tasks: int = MAX_TASKS):
         super().__init__()
         self.name = name
         self.max_tasks = max_tasks
@@ -63,7 +63,7 @@ class SingleThreadTaskQueue(Queue):
         t.daemon = True
         t.start()
 
-    def add_task(self, task_name: str, task: Callable, *args, **kwargs):
+    def add_task(self, task_name: str, task: Callable, *args: Any, **kwargs: Any) -> None:
         args = args or ()
         kwargs = kwargs or {}
         with self.all_tasks_mutex:
@@ -100,7 +100,7 @@ class SingleThreadTaskQueue(Queue):
                     logging.warning('Too many tasks run: [%s]', self.all_executed_tasks)
                 raise self.terminating_exception
 
-    def worker(self):
+    def worker(self) -> None:
         """Runs tasks indefinitely until a task raises an exception, waiting for new tasks if the queue is empty."""
         while True:
             _task_name, task, args, kwargs = self._worker_pop_task()
@@ -145,16 +145,18 @@ class SingleThreadTaskQueue(Queue):
                 except Empty:
                     self.has_unfinished_tasks_condition.wait()
 
-    def _worker_mark_task_done(self):
+    def _worker_mark_task_done(self) -> None:
         """Helper for the worker thread. Marks the current task as complete in the running thread and updates the list
         of all task names."""
         with self.all_tasks_mutex:
             self.task_done()
+            if not self.running_task_name:
+                raise ValueError('Expected nonnull running_task_name, found None.')
             self.all_executed_tasks.append(self.running_task_name)
             self.running_task_name = None
             self.all_task_names = self._get_queued_task_names()
 
-    def _worker_handle_exception(self, e: Exception):
+    def _worker_handle_exception(self, e: Exception) -> None:
         """Helper for the worker thread. Clears the queue and sets the terminating exception field so that any callers
         to join() will terminate and raise on the join thread."""
         with self.all_tasks_mutex:
@@ -169,7 +171,7 @@ class SingleThreadTaskQueue(Queue):
 
 
 def with_monitoring(region_code: str, fn: Callable) -> Callable:
-    def wrapped_fn(*args, **kwargs):
+    def wrapped_fn(*args: Any, **kwargs: Any) -> None:
         with monitoring.push_region_tag(region_code):
             fn(*args, **kwargs)
     return wrapped_fn
@@ -179,7 +181,7 @@ class FakeAsyncDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManager):
     """Test implementation of the DirectIngestCloudTaskManager that runs tasks
     asynchronously on background threads."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
         self.scheduler_queue = SingleThreadTaskQueue(name='scheduler')
         self.process_job_queue = SingleThreadTaskQueue(name='process_job')
@@ -187,7 +189,7 @@ class FakeAsyncDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManager):
 
     def create_direct_ingest_process_job_task(self,
                                               region: Region,
-                                              ingest_args: IngestArgsType):
+                                              ingest_args: IngestArgsType) -> None:
         if not self.controller:
             raise ValueError(
                 "Controller is null - did you call set_controller()?")
@@ -204,7 +206,7 @@ class FakeAsyncDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManager):
             self,
             region: Region,
             just_finished_job: bool,
-            delay_sec: int):
+            delay_sec: int) -> None:
         if not self.controller:
             raise ValueError(
                 "Controller is null - did you call set_controller()?")
@@ -218,7 +220,7 @@ class FakeAsyncDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManager):
 
     def create_direct_ingest_handle_new_files_task(self,
                                                    region: Region,
-                                                   can_start_ingest: bool):
+                                                   can_start_ingest: bool) -> None:
         if not self.controller:
             raise ValueError(
                 "Controller is null - did you call set_controller()?")
@@ -235,7 +237,7 @@ class FakeAsyncDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManager):
 
     def create_direct_ingest_raw_data_import_task(self,
                                                   region: Region,
-                                                  data_import_args: GcsfsRawDataBQImportArgs):
+                                                  data_import_args: GcsfsRawDataBQImportArgs) -> None:
         if not self.controller:
             raise ValueError(
                 "Controller is null - did you call set_controller()?")
@@ -253,7 +255,7 @@ class FakeAsyncDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManager):
 
     def create_direct_ingest_ingest_view_export_task(self,
                                                      region: Region,
-                                                     ingest_view_export_args: GcsfsIngestViewExportArgs):
+                                                     ingest_view_export_args: GcsfsIngestViewExportArgs) -> None:
         if not self.controller:
             raise ValueError(
                 "Controller is null - did you call set_controller()?")
@@ -292,7 +294,7 @@ class FakeAsyncDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManager):
         return BQImportExportCloudTaskQueueInfo(queue_name=self.bq_import_export_queue.name,
                                                 task_names=task_names)
 
-    def wait_for_all_tasks_to_run(self):
+    def wait_for_all_tasks_to_run(self) -> None:
         bq_import_export_done = False
         scheduler_done = False
         process_job_queue_done = False

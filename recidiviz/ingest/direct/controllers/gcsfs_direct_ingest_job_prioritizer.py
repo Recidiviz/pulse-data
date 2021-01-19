@@ -63,7 +63,7 @@ class GcsfsDirectIngestJobPrioritizer:
 
         return GcsfsIngestArgs(ingest_time=datetime.datetime.utcnow(), file_path=next_file_path)
 
-    def are_next_args_expected(self, next_args: GcsfsIngestArgs):
+    def are_next_args_expected(self, next_args: GcsfsIngestArgs) -> bool:
         """Returns True if the provided args are the args we expect to run next,
         i.e. there are no other files with different file tags we expect to
         see uploaded on this day before we process the specified file.
@@ -81,6 +81,9 @@ class GcsfsDirectIngestJobPrioritizer:
 
         args_sort_key_prefix = self._sort_key_for_file_path(
             next_args.file_path, prefix_only=True)
+
+        if not args_sort_key_prefix:
+            raise ValueError(f'No known sort key prefix for args [{next_args}]')
 
         return args_sort_key_prefix <= expected_next_sort_key_prefix
 
@@ -120,7 +123,7 @@ class GcsfsDirectIngestJobPrioritizer:
         sorted_keys_and_paths = sorted(keys_and_paths)
         return sorted_keys_and_paths[0][1]
 
-    def _get_expected_next_sort_key_prefix_for_day(self, date_str: str):
+    def _get_expected_next_sort_key_prefix_for_day(self, date_str: str) -> Optional[str]:
         """Returns a sort key that excludes the timestamp/filename_suffix term,
         which describes the next file we expect to see on a given day.
         """

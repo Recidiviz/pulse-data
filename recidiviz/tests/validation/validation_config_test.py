@@ -26,7 +26,7 @@ from recidiviz.validation.validation_config import ValidationRegionConfig, Valid
 class ValidationConfigTest(unittest.TestCase):
     """Tests for classes in validation_config.py."""
 
-    def test_parse_empty_config(self):
+    def test_parse_empty_config(self) -> None:
         # Arrange
         yaml_path = fixtures.as_filepath('us_xx_validation_config_empty.yaml')
 
@@ -38,7 +38,7 @@ class ValidationConfigTest(unittest.TestCase):
         self.assertEqual({}, config.exclusions)
         self.assertEqual({}, config.max_allowed_error_overrides)
 
-    def test_parse_complex_config(self):
+    def test_parse_complex_config(self) -> None:
         # Arrange
         yaml_path = fixtures.as_filepath('us_xx_validation_config_complex.yaml')
 
@@ -76,7 +76,7 @@ class ValidationConfigTest(unittest.TestCase):
 
         self.assertEqual(expected_config, config)
 
-    def test_parse_view_name_reused_exclusion(self):
+    def test_parse_view_name_reused_exclusion(self) -> None:
         # Arrange
         yaml_path = fixtures.as_filepath('us_xx_validation_config_reused_exclusion.yaml')
 
@@ -87,7 +87,7 @@ class ValidationConfigTest(unittest.TestCase):
         # Assert
         self.assertEqual('Found multiple exclusions defined for the same validation: [my_view]', str(e.exception))
 
-    def test_parse_view_name_reused_overrides(self):
+    def test_parse_view_name_reused_overrides(self) -> None:
         # Arrange
         yaml_path = fixtures.as_filepath('us_xx_validation_config_reused_overrides.yaml')
 
@@ -98,7 +98,7 @@ class ValidationConfigTest(unittest.TestCase):
         # Assert
         self.assertEqual('Found multiple error overrides defined for the same validation: [my_view]', str(e.exception))
 
-    def test_parse_bad_exclusion_type(self):
+    def test_parse_bad_exclusion_type(self) -> None:
         # Arrange
         yaml_path = fixtures.as_filepath('us_xx_validation_config_bad_exclusion_type.yaml')
 
@@ -109,7 +109,7 @@ class ValidationConfigTest(unittest.TestCase):
         # Assert
         self.assertEqual('\'NOT_A_VALID_TYPE\' is not a valid ValidationExclusionType', str(e.exception))
 
-    def test_parse_override_is_not_float(self):
+    def test_parse_override_is_not_float(self) -> None:
         # Arrange
         yaml_path = fixtures.as_filepath('us_xx_validation_config_override_is_not_float.yaml')
 
@@ -120,6 +120,6 @@ class ValidationConfigTest(unittest.TestCase):
         # Assert
         self.assertEqual('could not convert string to float: \'0.3.0\'', str(e.exception))
 
-    def test_parse_global_config_parses(self):
+    def test_parse_global_config_parses(self) -> None:
         # Test passes if this parses
         self.assertIsNotNone(get_validation_global_config())

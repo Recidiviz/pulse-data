@@ -99,7 +99,7 @@ class BaseDirectIngestControllerTests(unittest.TestCase):
         local_postgres_helpers.stop_and_clear_on_disk_postgresql_database(cls.temp_db_dir)
 
     @classmethod
-    def fixture_path_prefix(cls):
+    def fixture_path_prefix(cls) -> str:
         return os.path.join('direct', 'regions', cls.region_code().lower())
 
     def run_parse_file_test(self,
@@ -145,7 +145,7 @@ class BaseDirectIngestControllerTests(unittest.TestCase):
         return final_info
 
     @staticmethod
-    def invalidate_ingest_view_metadata():
+    def invalidate_ingest_view_metadata() -> None:
         session = SessionFactory.for_schema_base(OperationsBase)
         try:
             session.query(operations_schema.DirectIngestIngestFileMetadata) \

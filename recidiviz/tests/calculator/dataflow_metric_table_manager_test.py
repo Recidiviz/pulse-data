@@ -27,7 +27,7 @@ from recidiviz.calculator import dataflow_metric_table_manager
 class CalculationDataStorageManagerTest(unittest.TestCase):
     """Tests for calculation_data_storage_manager.py."""
 
-    def setUp(self):
+    def setUp(self) -> None:
 
         self.project_id = 'fake-recidiviz-project'
         self.mock_view_dataset_name = 'my_views_dataset'
@@ -55,19 +55,19 @@ class CalculationDataStorageManagerTest(unittest.TestCase):
         self.fake_cold_storage_dataset = 'fake_cold_storage_dataset'
         self.fake_max_jobs = 10
 
-    def tearDown(self):
+    def tearDown(self) -> None:
         self.bq_client_patcher.stop()
         self.project_id_patcher.stop()
         self.project_number_patcher.stop()
 
-    def test_update_dataflow_metric_tables_schemas(self):
+    def test_update_dataflow_metric_tables_schemas(self) -> None:
         """Test that update_dataflow_metric_tables_schemas calls the client to update the schemas of the metric
         tables."""
         dataflow_metric_table_manager.update_dataflow_metric_tables_schemas()
 
         self.mock_client.update_schema.assert_called()
 
-    def test_update_dataflow_metric_tables_schemas_create_table(self):
+    def test_update_dataflow_metric_tables_schemas_create_table(self) -> None:
         """Test that update_dataflow_metric_tables_schemas calls the client to create a new table when the table
         does not yet exist."""
         self.mock_client.table_exists.return_value = False

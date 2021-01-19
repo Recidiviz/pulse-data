@@ -43,17 +43,17 @@ class TestSamenessValidationChecker(TestCase):
         self.good_string_row = {'a': 'same', 'b': 'same', 'c': 'same'}
         self.bad_string_row = {'a': 'a_value', 'b': 'b_value', 'c': 'c_value'}
 
-    def tearDown(self):
+    def tearDown(self) -> None:
         self.client_patcher.stop()
         self.metadata_patcher.stop()
 
-    def return_string_values_with_num_bad_rows(self, num_bad_rows) -> List[Dict[str, str]]:
+    def return_string_values_with_num_bad_rows(self, num_bad_rows: int) -> List[Dict[str, str]]:
         return_values = [self.good_string_row] * (100 - num_bad_rows)
         return_values.extend([self.bad_string_row] * num_bad_rows)
 
         return return_values
 
-    def test_samneness_check_no_comparison_columns(self):
+    def test_samneness_check_no_comparison_columns(self) -> None:
         with self.assertRaises(ValueError) as e:
             _ = SamenessDataValidationCheck(
                 validation_type=ValidationCheckType.SAMENESS,
@@ -64,7 +64,7 @@ class TestSamenessValidationChecker(TestCase):
             )
         self.assertEqual(str(e.exception), 'Found only [0] comparison columns, expected at least 2.')
 
-    def test_samneness_check_bad_max_error(self):
+    def test_samneness_check_bad_max_error(self) -> None:
         with self.assertRaises(ValueError) as e:
             _ = SamenessDataValidationCheck(
                 validation_type=ValidationCheckType.SAMENESS,
@@ -77,7 +77,7 @@ class TestSamenessValidationChecker(TestCase):
             )
         self.assertEqual(str(e.exception), 'Allowed error value must be between 0.0 and 1.0. Found instead: [1.5]')
 
-    def test_samneness_check_validation_name(self):
+    def test_samneness_check_validation_name(self) -> None:
         check = SamenessDataValidationCheck(
             validation_type=ValidationCheckType.SAMENESS,
             sameness_check_type=SamenessDataValidationCheckType.NUMBERS,
@@ -99,7 +99,7 @@ class TestSamenessValidationChecker(TestCase):
         )
         self.assertEqual(check_with_name_suffix.validation_name, 'test_view_b_c_only')
 
-    def test_sameness_check_same_values_numbers(self):
+    def test_sameness_check_same_values_numbers(self) -> None:
         self.mock_client.run_query_async.return_value = [{'a': 10, 'b': 10, 'c': 10}]
 
         job = DataValidationJob(region_code='US_VA',
@@ -116,7 +116,7 @@ class TestSamenessValidationChecker(TestCase):
         self.assertEqual(result,
                          DataValidationJobResult(validation_job=job, was_successful=True, failure_description=None))
 
-    def test_sameness_check_different_values_numbers_no_allowed_error(self):
+    def test_sameness_check_different_values_numbers_no_allowed_error(self) -> None:
         self.mock_client.run_query_async.return_value = [{'a': 98, 'b': 100, 'c': 99}]
 
         job = DataValidationJob(region_code='US_VA',
@@ -139,7 +139,7 @@ class TestSamenessValidationChecker(TestCase):
                                                  'errors as high as 0.02.',
                          ))
 
-    def test_sameness_check_numbers_different_values_within_margin(self):
+    def test_sameness_check_numbers_different_values_within_margin(self) -> None:
         self.mock_client.run_query_async.return_value = [{'a': 98, 'b': 100, 'c': 99}]
 
         job = DataValidationJob(region_code='US_VA',
@@ -157,7 +157,7 @@ class TestSamenessValidationChecker(TestCase):
         self.assertEqual(result,
                          DataValidationJobResult(validation_job=job, was_successful=True, failure_description=None))
 
-    def test_sameness_check_numbers_different_values_above_margin(self):
+    def test_sameness_check_numbers_different_values_above_margin(self) -> None:
         self.mock_client.run_query_async.return_value = [{'a': 97, 'b': 100, 'c': 99}]
 
         job = DataValidationJob(region_code='US_VA',
@@ -181,7 +181,7 @@ class TestSamenessValidationChecker(TestCase):
                                                  'errors as high as 0.03.',
                          ))
 
-    def test_sameness_check_numbers_multiple_rows_above_margin(self):
+    def test_sameness_check_numbers_multiple_rows_above_margin(self) -> None:
         self.mock_client.run_query_async.return_value = [{'a': 97, 'b': 100, 'c': 99}, {'a': 14, 'b': 21, 'c': 14}]
 
         job = DataValidationJob(region_code='US_VA',
@@ -205,7 +205,7 @@ class TestSamenessValidationChecker(TestCase):
                                                  'errors as high as 0.3333.',
                          ))
 
-    def test_string_sameness_check_same_values(self):
+    def test_string_sameness_check_same_values(self) -> None:
         self.mock_client.run_query_async.return_value = [{'a': '10', 'b': '10', 'c': '10'}]
 
         job = DataValidationJob(region_code='US_VA',
@@ -222,7 +222,7 @@ class TestSamenessValidationChecker(TestCase):
         self.assertEqual(result,
                          DataValidationJobResult(validation_job=job, was_successful=True, failure_description=None))
 
-    def test_string_sameness_check_strings_values_all_none(self):
+    def test_string_sameness_check_strings_values_all_none(self) -> None:
         self.mock_client.run_query_async.return_value = [{'a': None, 'b': None, 'c': None}]
 
         job = DataValidationJob(region_code='US_VA',
@@ -239,7 +239,7 @@ class TestSamenessValidationChecker(TestCase):
         self.assertEqual(result,
                          DataValidationJobResult(validation_job=job, was_successful=True, failure_description=None))
 
-    def test_string_sameness_check_numbers_values_all_none(self):
+    def test_string_sameness_check_numbers_values_all_none(self) -> None:
         self.mock_client.run_query_async.return_value = [{'a': None, 'b': None, 'c': None}]
 
         job = DataValidationJob(region_code='US_VA',
@@ -258,7 +258,7 @@ class TestSamenessValidationChecker(TestCase):
         self.assertEqual(str(e.exception), 'Unexpected None value for column [a] in validation [test_view].')
 
 
-    def test_string_sameness_check_numbers_one_none(self):
+    def test_string_sameness_check_numbers_one_none(self) -> None:
         self.mock_client.run_query_async.return_value = [{'a': 3, 'b': 3, 'c': None}]
 
         job = DataValidationJob(region_code='US_VA',
@@ -276,7 +276,7 @@ class TestSamenessValidationChecker(TestCase):
 
         self.assertEqual(str(e.exception), 'Unexpected None value for column [c] in validation [test_view].')
 
-    def test_string_sameness_check_different_values_no_allowed_error(self):
+    def test_string_sameness_check_different_values_no_allowed_error(self) -> None:
         self.mock_client.run_query_async.return_value = [{'a': 'a', 'b': 'b', 'c': 'c'}]
 
         job = DataValidationJob(region_code='US_VA',
@@ -299,7 +299,7 @@ class TestSamenessValidationChecker(TestCase):
                                                  'validation returned an error rate of 1.0.',
                          ))
 
-    def test_string_sameness_check_different_values_handle_empty_string(self):
+    def test_string_sameness_check_different_values_handle_empty_string(self) -> None:
         self.mock_client.run_query_async.return_value = [{'a': 'same', 'b': 'same', 'c': None}]
 
         job = DataValidationJob(region_code='US_VA',
@@ -322,7 +322,7 @@ class TestSamenessValidationChecker(TestCase):
                                                  'validation returned an error rate of 1.0.',
                          ))
 
-    def test_string_sameness_check_different_values_handle_non_string_type(self):
+    def test_string_sameness_check_different_values_handle_non_string_type(self) -> None:
         self.mock_client.run_query_async.return_value = [{'a': 'same', 'b': 'same', 'c': 1245}]
 
         job = DataValidationJob(region_code='US_VA',
@@ -340,7 +340,7 @@ class TestSamenessValidationChecker(TestCase):
         self.assertEqual(str(e.exception),
                          'Unexpected type [<class \'int\'>] for value [1245] in STRING validation [test_view].')
 
-    def test_string_sameness_check_different_values_within_margin(self):
+    def test_string_sameness_check_different_values_within_margin(self) -> None:
         num_bad_rows = 2
         max_allowed_error = (num_bad_rows / 100)
 
@@ -361,7 +361,7 @@ class TestSamenessValidationChecker(TestCase):
         self.assertEqual(result,
                          DataValidationJobResult(validation_job=job, was_successful=True, failure_description=None))
 
-    def test_string_sameness_check_different_values_above_margin(self):
+    def test_string_sameness_check_different_values_above_margin(self) -> None:
         num_bad_rows = 5
         max_allowed_error = ((num_bad_rows - 1) / 100)  # Below the number of bad rows
 

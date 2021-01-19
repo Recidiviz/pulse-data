@@ -60,12 +60,12 @@ class ContextUtilsTest(TestCase):
         actual = prepared_data['final_text']
         self.assertEqual(expected, actual)
 
-    def test_format_date(self):
+    def test_format_date(self) -> None:
         date = datetime.strptime('20201205112344', '%Y%m%d%H%M%S')
         actual = format_date('20201205112344', current_format='%Y%m%d%H%M%S')
         self.assertEqual(datetime.strftime(date, '%m/%d/%Y'), actual)
 
-    def test_align_columns(self):
+    def test_align_columns(self) -> None:
         columns = [
             ["few char", "many characters", "a little"],
             ["1", "2", "3"],

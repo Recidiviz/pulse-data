@@ -21,7 +21,7 @@ from typing import List, Set
 from unittest import TestCase
 
 from flask import Flask
-from mock import patch, call
+from mock import patch, call, MagicMock
 
 from recidiviz.big_query.big_query_view import BigQueryView
 from recidiviz.big_query.view_update_manager import BigQueryViewNamespace
@@ -95,7 +95,7 @@ class TestHandleRequest(TestCase):
     @patch("recidiviz.validation.validation_manager._run_job")
     @patch("recidiviz.validation.validation_manager._fetch_validation_jobs_to_perform")
     def test_handle_request_happy_path_no_failures(
-            self, mock_fetch_validations, mock_run_job, mock_emit_failures) -> None:
+            self, mock_fetch_validations: MagicMock, mock_run_job: MagicMock, mock_emit_failures: MagicMock) -> None:
         mock_fetch_validations.return_value = self._TEST_VALIDATIONS
         mock_run_job.return_value = DataValidationJobResult(
             validation_job=self._TEST_VALIDATIONS[0], was_successful=True, failure_description=None)
@@ -116,7 +116,7 @@ class TestHandleRequest(TestCase):
     @patch("recidiviz.validation.validation_manager._run_job")
     @patch("recidiviz.validation.validation_manager._fetch_validation_jobs_to_perform")
     def test_handle_request_with_job_failures_and_validation_failures(
-            self, mock_fetch_validations, mock_run_job, mock_emit_failures) -> None:
+            self, mock_fetch_validations: MagicMock, mock_run_job: MagicMock, mock_emit_failures: MagicMock) -> None:
         mock_fetch_validations.return_value = self._TEST_VALIDATIONS
         first_failure = DataValidationJobResult(
             validation_job=self._TEST_VALIDATIONS[1], was_successful=False, failure_description='Oh no')
@@ -146,7 +146,7 @@ class TestHandleRequest(TestCase):
     @patch("recidiviz.validation.validation_manager._run_job")
     @patch("recidiviz.validation.validation_manager._fetch_validation_jobs_to_perform")
     def test_handle_request_happy_path_some_failures(
-            self, mock_fetch_validations, mock_run_job, mock_emit_failures) -> None:
+            self, mock_fetch_validations: MagicMock, mock_run_job: MagicMock, mock_emit_failures: MagicMock) -> None:
         mock_fetch_validations.return_value = self._TEST_VALIDATIONS
 
         first_failure = DataValidationJobResult(
@@ -178,9 +178,9 @@ class TestHandleRequest(TestCase):
     @patch("recidiviz.validation.validation_manager._run_job")
     @patch("recidiviz.validation.validation_manager._fetch_validation_jobs_to_perform")
     def test_handle_request_happy_path_nothing_configured(self,
-                                                          mock_fetch_validations,
-                                                          mock_run_job,
-                                                          mock_emit_failures) -> None:
+                                                          mock_fetch_validations: MagicMock,
+                                                          mock_run_job: MagicMock,
+                                                          mock_emit_failures: MagicMock) -> None:
         mock_fetch_validations.return_value = []
 
         headers = {'X-Appengine-Cron': 'test-cron'}
@@ -197,10 +197,10 @@ class TestHandleRequest(TestCase):
     @patch("recidiviz.validation.validation_manager._run_job")
     @patch("recidiviz.validation.validation_manager._fetch_validation_jobs_to_perform")
     def test_handle_request_happy_path_should_update_views(self,
-                                                           mock_fetch_validations,
-                                                           mock_run_job,
-                                                           mock_emit_failures,
-                                                           mock_update_views) -> None:
+                                                           mock_fetch_validations: MagicMock,
+                                                           mock_run_job: MagicMock,
+                                                           mock_emit_failures: MagicMock,
+                                                           mock_update_views: MagicMock) -> None:
         mock_fetch_validations.return_value = []
 
         headers = {'X-Appengine-Cron': 'test-cron'}
@@ -245,7 +245,7 @@ class TestFetchValidations(TestCase):
         self.metadata_patcher.stop()
 
     @patch("recidiviz.utils.environment.get_gae_environment", return_value=GaeEnvironment.STAGING.value)
-    def test_cross_product_states_and_checks_staging(self, _mock_get_environment) -> None:
+    def test_cross_product_states_and_checks_staging(self, _mock_get_environment: MagicMock) -> None:
         all_validations = get_all_validations()
         all_region_configs = get_validation_region_configs()
         global_config = get_validation_global_config()
@@ -261,7 +261,7 @@ class TestFetchValidations(TestCase):
         self.assertEqual(expected_length, len(result))
 
     @patch("recidiviz.utils.environment.get_gae_environment", return_value=GaeEnvironment.PRODUCTION.value)
-    def test_cross_product_states_and_checks_production(self, _mock_get_environment) -> None:
+    def test_cross_product_states_and_checks_production(self, _mock_get_environment: MagicMock) -> None:
         all_validations = get_all_validations()
         region_configs_to_validate = get_validation_region_configs()
         global_config = get_validation_global_config()

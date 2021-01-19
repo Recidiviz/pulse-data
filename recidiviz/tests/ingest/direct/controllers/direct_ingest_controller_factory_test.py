@@ -28,7 +28,7 @@ from recidiviz.ingest.direct.regions.us_nd.us_nd_controller import \
 class TestDirectIngestControllerFactory(unittest.TestCase):
     """Tests for the DirectIngestControllerFactory."""
 
-    def test_build_gcsfs_ingest_controller(self):
+    def test_build_gcsfs_ingest_controller(self) -> None:
         mock_package = Mock()
         mock_controller = create_autospec(spec=UsNdController)
         mock_package.UsNdController.return_value = \

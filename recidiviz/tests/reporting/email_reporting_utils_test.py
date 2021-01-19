@@ -33,7 +33,7 @@ class EmailReportingUtilsTests(TestCase):
         self.project_id_patcher = patch('recidiviz.utils.metadata.project_id')
         self.project_id_patcher.start().return_value = 'fake-project'
 
-    def tearDown(self):
+    def tearDown(self) -> None:
         self.project_id_patcher.stop()
 
     @patch('os.environ.get')

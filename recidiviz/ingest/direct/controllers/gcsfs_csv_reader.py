@@ -16,7 +16,7 @@
 # =============================================================================
 """Streaming read functionality for Google Cloud Storage CSV files."""
 import abc
-from typing import Iterator, List, Optional
+from typing import Iterator, List, Optional, Any, TextIO
 
 import gcsfs
 import pandas as pd
@@ -78,7 +78,7 @@ class GcsfsCsvReader:
     def __init__(self, fs: gcsfs.GCSFileSystem):
         self.gcs_file_system = fs
 
-    def _file_pointer_for_path(self, path: GcsfsFilePath, encoding: str):
+    def _file_pointer_for_path(self, path: GcsfsFilePath, encoding: str) -> TextIO:
         """Returns a file pointer for the given path."""
 
         # From the GCSFileSystem docs (https://gcsfs.readthedocs.io/en/latest/api.html#gcsfs.core.GCSFileSystem),
@@ -94,7 +94,7 @@ class GcsfsCsvReader:
                        delegate: GcsfsCsvReaderDelegate,
                        chunk_size: int,
                        encodings_to_try: Optional[List[str]] = None,
-                       **kwargs):
+                       **kwargs: Any) -> None:
         """
         Performs a streaming read of the CSV at the provided path. Will attempt to decode file with multiple encoding
         types. For large files, this allows us to read and process the whole file without ever storing the whole file in

@@ -17,6 +17,7 @@
 """Tests for the GcsfsCsvReader."""
 
 import unittest
+from typing import IO, List, Optional
 
 import gcsfs
 import pandas as pd
@@ -31,12 +32,12 @@ from recidiviz.tests.ingest import fixtures
 class _TestGcsfsCsvReaderDelegate(GcsfsCsvReaderDelegate):
     """Test-only GcsfsCsvReaderDelegate for tracking work done in the reader."""
 
-    def __init__(self):
-        self.dataframes = []
-        self.encodings_attempted = []
+    def __init__(self) -> None:
+        self.dataframes: List[pd.DataFrame] = []
+        self.encodings_attempted: List[str] = []
         self.decode_errors = 0
         self.exceptions = 0
-        self.successful_encoding = None
+        self.successful_encoding: Optional[str] = None
 
     def on_start_read_with_encoding(self, encoding: str) -> None:
         self.encodings_attempted.append(encoding)
@@ -64,7 +65,7 @@ def _fake_gcsfs_open(
         *,
         encoding: str,
         # pylint: disable=unused-argument
-        token: str):
+        token: str) -> IO:
     if not path_str.startswith('gs://'):
         raise ValueError(f'Expected gs:// path URI, got this instead: {path_str}')
 
@@ -81,14 +82,14 @@ class GcsfsCsvReaderTest(unittest.TestCase):
         self.mock_gcsfs.open = _fake_gcsfs_open
         self.reader = GcsfsCsvReader(self.mock_gcsfs)
 
-    def _validate_empty_file_result(self, delegate: _TestGcsfsCsvReaderDelegate):
+    def _validate_empty_file_result(self, delegate: _TestGcsfsCsvReaderDelegate) -> None:
         self.assertEqual(1, len(delegate.encodings_attempted))
         self.assertEqual(delegate.encodings_attempted[0], delegate.successful_encoding)
         self.assertEqual(0, len(delegate.dataframes))
         self.assertEqual(0, delegate.decode_errors)
         self.assertEqual(0, delegate.exceptions)
 
-    def test_read_completely_empty_file(self):
+    def test_read_completely_empty_file(self) -> None:
         empty_file_path = fixtures.as_filepath('tagA.csv')
 
         delegate = _TestGcsfsCsvReaderDelegate()
@@ -107,7 +108,7 @@ class GcsfsCsvReaderTest(unittest.TestCase):
         self.assertEqual(0, delegate.decode_errors)
         self.assertEqual(0, delegate.exceptions)
 
-    def test_read_file_with_columns_no_contents(self):
+    def test_read_file_with_columns_no_contents(self) -> None:
         empty_file_path = fixtures.as_filepath('tagB.csv')
 
         delegate = _TestGcsfsCsvReaderDelegate()
@@ -134,7 +135,7 @@ class GcsfsCsvReaderTest(unittest.TestCase):
         self.assertEqual(0, delegate.decode_errors)
         self.assertEqual(0, delegate.exceptions)
 
-    def test_read_no_encodings_match(self):
+    def test_read_no_encodings_match(self) -> None:
         file_path = fixtures.as_filepath('encoded_latin_1.csv')
         delegate = _TestGcsfsCsvReaderDelegate()
         encodings_to_try = ['UTF-8', 'UTF-16']
@@ -148,7 +149,7 @@ class GcsfsCsvReaderTest(unittest.TestCase):
         self.assertEqual(2, delegate.decode_errors)
         self.assertEqual(0, delegate.exceptions)
 
-    def test_read_with_failure_first(self):
+    def test_read_with_failure_first(self) -> None:
         file_path = fixtures.as_filepath('encoded_latin_1.csv')
         delegate = _TestGcsfsCsvReaderDelegate()
         self.reader.streaming_read(GcsfsFilePath.from_absolute_path(file_path), delegate=delegate, chunk_size=1)
@@ -162,7 +163,7 @@ class GcsfsCsvReaderTest(unittest.TestCase):
         self.assertEqual(1, delegate.decode_errors)
         self.assertEqual(0, delegate.exceptions)
 
-    def test_read_with_no_failure(self):
+    def test_read_with_no_failure(self) -> None:
         file_path = fixtures.as_filepath('encoded_utf_8.csv')
         delegate = _TestGcsfsCsvReaderDelegate()
         self.reader.streaming_read(GcsfsFilePath.from_absolute_path(file_path), delegate=delegate, chunk_size=1)
@@ -175,7 +176,7 @@ class GcsfsCsvReaderTest(unittest.TestCase):
         self.assertEqual(0, delegate.decode_errors)
         self.assertEqual(0, delegate.exceptions)
 
-    def test_read_with_exception(self):
+    def test_read_with_exception(self) -> None:
         class _TestException(ValueError):
             pass
 

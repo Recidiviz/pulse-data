@@ -26,20 +26,20 @@ from recidiviz.ingest.scrape.task_params import ScrapedData, SingleCount
 class TestScrapedData(TestCase):
     """Test that scraped data construction is validated."""
 
-    def testRaiseWithNothing(self):
+    def testRaiseWithNothing(self) -> None:
         with self.assertRaises(ScraperError):
             ScrapedData(ingest_info=None, persist=True)
 
-    def testIngestInfo(self):
+    def testIngestInfo(self) -> None:
         ScrapedData(
             ingest_info=IngestInfo(people=[Person(race=Race("ASIAN"))]),
             persist=True)
 
-    def testSingleCount(self):
+    def testSingleCount(self) -> None:
         ScrapedData(single_counts=[SingleCount(count=123)],
                     persist=True)
 
-    def testBoth(self):
+    def testBoth(self) -> None:
         ScrapedData(
             ingest_info=IngestInfo(people=[Person(race=Race("ASIAN"))]),
             single_counts=[SingleCount(count=123)],

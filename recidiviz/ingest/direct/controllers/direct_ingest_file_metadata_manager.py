@@ -70,7 +70,7 @@ class DirectIngestFileMetadataManager:
     @abc.abstractmethod
     def register_ingest_view_export_file_name(self,
                                               metadata_entity: DirectIngestIngestFileMetadata,
-                                              exported_path: GcsfsFilePath):
+                                              exported_path: GcsfsFilePath) -> None:
         """Updates an ingest file metadata row with a file name for the path we expect to export. This must be called
         BEFORE the path starts exporting, so we avoid races where the cloud function discovers the new file before we've
         marked the row with the file name. If the export fails, this file name will be used on any subsequent retries.

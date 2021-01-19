@@ -18,12 +18,13 @@
 import abc
 import datetime
 import heapq
-from typing import TypeVar, Generic, Callable, List, Tuple, Optional
+from typing import TypeVar, Generic, Callable, List, Tuple, Optional, Type, Dict, Any
 
 import attr
 import cattr
 
 from recidiviz.cloud_storage.content_types import FileContentsHandle
+from recidiviz.utils.types import ClsT
 
 
 @attr.s(frozen=True)
@@ -32,11 +33,11 @@ class CloudTaskArgs:
     def task_id_tag(self) -> Optional[str]:
         """Tag to add to the name of an associated cloud task."""
 
-    def to_serializable(self):
+    def to_serializable(self) -> Dict[str, Any]:
         return cattr.unstructure(self)
 
     @classmethod
-    def from_serializable(cls, serializable):
+    def from_serializable(cls: Type[ClsT], serializable: Dict[str, Any]) -> ClsT:
         return cattr.structure(serializable, cls)
 
 
@@ -59,7 +60,7 @@ class ArgsPriorityQueue(Generic[IngestArgsType]):
         self._sort_key_gen = sort_key_gen
         self._heap: List[Tuple[str, IngestArgsType]] = []
 
-    def push(self, item: IngestArgsType):
+    def push(self, item: IngestArgsType) -> None:
         heapq.heappush(self._heap, (self._sort_key_gen(item), item))
 
     def pop(self) -> Optional[IngestArgsType]:
@@ -73,5 +74,5 @@ class ArgsPriorityQueue(Generic[IngestArgsType]):
             return None
         return heapq.nsmallest(1, self._heap)[0][1]
 
-    def size(self):
+    def size(self) -> int:
         return len(self._heap)

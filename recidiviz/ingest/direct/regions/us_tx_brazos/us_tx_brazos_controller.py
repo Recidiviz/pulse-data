@@ -29,6 +29,7 @@ from recidiviz.common.constants.bond import BondStatus, BondType
 from recidiviz.common.constants.charge import ChargeStatus
 from recidiviz.common.constants.county.booking import CustodyStatus
 from recidiviz.common.constants.county.charge import ChargeDegree, ChargeClass
+from recidiviz.common.constants.enum_overrides import EnumOverrides
 from recidiviz.common.constants.person_characteristics import Race
 from recidiviz.common.ingest_metadata import SystemLevel, IngestMetadata
 from recidiviz.cloud_storage.gcs_file_system import GcsfsFileContentsHandle
@@ -63,7 +64,7 @@ class UsTxBrazosController(CsvGcsfsDirectIngestController):
         return ['VERABrazosJailData']
 
     class DataFrameContentsHandle(GcsfsFileContentsHandle):
-        def __init__(self, local_path, df):
+        def __init__(self, local_path: str, df: pd.DataFrame):
             super().__init__(local_path)
             self.df = df
 
@@ -128,7 +129,7 @@ class UsTxBrazosController(CsvGcsfsDirectIngestController):
         return attr.evolve(super()._get_ingest_metadata(args),
                            ingest_time=ingest_time)
 
-    def _do_cleanup(self, args: GcsfsIngestArgs):
+    def _do_cleanup(self, args: GcsfsIngestArgs) -> None:
         """If this job is the last for the day, call infer_release before
         continuing to further jobs."""
         self.fs.mv_path_to_processed_path(args.file_path)
@@ -143,7 +144,7 @@ class UsTxBrazosController(CsvGcsfsDirectIngestController):
         self._move_processed_files_to_storage_as_necessary(
             last_processed_date_str=parts.date_str)
 
-    def get_enum_overrides(self):
+    def get_enum_overrides(self) -> EnumOverrides:
         overrides_builder = super().get_enum_overrides().to_builder()
 
         overrides_builder.ignore_with_predicate(lambda x: True, CustodyStatus)

@@ -15,6 +15,7 @@
 # =============================================================================
 
 """Tests for reporting/email_delivery.py."""
+from typing import Dict
 from unittest import TestCase
 from unittest.mock import patch, MagicMock, Mock, call
 
@@ -97,7 +98,7 @@ class EmailDeliveryTest(TestCase):
     @patch('recidiviz.reporting.email_delivery.load_files_from_storage')
     def test_deliver_no_attachments(self, mock_load_files_from_storage: MagicMock) -> None:
         """ When emails exist, but no attachments exist, an attachment is not delivered to the recipients """
-        def fake_load_files(_bucket, prefix):
+        def fake_load_files(_bucket: str, prefix: str) -> Dict[str, str]:
             if 'attachments' not in prefix:
                 return self.mock_files
 
