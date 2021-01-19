@@ -1,0 +1,4 @@
+file_tag: dbo_LU_TreatTrackingProgramNew
+# Best initial (unconfirmed) guess at primary keys for this table:
+#      - TreatTrackProgCode
+primary_key_cols: []

@@ -1,0 +1,6 @@
+file_tag: dbo_Mischg
+# Best initial (unconfirmed) guess at primary keys for this table:
+#      - inmate_cnt_num1
+#      - inmate_cnt_num2
+#      - miscndct_number
+primary_key_cols: []

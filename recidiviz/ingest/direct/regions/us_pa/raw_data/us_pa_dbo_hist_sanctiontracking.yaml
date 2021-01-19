@@ -1,0 +1,6 @@
+file_tag: dbo_Hist_SanctionTracking
+primary_key_cols:
+  - ParoleNumber
+  - ParoleCountID
+  - SetID
+  - SequenceID

@@ -1,0 +1,4 @@
+file_tag: dbo_tblEvalHist
+# Best initial (unconfirmed) guess at primary keys for this table:
+#      - Control_Number
+primary_key_cols: []

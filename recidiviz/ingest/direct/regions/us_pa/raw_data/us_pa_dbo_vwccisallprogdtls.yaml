@@ -1,0 +1,8 @@
+file_tag: dbo_vwCCISAllProgDtls
+# Best initial (unconfirmed) guess at primary keys for this table:
+#      - CCISMvmt_Id
+#      - Program_Id
+primary_key_cols: []
+datetime_cols:
+  - LstMod_Dt
+encoding: ISO-8859-1

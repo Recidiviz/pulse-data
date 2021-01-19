@@ -1,0 +1,4 @@
+file_tag: dbo_IcsDoc
+primary_key_cols:
+  - Cont_Num
+  - Doc_Id

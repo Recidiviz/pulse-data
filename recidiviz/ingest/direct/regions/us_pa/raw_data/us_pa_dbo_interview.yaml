@@ -1,0 +1,7 @@
+file_tag: dbo_Interview
+# Best initial (unconfirmed) guess at primary keys for this table:
+#      - InstitutionNumber
+#      - ParoleNumber
+#      - DocketID
+#      - InterviewID
+primary_key_cols: []

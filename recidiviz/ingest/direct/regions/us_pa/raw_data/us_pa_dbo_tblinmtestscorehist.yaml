@@ -1,0 +1,7 @@
+file_tag: dbo_tblInmTestScoreHist
+primary_key_cols:
+  - Control_Number
+  - Inmate_number
+  - Test_Id
+  - AsmtVer_Num
+supplemental_order_by_clause: "PARSE_DATETIME('%m/%d/%Y %H:%M:%S', Hist_dt) DESC"

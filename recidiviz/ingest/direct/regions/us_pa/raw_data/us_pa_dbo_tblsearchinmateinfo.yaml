@@ -1,0 +1,5 @@
+file_tag: dbo_tblSearchInmateInfo
+primary_key_cols:
+  - inmate_number
+  - control_number
+  - state_id_num

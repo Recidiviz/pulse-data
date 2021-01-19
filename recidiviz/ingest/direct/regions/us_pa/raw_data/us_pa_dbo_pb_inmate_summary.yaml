@@ -1,0 +1,6 @@
+file_tag: dbo_pb_INMATE_SUMMARY
+# Best initial (unconfirmed) guess at primary keys for this table:
+#      - sid
+#      - inmate_number
+#      - control_number
+primary_key_cols: []
