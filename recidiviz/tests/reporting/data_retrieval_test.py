@@ -30,7 +30,7 @@ from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 FIXTURE_FILE = 'po_monthly_report_data_fixture.json'
 
 
-def build_report_json_fixture(email_address) -> str:
+def build_report_json_fixture(email_address: str) -> str:
     return json.dumps({
         "email_address": email_address,
         "state_code": "US_ID",
@@ -54,7 +54,7 @@ class EmailGenerationTests(TestCase):
         self.state_code = "US_ID"
         self.report_type = 'po_monthly_report'
 
-    def _write_test_data(self, test_data):
+    def _write_test_data(self, test_data: str) -> None:
         self.gcs_file_system.upload_from_string(
             GcsfsFilePath.from_absolute_path(
                 f'gs://recidiviz-test-report-data/po_monthly_report/{self.state_code}/po_monthly_report_data.json'

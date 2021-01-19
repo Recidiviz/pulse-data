@@ -26,6 +26,7 @@ import pandas as pd
 from recidiviz import IngestInfo
 from recidiviz.common.constants.bond import BondStatus, BondType
 from recidiviz.common.constants.county.booking import CustodyStatus
+from recidiviz.common.constants.enum_overrides import EnumOverrides
 from recidiviz.common.constants.person_characteristics import Ethnicity, Race
 from recidiviz.common.ingest_metadata import SystemLevel, IngestMetadata
 from recidiviz.cloud_storage.gcs_file_system import GcsfsFileContentsHandle
@@ -62,7 +63,7 @@ class UsNmBernalilloController(CsvGcsfsDirectIngestController):
         return ['MDC_VERA']
 
     class DataFrameContentsHandle(GcsfsFileContentsHandle):
-        def __init__(self, local_path, df):
+        def __init__(self, local_path: str, df: pd.DataFrame):
             super().__init__(local_path)
             self.df = df
 
@@ -100,7 +101,7 @@ class UsNmBernalilloController(CsvGcsfsDirectIngestController):
         return attr.evolve(super()._get_ingest_metadata(args),
                            ingest_time=ingest_time)
 
-    def _do_cleanup(self, args: GcsfsIngestArgs):
+    def _do_cleanup(self, args: GcsfsIngestArgs) -> None:
         """If this job is the last for the day, call infer_release before
         continuing to further jobs."""
         self.fs.mv_path_to_processed_path(args.file_path)
@@ -115,12 +116,12 @@ class UsNmBernalilloController(CsvGcsfsDirectIngestController):
         self._move_processed_files_to_storage_as_necessary(
             last_processed_date_str=parts.date_str)
 
-    def _postprocess_ingest_info(self, ingest_info):
+    def _postprocess_ingest_info(self, ingest_info: IngestInfo) -> None:
         """Validate the ingest info and extract some fields (e.g., charge)
         that are packed as HTML into a single field.
         """
 
-        def replace_html_tags(in_str, replacement=''):
+        def replace_html_tags(in_str: str, replacement: str = '') -> str:
             return re.sub(r'<[^>]*>', replacement, in_str)
 
         for person in ingest_info.people:
@@ -178,7 +179,7 @@ class UsNmBernalilloController(CsvGcsfsDirectIngestController):
                             bond=bond
                         )
 
-    def get_enum_overrides(self):
+    def get_enum_overrides(self) -> EnumOverrides:
         overrides_builder = super().get_enum_overrides().to_builder()
 
         overrides_builder.add('MEXICAN', Ethnicity.HISPANIC, Race)

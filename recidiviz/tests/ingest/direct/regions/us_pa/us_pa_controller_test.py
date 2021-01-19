@@ -75,7 +75,7 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
     def controller_cls(cls) -> Type[GcsfsDirectIngestController]:
         return UsPaController
 
-    def test_populate_data_person_external_ids(self):
+    def test_populate_data_person_external_ids(self) -> None:
         expected = IngestInfo(state_people=[
             StatePerson(state_person_id='RECIDIVIZ_MASTER_STATE_ID_12345678',
                         state_person_external_ids=[
@@ -129,7 +129,7 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
 
         self.run_parse_file_test(expected, 'person_external_ids')
 
-    def test_populate_data_doc_person_info(self):
+    def test_populate_data_doc_person_info(self) -> None:
         expected = IngestInfo(
             state_people=[
                 StatePerson(state_person_id='123456',
@@ -219,7 +219,7 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
 
         self.run_parse_file_test(expected, 'doc_person_info')
 
-    def test_populate_data_dbo_tblInmTestScore(self):
+    def test_populate_data_dbo_tblInmTestScore(self) -> None:
         expected = IngestInfo(
             state_people=[
                 StatePerson(state_person_id='123456',
@@ -321,7 +321,7 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
 
         self.run_parse_file_test(expected, 'dbo_tblInmTestScore')
 
-    def test_populate_data_dbo_Senrec(self):
+    def test_populate_data_dbo_Senrec(self) -> None:
         expected = IngestInfo(
             state_people=[
                 StatePerson(
@@ -457,7 +457,7 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
 
         self.run_parse_file_test(expected, 'dbo_Senrec')
 
-    def test_populate_data_incarceration_period(self):
+    def test_populate_data_incarceration_period(self) -> None:
         gf3374_incarceration_periods = [
             StateIncarcerationPeriod(
                 state_incarceration_period_id='654321-GF3374-1',
@@ -696,7 +696,7 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
 
         self.run_parse_file_test(expected, 'incarceration_period')
 
-    def test_populate_data_dbo_Miscon(self):
+    def test_populate_data_dbo_Miscon(self) -> None:
         expected = IngestInfo(
             state_people=[
                 StatePerson(
@@ -831,7 +831,7 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
 
         self.run_parse_file_test(expected, 'dbo_Miscon')
 
-    def test_populate_data_dbo_Offender(self):
+    def test_populate_data_dbo_Offender(self) -> None:
         expected = IngestInfo(
             state_people=[
                 StatePerson(state_person_id='123A',
@@ -874,7 +874,7 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
 
         self.run_parse_file_test(expected, 'dbo_Offender')
 
-    def test_populate_data_dbo_LSIR(self):
+    def test_populate_data_dbo_LSIR(self) -> None:
         expected = IngestInfo(
             state_people=[
                 StatePerson(state_person_id='789C',
@@ -935,7 +935,7 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
 
         self.run_parse_file_test(expected, 'dbo_LSIR')
 
-    def test_populate_data_supervision_sentence(self):
+    def test_populate_data_supervision_sentence(self) -> None:
         expected = IngestInfo(
             state_people=[
                 StatePerson(state_person_id='456B',
@@ -1036,7 +1036,7 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
 
         self.run_parse_file_test(expected, 'supervision_sentence')
 
-    def test_populate_data_supervision_period(self):
+    def test_populate_data_supervision_period(self) -> None:
         expected = IngestInfo(
             state_people=[
                 StatePerson(state_person_id='456B',
@@ -1206,7 +1206,7 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
 
         self.run_parse_file_test(expected, 'supervision_period')
 
-    def test_populate_data_supervision_violation(self):
+    def test_populate_data_supervision_violation(self) -> None:
         violation_456B_1_1 = StateSupervisionViolation(
             state_supervision_violation_id='456B-1-1', violation_date='2014-01-01',
             state_supervision_violation_types=[
@@ -1390,7 +1390,7 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
 
         self.run_parse_file_test(expected, 'supervision_violation')
 
-    def test_populate_data_supervision_violation_response(self):
+    def test_populate_data_supervision_violation_response(self) -> None:
         violation_456B_1_1 = StateSupervisionViolation(
             state_supervision_violation_id='456B-1-1',
             state_supervision_violation_responses=[
@@ -1551,7 +1551,7 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
 
         self.run_parse_file_test(expected, 'supervision_violation_response')
 
-    def test_populate_board_action(self):
+    def test_populate_board_action(self) -> None:
         violation_445566_456B_DX1182 = StateSupervisionViolation(
             state_supervision_violation_responses=[
                 StateSupervisionViolationResponse(

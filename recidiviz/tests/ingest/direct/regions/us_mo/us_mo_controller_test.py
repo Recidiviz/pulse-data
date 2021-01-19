@@ -16,7 +16,7 @@
 # =============================================================================
 """Tests for the UsMoController."""
 import datetime
-from typing import Type
+from typing import Type, cast, List
 
 from recidiviz import IngestInfo
 from recidiviz.common.constants.charge import ChargeStatus
@@ -68,7 +68,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
     def controller_cls(cls) -> Type[GcsfsDirectIngestController]:
         return UsMoController
 
-    def test_parse_mo_julian_date(self):
+    def test_parse_mo_julian_date(self) -> None:
         self.assertEqual(UsMoController.mo_julian_date_to_iso(''), None)
         self.assertEqual(UsMoController.mo_julian_date_to_iso('0'), None)
         self.assertEqual(UsMoController.mo_julian_date_to_iso('99001'), '1999-01-01')
@@ -77,7 +77,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
         self.assertEqual(UsMoController.mo_julian_date_to_iso('115104'), '2015-04-14')
         self.assertEqual(UsMoController.mo_julian_date_to_iso('118365'), '2018-12-31')
 
-    def test_populate_data_tak001_offender_identification(self):
+    def test_populate_data_tak001_offender_identification(self) -> None:
         expected = IngestInfo(
             state_people=[
                 StatePerson(state_person_id='110035',
@@ -186,7 +186,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
 
         self.run_parse_file_test(expected, 'tak001_offender_identification')
 
-    def test_populate_data_oras_assessments_weekly(self):
+    def test_populate_data_oras_assessments_weekly(self) -> None:
         expected = IngestInfo(
             state_people=[
                 StatePerson(state_person_id='110035',
@@ -231,7 +231,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
 
         self.run_parse_file_test(expected, 'oras_assessments_weekly')
 
-    def test_populate_data_tak040_offender_identification(self):
+    def test_populate_data_tak040_offender_identification(self) -> None:
         expected = IngestInfo(state_people=[
             StatePerson(state_person_id='110035',
                         state_person_external_ids=[
@@ -287,7 +287,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
 
         self.run_parse_file_test(expected, 'tak040_offender_cycles')
 
-    def test_populate_data_tak022_tak023_offender_sentence_institutional(self):
+    def test_populate_data_tak022_tak023_offender_sentence_institutional(self) -> None:
         expected = IngestInfo(state_people=[
             StatePerson(state_person_id='110035',
                         state_person_external_ids=[
@@ -505,7 +505,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
 
         self.run_parse_file_test(expected, 'tak022_tak023_tak025_tak026_offender_sentence_institution')
 
-    def test_populate_data_tak022_tak024_tak025_tak026_offender_sentence_supervision(self):
+    def test_populate_data_tak022_tak024_tak025_tak026_offender_sentence_supervision(self) -> None:
         expected = IngestInfo(state_people=[
             StatePerson(state_person_id='910324',
                         state_person_external_ids=[
@@ -653,7 +653,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
 
         self.run_parse_file_test(expected, 'tak022_tak024_tak025_tak026_offender_sentence_supervision')
 
-    def test_populate_data_tak158_tak023_tak026_incarceration_period_from_incarceration_sentence(self):
+    def test_populate_data_tak158_tak023_tak026_incarceration_period_from_incarceration_sentence(self) -> None:
         vr_110035_19890901_3 = StateSupervisionViolationResponse(
             response_type='PERMANENT_DECISION',
             response_date='19930701',
@@ -957,7 +957,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
         self.run_parse_file_test(expected, 'tak158_tak023_tak026_incarceration_period_from_incarceration_sentence')
 
 
-    def test_populate_data_tak158_tak024_tak026_incarceration_period_from_supervision_sentence(self):
+    def test_populate_data_tak158_tak024_tak026_incarceration_period_from_supervision_sentence(self) -> None:
         expected = IngestInfo(state_people=[
             StatePerson(state_person_id='910324',
                         state_person_external_ids=[
@@ -1016,7 +1016,9 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
 
         self.run_parse_file_test(expected, 'tak158_tak024_tak026_incarceration_period_from_supervision_sentence')
 
-    def test_populate_data_tak034_tak026_tak039_apfx90_apfx91_supervision_enhancements_supervision_periods(self):
+    def test_populate_data_tak034_tak026_tak039_apfx90_apfx91_supervision_enhancements_supervision_periods(
+            self
+    ) -> None:
 
         po_E123 = StateAgent(
             agent_type='PROBATION/PAROLE UNIT SPV',
@@ -1323,7 +1325,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
         self.run_parse_file_test(
             expected, 'tak034_tak026_tak039_apfx90_apfx91_supervision_enhancements_supervision_periods')
 
-    def test_populate_data_tak028_tak042_tak076_tak024_violation_reports(self):
+    def test_populate_data_tak028_tak042_tak076_tak024_violation_reports(self) -> None:
         sss_110035_20040712_1 = StateSupervisionSentence(
             state_supervision_sentence_id='110035-20040712-1',
             state_supervision_periods=[
@@ -1599,7 +1601,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
 
         self.run_parse_file_test(expected, 'tak028_tak042_tak076_tak024_violation_reports')
 
-    def test_populate_data_tak291_tak292_tak024_citations(self):
+    def test_populate_data_tak291_tak292_tak024_citations(self) -> None:
         sss_110035_20040712_1 = StateSupervisionSentence(
             state_supervision_sentence_id='110035-20040712-1',
             state_supervision_periods=[
@@ -3761,7 +3763,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
 
         session = SessionFactory.for_schema_base(StateBase)
         found_people_from_db = dao.read_people(session)
-        found_people = self.convert_and_clear_db_ids(found_people_from_db)
+        found_people = cast(List[entities.StatePerson], self.convert_and_clear_db_ids(found_people_from_db))
 
         compliant_periods = 0
         for person in found_people:

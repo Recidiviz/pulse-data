@@ -31,10 +31,10 @@ from recidiviz.utils.regions import Region
 class FakeDirectIngestCloudTaskManager(DirectIngestCloudTaskManager):
     """Base class for fake implementations of DirectIngestCloudTaskManager."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.controller: Optional[BaseDirectIngestController] = None
 
-    def set_controller(self, controller: BaseDirectIngestController):
+    def set_controller(self, controller: BaseDirectIngestController) -> None:
         self.controller = controller
 
     @abc.abstractmethod
@@ -51,17 +51,17 @@ class FakeDirectIngestCloudTaskManager(DirectIngestCloudTaskManager):
 
     @abc.abstractmethod
     def create_direct_ingest_process_job_task(self, region: Region,
-                                              ingest_args: IngestArgs):
+                                              ingest_args: IngestArgs) -> None:
         pass
 
     @abc.abstractmethod
     def create_direct_ingest_scheduler_queue_task(self, region: Region,
                                                   just_finished_job: bool,
-                                                  delay_sec: int):
+                                                  delay_sec: int) -> None:
         pass
 
     @abc.abstractmethod
     def create_direct_ingest_handle_new_files_task(self,
                                                    region: Region,
-                                                   can_start_ingest: bool):
+                                                   can_start_ingest: bool) -> None:
         pass

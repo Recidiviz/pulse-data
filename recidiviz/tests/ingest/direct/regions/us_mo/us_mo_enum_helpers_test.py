@@ -34,18 +34,18 @@ _STATE_CODE_UPPER = 'US_MO'
 class TestUsMoEnumHelpers(unittest.TestCase):
     """Tests for the US MO enum helpers."""
 
-    def test_parse_supervision_admission_reason_empty(self):
+    def test_parse_supervision_admission_reason_empty(self) -> None:
         input_statuses = ''
         with self.assertRaises(ValueError):
             _ = supervision_period_admission_reason_mapper(input_statuses)
 
-    def test_parse_supervision_admission_reason_transfer_within_state(self):
+    def test_parse_supervision_admission_reason_transfer_within_state(self) -> None:
         input_statuses = normalize(StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE.value,
                                    remove_punctuation=True)
         reason = supervision_period_admission_reason_mapper(input_statuses)
         self.assertEqual(StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE, reason)
 
-    def test_parse_supervision_admission_reason_single_has_mapping(self):
+    def test_parse_supervision_admission_reason_single_has_mapping(self) -> None:
         # Status meanings and mappings, in relative order:
         #   - Court Probation Reinstated -> RETURN_FROM_SUSPENSION
         input_statuses = '65I2015'
@@ -53,7 +53,7 @@ class TestUsMoEnumHelpers(unittest.TestCase):
         reason = supervision_period_admission_reason_mapper(input_statuses)
         self.assertEqual(StateSupervisionPeriodAdmissionReason.RETURN_FROM_SUSPENSION, reason)
 
-    def test_parse_supervision_admission_reason_single_has_no_mapping(self):
+    def test_parse_supervision_admission_reason_single_has_no_mapping(self) -> None:
         # Status meanings and mappings, in relative order:
         #   - unknown, unmapped
         input_statuses = '40O0000'
@@ -61,7 +61,7 @@ class TestUsMoEnumHelpers(unittest.TestCase):
         reason = supervision_period_admission_reason_mapper(input_statuses)
         self.assertEqual(StateSupervisionPeriodAdmissionReason.INTERNAL_UNKNOWN, reason)
 
-    def test_parse_supervision_admission_reason_multiple_one_is_mapped(self):
+    def test_parse_supervision_admission_reason_multiple_one_is_mapped(self) -> None:
         # Status meanings and mappings, in relative order:
         #   - unknown, unmapped
         #   - Parole Release -> CONDITIONAL_RELEASE
@@ -70,7 +70,7 @@ class TestUsMoEnumHelpers(unittest.TestCase):
         reason = supervision_period_admission_reason_mapper(input_statuses)
         self.assertEqual(StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE, reason)
 
-    def test_parse_supervision_admission_reason_multiple_all_unmapped(self):
+    def test_parse_supervision_admission_reason_multiple_all_unmapped(self) -> None:
         # Status meanings and mappings, in relative order:
         #   - unknown, unmapped
         #   - unknown, unmapped
@@ -79,7 +79,7 @@ class TestUsMoEnumHelpers(unittest.TestCase):
         reason = supervision_period_admission_reason_mapper(input_statuses)
         self.assertEqual(StateSupervisionPeriodAdmissionReason.INTERNAL_UNKNOWN, reason)
 
-    def test_parse_supervision_admission_reason_rank_statuses(self):
+    def test_parse_supervision_admission_reason_rank_statuses(self) -> None:
         # Status meanings and mappings, in relative order:
         #   - Release to Probation -> CONDITIONAL_RELEASE
         #   - New Court Probation -> COURT_SENTENCE (higher priority)
@@ -88,7 +88,7 @@ class TestUsMoEnumHelpers(unittest.TestCase):
         reason = supervision_period_admission_reason_mapper(input_statuses)
         self.assertEqual(StateSupervisionPeriodAdmissionReason.COURT_SENTENCE, reason)
 
-    def test_parse_supervision_admission_reason_rank_investigative_status(self):
+    def test_parse_supervision_admission_reason_rank_investigative_status(self) -> None:
         # Status meanings and mappings, in relative order:
         #   - PSI Additional Charge -> TRANSFER_WITHIN_STATE
         #   - New Court Probation -> COURT_SENTENCE (higher priority)
@@ -109,7 +109,7 @@ class TestUsMoEnumHelpers(unittest.TestCase):
         reason = supervision_period_admission_reason_mapper(input_statuses)
         self.assertEqual(StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE, reason)
 
-    def test_parse_supervision_admission_reason_two_statuses_same_rank(self):
+    def test_parse_supervision_admission_reason_two_statuses_same_rank(self) -> None:
         # Status meanings and mappings, in relative order:
         #   - Court Probation Reinstated -> COURT_SENTENCE
         #   - New Court Probation -> COURT_SENTENCE
@@ -120,18 +120,18 @@ class TestUsMoEnumHelpers(unittest.TestCase):
         # tie in rank.
         self.assertEqual(StateSupervisionPeriodAdmissionReason.COURT_SENTENCE, reason)
 
-    def test_parse_supervision_termination_reason_empty(self):
+    def test_parse_supervision_termination_reason_empty(self) -> None:
         input_statuses = ''
         with self.assertRaises(ValueError):
             _ = supervision_period_termination_reason_mapper(input_statuses)
 
-    def test_parse_supervision_termination_reason_transfer_within_state(self):
+    def test_parse_supervision_termination_reason_transfer_within_state(self) -> None:
         input_statuses = normalize(StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE.value,
                                    remove_punctuation=True)
         reason = supervision_period_termination_reason_mapper(input_statuses)
         self.assertEqual(StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE, reason)
 
-    def test_parse_supervision_termination_reason_single_has_mapping(self):
+    def test_parse_supervision_termination_reason_single_has_mapping(self) -> None:
         # Status meanings and mappings, in relative order:
         #   - Suicide-Institution -> DEATH
         input_statuses = '99O9020'
@@ -139,7 +139,7 @@ class TestUsMoEnumHelpers(unittest.TestCase):
         reason = supervision_period_termination_reason_mapper(input_statuses)
         self.assertEqual(StateSupervisionPeriodTerminationReason.DEATH, reason)
 
-    def test_parse_supervision_termination_reason_single_has_no_mapping(self):
+    def test_parse_supervision_termination_reason_single_has_no_mapping(self) -> None:
         # Status meanings and mappings, in relative order:
         #   - unknown, unmapped
         input_statuses = '40I0000'
@@ -147,7 +147,7 @@ class TestUsMoEnumHelpers(unittest.TestCase):
         reason = supervision_period_termination_reason_mapper(input_statuses)
         self.assertEqual(StateSupervisionPeriodTerminationReason.INTERNAL_UNKNOWN, reason)
 
-    def test_parse_supervision_termination_reason_multiple_one_is_mapped(self):
+    def test_parse_supervision_termination_reason_multiple_one_is_mapped(self) -> None:
         # Status meanings and mappings, in relative order:
         #   - unknown, unmapped
         #   - Field Commutation -> DISCHARGE
@@ -156,7 +156,7 @@ class TestUsMoEnumHelpers(unittest.TestCase):
         reason = supervision_period_termination_reason_mapper(input_statuses)
         self.assertEqual(StateSupervisionPeriodTerminationReason.DISCHARGE, reason)
 
-    def test_parse_supervision_termination_reason_multiple_all_unmapped(self):
+    def test_parse_supervision_termination_reason_multiple_all_unmapped(self) -> None:
         # Status meanings and mappings, in relative order:
         #   - unknown, unmapped
         #   - unknown, unmapped
@@ -165,7 +165,7 @@ class TestUsMoEnumHelpers(unittest.TestCase):
         reason = supervision_period_termination_reason_mapper(input_statuses)
         self.assertEqual(StateSupervisionPeriodTerminationReason.INTERNAL_UNKNOWN, reason)
 
-    def test_parse_supervision_termination_reason_rank_statuses(self):
+    def test_parse_supervision_termination_reason_rank_statuses(self) -> None:
         # Status meanings and mappings, in relative order:
         #   -  Offender re-engaged -> RETURN_FROM_ABSCONSCION
         #   -  Parole discharge -> DISCHARGE (highest rank)
@@ -177,7 +177,7 @@ class TestUsMoEnumHelpers(unittest.TestCase):
         # 99O statuses ranked higher than the others
         self.assertEqual(StateSupervisionPeriodTerminationReason.DISCHARGE, reason)
 
-    def test_parse_supervision_termination_reason_two_statuses_same_rank(self):
+    def test_parse_supervision_termination_reason_two_statuses_same_rank(self) -> None:
         # Status meanings and mappings, in relative order:
         #   -  Parole Ret-No Violation -> REVOCATION
         #   -  Offender declared absconder -> ABSCONSION
@@ -189,7 +189,7 @@ class TestUsMoEnumHelpers(unittest.TestCase):
         # rank
         self.assertEqual(StateSupervisionPeriodTerminationReason.REVOCATION, reason)
 
-    def test_parse_does_not_return_internal_unknown_for_tak026_incarceration_in_statuses(self):
+    def test_parse_does_not_return_internal_unknown_for_tak026_incarceration_in_statuses(self) -> None:
         """Loops over a file with every single combination of TAK026 incarceration in statuses (*0I*) that are present
         on cycles that started after 2000 and ensures we have a mapping for those statuses.
         """
@@ -206,17 +206,17 @@ class TestUsMoEnumHelpers(unittest.TestCase):
                 self.assertNotEqual(admission_reason, StateIncarcerationPeriodAdmissionReason.INTERNAL_UNKNOWN,
                                     f'No mapping for [{status_list_str}]')
 
-    def test_parse_incarceration_admission_reason_statuses_have_rank(self):
+    def test_parse_incarceration_admission_reason_statuses_have_rank(self) -> None:
         for status_str in STR_TO_INCARCERATION_PERIOD_ADMISSION_REASON_MAPPINGS:
             self.assertIsNotNone(rank_incarceration_period_admission_reason_status_str(status_str),
                                  f'No rank defined for status [{status_str}]')
 
-    def test_parse_incarceration_admission_reason_no_mapped_admission_statuse(self):
+    def test_parse_incarceration_admission_reason_no_mapped_admission_statuse(self) -> None:
         status_list_str = '90O1050 25I1000'
         admission_reason = incarceration_period_admission_reason_mapper(status_list_str)
         self.assertEqual(admission_reason, StateIncarcerationPeriodAdmissionReason.INTERNAL_UNKNOWN)
 
-    def test_supervising_officer_mapper_po_roles(self):
+    def test_supervising_officer_mapper_po_roles(self) -> None:
         """Tests that all PO job titles for MO are properly classified."""
         parole_officer_roles = [
             'P&P OF I',
@@ -248,5 +248,5 @@ class TestUsMoEnumHelpers(unittest.TestCase):
         for role in normalized_po_roles:
             self.assertEqual(StateAgentType.SUPERVISION_OFFICER, supervising_officer_mapper(role))
 
-    def test_supervising_officer_mapper_unknown_role(self):
+    def test_supervising_officer_mapper_unknown_role(self) -> None:
         self.assertEqual(StateAgentType.INTERNAL_UNKNOWN, supervising_officer_mapper('UNMAPPED ROLE'))

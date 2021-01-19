@@ -25,7 +25,7 @@ from recidiviz.ingest.direct.regions.us_nd.\
 class TestUsNdJudicialDistrictCodeReferenceTable(unittest.TestCase):
     """Tests for us_nd_judicial_code_reference_table.py."""
 
-    def test_normalized_judicial_district_code(self):
+    def test_normalized_judicial_district_code(self) -> None:
         self.assertEqual(normalized_judicial_district_code('FD'),
                          'FEDERAL')
         self.assertEqual(normalized_judicial_district_code('NC'),
@@ -35,9 +35,9 @@ class TestUsNdJudicialDistrictCodeReferenceTable(unittest.TestCase):
         self.assertEqual(normalized_judicial_district_code('OOS'),
                          'OUT_OF_STATE')
 
-    def test_normalized_judicial_district_code_unmapped(self):
+    def test_normalized_judicial_district_code_unmapped(self) -> None:
         self.assertEqual(normalized_judicial_district_code('ABC'), 'ABC')
 
-    def test_normalized_judicial_district_code_empty(self):
+    def test_normalized_judicial_district_code_empty(self) -> None:
         self.assertIsNone(normalized_judicial_district_code(''))
         self.assertIsNone(normalized_judicial_district_code(None))

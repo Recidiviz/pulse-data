@@ -23,7 +23,7 @@ import mock
 from freezegun import freeze_time
 from google.cloud import tasks_v2
 from google.protobuf import timestamp_pb2
-from mock import patch
+from mock import patch, MagicMock
 
 from recidiviz.common.google_cloud.google_cloud_tasks_shared_queues import \
     DIRECT_INGEST_SCHEDULER_QUEUE_V2, DIRECT_INGEST_STATE_PROCESS_JOB_QUEUE_V2, DIRECT_INGEST_BQ_IMPORT_EXPORT_QUEUE_V2
@@ -201,7 +201,7 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
     @patch('recidiviz.ingest.direct.direct_ingest_cloud_task_manager.uuid')
     @patch('google.cloud.tasks_v2.CloudTasksClient')
     def test_create_direct_ingest_process_job_task_gcsfs_args(
-            self, mock_client, mock_uuid, mock_datetime):
+            self, mock_client: MagicMock, mock_uuid: MagicMock, mock_datetime: MagicMock) -> None:
         # Arrange
         file_path = to_normalized_unprocessed_file_path('bucket/file_path.csv', GcsfsDirectIngestFileType.INGEST_VIEW)
         ingest_args = \
@@ -217,7 +217,7 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
         mock_datetime.date.today.return_value = date
         queue_path = f'{_REGION.shared_queue}-path'
 
-        task_name = _REGION.shared_queue + '/{}-{}-{}'.format(
+        task_name = _REGION.get_queue_name() + '/{}-{}-{}'.format(
             _REGION.region_code, date, uuid)
         task = tasks_v2.types.task_pb2.Task(
             name=task_name,

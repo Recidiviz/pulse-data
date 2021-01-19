@@ -701,8 +701,7 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
 
         self.run_parse_file_test(expected, 'elite_externalmovements')
 
-    def test_populate_data_elite_elite_offense_in_custody_and_pos_report_data(
-            self):
+    def test_populate_data_elite_elite_offense_in_custody_and_pos_report_data(self) -> None:
         state_incarceration_incident_353844 = StateIncarcerationIncident(
             state_incarceration_incident_id='347484-353844',
             incident_type=None,  # TODO(#1948): Make MISC types more specific
@@ -1447,7 +1446,7 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
         ])
         self.run_parse_file_test(expected, 'docstars_ftr_episode')
 
-    def test_populate_docstars_contacts(self):
+    def test_populate_docstars_contacts(self) -> None:
         agent_22 = StateAgent(
             state_agent_id='22',
             agent_type='SUPERVISION_OFFICER',

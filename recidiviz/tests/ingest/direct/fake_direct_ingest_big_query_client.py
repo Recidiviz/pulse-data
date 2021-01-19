@@ -31,7 +31,7 @@ from recidiviz.tests.ingest.direct import fixture_util
 class FakeQueryJob:
     """A fake implementation of bigquery.QueryJob for use in direct ingest tests."""
 
-    def result(self, _page_size=None, _max_results=None, _retry=None, _timeout=None) -> None:
+    def result(self, _page_size: int = None, _max_results: int = None, _retry: int =None, _timeou: int = None) -> None:
         return
 
 

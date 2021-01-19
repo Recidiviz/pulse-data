@@ -106,7 +106,7 @@ class GcsfsFilenameParts:
     file_split_size: Optional[int] = attr.ib()
 
     # File tag followed by file suffix, if there is one
-    stripped_file_name = attr.ib()
+    stripped_file_name: str = attr.ib()
 
     @stripped_file_name.default
     def _stripped_file_name(self) -> str:

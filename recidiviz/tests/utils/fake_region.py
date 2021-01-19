@@ -36,7 +36,7 @@ def fake_region(*,
                 are_raw_data_bq_imports_enabled_in_env: bool = False,
                 are_ingest_view_exports_enabled_in_env: bool = False,
                 queue: Optional[Dict[str, Any]] = None,
-                shared_queue: Optional[str] = None):
+                shared_queue: Optional[str] = None) -> Region:
     region = create_autospec(Region)
     region.region_code = region_code
     region.agency_type = agency_type

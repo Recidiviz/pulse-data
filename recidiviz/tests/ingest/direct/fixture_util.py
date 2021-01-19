@@ -27,7 +27,7 @@ from recidiviz.tests.ingest import fixtures
 
 def add_direct_ingest_path(
         fs: FakeGCSFileSystem, path: Union[GcsfsFilePath, GcsfsDirectoryPath], has_fixture: bool = True,
-        fail_handle_file_call: bool = False):
+        fail_handle_file_call: bool = False) -> None:
     local_path = None
     if has_fixture and isinstance(path, GcsfsFilePath):
         local_path = _get_fixture_for_direct_ingest_path(path)

@@ -21,7 +21,7 @@ from unittest import TestCase
 
 import pandas as pd
 
-import recidiviz.common.constants.enum_canonical_strings as enum_strings
+import recidiviz.common.constants.aggregate.enum_canonical_strings as enum_strings
 from recidiviz.calculator.query.county.views.state_aggregates import \
     combined_state_aggregate
 from recidiviz.persistence.database.base_schema import \
@@ -42,7 +42,7 @@ class TestAggregateView(TestCase):
     def tearDown(self) -> None:
         fakes.teardown_in_memory_sqlite_databases()
 
-    def test_toQuery(self):
+    def test_toQuery(self) -> None:
         # Arrange
         ca_data = pd.DataFrame({
             'jurisdiction_name': ['Alameda Sheriff\'s Dept.',

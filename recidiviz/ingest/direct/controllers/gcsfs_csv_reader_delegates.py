@@ -19,7 +19,7 @@
 import abc
 import csv
 import logging
-from typing import List, Tuple
+from typing import List, Tuple, Optional
 
 import pandas as pd
 
@@ -52,8 +52,8 @@ class SimpleGcsfsCsvReaderDelegate(GcsfsCsvReaderDelegate):
 class ReadOneGcsfsCsvReaderDelegate(SimpleGcsfsCsvReaderDelegate):
     """An implementation of the GcsfsCsvReaderDelegate that reads and stores at most one data chunk."""
 
-    def __init__(self):
-        self.df = None
+    def __init__(self) -> None:
+        self.df: Optional[pd.DataFrame] = None
 
     def on_dataframe(self, encoding: str, chunk_num: int, df: pd.DataFrame) -> bool:
         if self.df is not None:
@@ -76,7 +76,7 @@ class SplittingGcsfsCsvReaderDelegate(GcsfsCsvReaderDelegate):
 
         self.output_paths_with_columns: List[Tuple[GcsfsFilePath, List[str]]] = []
 
-    def on_start_read_with_encoding(self, encoding: str):
+    def on_start_read_with_encoding(self, encoding: str) -> None:
         logging.info('Attempting to do chunked upload of [%s] with encoding [%s]', self.path.abs_path(), encoding)
 
     def on_dataframe(self, encoding: str, chunk_num: int, df: pd.DataFrame) -> bool:
@@ -111,7 +111,7 @@ class SplittingGcsfsCsvReaderDelegate(GcsfsCsvReaderDelegate):
         self._delete_temp_output_paths()
         return True
 
-    def on_file_read_success(self, encoding: str):
+    def on_file_read_success(self, encoding: str) -> None:
         logging.info('Successfully read file [%s] with encoding [%s]', self.path.abs_path(), encoding)
 
     def _delete_temp_output_paths(self) -> None:
@@ -125,5 +125,5 @@ class SplittingGcsfsCsvReaderDelegate(GcsfsCsvReaderDelegate):
         pass
 
     @abc.abstractmethod
-    def get_output_path(self, chunk_num: int):
+    def get_output_path(self, chunk_num: int) -> GcsfsFilePath:
         pass

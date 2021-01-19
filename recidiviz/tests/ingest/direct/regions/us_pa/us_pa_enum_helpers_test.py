@@ -26,7 +26,7 @@ from recidiviz.tests.ingest import fixtures
 class TestSetDateSpecificAssessmentLevel(unittest.TestCase):
     """Tests the mapper functions from the us_pa_enum_helpers file
     which parse raw text from the incarceration period ingest view"""
-    def test_incarceration_period_admission_reason_mapper(self):
+    def test_incarceration_period_admission_reason_mapper(self) -> None:
         fixture_path = fixtures.as_filepath('admission_reason_raw_text.csv')
         with open(fixture_path, 'r') as f:
             while True:
@@ -37,7 +37,7 @@ class TestSetDateSpecificAssessmentLevel(unittest.TestCase):
                 self.assertIsNotNone(mapping)
                 self.assertIsInstance(mapping, StateIncarcerationPeriodAdmissionReason)
 
-    def test_incarceration_period_release_reason_mapper(self):
+    def test_incarceration_period_release_reason_mapper(self) -> None:
         fixture_path = fixtures.as_filepath('release_reason_raw_text.csv')
         with open(fixture_path, 'r') as f:
             while True:
@@ -48,7 +48,7 @@ class TestSetDateSpecificAssessmentLevel(unittest.TestCase):
                 self.assertIsNotNone(mapping)
                 self.assertIsInstance(mapping, StateIncarcerationPeriodReleaseReason)
 
-    def test_incarceration_period_purpose_mapper(self):
+    def test_incarceration_period_purpose_mapper(self) -> None:
         fixture_path = fixtures.as_filepath('purpose_raw_text.csv')
         with open(fixture_path, 'r') as f:
             while True:

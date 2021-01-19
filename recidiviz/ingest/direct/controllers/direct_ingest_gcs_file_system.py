@@ -239,15 +239,15 @@ class DirectIngestGCSFileSystem(Generic[GCSFileSystemType], GCSFileSystem):
         return self.gcs_file_system.ls_with_blob_prefix(bucket_name, blob_prefix)
 
     @staticmethod
-    def is_processed_file(path: GcsfsFilePath):
+    def is_processed_file(path: GcsfsFilePath) -> bool:
         return path.file_name.startswith(DIRECT_INGEST_PROCESSED_PREFIX)
 
     @staticmethod
-    def is_seen_unprocessed_file(path: GcsfsFilePath):
+    def is_seen_unprocessed_file(path: GcsfsFilePath) -> bool:
         return path.file_name.startswith(DIRECT_INGEST_UNPROCESSED_PREFIX)
 
     @staticmethod
-    def is_split_file(path: GcsfsFilePath):
+    def is_split_file(path: GcsfsFilePath) -> bool:
         return filename_parts_from_path(path).is_file_split
 
     @staticmethod
@@ -356,7 +356,7 @@ class DirectIngestGCSFileSystem(Generic[GCSFileSystemType], GCSFileSystem):
             storage_directory_path: GcsfsDirectoryPath,
             file_type_filter: Optional[GcsfsDirectIngestFileType],
             date_str_bound: str,
-            include_bound: bool):
+            include_bound: bool) -> None:
 
         """Moves all files with timestamps before the provided |date_str_bound| to the appropriate storage location for
         that file. If a |file_type_filter| is provided, only moves files of a certain file type and throws if
@@ -377,7 +377,7 @@ class DirectIngestGCSFileSystem(Generic[GCSFileSystemType], GCSFileSystem):
 
     def mv_path_to_storage(self,
                            path: GcsfsFilePath,
-                           storage_directory_path: GcsfsDirectoryPath):
+                           storage_directory_path: GcsfsDirectoryPath) -> None:
         """Moves a normalized path to it's appropriate storage location based on the date and file type information
         embedded in the file name."""
         storage_path = self._storage_path(storage_directory_path, path)

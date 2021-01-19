@@ -72,7 +72,7 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
     def controller_cls(cls) -> Type[GcsfsDirectIngestController]:
         return UsIdController
 
-    def test_populate_data_offender_ofndr_dob_address(self):
+    def test_populate_data_offender_ofndr_dob_address(self) -> None:
         expected = IngestInfo(
             state_people=[
                 StatePerson(state_person_id='1111',
@@ -151,7 +151,7 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
 
         self.run_parse_file_test(expected, 'offender_ofndr_dob_address')
 
-    def test_populate_data_ofndr_tst_ofndr_tst_cert(self):
+    def test_populate_data_ofndr_tst_ofndr_tst_cert(self) -> None:
         expected = IngestInfo(
             state_people=[
                 StatePerson(state_person_id='1111',
@@ -200,7 +200,7 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
 
         self.run_parse_file_test(expected, 'ofndr_tst_ofndr_tst_cert')
 
-    def test_populate_data_mittimus_judge_sentence_offense_sentprob_incarceration_sentences(self):
+    def test_populate_data_mittimus_judge_sentence_offense_sentprob_incarceration_sentences(self) -> None:
         expected = IngestInfo(
             state_people=[
                 StatePerson(
@@ -322,7 +322,7 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
 
         self.run_parse_file_test(expected, 'mittimus_judge_sentence_offense_sentprob_incarceration_sentences')
 
-    def test_populate_data_mittimus_judge_sentence_offense_sentprob_supervision_sentences(self):
+    def test_populate_data_mittimus_judge_sentence_offense_sentprob_supervision_sentences(self) -> None:
         expected = IngestInfo(
             state_people=[
                 StatePerson(
@@ -452,7 +452,7 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
 
         self.run_parse_file_test(expected, 'mittimus_judge_sentence_offense_sentprob_supervision_sentences')
 
-    def test_populate_data_early_discharge_incarceration_sentence(self):
+    def test_populate_data_early_discharge_incarceration_sentence(self) -> None:
         expected = IngestInfo(
             state_people=[
                 StatePerson(
@@ -495,7 +495,7 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
 
         self.run_parse_file_test(expected, 'early_discharge_incarceration_sentence')
 
-    def test_populate_data_early_discharge_supervision_sentence(self):
+    def test_populate_data_early_discharge_supervision_sentence(self) -> None:
         expected = IngestInfo(
             state_people=[
                 StatePerson(
@@ -537,7 +537,7 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
 
         self.run_parse_file_test(expected, 'early_discharge_supervision_sentence')
 
-    def test_populate_data_early_discharge_incarceration_sentence_deleted_rows(self):
+    def test_populate_data_early_discharge_incarceration_sentence_deleted_rows(self) -> None:
         expected = IngestInfo(
             state_people=[
                 StatePerson(
@@ -567,7 +567,7 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
 
         self.run_parse_file_test(expected, 'early_discharge_incarceration_sentence_deleted_rows')
 
-    def test_populate_data_early_discharge_supervision_sentence_deleted_rows(self):
+    def test_populate_data_early_discharge_supervision_sentence_deleted_rows(self) -> None:
         expected = IngestInfo(
             state_people=[
                 StatePerson(
@@ -597,7 +597,7 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
 
         self.run_parse_file_test(expected, 'early_discharge_supervision_sentence_deleted_rows')
 
-    def test_populate_data_movement_facility_location_offstat_incarceration_periods(self):
+    def test_populate_data_movement_facility_location_offstat_incarceration_periods(self) -> None:
         expected = IngestInfo(
             state_people=[
                 StatePerson(
@@ -708,7 +708,7 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
 
         self.run_parse_file_test(expected, 'movement_facility_location_offstat_incarceration_periods')
 
-    def test_populate_data_movement_facility_location_offstat_supervision_periods(self):
+    def test_populate_data_movement_facility_location_offstat_supervision_periods(self) -> None:
         expected = IngestInfo(
             state_people=[
                 StatePerson(
@@ -923,7 +923,7 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
 
         self.run_parse_file_test(expected, 'movement_facility_location_offstat_supervision_periods')
 
-    def test_populate_data_ofndr_tst_tst_qstn_rspns_violation_reports(self):
+    def test_populate_data_ofndr_tst_tst_qstn_rspns_violation_reports(self) -> None:
         expected = IngestInfo(
             state_people=[
                 StatePerson(
@@ -1058,7 +1058,7 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
 
         self.run_parse_file_test(expected, 'ofndr_tst_tst_qstn_rspns_violation_reports')
 
-    def test_populate_data_ofndr_tst_tst_qstn_rspns_violation_reports_old(self):
+    def test_populate_data_ofndr_tst_tst_qstn_rspns_violation_reports_old(self) -> None:
         expected = IngestInfo(
             state_people=[
                 StatePerson(
@@ -1111,7 +1111,7 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
 
         self.run_parse_file_test(expected, 'ofndr_tst_tst_qstn_rspns_violation_reports_old')
 
-    def test_populate_data_sprvsn_cntc(self):
+    def test_populate_data_sprvsn_cntc(self) -> None:
         expected = IngestInfo(
             state_people=[
                 StatePerson(

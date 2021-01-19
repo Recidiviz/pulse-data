@@ -36,6 +36,7 @@ from recidiviz.persistence.database.schema.state import dao
 from recidiviz.persistence.database.schema_entity_converter.state.\
     schema_entity_converter import StateSchemaToEntityConverter
 from recidiviz.persistence.database.session_factory import SessionFactory
+from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.persistence.entity.entity_utils import person_has_id, \
     print_entity_trees, prune_dangling_placeholders_from_tree
 from recidiviz.persistence.entity.state.entities import StatePerson
@@ -141,13 +142,13 @@ class BaseStateDirectIngestControllerTests(BaseDirectIngestControllerTests):
         get_region_patcher.stop()
         environ_patcher.stop()
 
-    def _do_ingest_job_rerun_for_tags(self, file_tags: List[str]):
+    def _do_ingest_job_rerun_for_tags(self, file_tags: List[str]) -> None:
         self.invalidate_ingest_view_metadata()
         for file_tag in file_tags:
             self._run_ingest_job_for_filename(f'{file_tag}.csv')
 
     @staticmethod
-    def convert_and_clear_db_ids(db_entities: List[StateBase]):
+    def convert_and_clear_db_ids(db_entities: List[StateBase]) -> List[Entity]:
         converted = StateSchemaToEntityConverter().convert_all(
             db_entities, populate_back_edges=True)
         clear_db_ids(converted)
@@ -180,12 +181,12 @@ class BaseStateDirectIngestControllerTests(BaseDirectIngestControllerTests):
             print('\n\n************** ASSERTING *************')
         session = SessionFactory.for_schema_base(StateBase)
         found_people_from_db = dao.read_people(session)
-        found_people = self.convert_and_clear_db_ids(found_people_from_db)
+        found_people = cast(List[StatePerson], self.convert_and_clear_db_ids(found_people_from_db))
 
         if ignore_dangling_placeholders:
             pruned_found_people = []
             for person in found_people:
-                pruned_person = prune_dangling_placeholders_from_tree(person)
+                pruned_person = cast(StatePerson, prune_dangling_placeholders_from_tree(person))
                 if pruned_person is not None:
                     pruned_found_people.append(pruned_person)
             found_people = pruned_found_people
@@ -215,7 +216,7 @@ class BaseStateDirectIngestControllerTests(BaseDirectIngestControllerTests):
 
         assert_no_unexpected_entities_in_db(found_people_from_db, session)
 
-    def _fake_region(self):
+    def _fake_region(self) -> Region:
         fake_region = create_autospec(Region)
         fake_region.get_enum_overrides.return_value = \
             self.controller.get_enum_overrides()

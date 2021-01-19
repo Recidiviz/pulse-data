@@ -54,14 +54,14 @@ class DirectIngestRegionDirStructureTest(unittest.TestCase):
         self.storage_client_patcher.stop()
         self.task_client_patcher.stop()
 
-    def test_region_dirname_matches_pattern(self):
+    def test_region_dirname_matches_pattern(self) -> None:
         for d in get_existing_region_dir_names():
             self.assertIsNotNone(re.match(_REGION_REGEX, d),
                                  f'Region [{d}] does not match expected region pattern.')
 
     def run_check_valid_yamls_exist_in_all_regions(self,
                                                    generate_yaml_name_fn: Callable[[str], str],
-                                                   validate_contents_fn: Callable[[str, object], None]):
+                                                   validate_contents_fn: Callable[[str, object], None]) -> None:
         for dir_path in get_existing_region_dir_paths():
             region_code = os.path.basename(dir_path)
 
@@ -72,8 +72,8 @@ class DirectIngestRegionDirStructureTest(unittest.TestCase):
                 self.assertTrue(file_contents)
                 validate_contents_fn(yaml_path, file_contents)
 
-    def test_manifest_yaml_format(self):
-        def validate_manifest_contents(file_path: str, file_contents: object):
+    def test_manifest_yaml_format(self) -> None:
+        def validate_manifest_contents(file_path: str, file_contents: object) -> None:
 
             if not isinstance(file_contents, dict):
                 self.fail(f'File contents type [{type(file_contents)}], expected dict.')
@@ -94,7 +94,7 @@ class DirectIngestRegionDirStructureTest(unittest.TestCase):
         self.run_check_valid_yamls_exist_in_all_regions(lambda region_code: 'manifest.yaml',
                                                         validate_manifest_contents)
 
-    def test_region_controller_exists_and_builds(self):
+    def test_region_controller_exists_and_builds(self) -> None:
         for dir_path in get_existing_region_dir_paths():
             region_code = os.path.basename(dir_path)
             controller_path = os.path.join(dir_path, f'{region_code}_controller.py')
@@ -104,7 +104,7 @@ class DirectIngestRegionDirStructureTest(unittest.TestCase):
             with local_project_id_override('project'):
                 self.assertIsNotNone(region.get_ingestor_class())
 
-    def test_region_controller_builds(self):
+    def test_region_controller_builds(self) -> None:
         for dir_path in get_existing_region_dir_paths():
             region_code = os.path.basename(dir_path)
 
@@ -112,7 +112,7 @@ class DirectIngestRegionDirStructureTest(unittest.TestCase):
             with local_project_id_override('project'):
                 self.assertIsNotNone(region.get_ingestor())
 
-    def test_raw_files_yaml_parses_all_regions(self):
+    def test_raw_files_yaml_parses_all_regions(self) -> None:
         for region_code in get_existing_region_dir_names():
             region = get_region(region_code, is_direct_ingest=True)
 
@@ -130,7 +130,8 @@ class DirectIngestRegionDirStructureTest(unittest.TestCase):
         ('build_prod', 'recidiviz-123', GaeEnvironment.PRODUCTION.value),
         ('build_staging', 'recidiviz-staging', GaeEnvironment.STAGING.value),
     ])
-    def test_collect_and_build_ingest_view_builders(self, _name, project_id, environment):
+    def test_collect_and_build_ingest_view_builders(
+            self, _name: str, project_id: str, environment: GaeEnvironment) -> None:
         with patch("recidiviz.utils.environment.get_gae_environment", return_value=environment):
             with patch('recidiviz.utils.metadata.project_id', return_value=project_id):
                 for region_code in get_existing_region_dir_names():

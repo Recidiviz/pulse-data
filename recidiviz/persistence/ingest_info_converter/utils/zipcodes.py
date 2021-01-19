@@ -37,7 +37,7 @@ import uszipcode.db
 import uszipcode.search
 
 # Do not download the zipcode database file for normal operations - use saved file instead.
-# TODO(XXXX): Build mechanism for refreshing this file
+# TODO(#4015): Build mechanism for refreshing this file
 
 def download_simple_db_file(db_file_dir):
     logging.info("Copying saved zipcodes DB file to library database")

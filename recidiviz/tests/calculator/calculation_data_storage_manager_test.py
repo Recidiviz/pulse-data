@@ -32,7 +32,7 @@ from recidiviz.calculator.calculation_data_storage_manager import calculation_da
 class CalculationDataStorageManagerTest(unittest.TestCase):
     """Tests for calculation_data_storage_manager.py."""
 
-    def setUp(self):
+    def setUp(self) -> None:
 
         self.project_id = 'fake-recidiviz-project'
         self.mock_view_dataset_name = 'my_views_dataset'
@@ -85,13 +85,13 @@ class CalculationDataStorageManagerTest(unittest.TestCase):
         app.config['TESTING'] = True
         self.client = app.test_client()
 
-    def tearDown(self):
+    def tearDown(self) -> None:
         self.bq_client_patcher.stop()
         self.project_id_patcher.stop()
         self.project_number_patcher.stop()
         self.data_storage_config_patcher.stop()
 
-    def test_move_old_dataflow_metrics_to_cold_storage(self):
+    def test_move_old_dataflow_metrics_to_cold_storage(self) -> None:
         """Test that move_old_dataflow_metrics_to_cold_storage gets the list of tables to prune, calls the client to
         insert into the cold storage table, and calls the client to replace the dataflow table."""
         calculation_data_storage_manager.move_old_dataflow_metrics_to_cold_storage()
@@ -101,7 +101,7 @@ class CalculationDataStorageManagerTest(unittest.TestCase):
         self.mock_client.create_table_from_query_async.assert_called()
 
     @patch('recidiviz.calculator.calculation_data_storage_manager.move_old_dataflow_metrics_to_cold_storage')
-    def test_prune_old_dataflow_data(self, mock_move_metrics):
+    def test_prune_old_dataflow_data(self, mock_move_metrics: mock.MagicMock) -> None:
         """Tests that the move_old_dataflow_metrics_to_cold_storage function is called when the /prune_old_dataflow_data
         endpoint is hit."""
         headers = {'X-Appengine-Cron': 'test-cron'}
@@ -112,7 +112,7 @@ class CalculationDataStorageManagerTest(unittest.TestCase):
 
     # pylint: disable=protected-access
     @freeze_time('2020-01-02 00:00')
-    def test_delete_empty_datasets(self):
+    def test_delete_empty_datasets(self) -> None:
         """Test that _delete_empty_datasets deletes a dataset if it has no tables in it."""
         empty_dataset = MockDataset(self.mock_view_dataset_name, datetime.datetime(2020, 1, 1, 0, 0, 0,
                                                                                    tzinfo=datetime.timezone.utc))
@@ -129,7 +129,7 @@ class CalculationDataStorageManagerTest(unittest.TestCase):
 
     # pylint: disable=protected-access
     @freeze_time('2020-01-02 00:00')
-    def test_delete_empty_datasets_dataset_not_empty(self):
+    def test_delete_empty_datasets_dataset_not_empty(self) -> None:
         """Test that _delete_empty_datasets does not delete a dataset if it has tables in it."""
         non_empty_dataset = MockDataset(self.mock_view_dataset_name, datetime.datetime(2020, 1, 1, 0, 0, 0,
                                                                                        tzinfo=datetime.timezone.utc))
@@ -146,7 +146,7 @@ class CalculationDataStorageManagerTest(unittest.TestCase):
 
     # pylint: disable=protected-access
     @freeze_time('2020-01-02 00:30')
-    def test_delete_empty_datasets_new_dataset(self):
+    def test_delete_empty_datasets_new_dataset(self) -> None:
         """Test that _delete_empty_datasets deletes a dataset if it has no tables in it."""
         # Created 30 minutes ago, should not be deleted
         new_dataset = MockDataset(self.mock_view_dataset_name, datetime.datetime(2020, 1, 1, 0, 0, 0,
@@ -163,7 +163,7 @@ class CalculationDataStorageManagerTest(unittest.TestCase):
         self.mock_client.delete_dataset.assert_not_called()
 
     @patch('recidiviz.calculator.calculation_data_storage_manager._delete_empty_datasets')
-    def test_delete_empty_datasets_endpoint(self, mock_delete):
+    def test_delete_empty_datasets_endpoint(self, mock_delete: mock.MagicMock) -> None:
         """Tests that the delete_empty_datasets function is called when the /delete_empty_datasets endpoint is hit."""
         headers = {'X-Appengine-Cron': 'test-cron'}
         response = self.client.get('/delete_empty_datasets', headers=headers)
@@ -174,6 +174,6 @@ class CalculationDataStorageManagerTest(unittest.TestCase):
 
 class MockDataset:
     """Class for mocking bigquery.Dataset."""
-    def __init__(self, dataset_id, created):
+    def __init__(self, dataset_id: str, created: datetime.datetime) -> None:
         self.dataset_id = dataset_id
         self.created = created

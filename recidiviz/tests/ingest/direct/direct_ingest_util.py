@@ -19,7 +19,7 @@ import datetime
 import os
 import time
 import unittest
-from typing import List, Union, Optional, Dict, Type, TextIO
+from typing import List, Optional, Dict, Type, TextIO, Any
 
 import attr
 import gcsfs
@@ -30,6 +30,7 @@ from recidiviz.big_query.big_query_view import BigQueryViewBuilder
 from recidiviz.big_query.big_query_view_collector import BigQueryViewCollector
 from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import \
     BaseDirectIngestController
+from recidiviz.ingest.direct.controllers.csv_gcsfs_direct_ingest_controller import CsvGcsfsDirectIngestController
 from recidiviz.ingest.direct.controllers.direct_ingest_big_query_view_types import DirectIngestPreProcessedIngestView
 from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import \
     DirectIngestGCSFileSystem, to_normalized_unprocessed_file_path
@@ -175,7 +176,7 @@ class FakeDirectIngestPreProcessedIngestViewBuilder(BigQueryViewBuilder[DirectIn
         self.build()
 
     @property
-    def file_tag(self):
+    def file_tag(self) -> str:
         return self.tag
 
 
@@ -197,7 +198,7 @@ class FakeDirectIngestPreProcessedIngestViewCollector(
         return builders
 
 
-def build_controller_for_tests(controller_cls,
+def build_controller_for_tests(controller_cls: Type[BaseDirectIngestController],
                                run_async: bool) -> BaseDirectIngestController:
     """Builds an instance of |controller_cls| for use in tests with several internal classes mocked properly. If
     |controller_cls| is an instance of GcsfsDirectIngestController, use build_gcsfs_controller_for_tests() instead.
@@ -214,23 +215,22 @@ def build_controller_for_tests(controller_cls,
         task_manager = FakeAsyncDirectIngestCloudTaskManager() \
             if run_async else FakeSynchronousDirectIngestCloudTaskManager()
         mock_task_factory_cls.return_value = task_manager
-        return controller_cls()
+        return controller_cls()  # type: ignore[call-arg]
 
 
 @patch('recidiviz.utils.metadata.project_id',
        Mock(return_value='recidiviz-staging'))
 def build_gcsfs_controller_for_tests(
-        controller_cls,
+        controller_cls: Type[CsvGcsfsDirectIngestController],
         fixture_path_prefix: str,
         run_async: bool,
-        fake_fs: Optional[FakeGCSFileSystem] = None,
         can_start_ingest: bool = True,
-        **kwargs,
+        **kwargs: Any,
 ) -> GcsfsDirectIngestController:
     """Builds an instance of |controller_cls| for use in tests with several internal classes mocked properly. """
     fake_fs = FakeGCSFileSystem()
 
-    def mock_build_fs():
+    def mock_build_fs() -> FakeGCSFileSystem:
         return fake_fs
 
     if 'TestGcsfsDirectIngestController' in controller_cls.__name__:
@@ -286,7 +286,7 @@ def path_for_fixture_file(
         should_normalize: bool,
         file_type: Optional[GcsfsDirectIngestFileType] = None,
         dt: Optional[datetime.datetime] = None
-) -> Union[GcsfsFilePath, GcsfsDirectoryPath]:
+) -> GcsfsFilePath:
     return path_for_fixture_file_in_test_gcs_directory(
         directory=controller.ingest_directory_path,
         filename=filename,
@@ -302,7 +302,7 @@ def path_for_fixture_file_in_test_gcs_directory(
         should_normalize: bool,
         file_type: Optional[GcsfsDirectIngestFileType] = None,
         dt: Optional[datetime.datetime] = None
-) -> Union[GcsfsFilePath, GcsfsDirectoryPath]:
+) -> GcsfsFilePath:
     file_path_str = filename
 
     if should_normalize:
@@ -313,17 +313,22 @@ def path_for_fixture_file_in_test_gcs_directory(
                                                             file_type=file_type,
                                                             dt=dt)
 
-    return GcsfsPath.from_bucket_and_blob_name(
+    file_path = GcsfsPath.from_bucket_and_blob_name(
         bucket_name=directory.bucket_name,
         blob_name=os.path.join(directory.relative_path, file_path_str))
+    if not isinstance(file_path, GcsfsFilePath):
+        raise ValueError(f'Expected type GcsfsFilePath, found {type(file_path)} for path: {file_path.abs_path()}')
+    return file_path
 
 
-def add_paths_with_tags_and_process(test_case: unittest.TestCase,
-                                    controller: GcsfsDirectIngestController,
-                                    file_tags: List[str],
-                                    unexpected_tags: List[str] = None,
-                                    pre_normalize_filename: bool = False,
-                                    file_type=GcsfsDirectIngestFileType.UNSPECIFIED):
+def add_paths_with_tags_and_process(
+        test_case: unittest.TestCase,
+        controller: GcsfsDirectIngestController,
+        file_tags: List[str],
+        unexpected_tags: List[str] = None,
+        pre_normalize_filename: bool = False,
+        file_type: GcsfsDirectIngestFileType = GcsfsDirectIngestFileType.UNSPECIFIED
+) -> None:
     """Runs a test that queues files for all the provided file tags, waits
     for the controller to finish processing everything, then makes sure that
     all files not in |unexpected_tags| have been moved to storage.
@@ -335,7 +340,7 @@ def add_paths_with_tags_and_process(test_case: unittest.TestCase,
 def add_paths_with_tags(controller: GcsfsDirectIngestController,
                         file_tags: List[str],
                         pre_normalize_filename: bool = False,
-                        file_type=GcsfsDirectIngestFileType.UNSPECIFIED):
+                        file_type: GcsfsDirectIngestFileType = GcsfsDirectIngestFileType.UNSPECIFIED) -> None:
     if not isinstance(controller.fs.gcs_file_system, FakeGCSFileSystem):
         raise ValueError(f"Controller fs must have type "
                          f"FakeGCSFileSystem. Found instead "
@@ -355,7 +360,7 @@ def add_paths_with_tags(controller: GcsfsDirectIngestController,
 def process_task_queues(test_case: unittest.TestCase,
                         controller: GcsfsDirectIngestController,
                         file_tags: List[str],
-                        unexpected_tags: List[str] = None):
+                        unexpected_tags: List[str] = None) -> None:
     if unexpected_tags is None:
         unexpected_tags = []
 
@@ -367,7 +372,7 @@ def check_all_paths_processed(
         test_case: unittest.TestCase,
         controller: GcsfsDirectIngestController,
         file_tags: List[str],
-        unexpected_tags: List[str]):
+        unexpected_tags: List[str]) -> None:
     """Checks that all non-directory paths with expected tags have been
     processed and moved to storage.
     """
@@ -400,7 +405,7 @@ def check_all_paths_processed(
                           set(file_tags).difference(set(unexpected_tags)))
 
 
-def run_task_queues_to_empty(controller: GcsfsDirectIngestController):
+def run_task_queues_to_empty(controller: GcsfsDirectIngestController) -> None:
     if isinstance(controller.cloud_task_manager,
                   FakeAsyncDirectIngestCloudTaskManager):
         controller.cloud_task_manager.wait_for_all_tasks_to_run()
