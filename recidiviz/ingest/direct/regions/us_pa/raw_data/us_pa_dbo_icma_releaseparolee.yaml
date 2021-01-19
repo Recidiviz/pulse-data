@@ -1,0 +1,6 @@
+file_tag: dbo_ICMA_ReleaseParolee
+# Best initial (unconfirmed) guess at primary keys for this table:
+#      - InstitutionNumber
+#      - ParoleNumber
+#      - ParoleCountId
+primary_key_cols: []

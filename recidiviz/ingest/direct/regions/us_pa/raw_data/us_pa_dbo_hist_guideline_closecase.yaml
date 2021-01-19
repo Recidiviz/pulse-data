@@ -1,0 +1,7 @@
+file_tag: dbo_Hist_Guideline_CloseCase
+# Best initial (unconfirmed) guess at primary keys for this table:
+#      - ParoleNumber
+#      - ParoleCountID
+#      - GuidelineID
+#      - DocketID
+primary_key_cols: []

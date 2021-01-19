@@ -1,0 +1,4 @@
+file_tag: dbo_LU_BoardActionClass
+# Best initial (unconfirmed) guess at primary keys for this table:
+#      - ActionClassCode
+primary_key_cols: []

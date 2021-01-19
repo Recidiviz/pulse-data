@@ -1,0 +1,4 @@
+file_tag: dbo_Hist_Investigation
+# Best initial (unconfirmed) guess at primary keys for this table:
+#      - InvUPAR
+primary_key_cols: []

@@ -1,0 +1,6 @@
+file_tag: dbo_BdActionType
+primary_key_cols:
+  - ParoleNumber
+  - ParoleCountID
+  - BdActionID
+  - BdActionTypeID

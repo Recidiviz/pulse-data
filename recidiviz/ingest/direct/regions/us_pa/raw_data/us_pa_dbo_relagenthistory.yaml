@@ -1,0 +1,7 @@
+file_tag: dbo_RelAgentHistory
+primary_key_cols:
+  - ParoleNumber
+  - ParoleCountID
+  - LastModifiedDateTime
+datetime_cols:
+  - LastModifiedDateTime

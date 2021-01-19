@@ -1,0 +1,10 @@
+file_tag: dbo_vwCCISAllInmate
+# Best initial (unconfirmed) guess at primary keys for this table:
+#      - Control_Number
+#      - Inmate_Number
+primary_key_cols: []
+datetime_cols:
+  - Bed_Dt
+  - Cur_Status_Dt
+  - LstMod_Dt
+encoding: ISO-8859-1
