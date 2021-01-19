@@ -22,12 +22,12 @@
 These boxes should be checked by the submitter prior to merging:
 
 - [ ] Mypy types have been added to all functions/methods in files this PR touches (when reasonable)
-- [ ] Directories passing mypy have been removed from disallow_untyped_defs blacklist in setup.cfg (See http://go/mypy for more info)
+- [ ] Directories passing mypy have been removed from disallow_untyped_defs excludelist in setup.cfg (See http://go/mypy for more info)
 - [ ] Lint and mypy rules pass locally
 - [ ] All tests related to the changed code pass locally
 - [ ] Tests have been written to cover the code changed/added as part of this pull request
 
-### Code review 
+### Code review
 
 These boxes should be checked by reviewers prior to merging:
 
