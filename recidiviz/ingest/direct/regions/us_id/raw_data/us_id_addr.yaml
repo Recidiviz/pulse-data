@@ -1,0 +1,3 @@
+file_tag: addr
+primary_key_cols:
+  - addr_id

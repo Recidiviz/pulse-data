@@ -1,0 +1,4 @@
+file_tag: sbstnc_rslt
+primary_key_cols:
+  - tst_id
+  - sbstnc_cd

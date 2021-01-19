@@ -1,0 +1,13 @@
+file_tag: offstat
+primary_key_cols:
+  - docno
+  - incrno
+  - statno
+datetime_cols:
+  - stat_intake_dtd
+  - stat_strt_dtd
+  - stat_rls_dtd
+  - stat_elig_end_dtd
+  - stat_strt_ped_dtd
+  - proj_rls_dtd
+  - rel_par_revoc_dtd

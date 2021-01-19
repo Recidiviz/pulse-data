@@ -1,0 +1,3 @@
+file_tag: region
+primary_key_cols:
+  - region_id

@@ -1,0 +1,4 @@
+file_tag: tst_qstn_rspns
+primary_key_cols:
+  - tst_qstn_rspns_id
+ignore_quotes: True

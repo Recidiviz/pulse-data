@@ -1,0 +1,7 @@
+file_tag: ofndr_tst
+primary_key_cols:
+  - ofndr_tst_id
+datetime_cols:
+  - tst_dt
+  - updt_dt
+ignore_quotes: True

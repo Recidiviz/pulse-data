@@ -1,0 +1,4 @@
+file_tag: county
+primary_key_cols:
+  - cnty_cd
+separator: ','

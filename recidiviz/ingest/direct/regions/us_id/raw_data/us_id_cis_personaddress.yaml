@@ -1,0 +1,6 @@
+file_tag: cis_personaddress
+primary_key_cols:
+  - id
+datetime_cols:
+  - insdate
+  - upddate

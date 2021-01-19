@@ -1,0 +1,4 @@
+file_tag: cis_personname
+primary_key_cols:
+  - id
+ignore_quotes: True

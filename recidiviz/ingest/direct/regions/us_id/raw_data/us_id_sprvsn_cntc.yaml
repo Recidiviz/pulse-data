@@ -1,0 +1,6 @@
+file_tag: sprvsn_cntc
+primary_key_cols:
+  - sprvsn_cntc_id
+datetime_cols:
+  - cntc_dt
+  - updt_dt

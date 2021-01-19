@@ -1,0 +1,6 @@
+file_tag: x_body_loc_cd
+primary_key_cols:
+  - fac_cd
+  - lu_cd
+  - pod
+  - loc_cd

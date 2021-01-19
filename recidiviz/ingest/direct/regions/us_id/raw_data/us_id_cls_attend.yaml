@@ -1,0 +1,4 @@
+file_tag: cls_attend
+primary_key_cols:
+  - cls_attnd_id
+ignore_quotes: True

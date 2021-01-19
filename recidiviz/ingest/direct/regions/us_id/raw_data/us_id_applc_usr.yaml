@@ -1,0 +1,4 @@
+file_tag: applc_usr
+primary_key_cols:
+  - usr_id
+separator: ','
