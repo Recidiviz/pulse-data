@@ -1,0 +1,5 @@
+file_tag: ofndr_sctn_eval
+primary_key_cols:
+  - ofndr_tst_id
+  - tst_sctn_num
+  - assess_tst_id

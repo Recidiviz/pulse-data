@@ -1,0 +1,6 @@
+file_tag: assess_qstn_choice
+primary_key_cols:
+  - qstn_choice_num
+  - assess_qstn_num
+  - tst_sctn_num
+  - assess_tst_id

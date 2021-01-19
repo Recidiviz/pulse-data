@@ -1,0 +1,3 @@
+file_tag: sentdisp
+primary_key_cols:
+  - sent_disp

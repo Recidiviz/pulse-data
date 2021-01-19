@@ -1,0 +1,6 @@
+file_tag: ofndr_wrkld
+primary_key_cols:
+  - ofndr_wrkld_id
+datetime_cols:
+  - strt_dt
+  - end_dt

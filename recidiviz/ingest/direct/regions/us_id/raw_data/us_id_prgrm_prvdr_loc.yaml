@@ -1,0 +1,3 @@
+file_tag: prgrm_prvdr_loc
+primary_key_cols:
+  - prgrm_prvdr_loc_id

@@ -1,0 +1,4 @@
+file_tag: jurisdiction_decision_code
+primary_key_cols:
+  - jurisdiction_decision_code_id
+separator: ','

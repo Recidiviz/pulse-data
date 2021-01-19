@@ -1,0 +1,5 @@
+file_tag: sentretn
+primary_key_cols:
+  - mitt_srl
+  - sent_no
+  - retn_no

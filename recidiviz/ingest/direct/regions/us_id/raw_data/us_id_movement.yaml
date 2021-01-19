@@ -1,0 +1,5 @@
+file_tag: movement
+primary_key_cols:
+  - move_srl
+datetime_cols:
+  - move_dtd
