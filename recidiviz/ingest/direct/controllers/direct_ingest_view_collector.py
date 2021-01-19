@@ -55,7 +55,7 @@ class DirectIngestPreProcessedIngestViewCollector(BigQueryViewCollector[DirectIn
 
         return ingest_view_builders
 
-    def _validate_ingest_views(self, ingest_view_builders: List[DirectIngestPreProcessedIngestViewBuilder]):
+    def _validate_ingest_views(self, ingest_view_builders: List[DirectIngestPreProcessedIngestViewBuilder]) -> None:
         found_ingest_view_tags = [builder.file_tag for builder in ingest_view_builders]
         found_ingest_view_tags_set = set(found_ingest_view_tags)
         if len(found_ingest_view_tags) > len(found_ingest_view_tags_set):

@@ -38,7 +38,7 @@ class FakeSynchronousDirectIngestCloudTaskManager(
     """Test implementation of the DirectIngestCloudTaskManager that runs tasks
     synchronously, when prompted."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
         self.process_job_tasks: List[Tuple[str, IngestArgs]] = []
         self.num_finished_process_job_tasks = 0
@@ -93,7 +93,7 @@ class FakeSynchronousDirectIngestCloudTaskManager(
 
     def create_direct_ingest_handle_new_files_task(self,
                                                    region: Region,
-                                                   can_start_ingest: bool):
+                                                   can_start_ingest: bool) -> None:
         if not self.controller:
             raise ValueError(
                 "Controller is null - did you call set_controller()?")
@@ -101,7 +101,8 @@ class FakeSynchronousDirectIngestCloudTaskManager(
         self.scheduler_tasks.append(
             (f'projects/path/to/{task_id}-handle_new_files', can_start_ingest))
 
-    def create_direct_ingest_raw_data_import_task(self, region: Region, data_import_args: GcsfsRawDataBQImportArgs):
+    def create_direct_ingest_raw_data_import_task(self,
+                                                  region: Region, data_import_args: GcsfsRawDataBQImportArgs) -> None:
         if not self.controller:
             raise ValueError(
                 "Controller is null - did you call set_controller()?")
@@ -110,7 +111,7 @@ class FakeSynchronousDirectIngestCloudTaskManager(
             (f'projects/path/to/{task_id}-raw_data_import', data_import_args))
 
     def create_direct_ingest_ingest_view_export_task(self, region: Region,
-                                                     ingest_view_export_args: GcsfsIngestViewExportArgs):
+                                                     ingest_view_export_args: GcsfsIngestViewExportArgs) -> None:
         if not self.controller:
             raise ValueError(
                 "Controller is null - did you call set_controller()?")

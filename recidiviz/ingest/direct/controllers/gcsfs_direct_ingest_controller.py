@@ -121,7 +121,7 @@ class GcsfsDirectIngestController(
     # ================= #
     # NEW FILE HANDLING #
     # ================= #
-    def handle_file(self, path: GcsfsFilePath, start_ingest: bool):
+    def handle_file(self, path: GcsfsFilePath, start_ingest: bool) -> None:
         """Called when a single new file is added to an ingest bucket (may also
         be called as a result of a rename).
 
@@ -149,13 +149,13 @@ class GcsfsDirectIngestController(
             region=self.region,
             can_start_ingest=start_ingest)
 
-    def _register_all_new_paths_in_metadata(self, paths: List[GcsfsFilePath]):
+    def _register_all_new_paths_in_metadata(self, paths: List[GcsfsFilePath]) -> None:
         for path in paths:
             if not self.file_metadata_manager.has_file_been_discovered(path):
                 self.file_metadata_manager.mark_file_as_discovered(path)
 
     @trace.span
-    def handle_new_files(self, can_start_ingest: bool):
+    def handle_new_files(self, can_start_ingest: bool) -> None:
         """Searches the ingest directory for new/unprocessed files. Normalizes
         file names and splits files as necessary, schedules the next ingest job
         if allowed.
@@ -427,7 +427,7 @@ class GcsfsDirectIngestController(
                      wait_time, self._job_tag(args))
         return wait_time
 
-    def _on_job_scheduled(self, ingest_args: GcsfsIngestArgs):
+    def _on_job_scheduled(self, ingest_args: GcsfsIngestArgs) -> None:
         pass
 
     # =================== #
@@ -455,14 +455,14 @@ class GcsfsDirectIngestController(
     def _can_proceed_with_ingest_for_contents(
             self,
             args: GcsfsIngestArgs,
-            contents_handle: GcsfsFileContentsHandle):
+            contents_handle: GcsfsFileContentsHandle) -> bool:
         parts = filename_parts_from_path(args.file_path)
         return self._are_contents_empty(args, contents_handle) or \
             not self._must_split_contents(parts.file_type, args.file_path)
 
     def _must_split_contents(self,
                              file_type: GcsfsDirectIngestFileType,
-                             path: GcsfsFilePath):
+                             path: GcsfsFilePath) -> bool:
         if self.region.is_raw_vs_ingest_file_name_detection_enabled() and \
                 file_type == GcsfsDirectIngestFileType.RAW_DATA:
             return False
@@ -593,7 +593,7 @@ class GcsfsDirectIngestController(
         """Should be implemented by subclasses to split a file accessible via the provided path into multiple
         files and upload those files to GCS. Returns the list of upload paths."""
 
-    def _do_cleanup(self, args: GcsfsIngestArgs):
+    def _do_cleanup(self, args: GcsfsIngestArgs) -> None:
         self.fs.mv_path_to_processed_path(args.file_path)
 
         if self.region.are_ingest_view_exports_enabled_in_env():
@@ -620,7 +620,7 @@ class GcsfsDirectIngestController(
         return True
 
     def _move_processed_files_to_storage_as_necessary(
-            self, last_processed_date_str: str):
+            self, last_processed_date_str: str) -> None:
         next_args = self.file_prioritizer.get_next_job_args()
 
         should_move_last_processed_date = False

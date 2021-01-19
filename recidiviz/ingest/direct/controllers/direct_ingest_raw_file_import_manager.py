@@ -85,10 +85,10 @@ class DirectIngestRawFileConfig:
     always_historical_export: bool = attr.ib()
 
     # A comma-separated string representation of the primary keys
-    primary_key_str = attr.ib()
+    primary_key_str: str = attr.ib()
 
     @primary_key_str.default
-    def _primary_key_str(self):
+    def _primary_key_str(self) -> str:
         return ", ".join(self.primary_key_cols)
 
     def encodings_to_try(self) -> List[str]:
@@ -219,7 +219,7 @@ class DirectIngestRegionRawFileConfig:
     raw_file_tags: Set[str] = attr.ib()
 
     @raw_file_tags.default
-    def _raw_file_tags(self):
+    def _raw_file_tags(self) -> Set[str]:
         return set(self.raw_file_configs.keys())
 
 
@@ -276,7 +276,7 @@ class DirectIngestRawFileImportManager:
         return paths_to_import
 
     @classmethod
-    def raw_tables_dataset_for_region(cls, region_code: str):
+    def raw_tables_dataset_for_region(cls, region_code: str) -> str:
         return f'{region_code.lower()}_raw_data'
 
     def import_raw_file_to_big_query(self,
@@ -340,7 +340,7 @@ class DirectIngestRawFileImportManager:
 
     def _load_contents_to_bigquery(self,
                                    path: GcsfsFilePath,
-                                   temp_paths_with_columns: List[Tuple[GcsfsFilePath, List[str]]]):
+                                   temp_paths_with_columns: List[Tuple[GcsfsFilePath, List[str]]]) -> None:
         """Loads the contents in the given handle to the appropriate table in BigQuery."""
 
         logging.info('Starting chunked load of contents to BigQuery')
@@ -503,7 +503,7 @@ class DirectIngestRawDataSplittingGcsfsCsvReaderDelegate(SplittingGcsfsCsvReader
                                                                     raw_data_df=df)
         return augmented_df
 
-    def get_output_path(self, chunk_num: int):
+    def get_output_path(self, chunk_num: int) -> GcsfsFilePath:
         name, _extension = os.path.splitext(self.path.file_name)
 
         return GcsfsFilePath.from_directory_and_file_name(self.temp_output_directory_path,

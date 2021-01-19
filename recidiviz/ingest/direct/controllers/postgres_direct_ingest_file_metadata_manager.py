@@ -219,7 +219,7 @@ class PostgresDirectIngestFileMetadataManager(DirectIngestFileMetadataManager):
 
     def register_ingest_view_export_file_name(self,
                                               metadata_entity: DirectIngestIngestFileMetadata,
-                                              exported_path: GcsfsFilePath):
+                                              exported_path: GcsfsFilePath) -> None:
         parts = filename_parts_from_path(exported_path)
         if parts.file_type != GcsfsDirectIngestFileType.INGEST_VIEW:
             raise ValueError(f'Exported path has unexpected type {parts.file_type}')

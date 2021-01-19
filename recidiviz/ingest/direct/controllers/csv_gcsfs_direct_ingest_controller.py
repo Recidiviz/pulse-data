@@ -21,7 +21,7 @@ GCSFileSystem.
 import abc
 import inspect
 import os
-from typing import List, Optional, Callable
+from typing import List, Optional, Callable, Any
 
 import gcsfs
 import pandas as pd
@@ -54,7 +54,7 @@ class DirectIngestFileSplittingGcsfsCsvReaderDelegate(SplittingGcsfsCsvReaderDel
     def transform_dataframe(self, df: pd.DataFrame) -> pd.DataFrame:
         return df
 
-    def get_output_path(self, chunk_num: int):
+    def get_output_path(self, chunk_num: int) -> GcsfsFilePath:
         name, _extension = os.path.splitext(self.path.file_name)
 
         return GcsfsFilePath.from_directory_and_file_name(self.output_directory_path,
@@ -118,22 +118,26 @@ class CsvGcsfsDirectIngestController(GcsfsDirectIngestController):
 
         return output_paths
 
-    def _yaml_filepath(self, file_tag):
+    def _yaml_filepath(self, file_tag: str) -> str:
         return os.path.join(os.path.dirname(inspect.getfile(self.__class__)),
                             f'{self.region.region_code}_{file_tag}.yaml')
 
+    WrappableCallable = Callable[[str, Any], Any]
+    WrappedCallable = Callable[..., Any]
     @staticmethod
-    def _wrap_with_tag(file_tag: str, callback: Optional[Callable]):
+    def _wrap_with_tag(file_tag: str, callback: Optional[WrappableCallable]) -> Optional[WrappedCallable]:
         if callback is None:
             return None
 
-        def wrapped_cb(*args):
+        def wrapped_cb(*args: Any) -> Any:
+            if callback is None:
+                raise ValueError('Unexpected None value for callback')
             return callback(file_tag, *args)
 
         return wrapped_cb
 
     @classmethod
-    def _wrap_list_with_tag(cls, file_tag: str, callbacks: List[Callable]):
+    def _wrap_list_with_tag(cls, file_tag: str, callbacks: List[Callable]) -> List[Optional[WrappedCallable]]:
         return [cls._wrap_with_tag(file_tag, callback)
                 for callback in callbacks]
 
@@ -189,19 +193,19 @@ class CsvGcsfsDirectIngestController(GcsfsDirectIngestController):
         self.csv_reader.streaming_read(args.file_path, delegate=delegate, chunk_size=1, skiprows=1)
         return delegate.df is None
 
-    def _get_row_pre_processors_for_file(self, _file_tag) -> List[Callable]:
+    def _get_row_pre_processors_for_file(self, _file_tag: str) -> List[Callable]:
         """Subclasses should override to return row_pre_processors for a given
         file tag.
         """
         return []
 
-    def _get_row_post_processors_for_file(self, _file_tag) -> List[Callable]:
+    def _get_row_post_processors_for_file(self, _file_tag: str) -> List[Callable]:
         """Subclasses should override to return row_post_processors for a given
         file tag.
         """
         return []
 
-    def _get_file_post_processors_for_file(self, _file_tag) -> List[Callable]:
+    def _get_file_post_processors_for_file(self, _file_tag: str) -> List[Callable]:
         """Subclasses should override to return file_post_processors for a given
         file tag.
         """

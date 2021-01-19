@@ -38,10 +38,12 @@ from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath
 from recidiviz.ingest.direct.controllers.postgres_direct_ingest_file_metadata_manager import \
     PostgresDirectIngestFileMetadataManager
 from recidiviz.persistence.database.base_schema import OperationsBase
+from recidiviz.persistence.database.database_entity import DatabaseEntity
 from recidiviz.persistence.database.schema.operations import schema
 from recidiviz.persistence.database.schema_entity_converter import (
     schema_entity_converter as converter)
 from recidiviz.persistence.database.session_factory import SessionFactory
+from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.tests.ingest import fixtures
 from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.tests.utils import fakes
@@ -266,11 +268,11 @@ class DirectIngestIngestViewExportManagerTest(unittest.TestCase):
         self.metadata_patcher.stop()
         fakes.teardown_in_memory_sqlite_databases()
 
-    def to_entity(self, schema_obj):
+    def to_entity(self, schema_obj: DatabaseEntity) -> Entity:
         return converter.convert_schema_object_to_entity(schema_obj, populate_back_edges=False)
 
     @staticmethod
-    def create_fake_region(ingest_view_exports_enabled=True):
+    def create_fake_region(ingest_view_exports_enabled: bool = True) -> Region:
         return fake_region(region_code='US_XX',
                            is_raw_vs_ingest_file_name_detection_enabled=True,
                            are_raw_data_bq_imports_enabled_in_env=True,
@@ -279,7 +281,7 @@ class DirectIngestIngestViewExportManagerTest(unittest.TestCase):
     def create_export_manager(self,
                               region: Region,
                               is_detect_row_deletion_view: bool = False,
-                              materialize_raw_data_table_views: bool = False):
+                              materialize_raw_data_table_views: bool = False) -> DirectIngestIngestViewExportManager:
         metadata_manager = PostgresDirectIngestFileMetadataManager(region.region_code)
         return DirectIngestIngestViewExportManager(
             region=region,
@@ -295,10 +297,10 @@ class DirectIngestIngestViewExportManagerTest(unittest.TestCase):
             ))
 
     @staticmethod
-    def generate_query_params_for_date(date_param):
+    def generate_query_params_for_date(date_param: datetime.datetime) -> ScalarQueryParameter:
         return ScalarQueryParameter('update_timestamp', 'DATETIME', date_param)
 
-    def assert_exported_to_gcs_with_query(self, expected_query):
+    def assert_exported_to_gcs_with_query(self, expected_query: str) -> None:
         self.mock_client.export_query_results_to_cloud_storage.assert_called_once()
         _, kwargs = one(self.mock_client.export_query_results_to_cloud_storage.call_args_list)
         export_config = one(kwargs['export_configs'])
@@ -476,10 +478,10 @@ class DirectIngestIngestViewExportManagerTest(unittest.TestCase):
         self.mock_client.run_query_async.assert_has_calls([
             mock.call(
                 query_str=expected_upper_bound_query,
-                query_parameters=[self.generate_query_params_for_date(export_args.upper_bound_datetime_to_export)]),
+                query_parameters=[self.generate_query_params_for_date(_DATE_2)]),
             mock.call(
                 query_str=expected_lower_bound_query,
-                query_parameters=[self.generate_query_params_for_date(export_args.upper_bound_datetime_prev)]),
+                query_parameters=[self.generate_query_params_for_date(_DATE_1)]),
         ])
         expected_query = \
             '(SELECT * FROM `recidiviz-456.us_xx_ingest_views.ingest_view_2020_07_20_00_00_00_upper_bound`) ' \
@@ -538,10 +540,10 @@ class DirectIngestIngestViewExportManagerTest(unittest.TestCase):
         self.mock_client.run_query_async.assert_has_calls([
             mock.call(
                 query_str=expected_upper_bound_query,
-                query_parameters=[self.generate_query_params_for_date(export_args.upper_bound_datetime_to_export)]),
+                query_parameters=[self.generate_query_params_for_date(_DATE_2)]),
             mock.call(
                 query_str=expected_lower_bound_query,
-                query_parameters=[self.generate_query_params_for_date(export_args.upper_bound_datetime_prev)]),
+                query_parameters=[self.generate_query_params_for_date(_DATE_1)]),
         ])
         expected_query = \
             '(SELECT * FROM `recidiviz-456.us_xx_ingest_views.ingest_view_2020_07_20_00_00_00_upper_bound`) ' \
@@ -640,10 +642,10 @@ class DirectIngestIngestViewExportManagerTest(unittest.TestCase):
         self.mock_client.run_query_async.assert_has_calls([
             mock.call(
                 query_str=expected_upper_bound_query,
-                query_parameters=[self.generate_query_params_for_date(export_args.upper_bound_datetime_to_export)]),
+                query_parameters=[self.generate_query_params_for_date(_DATE_2)]),
             mock.call(
                 query_str=expected_lower_bound_query,
-                query_parameters=[self.generate_query_params_for_date(export_args.upper_bound_datetime_prev)]),
+                query_parameters=[self.generate_query_params_for_date(_DATE_1)]),
         ])
         # Lower bound is the first part of the subquery, not upper bound.
         expected_query = \

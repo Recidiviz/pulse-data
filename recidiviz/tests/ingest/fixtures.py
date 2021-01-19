@@ -20,12 +20,13 @@
 import os
 import inspect
 import json
+from typing import Dict, Any
 from xml.etree import ElementTree
 import html5lib
 from lxml import html
 
 
-def as_string(region_directory: str, filename: str):
+def as_string(region_directory: str, filename: str) -> str:
     """Returns the contents of the given fixture file as a string.
 
     Assumes the fixture file has the given name (with extension included), and
@@ -57,7 +58,7 @@ def as_string(region_directory: str, filename: str):
 def file_path_from_relative_path(relative_path: str) -> str:
     return os.path.join(os.path.dirname(__file__), relative_path)
 
-def as_string_from_relative_path(relative_path: str):
+def as_string_from_relative_path(relative_path: str) -> str:
     """Returns the contents of the given fixture file as a string.
 
     Args:
@@ -70,7 +71,7 @@ def as_string_from_relative_path(relative_path: str):
     return string
 
 
-def as_dict(region_directory: str, filename: str):
+def as_dict(region_directory: str, filename: str) -> Dict[str, Any]:
     """Returns the contents of the given fixture file as a dictionary.
 
     Assumes the fixture file has the given name (with extension included), and
@@ -107,12 +108,12 @@ def as_filepath(filename: str, subdir: str = 'fixtures') -> str:
         os.path.join(caller_filepath, '..', subdir, filename))
 
 
-def as_html(region_directory: str, filename: str):
+def as_html(region_directory: str, filename: str) -> Any:  # No types defined out of lxml library
     content_string = as_string(region_directory, filename)
     return html.fromstring(content_string)
 
 
-def as_html5(region_directory: str, filename: str):
+def as_html5(region_directory: str, filename: str) -> Any:  # No types defined out of lxml library
     content_string = as_string(region_directory, filename)
     html5_etree = html5lib.parse(content_string)
     html5_string = ElementTree.tostring(html5_etree)

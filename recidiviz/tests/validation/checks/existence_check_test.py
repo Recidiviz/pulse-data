@@ -38,11 +38,11 @@ class TestExistenceValidationChecker(TestCase):
             'recidiviz.validation.checks.existence_check.BigQueryClientImpl')
         self.mock_client = self.client_patcher.start().return_value
 
-    def tearDown(self):
+    def tearDown(self) -> None:
         self.client_patcher.stop()
         self.metadata_patcher.stop()
 
-    def test_existence_check_no_failures(self):
+    def test_existence_check_no_failures(self) -> None:
         self.mock_client.run_query_async.return_value = []
 
         job = DataValidationJob(region_code='US_VA',
@@ -57,7 +57,7 @@ class TestExistenceValidationChecker(TestCase):
         self.assertEqual(result,
                          DataValidationJobResult(validation_job=job, was_successful=True, failure_description=None))
 
-    def test_existence_check_failures(self):
+    def test_existence_check_failures(self) -> None:
         self.mock_client.run_query_async.return_value = ['some result row', 'some other result row']
 
         job = DataValidationJob(region_code='US_VA',
@@ -75,7 +75,7 @@ class TestExistenceValidationChecker(TestCase):
                              was_successful=False,
                              failure_description='Found [2] invalid rows, though [0] were expected'))
 
-    def test_existence_check_failures_below_threshold(self):
+    def test_existence_check_failures_below_threshold(self) -> None:
         self.mock_client.run_query_async.return_value = ['some result row', 'some other result row']
 
         job = DataValidationJob(region_code='US_VA',

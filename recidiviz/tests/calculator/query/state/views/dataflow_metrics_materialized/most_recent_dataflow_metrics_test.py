@@ -38,7 +38,7 @@ class MostRecentDataflowMetricsTest(unittest.TestCase):
     def tearDown(self) -> None:
         self.metadata_patcher.stop()
 
-    def test_replace_join_clause(self):
+    def test_replace_join_clause(self) -> None:
         """Test that special-cased tables use the appropriate JOIN indices"""
         metric_names = METRIC_TABLES_JOIN_OVERRIDES.keys()
         for metric_name in metric_names:
@@ -47,7 +47,7 @@ class MostRecentDataflowMetricsTest(unittest.TestCase):
             using_clause = make_using_clause(METRIC_TABLES_JOIN_OVERRIDES[metric_name])
             self.assertIn(using_clause, query.__repr__())
 
-    def test_default_join_clause(self):
+    def test_default_join_clause(self) -> None:
         """Test that non-special-cased tables use the default JOIN indices"""
         using_clause = make_using_clause(DEFAULT_JOIN_INDICES)
         for metric_name in [name for name in METRICS_VIEWS_TO_MATERIALIZE if name not in METRIC_TABLES_JOIN_OVERRIDES]:

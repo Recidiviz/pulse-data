@@ -58,7 +58,7 @@ class DirectIngestRawDataTableLatestViewUpdater:
     def _create_or_update_views_for_table(
             self,
             raw_file_config: DirectIngestRawFileConfig,
-            views_dataset: str):
+            views_dataset: str) -> None:
         """Creates/Updates views corresponding to the provided |raw_file_config|."""
         logging.info('===================== CREATING QUERIES FOR %s  =======================', raw_file_config.file_tag)
 
@@ -84,7 +84,7 @@ class DirectIngestRawDataTableLatestViewUpdater:
         self.bq_client.create_or_update_view(dataset_ref=views_dataset_ref, view=latest_view)
         logging.info('Created/Updated view %s', latest_view.view_id)
 
-    def update_views_for_state(self):
+    def update_views_for_state(self) -> None:
         """Create or update the up to date views dataset for a state with latest views"""
         views_dataset = f'{self.state_code}_raw_data_up_to_date_views'
         raw_data_dataset = f'{self.state_code}_raw_data'

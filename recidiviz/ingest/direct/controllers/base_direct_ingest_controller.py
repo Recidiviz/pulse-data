@@ -40,7 +40,7 @@ class BaseDirectIngestController(Ingestor, Generic[IngestArgsType, ContentsHandl
     """Parses and persists individual-level info from direct ingest partners.
     """
 
-    def __init__(self, region_name, system_level: SystemLevel):
+    def __init__(self, region_name: str, system_level: SystemLevel):
         """Initialize the controller.
 
         Args:
@@ -54,7 +54,7 @@ class BaseDirectIngestController(Ingestor, Generic[IngestArgsType, ContentsHandl
     # ============== #
     # JOB SCHEDULING #
     # ============== #
-    def kick_scheduler(self, just_finished_job: bool):
+    def kick_scheduler(self, just_finished_job: bool) -> None:
         logging.info("Creating cloud task to schedule next job.")
         self.cloud_task_manager.create_direct_ingest_scheduler_queue_task(
             region=self.region,
@@ -62,7 +62,7 @@ class BaseDirectIngestController(Ingestor, Generic[IngestArgsType, ContentsHandl
             delay_sec=0)
 
     def schedule_next_ingest_job_or_wait_if_necessary(self,
-                                                      just_finished_job: bool):
+                                                      just_finished_job: bool) -> None:
         """Creates a cloud task to run the next ingest job. Depending on the
         next job's IngestArgs, we either post a task to direct/scheduler/ if
         a wait_time is specified or direct/process_job/ if we can run the next
@@ -148,10 +148,10 @@ class BaseDirectIngestController(Ingestor, Generic[IngestArgsType, ContentsHandl
             return True
         return False
 
-    def _schedule_raw_data_import_tasks(self):
+    def _schedule_raw_data_import_tasks(self) -> bool:
         return False
 
-    def _schedule_ingest_view_export_tasks(self):
+    def _schedule_ingest_view_export_tasks(self) -> bool:
         return False
 
     @abc.abstractmethod
@@ -160,7 +160,7 @@ class BaseDirectIngestController(Ingestor, Generic[IngestArgsType, ContentsHandl
         None if there is nothing to process."""
 
     @abc.abstractmethod
-    def _on_job_scheduled(self, ingest_args: IngestArgsType):
+    def _on_job_scheduled(self, ingest_args: IngestArgsType) -> None:
         """Called from the scheduler queue when an individual direct ingest job
         is scheduled.
         """
@@ -179,7 +179,7 @@ class BaseDirectIngestController(Ingestor, Generic[IngestArgsType, ContentsHandl
     # SINGLE JOB RUN CODE #
     # =================== #
     def run_ingest_job_and_kick_scheduler_on_completion(self,
-                                                        args: IngestArgsType):
+                                                        args: IngestArgsType) -> None:
         check_is_region_launched_in_env(self.region)
 
         should_schedule = self._run_ingest_job(args)
@@ -244,7 +244,7 @@ class BaseDirectIngestController(Ingestor, Generic[IngestArgsType, ContentsHandl
     @trace.span
     def _parse_and_persist_contents(self,
                                     args: IngestArgsType,
-                                    contents_handle: ContentsHandleType):
+                                    contents_handle: ContentsHandleType) -> None:
         """
         Runs the full ingest process for this controller for files with
         non-empty contents.
@@ -317,7 +317,7 @@ class BaseDirectIngestController(Ingestor, Generic[IngestArgsType, ContentsHandl
         """
 
     @abc.abstractmethod
-    def _do_cleanup(self, args: IngestArgsType):
+    def _do_cleanup(self, args: IngestArgsType) -> None:
         """Should be overridden by subclasses to do any necessary cleanup in the
         ingested source once contents have been successfully persisted.
         """
@@ -326,7 +326,7 @@ class BaseDirectIngestController(Ingestor, Generic[IngestArgsType, ContentsHandl
     def _can_proceed_with_ingest_for_contents(
             self,
             args: IngestArgsType,
-            contents_handle: ContentsHandleType):
+            contents_handle: ContentsHandleType) -> bool:
         """ Given a pointer to the contents, can the controller continue with
         ingest.
         """

@@ -58,7 +58,7 @@ class GcsfsDirectIngestUtilsTest(TestCase):
 
     @patch('recidiviz.utils.metadata.project_id',
            Mock(return_value='recidiviz-123'))
-    def test_get_county_ingest_directory_path_for_region(self):
+    def test_get_county_ingest_directory_path_for_region(self) -> None:
         self.assertEqual(
             gcsfs_direct_ingest_directory_path_for_region(
                 'us_tx_brazos', SystemLevel.COUNTY),
@@ -66,13 +66,13 @@ class GcsfsDirectIngestUtilsTest(TestCase):
 
     @patch('recidiviz.utils.metadata.project_id',
            Mock(return_value='recidiviz-staging'))
-    def test_get_state_ingest_directory_path_for_region(self):
+    def test_get_state_ingest_directory_path_for_region(self) -> None:
         self.assertEqual(
             gcsfs_direct_ingest_directory_path_for_region(
                 'us_nd', SystemLevel.STATE),
             'recidiviz-staging-direct-ingest-state-us-nd')
 
-    def test_filename_parts_from_path_unspecified_file_type(self):
+    def test_filename_parts_from_path_unspecified_file_type(self) -> None:
         with self.assertRaises(DirectIngestError):
             filename_parts_from_path(
                 GcsfsFilePath.from_absolute_path(
@@ -257,7 +257,7 @@ class GcsfsDirectIngestUtilsTest(TestCase):
 
         self.assertEqual(parts.is_file_split, False)
 
-    def test_filename_parts_from_path_with_file_type(self):
+    def test_filename_parts_from_path_with_file_type(self) -> None:
         with self.assertRaises(DirectIngestError):
             filename_parts_from_path(
                 GcsfsFilePath.from_absolute_path(
@@ -460,7 +460,7 @@ class GcsfsDirectIngestUtilsTest(TestCase):
         self.assertEqual(parts.is_file_split, True)
         self.assertEqual(parts.file_split_size, 300)
 
-    def test_gcsfs_ingest_view_export_args(self):
+    def test_gcsfs_ingest_view_export_args(self) -> None:
         dt_lower = datetime.datetime(2019, 1, 22, 11, 22, 33, 444444)
         dt_upper = datetime.datetime(2019, 11, 22, 11, 22, 33, 444444)
 

@@ -77,7 +77,7 @@ class TestGcsfsDirectIngestJobPrioritizerNoFilter(unittest.TestCase):
         return GcsfsFilePath.from_absolute_path(normalized_path)
 
     def _process_jobs_for_paths_with_no_gaps_in_expected_order(
-            self, paths: List[GcsfsFilePath]):
+            self, paths: List[GcsfsFilePath]) -> None:
         for path in paths:
             date_str = filename_parts_from_path(path).date_str
             next_job_args = self.prioritizer.get_next_job_args()
@@ -96,13 +96,13 @@ class TestGcsfsDirectIngestJobPrioritizerNoFilter(unittest.TestCase):
 
             self.fs.mv_path_to_processed_path(path)
 
-    def test_empty_fs(self):
+    def test_empty_fs(self) -> None:
         self.assertTrue(
             self.prioritizer.are_more_jobs_expected_for_day(
                 self._DAY_1_TIME_1.date().isoformat()))
         self.assertIsNone(self.prioritizer.get_next_job_args())
 
-    def test_single_expected_file(self):
+    def test_single_expected_file(self) -> None:
         path = self._normalized_path_for_filename(
             'tagA.csv', GcsfsDirectIngestFileType.UNSPECIFIED, self._DAY_1_TIME_1)
 
@@ -117,7 +117,7 @@ class TestGcsfsDirectIngestJobPrioritizerNoFilter(unittest.TestCase):
             self.prioritizer.are_more_jobs_expected_for_day(
                 self._DAY_1.isoformat()))
 
-    def test_multiple_files(self):
+    def test_multiple_files(self) -> None:
 
         paths = [
             self._normalized_path_for_filename(
@@ -136,7 +136,7 @@ class TestGcsfsDirectIngestJobPrioritizerNoFilter(unittest.TestCase):
             self.prioritizer.are_more_jobs_expected_for_day(
                 self._DAY_1.isoformat()))
 
-    def test_unexpected_file(self):
+    def test_unexpected_file(self) -> None:
         # Only file is out of order
         path = self._normalized_path_for_filename(
             'tagB.csv', GcsfsDirectIngestFileType.UNSPECIFIED, self._DAY_1_TIME_1)
@@ -148,7 +148,8 @@ class TestGcsfsDirectIngestJobPrioritizerNoFilter(unittest.TestCase):
                 self._DAY_1.isoformat()))
 
         next_job_args = self.prioritizer.get_next_job_args()
-        self.assertIsNotNone(next_job_args)
+        if next_job_args is None:
+            self.fail('Next job args unexpectedly None')
         self.assertEqual(next_job_args.file_path, path)
         self.assertFalse(self.prioritizer.are_next_args_expected(next_job_args))
 
@@ -163,7 +164,7 @@ class TestGcsfsDirectIngestJobPrioritizerNoFilter(unittest.TestCase):
             self.prioritizer.are_more_jobs_expected_for_day(
                 self._DAY_1.isoformat()))
 
-    def test_files_on_multiple_days(self):
+    def test_files_on_multiple_days(self) -> None:
         paths = [
             self._normalized_path_for_filename(
                 'tagA.csv', GcsfsDirectIngestFileType.INGEST_VIEW, self._DAY_1_TIME_1),
@@ -185,7 +186,7 @@ class TestGcsfsDirectIngestJobPrioritizerNoFilter(unittest.TestCase):
             self.prioritizer.are_more_jobs_expected_for_day(
                 self._DAY_2.isoformat()))
 
-    def test_files_on_multiple_days_with_gap(self):
+    def test_files_on_multiple_days_with_gap(self) -> None:
         """Runs a test where there are files on multiple days and there is a gap
         in the expected files for the first day.
         """
@@ -201,7 +202,8 @@ class TestGcsfsDirectIngestJobPrioritizerNoFilter(unittest.TestCase):
         for i, path in enumerate(paths):
             date_str = filename_parts_from_path(path).date_str
             next_job_args = self.prioritizer.get_next_job_args()
-            self.assertIsNotNone(next_job_args)
+            if next_job_args is None:
+                self.fail('Next job args unexpectedly None')
             self.assertEqual(next_job_args.file_path, path)
 
             are_args_expected = \
@@ -226,7 +228,7 @@ class TestGcsfsDirectIngestJobPrioritizerNoFilter(unittest.TestCase):
             self.prioritizer.are_more_jobs_expected_for_day(
                 self._DAY_2.isoformat()))
 
-    def test_multiple_files_same_tag(self):
+    def test_multiple_files_same_tag(self) -> None:
         paths = [
             self._normalized_path_for_filename(
                 'tagA.csv', GcsfsDirectIngestFileType.UNSPECIFIED, self._DAY_1_TIME_1),
@@ -245,7 +247,7 @@ class TestGcsfsDirectIngestJobPrioritizerNoFilter(unittest.TestCase):
             self.prioritizer.are_more_jobs_expected_for_day(
                 self._DAY_1.isoformat()))
 
-    def test_multiple_files_times_out_of_order(self):
+    def test_multiple_files_times_out_of_order(self) -> None:
         """Runs a test where there are no gaps but the files have been added
         (i.e. have creation times) out of order.
         """
@@ -264,7 +266,8 @@ class TestGcsfsDirectIngestJobPrioritizerNoFilter(unittest.TestCase):
         for i, path in enumerate(paths):
             date_str = filename_parts_from_path(path).date_str
             next_job_args = self.prioritizer.get_next_job_args()
-            self.assertIsNotNone(next_job_args)
+            if next_job_args is None:
+                self.fail('Next job args unexpectedly None')
             self.assertEqual(next_job_args.file_path, path)
             self.assertTrue(
                 self.prioritizer.are_next_args_expected(next_job_args))
@@ -285,7 +288,7 @@ class TestGcsfsDirectIngestJobPrioritizerNoFilter(unittest.TestCase):
             self.prioritizer.are_more_jobs_expected_for_day(
                 self._DAY_1.isoformat()))
 
-    def test_run_multiple_copies_of_same_tag(self):
+    def test_run_multiple_copies_of_same_tag(self) -> None:
         paths = [
             self._normalized_path_for_filename(
                 'tagA.csv', GcsfsDirectIngestFileType.UNSPECIFIED, self._DAY_1_TIME_2),
@@ -348,7 +351,7 @@ class TestGcsfsDirectIngestJobPrioritizerIngestViewFilter(unittest.TestCase):
                 dt=dt)
         return GcsfsFilePath.from_absolute_path(normalized_path)
 
-    def _process_jobs_for_paths_with_no_gaps_in_expected_order(self, paths: List[GcsfsFilePath]):
+    def _process_jobs_for_paths_with_no_gaps_in_expected_order(self, paths: List[GcsfsFilePath]) -> None:
         for path in paths:
             date_str = filename_parts_from_path(path).date_str
             next_job_args = self.prioritizer.get_next_job_args()
@@ -367,13 +370,13 @@ class TestGcsfsDirectIngestJobPrioritizerIngestViewFilter(unittest.TestCase):
 
             self.fs.mv_path_to_processed_path(path)
 
-    def test_empty_fs(self):
+    def test_empty_fs(self) -> None:
         self.assertTrue(
             self.prioritizer.are_more_jobs_expected_for_day(
                 self._DAY_1_TIME_1.date().isoformat()))
         self.assertIsNone(self.prioritizer.get_next_job_args())
 
-    def test_single_expected_file(self):
+    def test_single_expected_file(self) -> None:
         path = self._normalized_path_for_filename(
             'tagA.csv', GcsfsDirectIngestFileType.INGEST_VIEW, self._DAY_1_TIME_1)
 
@@ -388,7 +391,7 @@ class TestGcsfsDirectIngestJobPrioritizerIngestViewFilter(unittest.TestCase):
             self.prioritizer.are_more_jobs_expected_for_day(
                 self._DAY_1.isoformat()))
 
-    def test_multiple_files(self):
+    def test_multiple_files(self) -> None:
 
         paths = [
             self._normalized_path_for_filename(
@@ -414,7 +417,7 @@ class TestGcsfsDirectIngestJobPrioritizerIngestViewFilter(unittest.TestCase):
             self.prioritizer.are_more_jobs_expected_for_day(
                 self._DAY_1.isoformat()))
 
-    def test_unexpected_file(self):
+    def test_unexpected_file(self) -> None:
         # Only file is out of order
         path = self._normalized_path_for_filename(
             'tagB.csv', GcsfsDirectIngestFileType.INGEST_VIEW, self._DAY_1_TIME_1)
@@ -426,7 +429,8 @@ class TestGcsfsDirectIngestJobPrioritizerIngestViewFilter(unittest.TestCase):
                 self._DAY_1.isoformat()))
 
         next_job_args = self.prioritizer.get_next_job_args()
-        self.assertIsNotNone(next_job_args)
+        if next_job_args is None:
+            self.fail('Next job args unexpectedly None')
         self.assertEqual(next_job_args.file_path, path)
         self.assertFalse(self.prioritizer.are_next_args_expected(next_job_args))
 
@@ -441,7 +445,7 @@ class TestGcsfsDirectIngestJobPrioritizerIngestViewFilter(unittest.TestCase):
             self.prioritizer.are_more_jobs_expected_for_day(
                 self._DAY_1.isoformat()))
 
-    def test_files_on_multiple_days(self):
+    def test_files_on_multiple_days(self) -> None:
         paths = [
             self._normalized_path_for_filename(
                 'tagA.csv', GcsfsDirectIngestFileType.INGEST_VIEW, self._DAY_1_TIME_1),
@@ -470,7 +474,7 @@ class TestGcsfsDirectIngestJobPrioritizerIngestViewFilter(unittest.TestCase):
             self.prioritizer.are_more_jobs_expected_for_day(
                 self._DAY_2.isoformat()))
 
-    def test_files_on_multiple_days_with_gap(self):
+    def test_files_on_multiple_days_with_gap(self) -> None:
         """Runs a test where there are files on multiple days and there is a gap
         in the expected files for the first day.
         """
@@ -486,7 +490,8 @@ class TestGcsfsDirectIngestJobPrioritizerIngestViewFilter(unittest.TestCase):
         for i, path in enumerate(paths):
             date_str = filename_parts_from_path(path).date_str
             next_job_args = self.prioritizer.get_next_job_args()
-            self.assertIsNotNone(next_job_args)
+            if next_job_args is None:
+                self.fail('Next job args unexpectedly None')
             self.assertEqual(next_job_args.file_path, path)
 
             are_args_expected = \
@@ -511,7 +516,7 @@ class TestGcsfsDirectIngestJobPrioritizerIngestViewFilter(unittest.TestCase):
             self.prioritizer.are_more_jobs_expected_for_day(
                 self._DAY_2.isoformat()))
 
-    def test_multiple_files_same_tag(self):
+    def test_multiple_files_same_tag(self) -> None:
         paths = [
             self._normalized_path_for_filename(
                 'tagA.csv', GcsfsDirectIngestFileType.INGEST_VIEW, self._DAY_1_TIME_1),
@@ -530,7 +535,7 @@ class TestGcsfsDirectIngestJobPrioritizerIngestViewFilter(unittest.TestCase):
             self.prioritizer.are_more_jobs_expected_for_day(
                 self._DAY_1.isoformat()))
 
-    def test_multiple_files_times_out_of_order(self):
+    def test_multiple_files_times_out_of_order(self) -> None:
         """Runs a test where there are no gaps but the files have been added
         (i.e. have creation times) out of order.
         """
@@ -549,7 +554,8 @@ class TestGcsfsDirectIngestJobPrioritizerIngestViewFilter(unittest.TestCase):
         for i, path in enumerate(paths):
             date_str = filename_parts_from_path(path).date_str
             next_job_args = self.prioritizer.get_next_job_args()
-            self.assertIsNotNone(next_job_args)
+            if next_job_args is None:
+                self.fail('Next job args unexpectedly None')
             self.assertEqual(next_job_args.file_path, path)
             self.assertTrue(
                 self.prioritizer.are_next_args_expected(next_job_args))
@@ -570,7 +576,7 @@ class TestGcsfsDirectIngestJobPrioritizerIngestViewFilter(unittest.TestCase):
             self.prioritizer.are_more_jobs_expected_for_day(
                 self._DAY_1.isoformat()))
 
-    def test_run_multiple_copies_of_same_tag(self):
+    def test_run_multiple_copies_of_same_tag(self) -> None:
         paths = [
             self._normalized_path_for_filename(
                 'tagA.csv', GcsfsDirectIngestFileType.INGEST_VIEW, self._DAY_1_TIME_2),

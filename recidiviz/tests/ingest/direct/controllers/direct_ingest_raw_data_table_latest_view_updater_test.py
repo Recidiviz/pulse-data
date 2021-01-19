@@ -54,7 +54,7 @@ class DirectIngestRawDataUpdateControllerTest(unittest.TestCase):
 
     @patch("recidiviz.ingest.direct.controllers.direct_ingest_raw_data_table_latest_view_updater"
            ".DirectIngestRegionRawFileConfig")
-    def test_update_tables_for_state(self, mock_region_config_fn) -> None:
+    def test_update_tables_for_state(self, mock_region_config_fn: mock.MagicMock) -> None:
         mock_region_config = FakeDirectIngestRegionRawFileConfig(self.test_region.region_code)
         mock_region_config_fn.return_value = mock_region_config
         self.mock_raw_file_configs = mock_region_config.raw_file_configs
@@ -92,7 +92,7 @@ class DirectIngestRawDataUpdateControllerTest(unittest.TestCase):
 
     @patch("recidiviz.ingest.direct.controllers.direct_ingest_raw_data_table_latest_view_updater"
            ".DirectIngestRegionRawFileConfig")
-    def test_failed_view_update(self, mock_region_config_fn) -> None:
+    def test_failed_view_update(self, mock_region_config_fn: mock.MagicMock) -> None:
         mock_region_config = FakeDirectIngestRegionRawFileConfig(self.test_region.region_code)
         mock_region_config_fn.return_value = mock_region_config
         self.mock_raw_file_configs = mock_region_config.raw_file_configs

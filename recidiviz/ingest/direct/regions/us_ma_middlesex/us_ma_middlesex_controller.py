@@ -45,7 +45,7 @@ from recidiviz.utils import secrets, environment
 _DATABASE_TYPE = 'postgresql'
 
 
-def _create_engine():
+def _create_engine() -> sqlalchemy.engine.Engine:
     db_user = secrets.get_secret('us_ma_middlesex_db_user')
     db_password = secrets.get_secret('us_ma_middlesex_db_password')
     db_name = secrets.get_secret('us_ma_middlesex_db_name')
@@ -116,9 +116,9 @@ class UsMaMiddlesexController(
     left in the cloud SQL database.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__('us_ma_middlesex',
-                                                      SystemLevel.COUNTY)
+                         SystemLevel.COUNTY)
         self.scheduled_ingest_times: Set[datetime.datetime] = set()
 
     # ============== #
@@ -141,7 +141,7 @@ class UsMaMiddlesexController(
 
         return IngestArgs(ingest_time=ingest_time)
 
-    def _on_job_scheduled(self, ingest_args: IngestArgs):
+    def _on_job_scheduled(self, ingest_args: IngestArgs) -> None:
         self.scheduled_ingest_times.add(ingest_args.ingest_time)
 
     # =================== #
@@ -153,7 +153,7 @@ class UsMaMiddlesexController(
         return UsMaMiddlesexContentsHandle(args)
 
     def _can_proceed_with_ingest_for_contents(
-            self, _args: IngestArgs, _contents_handle: UsMaMiddlesexContentsHandle):
+            self, _args: IngestArgs, _contents_handle: UsMaMiddlesexContentsHandle) -> bool:
         return True
 
     def _parse(self,
@@ -174,7 +174,7 @@ class UsMaMiddlesexController(
         """
         return not bool(peekable(contents_handle.get_contents_iterator()))
 
-    def _do_cleanup(self, args: IngestArgs):
+    def _do_cleanup(self, args: IngestArgs) -> None:
         """Removes all rows in all tables for a single export time."""
 
         export_time = args.ingest_time

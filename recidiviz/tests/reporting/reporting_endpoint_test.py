@@ -54,7 +54,7 @@ class ReportingEndpointTests(TestCase):
         self.project_id_patcher.stop()
         self.authentication_patcher.stop()
 
-    def test_start_new_batch_validation(self):
+    def test_start_new_batch_validation(self) -> None:
         with self.app.test_request_context():
             base_query_string = {
                 "state_code": self.state_code,
@@ -86,7 +86,7 @@ class ReportingEndpointTests(TestCase):
 
     @patch('recidiviz.reporting.email_reporting_utils.generate_batch_id')
     @patch('recidiviz.reporting.data_retrieval.start')
-    def test_integration_start_new_batch(self, mock_start: MagicMock, mock_generate: MagicMock):
+    def test_integration_start_new_batch(self, mock_start: MagicMock, mock_generate: MagicMock) -> None:
         with self.app.test_request_context():
             mock_generate.return_value = "test_batch_id"
             mock_start.return_value = [0, 1]
@@ -112,7 +112,7 @@ class ReportingEndpointTests(TestCase):
 
     @patch('recidiviz.reporting.email_reporting_utils.generate_batch_id')
     @patch('recidiviz.reporting.data_retrieval.start')
-    def test_integration_counts_messages(self, mock_start: MagicMock, mock_generate: MagicMock):
+    def test_integration_counts_messages(self, mock_start: MagicMock, mock_generate: MagicMock) -> None:
         with self.app.test_request_context():
             mock_generate.return_value = "test_batch_id"
             mock_start.return_value = [0, 1]

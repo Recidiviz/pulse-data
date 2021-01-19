@@ -28,10 +28,10 @@ class _TestException(ValueError):
 class SingleThreadTaskQueueTest(unittest.TestCase):
     """Tests for SingleThreadTaskQueue."""
 
-    def test_join_terminates_and_raises_on_exception(self):
+    def test_join_terminates_and_raises_on_exception(self) -> None:
         task_queue = SingleThreadTaskQueue(name='test_queue')
 
-        def raise_value_error():
+        def raise_value_error() -> None:
             raise _TestException('FOO BAR')
 
         task_queue.add_task('my_task', raise_value_error)
@@ -39,13 +39,13 @@ class SingleThreadTaskQueueTest(unittest.TestCase):
         with self.assertRaises(_TestException):
             task_queue.join()
 
-    def test_run_many_tasks(self):
+    def test_run_many_tasks(self) -> None:
         task_queue = SingleThreadTaskQueue(name='test_queue', max_tasks=1000)
 
         self.num_tasks = 0
         expected_num_tasks = 1000
 
-        def do_task():
+        def do_task() -> None:
             self.num_tasks += 1
 
         for _ in range(expected_num_tasks):
@@ -54,12 +54,12 @@ class SingleThreadTaskQueueTest(unittest.TestCase):
         task_queue.join()
         self.assertEqual(expected_num_tasks, self.num_tasks)
 
-    def test_add_tasks_during_tasks(self):
+    def test_add_tasks_during_tasks(self) -> None:
         task_queue = SingleThreadTaskQueue(name='test_queue')
 
         self.num_tasks = 0
 
-        def do_task():
+        def do_task() -> None:
             self.num_tasks += 1
             if self.num_tasks < 10:
                 task_queue.add_task('task', do_task)

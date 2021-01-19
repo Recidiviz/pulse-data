@@ -43,6 +43,7 @@ from recidiviz.ingest.direct.direct_ingest_region_utils import get_existing_regi
 from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.tests.utils.fake_region import fake_region
 from recidiviz.utils.metadata import local_project_id_override
+from recidiviz.utils.regions import Region
 
 CONTROL_PACKAGE_NAME = direct_ingest_control.__name__
 
@@ -69,7 +70,7 @@ class TestDirectIngestControl(unittest.TestCase):
 
     @patch("recidiviz.utils.environment.get_gae_environment")
     @patch("recidiviz.utils.regions.get_region")
-    def test_schedule(self, mock_region, mock_environment):
+    def test_schedule(self, mock_region: mock.MagicMock, mock_environment: mock.MagicMock) -> None:
         """Tests that the start operation chains together the correct calls."""
 
         mock_controller = create_autospec(GcsfsDirectIngestController)
@@ -91,7 +92,7 @@ class TestDirectIngestControl(unittest.TestCase):
     @patch("recidiviz.utils.environment.get_gae_environment")
     @patch("recidiviz.utils.regions.get_region")
     def test_schedule_diff_environment_in_production(
-            self, mock_region, mock_environment):
+            self, mock_region: mock.MagicMock, mock_environment: mock.MagicMock) -> None:
         """Tests that the start operation chains together the correct calls."""
         mock_environment.return_value = 'production'
         mock_controller = create_autospec(GcsfsDirectIngestController)
@@ -119,7 +120,7 @@ class TestDirectIngestControl(unittest.TestCase):
     @patch("recidiviz.utils.environment.get_gae_environment")
     @patch("recidiviz.utils.regions.get_region")
     def test_start_diff_environment_in_staging(
-            self, mock_region, mock_environment):
+            self, mock_region: mock.MagicMock, mock_environment: mock.MagicMock) -> None:
         """Tests that the start operation chains together the correct calls."""
         mock_environment.return_value = 'staging'
         mock_controller = create_autospec(GcsfsDirectIngestController)
@@ -138,7 +139,7 @@ class TestDirectIngestControl(unittest.TestCase):
         mock_controller.schedule_next_ingest_job_or_wait_if_necessary.assert_called_with(just_finished_job=True)
 
     @patch(f"{CONTROL_PACKAGE_NAME}.get_supported_direct_ingest_region_codes")
-    def test_schedule_unsupported_region(self, mock_supported):
+    def test_schedule_unsupported_region(self, mock_supported: mock.MagicMock) -> None:
         mock_supported.return_value = ['us_ny', 'us_pa']
 
         request_args = {'region': 'us_ca', 'just_finished_job': 'False'}
@@ -154,7 +155,10 @@ class TestDirectIngestControl(unittest.TestCase):
     @patch("recidiviz.utils.regions.get_region")
     @patch(f"{CONTROL_PACKAGE_NAME}.get_supported_direct_ingest_region_codes")
     def test_schedule_unlaunched_region(
-            self, mock_supported, mock_region, mock_environment):
+            self,
+            mock_supported: mock.MagicMock,
+            mock_region: mock.MagicMock,
+            mock_environment: mock.MagicMock) -> None:
         mock_supported.return_value = ['us_nd', 'us_pa']
 
         region_code = 'us_nd'
@@ -181,7 +185,10 @@ class TestDirectIngestControl(unittest.TestCase):
     @patch("recidiviz.utils.regions.get_region")
     @patch(f"{CONTROL_PACKAGE_NAME}.get_supported_direct_ingest_region_codes")
     def test_process_job(
-            self, mock_supported, mock_region, mock_environment):
+            self,
+            mock_supported: mock.MagicMock,
+            mock_region: mock.MagicMock,
+            mock_environment: mock.MagicMock) -> None:
         mock_supported.return_value = ['us_nd', 'us_pa']
 
         region_code = 'us_nd'
@@ -216,7 +223,10 @@ class TestDirectIngestControl(unittest.TestCase):
     @patch("recidiviz.utils.regions.get_region")
     @patch(f"{CONTROL_PACKAGE_NAME}.get_supported_direct_ingest_region_codes")
     def test_process_job_unlaunched_region(
-            self, mock_supported, mock_region, mock_environment):
+            self,
+            mock_supported: mock.MagicMock,
+            mock_region: mock.MagicMock,
+            mock_environment: mock.MagicMock) -> None:
         mock_supported.return_value = ['us_ca', 'us_pa']
 
         region_code = 'us_ca'
@@ -250,7 +260,7 @@ class TestDirectIngestControl(unittest.TestCase):
     @patch("recidiviz.utils.environment.get_gae_environment")
     @patch("recidiviz.utils.regions.get_region")
     def test_handle_file_no_start_ingest(
-            self, mock_region, mock_environment):
+            self, mock_region: mock.MagicMock, mock_environment: mock.MagicMock) -> None:
         region_code = 'us_nd'
 
         mock_environment.return_value = 'production'
@@ -281,7 +291,7 @@ class TestDirectIngestControl(unittest.TestCase):
     @patch("recidiviz.utils.environment.get_gae_environment")
     @patch("recidiviz.utils.regions.get_region")
     def test_handle_file_start_ingest(
-            self, mock_region, mock_environment):
+            self, mock_region: mock.MagicMock, mock_environment: mock.MagicMock) -> None:
         region_code = 'us_nd'
 
         mock_environment.return_value = 'production'
@@ -311,7 +321,7 @@ class TestDirectIngestControl(unittest.TestCase):
     @patch("recidiviz.utils.environment.get_gae_environment")
     @patch("recidiviz.utils.regions.get_region")
     def test_handle_file_start_ingest_unsupported_region(
-            self, mock_region, mock_environment):
+            self, mock_region: mock.MagicMock, mock_environment: mock.MagicMock) -> None:
         region_code = 'us_nd'
 
         mock_environment.return_value = 'production'
@@ -347,7 +357,7 @@ class TestDirectIngestControl(unittest.TestCase):
     @patch("recidiviz.utils.environment.get_gae_environment")
     @patch("recidiviz.utils.regions.get_region")
     def test_handle_files_start_ingest(
-            self, mock_region, mock_environment):
+            self, mock_region: mock.MagicMock, mock_environment: mock.MagicMock) -> None:
         region_code = 'us_nd'
 
         mock_environment.return_value = 'production'
@@ -371,7 +381,7 @@ class TestDirectIngestControl(unittest.TestCase):
     @patch("recidiviz.utils.environment.get_gae_environment")
     @patch("recidiviz.utils.regions.get_region")
     def test_handle_files_no_start_ingest(
-            self, mock_region, mock_environment):
+            self, mock_region: mock.MagicMock, mock_environment: mock.MagicMock) -> None:
         region_code = 'us_nd'
 
         mock_environment.return_value = 'staging'
@@ -395,7 +405,7 @@ class TestDirectIngestControl(unittest.TestCase):
     @patch("recidiviz.utils.environment.get_gae_environment")
     @patch("recidiviz.ingest.direct.direct_ingest_control.GcsfsFactory.build")
     def test_normalize_file_path(
-            self, mock_fs_factory, mock_environment):
+            self, mock_fs_factory: mock.MagicMock, mock_environment: mock.MagicMock) -> None:
 
         mock_environment.return_value = 'production'
         mock_fs = FakeGCSFileSystem()
@@ -419,13 +429,16 @@ class TestDirectIngestControl(unittest.TestCase):
         self.assertEqual(200, response.status_code)
 
         self.assertEqual(1, len(mock_fs.all_paths))
-        self.assertTrue(DirectIngestGCSFileSystem.is_normalized_file_path(mock_fs.all_paths[0]))
+        registered_path = mock_fs.all_paths[0]
+        if not isinstance(registered_path, GcsfsFilePath):
+            self.fail(f'Unexpected type for path [{type(registered_path)}]')
+        self.assertTrue(DirectIngestGCSFileSystem.is_normalized_file_path(registered_path))
 
 
     @patch("recidiviz.utils.environment.get_gae_environment")
     @patch("recidiviz.utils.regions.get_region")
     def test_handle_new_files_no_start_ingest_in_production(
-            self, mock_region, mock_environment):
+            self, mock_region: mock.MagicMock, mock_environment: mock.MagicMock) -> None:
         """Tests that handle_new_files will run and rename files in unlaunched locations, but will not schedule a job to
         process any files."""
         region_code = 'us_nd'
@@ -452,9 +465,9 @@ class TestDirectIngestControl(unittest.TestCase):
     @patch("recidiviz.utils.regions.get_region")
     def test_ensure_all_file_paths_normalized(
             self,
-            mock_get_region,
-            mock_environment,
-            mock_supported_region_codes):
+            mock_get_region: mock.MagicMock,
+            mock_environment: mock.MagicMock,
+            mock_supported_region_codes: mock.MagicMock) -> None:
 
         fake_supported_regions = {
             'us_mo':
@@ -473,7 +486,7 @@ class TestDirectIngestControl(unittest.TestCase):
             region.get_ingestor().cloud_task_manager.return_value = \
                 mock_cloud_task_manager
 
-        def fake_get_region(region_code: str, is_direct_ingest: bool):
+        def fake_get_region(region_code: str, is_direct_ingest: bool) -> Region:
             if not is_direct_ingest:
                 self.fail("is_direct_ingest is False")
 
@@ -496,8 +509,8 @@ class TestDirectIngestControl(unittest.TestCase):
     @patch('recidiviz.ingest.direct.controllers.base_direct_ingest_controller.DirectIngestCloudTaskManagerImpl')
     def test_ensure_all_file_paths_normalized_actual_regions(
             self,
-            mock_cloud_task_manager,
-            mock_environment):
+            mock_cloud_task_manager: mock.MagicMock,
+            mock_environment: mock.MagicMock) -> None:
         with local_project_id_override('recidiviz-staging'):
             mock_environment.return_value = 'staging'
             mock_cloud_task_manager.return_value = create_autospec(DirectIngestCloudTaskManager)
@@ -514,7 +527,10 @@ class TestDirectIngestControl(unittest.TestCase):
     @patch(f"{CONTROL_PACKAGE_NAME}.get_supported_direct_ingest_region_codes")
     @patch('recidiviz.ingest.direct.direct_ingest_control.DirectIngestRawDataTableLatestViewUpdater')
     def test_update_raw_data_latest_views_for_state(
-            self, mock_updater_fn, mock_supported, mock_region, mock_environment):
+            self, mock_updater_fn: mock.MagicMock,
+            mock_supported: mock.MagicMock,
+            mock_region: mock.MagicMock,
+            mock_environment: mock.MagicMock) -> None:
         with local_project_id_override('recidiviz-staging'):
             mock_supported.return_value = ['us_xx']
             mock_updater = create_autospec(DirectIngestRawDataTableLatestViewUpdater)
@@ -543,8 +559,8 @@ class TestDirectIngestControl(unittest.TestCase):
     @patch(f"{CONTROL_PACKAGE_NAME}.DirectIngestRawUpdateCloudTaskManager")
     def test_create_raw_data_latest_view_update_tasks(
             self,
-            mock_cloud_task_manager_fn,
-            mock_environment):
+            mock_cloud_task_manager_fn: mock.MagicMock,
+            mock_environment: mock.MagicMock) -> None:
         with local_project_id_override('recidiviz-staging'):
             mock_environment.return_value = 'staging'
 
@@ -568,7 +584,10 @@ class TestDirectIngestControl(unittest.TestCase):
     @patch("recidiviz.utils.regions.get_region")
     @patch(f"{CONTROL_PACKAGE_NAME}.get_supported_direct_ingest_region_codes")
     def test_raw_data_import(
-            self, mock_supported, mock_region, mock_environment):
+            self,
+            mock_supported: mock.MagicMock,
+            mock_region: mock.MagicMock,
+            mock_environment: mock.MagicMock) -> None:
         mock_supported.return_value = ['us_xx']
 
         region_code = 'us_xx'
@@ -606,7 +625,10 @@ class TestDirectIngestControl(unittest.TestCase):
     @patch("recidiviz.utils.regions.get_region")
     @patch(f"{CONTROL_PACKAGE_NAME}.get_supported_direct_ingest_region_codes")
     def test_ingest_view_export(
-            self, mock_supported, mock_region, mock_environment):
+            self,
+            mock_supported: mock.MagicMock,
+            mock_region: mock.MagicMock,
+            mock_environment: mock.MagicMock) -> None:
         mock_supported.return_value = ['us_xx']
 
         region_code = 'us_xx'

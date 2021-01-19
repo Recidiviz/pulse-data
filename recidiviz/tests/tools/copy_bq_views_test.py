@@ -28,7 +28,7 @@ from recidiviz.tools.copy_bq_views import copy_bq_views
 class CopyBQViewsTest(unittest.TestCase):
     """Tests for the copy_bq_views script."""
 
-    def setUp(self):
+    def setUp(self) -> None:
         self.mock_source_project_id = 'fake-recidiviz-project'
         self.mock_source_dataset_id = 'fake-dataset'
         self.mock_source_dataset = bigquery.dataset.DatasetReference(
@@ -50,7 +50,7 @@ class CopyBQViewsTest(unittest.TestCase):
             should_materialize=True
         )
 
-    def tearDown(self):
+    def tearDown(self) -> None:
         self.client_patcher.stop()
 
     # pylint: disable=unused-argument
@@ -59,7 +59,7 @@ class CopyBQViewsTest(unittest.TestCase):
 
     @mock.patch('recidiviz.big_query.big_query_client.BigQueryClientImpl.copy_view')
     @mock.patch('recidiviz.big_query.big_query_client.BigQueryClientImpl.table_exists')
-    def test_copy_bq_views(self, mock_table_exists, mock_copy_view):
+    def test_copy_bq_views(self, mock_table_exists: mock.MagicMock, mock_copy_view: mock.MagicMock) -> None:
         """Check that copy_view is called when the view does not exist in the destination dataset."""
         self.mock_client.list_tables.return_value = [self.mock_view]
         self.mock_client.get_table.return_value = self.mock_view
@@ -92,7 +92,8 @@ class CopyBQViewsTest(unittest.TestCase):
 
     @mock.patch('recidiviz.big_query.big_query_client.BigQueryClientImpl.copy_view')
     @mock.patch('recidiviz.big_query.big_query_client.BigQueryClientImpl.table_exists')
-    def test_copy_bq_views_already_exists(self, mock_table_exists, mock_copy_view):
+    def test_copy_bq_views_already_exists(
+            self, mock_table_exists: mock.MagicMock, mock_copy_view: mock.MagicMock) -> None:
         """Check that copy_view is not called when the view already exists in the destination dataset."""
         self.mock_client.list_tables.return_value = [self.mock_view]
         self.mock_client.get_table.return_value = self.mock_view
@@ -107,7 +108,7 @@ class CopyBQViewsTest(unittest.TestCase):
 
     @mock.patch('recidiviz.big_query.big_query_client.BigQueryClientImpl.copy_view')
     @mock.patch('recidiviz.big_query.big_query_client.BigQueryClientImpl.table_exists')
-    def test_copy_bq_views_not_table(self, mock_table_exists, mock_copy_view):
+    def test_copy_bq_views_not_table(self, mock_table_exists: mock.MagicMock, mock_copy_view: mock.MagicMock) -> None:
         """Check that copy_view is not called on a table that does not have a view_query."""
         table_ref = bigquery.TableReference(self.mock_source_dataset, 'table_not_view')
         schema_fields = [bigquery.SchemaField('fake_schema_field', 'STRING')]
@@ -125,7 +126,8 @@ class CopyBQViewsTest(unittest.TestCase):
 
     @mock.patch('recidiviz.big_query.big_query_client.BigQueryClientImpl.copy_view')
     @mock.patch('recidiviz.big_query.big_query_client.BigQueryClientImpl.table_exists')
-    def test_copy_bq_views_raw_project_id(self, mock_table_exists, mock_copy_view):
+    def test_copy_bq_views_raw_project_id(
+            self, mock_table_exists: mock.MagicMock, mock_copy_view: mock.MagicMock) -> None:
         """Check that copy_view is called, even when the project_id is in the view_query_template."""
         view_with_project_id = BigQueryView(
             project_id=self.mock_source_project_id,

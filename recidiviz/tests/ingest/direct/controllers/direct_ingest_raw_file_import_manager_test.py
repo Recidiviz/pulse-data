@@ -16,7 +16,7 @@
 # =============================================================================
 """Tests for DirectIngestRawFileImportManager."""
 import unittest
-from typing import List
+from typing import List, Any
 from unittest import mock
 
 import pandas as pd
@@ -43,7 +43,7 @@ from recidiviz.tests.utils.fake_region import fake_region
 class DirectIngestRegionRawFileConfigTest(unittest.TestCase):
     """Tests for DirectIngestRegionRawFileConfig."""
 
-    def test_legacy_parse_yaml(self):
+    def test_legacy_parse_yaml(self) -> None:
         region_config = DirectIngestRegionRawFileConfig(
             region_code='us_xx',
             legacy_yaml_config_file_path=fixtures.as_filepath('us_xx_raw_data_files.yaml'),
@@ -79,14 +79,14 @@ class DirectIngestRegionRawFileConfigTest(unittest.TestCase):
         self.assertEqual('ISO-8859-1', config_4.encoding)
         self.assertEqual('|', config_4.separator)
 
-    def test_parse_empty_yaml_throws(self):
+    def test_parse_empty_yaml_throws(self) -> None:
         with self.assertRaises(ValueError):
             _ = DirectIngestRegionRawFileConfig(
                 region_code='us_xx',
                 legacy_yaml_config_file_path=fixtures.as_filepath('empty_raw_data_files.yaml'),
             )
 
-    def test_parse_yaml(self):
+    def test_parse_yaml(self) -> None:
         region_config = DirectIngestRegionRawFileConfig(
             region_code='us_yy',
             yaml_config_file_dir=fixtures.as_filepath('us_yy'),
@@ -113,7 +113,7 @@ class DirectIngestRegionRawFileConfigTest(unittest.TestCase):
         self.assertEqual('UTF-8', config_3.encoding)
         self.assertEqual(',', config_3.separator)
 
-    def test_missing_configs_for_region(self):
+    def test_missing_configs_for_region(self) -> None:
         with self.assertRaises(ValueError) as e:
             region_config = DirectIngestRegionRawFileConfig(
                 region_code='us_xy',
@@ -173,7 +173,7 @@ class DirectIngestRawFileImportManagerTest(unittest.TestCase):
                                           *,
                                           source_uri: str,
                                           destination_table_schema: List[bigquery.SchemaField],
-                                          **_kwargs):
+                                          **_kwargs: Any) -> mock.MagicMock:
         col_names = [schema_field.name for schema_field in destination_table_schema]
         temp_path = GcsfsFilePath.from_absolute_path(source_uri)
         local_temp_path = self.fs.gcs_file_system.real_absolute_path_for_path(temp_path)
@@ -201,12 +201,12 @@ class DirectIngestRawFileImportManagerTest(unittest.TestCase):
             processed_time=None
         )
 
-    def _check_no_temp_files_remain(self):
+    def _check_no_temp_files_remain(self) -> None:
         for path in self.fs.gcs_file_system.all_paths:
             if path.abs_path().startswith(self.temp_output_path.abs_path()):
                 self.fail(f'Expected temp path {path.abs_path()} to be cleaned up')
 
-    def test_get_unprocessed_raw_files_to_import(self):
+    def test_get_unprocessed_raw_files_to_import(self) -> None:
         self.assertEqual([], self.import_manager.get_unprocessed_raw_files_to_import())
 
         raw_unprocessed = path_for_fixture_file_in_test_gcs_directory(
@@ -226,7 +226,7 @@ class DirectIngestRawFileImportManagerTest(unittest.TestCase):
 
         self.assertEqual([raw_unprocessed], self.import_manager.get_unprocessed_raw_files_to_import())
 
-    def test_import_bq_file_not_in_tags(self):
+    def test_import_bq_file_not_in_tags(self) -> None:
         file_path = path_for_fixture_file_in_test_gcs_directory(
             directory=self.ingest_directory_path,
             filename='this_path_tag_not_in_yaml.csv',
@@ -236,7 +236,7 @@ class DirectIngestRawFileImportManagerTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.import_manager.import_raw_file_to_big_query(file_path, create_autospec(DirectIngestFileMetadata))
 
-    def test_import_bq_file_with_ingest_view_file(self):
+    def test_import_bq_file_with_ingest_view_file(self) -> None:
         file_path = path_for_fixture_file_in_test_gcs_directory(
             directory=self.ingest_directory_path,
             filename='file_tag_first.csv',
@@ -246,7 +246,7 @@ class DirectIngestRawFileImportManagerTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.import_manager.import_raw_file_to_big_query(file_path, create_autospec(DirectIngestFileMetadata))
 
-    def test_import_bq_file_with_unspecified_type_file(self):
+    def test_import_bq_file_with_unspecified_type_file(self) -> None:
         file_path = path_for_fixture_file_in_test_gcs_directory(
             directory=self.ingest_directory_path,
             filename='file_tag_first.csv',
@@ -256,7 +256,7 @@ class DirectIngestRawFileImportManagerTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.import_manager.import_raw_file_to_big_query(file_path, create_autospec(DirectIngestFileMetadata))
 
-    def test_import_bq_file_feature_not_released_throws(self):
+    def test_import_bq_file_feature_not_released_throws(self) -> None:
         self.import_manager = DirectIngestRawFileImportManager(
             region=fake_region(region_code='us_xx',
                                are_raw_data_bq_imports_enabled_in_env=False),
@@ -276,7 +276,7 @@ class DirectIngestRawFileImportManagerTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.import_manager.import_raw_file_to_big_query(file_path, create_autospec(DirectIngestFileMetadata))
 
-    def test_import_bq_file_with_raw_file(self):
+    def test_import_bq_file_with_raw_file(self) -> None:
         file_path = path_for_fixture_file_in_test_gcs_directory(
             directory=self.ingest_directory_path,
             filename='tagC.csv',
@@ -303,7 +303,7 @@ class DirectIngestRawFileImportManagerTest(unittest.TestCase):
         self.assertEqual(2, self.num_lines_uploaded)
         self._check_no_temp_files_remain()
 
-    def test_import_bq_file_with_raw_file_alternate_separator_and_encoding(self):
+    def test_import_bq_file_with_raw_file_alternate_separator_and_encoding(self) -> None:
         file_path = path_for_fixture_file_in_test_gcs_directory(
             directory=self.ingest_directory_path,
             filename='tagPipeSeparatedNonUTF8.txt',
@@ -331,7 +331,7 @@ class DirectIngestRawFileImportManagerTest(unittest.TestCase):
         self.assertEqual(5, self.num_lines_uploaded)
         self._check_no_temp_files_remain()
 
-    def test_import_bq_file_multiple_chunks_even_division(self):
+    def test_import_bq_file_multiple_chunks_even_division(self) -> None:
 
         self.import_manager.upload_chunk_size = 1
 
@@ -368,7 +368,7 @@ class DirectIngestRawFileImportManagerTest(unittest.TestCase):
         self.assertEqual(5, self.num_lines_uploaded)
         self._check_no_temp_files_remain()
 
-    def test_import_bq_file_multiple_chunks_uneven_division(self):
+    def test_import_bq_file_multiple_chunks_uneven_division(self) -> None:
 
         self.import_manager.upload_chunk_size = 2
 
@@ -405,7 +405,7 @@ class DirectIngestRawFileImportManagerTest(unittest.TestCase):
         self.assertEqual(5, self.num_lines_uploaded)
         self._check_no_temp_files_remain()
 
-    def test_import_bq_file_with_raw_file_invalid_column_chars(self):
+    def test_import_bq_file_with_raw_file_invalid_column_chars(self) -> None:
         file_path = path_for_fixture_file_in_test_gcs_directory(
             directory=self.ingest_directory_path,
             filename='tagInvalidCharacters.csv',
@@ -433,7 +433,7 @@ class DirectIngestRawFileImportManagerTest(unittest.TestCase):
         self.assertEqual(1, self.num_lines_uploaded)
         self._check_no_temp_files_remain()
 
-    def test_import_bq_file_with_raw_file_normalization_conflict(self):
+    def test_import_bq_file_with_raw_file_normalization_conflict(self) -> None:
         with self.assertRaises(ValueError) as e:
             file_path = path_for_fixture_file_in_test_gcs_directory(
                 directory=self.ingest_directory_path,

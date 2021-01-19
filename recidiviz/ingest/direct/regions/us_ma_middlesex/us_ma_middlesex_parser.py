@@ -38,7 +38,7 @@ class UsMaMiddlesexParser:
     """Parses exported data to IngestInfos after it has been read into
     dataframes."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         region_name = 'us_ma_middlesex'
         self.yaml_file = os.path.join(os.path.dirname(__file__),
                                       region_name + '.yaml')
@@ -117,7 +117,7 @@ class UsMaMiddlesexParser:
 
             people[person.person_id].append(person)
 
-        def merge_bookings(dupes):
+        def merge_bookings(dupes: List[Person]) -> Person:
             base = dupes.pop()
             for p in dupes:
                 base.bookings.extend(p.bookings)
@@ -201,7 +201,7 @@ class UsMaMiddlesexParser:
                                          for charge in person_dict['charge']
                                          if charge['charge_pk'] == charge_id)
 
-        def clean(s):
+        def clean(s: Optional[str]) -> Optional[str]:
             if s and not s.isspace() and s not in {'OT', 'Other',
                                                    'GUILTY/FILED'}:
                 return s
