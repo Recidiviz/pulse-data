@@ -1,0 +1,6 @@
+# Sentence. Column prefix: BS.
+file_tag: LBAKRDTA_TAK022
+primary_key_cols:
+  - BS_DOC
+  - BS_CYC
+  - BS_SEO

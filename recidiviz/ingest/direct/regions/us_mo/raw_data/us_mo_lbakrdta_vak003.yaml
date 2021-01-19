@@ -1,0 +1,4 @@
+# DOB View.
+file_tag: LBAKRDTA_VAK003
+primary_key_cols:
+  - DOC_ID_DOB

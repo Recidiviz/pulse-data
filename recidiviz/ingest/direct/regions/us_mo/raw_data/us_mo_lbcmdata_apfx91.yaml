@@ -1,0 +1,7 @@
+# Officer information.
+file_tag: LBCMDATA_APFX91
+primary_key_cols:
+  - BDGNO
+  - EMPSSN
+  - STRDTE
+  - DEPCLS
