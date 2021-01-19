@@ -28,6 +28,7 @@ from recidiviz.calculator.query.state.views.dashboard.dashboard_views import LAN
 from recidiviz.calculator.query.state.views.po_report.po_monthly_report_data import PO_MONTHLY_REPORT_DATA_VIEW_BUILDER
 from recidiviz.calculator.query.state.views.public_dashboard.public_dashboard_views import \
     PUBLIC_DASHBOARD_VIEW_BUILDERS
+from recidiviz.case_triage.views.view_config import CASE_TRIAGE_EXPORTED_VIEW_BUILDERS
 from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath
 from recidiviz.ingest.views.view_config import INGEST_METADATA_BUILDERS
 
@@ -100,6 +101,7 @@ class ExportViewCollectionConfig:
 
 
 # The format for the destination of the files in the export
+CASE_TRIAGE_VIEWS_OUTPUT_DIRECTORY_URI = "gs://{project_id}-case-triage-data"
 COVID_DASHBOARD_OUTPUT_DIRECTORY_URI = "gs://{project_id}-covid-dashboard-data"
 DASHBOARD_VIEWS_OUTPUT_DIRECTORY_URI = "gs://{project_id}-dashboard-data"
 PO_REPORT_OUTPUT_DIRECTORY_URI = "gs://{project_id}-report-data/po_monthly_report"
@@ -131,6 +133,15 @@ VIEW_COLLECTION_EXPORT_CONFIGS: List[ExportViewCollectionConfig] = [
         state_code_filter=None,
         export_name='COVID_DASHBOARD',
         bq_view_namespace=BigQueryViewNamespace.STATE,
+    ),
+    # Case Triage views for US_ID
+    ExportViewCollectionConfig(
+        view_builders_to_export=CASE_TRIAGE_EXPORTED_VIEW_BUILDERS,
+        output_directory_uri_template=CASE_TRIAGE_VIEWS_OUTPUT_DIRECTORY_URI,
+        state_code_filter='US_ID',
+        export_name='CASE_TRIAGE',
+        bq_view_namespace=BigQueryViewNamespace.CASE_TRIAGE,
+        export_output_formats=[ExportOutputFormatType.HEADERLESS_CSV],
     ),
     # Ingest metadata views for admin panel
     ExportViewCollectionConfig(
