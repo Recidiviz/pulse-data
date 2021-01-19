@@ -1,0 +1,4 @@
+file_tag: ofndr_cls_sctn
+primary_key_cols:
+  - cls_enroll_id
+  - cls_sctn_id

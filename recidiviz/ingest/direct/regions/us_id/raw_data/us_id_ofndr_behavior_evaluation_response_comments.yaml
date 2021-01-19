@@ -1,0 +1,3 @@
+file_tag: ofndr_behavior_evaluation_response_comments
+primary_key_cols:
+  - ofndr_behavior_evaluation_response_comment_id

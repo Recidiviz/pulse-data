@@ -1,0 +1,4 @@
+file_tag: lvgunit
+primary_key_cols:
+  - fac_cd
+  - lu_cd

@@ -1,0 +1,4 @@
+file_tag: behavior_evaluation_action_dates
+primary_key_cols:
+  - ofndr_behavior_evaluation_id
+  - behavior_evaluation_action_id

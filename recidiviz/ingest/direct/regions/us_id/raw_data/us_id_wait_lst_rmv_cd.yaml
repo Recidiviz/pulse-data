@@ -1,0 +1,3 @@
+file_tag: wait_lst_rmv_cd
+primary_key_cols:
+  - wait_lst_rmv_cd

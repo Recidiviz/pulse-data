@@ -1,0 +1,4 @@
+file_tag: cls_perf_rate
+primary_key_cols:
+  - cls_enroll_id
+  - cls_rate_dt

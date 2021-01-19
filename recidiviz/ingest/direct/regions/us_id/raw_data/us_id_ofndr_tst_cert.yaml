@@ -1,0 +1,6 @@
+file_tag: ofndr_tst_cert
+primary_key_cols:
+  - ofndr_tst_id
+datetime_cols:
+  - cert_dt
+  - updt_dt

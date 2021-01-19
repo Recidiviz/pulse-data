@@ -1,0 +1,17 @@
+file_tag: early_discharge
+primary_key_cols:
+  - early_discharge_id
+datetime_cols:
+  - created_by_dt
+  - decision_date
+  - decision_official_dt
+  - decision_updt_date
+  - fine_last_pymnt_dt
+  - juris_auth_sbmt_dt
+  - jurisdiction_authize_date
+  - ncic_chk_date
+  - restitution_last_pymnt_dt
+  - submit_updt_date
+  - subst_tst_start_dt
+  - sup_aprv_sbmt_dt
+  - supervisor_review_date

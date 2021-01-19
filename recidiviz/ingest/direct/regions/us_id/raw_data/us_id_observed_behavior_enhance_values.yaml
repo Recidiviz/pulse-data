@@ -1,0 +1,4 @@
+file_tag: observed_behavior_enhance_values
+primary_key_cols:
+  - observed_behavior_enhance_typ
+  - observed_behavior_cd

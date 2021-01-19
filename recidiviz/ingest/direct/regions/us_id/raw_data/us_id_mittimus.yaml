@@ -1,0 +1,7 @@
+file_tag: mittimus
+primary_key_cols:
+  - mitt_srl
+datetime_cols:
+  - sent_eff_dtd
+  - sentence_dtd
+  - sent_exp_dtd

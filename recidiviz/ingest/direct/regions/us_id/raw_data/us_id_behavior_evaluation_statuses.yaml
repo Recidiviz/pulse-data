@@ -1,0 +1,3 @@
+file_tag: behavior_evaluation_statuses
+primary_key_cols:
+  - behavior_evaluation_status_id

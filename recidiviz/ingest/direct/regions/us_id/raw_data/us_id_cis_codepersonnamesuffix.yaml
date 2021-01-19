@@ -1,0 +1,4 @@
+file_tag: cis_codepersonnamesuffix
+primary_key_cols:
+  - id
+separator: ','

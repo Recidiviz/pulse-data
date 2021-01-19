@@ -1,0 +1,4 @@
+file_tag: prgrm_cls
+primary_key_cols:
+  - Prgm_cls_id
+  - Prgrm_id
