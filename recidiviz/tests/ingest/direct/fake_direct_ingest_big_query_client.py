@@ -109,11 +109,13 @@ class FakeDirectIngestBigQueryClient(BigQueryClient):
             self,
             source_table_dataset_ref: bigquery.dataset.DatasetReference,
             source_table_id: str, destination_uri: str,
-            destination_format: bigquery.DestinationFormat) -> Optional[bigquery.ExtractJob]:
+            destination_format: bigquery.DestinationFormat,
+            print_header: bool) -> Optional[bigquery.ExtractJob]:
         raise ValueError('Must be implemented for use in tests.')
 
     def export_query_results_to_cloud_storage(self,
-                                              export_configs: List[ExportQueryConfig]) -> None:
+                                              export_configs: List[ExportQueryConfig],
+                                              print_header: bool) -> None:
         for export_config in export_configs:
             export_path = GcsfsFilePath.from_absolute_path(export_config.output_uri)
             fixture_util.add_direct_ingest_path(self.fs, export_path)

@@ -33,6 +33,7 @@ STAGING_DIRECTORY = 'staging/'
 
 class ExportOutputFormatType(Enum):
     METRIC = 'metric'
+    HEADERLESS_CSV = 'headerless_csv'
     CSV = 'csv'
     JSON = 'json'
 

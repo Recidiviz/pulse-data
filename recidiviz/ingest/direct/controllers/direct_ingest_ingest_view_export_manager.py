@@ -332,7 +332,7 @@ class DirectIngestIngestViewExportManager:
         ]
 
         logging.info('Starting export to cloud storage.')
-        self.big_query_client.export_query_results_to_cloud_storage(export_configs=export_configs)
+        self.big_query_client.export_query_results_to_cloud_storage(export_configs=export_configs, print_header=True)
         logging.info('Export to cloud storage complete.')
 
         logging.info('Deleting intermediate tables.')
