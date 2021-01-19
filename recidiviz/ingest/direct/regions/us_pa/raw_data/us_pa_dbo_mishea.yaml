@@ -1,0 +1,6 @@
+file_tag: dbo_Mishea
+# Best initial (unconfirmed) guess at primary keys for this table:
+#      - Inmate_Cnt_Num
+#      - Miscndct_Number
+#      - Sequence_Number
+primary_key_cols: []

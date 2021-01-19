@@ -1,0 +1,5 @@
+file_tag: dbo_Docket
+# Best initial (unconfirmed) guess at primary keys for this table:
+#      - ParoleNumber
+#      - DocketID
+primary_key_cols: []

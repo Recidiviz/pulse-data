@@ -1,0 +1,5 @@
+file_tag: dbo_Hist_Arrest_Tech
+# Best initial (unconfirmed) guess at primary keys for this table:
+#      - ParoleNumber
+#      - ArrestReportNO
+primary_key_cols: []

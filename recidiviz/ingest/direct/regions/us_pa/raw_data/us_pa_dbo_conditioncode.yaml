@@ -1,0 +1,6 @@
+file_tag: dbo_ConditionCode
+primary_key_cols:
+  - ParoleNumber
+  - ParoleCountID
+  - BdActionID
+  - ConditionCodeID

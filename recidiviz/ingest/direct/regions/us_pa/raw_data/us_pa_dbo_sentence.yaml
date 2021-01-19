@@ -1,0 +1,6 @@
+file_tag: dbo_Sentence
+primary_key_cols:
+  - ParoleNumber
+  - ParoleCountID
+  - Sent16DGroupNumber
+  - SentenceID

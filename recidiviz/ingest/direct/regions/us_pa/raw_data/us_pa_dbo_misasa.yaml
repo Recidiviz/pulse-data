@@ -1,0 +1,6 @@
+file_tag: dbo_Misasa
+# Best initial (unconfirmed) guess at primary keys for this table:
+#      - status_ind
+#      - control_number
+#      - misconduct_number
+primary_key_cols: []

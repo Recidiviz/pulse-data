@@ -1,0 +1,7 @@
+file_tag: dbo_vwCCISAllMvmt
+# Best initial (unconfirmed) guess at primary keys for this table:
+#      - CCISMvmt_Id
+primary_key_cols: []
+datetime_cols:
+  - Status_Dt
+encoding: ISO-8859-1

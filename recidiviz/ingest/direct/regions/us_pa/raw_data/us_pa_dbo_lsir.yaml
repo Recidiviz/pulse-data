@@ -1,0 +1,5 @@
+file_tag: dbo_LSIR
+primary_key_cols:
+  - ParoleNumber
+  - ParoleCountID
+  - LsirID

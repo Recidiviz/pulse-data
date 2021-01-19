@@ -1,0 +1,4 @@
+file_tag: dbo_Senrec
+primary_key_cols:
+  - curr_inmate_num
+  - type_number

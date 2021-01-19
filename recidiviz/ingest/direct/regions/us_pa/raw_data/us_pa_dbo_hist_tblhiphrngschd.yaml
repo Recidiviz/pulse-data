@@ -1,0 +1,5 @@
+file_tag: dbo_HIST_tblHIPHrngSchd
+# Best initial (unconfirmed) guess at primary keys for this table:
+#      - HrngID
+#      - SchdID
+primary_key_cols: []
