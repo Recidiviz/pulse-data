@@ -30,6 +30,7 @@ import gzip
 import io
 import json
 import logging
+from concurrent import futures
 from typing import List, Dict, Tuple, Set, Any, Callable, Union, Sequence
 
 import attr
@@ -43,11 +44,19 @@ from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.metrics.export.optimized_metric_big_query_view_export_validator import \
     OptimizedMetricBigQueryViewExportValidator
 from recidiviz.metrics.metric_big_query_view import MetricBigQueryView
+from recidiviz.utils import structured_logging
 
 # 10000 rows appears to be a reasonable balance of speed and memory usage from local testing
 QUERY_PAGE_SIZE = 10000
 
 DEFAULT_DATA_VALUE = 0
+
+# We set this to 10 because urllib3 (used by the Google BigQuery client) has an default limit of 10 connections and
+# we were seeing "urllib3.connectionpool:Connection pool is full, discarding connection" errors when this number
+# increased.
+# In the future, we could increase the worker number by playing around with increasing the pool size per this post:
+# https://github.com/googleapis/python-storage/issues/253
+OPTIMIZED_VIEW_EXPORTER_MAX_WORKERS = 10
 
 
 @attr.s(frozen=True)
@@ -77,17 +86,29 @@ class OptimizedMetricBigQueryViewExporter(BigQueryViewExporter):
     def export(self, export_configs: Sequence[ExportBigQueryViewConfig[MetricBigQueryView]]) -> List[GcsfsFilePath]:
         storage_client = storage.Client()
         output_paths = []
+        with futures.ThreadPoolExecutor(max_workers=OPTIMIZED_VIEW_EXPORTER_MAX_WORKERS) as executor:
+            future_to_view = {
+                executor.submit(structured_logging.with_context(self._export_view), storage_client, config): config
+                for config in export_configs
+            }
+            for future in futures.as_completed(future_to_view):
+                config = future_to_view.pop(future)
+                try:
+                    output_path: GcsfsFilePath = future.result()
+                except Exception as e:
+                    logging.error('Exception found exporting view: %s.%s', config.view.dataset_id, config.view.view_id)
+                    raise e
+                output_paths.append(output_path)
 
-        query_jobs = []
-        for config in export_configs:
-            query_job = self.bq_client.run_query_async(config.query, [])
-            query_jobs.append((config, query_job))
-
-        for config, query_job in query_jobs:
-            optimized_format = self.convert_query_results_to_optimized_value_matrix(query_job, config)
-            output_path = self._export_optimized_format(config, optimized_format, storage_client)
-            output_paths.append(output_path)
         return output_paths
+
+    def _export_view(self,
+                     storage_client: storage.Client,
+                     config: ExportBigQueryViewConfig[MetricBigQueryView]) -> GcsfsFilePath:
+        query_job = self.bq_client.run_query_async(config.query, [])
+        optimized_format = self.convert_query_results_to_optimized_value_matrix(query_job, config)
+        output_path = self._export_optimized_format(config, optimized_format, storage_client)
+        return output_path
 
     def convert_query_results_to_optimized_value_matrix(self,
                                                         query_job: bigquery.QueryJob,
@@ -116,12 +137,14 @@ class OptimizedMetricBigQueryViewExporter(BigQueryViewExporter):
         dimension_values_by_key: Dict[str, Set[str]] = _initialize_dimension_manifest(dimension_keys)
         assemble_manifest_fn = _gen_assemble_manifest(dimension_values_by_key)
         self.bq_client.paged_read_and_process(query_job, QUERY_PAGE_SIZE, assemble_manifest_fn)
-        logging.debug("Produced dictionary-based manifest of: %s", dimension_values_by_key)
+        logging.info("Produced dictionary-based manifest for view: %s", export_view.view_id)
+        logging.debug("Dictionary-based manifest for view %s: %s", export_view.view_id, dimension_values_by_key)
 
         # Transform dimension ranges into list of tuples first ordered by dimension key and internally by values
         dimension_manifest: List[Tuple[str, List[str]]] = transform_manifest_to_order_enforced_form(
             dimension_values_by_key)
-        logging.debug("Produced ordered dimension manifest of: %s", dimension_manifest)
+        logging.info("Produced ordered dimension manifest for view: %s", export_view.view_id)
+        logging.debug("Ordered dimension manifest for view %s: %s", export_view.view_id, dimension_manifest)
 
         # Allocate an array with nested arrays for each dimension and value key
         data_values: List[List[Any]] = [[] for _ in range(len(dimension_keys) + len(value_keys))]
@@ -129,6 +152,7 @@ class OptimizedMetricBigQueryViewExporter(BigQueryViewExporter):
         # For each data point, set its numeric values in the spot determined by its dimensional combination
         place_value_in_matrix_fn = _gen_place_in_compact_matrix(data_values, value_keys, dimension_manifest)
         self.bq_client.paged_read_and_process(query_job, QUERY_PAGE_SIZE, place_value_in_matrix_fn)
+        logging.info("Finished paged read and process for view: %s", export_view.view_id)
 
         # Return the array and the dimensional manifest
         return OptimizedMetricRepresentation(value_matrix=data_values,

@@ -760,7 +760,7 @@ class BigQueryClientImpl(BigQueryClient):
                                query_job: bigquery.QueryJob,
                                page_size: int,
                                process_fn: Callable[[bigquery.table.Row], None]) -> None:
-        logging.info("Querying for first page of results to perform %s...", process_fn.__name__)
+        logging.debug("Querying for first page of results to perform %s...", process_fn.__name__)
 
         start_index = 0
 
@@ -779,7 +779,7 @@ class BigQueryClientImpl(BigQueryClient):
                 break
 
             start_index += rows_processed
-            logging.info("Processed [%d] rows...", start_index)
+            logging.debug("Processed [%d] rows...", start_index)
 
     def copy_view(self,
                   view: BigQueryView,
