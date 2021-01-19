@@ -24,8 +24,6 @@ from recidiviz.calculator.query.state.views.dashboard.program_evaluation import 
 from recidiviz.calculator.query.state.views.dashboard.reincarcerations import reincarcerations_views
 from recidiviz.calculator.query.state.views.dashboard.revocation_analysis import revocation_analysis_views
 from recidiviz.calculator.query.state.views.dashboard.revocations import revocations_views
-from recidiviz.calculator.query.state.views.dashboard.revocations.revocations_by_officer_by_period import \
-    REVOCATIONS_BY_OFFICER_BY_PERIOD_VIEW_BUILDER
 from recidiviz.calculator.query.state.views.dashboard.supervision import supervision_views
 
 
@@ -37,11 +35,6 @@ CORE_DASHBOARD_VIEW_BUILDERS: Sequence[BigQueryViewBuilder] = (
     program_evaluation_views.PROGRAM_EVALUATION_VIEW_BUILDERS
 )
 
-LANTERN_VIEW_BUILDERS_EXCLUDED_FROM_EXPORT = [
-    # TODO(#5102): Re-enable export of this file once the metric view export job is optimized to handle the scale and
-    #  won't time out.
-    REVOCATIONS_BY_OFFICER_BY_PERIOD_VIEW_BUILDER
-]
 
 LANTERN_DASHBOARD_VIEW_BUILDERS: Sequence[BigQueryViewBuilder] = \
     revocation_analysis_views.REVOCATION_ANALYSIS_VIEW_BUILDERS

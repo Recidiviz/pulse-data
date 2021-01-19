@@ -24,7 +24,7 @@ from recidiviz.big_query.export.export_query_config import ExportBigQueryViewCon
 from recidiviz.big_query.view_update_manager import BigQueryViewNamespace
 from recidiviz.calculator.query.state.views.covid_dashboard.covid_dashboard_views import COVID_DASHBOARD_VIEW_BUILDERS
 from recidiviz.calculator.query.state.views.dashboard.dashboard_views import LANTERN_DASHBOARD_VIEW_BUILDERS, \
-    LANTERN_VIEW_BUILDERS_EXCLUDED_FROM_EXPORT, CORE_DASHBOARD_VIEW_BUILDERS
+    CORE_DASHBOARD_VIEW_BUILDERS
 from recidiviz.calculator.query.state.views.po_report.po_monthly_report_data import PO_MONTHLY_REPORT_DATA_VIEW_BUILDER
 from recidiviz.calculator.query.state.views.public_dashboard.public_dashboard_views import \
     PUBLIC_DASHBOARD_VIEW_BUILDERS
@@ -143,8 +143,7 @@ VIEW_COLLECTION_EXPORT_CONFIGS: List[ExportViewCollectionConfig] = [
 ] + [
     # Lantern Dashboard views for all relevant states
     ExportViewCollectionConfig(
-        view_builders_to_export=[b for b in LANTERN_DASHBOARD_VIEW_BUILDERS
-                                 if b not in LANTERN_VIEW_BUILDERS_EXCLUDED_FROM_EXPORT],
+        view_builders_to_export=LANTERN_DASHBOARD_VIEW_BUILDERS,
         output_directory_uri_template=DASHBOARD_VIEWS_OUTPUT_DIRECTORY_URI,
         state_code_filter=state_code,
         export_name='LANTERN',

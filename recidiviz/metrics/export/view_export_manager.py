@@ -31,7 +31,6 @@ from typing import Dict, List, Optional, Sequence, Set, Tuple
 from flask import Blueprint, request
 from opencensus.stats import measure, view as opencensus_view, aggregation
 
-from recidiviz.big_query.view_update_manager import BigQueryViewNamespace
 from recidiviz.metrics.export import export_config
 from recidiviz.big_query import view_update_manager
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
@@ -177,9 +176,6 @@ def export_view_data_to_cloud_storage(export_job_filter: str,
                                                                                   view_builders_for_views_to_update,
                                                                                   materialized_views_only=True)
 
-    json_exporter = None
-    metric_exporter = None
-
     gcsfs_client = GcsfsFactory.build()
     if override_view_exporter is None:
         bq_client = BigQueryClientImpl()
@@ -259,12 +255,14 @@ def export_views_with_exporters(gcsfs: GCSFileSystem,
         staging_configs = [config.pointed_to_staging_subdirectory()
                            for config in export_configs if export_type in config.export_output_formats]
 
-        logging.info("Beginning staged export of results for view exporter delegate [%s]", view_exporter.__class__)
+        logging.info("Beginning staged export of results for view exporter delegate [%s]",
+                     view_exporter.__class__.__name__)
 
         staging_paths = view_exporter.export_and_validate(staging_configs)
         all_staging_paths.extend(staging_paths)
 
-        logging.info("Completed staged export of results for view exporter delegate [%s]", view_exporter.__class__)
+        logging.info("Completed staged export of results for view exporter delegate [%s]",
+                     view_exporter.__class__.__name__)
 
         logging.info("Copying staged export results to final location")
 
