@@ -1,0 +1,6 @@
+# Sentence Inst. Column prefix: BT.
+file_tag: LBAKRDTA_TAK023
+primary_key_cols:
+  - BT_DOC
+  - BT_CYC
+  - BT_SEO

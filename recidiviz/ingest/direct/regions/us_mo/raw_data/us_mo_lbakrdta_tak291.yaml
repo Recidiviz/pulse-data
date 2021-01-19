@@ -1,0 +1,7 @@
+# Sentence / Citation Xref. Column prefix: JS.
+file_tag: LBAKRDTA_TAK291
+primary_key_cols:
+  - JS_DOC
+  - JS_CYC
+  - JS_CSQ
+  - JS_SEO

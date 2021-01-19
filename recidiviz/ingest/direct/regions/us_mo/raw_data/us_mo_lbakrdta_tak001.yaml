@@ -1,0 +1,4 @@
+# Offender Identification. Column prefix: EK.
+file_tag: LBAKRDTA_TAK001
+primary_key_cols:
+  - EK_DOC

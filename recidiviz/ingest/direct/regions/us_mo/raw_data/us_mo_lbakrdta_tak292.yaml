@@ -1,0 +1,7 @@
+# Citations. Column prefix: JT.
+file_tag: LBAKRDTA_TAK292
+primary_key_cols:
+  - JT_DOC
+  - JT_CYC
+  - JT_CSQ
+  - JT_TSS

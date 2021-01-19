@@ -1,0 +1,7 @@
+# Sentence / Status Xref. Column prefix: BV.
+file_tag: LBAKRDTA_TAK025
+primary_key_cols:
+  - BV_DOC
+  - BV_CYC
+  - BV_SSO
+  - BV_SEO
