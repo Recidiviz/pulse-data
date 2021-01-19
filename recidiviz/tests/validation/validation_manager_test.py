@@ -35,6 +35,7 @@ from recidiviz.validation.validation_models import DataValidationJob, DataValida
 from recidiviz.calculator.query.county import view_config as county_view_config
 from recidiviz.calculator.query.justice_counts import view_config as justice_counts_view_config
 from recidiviz.calculator.query.state import view_config as state_view_config
+from recidiviz.case_triage.views import view_config as case_triage_view_config
 from recidiviz.ingest.views import view_config as ingest_metadata_view_config
 from recidiviz.validation.views import view_config as validation_view_config
 
@@ -224,6 +225,9 @@ class TestHandleRequest(TestCase):
                  dataset_overrides=None,
                  materialized_views_only=False),
             call(BigQueryViewNamespace.VALIDATION, validation_view_config.VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE,
+                 dataset_overrides=None,
+                 materialized_views_only=False),
+            call(BigQueryViewNamespace.CASE_TRIAGE, case_triage_view_config.VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE,
                  dataset_overrides=None,
                  materialized_views_only=False),
             call(BigQueryViewNamespace.INGEST_METADATA, ingest_metadata_view_config.VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE,

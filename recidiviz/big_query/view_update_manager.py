@@ -46,6 +46,7 @@ from recidiviz.calculator.query.operations.dataset_config import OPERATIONS_BASE
 from recidiviz.calculator.query.state.dataset_config import STATE_BASE_DATASET, STATIC_REFERENCE_TABLES_DATASET, \
     DATAFLOW_METRICS_DATASET, COVID_DASHBOARD_REFERENCE_DATASET
 from recidiviz.calculator.query.state.view_config import VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE as STATE_VIEW_BUILDERS
+from recidiviz.case_triage.views.view_config import VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE as CASE_TRIAGE_VIEW_BUILDERS
 from recidiviz.ingest.views.view_config import VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE as INGEST_METADATA_VIEW_BUILDERS
 from recidiviz.utils import monitoring
 from recidiviz.utils.params import str_to_bool
@@ -72,6 +73,7 @@ class BigQueryViewNamespace(Enum):
     JUSTICE_COUNTS = 'justice_counts'
     STATE = 'state'
     VALIDATION = 'validation'
+    CASE_TRIAGE = 'case_triage'
     INGEST_METADATA = 'ingest_metadata'
 
 
@@ -80,6 +82,7 @@ VIEW_BUILDERS_BY_NAMESPACE: Dict[BigQueryViewNamespace, Sequence[BigQueryViewBui
     BigQueryViewNamespace.JUSTICE_COUNTS: JUSTICE_COUNTS_VIEW_BUILDERS,
     BigQueryViewNamespace.STATE: STATE_VIEW_BUILDERS,
     BigQueryViewNamespace.VALIDATION: VALIDATION_VIEW_BUILDERS,
+    BigQueryViewNamespace.CASE_TRIAGE: CASE_TRIAGE_VIEW_BUILDERS,
     BigQueryViewNamespace.INGEST_METADATA: INGEST_METADATA_VIEW_BUILDERS,
 }
 
