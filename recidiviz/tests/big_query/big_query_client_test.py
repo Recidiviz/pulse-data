@@ -117,7 +117,8 @@ class BigQueryClientImplTest(unittest.TestCase):
             source_table_dataset_ref=self.mock_dataset_ref,
             source_table_id='source-table',
             destination_uri=f'gs://{self.mock_project_id}-bucket/destination_path.json',
-            destination_format=bigquery.DestinationFormat.NEWLINE_DELIMITED_JSON
+            destination_format=bigquery.DestinationFormat.NEWLINE_DELIMITED_JSON,
+            print_header=True,
         ))
         self.mock_client.extract_table.assert_called()
 
@@ -130,7 +131,9 @@ class BigQueryClientImplTest(unittest.TestCase):
                 source_table_dataset_ref=self.mock_dataset_ref,
                 source_table_id='source-table',
                 destination_uri=f'gs://{self.mock_project_id}-bucket/destination_path.json',
-                destination_format=bigquery.DestinationFormat.NEWLINE_DELIMITED_JSON))
+                destination_format=bigquery.DestinationFormat.NEWLINE_DELIMITED_JSON,
+                print_header=True,
+            ))
             self.mock_client.extract_table.assert_not_called()
 
     def test_load_table_async_create_dataset(self) -> None:
@@ -171,7 +174,7 @@ class BigQueryClientImplTest(unittest.TestCase):
                     intermediate_table_name=self.mock_table_id,
                     output_uri=f'gs://{bucket}/view.json',
                     output_format=bigquery.DestinationFormat.NEWLINE_DELIMITED_JSON)
-            ])
+            ], print_header=True)
 
     def test_export_query_results_to_cloud_storage(self) -> None:
         """export_query_results_to_cloud_storage creates the table from the view query and
@@ -190,7 +193,7 @@ class BigQueryClientImplTest(unittest.TestCase):
                 intermediate_table_name=self.mock_table_id,
                 output_uri=f'gs://{bucket}/view.json',
                 output_format=bigquery.DestinationFormat.NEWLINE_DELIMITED_JSON)
-            ])
+        ], print_header=True)
         self.mock_client.query.assert_called()
         self.mock_client.extract_table.assert_called()
         self.mock_client.delete_table.assert_called_with(
