@@ -28,6 +28,8 @@ from recidiviz.big_query.big_query_view import BigQueryView, MATERIALIZED_SUFFIX
 # increased.
 # In the future, we could increase the worker number by playing around with increasing the pool size per this post:
 # https://github.com/googleapis/python-storage/issues/253
+from recidiviz.utils import structured_logging
+
 DAG_WALKER_MAX_WORKERS = 10
 
 DagKey = Tuple[str, str]
@@ -117,7 +119,7 @@ class BigQueryViewDagWalker:
         result: Dict[BigQueryView, ViewResultT] = {}
         with futures.ThreadPoolExecutor(max_workers=DAG_WALKER_MAX_WORKERS) as executor:
             future_to_view = {
-                executor.submit(view_process_fn, node.view): node
+                executor.submit(structured_logging.with_context(view_process_fn), node.view): node
                 for node in self.roots
             }
             processing = {node.dag_key for node in future_to_view.values()}
@@ -148,6 +150,7 @@ class BigQueryViewDagWalker:
                                 parents_all_processed = False
                                 break
                         if parents_all_processed:
-                            future_to_view[executor.submit(view_process_fn, child_node.view)] = child_node
+                            future = executor.submit(structured_logging.with_context(view_process_fn), child_node.view)
+                            future_to_view[future] = child_node
                             processing.add(child_node.dag_key)
         return result
