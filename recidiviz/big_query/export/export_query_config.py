@@ -16,6 +16,7 @@
 # =============================================================================
 
 """Defines configuration for a BigQuery query whose results should be exported somewhere."""
+import os
 from enum import Enum
 from typing import List, TypeVar, Generic, Optional
 
@@ -25,6 +26,9 @@ from google.cloud import bigquery
 from recidiviz.big_query.big_query_view import BigQueryView
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath, GcsfsDirectoryPath
 from recidiviz.metrics.metric_big_query_view import MetricBigQueryView
+
+
+STAGING_DIRECTORY = 'staging/'
 
 
 class ExportOutputFormatType(Enum):
@@ -132,7 +136,9 @@ class ExportBigQueryViewConfig(Generic[BigQueryViewType]):
 
     @staticmethod
     def revert_staging_path_to_original(staging_path: GcsfsFilePath) -> GcsfsFilePath:
-        non_staging_relative_path = staging_path.blob_name.lstrip('staging/')
+        non_staging_relative_path = staging_path.blob_name
+        if non_staging_relative_path.startswith(STAGING_DIRECTORY):
+            non_staging_relative_path = non_staging_relative_path[len(STAGING_DIRECTORY):]
         return GcsfsFilePath.from_absolute_path(f'{staging_path.bucket_name}/{non_staging_relative_path}')
 
     def pointed_to_staging_subdirectory(self) -> 'ExportBigQueryViewConfig':
@@ -151,6 +157,7 @@ class ExportBigQueryViewConfig(Generic[BigQueryViewType]):
             view=self.view,
             view_filter_clause=self.view_filter_clause,
             intermediate_table_name=self.intermediate_table_name,
-            output_directory=GcsfsDirectoryPath.from_absolute_path(f'{bucket_name}/staging/{relative_path}'),
+            output_directory=GcsfsDirectoryPath.from_absolute_path(
+                os.path.join(bucket_name, STAGING_DIRECTORY, relative_path)),
             export_output_formats=self.export_output_formats,
         )
