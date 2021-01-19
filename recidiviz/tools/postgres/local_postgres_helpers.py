@@ -152,8 +152,8 @@ def start_on_disk_postgresql_database() -> str:
     # the subprocess will hang.
     _run_command(f'pg_ctl -D {temp_db_data_dir} -l /tmp/postgres initdb', as_user=password_record)
 
-    if os.environ.get('CIRCLECI') == 'true':
-        # We need to set the host to 0.0.0.0 in CircleCI doesn't let us bind to 127.0.0.1 as the default.
+    if os.environ.get('CI') == 'true':
+        # We need to set the host to 0.0.0.0 as CircleCI/GitHub Actions don't let us bind to 127.0.0.1 as the default.
         _run_command(f'pg_ctl -D {temp_db_data_dir} -l /tmp/postgres start -o "-h 0.0.0.0"', as_user=password_record)
     else:
         _run_command(f'pg_ctl -D {temp_db_data_dir} -l /tmp/postgres start', as_user=password_record)

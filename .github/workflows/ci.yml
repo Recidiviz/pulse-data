@@ -1,0 +1,171 @@
+name: CI Tests
+
+on: push
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Cancel previous runs
+        uses: styfle/cancel-workflow-action@0.6.0
+        with:
+          access_token: ${{ github.token }}
+      - uses: actions/checkout@v2
+        with:
+          # Need sufficient depth in order for merge-base to work
+          fetch-depth: 50
+      - uses: actions/setup-python@v2
+        with:
+          python-version: "3.7.9"
+      - name: Pipenv caching
+        uses: actions/cache@v2
+        with:
+          path: ~/.local/share/virtualenvs/
+          key: pipenv-cache-v1-${{ hashFiles('**/Pipfile.lock') }}
+          restore-keys: |
+            pipenv-cache-v1-${{ hashFiles('**/Pipfile.lock') }}
+            pipenv-cache-v1-
+            pipenv-cache-
+      - name: Sync pipenv
+        run: |
+          pip install pipenv
+          pipenv sync --dev
+      - uses: hashicorp/setup-terraform@v1
+      - name: Validate terraform
+        run: |
+          terraform init -backend=false ./recidiviz/tools/deploy/terraform
+          terraform validate ./recidiviz/tools/deploy/terraform
+      - name: Fetch origin/master
+        # Needed for origin/master object lookups to succeed.
+        run: git fetch origin master
+      - name: Validate source modifications
+        run: |
+          pipenv run python -m recidiviz.tools.validate_source_modifications \
+            --commit-range $(git merge-base origin/master HEAD)...HEAD
+      - name: Check pipenv is locked
+        run: pipenv run python -m recidiviz.tools.is_pipenv_locked
+      - name: Mypy check
+        run: pipenv run mypy recidiviz
+      - name: Pylint
+        run: pipenv run ./recidiviz/tools/travis/run_pylint.sh
+
+  unit-tests:
+    name: Base unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Cancel previous runs
+        uses: styfle/cancel-workflow-action@0.6.0
+        with:
+          access_token: ${{ github.token }}
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v2
+        with:
+          python-version: "3.7.9"
+      - name: Pipenv caching
+        uses: actions/cache@v2
+        with:
+          path: ~/.local/share/virtualenvs/
+          key: pipenv-cache-v1-${{ hashFiles('**/Pipfile.lock') }}
+          restore-keys: |
+            pipenv-cache-v1-${{ hashFiles('**/Pipfile.lock') }}
+            pipenv-cache-v1-
+            pipenv-cache-
+      - name: Sync pipenv
+        run: |
+          pip install pipenv
+          pipenv sync --dev
+      - name: Run unit tests in parallel
+        run: pipenv run pytest recidiviz -n auto --test-set parallel
+
+  db-tests:
+    name: Database tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Cancel previous runs
+        uses: styfle/cancel-workflow-action@0.6.0
+        with:
+          access_token: ${{ github.token }}
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v2
+        with:
+          python-version: "3.7.9"
+      - name: Pipenv caching
+        uses: actions/cache@v2
+        with:
+          path: ~/.local/share/virtualenvs/
+          key: pipenv-cache-v1-${{ hashFiles('**/Pipfile.lock') }}
+          restore-keys: |
+            pipenv-cache-v1-${{ hashFiles('**/Pipfile.lock') }}
+            pipenv-cache-v1-
+            pipenv-cache-
+      - name: Sync pipenv
+        run: |
+          pip install pipenv
+          pipenv sync --dev
+      - name: Install postgres
+        run: |
+          sudo apt-get update && sudo apt install postgresql-10 -y
+          echo "/usr/lib/postgresql/10/bin" >> $GITHUB_PATH
+          sudo chown -R $USER /var/run/postgresql
+      - name: Run db tests
+        run: pipenv run pytest recidiviz --test-set not-parallel -m 'uses_db' --with-emulator
+
+  emulator-tests:
+    name: Emulator tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Cancel previous runs
+        uses: styfle/cancel-workflow-action@0.6.0
+        with:
+          access_token: ${{ github.token }}
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v2
+        with:
+          python-version: "3.7.9"
+      - name: Pipenv caching
+        uses: actions/cache@v2
+        with:
+          path: ~/.local/share/virtualenvs/
+          key: pipenv-cache-v1-${{ hashFiles('**/Pipfile.lock') }}
+          restore-keys: |
+            pipenv-cache-v1-${{ hashFiles('**/Pipfile.lock') }}
+            pipenv-cache-v1-
+            pipenv-cache-
+      - name: Sync pipenv
+        run: |
+          pip install pipenv
+          pipenv sync --dev
+      # GCP caching strategy adapted from https://raymii.org/s/articles/Github_Actions_cpp_boost_cmake_speedup.html
+      - name: GCP caching
+        uses: actions/cache@v2
+        id: gcp-caching
+        with:
+          path: ~/gcp/
+          key: gcloud-323.0.0
+      - name: Install emulators
+        env:
+          CACHE_HIT: ${{steps.gcp-caching.outputs.cache-hit}}
+        run: |
+          if [[ "$CACHE_HIT" == 'true' ]]; then
+            sudo cp --force --recursive ~/gcp/sdk/* /
+            sudo cp --force --recursive ~/gcp/datastore/* /
+            sudo cp --force --recursive ~/gcp/pubsub/* /
+          else
+            sudo apt-get update && sudo apt install -y lsb-core && \
+            export CLOUD_SDK_REPO="cloud-sdk-$(lsb_release -c -s)" && \
+            echo "deb http://packages.cloud.google.com/apt $CLOUD_SDK_REPO main" | sudo tee -a /etc/apt/sources.list.d/google-cloud-sdk.list && \
+            curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add - && \
+            sudo apt update -y && sudo apt-get install google-cloud-sdk -y && \
+            sudo apt install google-cloud-sdk-datastore-emulator -y && \
+            sudo apt install google-cloud-sdk-pubsub-emulator -y
+
+            mkdir -p ~/gcp/sdk
+            mkdir -p ~/gcp/datastore
+            mkdir -p ~/gcp/pubsub
+            dpkg -L google-cloud-sdk | while IFS= read -r f; do if test -f $f; then echo $f; fi; done | xargs cp --parents --target-directory ~/gcp/sdk
+            dpkg -L google-cloud-sdk-datastore-emulator | while IFS= read -r f; do if test -f $f; then echo $f; fi; done | xargs cp --parents --target-directory ~/gcp/datastore
+            dpkg -L google-cloud-sdk-pubsub-emulator | while IFS= read -r f; do if test -f $f; then echo $f; fi; done | xargs cp --parents --target-directory ~/gcp/pubsub
+          fi
+      - name: Run emulator tests
+        run: pipenv run pytest recidiviz --test-set not-parallel -m 'not uses_db' --with-emulator
