@@ -31,8 +31,10 @@ from recidiviz.cloud_storage.content_types import FileContentsHandle
 from recidiviz.cloud_storage.gcsfs_path import GcsfsPath, \
     GcsfsFilePath, GcsfsDirectoryPath, GcsfsBucketPath
 
+
 class GCSBlobDoesNotExistError(ValueError):
     pass
+
 
 class GcsfsFileContentsHandle(FileContentsHandle[str]):
     def __init__(self, local_file_path: str):
@@ -139,9 +141,7 @@ def retry_predicate(exception: Exception) -> Callable[[Exception], bool]:
 
 def generate_random_temp_path() -> str:
     temp_dir = os.path.join(tempfile.gettempdir(), 'gcs_temp_files')
-
-    if not os.path.exists(temp_dir):
-        os.mkdir(temp_dir)
+    os.makedirs(temp_dir, exist_ok=True)
 
     return os.path.join(temp_dir, str(uuid.uuid4()))
 
