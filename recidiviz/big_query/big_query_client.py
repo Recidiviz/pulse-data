@@ -223,7 +223,8 @@ class BigQueryClient:
             source_table_dataset_ref: bigquery.dataset.DatasetReference,
             source_table_id: str,
             destination_uri: str,
-            destination_format: bigquery.DestinationFormat) -> Optional[bigquery.ExtractJob]:
+            destination_format: bigquery.DestinationFormat,
+            print_header: bool) -> Optional[bigquery.ExtractJob]:
         """Exports the table corresponding to the given view to the path in Google Cloud Storage denoted by
         |destination_uri|.
 
@@ -238,13 +239,16 @@ class BigQueryClient:
                 'gs://').
             destination_format: The format the contents of the table should be outputted as (e.g. CSV or
                 NEWLINE_DELIMITED_JSON).
+            print_header: Indicates whether to print out a header row in the results.
 
         Returns:
             The ExtractJob object containing job details, or None if the job fails to start.
         """
 
     @abc.abstractmethod
-    def export_query_results_to_cloud_storage(self, export_configs: List[ExportQueryConfig]) -> None:
+    def export_query_results_to_cloud_storage(self,
+                                              export_configs: List[ExportQueryConfig],
+                                              print_header: bool) -> None:
         """Exports the queries to cloud storage according to the given configs.
 
         This is a three-step process. First, each query is executed and the entire result is loaded into a temporary
@@ -258,6 +262,7 @@ class BigQueryClient:
 
         Args:
             export_configs: List of queries along with how to export their results.
+            print_header: Indicates whether to print out a header row in the results.
         """
 
     @abc.abstractmethod
@@ -666,7 +671,12 @@ class BigQueryClientImpl(BigQueryClient):
             source_table_dataset_ref: bigquery.DatasetReference,
             source_table_id: str,
             destination_uri: str,
-            destination_format: bigquery.DestinationFormat) -> Optional[bigquery.ExtractJob]:
+            destination_format: bigquery.DestinationFormat,
+            print_header: bool) -> Optional[bigquery.ExtractJob]:
+        if not print_header and destination_format != bigquery.DestinationFormat.CSV:
+            raise ValueError(
+                f'Export called incorrectly with print_header=False and destination_format={destination_format}')
+
         if not self.table_exists(source_table_dataset_ref, source_table_id):
             logging.error("Table [%s] does not exist in dataset [%s]", source_table_id, str(source_table_dataset_ref))
             return None
@@ -675,6 +685,7 @@ class BigQueryClientImpl(BigQueryClient):
 
         job_config = bigquery.ExtractJobConfig()
         job_config.destination_format = destination_format
+        job_config.print_header = print_header
 
         return self.client.extract_table(
             table_ref,
@@ -685,7 +696,8 @@ class BigQueryClientImpl(BigQueryClient):
         )
 
     def export_query_results_to_cloud_storage(self,
-                                              export_configs: List[ExportQueryConfig]) -> None:
+                                              export_configs: List[ExportQueryConfig],
+                                              print_header: bool) -> None:
         query_jobs = []
         for export_config in export_configs:
             query_job = self.create_table_from_query_async(
@@ -710,7 +722,8 @@ class BigQueryClientImpl(BigQueryClient):
                 self.dataset_ref_for_id(export_config.intermediate_dataset_id),
                 export_config.intermediate_table_name,
                 export_config.output_uri,
-                export_config.output_format
+                export_config.output_format,
+                print_header,
             )
             if extract_job is not None:
                 extract_jobs.append(extract_job)

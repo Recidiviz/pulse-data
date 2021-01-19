@@ -96,7 +96,7 @@ def run_export(dry_run: bool,
         logging.info("[DRY RUN] Exporting [%d] tables to GCS", len(export_configs))
     else:
         logging.info("Exporting [%d] tables to GCS", len(export_configs))
-        big_query_client.export_query_results_to_cloud_storage(export_configs)
+        big_query_client.export_query_results_to_cloud_storage(export_configs, print_header=True)
 
 
 if __name__ == '__main__':

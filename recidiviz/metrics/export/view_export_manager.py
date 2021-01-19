@@ -35,8 +35,12 @@ from recidiviz.big_query.view_update_manager import BigQueryViewNamespace
 from recidiviz.metrics.export import export_config
 from recidiviz.big_query import view_update_manager
 from recidiviz.big_query.big_query_client import BigQueryClientImpl
-from recidiviz.big_query.export.big_query_view_exporter import BigQueryViewExporter, JsonLinesBigQueryViewExporter, \
-    ViewExportValidationError
+from recidiviz.big_query.export.big_query_view_exporter import (
+    BigQueryViewExporter,
+    CSVBigQueryViewExporter,
+    JsonLinesBigQueryViewExporter,
+    ViewExportValidationError,
+)
 from recidiviz.big_query.export.big_query_view_export_validator import ExistsBigQueryViewExportValidator
 from recidiviz.big_query.export.export_query_config import ExportOutputFormatType
 from recidiviz.big_query.view_update_manager import BigQueryViewNamespace
@@ -182,8 +186,8 @@ def export_view_data_to_cloud_storage(export_job_filter: str,
 
         # Some our views intentionally export empty files (e.g. some of the ingest_metadata views)
         # so we just check for existence
-        csv_exporter = JsonLinesBigQueryViewExporter(bq_client,
-                                                     ExistsBigQueryViewExportValidator(gcsfs_client))
+        csv_exporter = CSVBigQueryViewExporter(bq_client,
+                                               ExistsBigQueryViewExportValidator(gcsfs_client))
         json_exporter = JsonLinesBigQueryViewExporter(bq_client,
                                                       ExistsBigQueryViewExportValidator(gcsfs_client))
         metric_exporter = OptimizedMetricBigQueryViewExporter(
@@ -191,12 +195,14 @@ def export_view_data_to_cloud_storage(export_job_filter: str,
 
         delegate_export_map = {
             ExportOutputFormatType.CSV: csv_exporter,
+            ExportOutputFormatType.HEADERLESS_CSV: csv_exporter,
             ExportOutputFormatType.JSON: json_exporter,
             ExportOutputFormatType.METRIC: metric_exporter,
         }
     else:
         delegate_export_map = {
             ExportOutputFormatType.CSV: override_view_exporter,
+            ExportOutputFormatType.HEADERLESS_CSV: override_view_exporter,
             ExportOutputFormatType.JSON: override_view_exporter,
             ExportOutputFormatType.METRIC: override_view_exporter,
         }

@@ -34,42 +34,42 @@ class BigQueryViewExporterTest(unittest.TestCase):
         self.mock_bq_client = mock.create_autospec(BigQueryClient)
         self.mock_validator = mock.create_autospec(BigQueryViewExportValidator)
 
-        mock_project_id = 'fake-project'
+        self.mock_project_id = 'fake-project'
 
         self.metadata_patcher = mock.patch('recidiviz.utils.metadata.project_id')
         self.mock_project_id_fn = self.metadata_patcher.start()
-        self.mock_project_id_fn.return_value = mock_project_id
+        self.mock_project_id_fn.return_value = self.mock_project_id
 
-        view_builder = SimpleBigQueryViewBuilder(
+        self.view_builder = SimpleBigQueryViewBuilder(
             dataset_id='test_dataset',
             view_id='test_view',
             view_query_template='SELECT NULL LIMIT 0',
         )
-        second_view_builder = SimpleBigQueryViewBuilder(
+        self.second_view_builder = SimpleBigQueryViewBuilder(
             dataset_id='test_dataset',
             view_id='test_view_2',
             view_query_template='SELECT NULL LIMIT 0',
         )
         self.view_export_configs = [
             ExportBigQueryViewConfig(
-                view=view_builder.build(),
+                view=self.view_builder.build(),
                 view_filter_clause=" WHERE state_code = 'US_XX'",
-                intermediate_table_name=f"{view_builder.view_id}_table_US_XX",
+                intermediate_table_name=f"{self.view_builder.view_id}_table_US_XX",
                 output_directory=GcsfsDirectoryPath.from_absolute_path(
                     "gs://{project_id}-dataset-location/subdirectory/{state_code}".format(
-                        project_id=mock_project_id,
+                        project_id=self.mock_project_id,
                         state_code='US_XX',
                     )
                 ),
-                export_output_formats=[ExportOutputFormatType.JSON, ExportOutputFormatType.CSV],
+                export_output_formats=[ExportOutputFormatType.JSON, ExportOutputFormatType.HEADERLESS_CSV],
             ),
             ExportBigQueryViewConfig(
-                view=second_view_builder.build(),
+                view=self.second_view_builder.build(),
                 view_filter_clause=" WHERE state_code = 'US_XX'",
-                intermediate_table_name=f"{second_view_builder.view_id}_table_US_XX",
+                intermediate_table_name=f"{self.second_view_builder.view_id}_table_US_XX",
                 output_directory=GcsfsDirectoryPath.from_absolute_path(
                     "gs://{project_id}-dataset-location/subdirectory/{state_code}".format(
-                        project_id=mock_project_id,
+                        project_id=self.mock_project_id,
                         state_code='US_XX',
                     )
                 ),
@@ -90,6 +90,38 @@ class BigQueryViewExporterTest(unittest.TestCase):
             self.assertTrue(gcs_path.file_name.endswith('.csv'),
                             msg=f'GCS output file {gcs_path.abs_path()} is not a CSV as expected.')
 
+    def test_csv_throws(self) -> None:
+        exporter = CSVBigQueryViewExporter(self.mock_bq_client, self.mock_validator)
+        view_export_configs = [
+            ExportBigQueryViewConfig(
+                view=self.view_builder.build(),
+                view_filter_clause=" WHERE state_code = 'US_XX'",
+                intermediate_table_name=f"{self.view_builder.view_id}_table_US_XX",
+                output_directory=GcsfsDirectoryPath.from_absolute_path(
+                    "gs://{project_id}-dataset-location/subdirectory/{state_code}".format(
+                        project_id=self.mock_project_id,
+                        state_code='US_XX',
+                    )
+                ),
+                export_output_formats=[ExportOutputFormatType.JSON, ExportOutputFormatType.HEADERLESS_CSV],
+            ),
+            ExportBigQueryViewConfig(
+                view=self.second_view_builder.build(),
+                view_filter_clause=" WHERE state_code = 'US_XX'",
+                intermediate_table_name=f"{self.second_view_builder.view_id}_table_US_XX",
+                output_directory=GcsfsDirectoryPath.from_absolute_path(
+                    "gs://{project_id}-dataset-location/subdirectory/{state_code}".format(
+                        project_id=self.mock_project_id,
+                        state_code='US_XX',
+                    )
+                ),
+                export_output_formats=[ExportOutputFormatType.JSON],
+            ),
+        ]
+
+        with self.assertRaises(ValueError):
+            exporter.export(view_export_configs)
+
     def test_json_export_format(self) -> None:
         exporter = JsonLinesBigQueryViewExporter(self.mock_bq_client, self.mock_validator)
         export_file_destinations = exporter.export(self.view_export_configs)
@@ -99,3 +131,35 @@ class BigQueryViewExporterTest(unittest.TestCase):
         for gcs_path in export_file_destinations:
             self.assertTrue(gcs_path.file_name.endswith('.json'),
                             msg=f'GCS output file {gcs_path.abs_path()} is not a .json file as expected.')
+
+    def test_json_throws(self) -> None:
+        exporter = JsonLinesBigQueryViewExporter(self.mock_bq_client, self.mock_validator)
+        view_export_configs = [
+            ExportBigQueryViewConfig(
+                view=self.view_builder.build(),
+                view_filter_clause=" WHERE state_code = 'US_XX'",
+                intermediate_table_name=f"{self.view_builder.view_id}_table_US_XX",
+                output_directory=GcsfsDirectoryPath.from_absolute_path(
+                    "gs://{project_id}-dataset-location/subdirectory/{state_code}".format(
+                        project_id=self.mock_project_id,
+                        state_code='US_XX',
+                    )
+                ),
+                export_output_formats=[ExportOutputFormatType.JSON, ExportOutputFormatType.HEADERLESS_CSV],
+            ),
+            ExportBigQueryViewConfig(
+                view=self.second_view_builder.build(),
+                view_filter_clause=" WHERE state_code = 'US_XX'",
+                intermediate_table_name=f"{self.second_view_builder.view_id}_table_US_XX",
+                output_directory=GcsfsDirectoryPath.from_absolute_path(
+                    "gs://{project_id}-dataset-location/subdirectory/{state_code}".format(
+                        project_id=self.mock_project_id,
+                        state_code='US_XX',
+                    )
+                ),
+                export_output_formats=[ExportOutputFormatType.METRIC],
+            ),
+        ]
+
+        with self.assertRaises(ValueError):
+            exporter.export(view_export_configs)
