@@ -100,7 +100,7 @@ else:
 
 middleware = FlaskMiddleware(
     app,
-    blacklist_paths=['metadata', 'computeMetadata'],  # Don't trace metadata requests
+    excludelist_paths=['metadata', 'computeMetadata'],  # Don't trace metadata requests
     sampler=trace_sampler,
     exporter=trace_exporter,
     propagator=google_cloud_format.GoogleCloudFormatPropagator())
