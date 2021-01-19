@@ -26,7 +26,7 @@ from opencensus.stats import aggregation, measure, view
 from flask import Blueprint, request
 
 from recidiviz.big_query import view_update_manager
-from recidiviz.utils import monitoring
+from recidiviz.utils import monitoring, structured_logging
 from recidiviz.utils.auth.gae import requires_gae_auth
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -89,7 +89,8 @@ def execute_validation(
     failed_to_run_validations: List[DataValidationJob] = []
     failed_validations: List[DataValidationJobResult] = []
     with futures.ThreadPoolExecutor() as executor:
-        future_to_jobs = {executor.submit(_run_job, job): job for job in validation_jobs}
+        future_to_jobs = {executor.submit(structured_logging.with_context(_run_job), job): job
+                          for job in validation_jobs}
 
         for future in futures.as_completed(future_to_jobs):
             job = future_to_jobs[future]
