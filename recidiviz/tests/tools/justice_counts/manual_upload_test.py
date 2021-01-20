@@ -37,8 +37,8 @@ from recidiviz.tools.justice_counts import manual_upload
 from recidiviz.tools.postgres import local_postgres_helpers
 
 
-def manifest_filepath(report_id: str):
-    return os.path.join(os.path.dirname(__file__), 'fixtures', report_id, 'manifest.yaml')
+def manifest_filepath(report_id: str, manifest_name: Optional[str] = None):
+    return os.path.join(os.path.dirname(__file__), 'fixtures', report_id, manifest_name or 'manifest.yaml')
 
 
 class FakeType(manual_upload.Dimension, EntityEnum, metaclass=EntityEnumMeta):
@@ -769,3 +769,19 @@ class ManualUploadTest(unittest.TestCase):
             (['45+', 'MALE', 'Male'], decimal.Decimal(0)),
             (['45+', 'FEMALE', 'Female'], decimal.Decimal(0))
         ], [(cell.aggregated_dimension_values, cell.value) for cell in cells])
+
+    def test_genericSpreadsheet_isParsed(self):
+        # Act
+        manual_upload.ingest(self.fs, test_utils.prepare_files(
+            self.fs, manifest_filepath('report_generic_sheet', 'AL_A.yaml')))
+
+        # Assert
+        session = SessionFactory.for_schema_base(JusticeCountsBase)
+        cells = session.query(schema.Cell).all()
+        self.assertEqual([([], decimal.Decimal(1000))],
+                         [(cell.aggregated_dimension_values, cell.value) for cell in cells])
+
+    def test_NaNs_fail(self):
+        # Act
+        with self.assertRaisesRegex(ValueError, "Invalid value 'NaN'"):
+            manual_upload.ingest(self.fs, test_utils.prepare_files(self.fs, manifest_filepath('report_nans')))
