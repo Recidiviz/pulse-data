@@ -1,0 +1,23 @@
+source: 'Alabama Department of Corrections'
+report_type: 'Dashboard Measures'
+report_instance: '2020-10-05'
+publish_date: '2020-10-05'
+url: 'https://www.alabama.gov/'
+assignee: 'Solange Knowles'
+tables:
+  - name: 'population'
+    methodology: 'SNAPSHOT'
+    date_range:
+      fixed:
+        type: 'SNAPSHOT'
+        input:
+          - '2020-09-01'
+    system: 'CORRECTIONS'
+    location:
+      state: 'US_AL'
+    metric:
+      population:
+        measurement_type: 'INSTANT'
+        population_type: 'PRISON'
+    value_column:
+      column_name: 'Population'

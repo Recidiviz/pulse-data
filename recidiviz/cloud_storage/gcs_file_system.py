@@ -37,8 +37,9 @@ class GCSBlobDoesNotExistError(ValueError):
 
 
 class GcsfsFileContentsHandle(FileContentsHandle[str]):
-    def __init__(self, local_file_path: str):
+    def __init__(self, local_file_path: str, cleanup_file: bool = True):
         self.local_file_path = local_file_path
+        self.cleanup_file = cleanup_file
 
     def get_contents_iterator(self) -> Iterator[str]:
         """Lazy function (generator) to read a file line by line."""
@@ -56,7 +57,7 @@ class GcsfsFileContentsHandle(FileContentsHandle[str]):
         """This ensures that the file contents on local disk are deleted when
         this handle is garbage collected.
         """
-        if os.path.exists(self.local_file_path):
+        if self.cleanup_file and os.path.exists(self.local_file_path):
             os.remove(self.local_file_path)
 
 

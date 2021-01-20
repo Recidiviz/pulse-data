@@ -772,7 +772,7 @@ class Releases(Metric):
 
     @property
     def required_aggregated_dimensions(self) -> List[Type[Dimension]]:
-        return [ReleaseType] if self.release_type is None else []
+        return []
 
     def get_measurement_type(self) -> schema.MeasurementType:
         return self.measurement_type
@@ -1043,6 +1043,12 @@ class Table:
 
     # Each row in `data_points` may contain a subset of the dimensions in `dimensions`.
     data_points: List[DimensionalDataPoint] = attr.ib()
+
+    @data_points.validator
+    def _values_are_valid(self, _attribute: attr.Attribute, data_points: List[DimensionalDataPoint]) -> None:
+        for dimension_values, value in data_points:
+            if not value.is_finite():
+                raise ValueError(f"Invalid value '{value}' for row with dimensions: {dimension_values}")
 
     @data_points.validator
     def _rows_dimension_combinations_are_unique(
@@ -1339,10 +1345,15 @@ def _parse_metric(metric_input: YAMLDict) -> Metric:
     raise ValueError(f"Invalid metric, expected a dictionary with a single key that is one of ('admissions', "
                      f"'population') but received: {repr(metric_input)}")
 
+def _normalize(name: str) -> str:
+    return name.replace('/', '_')
+
+def csv_filename(sheet_name: str, worksheet_name: str) -> str:
+    return f"{_normalize(sheet_name)} - {_normalize(worksheet_name)}.csv"
 
 def _get_table_filename(spreadsheet_name: str, name: Optional[str], file: Optional[str]) -> str:
     if name is not None:
-        return f"{spreadsheet_name} - {name}.csv"
+        return csv_filename(spreadsheet_name, name)
     if file is not None:
         return file
     raise ValueError("Did not receive name parameter for table")
@@ -1367,15 +1378,22 @@ def _parse_tables(gcs: GCSFileSystem, manifest_path: GcsfsFilePath,
         filter_dimensions = \
             _parse_dimensions_from_additional_filters(table_input.pop_dict_optional('additional_filters'))
         metric = _parse_metric(table_input.pop_dict('metric'))
-        table_path = GcsfsFilePath.from_directory_and_file_name(
-            directory_path, _get_table_filename(spreadsheet_name,
-                                                name=table_input.pop_optional('name', str),
-                                                file=table_input.pop_optional('file', str)))
 
-        logging.info('Reading table: %s', table_path)
-        table_handle = gcs.download_to_temp_file(table_path)
-        if table_handle is None:
-            raise ValueError(f"Unable to download table from path: {table_path}")
+        table_name = table_input.pop_optional('name', str)
+        table_filename = table_input.pop_optional('file', str)
+        try:
+            table_handle = open_table_file(gcs, directory_path, spreadsheet_name, table_name, table_filename)
+        except ValueError as e:
+            # Much of the manually collected data uses a single spreadsheet with all of the data for a state, even if
+            # it is from multiple sources. To support that we first look for a table named with the data source, e.g.
+            # 'AL_A', but otherwise we fall back to the generic version, e.g. 'AL_Data'.
+            try:
+                spreadsheet_prefix = spreadsheet_name.split('_')[0]
+                table_handle = open_table_file(
+                    gcs, directory_path, f"{spreadsheet_prefix}_Data", table_name, table_filename)
+            except:
+                # Raise the original error.
+                raise e from e
         with table_handle.open() as table_file:
             df = pandas.read_csv(table_file)
 
@@ -1389,6 +1407,18 @@ def _parse_tables(gcs: GCSFileSystem, manifest_path: GcsfsFilePath,
             raise ValueError(f"Received unexpected parameters for table: {table_input}")
 
     return tables
+
+def open_table_file(
+    gcs: GCSFileSystem, directory_path: GcsfsDirectoryPath, spreadsheet_name: str, table_name: Optional[str],
+    table_file: Optional[str]
+) -> GcsfsFileContentsHandle:
+    table_path = GcsfsFilePath.from_directory_and_file_name(
+            directory_path, _get_table_filename(spreadsheet_name, name=table_name, file=table_file))
+    table_handle = gcs.download_to_temp_file(table_path)
+    if table_handle is None:
+        raise ValueError(f"Unable to download table from path: {table_path}")
+    logging.info('Reading table: %s', table_path)
+    return table_handle
 
 
 def _get_report_and_acquirer(gcs: GCSFileSystem, manifest_path: GcsfsFilePath) -> Tuple[Report, str]:
@@ -1552,6 +1582,7 @@ def _create_parser() -> argparse.ArgumentParser:
 
 
 def upload(gcs: GCSFileSystem, manifest_path: str) -> GcsfsFilePath:
+    """Uploads the manifest and any referenced tables to GCS."""
     directory, manifest_filename = os.path.split(manifest_path)
     manifest = YAMLDict.from_path(manifest_path)
 
@@ -1561,22 +1592,40 @@ def upload(gcs: GCSFileSystem, manifest_path: str) -> GcsfsFilePath:
     )
 
     for table in manifest.pop_dicts('tables'):
-        table_filename = _get_table_filename(manifest_filename[:-len('.yaml')],
-                                             name=table.pop_optional('name', str),
-                                             file=table.pop_optional('file', str))
-        gcs.upload_from_contents_handle(
-            path=GcsfsFilePath.from_directory_and_file_name(gcs_directory, table_filename),
-            contents_handle=GcsfsFileContentsHandle(os.path.join(directory, table_filename)),
-            content_type='text/csv'
-        )
+        spreadsheet_name = manifest_filename[:-len('.yaml')]
+        table_name = table.pop_optional('name', str)
+        table_filename = table.pop_optional('file', str)
+        try:
+            upload_table(gcs, directory, gcs_directory, spreadsheet_name, table_name, table_filename)
+        except FileNotFoundError as e:
+            # Much of the manually collected data uses a single spreadsheet with all of the data for a state, even if
+            # it is from multiple sources. To support that we first look for a table named with the data source, e.g.
+            # 'AL_A', but otherwise we fall back to the generic version, e.g. 'AL_Data'.
+            try:
+                spreadsheet_prefix = spreadsheet_name.split('_')[0]
+                upload_table(gcs, directory, gcs_directory, f"{spreadsheet_prefix}_Data", table_name, table_filename)
+            except:
+                # Raise the original error.
+                raise e from e
 
     manifest_gcs_path = GcsfsFilePath.from_directory_and_file_name(gcs_directory, os.path.basename(manifest_path))
     gcs.upload_from_contents_handle(
         path=manifest_gcs_path,
-        contents_handle=GcsfsFileContentsHandle(manifest_path),
+        contents_handle=GcsfsFileContentsHandle(manifest_path, cleanup_file=False),
         content_type='text/yaml'
     )
     return manifest_gcs_path
+
+def upload_table(
+    gcs: GCSFileSystem, directory: str, gcs_directory: GcsfsDirectoryPath, spreadsheet_name: str,
+    table_name: Optional[str], table_file: Optional[str]
+) -> None:
+    table_filename = _get_table_filename(spreadsheet_name, name=table_name, file=table_file)
+    gcs.upload_from_contents_handle(
+            path=GcsfsFilePath.from_directory_and_file_name(gcs_directory, table_filename),
+            contents_handle=GcsfsFileContentsHandle(os.path.join(directory, table_filename), cleanup_file=False),
+            content_type='text/csv'
+        )
 
 def trigger_ingest(gcs_path: GcsfsFilePath, app_url: Optional[str]) -> None:
     app_url = app_url or f'https://{metadata.project_id()}.appspot.com'
