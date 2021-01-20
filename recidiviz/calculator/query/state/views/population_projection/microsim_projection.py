@@ -67,7 +67,7 @@ MICROSIM_PROJECTION_QUERY_TEMPLATE = \
     most_recent_results AS (
       SELECT
         simulation_tag, MAX(date_created) AS date_created
-      FROM `{project_id}.{population_projection_dataset}.microsim_projection_raw`
+      FROM `{project_id}.{population_projection_output_dataset}.microsim_projection_raw`
       GROUP BY simulation_tag
     )
     SELECT
@@ -82,7 +82,7 @@ MICROSIM_PROJECTION_QUERY_TEMPLATE = \
       SUM(total_population) AS total_population,
       SUM(total_population_min) AS total_population_min,
       SUM(total_population_max) AS total_population_max,
-    FROM `{project_id}.{population_projection_dataset}.microsim_projection_raw`
+    FROM `{project_id}.{population_projection_output_dataset}.microsim_projection_raw`
     INNER JOIN most_recent_results
     USING (simulation_tag, date_created)
     WHERE compartment NOT LIKE 'RELEASE%'
@@ -114,7 +114,7 @@ MICROSIM_PROJECTION_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_query_template=MICROSIM_PROJECTION_QUERY_TEMPLATE,
     description=MICROSIM_PROJECTION_VIEW_DESCRIPTION,
     analyst_dataset=dataset_config.ANALYST_VIEWS_DATASET,
-    population_projection_dataset=dataset_config.POPULATION_PROJECTION_DATASET,
+    population_projection_output_dataset=dataset_config.POPULATION_PROJECTION_OUTPUT_DATASET,
     should_materialize=False
 )
 

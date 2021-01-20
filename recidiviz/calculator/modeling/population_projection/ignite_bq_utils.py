@@ -24,7 +24,7 @@ import pandas_gbq
 from recidiviz.calculator.modeling.population_projection.bq_utils import store_simulation_results, \
     add_simulation_date_column
 
-MICROSIM_DATASET = 'population_projection_data'
+MICROSIM_DATASET = 'population_projection_output_data'
 MICROSIM_TABLE_NAME = 'microsim_projection_raw'
 MICROSIM_SCHEMA = [
     {'name': 'simulation_tag', 'type': 'STRING', 'mode': 'REQUIRED'},
