@@ -24,7 +24,7 @@ from recidiviz.calculator.modeling.population_projection.bq_utils import store_s
     add_simulation_date_column
 
 # Constants for the Spark Output data
-SPARK_OUTPUT_DATASET = 'population_projection_data'
+SPARK_OUTPUT_DATASET = 'population_projection_output_data'
 
 COST_AVOIDANCE_TABLE_NAME = 'cost_avoidance_estimate_raw'
 COST_AVOIDANCE_NON_CUMULATIVE_TABLE_NAME = 'cost_avoidance_non_cumulative_estimate_raw'

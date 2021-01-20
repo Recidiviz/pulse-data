@@ -55,7 +55,7 @@ POPULATION_PROJECTION_OUTPUT_QUERY_TEMPLATE = \
     WITH most_recent_results AS (
       SELECT
         simulation_tag, MAX(date_created) AS date_created
-      FROM `{project_id}.{population_projection_dataset}.{output_name}_raw`
+      FROM `{project_id}.{population_projection_output_dataset}.{output_name}_raw`
       GROUP BY 1
     )
     SELECT
@@ -65,7 +65,7 @@ POPULATION_PROJECTION_OUTPUT_QUERY_TEMPLATE = \
       EXTRACT(MONTH FROM simulation_date) AS month,
       compartment,
       {output_columns}
-    FROM `{project_id}.{population_projection_dataset}.{output_name}_raw`
+    FROM `{project_id}.{population_projection_output_dataset}.{output_name}_raw`
     INNER JOIN most_recent_results
     USING (simulation_tag, date_created)
     """
@@ -75,7 +75,7 @@ POPULATION_PROJECTION_OUTPUT_VIEW_BUILDERS = [
                               view_id=output.output_name,
                               view_query_template=POPULATION_PROJECTION_OUTPUT_QUERY_TEMPLATE,
                               description=output.output_description,
-                              population_projection_dataset=dataset_config.POPULATION_PROJECTION_DATASET,
+                              population_projection_output_dataset=dataset_config.POPULATION_PROJECTION_OUTPUT_DATASET,
                               output_name=output.output_name,
                               output_columns=', '.join(output.output_columns),
                               should_materialize=False
