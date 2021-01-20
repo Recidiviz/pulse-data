@@ -115,7 +115,8 @@ class GcsfsDirectIngestController(
             ingest_directory_path=self.ingest_directory_path,
             file_metadata_manager=self.file_metadata_manager,
             big_query_client=BigQueryClientImpl(),
-            view_collector=DirectIngestPreProcessedIngestViewCollector(self.region, self.get_file_tag_rank_list())
+            view_collector=DirectIngestPreProcessedIngestViewCollector(self.region, self.get_file_tag_rank_list()),
+            launched_file_tags=self.get_file_tag_rank_list(),
         )
 
     # ================= #

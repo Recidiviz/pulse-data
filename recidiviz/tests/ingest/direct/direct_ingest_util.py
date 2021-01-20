@@ -155,9 +155,10 @@ class FakeDirectIngestRawFileImportManager(DirectIngestRawFileImportManager):
 
 class FakeDirectIngestPreProcessedIngestViewBuilder(BigQueryViewBuilder[DirectIngestPreProcessedIngestView]):
     """Fake BQ View Builder for tests."""
-    def __init__(self, tag: str, region: Region):
+    def __init__(self, tag: str, region: Region, view_query_template: Optional[str] = None):
         self.region = region
         self.tag = tag
+        self.view_query_template = view_query_template or f'SELECT * FROM {{{self.tag}}}'
 
     def build(self,
               *,
@@ -165,7 +166,7 @@ class FakeDirectIngestPreProcessedIngestViewBuilder(BigQueryViewBuilder[DirectIn
               ) -> DirectIngestPreProcessedIngestView:
         return DirectIngestPreProcessedIngestView(
             ingest_view_name=self.tag,
-            view_query_template=(f'SELECT * FROM {{{self.tag}}}'),
+            view_query_template=self.view_query_template,
             region_raw_table_config=FakeDirectIngestRegionRawFileConfig(region_code=self.region.region_code),
             order_by_cols=None,
             is_detect_row_deletion_view=False,
@@ -194,6 +195,12 @@ class FakeDirectIngestPreProcessedIngestViewCollector(
             FakeDirectIngestPreProcessedIngestViewBuilder(tag=tag, region=self.region)
             for tag in self.controller_file_tags
         ]
+
+        builders.append(FakeDirectIngestPreProcessedIngestViewBuilder(
+            tag='gatedTagNotInTagsList',
+            region=self.region,
+            view_query_template='SELECT * FROM {tagA} LEFT OUTER JOIN {tagB} USING (col);'
+        ))
 
         return builders
 

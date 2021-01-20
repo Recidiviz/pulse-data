@@ -283,6 +283,7 @@ class DirectIngestIngestViewExportManagerTest(unittest.TestCase):
                               is_detect_row_deletion_view: bool = False,
                               materialize_raw_data_table_views: bool = False) -> DirectIngestIngestViewExportManager:
         metadata_manager = PostgresDirectIngestFileMetadataManager(region.region_code)
+        controller_file_tags = ['ingest_view']
         return DirectIngestIngestViewExportManager(
             region=region,
             fs=FakeGCSFileSystem(),
@@ -291,10 +292,12 @@ class DirectIngestIngestViewExportManagerTest(unittest.TestCase):
             file_metadata_manager=metadata_manager,
             view_collector=_ViewCollector(  # type: ignore[arg-type]
                 region,
-                controller_file_tags=['ingest_view'],
+                controller_file_tags=controller_file_tags,
                 is_detect_row_deletion_view=is_detect_row_deletion_view,
                 materialize_raw_data_table_views=materialize_raw_data_table_views
-            ))
+            ),
+            launched_file_tags=controller_file_tags
+        )
 
     @staticmethod
     def generate_query_params_for_date(date_param: datetime.datetime) -> ScalarQueryParameter:
