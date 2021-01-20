@@ -441,6 +441,8 @@ class CompartmentTransitions(ABC):
                     new_sentence_length = max([sentence_length * (1 - row.reduction_size), 1])
                 elif reduction_type == '+':
                     new_sentence_length = max([sentence_length - row.reduction_size, 1])
+                else:
+                    raise RuntimeError(f"reduction type {reduction_type} not recognized (must be '*' or '+')")
 
                 # separate out non-integer sentence length into one chunk rounded up and one chunk rounded down,
                 #   weighted by where in the middle actual sentence falls
@@ -451,12 +453,13 @@ class CompartmentTransitions(ABC):
                 self.transition_dfs[df_name][row.outflow][int(new_sentence_length) - 1] += shorter_bit
                 self.transition_dfs[df_name][row.outflow][int(new_sentence_length)] += longer_bit
 
-    def reallocate_outflow(self, reallocation_df: pd.DataFrame, retroactive: bool = False):
+    def reallocate_outflow(self, reallocation_df: pd.DataFrame, reallocation_type: str, retroactive: bool = False):
         """
         reallocation_df should be a df with columns
             'outflow': outflow to be reallocated
             'affected_fraction' : 0 =< float =< 1
             'new_outflow': outflow_tag
+        reallocation_type: '*' or '+' --> if '*', scale new_outflow. if '+', add original sentence distribution
         If `new_outflow` doesn't exist, create a new column for it. If null, just scale down (BE VERY USING NULL,
             EASY TO MESS UP NORMALIZATION)
         """
@@ -466,12 +469,25 @@ class CompartmentTransitions(ABC):
 
         df_name = self.get_df_name_from_retroactive(retroactive)
 
+        if reallocation_type == '*' \
+                and not reallocation_df.new_outflow.isin(self.transition_dfs[df_name]).all():
+            raise ValueError("Cannot use scaling methodology if new_outflow not already in transition table")
+
         for _, row in reallocation_df.iterrows():
-            self.transition_dfs[df_name][row.outflow] = list(np.array(self.transition_dfs[df_name][row.outflow])
-                                                             * (1 - row.affected_fraction))
+            before_outflow = np.array(self.transition_dfs[df_name][row.outflow])
+            self.transition_dfs[df_name][row.outflow] = list(before_outflow * (1 - row.affected_fraction))
 
             if not row.isnull().new_outflow:
-                new_outflow_value = list(np.array(self.transition_dfs[df_name].get(row.new_outflow, 0)) +
-                                         np.array(self.transition_dfs[df_name][row.outflow]))
+                if reallocation_type == '+':
+                    new_outflow_value = list(np.array(self.transition_dfs[df_name].get(row.new_outflow, 0)) +
+                                             before_outflow * row.affected_fraction)
+                    self.transition_dfs[df_name][row.new_outflow] = new_outflow_value
+                elif reallocation_type == '*':
+                    reallocated_population = sum(before_outflow) * row.affected_fraction
+                    new_outflow_population = sum(self.transition_dfs[df_name][row.new_outflow])
+                    scale_factor = 1 + reallocated_population / new_outflow_population
+                    updated_new_outflow = np.array(self.transition_dfs[df_name][row.new_outflow]) * scale_factor
+                    self.transition_dfs[df_name][row.new_outflow] = list(updated_new_outflow)
 
-                self.transition_dfs[df_name][row.new_outflow] = new_outflow_value
+                else:
+                    raise RuntimeError(f"reallocation type {reallocation_type} not recognized (must be '*' or '+')")

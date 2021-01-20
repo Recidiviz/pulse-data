@@ -76,18 +76,20 @@ class ShellCompartment(SparkCompartment):
     def gen_arima_output_df(self, state: str = 'before'):
         return pd.concat({self.tag: self.admissions_predictors[state].gen_arima_output_df()}, names=['compartment'])
 
-    def reallocate_outflow(self, reallocation_fraction: float, outflow: str, new_outflow: str):
+    def reallocate_outflow(self, reallocation_fraction: float, outflow: str, new_outflow: str = None):
         """
-        reallocate `reallocation_fraction` of outflows from `outflow` to `new_outflow`
-            e.g. if reallocation_fraction is 0.2 and an outflow is 100 in a given ts, it will become 80 to that outflow
+        reallocate `reallocation_fraction` of outflows from `outflow` lto `new_outflow` (just scales down
+            if no new_outflow given)
+        e.g. if reallocation_fraction is 0.2 and an outflow is 100 in a given ts, it will become 80 to that outflow
             20 added to `new_outflow`
         """
 
-        # generate new outflows
-        if new_outflow in self.after_data.index:
-            self.after_data.loc[new_outflow] += self.after_data.loc[outflow] * reallocation_fraction
-        else:
-            self.after_data.loc[new_outflow] = self.after_data.loc[outflow] * reallocation_fraction
+        if new_outflow is not None:
+            # generate new outflows
+            if new_outflow in self.after_data.index:
+                self.after_data.loc[new_outflow] += self.after_data.loc[outflow] * reallocation_fraction
+            else:
+                self.after_data.loc[new_outflow] = self.after_data.loc[outflow] * reallocation_fraction
 
         # scale down old outflows
         self.after_data.loc[outflow] *= (1 - reallocation_fraction)

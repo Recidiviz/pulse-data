@@ -39,10 +39,10 @@ class CohortTable:
     def append_ts_end_count(self, cohort_sizes: pd.Series, projection_ts: int) -> None:
         """Append the cohort sizes for the end of the projection ts"""
         latest_population = self.get_latest_population()
-        if (cohort_sizes > latest_population).any():
+        if (round(cohort_sizes, 8) > round(latest_population, 8)).any():
             raise ValueError("Cannot append cohort data that is larger than the latest population\n"
-                             f"Latest population: {latest_population}\n"
-                             f"Attempting to append: {cohort_sizes}")
+                             f"Latest population: {latest_population[cohort_sizes > latest_population]}\n"
+                             f"Attempting to append: {cohort_sizes[cohort_sizes > latest_population]}")
 
         if projection_ts in self.cohort_df.columns:
             raise ValueError(f"Cannot overwrite cohort for time {projection_ts}")
