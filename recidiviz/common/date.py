@@ -149,6 +149,14 @@ class DateRange:
 
 
 @attr.s
+class NonNegativeDateRange(DateRange):
+    def __attrs_post_init__(self) -> None:
+        if self.lower_bound_inclusive_date > self.upper_bound_exclusive_date:
+            raise ValueError(f"Parsed date has to be in chronological order. "
+                             f"Current order: {self.lower_bound_inclusive_date}, {self.upper_bound_exclusive_date}")
+
+
+@attr.s
 class DateRangeDiff:
     """Utility class for representing the difference between two date ranges."""
 

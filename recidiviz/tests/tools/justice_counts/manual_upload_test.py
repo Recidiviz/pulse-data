@@ -35,6 +35,7 @@ from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.tests.tools.justice_counts import test_utils
 from recidiviz.tools.justice_counts import manual_upload
 from recidiviz.tools.postgres import local_postgres_helpers
+from recidiviz.utils.yaml_dict import YAMLDict
 
 
 def manifest_filepath(report_id: str, manifest_name: Optional[str] = None):
@@ -769,6 +770,69 @@ class ManualUploadTest(unittest.TestCase):
             (['45+', 'MALE', 'Male'], decimal.Decimal(0)),
             (['45+', 'FEMALE', 'Female'], decimal.Decimal(0))
         ], [(cell.aggregated_dimension_values, cell.value) for cell in cells])
+
+    def test_parse_date_range_raiseChronologicalError(self):
+        range_input = YAMLDict({
+            "type": "RANGE",
+            "input": [
+                '2020-11-01',
+                '2020-10-01'
+            ]
+        })
+
+        # Act
+        with pytest.raises(ValueError) as exception_info:
+            manual_upload._parse_date_range(range_input)  # pylint: disable=protected-access
+
+        # Assert
+        assert "Parsed date has to be in chronological order" in str(exception_info.value)
+
+    def test_parse_date_range_input_raiseMaximumDatesError(self):
+        range_input = YAMLDict({
+            "type": "RANGE",
+            "input": [
+                '2020-10-01',
+                '2020-11-01',
+                '2020-12-01',
+            ]
+        })
+
+        # Act
+        with pytest.raises(ValueError) as exception_info:
+            manual_upload._parse_date_range(range_input)  # pylint: disable=protected-access
+
+        # Assert
+        assert "Have a maximum of 2 dates for input" in str(exception_info.value)
+
+    def test_DynamicDateRangeProducer_convert_chronolicalError(self):
+        converter = manual_upload.RANGE_CONVERTERS[manual_upload.RangeType.CUSTOM]
+        columns = {
+            'Start': manual_upload.DATE_FORMAT_PARSERS[manual_upload.DateFormatType.MONTH],
+            'End': manual_upload.DATE_FORMAT_PARSERS[manual_upload.DateFormatType.MONTH]
+        }
+        args = ('2019-01', '2018-01')
+        dynamic_range_producer = manual_upload.DynamicDateRangeProducer(columns=columns, converter=converter)
+
+        # Act
+        with pytest.raises(ValueError) as exception_info:
+            dynamic_range_producer._convert(args)  # pylint: disable=protected-access
+
+        # Assert
+        assert "Parsed date has to be in chronological order" in str(exception_info.value)
+
+    def test_raiseAggregatedDimensionsShouldBeFilteredDimension(self):
+        date_range = manual_upload.NonNegativeDateRange(datetime.date(2019, 10, 1), datetime.date(2019, 11, 1))
+        metric = manual_upload.Population(schema.MeasurementType.INSTANT)
+
+        # Act
+        with pytest.raises(AttributeError) as exception_info:
+            manual_upload.Table(date_range, metric, schema.System.CORRECTIONS, 'Unknown',
+                                manual_upload.State('US_CO'), [manual_upload.Facility('MSP')],
+                                dimensions=[manual_upload.Race, manual_upload.PopulationType],
+                                data_points=[((manual_upload.Race('Black'),), decimal.Decimal(0))])
+
+        # Assert
+        assert "change it to a filtered dimension" in str(exception_info.value)
 
     def test_genericSpreadsheet_isParsed(self):
         # Act

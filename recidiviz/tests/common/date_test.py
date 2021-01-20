@@ -18,7 +18,9 @@
 import datetime
 import unittest
 
-from recidiviz.common.date import munge_date_string, DateRange, DateRangeDiff
+import pytest
+
+from recidiviz.common.date import munge_date_string, DateRange, DateRangeDiff, NonNegativeDateRange
 
 
 def test_mungeDateString_munges():
@@ -115,6 +117,16 @@ class TestDateRange(unittest.TestCase):
         year_range = DateRange.for_year_of_date(datetime.date(2019, 1, 25))
         self.assertEqual((datetime.date(2019, 1, 1), datetime.date(2020, 1, 1)),
                          (year_range.lower_bound_inclusive_date, year_range.upper_bound_exclusive_date))
+
+
+class TestNonNegativeDateRange(unittest.TestCase):
+    """Tests for NonNegativeDateRange"""
+
+    def test_negative_raises_value_error(self):
+        with pytest.raises(ValueError) as exception_info:
+            NonNegativeDateRange(lower_bound_inclusive_date=datetime.date(2019, 2, 3),
+                                 upper_bound_exclusive_date=datetime.date(2019, 2, 2))
+        assert "Parsed date has to be in chronological order" in str(exception_info.value)
 
 
 class TestDateRangeDiff(unittest.TestCase):
