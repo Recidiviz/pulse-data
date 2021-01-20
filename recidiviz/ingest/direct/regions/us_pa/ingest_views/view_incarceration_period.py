@@ -21,7 +21,7 @@ from recidiviz.ingest.direct.controllers.direct_ingest_big_query_view_types impo
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-
+# TODO(#4187): Once the v2 version of this view has shipped in prod, delete this view
 VIEW_QUERY_TEMPLATE = """
 WITH movements_base AS (
   SELECT 
