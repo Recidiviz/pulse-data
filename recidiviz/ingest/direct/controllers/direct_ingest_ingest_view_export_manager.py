@@ -87,7 +87,8 @@ class DirectIngestIngestViewExportManager:
                  ingest_directory_path: GcsfsDirectoryPath,
                  big_query_client: BigQueryClient,
                  file_metadata_manager: DirectIngestFileMetadataManager,
-                 view_collector: BigQueryViewCollector[DirectIngestPreProcessedIngestViewBuilder]):
+                 view_collector: BigQueryViewCollector[DirectIngestPreProcessedIngestViewBuilder],
+                 launched_file_tags: List[str]):
 
         self.region = region
         self.fs = fs
@@ -96,7 +97,9 @@ class DirectIngestIngestViewExportManager:
         self.file_metadata_manager = file_metadata_manager
         self.ingest_views_by_tag = {
             builder.file_tag: builder.build()
-            for builder in view_collector.collect_view_builders()}
+            for builder in view_collector.collect_view_builders()
+            if builder.file_tag in launched_file_tags
+        }
 
     def get_ingest_view_export_task_args(self) -> List[GcsfsIngestViewExportArgs]:
         """Looks at what files have been exported for a given region and returns args for all the export jobs that
