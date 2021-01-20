@@ -44,6 +44,9 @@ MOST_RECENT_DAILY_JOB_ID_BY_METRIC_AND_STATE_CODE_QUERY_TEMPLATE = \
       UNION ALL
       (SELECT DISTINCT job_id, state_code, date_of_participation as metric_date, metric_type
       FROM `{project_id}.{metrics_dataset}.program_participation_metrics`)
+      UNION ALL
+      (SELECT DISTINCT job_id, state_code, revocation_admission_date as metric_date, metric_type
+      FROM `{project_id}.{metrics_dataset}.supervision_revocation_analysis_metrics`)
     ), ranked_job_ids AS (
       SELECT *, row_number() OVER (PARTITION BY state_code, metric_type ORDER BY metric_date DESC, job_id DESC) AS recency_rank
       FROM all_job_ids
