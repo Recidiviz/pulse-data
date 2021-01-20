@@ -44,7 +44,7 @@ from recidiviz.calculator.query.justice_counts.view_config import VIEW_BUILDERS_
     JUSTICE_COUNTS_VIEW_BUILDERS
 from recidiviz.calculator.query.operations.dataset_config import OPERATIONS_BASE_DATASET
 from recidiviz.calculator.query.state.dataset_config import STATE_BASE_DATASET, STATIC_REFERENCE_TABLES_DATASET, \
-    DATAFLOW_METRICS_DATASET, COVID_DASHBOARD_REFERENCE_DATASET
+    DATAFLOW_METRICS_DATASET, COVID_DASHBOARD_REFERENCE_DATASET, POPULATION_PROJECTION_OUTPUT_DATASET
 from recidiviz.calculator.query.state.view_config import VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE as STATE_VIEW_BUILDERS
 from recidiviz.case_triage.views.view_config import VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE as CASE_TRIAGE_VIEW_BUILDERS
 from recidiviz.ingest.views.view_config import VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE as INGEST_METADATA_VIEW_BUILDERS
@@ -88,13 +88,12 @@ VIEW_BUILDERS_BY_NAMESPACE: Dict[BigQueryViewNamespace, Sequence[BigQueryViewBui
 
 # These datasets should only contain tables that provide the source data for our view graph.
 VIEW_SOURCE_TABLE_DATASETS = {
-    # TODO(#5200): Add the population projection raw data dataset to this list once raw data tables have been separated
-    #  from views.
     COUNTY_BASE_DATASET,
     COVID_DASHBOARD_REFERENCE_DATASET,
     DATAFLOW_METRICS_DATASET,
     EXTERNAL_ACCURACY_DATASET,
     OPERATIONS_BASE_DATASET,
+    POPULATION_PROJECTION_OUTPUT_DATASET,
     STATE_BASE_DATASET,
     STATIC_REFERENCE_TABLES_DATASET,
     VERA_DATASET

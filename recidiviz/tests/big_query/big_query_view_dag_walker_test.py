@@ -264,13 +264,8 @@ class TestBigQueryViewDagWalker(unittest.TestCase):
         self.fail(node.dag_key)
 
     def assertIsValidSourceDataTable(self, child_view_key: Tuple[str, str], source_table_key: Tuple[str, str]) -> None:
-        source_table_dataset_id, source_table_table_id = source_table_key
+        source_table_dataset_id, _ = source_table_key
         if source_table_dataset_id in VIEW_SOURCE_TABLE_DATASETS:
-            return
-
-        # TODO(#5200): Once raw data and views have been separated for population projection, remove this block and add
-        #  the appropriate dataset to VIEW_SOURCE_TABLE_DATASETS.
-        if source_table_dataset_id == 'population_projection_data' and source_table_table_id.endswith('_raw'):
             return
 
         up_to_date_view_match = re.match(LATEST_VIEW_DATASET_REGEX, source_table_dataset_id)
