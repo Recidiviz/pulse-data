@@ -48,6 +48,11 @@ USING
   (supervising_officer_external_id,
     state_code,
     date_of_supervision)
+LEFT JOIN
+  `{project_id}.state.state_person`
+USING
+  (person_id,
+    state_code)
 WHERE
   supervision_level IS NOT NULL
 """
@@ -59,6 +64,10 @@ CLIENT_LIST_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
     columns=[
         'supervising_officer_external_id',
         'person_external_id',
+        'full_name',
+        'current_address',
+        'birthdate',
+        'birthdate_inferred_from_age',
         'supervision_type',
         'case_type',
         'supervision_level',
