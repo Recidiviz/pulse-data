@@ -217,7 +217,7 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
                             ]),
             ])
 
-        self.run_parse_file_test(expected, 'doc_person_info')
+        self.run_parse_file_test(expected, 'doc_person_info_v2')
 
     def test_populate_data_dbo_tblInmTestScore(self) -> None:
         expected = IngestInfo(
@@ -1927,7 +1927,7 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
         populate_person_backedges(expected_people)
 
         # Act
-        self._run_ingest_job_for_filename('doc_person_info.csv')
+        self._run_ingest_job_for_filename('doc_person_info_v2.csv')
 
         # Assert
         self.assert_expected_db_people(expected_people)

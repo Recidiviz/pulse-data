@@ -19,13 +19,12 @@
 from recidiviz.ingest.direct.controllers.direct_ingest_big_query_view_types import \
     DirectIngestPreProcessedIngestViewBuilder
 from recidiviz.ingest.direct.regions.us_pa.ingest_views.templates_person_external_ids import \
-    MASTER_STATE_IDS_FRAGMENT
+    MASTER_STATE_IDS_FRAGMENT_V2
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-# TODO(#4187): Introduce a new _v2 version of this ingest view that references MASTER_STATE_IDS_FRAGMENT_V2
 VIEW_QUERY_TEMPLATE = f"""WITH
-{MASTER_STATE_IDS_FRAGMENT},
+{MASTER_STATE_IDS_FRAGMENT_V2},
 base_query AS (
   SELECT 
     ids.recidiviz_master_person_id, ParoleNumber, OffRaceEthnicGroup, OffSex,
@@ -55,6 +54,7 @@ VIEW_BUILDER = DirectIngestPreProcessedIngestViewBuilder(
     ingest_view_name='dbo_Offender',
     view_query_template=VIEW_QUERY_TEMPLATE,
     order_by_cols=None,
+    materialize_raw_data_table_views=True
 )
 
 if __name__ == '__main__':
