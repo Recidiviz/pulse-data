@@ -33,12 +33,44 @@ class PredictedAdmissions:
         """
         historical_data is a DataFrame with columns for each time step and rows for each outflow_to type (jail, prison).
         Columns need to be numeric.
+        Data must be continuous for each outflow, i.e. only NaN values on either end.
 
         The input data will not necessarily be sorted in temporal order, so that step is done here. Additionally, an
         ARIMA model will fail if all data is 0, so any rows with no data will be dropped as well.
         """
 
-        historical_data = historical_data[historical_data.sum(1) > 0].sort_index(axis=1)
+        historical_data = historical_data.sort_index(axis=1)
+
+        # fill out historical data so all outflows have the same time steps of data
+        for outflow, row in historical_data.iterrows():
+            missing_data = historical_data.columns[row.isnull()]
+
+            min_data_ts = row.dropna().index.min()
+            max_data_ts = row.dropna().index.max()
+
+            missing_data_backward = missing_data[missing_data < min_data_ts]
+            missing_data_forward = missing_data[missing_data > max_data_ts]
+
+            if not missing_data_backward.empty:
+                if len(row.dropna()) < MIN_NUM_DATA_POINTS:
+                    constant_admissions = True
+                    historical_data.loc[outflow, missing_data_backward] = historical_data.loc[outflow, min_data_ts]
+                else:
+                    model_backcast = ARIMA(row.iloc[::-1].dropna(), order=ORDER).fit(disp=False).forecast(
+                        steps=len(missing_data_backward))[0]
+
+                    # flip the predictions back around so they're ordered correctly for the historical data indexing
+                    historical_data.loc[outflow, missing_data_backward] = model_backcast.iloc[::-1]
+
+            if not missing_data_forward.empty:
+                if len(row.dropna()) < MIN_NUM_DATA_POINTS:
+                    constant_admissions = True
+                    historical_data.loc[outflow, missing_data_forward] = historical_data.loc[outflow, max_data_ts]
+                else:
+                    model_forecast = ARIMA(row.dropna(), order=ORDER).fit(disp=False).forecast(
+                        steps=len(missing_data_forward))[0]
+
+                    historical_data.loc[outflow, missing_data_forward] = model_forecast
 
         self.historical_data = historical_data
         self.trained_model_dict = None
@@ -71,8 +103,8 @@ class PredictedAdmissions:
         # A dictionary is created for each admission type with both a forecasting model and a backcasting model
         trained_model_dict = {}
         for outflow_compartment, row in self.historical_data.iterrows():
-            model_forecast = ARIMA(row.fillna(0).values, order=ORDER)
-            model_backcast = ARIMA(row.iloc[::-1].fillna(0).values, order=ORDER)
+            model_forecast = ARIMA(row.values, order=ORDER)
+            model_backcast = ARIMA(row.iloc[::-1].values, order=ORDER)
 
             trained_model_dict[outflow_compartment] = {'forecast': model_forecast.fit(disp=False),
                                      'backcast': model_backcast.fit(disp=False)}

@@ -1,0 +1,30 @@
+user_inputs:
+    policy_year: 2021
+    start_year: 2018.916667
+    projection_years: 10
+    speed_run: true
+
+model_architecture:
+    pre-supervision: null
+    probation: incarcerated
+    prison_technical: incarcerated 
+    prison_new_offense: incarcerated
+    release: released
+
+reference_date: 2014
+# january
+time_step: 0.083333333 
+# one month
+
+disaggregation_axes: 
+- crime_type
+
+data_inputs: 
+    big_query_simulation_tag: RI_probation
+
+per_year_costs:
+  prison_technical: 85927
+  prison_new_offense: 85927
+  probation: 2586
+  release: 0
+# average cost
