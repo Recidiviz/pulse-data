@@ -8,6 +8,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Cancel previous runs
+        if: ${{ github.ref != '/refs/heads/master' }}
         uses: styfle/cancel-workflow-action@0.6.0
         with:
           access_token: ${{ github.token }}
@@ -55,6 +56,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Cancel previous runs
+        if: ${{ github.ref != '/refs/heads/master' }}
         uses: styfle/cancel-workflow-action@0.6.0
         with:
           access_token: ${{ github.token }}
@@ -83,6 +85,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Cancel previous runs
+        if: ${{ github.ref != '/refs/heads/master' }}
         uses: styfle/cancel-workflow-action@0.6.0
         with:
           access_token: ${{ github.token }}
@@ -116,6 +119,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Cancel previous runs
+        if: ${{ github.ref != '/refs/heads/master' }}
         uses: styfle/cancel-workflow-action@0.6.0
         with:
           access_token: ${{ github.token }}
