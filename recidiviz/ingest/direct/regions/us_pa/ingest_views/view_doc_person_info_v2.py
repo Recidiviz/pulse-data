@@ -19,13 +19,12 @@
 from recidiviz.ingest.direct.controllers.direct_ingest_big_query_view_types import \
     DirectIngestPreProcessedIngestViewBuilder
 from recidiviz.ingest.direct.regions.us_pa.ingest_views.templates_person_external_ids import \
-    MASTER_STATE_IDS_FRAGMENT
+    MASTER_STATE_IDS_FRAGMENT_V2
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-# TODO(#4187): Once the v2 version of this view has shipped in prod, delete this view
 VIEW_QUERY_TEMPLATE = f"""WITH
-{MASTER_STATE_IDS_FRAGMENT},
+{MASTER_STATE_IDS_FRAGMENT_V2},
 search_inmate_info_with_master_ids AS (
     SELECT recidiviz_master_person_id, info.*
     FROM 
@@ -112,7 +111,7 @@ people AS (
   FROM
     most_recent_info
   LEFT OUTER JOIN (
-    SELECT recidiviz_master_person_id, STRING_AGG(inmate_number, ',' ORDER BY inmate_number) AS inmate_numbers
+    SELECT recidiviz_master_person_id, STRING_AGG(DISTINCT inmate_number, ',' ORDER BY inmate_number) AS inmate_numbers
     FROM search_inmate_info_with_master_ids
     GROUP BY recidiviz_master_person_id
   ) AS inmate_numbers_grouping
@@ -125,9 +124,10 @@ FROM people
 
 VIEW_BUILDER = DirectIngestPreProcessedIngestViewBuilder(
     region='us_pa',
-    ingest_view_name='doc_person_info',
+    ingest_view_name='doc_person_info_v2',
     view_query_template=VIEW_QUERY_TEMPLATE,
     order_by_cols='recidiviz_master_person_id',
+    materialize_raw_data_table_views=True
 )
 
 if __name__ == '__main__':

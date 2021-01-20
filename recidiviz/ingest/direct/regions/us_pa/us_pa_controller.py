@@ -96,21 +96,25 @@ class UsPaController(CsvGcsfsDirectIngestController):
             self._add_incarceration_type,
         ]
 
+        doc_person_info_postprocessors: List[Callable] = [
+            gen_label_single_external_id_hook(US_PA_CONTROL),
+            self.gen_hydrate_alternate_external_ids({
+                'SID_Num': US_PA_SID,
+                'PBPP_Num': US_PA_PBPP,
+            }),
+            copy_name_to_alias,
+            gen_rationalize_race_and_ethnicity(self.ENUM_OVERRIDES),
+            self._compose_current_address,
+            self._hydrate_sentence_group_ids
+        ]
         self.row_post_processors_by_file: Dict[str, List[Callable]] = {
             'person_external_ids': [
                 self._hydrate_person_external_ids
             ],
-            'doc_person_info': [
-                gen_label_single_external_id_hook(US_PA_CONTROL),
-                self.gen_hydrate_alternate_external_ids({
-                    'SID_Num': US_PA_SID,
-                    'PBPP_Num': US_PA_PBPP,
-                }),
-                copy_name_to_alias,
-                gen_rationalize_race_and_ethnicity(self.ENUM_OVERRIDES),
-                self._compose_current_address,
-                self._hydrate_sentence_group_ids
-            ],
+            # TODO(#4187): Once v2 views have shipped in staging, remove legacy tag and rename doc_person_info_v2
+            #  -> doc_person_info w/ a migration
+            'doc_person_info': doc_person_info_postprocessors,
+            'doc_person_info_v2': doc_person_info_postprocessors,
             'dbo_tblInmTestScore': [
                 gen_label_single_external_id_hook(US_PA_CONTROL),
                 self._generate_doc_assessment_external_id,
@@ -171,6 +175,7 @@ class UsPaController(CsvGcsfsDirectIngestController):
         self.file_post_processors_by_file: Dict[str, List[Callable]] = {
             'person_external_ids': [],
             'doc_person_info': [],
+            'doc_person_info_v2': [],
             'dbo_tblInmTestScore': [],
             'dbo_Senrec': [
                 gen_convert_person_ids_to_external_id_objects(self._get_id_type),
@@ -595,9 +600,16 @@ class UsPaController(CsvGcsfsDirectIngestController):
         launched_file_tags = [
             # Data source: Mixed
             'person_external_ids',
+        ]
 
-            # Data source: DOC
-            'doc_person_info',
+        # Data source: DOC
+        if environment.in_gae():
+            launched_file_tags.append('doc_person_info')
+        else:
+            # TODO(#4187): Launch this to staging and then prod with any new reruns
+            launched_file_tags.append('doc_person_info_v2')
+
+        launched_file_tags += [
             'dbo_tblInmTestScore',
             'dbo_Senrec',
         ]
@@ -628,8 +640,13 @@ class UsPaController(CsvGcsfsDirectIngestController):
         if not environment.in_gae():
             file_tags += unlaunched_file_tags
 
-        # TODO(#4187): Remove these checks once the sci_incarceration_period tag is fully launched the
-        #  incarceration_period tag is removed.
+        # TODO(#4187): Remove these checks once the doc_person_info_v2 and sci_incarceration_period tags are fully
+        #  launched
+        if 'doc_person_info' in file_tags and 'doc_person_info_v2' in file_tags:
+            raise ValueError("Can only launch one of 'doc_person_info' and 'doc_person_info_v2' at a time.")
+        if 'doc_person_info' not in file_tags and 'doc_person_info_v2' not in file_tags:
+            raise ValueError("Must launch one of 'doc_person_info' and 'doc_person_info_v2'.")
+
         if 'incarceration_period' in file_tags and 'sci_incarceration_period' in file_tags:
             raise ValueError("Can only launch one of 'incarceration_period' and 'sci_incarceration_period' at a time.")
         if 'incarceration_period' not in file_tags and 'sci_incarceration_period' not in file_tags:

@@ -19,13 +19,12 @@
 from recidiviz.ingest.direct.controllers.direct_ingest_big_query_view_types import \
     DirectIngestPreProcessedIngestViewBuilder
 from recidiviz.ingest.direct.regions.us_pa.ingest_views.templates_person_external_ids import \
-    MASTER_STATE_IDS_FRAGMENT
+    MASTER_STATE_IDS_FRAGMENT_V2
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-# TODO(#4187): Introduce a new _v2 version of this ingest view that references MASTER_STATE_IDS_FRAGMENT_V2
 VIEW_QUERY_TEMPLATE = f"""WITH
-{MASTER_STATE_IDS_FRAGMENT}
+{MASTER_STATE_IDS_FRAGMENT_V2}
 SELECT 
   recidiviz_master_person_id,
   STRING_AGG(DISTINCT control_number, ',' ORDER BY control_number) AS control_numbers,
