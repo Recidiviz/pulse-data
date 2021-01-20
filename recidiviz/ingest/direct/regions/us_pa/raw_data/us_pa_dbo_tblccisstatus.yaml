@@ -1,0 +1,5 @@
+file_tag: dbo_tblCCISStatus
+primary_key_cols:
+  - Status_Id
+datetime_cols:
+  - LstMod_Dt
