@@ -88,6 +88,14 @@ class UsPaController(CsvGcsfsDirectIngestController):
             max_delay_sec_between_files=max_delay_sec_between_files)
         self.enum_overrides = self.generate_enum_overrides()
 
+        incarceration_period_row_postprocessors = [
+            gen_label_single_external_id_hook(US_PA_CONTROL),
+            self._concatenate_admission_reason_codes,
+            self._concatenate_release_reason_codes,
+            self._concatenate_incarceration_purpose_codes,
+            self._add_incarceration_type,
+        ]
+
         self.row_post_processors_by_file: Dict[str, List[Callable]] = {
             'person_external_ids': [
                 self._hydrate_person_external_ids
@@ -114,13 +122,10 @@ class UsPaController(CsvGcsfsDirectIngestController):
                 self._strip_id_whitespace,
                 gen_set_agent_type(StateAgentType.JUDGE),
             ],
-            'incarceration_period': [
-                gen_label_single_external_id_hook(US_PA_CONTROL),
-                self._concatenate_admission_reason_codes,
-                self._concatenate_release_reason_codes,
-                self._concatenate_incarceration_purpose_codes,
-                self._add_incarceration_type,
-            ],
+            # TODO(#4187): Once v2 views have shipped in production, remove this tag and deprecate all associated ingest
+            #  view metadata rows
+            'incarceration_period': incarceration_period_row_postprocessors,
+            'sci_incarceration_period': incarceration_period_row_postprocessors,
             'dbo_Miscon': [
                 gen_label_single_external_id_hook(US_PA_CONTROL),
                 self._specify_incident_location,
@@ -170,7 +175,12 @@ class UsPaController(CsvGcsfsDirectIngestController):
             'dbo_Senrec': [
                 gen_convert_person_ids_to_external_id_objects(self._get_id_type),
             ],
+            # TODO(#4187): Once v2 views have shipped in production, remove this tag and deprecate all associated ingest
+            #  view metadata rows
             'incarceration_period': [
+                gen_convert_person_ids_to_external_id_objects(self._get_id_type),
+            ],
+            'sci_incarceration_period': [
                 gen_convert_person_ids_to_external_id_objects(self._get_id_type),
             ],
             'dbo_Miscon': [
@@ -196,7 +206,10 @@ class UsPaController(CsvGcsfsDirectIngestController):
         }
 
         self.primary_key_override_hook_by_file: Dict[str, Callable] = {
+            # TODO(#4187): Once v2 views have shipped in production, remove this tag and deprecate all associated ingest
+            #  view metadata rows
             'incarceration_period': _generate_incarceration_period_primary_key,
+            'sci_incarceration_period': _generate_sci_incarceration_period_primary_key,
             'supervision_sentence': _generate_supervision_sentence_primary_key,
             'supervision_period': _generate_supervision_period_primary_key,
             'supervision_violation': _generate_supervision_violation_primary_key,
@@ -205,7 +218,10 @@ class UsPaController(CsvGcsfsDirectIngestController):
         }
 
         self.ancestor_chain_overrides_callback_by_file: Dict[str, Callable] = {
+            # TODO(#4187): Once v2 views have shipped in production, remove this tag and deprecate all associated ingest
+            #  view metadata rows
             'incarceration_period': _state_incarceration_period_ancestor_chain_overrides,
+            'sci_incarceration_period': _state_incarceration_period_ancestor_chain_overrides,
             'supervision_sentence': _state_supervision_sentence_ancestor_chain_overrides,
             'supervision_violation_response': _state_supervision_violation_response_ancestor_chain_overrides,
         }
@@ -584,7 +600,15 @@ class UsPaController(CsvGcsfsDirectIngestController):
             'doc_person_info',
             'dbo_tblInmTestScore',
             'dbo_Senrec',
-            'incarceration_period',
+        ]
+
+        if environment.in_gae():
+            launched_file_tags.append('incarceration_period')
+        else:
+            # TODO(#4187): Launch this to staging and then prod with any new reruns
+            launched_file_tags.append('sci_incarceration_period')
+
+        launched_file_tags += [
             'dbo_Miscon',
 
             # Data source: PBPP
@@ -596,7 +620,6 @@ class UsPaController(CsvGcsfsDirectIngestController):
             'supervision_violation_response',
         ]
 
-        # TODO(#3024): Move these tags to the list above as each one is ready to run in stage
         unlaunched_file_tags: List[str] = [
             'board_action',
         ]
@@ -604,6 +627,13 @@ class UsPaController(CsvGcsfsDirectIngestController):
         file_tags = launched_file_tags
         if not environment.in_gae():
             file_tags += unlaunched_file_tags
+
+        # TODO(#4187): Remove these checks once the sci_incarceration_period tag is fully launched the
+        #  incarceration_period tag is removed.
+        if 'incarceration_period' in file_tags and 'sci_incarceration_period' in file_tags:
+            raise ValueError("Can only launch one of 'incarceration_period' and 'sci_incarceration_period' at a time.")
+        if 'incarceration_period' not in file_tags and 'sci_incarceration_period' not in file_tags:
+            raise ValueError("Must launch one of 'incarceration_period' and 'sci_incarceration_period'.")
 
         return file_tags
 
@@ -658,7 +688,15 @@ class UsPaController(CsvGcsfsDirectIngestController):
 
     @staticmethod
     def _get_id_type(file_tag: str) -> Optional[str]:
-        if file_tag in ['dbo_Senrec', 'incarceration_period', 'dbo_Miscon', 'board_action']:
+        if file_tag in [
+            'dbo_Senrec',
+            # TODO(#4187): Once v2 views have shipped in production, remove this tag and deprecate all associated ingest
+            #  view metadata rows
+            'incarceration_period',
+            'sci_incarceration_period',
+            'dbo_Miscon',
+            'board_action',
+        ]:
             return US_PA_CONTROL
 
         if file_tag in ['supervision_sentence',
@@ -1292,11 +1330,23 @@ class UsPaController(CsvGcsfsDirectIngestController):
                 )
 
 
+# TODO(#4187): Once v2 views have shipped in production, remove this tag and deprecate all associated ingest view
+#  metadata rows
 def _generate_incarceration_period_primary_key(_file_tag: str, row: Dict[str, str]) -> IngestFieldCoordinates:
     person_id = row['control_number']
     sentence_group_id = row['inmate_number']
     sequence_number = row['sequence_number']
     incarceration_period_id = f"{person_id}-{sentence_group_id}-{sequence_number}"
+
+    return IngestFieldCoordinates('state_incarceration_period',
+                                  'state_incarceration_period_id',
+                                  incarceration_period_id)
+
+
+def _generate_sci_incarceration_period_primary_key(_file_tag: str, row: Dict[str, str]) -> IngestFieldCoordinates:
+    sentence_group_id = row['inmate_number']
+    sequence_number = row['sequence_number']
+    incarceration_period_id = f"{sentence_group_id}-{sequence_number}"
 
     return IngestFieldCoordinates('state_incarceration_period',
                                   'state_incarceration_period_id',

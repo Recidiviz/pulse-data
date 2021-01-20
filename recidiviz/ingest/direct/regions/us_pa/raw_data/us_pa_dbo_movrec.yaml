@@ -1,4 +1,4 @@
 file_tag: dbo_Movrec
 primary_key_cols:
-  - mov_cnt_num
+  - mov_cur_inmt_num
   - mov_seq_num

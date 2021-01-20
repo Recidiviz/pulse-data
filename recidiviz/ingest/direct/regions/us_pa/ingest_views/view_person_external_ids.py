@@ -23,6 +23,7 @@ from recidiviz.ingest.direct.regions.us_pa.ingest_views.templates_person_externa
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
+# TODO(#4187): Introduce a new _v2 version of this ingest view that references MASTER_STATE_IDS_FRAGMENT_V2
 VIEW_QUERY_TEMPLATE = f"""WITH
 {MASTER_STATE_IDS_FRAGMENT}
 SELECT 
