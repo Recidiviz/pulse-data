@@ -58,13 +58,13 @@ class TestRevokedSupervisionPeriodsIfRevocationOccurred(unittest.TestCase):
 
         admission_is_revocation, revoked_periods = \
             state_calculation_config_manager.revoked_supervision_periods_if_revocation_occurred(
-                incarceration_period, supervision_periods, None
+                incarceration_period.state_code, incarceration_period, supervision_periods, None
             )
 
         self.assertTrue(admission_is_revocation)
         self.assertEqual([], revoked_periods)
 
-    def test_revoked_supervision_periods_if_revocation_occured_with_general_purpose_US_ID(self) -> None:
+    def test_revoked_supervision_periods_if_revocation_occurred_with_general_purpose_US_ID(self) -> None:
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=222,
             external_id='ip2',
@@ -82,7 +82,7 @@ class TestRevokedSupervisionPeriodsIfRevocationOccurred(unittest.TestCase):
 
         admission_is_revocation, revoked_periods = \
             state_calculation_config_manager.revoked_supervision_periods_if_revocation_occurred(
-                incarceration_period, supervision_periods, None
+                incarceration_period.state_code, incarceration_period, supervision_periods, None
             )
 
         self.assertTrue(admission_is_revocation)
@@ -106,7 +106,7 @@ class TestRevokedSupervisionPeriodsIfRevocationOccurred(unittest.TestCase):
 
         admission_is_revocation, revoked_periods = \
             state_calculation_config_manager.revoked_supervision_periods_if_revocation_occurred(
-                incarceration_period, supervision_periods, None
+                incarceration_period.state_code, incarceration_period, supervision_periods, None
             )
 
         self.assertTrue(admission_is_revocation)
@@ -147,7 +147,7 @@ class TestRevokedSupervisionPeriodsIfRevocationOccurred(unittest.TestCase):
 
         admission_is_revocation, revoked_periods = \
             state_calculation_config_manager.revoked_supervision_periods_if_revocation_occurred(
-                incarceration_period, supervision_periods, treatment_period
+                incarceration_period.state_code, incarceration_period, supervision_periods, treatment_period
             )
 
         self.assertFalse(admission_is_revocation)
@@ -186,7 +186,7 @@ class TestRevokedSupervisionPeriodsIfRevocationOccurred(unittest.TestCase):
 
         admission_is_revocation, revoked_periods = \
             state_calculation_config_manager.revoked_supervision_periods_if_revocation_occurred(
-                incarceration_period, supervision_periods, None
+                incarceration_period.state_code, incarceration_period, supervision_periods, None
             )
 
         self.assertTrue(admission_is_revocation)
@@ -217,7 +217,7 @@ class TestRevokedSupervisionPeriodsIfRevocationOccurred(unittest.TestCase):
 
         admission_is_revocation, revoked_periods = \
             state_calculation_config_manager.revoked_supervision_periods_if_revocation_occurred(
-                incarceration_period, supervision_periods, None
+                incarceration_period.state_code, incarceration_period, supervision_periods, None
             )
 
         self.assertFalse(admission_is_revocation)

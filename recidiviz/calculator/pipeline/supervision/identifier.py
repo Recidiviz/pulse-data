@@ -862,7 +862,8 @@ def find_revocation_return_buckets(supervision_sentences: List[StateSupervisionS
                                          if index > 0 else None)
 
         admission_is_revocation, revoked_supervision_periods = revoked_supervision_periods_if_revocation_occurred(
-            incarceration_period, filtered_supervision_periods, previous_incarceration_period)
+            incarceration_period.state_code, incarceration_period, filtered_supervision_periods,
+            previous_incarceration_period)
 
         if not admission_is_revocation:
             continue
