@@ -4163,6 +4163,249 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
 
         self.assertCountEqual(supervision_time_buckets, expected_buckets)
 
+    def test_find_supervision_time_buckets_us_pa_shock_incarceration_revocation(self):
+        """Tests the find_supervision_time_buckets function for periods in US_PA, where there is a revocation return
+        for shock incarceration."""
+        state_code = 'US_PA'
+
+        supervision_period = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=111,
+            external_id='sp1',
+            status=StateSupervisionPeriodStatus.TERMINATED,
+            case_type_entries=[
+                StateSupervisionCaseTypeEntry.new_with_defaults(
+                    state_code=state_code,
+                    case_type=StateSupervisionCaseType.GENERAL
+                )
+            ],
+            state_code=state_code,
+            supervision_site='DISTRICT_1|OFFICE_2',
+            start_date=date(2018, 3, 5),
+            termination_date=date(2018, 5, 19),
+            termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+            supervision_level=StateSupervisionLevel.MINIMUM,
+            supervision_level_raw_text='LOW'
+        )
+
+        supervision_sentence = StateSupervisionSentence.new_with_defaults(
+            state_code=state_code,
+            supervision_sentence_id=111,
+            start_date=date(2017, 1, 1),
+            external_id='ss1',
+            status=StateSentenceStatus.COMPLETED,
+            supervision_periods=[supervision_period]
+        )
+
+        assessment = StateAssessment.new_with_defaults(
+            state_code=state_code,
+            assessment_type=StateAssessmentType.LSIR,
+            assessment_level=StateAssessmentLevel.HIGH,
+            assessment_score=33,
+            assessment_date=date(2018, 3, 1)
+        )
+
+        shock_incarceration_revocation = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=222,
+            external_id='ip2',
+            state_code=state_code,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            admission_date=date(2018, 5, 19),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.SHOCK_INCARCERATION,
+            # Program 46 indicates a revocation for a 6, 9 or 12 month stay
+            specialized_purpose_for_incarceration_raw_text='46',
+            release_date=date(2019, 3, 3),
+            release_reason=ReleaseReason.SENTENCE_SERVED
+        )
+
+        supervision_sentences = [supervision_sentence]
+        supervision_periods = [supervision_period]
+        incarceration_periods = [shock_incarceration_revocation]
+        assessments = [assessment]
+        violation_responses = []
+        supervision_contacts = []
+        incarceration_sentences = []
+
+        supervision_time_buckets = identifier.find_supervision_time_buckets(
+            supervision_sentences,
+            incarceration_sentences,
+            supervision_periods,
+            incarceration_periods,
+            assessments,
+            violation_responses,
+            supervision_contacts,
+            DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
+            DEFAULT_SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATIONS
+        )
+
+        expected_buckets = [
+            create_start_bucket_from_period(
+                supervision_period,
+                supervising_district_external_id='DISTRICT_1',
+                level_1_supervision_location_external_id='OFFICE_2',
+                level_2_supervision_location_external_id='DISTRICT_1'),
+            SupervisionTerminationBucket(
+                state_code=supervision_period.state_code,
+                year=supervision_period.termination_date.year,
+                month=supervision_period.termination_date.month,
+                event_date=supervision_period.termination_date,
+                supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+                supervision_level=supervision_period.supervision_level,
+                supervision_level_raw_text=supervision_period.supervision_level_raw_text,
+                supervising_district_external_id='DISTRICT_1',
+                level_1_supervision_location_external_id='OFFICE_2',
+                level_2_supervision_location_external_id='DISTRICT_1',
+                case_type=StateSupervisionCaseType.GENERAL,
+                termination_reason=supervision_period.termination_reason
+            )
+        ]
+
+        expected_buckets.extend(expected_non_revocation_return_time_buckets(
+            supervision_period,
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            assessment_score=assessment.assessment_score,
+            assessment_level=StateAssessmentLevel.HIGH,
+            assessment_type=assessment.assessment_type,
+            level_1_supervision_location_external_id='OFFICE_2',
+            level_2_supervision_location_external_id='DISTRICT_1',
+        ))
+
+        expected_buckets.append(
+            RevocationReturnSupervisionTimeBucket(
+                state_code=supervision_period.state_code,
+                year=2018, month=5,
+                event_date=shock_incarceration_revocation.admission_date,
+                supervision_type=supervision_period.supervision_period_supervision_type,
+                supervision_level=supervision_period.supervision_level,
+                supervision_level_raw_text=supervision_period.supervision_level_raw_text,
+                supervising_district_external_id='DISTRICT_1',
+                level_1_supervision_location_external_id='OFFICE_2',
+                level_2_supervision_location_external_id='DISTRICT_1',
+                case_type=StateSupervisionCaseType.GENERAL,
+                assessment_score=assessment.assessment_score,
+                assessment_level=StateAssessmentLevel.HIGH,
+                assessment_type=assessment.assessment_type,
+                is_on_supervision_last_day_of_month=False,
+                revocation_type=StateSupervisionViolationResponseRevocationType.SHOCK_INCARCERATION)
+        )
+
+        self.assertCountEqual(supervision_time_buckets, expected_buckets)
+
+    def test_find_supervision_time_buckets_us_pa_shock_incarceration_revocation_to_pvc(self):
+        """Tests the find_supervision_time_buckets function for periods in US_PA, where there is a revocation return
+        to a Parole Violator Center (PVC)."""
+        state_code = 'US_PA'
+
+        supervision_period = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=111,
+            external_id='sp1',
+            status=StateSupervisionPeriodStatus.TERMINATED,
+            case_type_entries=[
+                StateSupervisionCaseTypeEntry.new_with_defaults(
+                    state_code=state_code,
+                    case_type=StateSupervisionCaseType.GENERAL
+                )
+            ],
+            state_code=state_code,
+            supervision_site='DISTRICT_1|OFFICE_2',
+            start_date=date(2018, 3, 5),
+            termination_date=date(2018, 5, 19),
+            termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+            supervision_level=StateSupervisionLevel.MINIMUM,
+            supervision_level_raw_text='LOW'
+        )
+
+        supervision_sentence = StateSupervisionSentence.new_with_defaults(
+            state_code=state_code,
+            supervision_sentence_id=111,
+            start_date=date(2017, 1, 1),
+            external_id='ss1',
+            status=StateSentenceStatus.COMPLETED,
+            supervision_periods=[supervision_period]
+        )
+
+        assessment = StateAssessment.new_with_defaults(
+            state_code=state_code,
+            assessment_type=StateAssessmentType.LSIR,
+            assessment_level=StateAssessmentLevel.HIGH,
+            assessment_score=33,
+            assessment_date=date(2018, 3, 1)
+        )
+
+        pvc_revocation = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=222,
+            external_id='ip2',
+            state_code=state_code,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            admission_date=date(2018, 1, 11),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+            # TODO(#4821): Count this as a revocation once Lantern is ready for PVC revocations
+            # Program 26 indicates a revocation to a PVC
+            specialized_purpose_for_incarceration_raw_text='26',
+            release_date=date(2019, 3, 3),
+            release_reason=ReleaseReason.SENTENCE_SERVED,
+            custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY
+        )
+
+        supervision_sentences = [supervision_sentence]
+        supervision_periods = [supervision_period]
+        incarceration_periods = [pvc_revocation]
+        assessments = [assessment]
+        violation_responses = []
+        supervision_contacts = []
+        incarceration_sentences = []
+
+        supervision_time_buckets = identifier.find_supervision_time_buckets(
+            supervision_sentences,
+            incarceration_sentences,
+            supervision_periods,
+            incarceration_periods,
+            assessments,
+            violation_responses,
+            supervision_contacts,
+            DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
+            DEFAULT_SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATIONS
+        )
+
+        expected_buckets = [
+            create_start_bucket_from_period(
+                supervision_period,
+                supervising_district_external_id='DISTRICT_1',
+                level_1_supervision_location_external_id='OFFICE_2',
+                level_2_supervision_location_external_id='DISTRICT_1'),
+            SupervisionTerminationBucket(
+                state_code=supervision_period.state_code,
+                year=supervision_period.termination_date.year,
+                month=supervision_period.termination_date.month,
+                event_date=supervision_period.termination_date,
+                supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+                supervision_level=supervision_period.supervision_level,
+                supervision_level_raw_text=supervision_period.supervision_level_raw_text,
+                supervising_district_external_id='DISTRICT_1',
+                level_1_supervision_location_external_id='OFFICE_2',
+                level_2_supervision_location_external_id='DISTRICT_1',
+                case_type=StateSupervisionCaseType.GENERAL,
+                termination_reason=supervision_period.termination_reason
+            )
+        ]
+
+        expected_buckets.extend(expected_non_revocation_return_time_buckets(
+            supervision_period,
+            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            assessment_score=assessment.assessment_score,
+            assessment_level=StateAssessmentLevel.HIGH,
+            assessment_type=assessment.assessment_type,
+            level_1_supervision_location_external_id='OFFICE_2',
+            level_2_supervision_location_external_id='DISTRICT_1',
+        ))
+
+        self.assertCountEqual(supervision_time_buckets, expected_buckets)
+
     def test_find_supervision_time_buckets_infer_supervision_type(self):
         """Tests the find_supervision_time_buckets function where the supervision type needs to be inferred from the
         sentence attached to the supervision period."""
