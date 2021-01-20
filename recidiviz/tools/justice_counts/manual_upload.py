@@ -35,7 +35,7 @@ import logging
 import os
 import sys
 from collections import defaultdict
-from typing import Callable, Dict, Iterable, List, Optional, Tuple, Type, TypeVar, Union
+from typing import Callable, Dict, Iterable, List, Optional, Tuple, Type, TypeVar, Union, Set
 from urllib import parse
 import webbrowser
 
@@ -50,7 +50,8 @@ import recidiviz.common.constants.person_characteristics as person_characteristi
 from recidiviz.common.constants import states
 from recidiviz.common.constants.enum_overrides import EnumOverrides
 from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta, EnumParsingError, EntityEnumT
-from recidiviz.common.date import DateRange, first_day_of_month, last_day_of_month
+from recidiviz.common.date import DateRange, first_day_of_month, last_day_of_month, DateRange, \
+    NonNegativeDateRange
 from recidiviz.common.str_field_utils import to_snake_case
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath, GcsfsFilePath
@@ -637,9 +638,9 @@ class RangeType(enum.Enum):
 
 
 RANGE_CONVERTERS: Dict[RangeType, DateRangeConverterType] = {
-    RangeType.CUSTOM: DateRange,
-    RangeType.MONTH: DateRange.for_month_of_date,
-    RangeType.YEAR: DateRange.for_year_of_date
+    RangeType.CUSTOM: NonNegativeDateRange,
+    RangeType.MONTH: NonNegativeDateRange.for_month_of_date,
+    RangeType.YEAR: NonNegativeDateRange.for_year_of_date
 }
 
 RANGE_CONVERTER_FORMAT_TYPES: Dict[RangeType, DateFormatType] = {
@@ -662,9 +663,9 @@ class SnapshotType(enum.Enum):
 
 
 SNAPSHOT_CONVERTERS: Dict[SnapshotType, DateRangeConverterType] = {
-    SnapshotType.DAY: DateRange.for_day,
-    SnapshotType.FIRST_DAY_OF_MONTH: lambda date: DateRange.for_day(first_day_of_month(date)),
-    SnapshotType.LAST_DAY_OF_MONTH: lambda date: DateRange.for_day(last_day_of_month(date)),
+    SnapshotType.DAY: NonNegativeDateRange.for_day,
+    SnapshotType.FIRST_DAY_OF_MONTH: lambda date: NonNegativeDateRange.for_day(first_day_of_month(date)),
+    SnapshotType.LAST_DAY_OF_MONTH: lambda date: NonNegativeDateRange.for_day(last_day_of_month(date)),
 }
 
 SNAPSHOT_CONVERTER_FORMAT_TYPES: Dict[SnapshotType, DateFormatType] = {
@@ -873,6 +874,7 @@ class DynamicDateRangeProducer(DateRangeProducer):
     def _convert(self, args: Union[str, List[str]]) -> DateRange:
         unified_args: List[str] = [args] if isinstance(args, str) else args
         parsed_args: List[datetime.date] = [parser(arg) for arg, parser in zip(unified_args, self.column_parsers)]
+
         # pylint: disable=not-callable
         return self.converter(*parsed_args)
 
@@ -1069,12 +1071,26 @@ class Table:
                 raise AttributeError(f"metric and dimension column specified for {type(dimension)},  "
                                      "make sure you have one or the other.")
 
+    def _validate_aggregate_dimensions(self) -> None:
+        unique_dimensions: Dict[str, Set[Dimension]] = {dimension.dimension_identifier(): set()
+                                                        for dimension in self.dimensions}
+
+        for dimensions, _value in self.data_points:
+            for dimension in dimensions:
+                unique_dimensions[dimension.dimension_identifier()].add(dimension)
+        for _key, unique_dimension in unique_dimensions.items():
+            if len(unique_dimension) == 1:
+                raise AttributeError(f"Attribute '{unique_dimension.pop()}' only has one set value, "
+                                     f"change it to a filtered dimension.")
+
+
     def __attrs_post_init__(self) -> None:
         # Validate consistency between `dimensions` and `data`.
         self._validate_metric()
         dimension_identifiers = {dimension.dimension_identifier() for dimension in self.dimensions}
         if len(dimension_identifiers) != len(self.dimensions):
             raise ValueError(f"Duplicate dimensions in table: {self.dimensions}")
+        self._validate_aggregate_dimensions()
         for dimensions, _value in self.data_points:
             row_dimension_identifiers = {dimension_value.dimension_identifier() for dimension_value in dimensions}
             if len(row_dimension_identifiers) != len(dimensions):
@@ -1228,7 +1244,10 @@ def _get_date_formatter(range_type_input: str, range_converter_input: Optional[s
 # TODO(#4480): Generalize these parsing methods, instead of creating one for each class. If value is a dict, pop it,
 # find all implementing classes of `key`, find matching class, pass inner dict as parameters to matching class.
 def _parse_date_range(range_input: YAMLDict) -> DateRange:
-    """Expects a dict with a single entry that is a dict, e.g. `{'snapshot': {'date': '2020-11-01'}}`"""
+    """
+    Expects a dict with a type, an input, and an optional range_converter.
+    e.g. `{'type':'snapshot', 'input': ['2020-11-01'], 'range_converter': 'DATE'}`
+    """
 
     range_args = range_input.pop('input', list)
     range_type = range_input.pop('type', str)
@@ -1237,9 +1256,12 @@ def _parse_date_range(range_input: YAMLDict) -> DateRange:
 
     if len(range_input) > 0:
         raise ValueError(f"Received unexpected parameters for date_range: {range_input}")
+    if len(range_args) > 2:
+        raise ValueError(f"Have a maximum of 2 dates for input. Currently have: {range_args}")
 
     converter = _get_converter(range_type.upper(), range_converter)
     parsed_args = [date_formatter(value) for value in range_args]
+
     return converter(*parsed_args)  # type: ignore[call-arg]
 
 
