@@ -524,6 +524,7 @@ def shorthand_for_violation_subtype(state_code: str, violation_subtype: str) -> 
 
 
 def revoked_supervision_periods_if_revocation_occurred(
+        state_code: str,
         incarceration_period: StateIncarcerationPeriod,
         supervision_periods: List[StateSupervisionPeriod],
         preceding_incarceration_period: Optional[StateIncarcerationPeriod]) -> \
@@ -539,7 +540,7 @@ def revoked_supervision_periods_if_revocation_occurred(
     """
     revoked_periods: List[StateSupervisionPeriod] = []
 
-    if incarceration_period.state_code.upper() == 'US_ID':
+    if state_code == StateCode.US_ID.value:
         admission_is_revocation, revoked_period = \
             us_id_revoked_supervision_period_if_revocation_occurred(
                 incarceration_period, supervision_periods, preceding_incarceration_period
@@ -547,6 +548,15 @@ def revoked_supervision_periods_if_revocation_occurred(
 
         if revoked_period:
             revoked_periods = [revoked_period]
+    # TODO(#4821): Remove this logic for US_PA once Lantern is ready for PVC revocations
+    elif state_code == StateCode.US_PA.value:
+        admission_is_revocation = is_revocation_admission(incarceration_period.admission_reason)
+
+        if admission_is_revocation and incarceration_period.specialized_purpose_for_incarceration_raw_text == '26':
+            return False, revoked_periods
+
+        revoked_periods = get_relevant_supervision_periods_before_admission_date(incarceration_period.admission_date,
+                                                                                 supervision_periods)
     else:
         admission_is_revocation = is_revocation_admission(incarceration_period.admission_reason)
         revoked_periods = get_relevant_supervision_periods_before_admission_date(incarceration_period.admission_date,
