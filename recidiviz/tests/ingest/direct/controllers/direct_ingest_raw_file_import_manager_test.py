@@ -27,7 +27,7 @@ from more_itertools import one
 from recidiviz.big_query.big_query_client import BigQueryClient
 from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import DirectIngestGCSFileSystem
 from recidiviz.ingest.direct.controllers.direct_ingest_raw_file_import_manager import \
-    DirectIngestRawFileImportManager, DirectIngestRegionRawFileConfig
+    DirectIngestRawFileImportManager, DirectIngestRegionRawFileConfig, RawTableColumnInfo
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import GcsfsDirectIngestFileType, \
     filename_parts_from_path
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath, GcsfsDirectoryPath
@@ -101,6 +101,12 @@ class DirectIngestRegionRawFileConfigTest(unittest.TestCase):
         self.assertEqual(['col_name_1a', 'col_name_1b'], config_1.primary_key_cols)
         self.assertEqual('ISO-456-7', config_1.encoding)
         self.assertEqual(',', config_1.separator)
+        expected_column2_description = 'A column description that is long enough to take up\nmultiple lines. This' \
+                                       ' text block will be interpreted\nliterally and trailing/leading whitespace' \
+                                       ' is removed.'
+        expected_columns_config_1 = [RawTableColumnInfo(name='col_name_1a', description='First column.'),
+                                     RawTableColumnInfo(name='col_name_1b', description=expected_column2_description)]
+        self.assertEqual(expected_columns_config_1, config_1.columns)
 
         config_2 = region_config.raw_file_configs['file_tag_second']
         expected_file_description_config_2 = 'Some special/unusual character\'s in the description &\nlong enough to' \
@@ -111,6 +117,7 @@ class DirectIngestRegionRawFileConfigTest(unittest.TestCase):
         self.assertEqual(['col_name_2a'], config_2.primary_key_cols)
         self.assertEqual('UTF-8', config_2.encoding)
         self.assertEqual('$', config_2.separator)
+        self.assertEqual([RawTableColumnInfo(name='col_name_2a', description='column description')], config_2.columns)
 
         config_3 = region_config.raw_file_configs['tagC']
         self.assertEqual('tagC', config_3.file_tag)
@@ -118,6 +125,7 @@ class DirectIngestRegionRawFileConfigTest(unittest.TestCase):
         self.assertEqual(['COL1'], config_3.primary_key_cols)
         self.assertEqual('UTF-8', config_3.encoding)
         self.assertEqual(',', config_3.separator)
+        self.assertEqual([RawTableColumnInfo(name='COL1', description='COL1 description')], config_3.columns)
 
     def test_missing_configs_for_region(self) -> None:
         with self.assertRaises(ValueError) as e:

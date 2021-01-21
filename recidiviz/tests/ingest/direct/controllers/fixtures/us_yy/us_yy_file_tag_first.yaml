@@ -4,4 +4,13 @@ file_description: |-
 primary_key_cols:
   - col_name_1a
   - col_name_1b
+columns:
+  - name: col_name_1a
+    description: |-
+      First column.
+  - name: col_name_1b
+    description: |-
+      A column description that is long enough to take up
+      multiple lines. This text block will be interpreted
+      literally and trailing/leading whitespace is removed.
 encoding: ISO-456-7
