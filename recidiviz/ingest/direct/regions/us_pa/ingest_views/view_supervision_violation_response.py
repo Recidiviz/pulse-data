@@ -18,19 +18,66 @@
 
 from recidiviz.ingest.direct.controllers.direct_ingest_big_query_view_types import \
     DirectIngestPreProcessedIngestViewBuilder
-from recidiviz.ingest.direct.regions.us_pa.ingest_views.templates_violations import generate_violation_view_query
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
+VIEW_QUERY_TEMPLATE = """
+WITH
+base_sanctions AS (
+  SELECT *,
+    ROW_NUMBER() OVER (
+      PARTITION BY parole_number, parole_count_id, set_id, sequence_id 
+      ORDER BY
+        -- A row that has been moved to the history table is the most "current" version of this row. We want to ignore
+        -- the old row in dbo_SanctionTracking.
+        is_history_row DESC,
+        -- This should never be different within a partition, but adding this for determinism
+        sanction_code
+    ) AS row_rank
+  FROM (
+    SELECT
+        ParoleNumber as parole_number,
+        ParoleCountID as parole_count_id,
+        SetID as set_id,
+        SequenceID as sequence_id,
+        SanctionCode as sanction_code,
+        SanctionDate AS sanction_timestamp,
+        0 AS is_history_row
+    FROM {dbo_SanctionTracking}
+    WHERE Type = 'S'
+
+    UNION ALL
+
+    SELECT
+        ParoleNumber as parole_number,
+        ParoleCountID as parole_count_id,
+        SetID as set_id,
+        SequenceID as sequence_id,
+        SanctionCode as sanction_code,
+        SanctionDate AS sanction_timestamp,
+        1 AS is_history_row
+    FROM {dbo_Hist_SanctionTracking}
+    WHERE Type = 'S'
+  )
+)
+SELECT
+  parole_number,
+  parole_count_id,
+  set_id,
+  EXTRACT(DATE FROM MIN(PARSE_TIMESTAMP("%m/%d/%Y %T", sanction_timestamp))) as sanction_date,
+  TO_JSON_STRING(
+    ARRAY_AGG(STRUCT(sequence_id, sanction_code) ORDER BY sequence_id)
+  ) AS sanction_types,
+FROM base_sanctions
+WHERE row_rank = 1
+GROUP BY parole_number, parole_count_id, set_id
+"""
 
 VIEW_BUILDER = DirectIngestPreProcessedIngestViewBuilder(
     region='us_pa',
     ingest_view_name='supervision_violation_response',
-    view_query_template=generate_violation_view_query(
-        'sanction_date', 'SanctionDate', 'parsed_sanction_timestamp',
-        'sanction_types', 'sanction_code', 'S'
-    ),
-    order_by_cols='parole_number ASC, parole_count_id ASC, set_id ASC'
+    view_query_template=VIEW_QUERY_TEMPLATE,
+    order_by_cols='parole_number ASC, CAST(parole_count_id AS INT64) ASC, CAST(set_id AS INT64) ASC'
 )
 
 if __name__ == '__main__':
