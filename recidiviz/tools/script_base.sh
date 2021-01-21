@@ -56,16 +56,27 @@ function run_cmd {
     exit_on_fail
 }
 
-# Prompts the user for a Y/N answer and exits if they do not respond with 'Y' (case insensitive).
+# Prompts the user for a Y/N answer and exits if they respond with 'N' (case insensitive).
 function script_prompt {
     prompt=$1
 
-    read -p "$prompt (y/n): " -r
-    echo
-    if [[ ! $REPLY =~ ^[Yy]$ ]]
-    then
+    while true
+    do
+      read -p "$prompt (y/n): " -r
+
+      if [[ $REPLY =~ ^[Nn]$ ]]
+      then
+        echo "Responded with (${REPLY}). Exiting."
         exit 1
-    fi
+      elif [[ ! $REPLY =~ ^[Yy]$ ]]
+      then
+        echo "Invalid input (${REPLY})."
+      else
+        break
+      fi
+
+      echo
+    done
 }
 
 # Given a list of versions over pipe, temporarily appends '_' to all versions that do not have a '-' so '-alpha.x'
