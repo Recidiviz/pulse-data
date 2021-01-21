@@ -18,7 +18,7 @@
 
 from abc import ABC, abstractmethod
 from copy import deepcopy
-from typing import Any, Dict, List
+from typing import Dict, List
 import numpy as np
 import pandas as pd
 
@@ -43,7 +43,9 @@ class CompartmentTransitions(ABC):
 
         self.historical_outflows = historical_outflows
 
-        self.transition_dfs: Dict[str, Any] = {}
+        self.historical_outflows_long = pd.DataFrame()
+
+        self.transition_dfs: Dict[str, pd.DataFrame] = {}
 
         self.long_sentence_transitions = pd.DataFrame()
 
@@ -73,13 +75,14 @@ class CompartmentTransitions(ABC):
             self.max_sentence = max_sentence
 
         self.transition_dfs = {
-            'before': {outflow: np.zeros(self.max_sentence + 1) for outflow in self.outflows},
-            'transitory': 0,
-            'after_retroactive': 0,
-            'after_non_retroactive': 0
+            'before': pd.DataFrame({outflow: np.zeros(self.max_sentence + 1) for outflow in self.outflows},
+                                   index=range(1, self.max_sentence + 2)),
+            'transitory': pd.DataFrame(),
+            'after_retroactive': pd.DataFrame(),
+            'after_non_retroactive': pd.DataFrame()
         }
 
-        self._generate_transition_tables(state='before')
+        self._generate_transition_table(state='before')
 
     def _set_max_sentence_from_threshold(self, threshold_percentile: float):
         """Set the maximum sentence length as a clipped value from a threshold percentile"""
@@ -107,7 +110,7 @@ class CompartmentTransitions(ABC):
             min(ordered_transitions[transitions_above_threshold_slice['total_population']].index)
         self.max_sentence = int(np.ceil(ordered_transitions.loc[max_sentence_index]['compartment_duration']))
 
-    def _generate_transition_tables(self, state: str, historical_outflows=None):
+    def _generate_transition_table(self, state: str, historical_outflows=None):
         """
         Accepts a state for which to populate transition probabilities
         optionally accepts a DataFrame with alternative transition data to use
@@ -131,16 +134,13 @@ class CompartmentTransitions(ABC):
                                                                   historical_outflows_long.outflow_to])
 
         self.transition_dfs[state] = grouped_short_outflows['total_population'].sum().unstack().reindex(
-            range(1, self.max_sentence + 1)).fillna(0).to_dict(
-            orient='list')
+            range(1, self.max_sentence + 1)).fillna(0)
 
         # Track life years of the lump category if handling 'before' state
         if state == 'before':
-            if historical_outflows_long.empty:
-                self.long_sentence_transitions = None
-            else:
+            if not historical_outflows_long.empty:
                 self.long_sentence_transitions = grouped_long_outflows['total_population'].sum().unstack().reindex(
-                    range(self.max_sentence + 1, int(long_sentence_length.max()) + 1)).fillna(0).to_dict(orient='list')
+                    range(self.max_sentence + 1, int(long_sentence_length.max()) + 1)).fillna(0)
 
     @abstractmethod
     def normalize_long_sentences(self):
@@ -148,11 +148,12 @@ class CompartmentTransitions(ABC):
 
     def normalize_transitions(self, state: str, before_table=None):
         """Convert the per-ts population counts into normalized probabilities"""
-        if (self.transition_dfs is None) or (state not in self.transition_dfs) or (self.transition_dfs[state] == 0):
+        if (state not in self.transition_dfs) or self.transition_dfs[state].empty:
             raise ValueError("Cannot normalize transition tables before they are initialized")
 
         if 'remaining' in self.transition_dfs[state]:
-            return
+            raise ValueError(
+                f"Trying to normalize a transition table that is already normalized: {self.transition_dfs[state]}")
 
         if before_table is None:
             before_table = self.transition_dfs[state]
@@ -170,47 +171,37 @@ class CompartmentTransitions(ABC):
         after_counted = 0
 
         # if no long sentence data, no need to include it in totals
-        if self.long_sentence_transitions is None:
-            before_total = sum([sum(before_table[outflow]) for outflow in before_table])
-            after_total = sum([sum(after_table[outflow]) for outflow in after_table])
+        if self.long_sentence_transitions.empty:
+            before_total = before_table.sum().sum()
+            after_total = after_table.sum().sum()
 
         else:
-            before_total = sum([sum(before_table[outflow]) for outflow in before_table]) + \
-                           sum([sum(self.long_sentence_transitions[outflow])
-                                for outflow in self.long_sentence_transitions])
+            before_total = before_table.sum().sum() + self.long_sentence_transitions.sum().sum()
 
-            after_total = sum([sum(after_table[outflow]) for outflow in after_table]) + \
-                          sum([sum(self.long_sentence_transitions[outflow])
-                               for outflow in self.long_sentence_transitions])
+            after_total = after_table.sum().sum() + self.long_sentence_transitions.sum().sum()
 
-        for sentence_len in range(self.max_sentence):
+        for sentence_len in range(1, self.max_sentence + 1):
 
             if before_counted == before_total:
-                for outflow in normalized_df:
-                    normalized_df[outflow][sentence_len] = 0
+                normalized_df.loc[sentence_len] = 0
                 continue
 
-            after_counted += sum([after_table[outflow][sentence_len] for outflow in after_table])
+            ts_released = after_table.loc[sentence_len].sum()
+
+            after_counted += ts_released
 
             ts_release_rate = 1 - (1 - after_counted / after_total) / (1 - before_counted / before_total)
-            ts_released = sum([after_table[outflow][sentence_len] for outflow in after_table])
 
             if ts_released > 0:
-                for outflow in normalized_df:
-                    normalized_df[outflow][sentence_len] *= ts_release_rate / ts_released
+                normalized_df.loc[sentence_len] *= ts_release_rate / ts_released
 
-            before_counted += sum([before_table[outflow][sentence_len] for outflow in before_table])
+            before_counted += before_table.loc[sentence_len].sum()
 
         self.transition_dfs[state] = normalized_df
 
-        self.transition_dfs[state]['remaining'] = [0 for i in range(self.max_sentence)]
-        for ts in range(self.max_sentence):
-            self.transition_dfs[state]['remaining'][ts] = \
-                1 - sum([self.transition_dfs[state][i][ts] for i in self.transition_dfs[state]])
-
-        self.transition_dfs[state] = pd.DataFrame(self.transition_dfs[state], index=range(1, self.max_sentence + 1))
-
         self.transition_dfs[state] = self.transition_dfs[state].apply(lambda x: round(x, 8))
+
+        self.transition_dfs[state]['remaining'] = 1 - self.transition_dfs[state].sum(axis=1)
 
         # Make sure all transition probabilities are between 0-1
         for compartment in self.transition_dfs[state]:
@@ -275,13 +266,12 @@ class CompartmentTransitions(ABC):
                           self.transition_dfs['after_retroactive'].loc[ts_since_policy + 1:, :]])
 
     def __eq__(self, other):
-        """Only works for initialized transition tables"""
         for state in self.transition_dfs:
             if set(self.transition_dfs[state].columns) != set(other.transition_dfs[state].columns):
                 return False
-            for outflow in self.transition_dfs[state]:
-                if not all(self.transition_dfs[state][outflow] == other.transition_dfs[state][outflow]):
-                    return False
+            matching_order_self = self.transition_dfs[state][other.transition_dfs[state].columns]
+            if (matching_order_self != other.transition_dfs[state]).all().all():
+                return False
         return True
 
     @staticmethod
@@ -292,12 +282,10 @@ class CompartmentTransitions(ABC):
         return 'after_non_retroactive'
 
     def test_non_retroactive_policy(self):
-        self.transition_dfs['after_non_retroactive']['jail'] = \
-            [0] * len(self.transition_dfs['after_non_retroactive']['jail'])
+        self.transition_dfs['after_non_retroactive']['jail'] = 0
 
     def test_retroactive_policy(self):
-        self.transition_dfs['after_retroactive']['jail'] = \
-            [0] * len(self.transition_dfs['after_retroactive']['jail'])
+        self.transition_dfs['after_retroactive']['jail'] = 0
 
     def extend_tables(self, new_max_sentence: int):
         """
@@ -307,7 +295,7 @@ class CompartmentTransitions(ABC):
         """
         # Ensure none of the transition tables have been normalized before they are extended
         for state in self.transition_dfs:
-            if self.transition_dfs[state] != 0:
+            if not self.transition_dfs[state].empty:
                 self.check_table_invariant_before_normalization(state)
 
         if new_max_sentence <= self.max_sentence:
@@ -315,17 +303,14 @@ class CompartmentTransitions(ABC):
 
         for state in self.transition_dfs:
             # skip over un-populated tables
-            if self.transition_dfs[state] != 0:
-                self.transition_dfs[state] = {
-                    outflow: (self.transition_dfs[state][outflow] +
-                              [0 for ts in range(new_max_sentence - self.max_sentence)])
-                    for outflow in self.transition_dfs[state]
-                }
+            if not self.transition_dfs[state].empty:
+
+                self.transition_dfs[state].iloc[self.max_sentence + 2: new_max_sentence + 1] = 0
 
         self.max_sentence = new_max_sentence
 
     def unnormalize_table(self, state: str):
-        """revert a normalized table back to an un-normalized dict. sum of all total populations will be 1"""
+        """revert a normalized table back to an un-normalized df. sum of all total populations will be 1"""
         if 'remaining' not in self.transition_dfs[state]:
             raise ValueError("trying to unnormalize a table that isn't normalized")
 
@@ -334,15 +319,15 @@ class CompartmentTransitions(ABC):
                 self.transition_dfs[state].loc[sentence_length] *= \
                     1 - self.transition_dfs[state].loc[shorter_sentence].drop('remaining').sum()
 
-        self.transition_dfs[state] = {outflow: list(self.transition_dfs[state][outflow])
-                                      for outflow in self.transition_dfs[state] if outflow != 'remaining'}
+        self.transition_dfs[state] = self.transition_dfs[state].drop('remaining', axis=1)
 
     def use_alternate_transitions_data(self, alternate_historical_transitions: pd.DataFrame, retroactive: bool):
         """Replace the historical admission data for this specific group with another data from a different set"""
 
+        # TODO(#4487): address time_step specific logic in Spark Model
         self.extend_tables(min([30 * 12, int(np.ceil(max(alternate_historical_transitions.compartment_duration)))]))
         df_name = self.get_df_name_from_retroactive(retroactive)
-        self._generate_transition_tables(df_name, alternate_historical_transitions)
+        self._generate_transition_table(df_name, alternate_historical_transitions)
 
     def preserve_normalized_outflow_behavior(self, outflows: List[str], state: str, before_state: str = 'before'):
         """
@@ -400,10 +385,9 @@ class CompartmentTransitions(ABC):
 
     def check_table_invariant_after_normalization(self, state: str):
         """Make sure transition lists are all positive decimal probability values for the provided transition state"""
-        for outflow, probabilities in self.transition_dfs[state].items():
-            if any(probabilities < 0) or any(probabilities > 1):
-                raise ValueError(f"All `{state}` probabilities for outflow `{outflow}` must be between 0 and 1\n"
-                                 f"{probabilities}")
+        if (self.transition_dfs[state] < 0).any().any() or (self.transition_dfs[state] > 1).any().any():
+            raise ValueError(f"All `{state}` probabilities must be between 0 and 1\n"
+                             f"{self.transition_dfs[state]}")
 
     def apply_reduction(self, reduction_df: pd.DataFrame, reduction_type: str,
                         retroactive: bool = False):
@@ -429,12 +413,12 @@ class CompartmentTransitions(ABC):
         df_name = self.get_df_name_from_retroactive(retroactive)
 
         for _, row in reduction_df.iterrows():
-            for sentence_length in range(2, self.max_sentence + 1):
+            for sentence_length in range(1, self.max_sentence + 1):
                 # record population to re-distribute
-                sentence_count = self.transition_dfs[df_name][row.outflow][sentence_length - 1] * row.affected_fraction
+                sentence_count = self.transition_dfs[df_name].loc[sentence_length, row.outflow] * row.affected_fraction
 
                 # start by clearing df entry that's getting re-distributed
-                self.transition_dfs[df_name][row.outflow][sentence_length - 1] *= 1 - row.affected_fraction
+                self.transition_dfs[df_name].loc[sentence_length, row.outflow] *= 1 - row.affected_fraction
 
                 # calculate new sentence length
                 if reduction_type == '*':
@@ -450,8 +434,9 @@ class CompartmentTransitions(ABC):
                 shorter_bit = sentence_count - longer_bit
 
                 # add in new sentence length probabilities to the df
-                self.transition_dfs[df_name][row.outflow][int(new_sentence_length) - 1] += shorter_bit
-                self.transition_dfs[df_name][row.outflow][int(new_sentence_length)] += longer_bit
+                self.transition_dfs[df_name].loc[int(new_sentence_length), row.outflow] += shorter_bit
+                if longer_bit > 0:
+                    self.transition_dfs[df_name].loc[int(new_sentence_length) + 1, row.outflow] += longer_bit
 
     def reallocate_outflow(self, reallocation_df: pd.DataFrame, reallocation_type: str, retroactive: bool = False):
         """

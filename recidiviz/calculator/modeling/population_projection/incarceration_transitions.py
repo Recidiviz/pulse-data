@@ -17,7 +17,7 @@
 """CompartmentTransitions instance with slow trickle long-sentence behavior"""
 
 import pandas as pd
-from numpy import average, sqrt
+from numpy import average, sqrt, isinf
 from recidiviz.calculator.modeling.population_projection.compartment_transitions import CompartmentTransitions
 
 
@@ -29,33 +29,24 @@ class IncarceratedTransitions(CompartmentTransitions):
         # If we implement policies that do, this step will need to be moved to before policies are applied.
 
         # if no data, just populate 'remaining' (it'll run but doesn't actually matter)
-        if self.long_sentence_transitions is None:
+        if self.long_sentence_transitions.empty or self.long_sentence_transitions.sum().sum() == 0:
             self.long_sentence_transitions = pd.DataFrame({'remaining': [1]})
             return
 
         lst = self.long_sentence_transitions
-        long_sentence_transitions = pd.DataFrame()
 
         # calculate the fraction of total long-sentence releases corresponding to each outflow
-        outflow_ratios = {outflow: sum(lst[outflow]) for outflow in lst}
-        outflow_total = sum(outflow_ratios.values())
+        outflow_ratios = lst.sum(axis=0) / lst.sum().sum()
 
-        # another way data could end up empty
-        if outflow_total == 0:
-            self.long_sentence_transitions = pd.DataFrame({'remaining': [1]})
-            return
+        # calculate average remaining sentence by taking weighted sum of number of sentence * sentence length
+        avg_sentences = (lst.mul(lst.index, axis=0) / lst.sum(axis=0)).sum(axis=0)
 
-        outflow_ratios = {outflow: outflow_ratios[outflow] / outflow_total for outflow in outflow_ratios}
+        # take long_sentence transitions to be 1 / avg_sentence, scaled by outflow fraction
+        long_sentence_transitions = ((1 / avg_sentences) * outflow_ratios).fillna(0)
+        long_sentence_transitions[isinf(long_sentence_transitions)] = 0
 
-        for outflow in lst:
-            if outflow_ratios[outflow] > 0:
-                # calculate average remaining sentence by taking weighted sum of number of sentence * sentence length
-                avg_sentence = sum([lst[outflow][i] * (i + 1) for i in range(len(lst[outflow]))]) / sum(lst[outflow])
-                # set transition probability to 1 / avg_sentence to match average sentence length, then scale by
-                #    fraction of total outflows corresponding to that outflow
-                long_sentence_transitions[outflow] = [1 / avg_sentence * outflow_ratios[outflow]]
-            else:
-                long_sentence_transitions[outflow] = 0
+        # convert to DataFrame
+        long_sentence_transitions = pd.DataFrame(long_sentence_transitions).transpose()
 
         # as always, `remaining` probability is just 1 - everything else
         long_sentence_transitions['remaining'] = [1 - long_sentence_transitions.iloc[0].sum()]
