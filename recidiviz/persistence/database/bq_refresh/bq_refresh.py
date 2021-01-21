@@ -200,7 +200,7 @@ def wait_for_table_load(big_query_client: BigQueryClient,
     """
     try:
         # Wait for table load job to complete.
-        load_job.result(_BQ_LOAD_WAIT_TIMEOUT_SECONDS)
+        load_job.result(timeout=_BQ_LOAD_WAIT_TIMEOUT_SECONDS)
         logging.info("Load job %s for table %s.%s.%s completed successfully.",
                      load_job.job_id,
                      load_job.destination.project,
