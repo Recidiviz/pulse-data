@@ -18,7 +18,6 @@
 # pylint: disable=trailing-whitespace
 # pylint: disable=line-too-long
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
-from recidiviz.calculator.query.state import dataset_config
 from recidiviz.calculator.query.state.dataset_config import ANALYST_VIEWS_DATASET
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -89,7 +88,7 @@ COMPARTMENT_SESSIONS_QUERY_TEMPLATE = \
     """
 
 COMPARTMENT_SESSIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
-    dataset_id=dataset_config.ANALYST_VIEWS_DATASET,
+    dataset_id=ANALYST_VIEWS_DATASET,
     view_id=COMPARTMENT_SESSIONS_VIEW_NAME,
     view_query_template=COMPARTMENT_SESSIONS_QUERY_TEMPLATE,
     description=COMPARTMENT_SESSIONS_VIEW_DESCRIPTION,

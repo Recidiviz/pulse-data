@@ -18,9 +18,7 @@
 # pylint: disable=trailing-whitespace
 # pylint: disable=line-too-long
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
-from recidiviz.calculator.query.state import dataset_config
-from recidiviz.calculator.query.state.dataset_config import STATIC_REFERENCE_TABLES_DATASET, \
-    DATAFLOW_METRICS_MATERIALIZED_DATASET
+from recidiviz.calculator.query.state.dataset_config import ANALYST_VIEWS_DATASET, DATAFLOW_METRICS_MATERIALIZED_DATASET
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
@@ -292,36 +290,35 @@ COMPARTMENT_SUB_SESSIONS_QUERY_TEMPLATE = \
         AND s.metric_source = l.metric_source
     )
     ,
-    release_compartment_cte AS
+    fill_gap_cte AS
     /*
-    Develop assumption around when someone is in a "RELEASE" compartment. Assume that if there is a gap between (1) the 
-    end date of one session and the start date of the following or (2) the end date of the last session and the last day
-    of data, that the person is released during that time period. This gives full session coverage for each person from 
-    the start of their first session to the last day for which we have data
+    Fill gaps between sessions. Once dataflow metrics are joined logic is implemented to determine if we think the gap 
+    is a release or part of a preceding compartment. This gives full session coverage for each person from the start of 
+    their first session to the last day for which we have data.
     */
     (
     SELECT 
         person_id,
         state_code,
         'INFERRED' AS metric_source,
-        'RELEASE' AS compartment_level_1,
-        'RELEASE' AS compartment_level_2,
+        CAST(NULL AS STRING) AS compartment_level_1,
+        CAST(NULL AS STRING) AS compartment_level_2,
         CAST(NULL AS STRING) AS compartment_location,
         start_date,
         end_date,
         MIN(last_day_of_data) OVER(PARTITION BY state_code) AS last_day_of_data
     FROM
-        (
-        SELECT 
-            person_id,
-            state_code,
-            --new session starts the day after the current row's end date
-            DATE_ADD(end_date, INTERVAL 1 DAY) as start_date,
-            --new session ends the day before the following row's start date
-            DATE_SUB(LEAD(start_date) OVER(PARTITION BY person_id ORDER BY start_date ASC), INTERVAL 1 DAY) AS end_date,
-            last_day_of_data
-        FROM sessionized_null_end_date_cte
-        )
+    (
+    SELECT 
+        person_id,
+        state_code,
+        --new session starts the day after the current row's end date
+        DATE_ADD(end_date, INTERVAL 1 DAY) as start_date,
+        --new session ends the day before the following row's start date
+        DATE_SUB(LEAD(start_date) OVER(PARTITION BY person_id ORDER BY start_date ASC), INTERVAL 1 DAY) AS end_date,
+        last_day_of_data
+    FROM sessionized_null_end_date_cte
+    )
     /*
     This where clause ensures that these new release records are only created when there is a gap in sessions.
     The release record start date will be greater than the release record end date when constructed from continuous 
@@ -338,98 +335,15 @@ COMPARTMENT_SUB_SESSIONS_QUERY_TEMPLATE = \
     (
     SELECT * FROM sessionized_null_end_date_cte
     UNION ALL
-    SELECT * FROM release_compartment_cte
+    SELECT * FROM fill_gap_cte
     )
     ,
-    start_metric_cte AS
-     /*
-    Combines three sources of admission / start metrics - (1) incarceration admissions, (2) revocation admisisons, and 
-    (3) supervision starts. Each of these 3 metrics is deduped individually, limiting 1 admission type on each day. 
-    No deduplication is done across the metrics because the join condition requires that the admission type joins to 
-    to the relevant compartment (supervision vs incarceration). In theory, there could be dups if a person has a 
-    new admission and a revocation admission on the same day, but that hasn't happen in the data, at this point.    
-    */
-    (
-    SELECT 
-        person_id,
-        admission_date AS start_date,
-        state_code,
-        admission_reason AS start_reason,
-        admission_reason AS start_sub_reason,
-        'INCARCERATION' as compartment_level_1,
-        --There are no cases of multiple admission reasons occurring on the same date as we are sub-setting for 
-        --"NEW_ADMISSION", therefore there is no 'order by' in the window function below
-        ROW_NUMBER() OVER(PARTITION BY person_id, admission_date) AS rn
-    FROM `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_admission_metrics_materialized`
-    WHERE admission_reason = 'NEW_ADMISSION' 
-    UNION ALL 
-    SELECT 
-        person_id,
-        revocation_admission_date as start_date,
-        state_code,
-        'REVOCATION' AS start_reason,
-         COALESCE(source_violation_type, 'UNKNOWN_REVOCATION') AS start_sub_reason,
-        'INCARCERATION' as compartment_level_1,
-        --This is very rare (2 cases) where a person has more that one revocation (with different reasons) on the same day. In both cases one of the 
-        --records has a null reason, so here I dedup prioritizing the non-null one.
-        ROW_NUMBER() OVER(PARTITION BY person_id, revocation_admission_date ORDER BY IF(source_violation_type IS NULL, 1, 0)) AS rn
-    FROM `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_revocation_metrics_materialized`
-    UNION ALL
-    SELECT 
-        person_id,
-        start_date,
-        state_code,
-        admission_reason AS start_reason,
-        admission_reason AS start_sub_reason,
-        'SUPERVISION' as compartment_level_1,
-         ROW_NUMBER() OVER(PARTITION BY person_id, start_date ORDER BY priority ASC) AS rn
-    FROM `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_start_metrics_materialized` m
-    --The main logic here is to de-prioritize transfers when they are concurrent with another reason
-    LEFT JOIN `static_reference_tables.admission_start_reason_dedup_priority` d
-      ON d.data_source = 'SUPERVISION'
-      AND d.start_reason = m.admission_reason
-    )
-    ,
-    release_metric_cte AS
-     /*
-    Pull in release reasons to join to the sessions view.
-    TODO(#142): Add validation to ensure all release reasons are in the static ranking table.
-    */
-    (
-    SELECT 
-        person_id,
-        state_code,
-        release_date AS end_date,
-        release_reason AS end_reason,
-        'INCARCERATION' AS data_source,
-        ROW_NUMBER() OVER(PARTITION BY person_id, release_date ORDER BY COALESCE(priority, 999)) AS rn
-    FROM `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_release_metrics_materialized` AS m
-    LEFT JOIN `{project_id}.{static_reference_views_dataset}.release_termination_reason_dedup_priority` AS p
-        ON m.release_reason = p.end_reason
-        AND p.data_source = 'INCARCERATION'
-    WHERE end_reason IS NOT NULL
-    UNION ALL  
-    SELECT 
-        person_id,
-        state_code,
-        termination_date AS end_date,
-        termination_reason AS end_reason,
-        'SUPERVISION' AS data_source,
-        ROW_NUMBER() OVER(PARTITION BY person_id, termination_date ORDER BY COALESCE(priority, 999)) AS rn
-    FROM `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_termination_metrics_materialized` m
-    LEFT JOIN `{project_id}.{static_reference_views_dataset}.release_termination_reason_dedup_priority` AS p
-        ON m.termination_reason = p.end_reason
-        AND p.data_source = 'SUPERVISION'
-    WHERE end_reason IS NOT NULL
-    )
-    ,
-    final_sessions_prep_cte AS
-    (
+    sessions_joined_with_dataflow AS
     /*
-    Final view that includes a sub_session_id, which is created based on the order of an individual's sessions. This view
-    is also joined back to the start metric table to pull in the start reason and start sub reason associated with 
-    the start of the session. 
+    Take the sessionized CTE and join to dataflow metrics to get start and end reasons. Also calculate inflow and 
+    outflow compartments. This is all information needed to categorize gaps into compartments.
     */
+    (
     SELECT 
         sessions.person_id,
         ROW_NUMBER() OVER(PARTITION BY sessions.person_id ORDER BY sessions.start_date ASC) AS sub_session_id,
@@ -440,46 +354,142 @@ COMPARTMENT_SUB_SESSIONS_QUERY_TEMPLATE = \
         sessions.compartment_location,
         starts.start_reason,
         starts.start_sub_reason,
-        releases.end_reason,
+        ends.end_reason,
         sessions.start_date,
         sessions.end_date,
-        releases.end_date AS release_date,
-        start_of_session.gender,
-        start_of_session.age_bucket,
-        start_of_session.prioritized_race_or_ethnicity,
-        start_of_session.assessment_score_bucket,
+        ends.end_date AS release_date,
+        sessions.last_day_of_data,
         LAG(sessions.compartment_level_1) OVER(PARTITION BY sessions.person_id ORDER BY sessions.start_date ASC) AS inflow_from_level_1,
         LAG(sessions.compartment_level_2) OVER(PARTITION BY sessions.person_id ORDER BY sessions.start_date ASC) AS inflow_from_level_2,
         LEAD(sessions.compartment_level_1) OVER(PARTITION BY sessions.person_id ORDER BY sessions.start_date ASC) AS outflow_to_level_1,
         LEAD(sessions.compartment_level_2) OVER(PARTITION BY sessions.person_id ORDER BY sessions.start_date ASC) AS outflow_to_level_2,
-        DATE_DIFF(COALESCE(sessions.end_date, sessions.last_day_of_data), sessions.start_date, DAY) AS session_length_days,
-        sessions.last_day_of_data
+        LAG(ends.end_reason) OVER (PARTITION BY sessions.person_id ORDER BY sessions.start_date ASC) AS prev_end_reason,
+        LEAD(starts.start_reason) OVER (PARTITION BY sessions.person_id ORDER BY sessions.start_date ASC) AS next_start_reason,
+        DATE_DIFF(COALESCE(sessions.end_date, sessions.last_day_of_data), sessions.start_date, DAY) AS session_length_days
     FROM full_sessionized_cte AS sessions
-    LEFT JOIN dedup_step_3_cte AS start_of_session
-        ON sessions.person_id = start_of_session.person_id
-        AND sessions.start_date = start_of_session.date
-    LEFT JOIN start_metric_cte starts
+    LEFT JOIN `{project_id}.{analyst_dataset}.compartment_session_start_reasons_materialized` starts
         ON starts.person_id = sessions.person_id
         AND starts.start_date = sessions.start_date
         AND starts.compartment_level_1 = sessions.compartment_level_1
-        AND starts.rn = 1
-    LEFT JOIN release_metric_cte releases
-        -- The release date will be a day after the session end date as the population metrics count a person towards 
-        -- population based on full days within that compartment
-        ON releases.end_date = DATE_ADD(sessions.end_date, INTERVAL 1 DAY)
-        AND releases.person_id = sessions.person_id
-        AND releases.data_source = sessions.compartment_level_1
-        AND releases.rn = 1
+    LEFT JOIN `{project_id}.{analyst_dataset}.compartment_session_end_reasons_materialized` ends
+    -- The release date will be a day after the session end date as the population metrics count a person towards 
+    -- population based on full days within that compartment
+        ON ends.end_date = DATE_ADD(sessions.end_date, INTERVAL 1 DAY)
+        AND ends.person_id = sessions.person_id
+        AND ends.compartment_level_1 = sessions.compartment_level_1
+    )
+    ,
+    session_gaps_identified AS
+    /*
+    Flag sub-session gaps that should take the compartment information from the previous sub-session. Three transitions
+    are accounted for (1) incarceration --> release --> incarceration, (2) supervision --> release --> supervision, 
+    and (3) supervision --> release --> incarceration. Prior session end reasons and subsequent session start reasons
+    are used to identify gaps that should be dissolved. Any that do not meet this criteria categorized as RELEASE. The
+    logic at this point is probably fairly conservative in dissolving sessions.
+    */
+    (
+    SELECT 
+        *,
+        CASE WHEN 
+        (
+        /*
+        If incarceration --> release --> incarceration and both the inflow end reason and outflow start reason are null 
+        then assume the gap is part of the previous session. There may be other reasons that we should allow for
+        (admitted in error, for example).
+        */
+        compartment_level_1 IS NULL
+            AND inflow_from_level_1 = 'INCARCERATION'
+            AND outflow_to_level_1 = 'INCARCERATION'
+            AND prev_end_reason IS NULL
+            AND next_start_reason IS NULL
+        )
+        OR
+        ( 
+        /*
+        If supervision --> release --> supervision, and the inflow end reason is either null or "REVOCATION" , and the 
+        outflow start reason is either null or "INTERNAL_UNKNOWN" then assume the gap is part of the previous 
+        session.
+        */
+        compartment_level_1 IS NULL
+            AND inflow_from_level_1 = 'SUPERVISION'
+            AND outflow_to_level_1 = 'SUPERVISION'
+            AND (prev_end_reason IS NULL OR prev_end_reason = 'REVOCATION')
+            AND (next_start_reason IS NULL OR next_start_reason = 'INTERNAL_UNKNOWN')
+        )
+        OR
+        ( 
+        /*
+        If supervision --> release --> incarceration, and either the inflow end reason or outflow start reason is 
+        "REVOCATION" then assume the gap is part of the previous session.
+        */
+        compartment_level_1 IS NULL
+            AND inflow_from_level_1 = 'SUPERVISION'
+            AND outflow_to_level_1 = 'INCARCERATION'
+            AND (prev_end_reason = 'REVOCATION' OR next_start_reason = 'REVOCATION')
+        )
+        THEN 1 ELSE 0 END AS gap_to_take_previous_compartment
+    FROM sessions_joined_with_dataflow
+    ) 
+    ,
+    session_gaps_with_compartment AS
+    /*
+    Have each sub-session that is flagged to take the previous compartment take on these values instead of the original 
+    values. Values taken from the previous session are compartment_level_1, compartment_level_2, 
+    compartment_location, and end_reason. These fields take the previous sub-session value when the sub-session is
+    flagged, and when this value is not taken it assumed to be a release.
+    */
+    (
+    SELECT 
+        * EXCEPT(compartment_level_1, compartment_level_2, compartment_location, end_reason),
+        COALESCE(
+            CASE WHEN gap_to_take_previous_compartment = 1 
+                THEN LAG(compartment_level_1) OVER(PARTITION BY person_id ORDER BY sub_session_id)
+                ELSE compartment_level_1 END, 'RELEASE') AS compartment_level_1,
+        COALESCE(
+            CASE WHEN gap_to_take_previous_compartment = 1 
+                THEN LAG(compartment_level_2) OVER(PARTITION BY person_id ORDER BY sub_session_id)
+             ELSE compartment_level_2 END, 'RELEASE') AS compartment_level_2,
+        CASE WHEN gap_to_take_previous_compartment = 1 
+            THEN LAG(compartment_location) OVER(PARTITION BY person_id ORDER BY sub_session_id)
+            ELSE compartment_location END AS compartment_location,
+        CASE WHEN gap_to_take_previous_compartment = 1 
+            THEN LAG(end_reason) OVER(PARTITION BY person_id ORDER BY sub_session_id)
+            ELSE end_reason END AS end_reason
+    FROM session_gaps_identified 
     )
     /*
-    This takes the previous CTE and adds a field for session_id which is calculated based on moving to a new compartment
-    (based the concatenation of compartment_level_1 and compartment_level2)
+    Now that compartment_level_1 and compartment_level_2 values are updated, recalculate the inflow and outflow values. 
+    This cte also does the join with the original population data to pull in demographic info as of the start of the 
+    session. Ultimately this will be moved out of the sub-sessions view entirely. 
+    */   
+    ,
+    sessions_recalculate_inflows_outflows AS
+    (
+    SELECT 
+        s.* EXCEPT(inflow_from_level_1, inflow_from_level_2, outflow_to_level_1, outflow_to_level_2),
+        LAG(s.compartment_level_1) OVER(PARTITION BY s.person_id ORDER BY s.start_date ASC) AS inflow_from_level_1,
+        LAG(s.compartment_level_2) OVER(PARTITION BY s.person_id ORDER BY s.start_date ASC) AS inflow_from_level_2,
+        LEAD(s.compartment_level_1) OVER(PARTITION BY s.person_id ORDER BY s.start_date ASC) AS outflow_to_level_1,
+        LEAD(s.compartment_level_2) OVER(PARTITION BY s.person_id ORDER BY s.start_date ASC) AS outflow_to_level_2,
+        start_of_session.gender,
+        start_of_session.age_bucket,
+        start_of_session.prioritized_race_or_ethnicity,
+        start_of_session.assessment_score_bucket,
+    FROM session_gaps_with_compartment s
+    LEFT JOIN dedup_step_3_cte AS start_of_session
+        ON s.person_id = start_of_session.person_id
+        AND s.start_date = start_of_session.date
+    )
+    /*
+    This is the final output with three additional fields calculated from the previous cte. Firstly, the session_id is 
+    calculated based on a person moving to a new compartment. And secondly, flags are created to identify the 
+    sub-sessions that are the first and last sub-sessions within a session. These are useful fields to have for data
+    validation.
     */
     SELECT
         person_id,
         sub_session_id,
-        SUM(CASE WHEN CONCAT(compartment_level_1, compartment_level_2)!=COALESCE(CONCAT(inflow_from_level_1, inflow_from_level_2),'') THEN 1 ELSE 0 END) 
-            OVER(PARTITION BY person_id ORDER BY sub_session_id) AS session_id,
+        session_id,
         state_code,
         start_date,
         end_date,
@@ -500,19 +510,27 @@ COMPARTMENT_SUB_SESSIONS_QUERY_TEMPLATE = \
         outflow_to_level_1,
         outflow_to_level_2,
         session_length_days,
-        last_day_of_data
-    FROM final_sessions_prep_cte
+        last_day_of_data,
+        CASE WHEN sub_session_id = MIN(sub_session_id) OVER(PARTITION BY person_id, session_id) THEN 1 ELSE 0 END AS first_sub_session_in_session,
+        CASE WHEN sub_session_id = MAX(sub_session_id) OVER(PARTITION BY person_id, session_id) THEN 1 ELSE 0 END AS last_sub_session_in_session,
+    FROM 
+        (
+        SELECT 
+            *,
+            SUM(CASE WHEN CONCAT(compartment_level_1, compartment_level_2)!=COALESCE(CONCAT(inflow_from_level_1, inflow_from_level_2),'') THEN 1 ELSE 0 END) 
+            OVER(PARTITION BY person_id ORDER BY sub_session_id) AS session_id
+        FROM sessions_recalculate_inflows_outflows
+        )
     ORDER BY person_id ASC, sub_session_id ASC
     """
 
 COMPARTMENT_SUB_SESSIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
-    dataset_id=dataset_config.ANALYST_VIEWS_DATASET,
+    dataset_id=ANALYST_VIEWS_DATASET,
     view_id=COMPARTMENT_SUB_SESSIONS_VIEW_NAME,
     view_query_template=COMPARTMENT_SUB_SESSIONS_QUERY_TEMPLATE,
     description=COMPARTMENT_SUB_SESSIONS_VIEW_DESCRIPTION,
-    static_reference_dataset=STATIC_REFERENCE_TABLES_DATASET,
     materialized_metrics_dataset=DATAFLOW_METRICS_MATERIALIZED_DATASET,
-    static_reference_views_dataset=dataset_config.STATIC_REFERENCE_TABLES_DATASET,
+    analyst_dataset=ANALYST_VIEWS_DATASET,
     should_materialize=True
 )
 
