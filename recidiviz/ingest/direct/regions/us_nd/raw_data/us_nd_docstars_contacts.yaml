@@ -1,4 +1,6 @@
 file_tag: docstars_contacts
+file_description: |-
+  Each row represents a contact between a supervision officer and supervisee.
 primary_key_cols:
   - RecID
 datetime_cols:

@@ -1,4 +1,5 @@
-# Status Descriptions. Column prefix: FH.
 file_tag: LBAKRCOD_TAK146
+file_description: |-
+  Status Descriptions. Column prefix: FH.
 primary_key_cols:
   - FH_SCD

@@ -1,3 +1,5 @@
 file_tag: tagC
+file_description: |-
+  tagC file description
 primary_key_cols:
   - COL1

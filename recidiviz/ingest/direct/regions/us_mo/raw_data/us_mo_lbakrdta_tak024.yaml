@@ -1,5 +1,6 @@
-# Sentence Prob. Column prefix: BU.
 file_tag: LBAKRDTA_TAK024
+file_description: |-
+  Sentence Prob. Column prefix: BU.
 primary_key_cols:
   - BU_DOC
   - BU_CYC
