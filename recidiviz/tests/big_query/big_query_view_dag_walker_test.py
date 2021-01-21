@@ -248,8 +248,10 @@ class TestBigQueryViewDagWalker(unittest.TestCase):
 
     def assertIsValidEmptyParentsView(self, node: BigQueryViewDagNode) -> None:
         known_empty_parent_view_keys = {
-            # This view unnests data from a static list
+            # These views unnest data from a static list
             ('census_views', 'charge_class_severity_ranks'),
+            ('analyst_data', 'admission_start_reason_dedup_priority'),
+            ('analyst_data', 'release_termination_reason_dedup_priority'),
 
             # Generate data using pure date functions
             ('reference_views', 'covid_report_weeks'),
