@@ -38,3 +38,8 @@ OperationsBase: DeclarativeMeta = declarative_base(cls=DatabaseEntity, name='Ope
 # Defines the base class for all table classes in the justice counts schema.
 # For actual schema definitions, see /justice_counts/schema.py.
 JusticeCountsBase: DeclarativeMeta = declarative_base(cls=DatabaseEntity, name='JusticeCountsBase')
+
+
+# Defines the base class for all table classes in the case triage schema.
+# For actual schema definitions, see /case_triage/schema.py.
+CaseTriageBase: DeclarativeMeta = declarative_base(cls=DatabaseEntity, name='CaseTriageBase')

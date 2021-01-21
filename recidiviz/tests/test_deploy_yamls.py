@@ -28,6 +28,7 @@ class TestDeployYamls(unittest.TestCase):
     """Tests checking that all the yamls deployed by our builds parse
     successfully.
     """
+
     def path_for_build_file(self, file_name: str) -> str:
         return os.path.join(os.path.dirname(__file__),
                             '..', '..', file_name)
@@ -67,7 +68,11 @@ class TestDeployYamls(unittest.TestCase):
         staging_cloud_sql_instances: str = cloud_sql_instance_diff['old_value']
         prod_cloud_sql_instances = cloud_sql_instance_diff['new_value']
         self.assertEqual(
-            staging_cloud_sql_instances.replace('recidiviz-staging', 'recidiviz-123').replace('dev-', 'prod-'),
+            (staging_cloud_sql_instances
+             .replace('recidiviz-staging', 'recidiviz-123')  # Staging project becomes production
+             .replace('dev-', 'prod-')  # Dev prefix becomes prod
+             .replace('-0af0a', '')  # Development case triage suffix is dropped
+             ),
             prod_cloud_sql_instances)
 
         # There should be no other values changed between the two

@@ -27,13 +27,14 @@ from sqlalchemy.orm.session import close_all_sessions
 
 from recidiviz.persistence.database import SQLALCHEMY_DB_NAME, SQLALCHEMY_DB_HOST, SQLALCHEMY_USE_SSL, \
     SQLALCHEMY_DB_USER, SQLALCHEMY_DB_PASSWORD
-from recidiviz.persistence.database.base_schema import OperationsBase, StateBase, JailsBase, JusticeCountsBase
+from recidiviz.persistence.database.base_schema import OperationsBase, StateBase, JailsBase, JusticeCountsBase, \
+    CaseTriageBase
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.database.sqlalchemy_engine_manager import SQLAlchemyEngineManager
 from recidiviz.tests.persistence.database.schema_entity_converter.test_base_schema import TestBase
 from recidiviz.utils import environment
 
-DECLARATIVE_BASES = [OperationsBase, StateBase, JailsBase, JusticeCountsBase, TestBase]
+DECLARATIVE_BASES = [OperationsBase, StateBase, JailsBase, JusticeCountsBase, TestBase, CaseTriageBase]
 LINUX_TEST_DB_OWNER_NAME = 'recidiviz_test_db_owner'
 TEST_POSTGRES_DB_NAME = 'recidiviz_test_db'
 TEST_POSTGRES_USER_NAME = 'recidiviz_test_usr'
