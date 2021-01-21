@@ -16,6 +16,7 @@
 # =============================================================================
 
 """Custom configuration for how pytest should run."""
+import logging
 import os
 import shlex
 import subprocess
@@ -125,7 +126,12 @@ def _write_emulator_environs() -> Dict[str, Optional[str]]:
         filename = os.path.join(
             os.environ.get('HOME', ''),
             '.config/gcloud/emulators/{}/env.yaml'.format(emulator_name))
-        env_file = open(filename, 'r')
+        try:
+            env_file = open(filename, 'r')
+        except Exception:
+            logging.warning('Could not find env file: %s', filename)
+            continue
+
         env_dict.update(yaml.full_load(env_file))
         env_file.close()
 
