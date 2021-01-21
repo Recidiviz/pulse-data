@@ -87,10 +87,12 @@ class SQLAlchemyEngineManagerTest(TestCase):
     @patch('recidiviz.utils.secrets.get_secret')
     def testGetAllStrippedCloudSqlInstanceIds_returnsOnlyConfiguredIds(self, mock_secrets):
         # Arrange
-        mock_secrets.side_effect = ['project:zone:111', 'project:zone:222', 'project:zone:333', 'project:zone:444']
+        mock_secrets.side_effect = [
+            'project:zone:111', 'project:zone:222', 'project:zone:333', 'project:zone:444', 'project:zone:555'
+        ]
 
         # Act
         ids = SQLAlchemyEngineManager.get_all_stripped_cloudsql_instance_ids()
 
         # Assert
-        assert ids == ['111', '222', '333', '444']
+        assert ids == ['111', '222', '333', '444', '555']

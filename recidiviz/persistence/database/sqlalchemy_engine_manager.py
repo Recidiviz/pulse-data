@@ -28,7 +28,8 @@ from recidiviz.persistence.database import SQLALCHEMY_DB_NAME, SQLALCHEMY_DB_HOS
     SQLALCHEMY_DB_PASSWORD, SQLALCHEMY_USE_SSL, SQLALCHEMY_SSL_CERT_PATH, SQLALCHEMY_SSL_KEY_PATH
 from recidiviz.persistence.database import migrations
 from recidiviz.persistence.database.base_schema import JailsBase, \
-    StateBase, OperationsBase, JusticeCountsBase
+    StateBase, OperationsBase, JusticeCountsBase, CaseTriageBase
+from recidiviz.persistence.database import migrations
 from recidiviz.utils import secrets, environment
 
 
@@ -38,6 +39,7 @@ class SchemaType(enum.Enum):
     STATE = 'STATE'
     OPERATIONS = 'OPERATIONS'
     JUSTICE_COUNTS = 'JUSTICE_COUNTS'
+    CASE_TRIAGE = 'CASE_TRIAGE'
 
 
 class SQLAlchemyEngineManager:
@@ -50,6 +52,7 @@ class SQLAlchemyEngineManager:
         SchemaType.STATE: 'state',
         SchemaType.OPERATIONS: 'operations',
         SchemaType.JUSTICE_COUNTS: 'justice_counts',
+        SchemaType.CASE_TRIAGE: 'case_triage',
     }
 
     _SCHEMA_TO_DECLARATIVE_META: Dict[SchemaType, DeclarativeMeta] = {
@@ -57,6 +60,7 @@ class SQLAlchemyEngineManager:
         SchemaType.STATE: StateBase,
         SchemaType.OPERATIONS: OperationsBase,
         SchemaType.JUSTICE_COUNTS: JusticeCountsBase,
+        SchemaType.CASE_TRIAGE: CaseTriageBase,
     }
 
     @classmethod

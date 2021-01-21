@@ -40,7 +40,7 @@ class CloudSqlToBQConfigTest(unittest.TestCase):
 
     def setUp(self) -> None:
         self.schema_types: List[SchemaType] = list(SchemaType)
-        self.disabled_schema_types = {SchemaType.JUSTICE_COUNTS}
+        self.disabled_schema_types = {SchemaType.JUSTICE_COUNTS,SchemaType.CASE_TRIAGE}
         self.enabled_schema_types = [schema_type for schema_type in self.schema_types
                                      if schema_type not in self.disabled_schema_types]
         self.mock_project_id = 'fake-recidiviz-project'

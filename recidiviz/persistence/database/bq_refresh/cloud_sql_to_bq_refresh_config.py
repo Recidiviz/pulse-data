@@ -238,6 +238,9 @@ class CloudSqlToBQConfig:
             # Justice Counts views currently rely on federated queries directly to Postgres instead of this refresh.
             # TODO(#5081): Re-enable this once arrays are removed from the Justice Counts schema.
             return None
+        if schema_type == SchemaType.CASE_TRIAGE:
+            # Case Triage does not need to be exported to BigQuery
+            return None
         if schema_type == SchemaType.OPERATIONS:
             return CloudSqlToBQConfig(
                 metadata_base=base_schema.OperationsBase,
