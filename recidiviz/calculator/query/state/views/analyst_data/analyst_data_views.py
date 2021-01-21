@@ -17,6 +17,14 @@
 """All views needed for analyst data"""
 from typing import List
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+from recidiviz.calculator.query.state.views.analyst_data.admission_start_reason_dedup_priority \
+    import ADMISSION_START_REASON_DEDUP_PRIORITY_VIEW_BUILDER
+from recidiviz.calculator.query.state.views.analyst_data.release_termination_reason_dedup_priority \
+    import RELEASE_TERMINATION_REASON_DEDUP_PRIORITY_VIEW_BUILDER
+from recidiviz.calculator.query.state.views.analyst_data.compartment_session_start_reasons \
+    import COMPARTMENT_SESSION_START_REASONS_VIEW_BUILDER
+from recidiviz.calculator.query.state.views.analyst_data.compartment_session_end_reasons \
+    import COMPARTMENT_SESSION_END_REASONS_VIEW_BUILDER
 from recidiviz.calculator.query.state.views.analyst_data.compartment_sub_sessions \
     import COMPARTMENT_SUB_SESSIONS_VIEW_BUILDER
 from recidiviz.calculator.query.state.views.analyst_data.compartment_sessions import COMPARTMENT_SESSIONS_VIEW_BUILDER
@@ -39,6 +47,10 @@ from recidiviz.calculator.query.state.views.analyst_data.supervision_population_
     import SUPERVISION_POPULATION_ATTRIBUTES_BY_DISTRICT_BY_MONTH_VIEW_BUILDER
 
 ANALYST_DATA_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
+    ADMISSION_START_REASON_DEDUP_PRIORITY_VIEW_BUILDER,
+    RELEASE_TERMINATION_REASON_DEDUP_PRIORITY_VIEW_BUILDER,
+    COMPARTMENT_SESSION_START_REASONS_VIEW_BUILDER,
+    COMPARTMENT_SESSION_END_REASONS_VIEW_BUILDER,
     COMPARTMENT_SUB_SESSIONS_VIEW_BUILDER,
     COMPARTMENT_SESSIONS_VIEW_BUILDER,
     COMPARTMENT_SENTENCES_VIEW_BUILDER,
