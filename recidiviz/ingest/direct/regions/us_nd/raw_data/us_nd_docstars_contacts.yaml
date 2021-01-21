@@ -8,3 +8,7 @@ datetime_cols:
   - CONTACT_DATE
   - RecDate
   - LASTUPDATE
+columns:
+  - name: Remarks
+    description: |-
+      The raw text the supervising officer inputs.

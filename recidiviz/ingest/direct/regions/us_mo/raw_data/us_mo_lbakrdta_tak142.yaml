@@ -4,4 +4,8 @@ file_description: |-
 primary_key_cols:
   - E6_DOC
   - E6_CYC
-  - E6_DSN # Internal Document seq number
+  - E6_DSN
+columns:
+  - name: E6_DSN
+    description: |-
+      Internal Document seq number

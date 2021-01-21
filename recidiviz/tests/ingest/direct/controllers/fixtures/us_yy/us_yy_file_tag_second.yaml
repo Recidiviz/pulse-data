@@ -6,4 +6,8 @@ file_description: |-
 
 primary_key_cols:
   - col_name_2a
+columns:
+  - name: col_name_2a
+    description: |-
+      column description
 separator: '$'
