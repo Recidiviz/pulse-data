@@ -1,5 +1,6 @@
-# Officer information.
 file_tag: LBCMDATA_APFX90
+file_description: |-
+  Officer information.
 primary_key_cols:
   - BDGNO
   - EMPSSN

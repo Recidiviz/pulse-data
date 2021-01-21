@@ -1,5 +1,6 @@
-# Regional and District Administrator Roster
 file_tag: LANTERN_DA_RA_LIST
+file_description: |-
+  Regional and District Administrator Roster
 primary_key_cols:
   - REGION
   - DISTRICT

@@ -1,5 +1,6 @@
-# Offender Cycles. Column prefix: DQ.
 file_tag: LBAKRDTA_TAK040
+file_description: |-
+  Offender Cycles. Column prefix: DQ.
 primary_key_cols:
   - DQ_DOC
   - DQ_CYC

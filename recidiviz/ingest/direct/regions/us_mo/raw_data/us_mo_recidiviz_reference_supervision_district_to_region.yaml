@@ -1,4 +1,5 @@
-# Recidiviz-generated mapping of MO supervision district ids to their associated region.
 file_tag: RECIDIVIZ_REFERENCE_supervision_district_to_region
+file_description: |-
+  Recidiviz-generated mapping of MO supervision district ids to their associated region.
 primary_key_cols:
   - level_1_supervision_location_external_id

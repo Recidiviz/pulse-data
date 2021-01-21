@@ -1,5 +1,6 @@
-# Sentence / Citation Xref. Column prefix: JS.
 file_tag: LBAKRDTA_TAK291
+file_description: |-
+  Sentence / Citation Xref. Column prefix: JS.
 primary_key_cols:
   - JS_DOC
   - JS_CYC

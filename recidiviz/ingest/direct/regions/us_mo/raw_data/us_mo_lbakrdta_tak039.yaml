@@ -1,5 +1,6 @@
-# Supervision Type Assessments. Column prefix: DN.
 file_tag: LBAKRDTA_TAK039
+file_description: |-
+  Supervision Type Assessments. Column prefix: DN.
 primary_key_cols:
   - DN_DOC
   - DN_CYC

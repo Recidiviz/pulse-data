@@ -1,5 +1,6 @@
-# Conditions. Column prefix: CF.
 file_tag: LBAKRDTA_TAK042
+file_description: |-
+  Conditions. Column prefix: CF.
 primary_key_cols:
   - CF_DOC
   - CF_CYC

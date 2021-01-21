@@ -97,18 +97,24 @@ class DirectIngestRegionRawFileConfigTest(unittest.TestCase):
 
         config_1 = region_config.raw_file_configs['file_tag_first']
         self.assertEqual('file_tag_first', config_1.file_tag)
+        self.assertEqual('First raw file.', config_1.file_description)
         self.assertEqual(['col_name_1a', 'col_name_1b'], config_1.primary_key_cols)
         self.assertEqual('ISO-456-7', config_1.encoding)
         self.assertEqual(',', config_1.separator)
 
         config_2 = region_config.raw_file_configs['file_tag_second']
+        expected_file_description_config_2 = 'Some special/unusual character\'s in the description &\nlong enough to' \
+                                             ' make a second line!\\n Trailing/leading white\nspace is stripped & the' \
+                                             ' text block is interpreted literally.'
         self.assertEqual('file_tag_second', config_2.file_tag)
+        self.assertEqual(expected_file_description_config_2, config_2.file_description)
         self.assertEqual(['col_name_2a'], config_2.primary_key_cols)
         self.assertEqual('UTF-8', config_2.encoding)
         self.assertEqual('$', config_2.separator)
 
         config_3 = region_config.raw_file_configs['tagC']
         self.assertEqual('tagC', config_3.file_tag)
+        self.assertEqual('tagC file description', config_3.file_description)
         self.assertEqual(['COL1'], config_3.primary_key_cols)
         self.assertEqual('UTF-8', config_3.encoding)
         self.assertEqual(',', config_3.separator)

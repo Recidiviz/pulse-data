@@ -1,5 +1,6 @@
-# ORAS assessment scores
 file_tag: FOCTEST_ORAS_ASSESSMENTS_WEEKLY
+file_description: |-
+  ORAS assessment scores
 primary_key_cols:
   - E04
   - FOCLIST

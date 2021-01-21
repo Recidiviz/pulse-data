@@ -1,5 +1,6 @@
-# Finally Formed Documents. Column prefix: E6.
 file_tag: LBAKRDTA_TAK142
+file_description: |-
+  Finally Formed Documents. Column prefix: E6.
 primary_key_cols:
   - E6_DOC
   - E6_CYC

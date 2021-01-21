@@ -56,6 +56,7 @@ class DirectIngestBigQueryViewTypesTest(unittest.TestCase):
             region_code='us_xx',
             raw_file_config=DirectIngestRawFileConfig(
                 file_tag='table_name',
+                file_description='file description',
                 primary_key_cols=['col1', 'col2'],
                 datetime_cols=[],
                 supplemental_order_by_clause='CAST(seq_num AS INT64)',
@@ -90,6 +91,7 @@ class DirectIngestBigQueryViewTypesTest(unittest.TestCase):
             region_code='us_xx',
             raw_file_config=DirectIngestRawFileConfig(
                 file_tag='table_name',
+                file_description='file description',
                 primary_key_cols=['col1', 'col2'],
                 datetime_cols=[],
                 supplemental_order_by_clause='CAST(seq_num AS INT64)',
@@ -124,6 +126,7 @@ class DirectIngestBigQueryViewTypesTest(unittest.TestCase):
             region_code='us_xx',
             raw_file_config=DirectIngestRawFileConfig(
                 file_tag='table_name',
+                file_description='file description',
                 primary_key_cols=['col1'],
                 datetime_cols=['col2'],
                 supplemental_order_by_clause='',
@@ -168,6 +171,7 @@ class DirectIngestBigQueryViewTypesTest(unittest.TestCase):
             region_code='us_xx',
             raw_file_config=DirectIngestRawFileConfig(
                 file_tag='table_name',
+                file_description='file description',
                 primary_key_cols=['col1'],
                 datetime_cols=['col2'],
                 supplemental_order_by_clause='',
