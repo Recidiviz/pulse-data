@@ -44,6 +44,14 @@ from recidiviz.utils.regions import Region
 from recidiviz.utils.yaml_dict import YAMLDict
 
 
+@attr.s
+class RawTableColumnInfo:
+    # The column name in BigQuery-compatible, normalized form (e.g. punctuation stripped)
+    name: str = attr.ib(validator=attr_validators.is_non_empty_str)
+    # Describes the column contents
+    description: str = attr.ib(validator=attr_validators.is_non_empty_str)
+
+
 @attr.s(frozen=True)
 class DirectIngestRawFileConfig:
     """Struct for storing any configuration for raw data imports for a certain file tag."""
@@ -62,6 +70,9 @@ class DirectIngestRawFileConfig:
     # A list of columns that contain dates that we should do our best to normalize into the same string format
     # to avoid re-ingesting data when raw data date formats change.
     datetime_cols: List[str] = attr.ib()
+
+    # A list of names and descriptions for each column in a file
+    columns: List[RawTableColumnInfo] = attr.ib()
 
     # An additional string clause that will be added to the ORDER BY list that determines which is the most up-to-date
     # row to pick among all rows that have the same primary key.
@@ -107,6 +118,7 @@ class DirectIngestRawFileConfig:
                        default_encoding: str,
                        default_separator: str,
                        file_config_dict: YAMLDict) -> 'DirectIngestRawFileConfig':
+        """Returns a DirectIngestRawFileConfig built from a YAMLDict"""
         primary_key_cols = file_config_dict.pop('primary_key_cols', list)
         # TODO(#5399): Migrate raw file configs for all legacy regions to have file descriptions
         # TODO(#5401): When migrating legacy tests, add file descriptions and remove US_XX from this set
@@ -116,6 +128,12 @@ class DirectIngestRawFileConfig:
         else:
             file_description = file_config_dict.pop('file_description', str)
         datetime_cols = file_config_dict.pop_optional('datetime_cols', list)
+        # TODO(#5399): Migrate raw file configs for all legacy regions to have column descriptions
+        # TODO(#5401): When migrating legacy tests, add file descriptions and remove US_XX from this set
+        if region_code.upper() in {'US_MO', 'US_ND', 'US_ID', 'US_PA', 'US_XX'}:
+            columns = file_config_dict.pop_optional('columns', list) or []
+        else:
+            columns = file_config_dict.pop('columns', list)
         supplemental_order_by_clause = file_config_dict.pop_optional('supplemental_order_by_clause', str)
         encoding = file_config_dict.pop_optional('encoding', str)
         separator = file_config_dict.pop_optional('separator', str)
@@ -131,6 +149,7 @@ class DirectIngestRawFileConfig:
             file_description=file_description,
             primary_key_cols=primary_key_cols,
             datetime_cols=datetime_cols if datetime_cols else [],
+            columns=[RawTableColumnInfo(name=column['name'], description=column['description']) for column in columns],
             supplemental_order_by_clause=supplemental_order_by_clause if supplemental_order_by_clause else '',
             encoding=encoding if encoding else default_encoding,
             separator=separator if separator else default_separator,
