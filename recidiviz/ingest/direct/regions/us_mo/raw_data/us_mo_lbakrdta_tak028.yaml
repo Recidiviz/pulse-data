@@ -1,5 +1,6 @@
-# Violation Reports. Column prefix: BY.
 file_tag: LBAKRDTA_TAK028
+file_description: |-
+  Violation Reports. Column prefix: BY.
 primary_key_cols:
   - BY_DOC
   - BY_CYC

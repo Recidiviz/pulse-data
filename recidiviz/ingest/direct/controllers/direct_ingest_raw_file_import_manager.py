@@ -30,6 +30,7 @@ from google.cloud import bigquery
 
 from recidiviz.big_query.big_query_client import BigQueryClient
 from recidiviz.cloud_functions.cloud_function_utils import GCSFS_NO_CACHING
+from recidiviz.common import attr_validators
 from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import DirectIngestGCSFileSystem
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import filename_parts_from_path, \
     GcsfsDirectIngestFileType
@@ -48,7 +49,10 @@ class DirectIngestRawFileConfig:
     """Struct for storing any configuration for raw data imports for a certain file tag."""
 
     # The file tag / table name that this file will get written to
-    file_tag: str = attr.ib(validator=attr.validators.instance_of(str))
+    file_tag: str = attr.ib(validator=attr_validators.is_non_empty_str)
+
+    # Description of the raw data file contents
+    file_description: str = attr.ib(validator=attr_validators.is_non_empty_str)
 
     # A list of columns that constitute the primary key for this file. If empty, this table cannot be used in an ingest
     # view query and a '*_latest' view will not be generated for this table. May be left empty for the purposes of
@@ -98,11 +102,19 @@ class DirectIngestRawFileConfig:
 
     @classmethod
     def from_yaml_dict(cls,
+                       region_code: str,
                        file_tag: str,
                        default_encoding: str,
                        default_separator: str,
                        file_config_dict: YAMLDict) -> 'DirectIngestRawFileConfig':
         primary_key_cols = file_config_dict.pop('primary_key_cols', list)
+        # TODO(#5399): Migrate raw file configs for all legacy regions to have file descriptions
+        # TODO(#5401): When migrating legacy tests, add file descriptions and remove US_XX from this set
+        if region_code.upper() in {'US_ND', 'US_ID', 'US_PA', 'US_XX'}:
+            file_description = file_config_dict.pop_optional('file_description', str)\
+                               or 'LEGACY_FILE_MISSING_DESCRIPTION'
+        else:
+            file_description = file_config_dict.pop('file_description', str)
         datetime_cols = file_config_dict.pop_optional('datetime_cols', list)
         supplemental_order_by_clause = file_config_dict.pop_optional('supplemental_order_by_clause', str)
         encoding = file_config_dict.pop_optional('encoding', str)
@@ -116,6 +128,7 @@ class DirectIngestRawFileConfig:
 
         return DirectIngestRawFileConfig(
             file_tag=file_tag,
+            file_description=file_description,
             primary_key_cols=primary_key_cols,
             datetime_cols=datetime_cols if datetime_cols else [],
             supplemental_order_by_clause=supplemental_order_by_clause if supplemental_order_by_clause else '',
@@ -179,7 +192,8 @@ class DirectIngestRegionRawFileConfig:
                     raise ValueError(
                         f'Tags out of ASCII alphabetical order - [{file_tag}] should come before [{last_tag}]')
 
-                raw_data_configs[file_tag] = DirectIngestRawFileConfig.from_yaml_dict(file_tag,
+                raw_data_configs[file_tag] = DirectIngestRawFileConfig.from_yaml_dict(self.region_code,
+                                                                                      file_tag,
                                                                                       default_encoding,
                                                                                       default_separator,
                                                                                       file_info)
@@ -208,7 +222,8 @@ class DirectIngestRegionRawFileConfig:
                     raise ValueError(f'Found file tag [{file_tag}] in [{yaml_file_path}]'
                                      f' that is already defined in another yaml file.')
 
-                raw_data_configs[file_tag] = DirectIngestRawFileConfig.from_yaml_dict(file_tag,
+                raw_data_configs[file_tag] = DirectIngestRawFileConfig.from_yaml_dict(self.region_code,
+                                                                                      file_tag,
                                                                                       default_encoding,
                                                                                       default_separator,
                                                                                       yaml_contents)

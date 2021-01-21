@@ -24,7 +24,7 @@ class MyClass:
 """
 
 import datetime
-from typing import Type, Callable
+from typing import Any, Type, Callable
 
 import attr
 
@@ -32,6 +32,13 @@ import attr
 def is_opt(cls_type: Type) -> Callable:
     """Returns an attrs validator that checks if the value is an instance of |cls_type| or None."""
     return attr.validators.optional(attr.validators.instance_of(cls_type))
+
+
+def is_non_empty_str(_instance: Any, _attribute: attr.Attribute, value: str) -> None:
+    if not isinstance(value, str):
+        raise ValueError(f'Expected value type str, found {type(str)}.')
+    if not value:
+        raise ValueError('String value should not be empty.')
 
 
 # String field validators

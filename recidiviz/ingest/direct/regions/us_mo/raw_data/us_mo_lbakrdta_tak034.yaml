@@ -1,5 +1,6 @@
-# Field Assignments. Column prefix: CE.
 file_tag: LBAKRDTA_TAK034
+file_description: |-
+  Field Assignments. Column prefix: CE.
 primary_key_cols:
   - CE_DOC
   - CE_CYC

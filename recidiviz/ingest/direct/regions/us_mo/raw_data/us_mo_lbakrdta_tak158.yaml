@@ -1,5 +1,6 @@
-# Body Status. Column prefix: F1.
 file_tag: LBAKRDTA_TAK158
+file_description: |-
+  Body Status. Column prefix: F1.
 primary_key_cols:
   - F1_DOC
   - F1_CYC
