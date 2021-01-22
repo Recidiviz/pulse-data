@@ -1,8 +1,12 @@
 file_tag: docstars_offensestable
 primary_key_cols:
   - RecID
-datetime_cols:
-  - LAST_UPDATE
-  - INACTIVEDATE
-  - OFFENSEDATE
-  - RecDate
+columns:
+  - name: LAST_UPDATE
+    is_datetime: True
+  - name: INACTIVEDATE
+    is_datetime: True
+  - name: OFFENSEDATE
+    is_datetime: True
+  - name: RecDate
+    is_datetime: True

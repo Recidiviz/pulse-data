@@ -2,6 +2,7 @@ file_tag: dbo_vwCCISAllProgDtls
 primary_key_cols:
   - CCISMvmt_Id
   - Program_Id
-datetime_cols:
-  - LstMod_Dt
+columns:
+  - name: LstMod_Dt
+    is_datetime: True
 encoding: ISO-8859-1

@@ -2,6 +2,8 @@ file_tag: sentprob
 primary_key_cols:
   - mitt_srl
   - sent_no
-datetime_cols:
-  - prob_strt_dtd
-  - prob_end_dtd
+columns:
+  - name: prob_strt_dtd
+    is_datetime: True
+  - name: prob_end_dtd
+    is_datetime: True

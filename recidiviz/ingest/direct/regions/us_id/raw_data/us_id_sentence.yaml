@@ -2,10 +2,16 @@ file_tag: sentence
 primary_key_cols:
   - mitt_srl
   - sent_no
-datetime_cols:
-  - sent_gtr_dtd
-  - sent_beg_dtd
-  - sent_par_dtd
-  - sent_ind_dtd
-  - sent_ft_dtd
-  - sent_sat_dtd
+columns:
+  - name: sent_gtr_dtd
+    is_datetime: True
+  - name: sent_beg_dtd
+    is_datetime: True
+  - name: sent_par_dtd
+    is_datetime: True
+  - name: sent_ind_dtd
+    is_datetime: True
+  - name: sent_ft_dtd
+    is_datetime: True
+  - name: sent_sat_dtd
+    is_datetime: True

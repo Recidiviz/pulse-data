@@ -3,11 +3,18 @@ primary_key_cols:
   - docno
   - incrno
   - statno
-datetime_cols:
-  - stat_intake_dtd
-  - stat_strt_dtd
-  - stat_rls_dtd
-  - stat_elig_end_dtd
-  - stat_strt_ped_dtd
-  - proj_rls_dtd
-  - rel_par_revoc_dtd
+columns:
+  - name: stat_intake_dtd
+    is_datetime: True
+  - name: stat_strt_dtd
+    is_datetime: True
+  - name: stat_rls_dtd
+    is_datetime: True
+  - name: stat_elig_end_dtd
+    is_datetime: True
+  - name: stat_strt_ped_dtd
+    is_datetime: True
+  - name: proj_rls_dtd
+    is_datetime: True
+  - name: rel_par_revoc_dtd
+    is_datetime: True

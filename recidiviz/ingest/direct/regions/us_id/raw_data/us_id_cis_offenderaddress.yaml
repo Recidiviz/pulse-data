@@ -1,8 +1,12 @@
 file_tag: cis_offenderaddress
 primary_key_cols:
   - personaddressid
-datetime_cols:
-  - upddate
-  - startdate
-  - enddate
-  - verifydate
+columns:
+  - name: upddate
+    is_datetime: True
+  - name: startdate
+    is_datetime: True
+  - name: enddate
+    is_datetime: True
+  - name: verifydate
+    is_datetime: True

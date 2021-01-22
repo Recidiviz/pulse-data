@@ -2,5 +2,6 @@ file_tag: casemgr
 primary_key_cols:
   - move_srl
   - case_dtd
-datetime_cols:
-  - case_dtd
+columns:
+  - name: case_dtd
+    is_datetime: True

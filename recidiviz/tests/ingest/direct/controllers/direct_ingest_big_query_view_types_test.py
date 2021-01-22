@@ -26,7 +26,7 @@ from recidiviz.ingest.direct.controllers.direct_ingest_big_query_view_types impo
     RAW_DATA_LATEST_HISTORICAL_FILE_VIEW_QUERY_TEMPLATE, RAW_DATA_UP_TO_DATE_HISTORICAL_FILE_VIEW_QUERY_TEMPLATE, \
     RawTableViewType, DestinationTableType
 from recidiviz.ingest.direct.controllers.direct_ingest_raw_file_import_manager import DirectIngestRawFileConfig, \
-    DirectIngestRegionRawFileConfig
+    DirectIngestRegionRawFileConfig, RawTableColumnInfo
 from recidiviz.tests.ingest import fixtures
 
 
@@ -58,7 +58,6 @@ class DirectIngestBigQueryViewTypesTest(unittest.TestCase):
                 file_tag='table_name',
                 file_description='file description',
                 primary_key_cols=['col1', 'col2'],
-                datetime_cols=[],
                 columns=[],
                 supplemental_order_by_clause='CAST(seq_num AS INT64)',
                 encoding='any-encoding',
@@ -94,7 +93,6 @@ class DirectIngestBigQueryViewTypesTest(unittest.TestCase):
                 file_tag='table_name',
                 file_description='file description',
                 primary_key_cols=['col1', 'col2'],
-                datetime_cols=[],
                 columns=[],
                 supplemental_order_by_clause='CAST(seq_num AS INT64)',
                 encoding='any-encoding',
@@ -130,8 +128,8 @@ class DirectIngestBigQueryViewTypesTest(unittest.TestCase):
                 file_tag='table_name',
                 file_description='file description',
                 primary_key_cols=['col1'],
-                datetime_cols=['col2'],
-                columns=[],
+                columns=[RawTableColumnInfo(name='col1', is_datetime=False, description='col1 description'),
+                         RawTableColumnInfo(name='col2', is_datetime=True, description='col2 description')],
                 supplemental_order_by_clause='',
                 encoding='any-encoding',
                 separator='@',
@@ -176,8 +174,8 @@ class DirectIngestBigQueryViewTypesTest(unittest.TestCase):
                 file_tag='table_name',
                 file_description='file description',
                 primary_key_cols=['col1'],
-                datetime_cols=['col2'],
-                columns=[],
+                columns=[RawTableColumnInfo(name='col1', is_datetime=False, description='col1 description'),
+                         RawTableColumnInfo(name='col2', is_datetime=True, description='col2 description')],
                 supplemental_order_by_clause='',
                 encoding='any-encoding',
                 separator='@',

@@ -3,5 +3,6 @@ primary_key_cols:
   - ParoleNumber
   - ParoleCountID
   - LastModifiedDateTime
-datetime_cols:
-  - LastModifiedDateTime
+columns:
+  - name: LastModifiedDateTime
+    is_datetime: True
