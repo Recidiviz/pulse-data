@@ -102,7 +102,7 @@ const MetadataTable = (props: MetadataTableProps): JSX.Element => {
       >
         Non-placeholders only
       </Checkbox>
-      <div className="center">
+      <div>
         <Table
           className="metadata-table"
           dataSource={metadataRecords}
