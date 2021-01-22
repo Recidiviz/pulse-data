@@ -464,7 +464,7 @@ def on_supervision_on_date(
         supervision_sentences: List[StateSupervisionSentence],
         incarceration_sentences: List[StateIncarcerationSentence],
         supervision_period: StateSupervisionPeriod,
-        incarceration_period_index: IncarcerationPeriodIndex):
+        incarceration_period_index: IncarcerationPeriodIndex) -> bool:
     """Determines whether the person was on supervision on a given date. We do not count someone as being on supervision
      for a given date if they were incarcerated or revoked that day."""
     if has_revocation_admission_on_date(evaluation_date, incarceration_period_index):
@@ -637,11 +637,11 @@ def find_supervision_termination_bucket(
 
 
 RevocationDetails = NamedTuple('RevocationDetails', [
-        ('revocation_type', Optional[StateSupervisionViolationResponseRevocationType]),
-        ('source_violation_type', Optional[StateSupervisionViolationType]),
-        ('supervising_officer_external_id', Optional[str]),
-        ('level_1_supervision_location_external_id', Optional[str]),
-        ('level_2_supervision_location_external_id', Optional[str])])
+    ('revocation_type', Optional[StateSupervisionViolationResponseRevocationType]),
+    ('source_violation_type', Optional[StateSupervisionViolationType]),
+    ('supervising_officer_external_id', Optional[str]),
+    ('level_1_supervision_location_external_id', Optional[str]),
+    ('level_2_supervision_location_external_id', Optional[str])])
 
 
 def _get_revocation_details(incarceration_period: StateIncarcerationPeriod,
@@ -701,12 +701,12 @@ def _get_revocation_details(incarceration_period: StateIncarcerationPeriod,
 
 
 ViolationHistory = NamedTuple('ViolationHistory', [
-        ('most_severe_violation_type', Optional[StateSupervisionViolationType]),
-        ('most_severe_violation_type_subtype', Optional[str]),
-        ('most_severe_response_decision', Optional[StateSupervisionViolationResponseDecision]),
-        ('response_count', Optional[int]),
-        ('violation_history_description', Optional[str]),
-        ('violation_type_frequency_counter', Optional[List[List[str]]])])
+    ('most_severe_violation_type', Optional[StateSupervisionViolationType]),
+    ('most_severe_violation_type_subtype', Optional[str]),
+    ('most_severe_response_decision', Optional[StateSupervisionViolationResponseDecision]),
+    ('response_count', Optional[int]),
+    ('violation_history_description', Optional[str]),
+    ('violation_type_frequency_counter', Optional[List[List[str]]])])
 
 
 def get_violation_and_response_history(
@@ -1062,7 +1062,7 @@ def classify_supervision_success(supervision_sentences: List[StateSupervisionSen
 
 
 def _get_projected_completion_bucket(
-        supervision_sentence,
+        supervision_sentence: StateSupervisionSentence,
         supervision_period: StateSupervisionPeriod,
         incarceration_period_index: IncarcerationPeriodIndex,
         supervision_period_to_agent_associations: Dict[int, Dict[Any, Any]],
@@ -1077,6 +1077,10 @@ def _get_projected_completion_bucket(
     start_date = supervision_sentence.start_date
     completion_date = supervision_sentence.completion_date
     projected_completion_date = supervision_sentence.projected_completion_date
+    if start_date is None or completion_date is None or projected_completion_date is None:
+        logging.warning("start_date, completion_date, and projected_completion_date must be non-None "
+                        "for supervision sentence: %s", supervision_sentence)
+        return None
 
     if completion_date < start_date:
         logging.warning("Supervision sentence completion date is before the start date: %s", supervision_sentence)
@@ -1085,7 +1089,7 @@ def _get_projected_completion_bucket(
     supervision_type = get_supervision_type_from_sentences(incarceration_sentences=[],
                                                            supervision_sentences=[supervision_sentence])
 
-    sentence_days_served = (supervision_sentence.completion_date - supervision_sentence.start_date).days
+    sentence_days_served = (completion_date - start_date).days
 
     # TODO(#2596): Assert that the sentence status is COMPLETED or COMMUTED to qualify as successful
     supervision_success = supervision_period.termination_reason in (StateSupervisionPeriodTerminationReason.DISCHARGE,
@@ -1237,7 +1241,7 @@ BUCKET_TYPES_FOR_METRIC: Dict[SupervisionMetricType, List[Type[SupervisionTimeBu
         NonRevocationReturnSupervisionTimeBucket, RevocationReturnSupervisionTimeBucket
     ],
     SupervisionMetricType.SUPERVISION_OUT_OF_STATE_POPULATION: [
-            NonRevocationReturnSupervisionTimeBucket, RevocationReturnSupervisionTimeBucket
+        NonRevocationReturnSupervisionTimeBucket, RevocationReturnSupervisionTimeBucket
     ],
     SupervisionMetricType.SUPERVISION_REVOCATION: [RevocationReturnSupervisionTimeBucket],
     SupervisionMetricType.SUPERVISION_REVOCATION_ANALYSIS: [RevocationReturnSupervisionTimeBucket],

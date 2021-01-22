@@ -152,11 +152,11 @@ def map_supervision_combinations(person: StatePerson,
     return metrics
 
 
-def include_event_in_metric(supervision_time_bucket, metric_type):
+def include_event_in_metric(supervision_time_bucket: SupervisionTimeBucket, metric_type: SupervisionMetricType) -> bool:
     """Returns whether the given supervision_time_bucket should contribute to metrics of the given metric_type."""
     if metric_type == SupervisionMetricType.SUPERVISION_COMPLIANCE:
         return (isinstance(supervision_time_bucket, NonRevocationReturnSupervisionTimeBucket)
-                and supervision_time_bucket.case_compliance)
+                and supervision_time_bucket.case_compliance is not None)
     if metric_type == SupervisionMetricType.SUPERVISION_DOWNGRADE:
         return (isinstance(supervision_time_bucket, NonRevocationReturnSupervisionTimeBucket)
                 and supervision_time_bucket.supervision_level_downgrade_occurred)

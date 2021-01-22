@@ -413,9 +413,15 @@ class SupervisionCaseComplianceMetric(SupervisionPopulationMetric):
 
     # Optional characteristics
 
+    # The date that the last assessment happened. If no assessment has yet happened, this is None.
+    most_recent_assessment_date: Optional[date] = attr.ib(default=None)
+
     # Whether or not a risk assessment has been completed for this person with enough recency to satisfy compliance
     # measures. Should be unset if we do not know the compliance standards for this person.
     assessment_up_to_date: Optional[bool] = attr.ib(default=None)
+
+    # The date that the last face-to-face contact happened. If no meetings have yet happened, this is None.
+    most_recent_face_to_face_date: Optional[date] = attr.ib(default=None)
 
     # Whether or not the supervision officer has had face-to-face contact with the person on supervision recently
     # enough to satisfy compliance measures. Should be unset if we do not know the compliance standards for this person.
