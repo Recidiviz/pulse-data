@@ -712,7 +712,8 @@ ViolationHistory = NamedTuple('ViolationHistory', [
 def get_violation_and_response_history(
         state_code: str,
         end_date: date,
-        violation_responses: List[StateSupervisionViolationResponse]
+        violation_responses: List[StateSupervisionViolationResponse],
+        window_preceding_revocation: bool = False,
 ) -> ViolationHistory:
     """Identifies and returns the most severe violation type, the most severe decision on the responses, and the total
     number of responses that were recorded during a window of time preceding the |end_date|.
@@ -726,8 +727,13 @@ def get_violation_and_response_history(
             violation_history_description=None,
             violation_type_frequency_counter=None)
 
-    responses_in_window = _get_responses_in_window_before_revocation(end_date, violation_responses,
-                                                                     include_follow_up_responses=False)
+    # If we are looking for the violation history preceding a revocation, then we will use the date of the last
+    # response prior to the revocation as the window cutoff. Otherwise, we will use |end_date|.
+    use_last_response_as_cutoff = window_preceding_revocation
+
+    responses_in_window = _get_responses_in_window_before_date(end_date, violation_responses,
+                                                               include_follow_up_responses=False,
+                                                               use_last_response_as_cutoff=use_last_response_as_cutoff)
 
     violations_in_window: List[StateSupervisionViolation] = []
     violation_ids_in_window: Set[int] = set()
@@ -748,8 +754,9 @@ def get_violation_and_response_history(
     responses_in_window_for_decision_evaluation = responses_in_window
 
     if include_decisions_on_follow_up_responses(state_code):
-        responses_in_window_for_decision_evaluation = _get_responses_in_window_before_revocation(
-            end_date, violation_responses, include_follow_up_responses=True)
+        responses_in_window_for_decision_evaluation = _get_responses_in_window_before_date(
+            end_date, violation_responses,
+            include_follow_up_responses=True, use_last_response_as_cutoff=use_last_response_as_cutoff)
 
     most_severe_response_decision = None
     if responses_in_window_for_decision_evaluation:
@@ -789,13 +796,17 @@ def get_violation_and_response_history(
     return violation_history_result
 
 
-def _get_responses_in_window_before_revocation(revocation_date: date,
-                                               violation_responses: List[StateSupervisionViolationResponse],
-                                               include_follow_up_responses: bool) \
+def _get_responses_in_window_before_date(window_end_date: date,
+                                         violation_responses: List[StateSupervisionViolationResponse],
+                                         include_follow_up_responses: bool,
+                                         use_last_response_as_cutoff: bool) \
         -> List[StateSupervisionViolationResponse]:
-    """Looks at the series of violation responses that preceded a revocation. Finds the last violation response that was
-    written before the end_date. Then, returns the violation responses that were written within
-    VIOLATION_HISTORY_WINDOW_MONTHS months of the response_date on that last response.
+    """Looks at the series of violation responses that preceded the given date. If use_last_response_as_cutoff is True,
+    finds the last violation response that was written before the end_date and returns the violation responses that were
+    written within VIOLATION_HISTORY_WINDOW_MONTHS months of the response_date on that last response.
+
+    If use_last_response_as_cutoff is False, returns the violation responses that were written within
+    VIOLATION_HISTORY_WINDOW_MONTHS months of the window_end_date.
     """
     responses_before_revocation = [
         response for response in violation_responses
@@ -803,7 +814,7 @@ def _get_responses_in_window_before_revocation(revocation_date: date,
         and not response.is_draft
         and response.response_type in (StateSupervisionViolationResponseType.VIOLATION_REPORT,
                                        StateSupervisionViolationResponseType.CITATION)
-        and response.response_date <= revocation_date
+        and response.response_date <= window_end_date
     ]
 
     responses_before_revocation = filter_violation_responses_before_revocation(responses_before_revocation,
@@ -821,13 +832,15 @@ def _get_responses_in_window_before_revocation(revocation_date: date,
         # This should never happen, but is here to silence mypy warnings about empty response_dates.
         raise ValueError("Not effectively filtering out responses without valid response_dates.")
 
-    history_cutoff_date = (last_response_before_revocation.response_date
-                           - relativedelta(months=VIOLATION_HISTORY_WINDOW_MONTHS))
+    end_date_for_cutoff = (last_response_before_revocation.response_date if use_last_response_as_cutoff
+                           else window_end_date)
+
+    history_cutoff_date = (end_date_for_cutoff - relativedelta(months=VIOLATION_HISTORY_WINDOW_MONTHS))
 
     responses_in_window = [
         response for response in responses_before_revocation
         if response.response_date is not None
-        and history_cutoff_date <= response.response_date <= last_response_before_revocation.response_date
+        and history_cutoff_date <= response.response_date <= end_date_for_cutoff
     ]
 
     return responses_in_window
@@ -896,7 +909,8 @@ def find_revocation_return_buckets(supervision_sentences: List[StateSupervisionS
                 # Get details about the violation and response history leading up to the revocation
                 violation_history = get_violation_and_response_history(incarceration_period.state_code,
                                                                        admission_date,
-                                                                       violation_responses)
+                                                                       violation_responses,
+                                                                       window_preceding_revocation=True)
 
                 judicial_district_code = _get_judicial_district_code(
                     supervision_period, supervision_period_to_judicial_district_associations)
@@ -952,7 +966,8 @@ def find_revocation_return_buckets(supervision_sentences: List[StateSupervisionS
             # Get details about the violation and response history leading up to the revocation
             violation_history = get_violation_and_response_history(incarceration_period.state_code,
                                                                    admission_date,
-                                                                   violation_responses)
+                                                                   violation_responses,
+                                                                   window_preceding_revocation=True)
 
             if pre_revocation_supervision_type is not None:
                 deprecated_supervising_district_external_id = \

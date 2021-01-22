@@ -9184,7 +9184,9 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
         revocation_date = date(2009, 2, 13)
 
         violation_history = identifier.get_violation_and_response_history(
-            supervision_violation_response.state_code, revocation_date, [supervision_violation_response])
+            supervision_violation_response.state_code, revocation_date, [supervision_violation_response],
+            window_preceding_revocation=True
+        )
 
         self.assertEqual(StateSupervisionViolationType.FELONY,
                          violation_history.most_severe_violation_type)
@@ -9193,6 +9195,143 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
         self.assertEqual(StateSupervisionViolationResponseDecision.REVOCATION,
                          violation_history.most_severe_response_decision)
         self.assertEqual(1, violation_history.response_count)
+        self.assertEqual('1felony', violation_history.violation_history_description)
+        self.assertEqual(violation_history.violation_type_frequency_counter, [['TECHNICAL', 'FELONY', 'ABSCONDED']])
+
+    def test_get_violation_and_response_history_not_preceding_revocation(self):
+        supervision_violation = StateSupervisionViolation.new_with_defaults(
+            supervision_violation_id=123455,
+            state_code='US_XX',
+            violation_date=date(2009, 1, 3),
+            supervision_violation_types=[
+                StateSupervisionViolationTypeEntry.new_with_defaults(
+                    state_code='US_XX',
+                    violation_type=StateSupervisionViolationType.TECHNICAL
+                ),
+                StateSupervisionViolationTypeEntry.new_with_defaults(
+                    state_code='US_XX',
+                    violation_type=StateSupervisionViolationType.FELONY
+                ),
+                StateSupervisionViolationTypeEntry.new_with_defaults(
+                    state_code='US_XX',
+                    violation_type=StateSupervisionViolationType.ABSCONDED
+                )
+            ]
+        )
+
+        # This is within 12 months of the most recent response, but not within 12 months of the end_date
+        supervision_violation_response_before_look_back = StateSupervisionViolationResponse.new_with_defaults(
+            supervision_violation_response_id=_DEFAULT_SSVR_ID,
+            response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
+            state_code='US_XX',
+            response_date=date(2018, 7, 25)
+        )
+
+        supervision_violation_response = StateSupervisionViolationResponse.new_with_defaults(
+            supervision_violation_response_id=_DEFAULT_SSVR_ID,
+            response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
+            state_code='US_XX',
+            response_date=date(2019, 1, 20),
+            supervision_violation_response_decisions=[
+                StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                    state_code='US_XX',
+                    decision=StateSupervisionViolationResponseDecision.REVOCATION,
+                    revocation_type=StateSupervisionViolationResponseRevocationType.REINCARCERATION
+                ),
+                StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                    state_code='US_XX',
+                    decision=StateSupervisionViolationResponseDecision.CONTINUANCE,
+                    revocation_type=StateSupervisionViolationResponseRevocationType.SHOCK_INCARCERATION,
+                )
+            ],
+            supervision_violation=supervision_violation
+        )
+
+        violation_responses = [supervision_violation_response_before_look_back, supervision_violation_response]
+
+        end_date = date(2019, 9, 5)
+
+        violation_history = identifier.get_violation_and_response_history(
+            supervision_violation_response.state_code, end_date, violation_responses,
+            window_preceding_revocation=False
+        )
+
+        self.assertEqual(StateSupervisionViolationType.FELONY,
+                         violation_history.most_severe_violation_type)
+        self.assertEqual(StateSupervisionViolationType.FELONY.value,
+                         violation_history.most_severe_violation_type_subtype)
+        self.assertEqual(StateSupervisionViolationResponseDecision.REVOCATION,
+                         violation_history.most_severe_response_decision)
+        self.assertEqual(1, violation_history.response_count)
+        self.assertEqual('1felony', violation_history.violation_history_description)
+        self.assertEqual(violation_history.violation_type_frequency_counter, [['TECHNICAL', 'FELONY', 'ABSCONDED']])
+
+    def test_get_violation_and_response_history_preceding_revocation(self):
+        supervision_violation = StateSupervisionViolation.new_with_defaults(
+            supervision_violation_id=123455,
+            state_code='US_XX',
+            violation_date=date(2009, 1, 3),
+            supervision_violation_types=[
+                StateSupervisionViolationTypeEntry.new_with_defaults(
+                    state_code='US_XX',
+                    violation_type=StateSupervisionViolationType.TECHNICAL
+                ),
+                StateSupervisionViolationTypeEntry.new_with_defaults(
+                    state_code='US_XX',
+                    violation_type=StateSupervisionViolationType.FELONY
+                ),
+                StateSupervisionViolationTypeEntry.new_with_defaults(
+                    state_code='US_XX',
+                    violation_type=StateSupervisionViolationType.ABSCONDED
+                )
+            ]
+        )
+
+        # This is within 12 months of the most recent response, but not within 12 months of the revocation_date
+        supervision_violation_response_before_look_back = StateSupervisionViolationResponse.new_with_defaults(
+            supervision_violation_response_id=_DEFAULT_SSVR_ID,
+            response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
+            state_code='US_XX',
+            response_date=date(2018, 7, 25)
+        )
+
+        supervision_violation_response = StateSupervisionViolationResponse.new_with_defaults(
+            supervision_violation_response_id=_DEFAULT_SSVR_ID,
+            response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
+            state_code='US_XX',
+            response_date=date(2019, 1, 20),
+            supervision_violation_response_decisions=[
+                StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                    state_code='US_XX',
+                    decision=StateSupervisionViolationResponseDecision.REVOCATION,
+                    revocation_type=StateSupervisionViolationResponseRevocationType.REINCARCERATION
+                ),
+                StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+                    state_code='US_XX',
+                    decision=StateSupervisionViolationResponseDecision.CONTINUANCE,
+                    revocation_type=StateSupervisionViolationResponseRevocationType.SHOCK_INCARCERATION,
+                )
+            ],
+            supervision_violation=supervision_violation
+        )
+
+        violation_responses = [supervision_violation_response_before_look_back, supervision_violation_response]
+
+        end_date = date(2019, 9, 5)
+
+        violation_history = identifier.get_violation_and_response_history(
+            supervision_violation_response.state_code, end_date, violation_responses,
+            window_preceding_revocation=True
+        )
+
+        self.assertEqual(StateSupervisionViolationType.FELONY,
+                         violation_history.most_severe_violation_type)
+        self.assertEqual(StateSupervisionViolationType.FELONY.value,
+                         violation_history.most_severe_violation_type_subtype)
+        self.assertEqual(StateSupervisionViolationResponseDecision.REVOCATION,
+                         violation_history.most_severe_response_decision)
+        # Both responses should be counted
+        self.assertEqual(2, violation_history.response_count)
         self.assertEqual('1felony', violation_history.violation_history_description)
         self.assertEqual(violation_history.violation_type_frequency_counter, [['TECHNICAL', 'FELONY', 'ABSCONDED']])
 
@@ -9259,7 +9398,9 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
         violation_history = identifier.get_violation_and_response_history(
             supervision_violation_response_1.state_code,
             revocation_date,
-            [supervision_violation_response_1, supervision_violation_response_2])
+            [supervision_violation_response_1, supervision_violation_response_2],
+            window_preceding_revocation=True
+        )
 
         self.assertEqual(StateSupervisionViolationType.FELONY, violation_history.most_severe_violation_type)
         self.assertEqual(StateSupervisionViolationType.FELONY.value,
@@ -9348,7 +9489,8 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
         violation_history = identifier.get_violation_and_response_history(
             supervision_violation_response.state_code,
             revocation_date,
-            [supervision_violation_response_old, supervision_violation_response])
+            [supervision_violation_response_old, supervision_violation_response],
+            window_preceding_revocation=True)
 
         self.assertEqual(StateSupervisionViolationType.FELONY,
                          violation_history.most_severe_violation_type)
@@ -9428,7 +9570,8 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
         violation_history = identifier.get_violation_and_response_history(
             supervision_violation_response.state_code,
             revocation_date,
-            [supervision_violation_response_old, supervision_violation_response])
+            [supervision_violation_response_old, supervision_violation_response],
+            window_preceding_revocation=True)
 
         self.assertEqual(StateSupervisionViolationType.FELONY,
                          violation_history.most_severe_violation_type)
@@ -9484,7 +9627,8 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
         revocation_date = date(2009, 2, 13)
 
         violation_history = \
-            identifier.get_violation_and_response_history('US_MO', revocation_date, [supervision_violation_response])
+            identifier.get_violation_and_response_history('US_MO', revocation_date, [supervision_violation_response],
+            window_preceding_revocation=True)
 
         self.assertEqual(StateSupervisionViolationType.TECHNICAL,
                          violation_history.most_severe_violation_type)
@@ -9539,7 +9683,8 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
         revocation_date = date(2009, 2, 13)
 
         violation_history = \
-            identifier.get_violation_and_response_history('US_PA', revocation_date, [supervision_violation_response])
+            identifier.get_violation_and_response_history('US_PA', revocation_date, [supervision_violation_response],
+            window_preceding_revocation=True)
 
         self.assertEqual(StateSupervisionViolationType.TECHNICAL,
                          violation_history.most_severe_violation_type)
@@ -9587,8 +9732,9 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
 
         revocation_date = date(2009, 2, 13)
 
-        violation_history = \
-            identifier.get_violation_and_response_history('US_PA', revocation_date, [supervision_violation_response])
+        violation_history = identifier.get_violation_and_response_history(
+            'US_PA', revocation_date, [supervision_violation_response], window_preceding_revocation=True
+        )
 
         self.assertEqual(StateSupervisionViolationType.TECHNICAL,
                          violation_history.most_severe_violation_type)
@@ -9637,8 +9783,10 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
 
         revocation_date = date(2009, 2, 13)
 
-        violation_history = \
-            identifier.get_violation_and_response_history('US_PA', revocation_date, [supervision_violation_response])
+        violation_history = identifier.get_violation_and_response_history(
+            'US_PA', revocation_date, [supervision_violation_response],
+            window_preceding_revocation=True
+        )
 
         self.assertEqual(StateSupervisionViolationType.TECHNICAL,
                          violation_history.most_severe_violation_type)
@@ -9730,8 +9878,12 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
         revocation_date = date(2009, 2, 13)
 
         violation_history = \
-            identifier.get_violation_and_response_history('US_PA', revocation_date, [
-                supervision_violation_response_1, supervision_violation_response_2, supervision_violation_response_3])
+            identifier.get_violation_and_response_history(
+                'US_PA', revocation_date,
+                [supervision_violation_response_1, supervision_violation_response_2,
+                 supervision_violation_response_3],
+                window_preceding_revocation=True
+            )
 
         self.assertEqual(StateSupervisionViolationType.TECHNICAL,
                          violation_history.most_severe_violation_type)
@@ -9769,7 +9921,9 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
         revocation_date = date(2009, 2, 13)
 
         violation_history = identifier.get_violation_and_response_history(
-            supervision_violation_response.state_code, revocation_date, [supervision_violation_response])
+            supervision_violation_response.state_code, revocation_date, [supervision_violation_response],
+            window_preceding_revocation=True
+        )
 
         self.assertIsNone(violation_history.most_severe_violation_type)
         self.assertIsNone(violation_history.most_severe_violation_type_subtype)
@@ -9833,7 +9987,9 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
 
         violation_history = \
             identifier.get_violation_and_response_history(
-                'US_MO', revocation_date, [supervision_violation_response, supervision_violation_response_supplemental])
+                'US_MO', revocation_date, [supervision_violation_response, supervision_violation_response_supplemental],
+                window_preceding_revocation=True
+            )
 
         self.assertEqual(StateSupervisionViolationType.TECHNICAL, violation_history.most_severe_violation_type)
         self.assertEqual(StateSupervisionViolationType.TECHNICAL.value,
@@ -9848,7 +10004,9 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
     def test_get_violation_and_response_history_no_responses(self):
         revocation_date = date(2009, 2, 13)
 
-        violation_history = identifier.get_violation_and_response_history('US_XX', revocation_date, [])
+        violation_history = identifier.get_violation_and_response_history('US_XX', revocation_date, [],
+            window_preceding_revocation=True
+        )
 
         self.assertIsNone(violation_history.most_severe_violation_type)
         self.assertIsNone(violation_history.most_severe_violation_type_subtype)
@@ -9897,7 +10055,9 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
         revocation_date = date(2009, 2, 13)
 
         violation_history = identifier.get_violation_and_response_history(
-            supervision_violation_response.state_code, revocation_date, [supervision_violation_response])
+            supervision_violation_response.state_code, revocation_date, [supervision_violation_response],
+            window_preceding_revocation=True
+        )
 
         self.assertEqual(StateSupervisionViolationType.MISDEMEANOR,
                          violation_history.most_severe_violation_type)
@@ -9954,7 +10114,9 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
         revocation_date = date(2009, 2, 13)
 
         violation_history = identifier.get_violation_and_response_history(
-            supervision_violation_response.state_code, revocation_date, [supervision_violation_response])
+            supervision_violation_response.state_code, revocation_date, [supervision_violation_response],
+            window_preceding_revocation=True
+        )
 
         self.assertIsNone(violation_history.most_severe_violation_type)
         self.assertIsNone(violation_history.most_severe_violation_type_subtype)
@@ -10011,7 +10173,9 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
         revocation_date = date(2009, 2, 13)
 
         violation_history = identifier.get_violation_and_response_history(
-            'US_MO', revocation_date, [supervision_violation_response])
+            'US_MO', revocation_date, [supervision_violation_response],
+            window_preceding_revocation=True
+        )
 
         self.assertEqual(StateSupervisionViolationType.TECHNICAL,
                          violation_history.most_severe_violation_type)
@@ -10024,10 +10188,72 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
         self.assertEqual([['LAW', 'TECHNICAL']], violation_history.violation_type_frequency_counter)
 
 
-class TestGetResponsesInWindowBeforeRevocation(unittest.TestCase):
-    """Test the get_responses_in_window_before_revocation function."""
+class TestGetResponsesInWindowBeforeDate(unittest.TestCase):
+    """Test the get_responses_in_window_before_date function."""
 
-    def test_get_responses_in_window_before_revocation(self):
+    def test_get_responses_in_window_before_date(self):
+        violation_responses = [
+            StateSupervisionViolationResponse.new_with_defaults(
+                state_code='US_XX',
+                response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
+                response_date=date(2010, 1, 1)
+            ),
+            StateSupervisionViolationResponse.new_with_defaults(
+                state_code='US_XX',
+                response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
+                response_date=date(1998, 2, 1)
+            ),
+            StateSupervisionViolationResponse.new_with_defaults(
+                state_code='US_XX',
+                response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
+                response_date=date(1997, 3, 1)
+            )
+        ]
+
+        end_date = date(2010, 1, 17)
+
+        responses_in_window = identifier._get_responses_in_window_before_date(
+            end_date, violation_responses,
+            include_follow_up_responses=False,
+            use_last_response_as_cutoff=False
+        )
+
+        self.assertEqual([StateSupervisionViolationResponse.new_with_defaults(
+                state_code='US_XX',
+                response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
+                response_date=date(2010, 1, 1)
+            )], responses_in_window)
+
+    def test_get_responses_in_window_before_date_outside_of_window(self):
+        violation_responses = [
+            StateSupervisionViolationResponse.new_with_defaults(
+                state_code='US_XX',
+                response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
+                response_date=date(2000, 1, 1)
+            ),
+            StateSupervisionViolationResponse.new_with_defaults(
+                state_code='US_XX',
+                response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
+                response_date=date(1998, 2, 1)
+            ),
+            StateSupervisionViolationResponse.new_with_defaults(
+                state_code='US_XX',
+                response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
+                response_date=date(1997, 3, 1)
+            )
+        ]
+
+        end_date = date(2010, 1, 17)
+
+        responses_in_window = identifier._get_responses_in_window_before_date(
+            end_date, violation_responses,
+            include_follow_up_responses=False,
+            use_last_response_as_cutoff=False
+        )
+
+        self.assertEqual([], responses_in_window)
+
+    def test_get_responses_in_window_before_date_revocation(self):
         violation_responses = [
             StateSupervisionViolationResponse.new_with_defaults(
                 state_code='US_XX',
@@ -10048,12 +10274,15 @@ class TestGetResponsesInWindowBeforeRevocation(unittest.TestCase):
 
         revocation_date = date(2001, 1, 17)
 
-        responses_in_window = identifier._get_responses_in_window_before_revocation(
-            revocation_date, violation_responses, include_follow_up_responses=False)
+        responses_in_window = identifier._get_responses_in_window_before_date(
+            revocation_date, violation_responses,
+            include_follow_up_responses=False,
+            use_last_response_as_cutoff=True
+        )
 
         self.assertEqual(violation_responses, responses_in_window)
 
-    def test_get_responses_in_window_before_revocation_exclude_before_window(self):
+    def test_get_responses_in_window_before_date_exclude_before_window(self):
         violation_responses = [
             StateSupervisionViolationResponse.new_with_defaults(
                 state_code='US_XX',
@@ -10074,8 +10303,11 @@ class TestGetResponsesInWindowBeforeRevocation(unittest.TestCase):
 
         revocation_date = date(2010, 1, 17)
 
-        responses_in_window = identifier._get_responses_in_window_before_revocation(
-            revocation_date, violation_responses, include_follow_up_responses=False)
+        responses_in_window = identifier._get_responses_in_window_before_date(
+            revocation_date, violation_responses,
+            include_follow_up_responses=False,
+            use_last_response_as_cutoff=True
+        )
 
         self.assertEqual([
             StateSupervisionViolationResponse.new_with_defaults(
@@ -10085,7 +10317,7 @@ class TestGetResponsesInWindowBeforeRevocation(unittest.TestCase):
             )
         ], responses_in_window)
 
-    def test_get_responses_in_window_before_revocation_none_before_revocation(self):
+    def test_get_responses_in_window_before_date_none_before_revocation(self):
         violation_responses = [
             StateSupervisionViolationResponse.new_with_defaults(
                 state_code='US_XX',
@@ -10106,12 +10338,15 @@ class TestGetResponsesInWindowBeforeRevocation(unittest.TestCase):
 
         revocation_date = date(1900, 1, 17)
 
-        responses_in_window = identifier._get_responses_in_window_before_revocation(
-            revocation_date, violation_responses, include_follow_up_responses=False)
+        responses_in_window = identifier._get_responses_in_window_before_date(
+            revocation_date, violation_responses,
+            include_follow_up_responses=False,
+            use_last_response_as_cutoff=True
+        )
 
         self.assertEqual([], responses_in_window)
 
-    def test_get_responses_in_window_before_revocation_exclude_permanent_decision(self):
+    def test_get_responses_in_window_before_date_exclude_permanent_decision(self):
         violation_responses = [
             StateSupervisionViolationResponse.new_with_defaults(
                 state_code='US_XX',
@@ -10132,8 +10367,11 @@ class TestGetResponsesInWindowBeforeRevocation(unittest.TestCase):
 
         revocation_date = date(2000, 1, 17)
 
-        responses_in_window = identifier._get_responses_in_window_before_revocation(
-            revocation_date, violation_responses, include_follow_up_responses=False)
+        responses_in_window = identifier._get_responses_in_window_before_date(
+            revocation_date, violation_responses,
+            include_follow_up_responses=False,
+            use_last_response_as_cutoff=True
+        )
 
         self.assertCountEqual([
             StateSupervisionViolationResponse.new_with_defaults(
@@ -10148,7 +10386,7 @@ class TestGetResponsesInWindowBeforeRevocation(unittest.TestCase):
             )
         ], responses_in_window)
 
-    def test_get_responses_in_window_before_revocation_us_mo_do_not_include_supplemental(self):
+    def test_get_responses_in_window_before_date_us_mo_do_not_include_supplemental(self):
         violation_responses = [
             StateSupervisionViolationResponse.new_with_defaults(
                 state_code='US_MO',
@@ -10166,8 +10404,11 @@ class TestGetResponsesInWindowBeforeRevocation(unittest.TestCase):
 
         revocation_date = date(2000, 1, 17)
 
-        responses_in_window = identifier._get_responses_in_window_before_revocation(
-            revocation_date, violation_responses, include_follow_up_responses=False)
+        responses_in_window = identifier._get_responses_in_window_before_date(
+            revocation_date, violation_responses,
+            include_follow_up_responses=False,
+            use_last_response_as_cutoff=True
+        )
 
         self.assertCountEqual([
             StateSupervisionViolationResponse.new_with_defaults(
@@ -10178,7 +10419,64 @@ class TestGetResponsesInWindowBeforeRevocation(unittest.TestCase):
             )
         ], responses_in_window)
 
-    def test_get_responses_in_window_before_revocation_us_mo_include_supplemental(self):
+    def test_get_responses_in_window_before_date_us_mo_do_not_include_supplemental_for_most_recent(self):
+        violation_responses = [
+            StateSupervisionViolationResponse.new_with_defaults(
+                state_code='US_MO',
+                response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
+                response_subtype='INI',
+                response_date=date(2019, 3, 20)
+            ),
+            StateSupervisionViolationResponse.new_with_defaults(
+                state_code='US_MO',
+                response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
+                response_subtype='SUP',
+                response_date=date(2018, 1, 11)
+            ),
+            StateSupervisionViolationResponse.new_with_defaults(
+                state_code='US_MO',
+                response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
+                response_subtype='INI',
+                response_date=date(2017, 10, 25)
+            ),
+            StateSupervisionViolationResponse.new_with_defaults(
+                state_code='US_MO',
+                response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
+                response_subtype='INI',
+                response_date=date(2017, 9, 12)
+            ),
+            StateSupervisionViolationResponse.new_with_defaults(
+                state_code='US_MO',
+                response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
+                response_subtype='INI',
+                response_date=date(2015, 1, 2)
+            )
+        ]
+
+        revocation_date = date(2018, 9, 5)
+
+        responses_in_window = identifier._get_responses_in_window_before_date(
+            revocation_date, violation_responses,
+            include_follow_up_responses=False,
+            use_last_response_as_cutoff=True
+        )
+
+        self.assertCountEqual([
+            StateSupervisionViolationResponse.new_with_defaults(
+                state_code='US_MO',
+                response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
+                response_subtype='INI',
+                response_date=date(2017, 10, 25)
+            ),
+            StateSupervisionViolationResponse.new_with_defaults(
+                state_code='US_MO',
+                response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
+                response_subtype='INI',
+                response_date=date(2017, 9, 12)
+            ),
+        ], responses_in_window)
+
+    def test_get_responses_in_window_before_date_us_mo_include_supplemental(self):
         violation_responses = [
             StateSupervisionViolationResponse.new_with_defaults(
                 state_code='US_MO',
@@ -10196,8 +10494,11 @@ class TestGetResponsesInWindowBeforeRevocation(unittest.TestCase):
 
         revocation_date = date(2000, 1, 17)
 
-        responses_in_window = identifier._get_responses_in_window_before_revocation(
-            revocation_date, violation_responses, include_follow_up_responses=True)
+        responses_in_window = identifier._get_responses_in_window_before_date(
+            revocation_date, violation_responses,
+            include_follow_up_responses=True,
+            use_last_response_as_cutoff=True
+        )
 
         self.assertCountEqual([
             StateSupervisionViolationResponse.new_with_defaults(
