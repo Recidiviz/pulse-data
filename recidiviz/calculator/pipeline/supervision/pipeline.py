@@ -70,7 +70,7 @@ def job_id(pipeline_options: Dict[str, str]) -> str:
 
 
 @environment.test_only
-def clear_job_id():
+def clear_job_id() -> None:
     global _job_id
     _job_id = None
 
@@ -79,6 +79,7 @@ def clear_job_id():
 @with_output_types(SupervisionMetric)
 class GetSupervisionMetrics(beam.PTransform):
     """Transforms a StatePerson and their SupervisionTimeBuckets into SupervisionMetrics."""
+
     def __init__(self, pipeline_options: Dict[str, str],
                  metric_types: Set[str],
                  calculation_month_count: int,
@@ -139,7 +140,7 @@ class ClassifySupervisionTimeBuckets(beam.DoFn):
         else:
             yield person.person_id, (person, supervision_time_buckets)
 
-    def to_runner_api_parameter(self, _):
+    def to_runner_api_parameter(self, _) -> None:
         pass  # Passing unused abstract method.
 
 
@@ -192,6 +193,7 @@ class CalculateSupervisionMetricCombinations(beam.DoFn):
 @with_output_types(SupervisionMetric)
 class ProduceSupervisionMetrics(beam.DoFn):
     """Produces SupervisionMetrics ready for persistence."""
+
     def process(self, element, *args, **kwargs):
         pipeline_options = kwargs
 
@@ -275,7 +277,7 @@ def run(apache_beam_pipeline_options: PipelineOptions,
         metric_types: List[str],
         state_code: str,
         calculation_end_month: Optional[str],
-        person_filter_ids: Optional[List[int]]):
+        person_filter_ids: Optional[List[int]]) -> None:
     """Runs the supervision calculation pipeline."""
 
     # Workaround to load SQLAlchemy objects at start of pipeline. This is necessary because the BuildRootEntity
@@ -392,35 +394,35 @@ def run(apache_beam_pipeline_options: PipelineOptions,
         ))
 
         supervision_period_to_agent_associations_as_kv = (
-                p | 'Load supervision_period_to_agent_associations_as_kv' >>
-                ImportTableAsKVTuples(
-                    dataset_id=reference_dataset,
-                    table_id=SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION_VIEW_NAME,
-                    table_key='person_id',
-                    state_code_filter=state_code,
-                    person_id_filter_set=person_id_filter_set
-                ))
+            p | 'Load supervision_period_to_agent_associations_as_kv' >>
+            ImportTableAsKVTuples(
+                dataset_id=reference_dataset,
+                table_id=SUPERVISION_PERIOD_TO_AGENT_ASSOCIATION_VIEW_NAME,
+                table_key='person_id',
+                state_code_filter=state_code,
+                person_id_filter_set=person_id_filter_set
+            ))
 
         # Bring in the judicial districts associated with supervision_periods
         sp_to_judicial_district_kv = (
-                p | 'Load sp_to_judicial_district_kv' >>
-                ImportTableAsKVTuples(
-                    dataset_id=reference_dataset,
-                    table_id=SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_NAME,
-                    state_code_filter=state_code,
-                    person_id_filter_set=person_id_filter_set,
-                    table_key='person_id'
-                )
+            p | 'Load sp_to_judicial_district_kv' >>
+            ImportTableAsKVTuples(
+                dataset_id=reference_dataset,
+                table_id=SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_VIEW_NAME,
+                state_code_filter=state_code,
+                person_id_filter_set=person_id_filter_set,
+                table_key='person_id'
+            )
         )
 
         state_race_ethnicity_population_counts = (
-                p | 'Load state_race_ethnicity_population_counts' >>
-                ImportTable(
-                    dataset_id=static_reference_dataset,
-                    table_id='state_race_ethnicity_population_counts',
-                    state_code_filter=state_code,
-                    person_id_filter_set=None,
-                )
+            p | 'Load state_race_ethnicity_population_counts' >>
+            ImportTable(
+                dataset_id=static_reference_dataset,
+                table_id='state_race_ethnicity_population_counts',
+                state_code_filter=state_code,
+                person_id_filter_set=None,
+            )
         )
 
         if state_code == 'US_MO':
@@ -553,17 +555,17 @@ def run(apache_beam_pipeline_options: PipelineOptions,
         # Convert the metrics into a format that's writable to BQ
         writable_metrics = (supervision_metrics | 'Convert to dict to be written to BQ' >>
                             beam.ParDo(RecidivizMetricWritableDict()).with_outputs(
-                                    SupervisionMetricType.SUPERVISION_COMPLIANCE.value,
-                                    SupervisionMetricType.SUPERVISION_POPULATION.value,
-                                    SupervisionMetricType.SUPERVISION_REVOCATION.value,
-                                    SupervisionMetricType.SUPERVISION_REVOCATION_ANALYSIS.value,
-                                    SupervisionMetricType.SUPERVISION_START.value,
-                                    SupervisionMetricType.SUPERVISION_SUCCESS.value,
-                                    SupervisionMetricType.SUPERVISION_SUCCESSFUL_SENTENCE_DAYS_SERVED.value,
-                                    SupervisionMetricType.SUPERVISION_TERMINATION.value,
-                                    SupervisionMetricType.SUPERVISION_OUT_OF_STATE_POPULATION.value,
-                                    SupervisionMetricType.SUPERVISION_DOWNGRADE.value,
-                                )
+                                SupervisionMetricType.SUPERVISION_COMPLIANCE.value,
+                                SupervisionMetricType.SUPERVISION_POPULATION.value,
+                                SupervisionMetricType.SUPERVISION_REVOCATION.value,
+                                SupervisionMetricType.SUPERVISION_REVOCATION_ANALYSIS.value,
+                                SupervisionMetricType.SUPERVISION_START.value,
+                                SupervisionMetricType.SUPERVISION_SUCCESS.value,
+                                SupervisionMetricType.SUPERVISION_SUCCESSFUL_SENTENCE_DAYS_SERVED.value,
+                                SupervisionMetricType.SUPERVISION_TERMINATION.value,
+                                SupervisionMetricType.SUPERVISION_OUT_OF_STATE_POPULATION.value,
+                                SupervisionMetricType.SUPERVISION_DOWNGRADE.value,
+                            )
                             )
 
         terminations_table_id = DATAFLOW_METRICS_TO_TABLES[SupervisionTerminationMetric]

@@ -1106,6 +1106,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                     assessment_count=0,
                     assessment_up_to_date=True,
                     face_to_face_count=1,
+                    most_recent_face_to_face_date=date(2017, 3, 5),
                     face_to_face_frequency_sufficient=True
                 ),
                 date(2017, 4, 30): SupervisionCaseCompliance(
@@ -1113,6 +1114,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                     assessment_count=0,
                     assessment_up_to_date=False,
                     face_to_face_count=0,
+                    most_recent_face_to_face_date=date(2017, 3, 5),
                     face_to_face_frequency_sufficient=True
                 )
             }
@@ -4054,6 +4056,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 date(2018, 3, 31): SupervisionCaseCompliance(
                     date_of_evaluation=date(2018, 3, 31),
                     assessment_count=1,
+                    most_recent_assessment_date=date(2018, 3, 1),
                     assessment_up_to_date=True,
                     face_to_face_count=0,
                     face_to_face_frequency_sufficient=False
@@ -4061,6 +4064,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 date(2018, 4, 30): SupervisionCaseCompliance(
                     date_of_evaluation=date(2018, 4, 30),
                     assessment_count=0,
+                    most_recent_assessment_date=date(2018, 3, 1),
                     assessment_up_to_date=True,
                     face_to_face_count=0,
                     face_to_face_frequency_sufficient=False
@@ -4505,6 +4509,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             date(2018, 3, 31): SupervisionCaseCompliance(
                 date_of_evaluation=date(2018, 3, 31),
                 assessment_count=0,
+                most_recent_assessment_date=date(2018, 2, 10),
                 assessment_up_to_date=True,
                 face_to_face_count=0,
                 face_to_face_frequency_sufficient=None
@@ -4512,6 +4517,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             date(2018, 4, 30): SupervisionCaseCompliance(
                 date_of_evaluation=date(2018, 4, 30),
                 assessment_count=0,
+                most_recent_assessment_date=date(2018, 2, 10),
                 assessment_up_to_date=True,
                 face_to_face_count=0,
                 face_to_face_frequency_sufficient=None
@@ -4614,6 +4620,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 date(2018, 3, 31): SupervisionCaseCompliance(
                     date_of_evaluation=date(2018, 3, 31),
                     assessment_count=1,
+                    most_recent_assessment_date=date(2018, 3, 1),
                     assessment_up_to_date=True,
                     face_to_face_count=0,
                     face_to_face_frequency_sufficient=None
@@ -4621,6 +4628,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 date(2018, 4, 30): SupervisionCaseCompliance(
                     date_of_evaluation=date(2018, 4, 30),
                     assessment_count=0,
+                    most_recent_assessment_date=date(2018, 3, 1),
                     assessment_up_to_date=True,
                     face_to_face_count=0,
                     face_to_face_frequency_sufficient=None
@@ -4826,6 +4834,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 date(2018, 3, 31): SupervisionCaseCompliance(
                     date_of_evaluation=date(2018, 3, 31),
                     assessment_count=1,
+                    most_recent_assessment_date=date(2018, 3, 1),
                     assessment_up_to_date=True,
                     face_to_face_count=0,
                     face_to_face_frequency_sufficient=False
@@ -4833,6 +4842,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 date(2018, 4, 30): SupervisionCaseCompliance(
                     date_of_evaluation=date(2018, 4, 30),
                     assessment_count=0,
+                    most_recent_assessment_date=date(2018, 3, 1),
                     assessment_up_to_date=True,
                     face_to_face_count=0,
                     face_to_face_frequency_sufficient=False
@@ -4958,6 +4968,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 date(2018, 3, 31): SupervisionCaseCompliance(
                     date_of_evaluation=date(2018, 3, 31),
                     assessment_count=1,
+                    most_recent_assessment_date=date(2018, 3, 1),
                     assessment_up_to_date=True,
                     face_to_face_count=0,
                     face_to_face_frequency_sufficient=None
@@ -4965,6 +4976,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 date(2018, 4, 30): SupervisionCaseCompliance(
                     date_of_evaluation=date(2018, 4, 30),
                     assessment_count=0,
+                    most_recent_assessment_date=date(2018, 3, 1),
                     assessment_up_to_date=True,
                     face_to_face_count=0,
                     face_to_face_frequency_sufficient=None
@@ -4983,6 +4995,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 date(2018, 3, 31): SupervisionCaseCompliance(
                     date_of_evaluation=date(2018, 3, 31),
                     assessment_count=1,
+                    most_recent_assessment_date=date(2018, 3, 1),
                     assessment_up_to_date=True,
                     face_to_face_count=0,
                     face_to_face_frequency_sufficient=None
@@ -4990,6 +5003,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 date(2018, 4, 30): SupervisionCaseCompliance(
                     date_of_evaluation=date(2018, 4, 30),
                     assessment_count=0,
+                    most_recent_assessment_date=date(2018, 3, 1),
                     assessment_up_to_date=True,
                     face_to_face_count=0,
                     face_to_face_frequency_sufficient=None
@@ -5008,6 +5022,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 date(2018, 3, 31): SupervisionCaseCompliance(
                     date_of_evaluation=date(2018, 3, 31),
                     assessment_count=1,
+                    most_recent_assessment_date=date(2018, 3, 1),
                     assessment_up_to_date=True,
                     face_to_face_count=0,
                     face_to_face_frequency_sufficient=None
@@ -5015,6 +5030,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 date(2018, 4, 30): SupervisionCaseCompliance(
                     date_of_evaluation=date(2018, 4, 30),
                     assessment_count=0,
+                    most_recent_assessment_date=date(2018, 3, 1),
                     assessment_up_to_date=True,
                     face_to_face_count=0,
                     face_to_face_frequency_sufficient=None
@@ -7790,6 +7806,7 @@ class TestFindTimeBucketsForSupervisionPeriod(unittest.TestCase):
                 date(2018, 1, 31): SupervisionCaseCompliance(
                     date_of_evaluation=date(2018, 1, 31),
                     assessment_count=0,
+                    most_recent_assessment_date=date(2017, 12, 17),
                     assessment_up_to_date=True,
                     face_to_face_count=0,
                     face_to_face_frequency_sufficient=None
@@ -7797,6 +7814,7 @@ class TestFindTimeBucketsForSupervisionPeriod(unittest.TestCase):
                 date(2018, 2, 28): SupervisionCaseCompliance(
                     date_of_evaluation=date(2018, 2, 28),
                     assessment_count=0,
+                    most_recent_assessment_date=date(2017, 12, 17),
                     assessment_up_to_date=True,
                     face_to_face_count=0,
                     face_to_face_frequency_sufficient=None

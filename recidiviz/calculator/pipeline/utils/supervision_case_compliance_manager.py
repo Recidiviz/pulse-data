@@ -38,6 +38,7 @@ from recidiviz.persistence.entity.state.entities import StateSupervisionPeriod, 
 class StateSupervisionCaseComplianceManager:
     """Interface for state-specific supervision case compliance calculations.
     """
+
     def __init__(self,
                  supervision_period: StateSupervisionPeriod,
                  case_type: StateSupervisionCaseType,
@@ -73,6 +74,7 @@ class StateSupervisionCaseComplianceManager:
         assessment_count = self._assessments_in_compliance_month(compliance_evaluation_date)
         face_to_face_count = self._face_to_face_contacts_in_compliance_month(compliance_evaluation_date)
 
+        most_recent_assessment_date = None
         assessment_is_up_to_date = None
         face_to_face_frequency_sufficient = None
 
@@ -83,6 +85,8 @@ class StateSupervisionCaseComplianceManager:
                 assessment_class=StateAssessmentClass.RISK,
                 state_code=self.supervision_period.state_code
             )
+            if most_recent_assessment is not None:
+                most_recent_assessment_date = most_recent_assessment.assessment_date
 
             assessment_is_up_to_date = self._assessment_is_up_to_date(compliance_evaluation_date,
                                                                       most_recent_assessment)
@@ -93,9 +97,11 @@ class StateSupervisionCaseComplianceManager:
         return SupervisionCaseCompliance(
             date_of_evaluation=compliance_evaluation_date,
             assessment_count=assessment_count,
+            most_recent_assessment_date=most_recent_assessment_date,
             assessment_up_to_date=assessment_is_up_to_date,
             face_to_face_count=face_to_face_count,
-            face_to_face_frequency_sufficient=face_to_face_frequency_sufficient
+            most_recent_face_to_face_date=self._most_recent_face_to_face_contact(compliance_evaluation_date),
+            face_to_face_frequency_sufficient=face_to_face_frequency_sufficient,
         )
 
     def _assessment_is_up_to_date(self, compliance_evaluation_date: date,
@@ -136,6 +142,16 @@ class StateSupervisionCaseComplianceManager:
 
         return self._reassessment_requirements_are_met(compliance_evaluation_date, most_recent_assessment)
 
+    def _most_recent_face_to_face_contact(self, compliance_evaluation_date: date) -> Optional[date]:
+        """Gets the most recent face to face contact date. If there is not any, it returns None."""
+        applicable_contacts = self._get_applicable_face_to_face_contacts_between_dates(self.start_of_supervision,
+                                                                                       compliance_evaluation_date)
+        contact_dates = [contact.contact_date for contact in applicable_contacts if contact.contact_date is not None]
+        if not contact_dates:
+            return None
+
+        return max(contact_dates)
+
     def _face_to_face_contacts_in_compliance_month(self, compliance_evaluation_date: date) -> int:
         """Returns the number of face-to-face contacts that were completed between the first of the month of the
         compliance_evaluation_date and the compliance_evaluation_date (inclusive)."""
@@ -149,14 +165,14 @@ class StateSupervisionCaseComplianceManager:
         first_day_of_month = date(compliance_year, compliance_month, 1)
 
         applicable_contacts = self._get_applicable_face_to_face_contacts_between_dates(
-                lower_bound_inclusive=first_day_of_month,
-                upper_bound_inclusive=compliance_evaluation_date)
+            lower_bound_inclusive=first_day_of_month,
+            upper_bound_inclusive=compliance_evaluation_date)
 
         return len(applicable_contacts)
 
     def _get_applicable_face_to_face_contacts_between_dates(self,
-                                                           lower_bound_inclusive: date,
-                                                           upper_bound_inclusive: date) \
+                                                            lower_bound_inclusive: date,
+                                                            upper_bound_inclusive: date) \
             -> List[StateSupervisionContact]:
         """Returns the completed contacts that can be counted as face-to-face contacts and occurred between the
         lower_bound_inclusive date and the upper_bound_inclusive date.
@@ -166,10 +182,10 @@ class StateSupervisionCaseComplianceManager:
             # These are the types of contacts that can satisfy the face-to-face contact requirement
             if contact.contact_type in (StateSupervisionContactType.FACE_TO_FACE, StateSupervisionContactType.TELEPHONE,
                                         StateSupervisionContactType.VIRTUAL)
-               # Contact must be marked as completed
-               and contact.status == StateSupervisionContactStatus.COMPLETED
-               and contact.contact_date is not None
-               and lower_bound_inclusive <= contact.contact_date <= upper_bound_inclusive
+            # Contact must be marked as completed
+            and contact.status == StateSupervisionContactStatus.COMPLETED
+            and contact.contact_date is not None
+            and lower_bound_inclusive <= contact.contact_date <= upper_bound_inclusive
         ]
 
     def _assessments_in_compliance_month(self, compliance_evaluation_date: date) -> int:

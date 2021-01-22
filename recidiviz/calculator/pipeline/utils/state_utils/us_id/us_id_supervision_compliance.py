@@ -126,7 +126,7 @@ class UsIdSupervisionCaseCompliance(StateSupervisionCaseComplianceManager):
                                      StateSupervisionPeriodSupervisionType.PROBATION,
                                      StateSupervisionPeriodSupervisionType.PAROLE]
         is_bench_warrant = supervision_type == StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN and \
-                           self.supervision_period.supervision_type_raw_text == 'BW'
+            self.supervision_period.supervision_type_raw_text == 'BW'
         if supervision_type not in allowed_supervision_types and not is_bench_warrant:
             return False
 
@@ -143,7 +143,7 @@ class UsIdSupervisionCaseCompliance(StateSupervisionCaseComplianceManager):
             if supervision_type == StateSupervisionPeriodSupervisionType.PROBATION:
                 return SEX_OFFENSE_NEW_SUPERVISION_ASSESSMENT_DEADLINE_DAYS_PROBATION
             if supervision_type in (StateSupervisionPeriodSupervisionType.PAROLE,
-                                                            StateSupervisionPeriodSupervisionType.DUAL):
+                                    StateSupervisionPeriodSupervisionType.DUAL):
                 return SEX_OFFENSE_NEW_SUPERVISION_ASSESSMENT_DEADLINE_DAYS_PAROLE
             raise ValueError(f"Found unexpected supervision_type: [{supervision_type}]")
 

@@ -122,6 +122,7 @@ class TestCaseCompliance(unittest.TestCase):
             SupervisionCaseCompliance(
                 date_of_evaluation=compliance_evaluation_date,
                 assessment_count=1,
+                most_recent_assessment_date=date(2020, 4, 10),
                 assessment_up_to_date=True,
                 face_to_face_count=0,
                 face_to_face_frequency_sufficient=None
@@ -226,8 +227,10 @@ class TestCaseCompliance(unittest.TestCase):
             SupervisionCaseCompliance(
                 date_of_evaluation=compliance_evaluation_date,
                 assessment_count=0,
+                most_recent_assessment_date=date(2018, 3, 10),
                 assessment_up_to_date=True,
                 face_to_face_count=1,
+                most_recent_face_to_face_date=date(2018, 4, 6),
                 face_to_face_frequency_sufficient=True
             ), compliance)
 
@@ -285,8 +288,10 @@ class TestCaseCompliance(unittest.TestCase):
             SupervisionCaseCompliance(
                 date_of_evaluation=compliance_evaluation_date,
                 assessment_count=0,
+                most_recent_assessment_date=date(2018, 3, 10),
                 assessment_up_to_date=True,
                 face_to_face_count=1,
+                most_recent_face_to_face_date=date(2018, 4, 6),
                 face_to_face_frequency_sufficient=True
             ), compliance)
 
@@ -373,6 +378,7 @@ class TestCaseCompliance(unittest.TestCase):
                 assessment_count=1,
                 assessment_up_to_date=None,
                 face_to_face_count=1,
+                most_recent_face_to_face_date=date(2018, 3, 6),
                 face_to_face_frequency_sufficient=None
             ), compliance)
 
