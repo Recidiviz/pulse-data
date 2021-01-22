@@ -138,7 +138,7 @@ VIEW_COLLECTION_EXPORT_CONFIGS: List[ExportViewCollectionConfig] = [
     ExportViewCollectionConfig(
         view_builders_to_export=CASE_TRIAGE_EXPORTED_VIEW_BUILDERS,
         output_directory_uri_template=CASE_TRIAGE_VIEWS_OUTPUT_DIRECTORY_URI,
-        state_code_filter='US_ID',
+        state_code_filter=None,
         export_name='CASE_TRIAGE',
         bq_view_namespace=BigQueryViewNamespace.CASE_TRIAGE,
         export_output_formats=[ExportOutputFormatType.HEADERLESS_CSV],
