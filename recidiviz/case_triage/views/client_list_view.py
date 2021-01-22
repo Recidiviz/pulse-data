@@ -59,7 +59,7 @@ WHERE
 
 CLIENT_LIST_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
     dataset_id=VIEWS_DATASET,
-    view_id='client_list',
+    view_id='etl_clients',
     view_query_template=CLIENT_LIST_QUERY_TEMPLATE,
     columns=[
         'supervising_officer_external_id',

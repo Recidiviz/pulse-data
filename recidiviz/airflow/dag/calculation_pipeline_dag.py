@@ -46,6 +46,10 @@ default_args = {
     'email_on_failure': True
 }
 
+CASE_TRIAGE_STATES = [
+    'US_ID',
+]
+
 
 def trigger_export_operator(export_name: str) -> PubSubPublishOperator:
     # TODO(#4593) Migrate to IAPHTTPOperator
@@ -74,13 +78,17 @@ with models.DAG(dag_id="{}_calculation_pipeline_dag".format(project_id),
         pipeline_yaml_dicts = yaml.full_load(f)
         if pipeline_yaml_dicts:
             pipeline_dict = pipelines_by_state(pipeline_yaml_dicts['daily_pipelines'])
+
             covid_export = trigger_export_operator('COVID_DASHBOARD')
+            case_triage_export = trigger_export_operator('CASE_TRIAGE')
+
             dataflow_default_args = {
                 'project': project_id,
                 'region': 'us-west1',
                 'zone': 'us-west1-c',
                 'tempLocation': 'gs://{}-dataflow-templates/staging/'.format(project_id)
             }
+
             for state_code, state_pipelines in pipeline_dict.items():
                 state_export = trigger_export_operator(state_code)
                 for pipeline_to_run in state_pipelines:
@@ -94,5 +102,7 @@ with models.DAG(dag_id="{}_calculation_pipeline_dag".format(project_id),
                     # is published saying the pipelines are done.
                     calculation_pipeline >> state_export
                     calculation_pipeline >> covid_export
+                    if state_code in CASE_TRIAGE_STATES:
+                        calculation_pipeline >> case_triage_export
 
-            ingest_metadata_export = trigger_export_operator('INGEST_METADATA')
+            _ = trigger_export_operator('INGEST_METADATA')
