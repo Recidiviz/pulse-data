@@ -16,12 +16,11 @@
 # =============================================================================
 
 """Custom configuration for how pytest should run."""
-import logging
 import os
 import shlex
 import subprocess
-from time import sleep
-from typing import Dict, Optional, Tuple
+from time import sleep, time
+from typing import Dict, List, Optional, Tuple
 
 from mock import patch
 import pytest
@@ -30,6 +29,9 @@ import yaml
 import recidiviz
 from recidiviz.ingest.scrape import sessions
 from recidiviz.utils import pubsub_helper
+
+
+EMULATOR_STARTUP_TIMEOUT = 30
 
 
 def pytest_configure(config) -> None:
@@ -107,7 +109,12 @@ def _start_emulators() -> Tuple[subprocess.Popen, subprocess.Popen]:
                     '--project=test-project'))
 
     # Sleep to ensure emulators successfully start
+    emulator_start_time = time()
     sleep(5)
+    while not _emulators_started():
+        if time() - emulator_start_time > EMULATOR_STARTUP_TIMEOUT:
+            raise Exception('Emulators did not start up before timeout.')
+        sleep(1)
 
     if datastore_emulator.poll() or pubsub_emulator.poll():
         datastore_emulator.terminate()
@@ -117,21 +124,26 @@ def _start_emulators() -> Tuple[subprocess.Popen, subprocess.Popen]:
     return datastore_emulator, pubsub_emulator
 
 
+def _get_emulator_env_paths() -> List[str]:
+    return [os.path.join(
+            os.environ.get('HOME', ''),
+            '.config/gcloud/emulators/{}/env.yaml'.format(emulator_name))
+            for emulator_name in ['datastore', 'pubsub']]
+
+
+def _emulators_started() -> bool:
+    for emulator_env_path in _get_emulator_env_paths():
+        if not os.path.exists(emulator_env_path):
+            return False
+    return True
+
+
 def _write_emulator_environs() -> Dict[str, Optional[str]]:
     # Note: If multiple emulator environments contain the same key, the last one
     # wins
-    emulator_names = ['datastore', 'pubsub']
     env_dict = {}
-    for emulator_name in emulator_names:
-        filename = os.path.join(
-            os.environ.get('HOME', ''),
-            '.config/gcloud/emulators/{}/env.yaml'.format(emulator_name))
-        try:
-            env_file = open(filename, 'r')
-        except Exception:
-            logging.warning('Could not find env file: %s', filename)
-            continue
-
+    for emulator_env_path in _get_emulator_env_paths():
+        env_file = open(emulator_env_path, 'r')
         env_dict.update(yaml.full_load(env_file))
         env_file.close()
 
