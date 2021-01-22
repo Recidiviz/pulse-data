@@ -139,6 +139,7 @@ class SQLAlchemyEngineManager:
         cls.init_engine(SchemaType.STATE)
         cls.init_engine(SchemaType.OPERATIONS)
         cls.init_engine(SchemaType.JUSTICE_COUNTS)
+        cls.init_engine(SchemaType.CASE_TRIAGE)
 
     @classmethod
     def declarative_method_for_schema(cls, schema_type: SchemaType) -> DeclarativeMeta:
@@ -339,8 +340,8 @@ class SQLAlchemyEngineManager:
         if instance_id_key is None:
             raise ValueError(f'Instance id is not configured for schema type [{schema_type}]')
 
-        db_user = secrets.get_secret(f'{cls._SCHEMA_TO_SECRET_MANAGER_PREFIX[schema_type]}_db_user')
-        db_password = secrets.get_secret(f'{cls._SCHEMA_TO_SECRET_MANAGER_PREFIX[schema_type]}_db_password')
+        db_user = cls.get_db_user(schema_type)
+        db_password = cls.get_db_password(schema_type)
         db_name = cls.get_db_name(schema_type)
         cloudsql_instance_id = secrets.get_secret(instance_id_key)
 

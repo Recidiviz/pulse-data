@@ -6,6 +6,7 @@
   "author": "Recidiviz <team@recidiviz.org>",
   "license": "GNU General Public License v3",
   "dependencies": {
+    "@ant-design/icons": "^4.4.0",
     "antd": "^4.6.3",
     "react": "^16.7.0",
     "react-dom": "^16.7.0",

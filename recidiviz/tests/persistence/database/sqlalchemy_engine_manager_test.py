@@ -25,6 +25,7 @@ from recidiviz.persistence.database.sqlalchemy_engine_manager import \
 
 class SQLAlchemyEngineManagerTest(TestCase):
     """Tests"""
+
     def tearDown(self):
         SQLAlchemyEngineManager.teardown_engines()
 
@@ -54,6 +55,9 @@ class SQLAlchemyEngineManagerTest(TestCase):
             call('postgresql://justice_counts_db_user_value:justice_counts_db_password_value@/'
                  'justice_counts_db_name_value?host=/cloudsql/justice_counts_cloudsql_instance_id_value',
                  isolation_level='SERIALIZABLE', pool_recycle=600),
+            call('postgresql://case_triage_db_user_value:case_triage_db_password_value@/'
+                 'case_triage_db_name_value?host=/cloudsql/case_triage_cloudsql_instance_id_value',
+                 isolation_level=None, pool_recycle=600),
         ]
 
     @patch('sqlalchemy.create_engine')
@@ -61,7 +65,7 @@ class SQLAlchemyEngineManagerTest(TestCase):
     @patch('recidiviz.environment.in_gae')
     @patch('recidiviz.utils.secrets.get_secret')
     def testInitEngines_usesCorrectIsolationLevelsInStaging(
-        self, mock_get_secret, mock_in_gae, mock_in_staging, mock_create_engine):
+            self, mock_get_secret, mock_in_gae, mock_in_staging, mock_create_engine):
         # Arrange
         mock_in_gae.return_value = True
         mock_in_staging.return_value = True
@@ -82,6 +86,9 @@ class SQLAlchemyEngineManagerTest(TestCase):
             call('postgresql://justice_counts_db_user_value:justice_counts_db_password_value@/'
                  'justice_counts_db_name_value?host=/cloudsql/justice_counts_cloudsql_instance_id_value',
                  isolation_level='SERIALIZABLE', pool_recycle=600),
+            call('postgresql://case_triage_db_user_value:case_triage_db_password_value@/'
+                 'case_triage_db_name_value?host=/cloudsql/case_triage_cloudsql_instance_id_value',
+                 isolation_level=None, pool_recycle=600),
         ]
 
     @patch('recidiviz.utils.secrets.get_secret')
