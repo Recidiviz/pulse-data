@@ -19,8 +19,11 @@ jobs:
       - uses: actions/setup-python@v2
         with:
           python-version: "3.7.9"
+      - name: Install pipenv
+        run: pip install pipenv
       - name: Pipenv caching
         uses: actions/cache@v2
+        id: pipenv-caching
         with:
           path: ~/.local/share/virtualenvs/
           key: pipenv-cache-v1-${{ hashFiles('**/Pipfile.lock') }}
@@ -29,9 +32,8 @@ jobs:
             pipenv-cache-v1-
             pipenv-cache-
       - name: Sync pipenv
-        run: |
-          pip install pipenv
-          pipenv sync --dev
+        if: steps.pipenv-caching.outputs.cache-hit != 'true'
+        run: pipenv sync --dev
       - uses: hashicorp/setup-terraform@v1
       - name: Validate terraform
         run: |
@@ -64,8 +66,11 @@ jobs:
       - uses: actions/setup-python@v2
         with:
           python-version: "3.7.9"
+      - name: Install pipenv
+        run: pip install pipenv
       - name: Pipenv caching
         uses: actions/cache@v2
+        id: pipenv-caching
         with:
           path: ~/.local/share/virtualenvs/
           key: pipenv-cache-v1-${{ hashFiles('**/Pipfile.lock') }}
@@ -74,9 +79,8 @@ jobs:
             pipenv-cache-v1-
             pipenv-cache-
       - name: Sync pipenv
-        run: |
-          pip install pipenv
-          pipenv sync --dev
+        if: steps.pipenv-caching.outputs.cache-hit != 'true'
+        run: pipenv sync --dev
       - name: Run unit tests in parallel
         run: pipenv run pytest recidiviz -n auto --test-set parallel
 
@@ -93,8 +97,11 @@ jobs:
       - uses: actions/setup-python@v2
         with:
           python-version: "3.7.9"
+      - name: Install pipenv
+        run: pip install pipenv
       - name: Pipenv caching
         uses: actions/cache@v2
+        id: pipenv-caching
         with:
           path: ~/.local/share/virtualenvs/
           key: pipenv-cache-v1-${{ hashFiles('**/Pipfile.lock') }}
@@ -103,9 +110,8 @@ jobs:
             pipenv-cache-v1-
             pipenv-cache-
       - name: Sync pipenv
-        run: |
-          pip install pipenv
-          pipenv sync --dev
+        if: steps.pipenv-caching.outputs.cache-hit != 'true'
+        run: pipenv sync --dev
       - name: Install postgres
         run: |
           sudo apt-get update && sudo apt install postgresql-10 -y
@@ -127,8 +133,11 @@ jobs:
       - uses: actions/setup-python@v2
         with:
           python-version: "3.7.9"
+      - name: Install pipenv
+        run: pip install pipenv
       - name: Pipenv caching
         uses: actions/cache@v2
+        id: pipenv-caching
         with:
           path: ~/.local/share/virtualenvs/
           key: pipenv-cache-v1-${{ hashFiles('**/Pipfile.lock') }}
@@ -137,9 +146,8 @@ jobs:
             pipenv-cache-v1-
             pipenv-cache-
       - name: Sync pipenv
-        run: |
-          pip install pipenv
-          pipenv sync --dev
+        if: steps.pipenv-caching.outputs.cache-hit != 'true'
+        run: pipenv sync --dev
       # GCP caching strategy adapted from https://raymii.org/s/articles/Github_Actions_cpp_boost_cmake_speedup.html
       - name: GCP caching
         uses: actions/cache@v2
