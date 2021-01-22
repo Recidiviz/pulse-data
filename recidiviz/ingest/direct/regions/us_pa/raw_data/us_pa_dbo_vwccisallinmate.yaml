@@ -3,8 +3,11 @@ file_tag: dbo_vwCCISAllInmate
 #      - Control_Number
 #      - Inmate_Number
 primary_key_cols: []
-datetime_cols:
-  - Bed_Dt
-  - Cur_Status_Dt
-  - LstMod_Dt
+columns:
+  - name: Bed_Dt
+    is_datetime: True
+  - name: Cur_Status_Dt
+    is_datetime: True
+  - name: LstMod_Dt
+    is_datetime: True
 encoding: ISO-8859-1

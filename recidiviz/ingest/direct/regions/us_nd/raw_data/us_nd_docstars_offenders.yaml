@@ -1,12 +1,20 @@
 file_tag: docstars_offenders
 primary_key_cols:
   - SID
-datetime_cols:
-  - DOB
-  - GOODTIMEDATE
-  - INACTIVEDATE
-  - RecDate
-  - RECORDCRDATE
-  - LAST_HOME_VISIT
-  - LAST_FACE_TO_FACE
-  - EARLY_TERMINATION_DATE
+columns:
+  - name: DOB
+    is_datetime: True
+  - name: GOODTIMEDATE
+    is_datetime: True
+  - name: INACTIVEDATE
+    is_datetime: True
+  - name: RecDate
+    is_datetime: True
+  - name: RECORDCRDATE
+    is_datetime: True
+  - name: LAST_HOME_VISIT
+    is_datetime: True
+  - name: LAST_FACE_TO_FACE
+    is_datetime: True
+  - name: EARLY_TERMINATION_DATE
+    is_datetime: True

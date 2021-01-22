@@ -1,5 +1,6 @@
 file_tag: ofndr_dob
 primary_key_cols:
   - ofndr_num
-datetime_cols:
-  - dob
+columns:
+  - name: dob
+    is_datetime: True

@@ -3,12 +3,16 @@ file_description: |-
   Each row represents a contact between a supervision officer and supervisee.
 primary_key_cols:
   - RecID
-datetime_cols:
-  - TIME_STAMP
-  - CONTACT_DATE
-  - RecDate
-  - LASTUPDATE
 columns:
   - name: Remarks
+    is_datetime: False
     description: |-
       The raw text the supervising officer inputs.
+  - name: TIME_STAMP
+    is_datetime: True
+  - name: CONTACT_DATE
+    is_datetime: True
+  - name: RecDate
+    is_datetime: True
+  - name: LASTUPDATE
+    is_datetime: True

@@ -3,6 +3,8 @@ primary_key_cols:
   - off_cat
   - off_cd
   - off_deg
-datetime_cols:
-  - off_stat_eff_dtd
-  - off_stat_term_dtd
+columns:
+  - name: off_stat_eff_dtd
+    is_datetime: True
+  - name: off_stat_term_dtd
+    is_datetime: True

@@ -1,9 +1,14 @@
 file_tag: docstars_offendercasestable
 primary_key_cols:
   - CASE_NUMBER
-datetime_cols:
-  - PAROLE_FR
-  - PAROLE_TO
-  - INACTIVEDATE
-  - RECORDCRDATE
-  - RecDate
+columns:
+  - name: PAROLE_FR
+    is_datetime: True
+  - name: PAROLE_TO
+    is_datetime: True
+  - name: INACTIVEDATE
+    is_datetime: True
+  - name: RECORDCRDATE
+    is_datetime: True
+  - name: RecDate
+    is_datetime: True

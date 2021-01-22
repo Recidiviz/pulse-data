@@ -2,8 +2,12 @@ file_tag: elite_bedassignmenthistory
 primary_key_cols:
   - OFFENDER_BOOK_ID
   - BED_ASSIGN_SEQ
-datetime_cols:
-  - ASSIGNMENT_DATE
-  - ASSIGNMENT_END_DATE
-  - CREATE_DATETIME
-  - MODIFY_DATETIME
+columns:
+  - name: ASSIGNMENT_DATE
+    is_datetime: True
+  - name: ASSIGNMENT_END_DATE
+    is_datetime: True
+  - name: CREATE_DATETIME
+    is_datetime: True
+  - name: MODIFY_DATETIME
+    is_datetime: True

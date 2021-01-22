@@ -1,7 +1,10 @@
 file_tag: mittimus
 primary_key_cols:
   - mitt_srl
-datetime_cols:
-  - sent_eff_dtd
-  - sentence_dtd
-  - sent_exp_dtd
+columns:
+  - name: sent_eff_dtd
+    is_datetime: True
+  - name: sentence_dtd
+    is_datetime: True
+  - name: sent_exp_dtd
+    is_datetime: True

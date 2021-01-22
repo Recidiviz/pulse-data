@@ -1,6 +1,8 @@
 file_tag: elite_alias
 primary_key_cols:
   - OFFENDER_ID
-datetime_cols:
-  - CREATE_DATETIME
-  - MODIFY_DATETIME
+columns:
+  - name: CREATE_DATETIME
+    is_datetime: True
+  - name: MODIFY_DATETIME
+    is_datetime: True

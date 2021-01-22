@@ -4,9 +4,14 @@ primary_key_cols:
   - OFFENDER_BOOK_ID
   - PROGRAM_ID
   - START_DATE
-datetime_cols:
-  - START_DATE
-  - END_DATE
-  - CREATE_DATETIME
-  - MODIFY_DATETIME
-  - REJECT_DATE
+columns:
+  - name: START_DATE
+    is_datetime: True
+  - name: END_DATE
+    is_datetime: True
+  - name: CREATE_DATETIME
+    is_datetime: True
+  - name: MODIFY_DATETIME
+    is_datetime: True
+  - name: REJECT_DATE
+    is_datetime: True

@@ -48,6 +48,8 @@ from recidiviz.utils.yaml_dict import YAMLDict
 class RawTableColumnInfo:
     # The column name in BigQuery-compatible, normalized form (e.g. punctuation stripped)
     name: str = attr.ib(validator=attr_validators.is_non_empty_str)
+    # True if a column is a date/time
+    is_datetime: bool = attr.ib(validator=attr.validators.instance_of(bool))
     # Describes the column contents
     description: str = attr.ib(validator=attr_validators.is_non_empty_str)
 
@@ -66,10 +68,6 @@ class DirectIngestRawFileConfig:
     # view query and a '*_latest' view will not be generated for this table. May be left empty for the purposes of
     # allowing us to quickly upload a new file into BQ and then determine the primary keys by querying BQ.
     primary_key_cols: List[str] = attr.ib(validator=attr.validators.instance_of(list))
-
-    # A list of columns that contain dates that we should do our best to normalize into the same string format
-    # to avoid re-ingesting data when raw data date formats change.
-    datetime_cols: List[str] = attr.ib()
 
     # A list of names and descriptions for each column in a file
     columns: List[RawTableColumnInfo] = attr.ib()
@@ -110,6 +108,10 @@ class DirectIngestRawFileConfig:
         """Returns an ordered list of encodings we should try for this file."""
         return [self.encoding] + [encoding for encoding in COMMON_RAW_FILE_ENCODINGS
                                   if encoding.upper() != self.encoding.upper()]
+    @property
+    def datetime_cols(self) -> List[str]:
+        return [column.name for column in self.columns if column.is_datetime]
+
 
     @classmethod
     def from_yaml_dict(cls,
@@ -127,7 +129,6 @@ class DirectIngestRawFileConfig:
                                or 'LEGACY_FILE_MISSING_DESCRIPTION'
         else:
             file_description = file_config_dict.pop('file_description', str)
-        datetime_cols = file_config_dict.pop_optional('datetime_cols', list)
         # TODO(#5399): Migrate raw file configs for all legacy regions to have column descriptions
         # TODO(#5401): When migrating legacy tests, add file descriptions and remove US_XX from this set
         if region_code.upper() in {'US_MO', 'US_ND', 'US_ID', 'US_PA', 'US_XX'}:
@@ -148,8 +149,12 @@ class DirectIngestRawFileConfig:
             file_tag=file_tag,
             file_description=file_description,
             primary_key_cols=primary_key_cols,
-            datetime_cols=datetime_cols if datetime_cols else [],
-            columns=[RawTableColumnInfo(name=column['name'], description=column['description']) for column in columns],
+            columns=[
+                RawTableColumnInfo(name=column['name'],
+                                   is_datetime=column['is_datetime'],
+                                   description=column.get('description', 'LEGACY MISSING DESCRIPTION')
+                                   if region_code.upper() in {'US_MO', 'US_ND', 'US_ID', 'US_PA', 'US_XX'}
+                                   else column['description']) for column in columns],
             supplemental_order_by_clause=supplemental_order_by_clause if supplemental_order_by_clause else '',
             encoding=encoding if encoding else default_encoding,
             separator=separator if separator else default_separator,

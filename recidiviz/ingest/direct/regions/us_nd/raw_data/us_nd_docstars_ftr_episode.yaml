@@ -1,8 +1,12 @@
 file_tag: docstars_ftr_episode
 primary_key_cols:
   - EPISODE_ID
-datetime_cols:
-  - STATUS_DATE
-  - SN_LAST_UPDATED_DATE
-  - SUBMITTED
-  - ADMITTED_DATE
+columns:
+  - name: STATUS_DATE
+    is_datetime: True
+  - name: SN_LAST_UPDATED_DATE
+    is_datetime: True
+  - name: SUBMITTED
+    is_datetime: True
+  - name: ADMITTED_DATE
+    is_datetime: True

@@ -1,5 +1,6 @@
 file_tag: ofndr_agnt
 primary_key_cols:
   - ofndr_num
-datetime_cols:
-  - agnt_strt_dt
+columns:
+  - name: agnt_strt_dt
+    is_datetime: True

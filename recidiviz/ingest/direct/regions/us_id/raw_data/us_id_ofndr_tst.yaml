@@ -1,7 +1,9 @@
 file_tag: ofndr_tst
 primary_key_cols:
   - ofndr_tst_id
-datetime_cols:
-  - tst_dt
-  - updt_dt
+columns:
+  - name: tst_dt
+    is_datetime: True
+  - name: updt_dt
+    is_datetime: True
 ignore_quotes: True
