@@ -15,7 +15,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Buckets of time on supervision that may have included a revocation."""
-from typing import Optional, List
+from datetime import date
+from typing import List, Optional
 
 import attr
 
@@ -93,31 +94,12 @@ class SupervisionTimeBucket(IdentifierEventWithSingularDate, AssessmentEventMixi
     # level 1 is an office.
     level_2_supervision_location_external_id: Optional[str] = attr.ib(default=None)
 
-    # Information related to whether the supervision case is meeting compliance standards
-    case_compliance: Optional[SupervisionCaseCompliance] = attr.ib(default=None)
-
     # Area of jurisdictional coverage of the court that sentenced the person to this supervision
     judicial_district_code: Optional[str] = attr.ib(default=None)
 
     @property
-    def date_of_evaluation(self):
+    def date_of_evaluation(self) -> date:
         return self.event_date
-
-    @property
-    def assessment_count(self):
-        return self.case_compliance.assessment_count
-
-    @property
-    def assessment_up_to_date(self):
-        return self.case_compliance.assessment_up_to_date
-
-    @property
-    def face_to_face_count(self):
-        return self.case_compliance.face_to_face_count
-
-    @property
-    def face_to_face_frequency_sufficient(self):
-        return self.case_compliance.face_to_face_frequency_sufficient
 
 
 @attr.s(frozen=True)
@@ -176,15 +158,15 @@ class RevocationReturnSupervisionTimeBucket(SupervisionTimeBucket, ViolationType
     is_on_supervision_last_day_of_month: bool = attr.ib()
 
     @is_on_supervision_last_day_of_month.default
-    def _default_is_on_supervision_last_day_of_month(self):
+    def _default_is_on_supervision_last_day_of_month(self) -> None:
         raise ValueError('Must set is_on_supervision_last_day_of_month!')
 
     @property
-    def revocation_admission_date(self):
+    def revocation_admission_date(self) -> date:
         return self.event_date
 
     @property
-    def date_of_supervision(self):
+    def date_of_supervision(self) -> date:
         return self.event_date
 
 
@@ -197,17 +179,56 @@ class NonRevocationReturnSupervisionTimeBucket(SupervisionTimeBucket, ViolationT
     # True if the stint of time on supervision this month included the last day of the month
     is_on_supervision_last_day_of_month: bool = attr.ib()
 
+    # Information related to whether the supervision case is meeting compliance standards
+    case_compliance: Optional[SupervisionCaseCompliance] = attr.ib(default=None)
+
     @is_on_supervision_last_day_of_month.default
-    def _default_is_on_supervision_last_day_of_month(self):
+    def _default_is_on_supervision_last_day_of_month(self) -> None:
         raise ValueError('Must set is_on_supervision_last_day_of_month!')
 
     @property
-    def date_of_supervision(self):
+    def date_of_supervision(self) -> date:
         return self.event_date
 
     @property
-    def date_of_downgrade(self):
+    def date_of_downgrade(self) -> date:
         return self.event_date
+
+    @property
+    def assessment_count(self) -> Optional[int]:
+        if not self.case_compliance:
+            return None
+        return self.case_compliance.assessment_count
+
+    @property
+    def most_recent_assessment_date(self) -> Optional[date]:
+        if not self.case_compliance:
+            return None
+        return self.case_compliance.most_recent_assessment_date
+
+    @property
+    def assessment_up_to_date(self) -> Optional[bool]:
+        if not self.case_compliance:
+            return None
+        return self.case_compliance.assessment_up_to_date
+
+    @property
+    def face_to_face_count(self) -> Optional[int]:
+        if not self.case_compliance:
+            return None
+        return self.case_compliance.face_to_face_count
+
+    @property
+    def most_recent_face_to_face_date(self) -> Optional[date]:
+        if not self.case_compliance:
+            return None
+        return self.case_compliance.most_recent_face_to_face_date
+
+    @property
+    def face_to_face_frequency_sufficient(self) -> Optional[bool]:
+        if not self.case_compliance:
+            return None
+        return self.case_compliance.face_to_face_frequency_sufficient
 
 
 @attr.s(frozen=True)
@@ -235,7 +256,7 @@ class SupervisionStartBucket(SupervisionTimeBucket):
     admission_reason: Optional[StateSupervisionPeriodAdmissionReason] = attr.ib(default=None)
 
     @property
-    def start_date(self):
+    def start_date(self) -> date:
         return self.event_date
 
 
@@ -254,5 +275,5 @@ class SupervisionTerminationBucket(SupervisionTimeBucket, ViolationTypeSeverityB
     assessment_score_change: Optional[int] = attr.ib(default=None)
 
     @property
-    def termination_date(self):
+    def termination_date(self) -> date:
         return self.event_date

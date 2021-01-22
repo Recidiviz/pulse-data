@@ -49,24 +49,24 @@ PERSON_EXTERNAL_ID_TYPES_TO_INCLUDE = {
 }
 
 DECISION_SEVERITY_ORDER = [
-        StateSupervisionViolationResponseDecision.REVOCATION,
-        StateSupervisionViolationResponseDecision.SHOCK_INCARCERATION,
-        StateSupervisionViolationResponseDecision.TREATMENT_IN_PRISON,
-        StateSupervisionViolationResponseDecision.WARRANT_ISSUED,
-        StateSupervisionViolationResponseDecision.PRIVILEGES_REVOKED,
-        StateSupervisionViolationResponseDecision.NEW_CONDITIONS,
-        StateSupervisionViolationResponseDecision.EXTENSION,
-        StateSupervisionViolationResponseDecision.SPECIALIZED_COURT,
-        StateSupervisionViolationResponseDecision.SUSPENSION,
-        StateSupervisionViolationResponseDecision.SERVICE_TERMINATION,
-        StateSupervisionViolationResponseDecision.TREATMENT_IN_FIELD,
-        StateSupervisionViolationResponseDecision.COMMUNITY_SERVICE,
-        StateSupervisionViolationResponseDecision.DELAYED_ACTION,
-        StateSupervisionViolationResponseDecision.OTHER,
-        StateSupervisionViolationResponseDecision.INTERNAL_UNKNOWN,
-        StateSupervisionViolationResponseDecision.WARNING,
-        StateSupervisionViolationResponseDecision.CONTINUANCE,
-    ]
+    StateSupervisionViolationResponseDecision.REVOCATION,
+    StateSupervisionViolationResponseDecision.SHOCK_INCARCERATION,
+    StateSupervisionViolationResponseDecision.TREATMENT_IN_PRISON,
+    StateSupervisionViolationResponseDecision.WARRANT_ISSUED,
+    StateSupervisionViolationResponseDecision.PRIVILEGES_REVOKED,
+    StateSupervisionViolationResponseDecision.NEW_CONDITIONS,
+    StateSupervisionViolationResponseDecision.EXTENSION,
+    StateSupervisionViolationResponseDecision.SPECIALIZED_COURT,
+    StateSupervisionViolationResponseDecision.SUSPENSION,
+    StateSupervisionViolationResponseDecision.SERVICE_TERMINATION,
+    StateSupervisionViolationResponseDecision.TREATMENT_IN_FIELD,
+    StateSupervisionViolationResponseDecision.COMMUNITY_SERVICE,
+    StateSupervisionViolationResponseDecision.DELAYED_ACTION,
+    StateSupervisionViolationResponseDecision.OTHER,
+    StateSupervisionViolationResponseDecision.INTERNAL_UNKNOWN,
+    StateSupervisionViolationResponseDecision.WARNING,
+    StateSupervisionViolationResponseDecision.CONTINUANCE,
+]
 
 
 RecidivizMetricT = TypeVar('RecidivizMetricT', bound=RecidivizMetric)
