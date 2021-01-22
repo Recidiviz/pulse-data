@@ -50,8 +50,7 @@ import recidiviz.common.constants.person_characteristics as person_characteristi
 from recidiviz.common.constants import states
 from recidiviz.common.constants.enum_overrides import EnumOverrides
 from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta, EnumParsingError, EntityEnumT
-from recidiviz.common.date import DateRange, first_day_of_month, last_day_of_month, DateRange, \
-    NonNegativeDateRange
+from recidiviz.common.date import first_day_of_month, last_day_of_month, DateRange, NonNegativeDateRange
 from recidiviz.common.str_field_utils import to_snake_case
 from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath, GcsfsFilePath
@@ -1478,11 +1477,8 @@ class Metadata:
     acquired_by: str = attr.ib()
 
 
-def _update_existing_or_create(ingested_entity: schema.JusticeCountsDatabaseEntity, session: Session) \
-        -> schema.JusticeCountsDatabaseEntity:
-    # Note: Using on_conflict_do_update to resolve whether there is an existing entity could be more efficient as it
-    # wouldn't incur multiple roundtrips. However for some entities we need to know whether there is an existing entity
-    # (e.g. table instance) so we can clear child entities, so we probably wouldn't win much if anything.
+def _get_existing_entity(ingested_entity: schema.JusticeCountsDatabaseEntity, session: Session) \
+        -> Optional[JusticeCountsBase]:
     table = ingested_entity.__table__
     [unique_constraint] = [constraint for constraint in table.constraints if isinstance(constraint, UniqueConstraint)]
     query = session.query(table)
@@ -1496,6 +1492,15 @@ def _update_existing_or_create(ingested_entity: schema.JusticeCountsDatabaseEnti
         # Cast to the type because array types aren't deduced properly.
         query = query.filter(column == cast(value, column.type))
     table_entity: Optional[JusticeCountsBase] = query.first()
+    return table_entity
+
+
+def _update_existing_or_create(ingested_entity: schema.JusticeCountsDatabaseEntity, session: Session) \
+        -> schema.JusticeCountsDatabaseEntity:
+    # Note: Using on_conflict_do_update to resolve whether there is an existing entity could be more efficient as it
+    # wouldn't incur multiple roundtrips. However for some entities we need to know whether there is an existing entity
+    # (e.g. table instance) so we can clear child entities, so we probably wouldn't win much if anything.
+    table_entity = _get_existing_entity(ingested_entity, session)
     if table_entity is not None:
         # TODO(#4477): Instead of assuming the primary key field is named `id`, use an Entity method.
         ingested_entity.id = table_entity.id
@@ -1509,9 +1514,22 @@ def _update_existing_or_create(ingested_entity: schema.JusticeCountsDatabaseEnti
     return ingested_entity
 
 
+def _delete_existing_and_create(session: Session, ingested_entity: schema.JusticeCountsDatabaseEntity,
+                                entity_cls: Type[schema.JusticeCountsDatabaseEntity]) \
+        -> schema.JusticeCountsDatabaseEntity:
+    table_entity = _get_existing_entity(ingested_entity, session)
+    if table_entity is not None:
+        table = ingested_entity.__table__
+        # TODO(#4477): need to have a better way to identify id since below method doesn't guarantee id is a valid attr
+        delete_q = table.delete().where(entity_cls.id == table_entity.id)  # type: ignore[attr-defined]
+        session.execute(delete_q)
+    session.add(ingested_entity)
+    return ingested_entity
+
+
 def _convert_entities(session: Session, ingested_report: Report, report_metadata: Metadata) -> None:
     """Convert the ingested report into SQLAlchemy models"""
-    report = _update_existing_or_create(schema.Report(
+    report = schema.Report(
         source=_update_existing_or_create(schema.Source(name=ingested_report.source_name), session),
         type=ingested_report.report_type,
         instance=ingested_report.report_instance,
@@ -1519,7 +1537,10 @@ def _convert_entities(session: Session, ingested_report: Report, report_metadata
         url=ingested_report.url.geturl(),
         acquisition_method=report_metadata.acquisition_method,
         acquired_by=report_metadata.acquired_by,
-    ), session)
+    )
+    # Does not delete associated report_table_definitions of report_table_instances,
+    # which may in certain cases leave orphaned report_table_definition_rows
+    _delete_existing_and_create(session, report, schema.Report)
 
     for table in ingested_report.tables:
         table_definition = _update_existing_or_create(schema.ReportTableDefinition(
@@ -1531,24 +1552,19 @@ def _convert_entities(session: Session, ingested_report: Report, report_metadata
             aggregated_dimensions=table.aggregated_dimension_names,
         ), session)
 
-        # TODO(#4476): Add ingested date to table_instance so that if we ingest a report update we can see which tables
-        # are newer and prefer them.
-
-        table_instance = _update_existing_or_create(schema.ReportTableInstance(
+        table_instance = schema.ReportTableInstance(
             report=report,
             report_table_definition=table_definition,
             time_window_start=table.date_range.lower_bound_inclusive_date,
             time_window_end=table.date_range.upper_bound_exclusive_date,
-        ), session)
+        )
 
-        # TODO(#4476): Clear any existing cells in the database for this report table instance. In the common case,
-        # there won't be any, but if this is an update to a report, and the set of dimension combinations covered by
-        # the new table is different, we want to make sure no stale data is left accidentally.
-        for dimensions, value in table.cells:
-            _update_existing_or_create(schema.Cell(
-                report_table_instance=table_instance,
-                aggregated_dimension_values=dimensions,
-                value=value), session)
+        table_instance.cells = [schema.Cell(
+            report_table_instance=table_instance,
+            aggregated_dimension_values=dimensions,
+            value=value) for dimensions, value in table.cells]
+
+        session.add(table_instance)
 
 
 def _persist_report(report: Report, report_metadata: Metadata) -> None:

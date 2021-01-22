@@ -237,22 +237,13 @@ class ManualUploadTest(unittest.TestCase):
         self.assertEqual(schema.System.CORRECTIONS, table_definition.system)
         self.assertEqual(schema.MetricType.POPULATION, table_definition.metric_type)
 
-        # There should still only be three tables, the second one with a new sum.
-        tables = session.query(schema.ReportTableInstance).order_by(schema.ReportTableInstance.time_window_start).all()
-        for table in tables:
-            self.assertEqual(report, table.report)
-            self.assertEqual(table_definition, table.report_table_definition)
-        [table1, table2, table3] = tables
-        table1_sum = session.query(sql.func.sum(schema.Cell.value)) \
-            .filter(schema.Cell.report_table_instance == table1).scalar()
-        self.assertEqual(17441, table1_sum)
-        table2_sum = session.query(sql.func.sum(schema.Cell.value)) \
-            .filter(schema.Cell.report_table_instance == table2).scalar()
-        # This has increased by 100
-        self.assertEqual(17257, table2_sum)
-        table3_sum = session.query(sql.func.sum(schema.Cell.value)) \
-            .filter(schema.Cell.report_table_instance == table3).scalar()
-        self.assertEqual(16908, table3_sum)
+        # There should only be one table
+        [table] = session.query(schema.ReportTableInstance).order_by(schema.ReportTableInstance.time_window_start).all()
+        self.assertEqual(report, table.report)
+        self.assertEqual(table_definition, table.report_table_definition)
+        table_sum = session.query(sql.func.sum(schema.Cell.value)) \
+            .filter(schema.Cell.report_table_instance == table).scalar()
+        self.assertEqual(17257, table_sum)
 
         # TODO(#4476): Add a case where a row is dropped to ensure that is reflected.
 
@@ -849,3 +840,36 @@ class ManualUploadTest(unittest.TestCase):
         # Act
         with self.assertRaisesRegex(ValueError, "Invalid value 'NaN'"):
             manual_upload.ingest(self.fs, test_utils.prepare_files(self.fs, manifest_filepath('report_nans')))
+
+    def test_reingestReport(self):
+        # Act
+        manual_upload.ingest(self.fs, test_utils.prepare_files(self.fs, manifest_filepath('report_reingest/original')))
+
+        # Initial Assert
+        session = SessionFactory.for_schema_base(JusticeCountsBase)
+
+        cells = session.query(schema.Cell).all()
+        self.assertEqual([
+            (['PRISON', 'Inmates', 'test1'], decimal.Decimal(1489)),
+            (['SUPERVISION', 'Parolees', 'test2'], decimal.Decimal(5592)),
+            (['SUPERVISION', 'Probationeers', 'test3'], decimal.Decimal(200784)),
+        ], [(cell.aggregated_dimension_values, cell.value) for cell in cells])
+
+        # Re-ingest
+        manual_upload.ingest(self.fs, test_utils.prepare_files(self.fs, manifest_filepath('report_reingest/updated')))
+
+        # Re-ingest Assert
+        session = SessionFactory.for_schema_base(JusticeCountsBase)
+
+        cells = session.query(schema.Cell).all()
+        self.assertEqual([
+            (['PRISON', 'Inmates'], decimal.Decimal(1489)),
+            (['SUPERVISION', 'Probationeers'], decimal.Decimal(200784)),
+        ], [(cell.aggregated_dimension_values, cell.value) for cell in cells])
+
+        [table_definition1, table_definition2] = session.query(schema.ReportTableDefinition).all()
+        self.assertEqual(['metric/population/type', 'metric/population/type/raw',
+                          'source/colorado_department_of_corrections/population_subtype/raw'],
+                         table_definition1.aggregated_dimensions)
+        self.assertEqual(['metric/population/type', 'metric/population/type/raw'],
+                         table_definition2.aggregated_dimensions)
