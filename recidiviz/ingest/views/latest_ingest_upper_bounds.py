@@ -58,18 +58,26 @@ processed_dates AS (
     SELECT state_code, ingest_file_date
     FROM ingest_file_dates
     WHERE is_processed
+),
+max_processed_dates AS (
+    SELECT
+        processed_dates.state_code,
+        MAX(processed_dates.ingest_file_date) AS processed_date
+    FROM processed_dates
+    LEFT OUTER JOIN
+        min_unprocessed_dates
+    ON
+        processed_dates.state_code = min_unprocessed_dates.state_code AND
+        processed_dates.ingest_file_date < min_unprocessed_dates.ingest_file_date
+    WHERE min_unprocessed_dates.state_code IS NOT NULL
+    GROUP BY state_code
 )
 SELECT
-  processed_dates.state_code,
-  MAX(processed_dates.ingest_file_date) AS processed_date
-FROM processed_dates
-LEFT OUTER JOIN
-    min_unprocessed_dates
-ON
-    processed_dates.state_code = min_unprocessed_dates.state_code AND
-    processed_dates.ingest_file_date < min_unprocessed_dates.ingest_file_date
-WHERE min_unprocessed_dates.state_code IS NOT NULL
-GROUP BY state_code
+    state_code,
+    processed_date
+FROM (SELECT DISTINCT state_code FROM ingest_file_dates)
+LEFT OUTER JOIN max_processed_dates
+USING (state_code)
 """
 
 
