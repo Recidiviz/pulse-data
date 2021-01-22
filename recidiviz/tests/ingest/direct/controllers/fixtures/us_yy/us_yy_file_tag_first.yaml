@@ -6,9 +6,10 @@ primary_key_cols:
   - col_name_1b
 columns:
   - name: col_name_1a
-    description: |-
-      First column.
+    is_datetime: False
+    description: First column.
   - name: col_name_1b
+    is_datetime: False
     description: |-
       A column description that is long enough to take up
       multiple lines. This text block will be interpreted

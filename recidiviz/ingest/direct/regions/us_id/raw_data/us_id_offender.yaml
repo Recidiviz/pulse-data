@@ -1,5 +1,6 @@
 file_tag: offender
 primary_key_cols:
   - docno
-datetime_cols:
-  - move_dtd
+columns:
+  - name: move_dtd
+    is_datetime: True

@@ -1,6 +1,8 @@
 file_tag: ofndr_tst_cert
 primary_key_cols:
   - ofndr_tst_id
-datetime_cols:
-  - cert_dt
-  - updt_dt
+columns:
+  - name: cert_dt
+    is_datetime: True
+  - name: updt_dt
+    is_datetime: True

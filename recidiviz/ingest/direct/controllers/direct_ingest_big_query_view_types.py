@@ -219,7 +219,8 @@ class DirectIngestRawDataTableBigQueryView(BigQueryView):
             return ''
 
         formatted_clauses = [
-            DATETIME_COL_NORMALIZATION_TEMPLATE.format(col_name=col_name) for col_name in raw_file_config.datetime_cols
+            DATETIME_COL_NORMALIZATION_TEMPLATE.format(col_name=col_name)
+            for col_name in raw_file_config.datetime_cols
         ]
         return ''.join(formatted_clauses)
 

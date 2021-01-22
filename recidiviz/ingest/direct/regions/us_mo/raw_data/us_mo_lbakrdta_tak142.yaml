@@ -7,5 +7,5 @@ primary_key_cols:
   - E6_DSN
 columns:
   - name: E6_DSN
-    description: |-
-      Internal Document seq number
+    is_datetime: False
+    description: Internal Document seq number

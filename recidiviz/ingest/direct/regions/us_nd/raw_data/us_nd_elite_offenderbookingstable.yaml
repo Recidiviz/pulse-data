@@ -1,8 +1,12 @@
 file_tag: elite_offenderbookingstable
 primary_key_cols:
   - OFFENDER_BOOK_ID
-datetime_cols:
-  - BOOKING_BEGIN_DATE
-  - BOOKING_END_DATE
-  - CREATE_DATETIME
-  - MODIFY_DATETIME
+columns:
+  - name: BOOKING_BEGIN_DATE
+    is_datetime: True
+  - name: BOOKING_END_DATE
+    is_datetime: True
+  - name: CREATE_DATETIME
+    is_datetime: True
+  - name: MODIFY_DATETIME
+    is_datetime: True

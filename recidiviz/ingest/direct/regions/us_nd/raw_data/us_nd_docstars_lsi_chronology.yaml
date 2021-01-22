@@ -1,8 +1,12 @@
 file_tag: docstars_lsi_chronology
 primary_key_cols:
   - RecID
-datetime_cols:
-  - AssessmentDate
-  - LastUpdate
-  - INACTIVEDATE
-  - RecDate
+columns:
+  - name: AssessmentDate
+    is_datetime: True
+  - name: LastUpdate
+    is_datetime: True
+  - name: INACTIVEDATE
+    is_datetime: True
+  - name: RecDate
+    is_datetime: True
