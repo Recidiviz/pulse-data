@@ -23,6 +23,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
   padding-bottom: 1em;
 
   height: 100%;
+  min-width: 80%;
   margin: auto;
 
   padding-left: 30px;

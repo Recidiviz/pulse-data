@@ -58,3 +58,16 @@ export const fetchObjectCountsByTable = async (): Promise<Response> => {
 export const fetchDataFreshness = async (): Promise<Response> => {
   return postWithURLAndBody("/api/ingest_metadata/data_freshness", {});
 };
+
+// GCS CSV -> Cloud SQL Import
+export const runCloudSQLImport = async (
+  destinationTable: string,
+  gcsURI: string,
+  columns: string[]
+): Promise<Response> => {
+  return postWithURLAndBody("/api/case_triage/run_gcs_import", {
+    destinationTable,
+    gcsURI,
+    columns,
+  });
+};

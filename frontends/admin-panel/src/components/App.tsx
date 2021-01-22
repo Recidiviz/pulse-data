@@ -18,11 +18,13 @@ import * as React from "react";
 import { Layout, Menu, Typography } from "antd";
 import { Link, Redirect, Route, Switch, useLocation } from "react-router-dom";
 
+import CloudSQLImportView from "./CloudSQLImportView";
 import ColumnView from "./ColumnView";
 import DatasetView from "./DatasetView";
 import DataFreshnessView from "./DataFreshnessView";
 import TableView from "./TableView";
 
+import * as CaseTriage from "../navigation/CaseTriage";
 import * as IngestMetadata from "../navigation/IngestMetadata";
 
 import "../style/App.css";
@@ -50,6 +52,13 @@ const App = (): JSX.Element => {
               </Link>
             </Menu.Item>
           </Menu.ItemGroup>
+          <Menu.ItemGroup title="Case Triage">
+            <Menu.Item key={CaseTriage.GCS_CSV_TO_CLOUD_SQL_ROUTE}>
+              <Link to={CaseTriage.GCS_CSV_TO_CLOUD_SQL_ROUTE}>
+                GCS &rarr; Cloud SQL
+              </Link>
+            </Menu.Item>
+          </Menu.ItemGroup>
         </Menu>
       </Layout.Sider>
       <div className="main-content">
@@ -71,6 +80,10 @@ const App = (): JSX.Element => {
             path={IngestMetadata.DATA_FRESHNESS_ROUTE}
             component={DataFreshnessView}
           />
+          <Route
+            path={CaseTriage.GCS_CSV_TO_CLOUD_SQL_ROUTE}
+            component={CloudSQLImportView}
+          />
           <Redirect from="/" to={IngestMetadata.STATE_METADATA_ROUTE} />
         </Switch>
       </div>
@@ -84,6 +97,9 @@ function selectedMenuKeys(pathname: string): string[] {
   }
   if (pathname.startsWith(IngestMetadata.DATA_FRESHNESS_ROUTE)) {
     return [IngestMetadata.DATA_FRESHNESS_ROUTE];
+  }
+  if (pathname.startsWith(CaseTriage.GCS_CSV_TO_CLOUD_SQL_ROUTE)) {
+    return [CaseTriage.GCS_CSV_TO_CLOUD_SQL_ROUTE];
   }
   return [];
 }

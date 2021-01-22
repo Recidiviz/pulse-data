@@ -17,11 +17,14 @@
 """Flask server for admin panel."""
 import logging
 import os
-from typing import Dict, Optional
+from http import HTTPStatus
+from typing import Dict, Optional, Tuple
 
 from flask import Blueprint, Response, jsonify, request, send_from_directory
 
+from recidiviz.admin_panel.gcs_import_to_cloud_sql import import_gcs_csv_to_cloud_sql
 from recidiviz.admin_panel.ingest_metadata_store import IngestMetadataCountsStore, IngestMetadataResult
+from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.utils.auth.gae import requires_gae_auth
 from recidiviz.utils.environment import (
     GCP_PROJECT_STAGING,
@@ -48,19 +51,19 @@ if not in_test():
     store_refresh.start()
 
 
-def jsonify_ingest_metadata_result(result: IngestMetadataResult) -> str:
+def jsonify_ingest_metadata_result(result: IngestMetadataResult) -> Tuple[str, HTTPStatus]:
     results_dict: Dict[str, Dict[str, Dict[str, int]]] = {}
     for name, state_map in result.items():
         results_dict[name] = {}
         for state_code, counts in state_map.items():
             results_dict[name][state_code] = counts.to_json()
-    return jsonify(results_dict)
+    return jsonify(results_dict), HTTPStatus.OK
 
 
 # State dataset column counts
 @admin_panel.route('/api/ingest_metadata/fetch_column_object_counts_by_value', methods=['POST'])
 @requires_gae_auth
-def fetch_column_object_counts_by_value() -> str:
+def fetch_column_object_counts_by_value() -> Tuple[str, HTTPStatus]:
     table = request.json['table']
     column = request.json['column']
     return jsonify_ingest_metadata_result(ingest_metadata_store.fetch_column_object_counts_by_value(table, column))
@@ -68,28 +71,50 @@ def fetch_column_object_counts_by_value() -> str:
 
 @admin_panel.route('/api/ingest_metadata/fetch_table_nonnull_counts_by_column', methods=['POST'])
 @requires_gae_auth
-def fetch_table_nonnull_counts_by_column() -> str:
+def fetch_table_nonnull_counts_by_column() -> Tuple[str, HTTPStatus]:
     table = request.json['table']
     return jsonify_ingest_metadata_result(ingest_metadata_store.fetch_table_nonnull_counts_by_column(table))
 
 
 @admin_panel.route('/api/ingest_metadata/fetch_object_counts_by_table', methods=['POST'])
 @requires_gae_auth
-def fetch_object_counts_by_table() -> str:
+def fetch_object_counts_by_table() -> Tuple[str, int]:
     return jsonify_ingest_metadata_result(ingest_metadata_store.fetch_object_counts_by_table())
 
 
 # Data freshness
 @admin_panel.route('/api/ingest_metadata/data_freshness', methods=['POST'])
 @requires_gae_auth
-def fetch_data_freshness() -> str:
-    return jsonify(ingest_metadata_store.data_freshness_results)
+def fetch_data_freshness() -> Tuple[str, HTTPStatus]:
+    return jsonify(ingest_metadata_store.data_freshness_results), HTTPStatus.OK
+
+
+# GCS CSV -> Cloud SQL Import
+@admin_panel.route('/api/case_triage/run_gcs_import', methods=['POST'])
+@requires_gae_auth
+def run_gcs_import() -> Tuple[str, HTTPStatus]:
+    if 'destinationTable' not in request.json or 'gcsURI' not in request.json or 'columns' not in request.json:
+        return 'not all required arguments provided', HTTPStatus.BAD_REQUEST
+    columns = request.json['columns']
+    if not isinstance(columns, list):
+        return 'provided columns are not a list', HTTPStatus.BAD_REQUEST
+    try:
+        gcs_uri = GcsfsFilePath.from_absolute_path(request.json['gcsURI'])
+    except ValueError:
+        return 'improper format for GCS URI', HTTPStatus.BAD_REQUEST
+
+    import_gcs_csv_to_cloud_sql(
+        request.json['destinationTable'],
+        gcs_uri,
+        columns,
+    )
+    return '', HTTPStatus.OK
 
 
 # Frontend configuration
 @admin_panel.route('/runtime_env_vars.js')
 @requires_gae_auth
-def runtime_env_vars() -> str:
+def runtime_env_vars() -> Tuple[str, HTTPStatus]:
     if in_development():
         env_string = 'development'
     elif in_gae_staging():
@@ -98,7 +123,7 @@ def runtime_env_vars() -> str:
         env_string = 'production'
     else:
         env_string = 'unknown'
-    return f'window.RUNTIME_GAE_ENVIRONMENT="{env_string}";'
+    return f'window.RUNTIME_GAE_ENVIRONMENT="{env_string}";', HTTPStatus.OK
 
 
 @admin_panel.route('/')
