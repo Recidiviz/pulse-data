@@ -130,6 +130,9 @@ class Report(JusticeCountsBase):
 
     source = relationship(Source)
 
+    report_table_instances = relationship('ReportTableInstance', back_populates='report', cascade='all, delete',
+                                          lazy='selectin', passive_deletes=True)
+
 
 class ReportTableDefinition(JusticeCountsBase):
     """The definition for what a table within a report describes.
@@ -189,11 +192,13 @@ class ReportTableInstance(JusticeCountsBase):
         # updates, I think we will re-ingest all table instances for a particular report table definition in an updated
         # report.
         UniqueConstraint(report_id, report_table_definition_id, time_window_start, time_window_end),
-        ForeignKeyConstraint([report_id], [Report.id]),
+        ForeignKeyConstraint([report_id], [Report.id], ondelete='CASCADE'),
         ForeignKeyConstraint([report_table_definition_id], [ReportTableDefinition.id])])
 
-    report = relationship(Report)
+    report = relationship(Report, back_populates='report_table_instances')
     report_table_definition = relationship(ReportTableDefinition)
+    cells = relationship('Cell', back_populates='report_table_instance', lazy='selectin',
+                         cascade='all, delete', passive_deletes=True)
 
 
 class Cell(JusticeCountsBase):
@@ -211,9 +216,9 @@ class Cell(JusticeCountsBase):
     __table_args__ = tuple([
         PrimaryKeyConstraint(id),
         UniqueConstraint(report_table_instance_id, aggregated_dimension_values),
-        ForeignKeyConstraint([report_table_instance_id], [ReportTableInstance.id])])
+        ForeignKeyConstraint([report_table_instance_id], [ReportTableInstance.id], ondelete='CASCADE')])
 
-    report_table_instance = relationship(ReportTableInstance)
+    report_table_instance = relationship(ReportTableInstance, back_populates='cells')
 
 # As this is a TypeVar, it should be used when all variables within the scope of this type should have the same
 # concrete class.
