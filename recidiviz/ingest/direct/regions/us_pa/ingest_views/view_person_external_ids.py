@@ -37,6 +37,7 @@ VIEW_BUILDER = DirectIngestPreProcessedIngestViewBuilder(
     region='us_pa',
     ingest_view_name='person_external_ids',
     view_query_template=VIEW_QUERY_TEMPLATE,
+    materialize_raw_data_table_views=True,
     order_by_cols=None,
 )
 
