@@ -18,6 +18,7 @@
 
 from typing import Dict, List, Optional
 from time import time
+from warnings import warn
 from functools import partial
 import pandas as pd
 
@@ -212,7 +213,15 @@ class PopulationSimulation:
                                   microsim: bool):
         """Helper function for initialize_simulation"""
 
+        # reset indicies to facilitate unused data tracking
+        transitions_data = transitions_data.reset_index(drop=True)
+        outflows_data = outflows_data.reset_index(drop=True)
+        total_population_data = total_population_data.reset_index(drop=True)
+
         # Initialize one sub simulation per sub-population
+        unused_transitions_data = transitions_data
+        unused_outflows_data = outflows_data
+        unused_total_population_data = total_population_data
         for sub_group_id in self.sub_group_ids_dict:
             group_attributes = pd.Series(self.sub_group_ids_dict[sub_group_id])
             disaggregated_transitions_data = \
@@ -221,6 +230,10 @@ class PopulationSimulation:
                 outflows_data[(outflows_data[disaggregation_axes] == group_attributes).all(axis=1)]
             disaggregated_total_population_data = \
                 total_population_data[(total_population_data[disaggregation_axes] == group_attributes).all(axis=1)]
+
+            unused_transitions_data = unused_transitions_data.drop(disaggregated_transitions_data.index)
+            unused_outflows_data = unused_outflows_data.drop(disaggregated_outflows_data.index)
+            unused_total_population_data = unused_total_population_data.drop(disaggregated_total_population_data.index)
 
             # Select the policies relevant to this simulation group
             group_policies = SparkPolicy.get_sub_population_policies(user_inputs['policy_list'],
@@ -237,6 +250,13 @@ class PopulationSimulation:
                 microsim=microsim
             )
             self.sub_simulations[sub_group_id].initialize()
+
+        if len(unused_transitions_data) > 0:
+            warn(f"Some transitions data left unused: {unused_transitions_data}", Warning)
+        if len(unused_outflows_data) > 0:
+            warn(f"Some outflows data left unused: {unused_outflows_data}", Warning)
+        if len(unused_total_population_data) > 0:
+            warn(f"Some total population data left unused: {unused_total_population_data}", Warning)
 
     def step_forward(self, num_ts: int):
         for _ in range(num_ts):
