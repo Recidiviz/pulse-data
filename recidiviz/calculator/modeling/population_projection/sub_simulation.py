@@ -17,6 +17,7 @@
 """Simulate multiple demographic/age groups"""
 
 from typing import Dict, Optional, List
+from warnings import warn
 import pandas as pd
 
 from recidiviz.calculator.modeling.population_projection.compartment_transitions import CompartmentTransitions
@@ -80,9 +81,11 @@ class SubSimulation:
 
         # Initialize a default transition class for each compartment to represent the no-policy scenario
         transitions_per_compartment = {}
+        unused_transitions_data = self.transitions_data
         for compartment in self.simulation_architecture:
             transition_type = self.simulation_architecture[compartment]
             compartment_duration_data = self.transitions_data[self.transitions_data['compartment'] == compartment]
+            unused_transitions_data = unused_transitions_data.drop(compartment_duration_data.index)
 
             if compartment_duration_data.empty:
                 if transition_type is not None:
@@ -99,6 +102,9 @@ class SubSimulation:
 
                 transition_class.initialize_transition_table()
                 transitions_per_compartment[compartment] = transition_class
+
+        if len(unused_transitions_data) > 0:
+            warn(f"Some transitions data not fed to a compartment: {unused_transitions_data}", Warning)
 
         # Create a transition object for each compartment and year with policies applied and store shell policies
         shell_policies = dict()

@@ -65,3 +65,31 @@ class TestSubSimulation(unittest.TestCase):
                             0)
         with self.assertRaises(ValueError):
             sim.initialize()
+
+    def test_dropping_data_raises_warning_or_error(self):
+        """Assert that SubSimulation throws an error when some input data goes unused"""
+        typo_transitions = self.test_transitions_data.copy()
+        typo_transitions.loc[typo_transitions.index == 0, 'compartment'] = 'prison '
+
+        typo_outflows = self.test_outflow_data.copy()
+        typo_outflows.loc[typo_outflows.index == 4, 'compartment'] = 'pre-trial'
+
+        with self.assertRaises(ValueError):
+            sub_sim = SubSimulation(typo_outflows,
+                                    self.test_transitions_data,
+                                    self.test_total_population_data,
+                                    self.test_architecture,
+                                    self.test_user_inputs,
+                                    self.compartment_policies,
+                                    0)
+            sub_sim.initialize()
+
+        with self.assertWarns(Warning):
+            sub_sim = SubSimulation(self.test_outflow_data,
+                                    typo_transitions,
+                                    self.test_total_population_data,
+                                    self.test_architecture,
+                                    self.test_user_inputs,
+                                    self.compartment_policies,
+                                    0)
+            sub_sim.initialize()
