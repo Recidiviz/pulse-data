@@ -19,11 +19,14 @@ from typing import Sequence
 
 from recidiviz.big_query.big_query_view import BigQueryViewBuilder
 from recidiviz.case_triage.views.client_list_view import CLIENT_LIST_VIEW_BUILDER
+from recidiviz.case_triage.views.officer_list_view import OFFICER_LIST_VIEW_BUILDER
 
 CASE_TRIAGE_EXPORTED_VIEW_BUILDERS: Sequence[BigQueryViewBuilder] = [
     CLIENT_LIST_VIEW_BUILDER,
+    OFFICER_LIST_VIEW_BUILDER,
 ]
 
 VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE: Sequence[BigQueryViewBuilder] = [
     CLIENT_LIST_VIEW_BUILDER,
+    OFFICER_LIST_VIEW_BUILDER,
 ]
