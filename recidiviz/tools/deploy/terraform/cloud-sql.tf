@@ -73,3 +73,16 @@ module "state_database" {
   tier              = "db-custom-4-16384" # 4 vCPUs, 16GB Memory
   has_readonly_user = local.is_production
 }
+
+locals {
+  joined_connection_string = join(
+    ", ",
+    [
+      module.case_triage_database.connection_name,
+      module.jails_database.connection_name,
+      module.justice_counts_database.connection_name,
+      module.operations_database.connection_name,
+      module.state_database.connection_name,
+    ]
+  )
+}
