@@ -200,7 +200,7 @@ class _FakeDirectIngestViewBuilder(BigQueryViewBuilder[DirectIngestPreProcessedI
               ) -> DirectIngestPreProcessedIngestView:
         region_config = DirectIngestRegionRawFileConfig(
             region_code='us_xx',
-            legacy_yaml_config_file_path=fixtures.as_filepath('us_xx_raw_data_files.yaml', subdir='fixtures'),
+            yaml_config_file_dir=fixtures.as_filepath('us_xx'),
         )
 
         query = 'select * from {file_tag_first} JOIN {tagFullHistoricalExport} USING (COL_1)'
