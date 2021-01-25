@@ -27,7 +27,7 @@ from recidiviz.persistence.database.base_schema import CaseTriageBase
 # Import anything from the case_triage schema.py files to ensure the table class
 # declarations are run within the Alembic environment
 from recidiviz.persistence.database.schema.case_triage.schema import \
-    Client  # pylint:disable=unused-import
+    ETLClient  # pylint:disable=unused-import
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
