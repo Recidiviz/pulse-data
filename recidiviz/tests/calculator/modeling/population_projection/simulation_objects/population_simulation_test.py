@@ -173,3 +173,40 @@ class TestPopulationSimulation(unittest.TestCase):
         )
 
         assert_index_equal(projection.index.unique().sort_values(), pd.Int64Index(range(11)))
+
+    def test_dropping_data_raises_warning(self):
+        """Assert that PopulationSimulation throws an error when some input data goes unused"""
+        population_simulation = PopulationSimulation()
+        non_disaggregated_outflows_data = self.test_outflows_data.copy()
+        non_disaggregated_transitions_data = self.test_transitions_data.copy()
+        non_disaggregated_total_population_data = self.test_total_population_data.copy()
+
+        non_disaggregated_outflows_data.loc[non_disaggregated_outflows_data.compartment != 'pretrial', 'crime'] = None
+        non_disaggregated_transitions_data.loc[non_disaggregated_transitions_data.index == 0, 'crime'] = None
+        non_disaggregated_total_population_data.crime = None
+
+        with self.assertWarns(Warning):
+            population_simulation.simulate_policies(self.test_outflows_data,
+                                                    self.test_transitions_data,
+                                                    non_disaggregated_total_population_data,
+                                                    self.simulation_architecture,
+                                                    ['crime'],
+                                                    self.user_inputs,
+                                                    first_relevant_ts=-5)
+        with self.assertWarns(Warning):
+            population_simulation.simulate_policies(self.test_outflows_data,
+                                                    non_disaggregated_transitions_data,
+                                                    self.test_total_population_data,
+                                                    self.simulation_architecture,
+                                                    ['crime'],
+                                                    self.user_inputs,
+                                                    first_relevant_ts=-5)
+
+        with self.assertWarns(Warning):
+            population_simulation.simulate_policies(non_disaggregated_outflows_data,
+                                                    self.test_transitions_data,
+                                                    self.test_total_population_data,
+                                                    self.simulation_architecture,
+                                                    ['crime'],
+                                                    self.user_inputs,
+                                                    first_relevant_ts=-5)
