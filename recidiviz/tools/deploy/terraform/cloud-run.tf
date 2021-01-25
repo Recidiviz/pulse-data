@@ -27,6 +27,13 @@ resource "google_cloud_run_service" "case-triage" {
         args    = ["run", "gunicorn", "-c", "gunicorn.conf.py", "--log-file=-", "-b", ":$PORT", "recidiviz.case_triage.server:app"]
       }
     }
+
+    metadata {
+      annotations = {
+        "autoscaling.knative.dev/maxScale" = "1000"
+        "run.googleapis.com/cloudsql-instances" = local.joined_connection_string
+      }
+    }
   }
 
   traffic {
