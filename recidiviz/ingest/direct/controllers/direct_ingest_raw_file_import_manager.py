@@ -206,6 +206,9 @@ class DirectIngestRegionRawFileConfig:
                 file_tag = yaml_contents.pop('file_tag', str)
                 if not file_tag:
                     raise ValueError(f'Missing file_tag in [{yaml_file_path}]')
+                if filename != f'{self.region_code.lower()}_{file_tag}.yaml':
+                    raise ValueError(f'Mismatched file_tag [{file_tag}] and filename [{filename}]'
+                                     f' in [{yaml_file_path}]')
                 if file_tag in raw_data_configs:
                     raise ValueError(f'Found file tag [{file_tag}] in [{yaml_file_path}]'
                                      f' that is already defined in another yaml file.')
