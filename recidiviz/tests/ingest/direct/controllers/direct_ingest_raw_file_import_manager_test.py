@@ -43,56 +43,22 @@ from recidiviz.tests.utils.fake_region import fake_region
 class DirectIngestRegionRawFileConfigTest(unittest.TestCase):
     """Tests for DirectIngestRegionRawFileConfig."""
 
-    def test_legacy_parse_yaml(self) -> None:
-        region_config = DirectIngestRegionRawFileConfig(
-            region_code='us_xx',
-            legacy_yaml_config_file_path=fixtures.as_filepath('us_xx_raw_data_files.yaml'),
-        )
-
-        self.assertEqual(7, len(region_config.raw_file_configs))
-
-        self.assertEqual({'file_tag_first', 'file_tag_second', 'tagC', 'tagFullHistoricalExport',
-                          'tagInvalidCharacters', 'tagNormalizationConflict', 'tagPipeSeparatedNonUTF8'},
-                         region_config.raw_file_configs.keys())
-
-        config_1 = region_config.raw_file_configs['file_tag_first']
-        self.assertEqual('file_tag_first', config_1.file_tag)
-        self.assertEqual(['col_name_1a', 'col_name_1b'], config_1.primary_key_cols)
-        self.assertEqual('ISO-456-7', config_1.encoding)
-        self.assertEqual(',', config_1.separator)
-
-        config_2 = region_config.raw_file_configs['file_tag_second']
-        self.assertEqual('file_tag_second', config_2.file_tag)
-        self.assertEqual(['col_name_2a'], config_2.primary_key_cols)
-        self.assertEqual('UTF-8', config_2.encoding)
-        self.assertEqual('$', config_2.separator)
-
-        config_3 = region_config.raw_file_configs['tagC']
-        self.assertEqual('tagC', config_3.file_tag)
-        self.assertEqual(['COL1'], config_3.primary_key_cols)
-        self.assertEqual('UTF-8', config_3.encoding)
-        self.assertEqual(',', config_3.separator)
-
-        config_4 = region_config.raw_file_configs['tagPipeSeparatedNonUTF8']
-        self.assertEqual('tagPipeSeparatedNonUTF8', config_4.file_tag)
-        self.assertEqual(['PRIMARY_COL1'], config_4.primary_key_cols)
-        self.assertEqual('ISO-8859-1', config_4.encoding)
-        self.assertEqual('|', config_4.separator)
-
-    def test_parse_empty_yaml_throws(self) -> None:
-        with self.assertRaises(ValueError):
+    def test_parse_no_defaults_throws(self) -> None:
+        with self.assertRaises(ValueError) as e:
             _ = DirectIngestRegionRawFileConfig(
-                region_code='us_xx',
-                legacy_yaml_config_file_path=fixtures.as_filepath('empty_raw_data_files.yaml'),
+                region_code='us_yy',
+                yaml_config_file_dir=fixtures.as_filepath('us_yy'),
             )
+        self.assertEqual(str(e.exception), 'Missing default raw data configs for region: us_yy')
 
     def test_parse_yaml(self) -> None:
         region_config = DirectIngestRegionRawFileConfig(
-            region_code='us_yy',
-            yaml_config_file_dir=fixtures.as_filepath('us_yy'),
+            region_code='us_xx',
+            yaml_config_file_dir=fixtures.as_filepath('us_xx'),
         )
-        self.assertEqual(3, len(region_config.raw_file_configs))
-        self.assertEqual({'file_tag_first', 'file_tag_second', 'tagC'},
+        self.assertEqual(7, len(region_config.raw_file_configs))
+        self.assertEqual({'file_tag_first', 'file_tag_second', 'tagC', 'tagFullHistoricalExport',
+                          'tagInvalidCharacters', 'tagNormalizationConflict', 'tagPipeSeparatedNonUTF8'},
                          region_config.raw_file_configs.keys())
 
         config_1 = region_config.raw_file_configs['file_tag_first']
@@ -135,11 +101,17 @@ class DirectIngestRegionRawFileConfigTest(unittest.TestCase):
                                              is_datetime=False,
                                              description='COL1 description')], config_3.columns)
 
+        config_4 = region_config.raw_file_configs['tagPipeSeparatedNonUTF8']
+        self.assertEqual('tagPipeSeparatedNonUTF8', config_4.file_tag)
+        self.assertEqual(['PRIMARY_COL1'], config_4.primary_key_cols)
+        self.assertEqual('ISO-8859-1', config_4.encoding)
+        self.assertEqual('|', config_4.separator)
+
     def test_missing_configs_for_region(self) -> None:
         with self.assertRaises(ValueError) as e:
             region_config = DirectIngestRegionRawFileConfig(
                 region_code='us_xy',
-                legacy_yaml_config_file_path=fixtures.as_filepath('does_not_exist.yaml'),
+                yaml_config_file_dir=fixtures.as_filepath('us_xy'),
             )
             _configs = region_config.raw_file_configs
         self.assertEqual(str(e.exception), 'Missing raw data configs for region: us_xy')
@@ -160,7 +132,7 @@ class DirectIngestRawFileImportManagerTest(unittest.TestCase):
 
         self.region_raw_file_config = DirectIngestRegionRawFileConfig(
             region_code='us_xx',
-            legacy_yaml_config_file_path=fixtures.as_filepath('us_xx_raw_data_files.yaml'),
+            yaml_config_file_dir=fixtures.as_filepath('us_xx'),
         )
 
         self.mock_big_query_client = create_autospec(BigQueryClient)

@@ -1,0 +1,9 @@
+file_tag: tagInvalidCharacters
+file_description: |-
+  tagInvalidCharacters file description
+primary_key_cols:
+  - COL_1
+columns:
+  - name: COL_1
+    is_datetime: False
+    description: COL_1 description

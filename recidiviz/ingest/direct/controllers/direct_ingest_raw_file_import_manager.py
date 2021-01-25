@@ -123,15 +123,13 @@ class DirectIngestRawFileConfig:
         """Returns a DirectIngestRawFileConfig built from a YAMLDict"""
         primary_key_cols = file_config_dict.pop('primary_key_cols', list)
         # TODO(#5399): Migrate raw file configs for all legacy regions to have file descriptions
-        # TODO(#5401): When migrating legacy tests, add file descriptions and remove US_XX from this set
-        if region_code.upper() in {'US_ND', 'US_ID', 'US_PA', 'US_XX'}:
+        if region_code.upper() in {'US_ND', 'US_ID', 'US_PA'}:
             file_description = file_config_dict.pop_optional('file_description', str)\
                                or 'LEGACY_FILE_MISSING_DESCRIPTION'
         else:
             file_description = file_config_dict.pop('file_description', str)
         # TODO(#5399): Migrate raw file configs for all legacy regions to have column descriptions
-        # TODO(#5401): When migrating legacy tests, add file descriptions and remove US_XX from this set
-        if region_code.upper() in {'US_MO', 'US_ND', 'US_ID', 'US_PA', 'US_XX'}:
+        if region_code.upper() in {'US_MO', 'US_ND', 'US_ID', 'US_PA'}:
             columns = file_config_dict.pop_optional('columns', list) or []
         else:
             columns = file_config_dict.pop('columns', list)
@@ -169,14 +167,7 @@ class DirectIngestRegionRawFileConfig:
 
     # TODO(#5262): Add documentation for the structure of the raw data yaml files
     region_code: str = attr.ib()
-    legacy_yaml_config_file_path: str = attr.ib()
     yaml_config_file_dir: str = attr.ib()
-
-    @legacy_yaml_config_file_path.default
-    def _legacy_config_file_path(self) -> str:
-        return os.path.join(self._region_ingest_dir(),
-                            f'{self.region_code.lower()}_raw_data_files.yaml')
-
     raw_file_configs: Dict[str, DirectIngestRawFileConfig] = attr.ib()
 
     def _region_ingest_dir(self) -> str:
@@ -195,34 +186,7 @@ class DirectIngestRegionRawFileConfig:
 
     def _get_raw_data_file_configs(self) -> Dict[str, DirectIngestRawFileConfig]:
         """Returns list of file tags we expect to see on raw files for this region."""
-        if os.path.exists(self.legacy_yaml_config_file_path):
-            file_contents = YAMLDict.from_path(self.legacy_yaml_config_file_path)
-
-            raw_data_configs = {}
-            default_encoding = file_contents.pop('default_encoding', str)
-            default_separator = file_contents.pop('default_separator', str)
-
-            last_tag = None
-            for file_info in file_contents.pop_dicts('raw_files'):
-                file_tag = file_info.pop('file_tag', str)
-
-                if not file_tag:
-                    raise ValueError(f'Found empty file tag in entry after [{last_tag}]')
-
-                if file_tag in raw_data_configs:
-                    raise ValueError(f'Found duplicate file tag [{file_tag}] in [{self.legacy_yaml_config_file_path}]')
-
-                if last_tag and file_tag < last_tag:
-                    raise ValueError(
-                        f'Tags out of ASCII alphabetical order - [{file_tag}] should come before [{last_tag}]')
-
-                raw_data_configs[file_tag] = DirectIngestRawFileConfig.from_yaml_dict(self.region_code,
-                                                                                      file_tag,
-                                                                                      default_encoding,
-                                                                                      default_separator,
-                                                                                      file_info)
-                last_tag = file_tag
-        elif os.path.isdir(self.yaml_config_file_dir):
+        if os.path.isdir(self.yaml_config_file_dir):
             default_filename = f'{self.region_code}_default.yaml'
             default_file_path = os.path.join(self.yaml_config_file_dir, default_filename)
             if not os.path.exists(default_file_path):
