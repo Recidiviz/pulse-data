@@ -19,13 +19,13 @@
 for Case Triage related entities.
 
 """
-from sqlalchemy import Column, Boolean, Date, String, UniqueConstraint, Text
+from sqlalchemy import Column, Boolean, Date, String, Text, UniqueConstraint
 
 from recidiviz.persistence.database.base_schema import CaseTriageBase
 
 
-class Client(CaseTriageBase):
-    """Represents a person in the SQL schema"""
+class ETLClient(CaseTriageBase):
+    """Represents a person derived from our ETL pipeline."""
     __tablename__ = 'etl_clients'
     __table_args__ = (
         UniqueConstraint('state_code', 'person_external_id'),
@@ -40,3 +40,13 @@ class Client(CaseTriageBase):
     case_type = Column(String(255), nullable=False)
     supervision_level = Column(String(255), nullable=False)
     state_code = Column(String(255), nullable=False, index=True)
+
+
+class ETLOfficer(CaseTriageBase):
+    """Represents an officer derived from our ETL pipeline."""
+    __tablename__ = 'etl_officers'
+    external_id = Column(String(255), nullable=False, index=True, primary_key=True)
+    state_code = Column(String(255), nullable=False, index=True, primary_key=True)
+    email_address = Column(String(255), nullable=False)
+    given_names = Column(String(255), nullable=False)
+    surname = Column(String(255), nullable=False)
