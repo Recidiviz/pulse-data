@@ -40,6 +40,7 @@ class ETLClient(CaseTriageBase):
     case_type = Column(String(255), nullable=False)
     supervision_level = Column(String(255), nullable=False)
     state_code = Column(String(255), nullable=False, index=True)
+    employer = Column(String(255))
 
 
 class ETLOfficer(CaseTriageBase):
