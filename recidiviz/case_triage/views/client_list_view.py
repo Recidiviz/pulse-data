@@ -17,6 +17,7 @@
 """Creates the view builder and view for listing all clients."""
 
 from recidiviz.big_query.selected_columns_big_query_view import SelectedColumnsBigQueryViewBuilder
+from recidiviz.calculator.query.state.dataset_config import CASE_TRIAGE_DATSET
 from recidiviz.case_triage.views.dataset_config import VIEWS_DATASET
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
@@ -53,6 +54,10 @@ LEFT JOIN
 USING
   (person_id,
     state_code)
+-- TODO(#5463): When we ingest employment info, we should replace this joined table with the correct table.
+LEFT JOIN
+  `{project_id}.{case_triage_dataset}.employment_periods`
+USING (person_external_id, state_code)
 WHERE
   supervision_level IS NOT NULL
 """
@@ -61,6 +66,7 @@ CLIENT_LIST_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
     dataset_id=VIEWS_DATASET,
     view_id='etl_clients',
     view_query_template=CLIENT_LIST_QUERY_TEMPLATE,
+    case_triage_dataset=CASE_TRIAGE_DATSET,
     columns=[
         'supervising_officer_external_id',
         'person_external_id',
@@ -72,6 +78,7 @@ CLIENT_LIST_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
         'case_type',
         'supervision_level',
         'state_code',
+        'employer',
     ],
 )
 
