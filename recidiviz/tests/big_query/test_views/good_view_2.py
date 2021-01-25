@@ -27,7 +27,7 @@ with local_project_id_override('my-project-id'):
         view_query_template='SELECT * FROM table1',
         region_raw_table_config=DirectIngestRegionRawFileConfig(
             region_code='us_xx',
-            legacy_yaml_config_file_path='/a/path/to/a.yaml',
+            yaml_config_file_dir='/a/path/to/a/dir',
             raw_file_configs={}
         ),
         order_by_cols=None,
