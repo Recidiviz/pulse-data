@@ -45,36 +45,6 @@ class MacroSuperSimulation(SuperSimulation):
             print(f"{table_tag} returned {len(table_data)} results")
             self.data_dict[table_tag] = table_data
 
-    def _initialize_data_csv(self, initialization_params: Dict[str, Any]):
-        """Initialize the data_dict from CSV data --> deprecated"""
-        simulation_data = pd.read_csv(initialization_params['state_data'])
-
-        transitions_data = simulation_data[simulation_data.compartment_duration.notnull()]
-        outflows_data = simulation_data[(simulation_data.compartment_duration.isnull()) &
-                                        (simulation_data.outflow_to.notnull())]
-        total_population_data = simulation_data[simulation_data.outflow_to.isnull()]
-
-        null_ts_outflows = outflows_data[outflows_data.time_step.isnull()]
-        if len(null_ts_outflows) != 0:
-            raise ValueError(f"Outflows data contains null time steps: {null_ts_outflows}")
-
-        null_ts_total_population = total_population_data[total_population_data.time_step.isnull()]
-        if len(null_ts_total_population) != 0:
-            raise ValueError(f"Total population data contains null time steps: {null_ts_total_population}")
-
-        if any(outflows_data['time_step'] != outflows_data['time_step'].apply(int)):
-            raise ValueError(f"Outflows data time steps cannot be converted to ints: {outflows_data['time_step']}")
-        outflows_data.loc[outflows_data.index, 'time_step'] = outflows_data['time_step'].apply(int)
-
-        if any(total_population_data['time_step'] != total_population_data['time_step'].apply(int)):
-            raise ValueError(f"Total population time steps cannot be converted to ints: {outflows_data['time_step']}")
-        total_population_data.loc[total_population_data.index, 'time_step'] = \
-            total_population_data['time_step'].apply(int)
-
-        self.data_dict['outflows_data'] = outflows_data
-        self.data_dict['transitions_data'] = transitions_data
-        self.data_dict['total_population_data'] = total_population_data
-
     def _set_user_inputs(self, yaml_user_inputs: Dict[str, Any]):
         super()._set_user_inputs(yaml_user_inputs)
         self.user_inputs['policy_time_step'] = \
@@ -86,12 +56,12 @@ class MacroSuperSimulation(SuperSimulation):
 
     def _get_first_relevant_ts(self):
         """calculate ts to start model initialization at"""
-        # TODO(#4512): cap this at 50 years (non-trivial because ts unit unknown)
+        # TODO(#4487): cap this at 50 years (non-trivial because ts unit unknown)
         if self.user_inputs['speed_run']:
             max_sentence = self.user_inputs['projection_time_steps'] + 1
         else:
             max_sentence = max(self.data_dict['transitions_data'].compartment_duration)
-        return int(self.user_inputs['start_time_step'] - 2 * max_sentence)
+        return self.user_inputs['start_time_step'] - int(2 * max_sentence)
 
     def simulate_policy(self, policy_list: List[SparkPolicy], output_compartment: str):
         """
@@ -100,7 +70,6 @@ class MacroSuperSimulation(SuperSimulation):
         `policy_list` should be a list of SparkPolicy objects to be applied in the policy scenario
         `output_compartment` should be the primary compartment to be graphed at the end (doesn't affect calculation)
         """
-        # TODO(#4870): update old functions
         self._reset_pop_simulations()
 
         self.user_inputs['policy_list'] = policy_list
@@ -204,30 +173,30 @@ class MacroSuperSimulation(SuperSimulation):
         self.output_data[simulation_title] = \
             self.pop_simulations[simulation_title].population_projections.sort_values('time_step')
 
-    def calculate_cohort_population_error(self, output_compartment: str, outflow_to: str,
-                                          back_fill_range: tuple = (0, 2, 0.1), unit: str = 'abs'):
+    def calculate_cohort_hydration_error(self, output_compartment: str, outflow_to: str,
+                                         back_fill_range: tuple = (0, 2, 0.1), unit: str = 'abs'):
         """
         `backfill_range` is a three item tuple giving the lower and upper bounds to test in units of
             subgroup max_sentence and the step size
         `output_compartment` is the compartment whose error you want to get
         `outflow_to` is the outflow from that compartment you want to get the error on
         `unit is either mse or abs`
-        TODO(#4870): update old functions
         """
         self._reset_pop_simulations()
 
-        range_start, range_end, step_size = back_fill_range
+        max_sentence = self.user_inputs['start_time_step'] - self._get_first_relevant_ts()
+        range_start, range_end, step_size = [int(i * max_sentence) for i in back_fill_range]
 
         for ts in np.arange(range_start, range_end, step_size):
-            self.pop_simulations[f"backfill_period_{ts}_max_sentences"] = PopulationSimulation()
-            self.pop_simulations[f"backfill_period_{ts}_max_sentences"].simulate_policies(
+            self.pop_simulations[f"backfill_period_{ts}_time_steps"] = PopulationSimulation()
+            self.pop_simulations[f"backfill_period_{ts}_time_steps"].simulate_policies(
                 self.data_dict['outflows_data'],
                 self.data_dict['transitions_data'],
                 self.data_dict['total_population_data'],
                 self.data_dict['simulation_compartments_architecture'],
                 self.data_dict['disaggregation_axes'],
                 self.user_inputs,
-                ts
+                self.user_inputs['start_time_step'] - ts
             )
 
         self.output_data['cohort_population_error'] = pd.DataFrame()
@@ -252,10 +221,9 @@ class MacroSuperSimulation(SuperSimulation):
                     self.output_data['cohort_population_error'].iloc[ts + 1][sub_group] - \
                     self.output_data['cohort_population_error'].iloc[ts][sub_group]
 
-        plt.plot(error_differential)
-        plt.ylabel(f'time_step-over-time_step differential in {unit}')
-        plt.xlabel('number of max_sentences of back-filling')
-        plt.title(f'error in releases from {output_compartment}')
+        error_differential.plot(ylabel=f'time_step-over-time_step differential in {unit}',
+                                xlabel='number of max_sentences of back-filling',
+                                title=f'error in releases from {output_compartment}')
 
         return self.output_data['cohort_population_error']
 
@@ -267,7 +235,6 @@ class MacroSuperSimulation(SuperSimulation):
         `output_compartment` is the compartment whose error you want to get
         `outflow_to` is the outflow from that compartment you want to get the error on
         `unit is either mse or abs`
-        TODO(#4870): update old functions
         """
         self._reset_pop_simulations()
 
@@ -281,10 +248,10 @@ class MacroSuperSimulation(SuperSimulation):
                 self.data_dict['simulation_compartments_architecture'],
                 self.data_dict['disaggregation_axes'],
                 self.user_inputs,
-                0
+                self._get_first_relevant_ts()
             )
 
-        self.output_data['release_data_sparsity_error'] = pd.DataFrame()
+        self.output_data[f'{outflow_to}_data_sparsity_error'] = pd.DataFrame()
         for test_sim in self.pop_simulations:
             errors = pd.Series()
             for sub_group in self.pop_simulations[test_sim].sub_simulations:
@@ -303,10 +270,9 @@ class MacroSuperSimulation(SuperSimulation):
                     self.output_data[f'{outflow_to}_data_sparsity_error'].loc[ts, sub_group] - \
                     self.output_data[f'{outflow_to}_data_sparsity_error'].loc[ts - 1, sub_group]
 
-        plt.plot(error_differential)
-        plt.ylabel(f'time_step-over-time_step differential in {unit}')
-        plt.xlabel('number of time_steps of historical data')
-        plt.title(f'error in releases from {output_compartment}')
+        error_differential.plot(ylabel=f'time_step-over-time_step differential in {unit}',
+                                xlabel='number of time_steps of historical data',
+                                title=f'error in releases from {output_compartment}')
 
         return self.output_data[f'{outflow_to}_data_sparsity_error']
 

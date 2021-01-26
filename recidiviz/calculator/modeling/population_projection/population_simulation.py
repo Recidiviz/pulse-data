@@ -184,8 +184,6 @@ class PopulationSimulation:
 
         # run simulation up to the start_year
         self.step_forward(user_inputs['start_time_step'] - first_relevant_ts)
-        for simulation_obj in self.sub_simulations.values():
-            simulation_obj.scale_total_populations()
 
     def _populate_sub_group_ids_dict(self, transitions_data: pd.DataFrame, disaggregation_axes: List[str]):
         """Helper function for initialize_simulation"""
@@ -324,11 +322,11 @@ class PopulationSimulation:
         return arima_output_df
 
     def gen_scale_factors_df(self):
-        scale_factors_df = pd.DataFrame(columns=self.sub_group_ids_dict.keys())
+        scale_factors_df = pd.DataFrame()
         for subgroup_name, subgroup_obj in self.sub_simulations.items():
-            if subgroup_name not in scale_factors_df.columns:
-                raise ValueError(f"{subgroup_name} sub simulation was not initialized in sub_group_ids_dict")
-            scale_factors_df[subgroup_name] = subgroup_obj.get_scale_factors()
+            subgroup_scale_factors = subgroup_obj.get_scale_factors()
+            subgroup_scale_factors['sub-group'] = subgroup_name
+            scale_factors_df = pd.concat([scale_factors_df, subgroup_scale_factors])
         return scale_factors_df
 
     def get_data_for_compartment_ts(self, compartment, ts):
@@ -368,6 +366,7 @@ class PopulationSimulation:
         return total_population_error.sort_index()
 
     def gen_full_error(self):
+        """Compile error data from sub-simulations"""
         min_projection_ts = min(self.population_projections['time_step'])
         total_population_error = pd.DataFrame(
             index=pd.MultiIndex.from_product([self.validation_population_data.compartment.unique(),
@@ -380,8 +379,15 @@ class PopulationSimulation:
         for (compartment, ts) in total_population_error.index:
 
             simulation_population, historical_population = self.get_data_for_compartment_ts(compartment, ts)
-            simulation_population = simulation_population.total_population.sum()
-            historical_population = historical_population.total_population.sum()
+            if simulation_population.empty:
+                simulation_population = None
+            else:
+                simulation_population = simulation_population.total_population.sum()
+
+            if historical_population.empty:
+                historical_population = None
+            else:
+                historical_population = historical_population.total_population.sum()
 
             if simulation_population == 0:
                 raise ValueError(f"Simulation population total for compartment {compartment} and time step {ts} "
@@ -390,9 +396,10 @@ class PopulationSimulation:
                 raise ValueError(f"Historical population data for compartment {compartment} and time step {ts} "
                                  "cannot be 0 for validation")
 
-            total_population_error.loc[(compartment, ts), 'simulation_population'] = simulation_population
-            total_population_error.loc[(compartment, ts), 'historical_population'] = historical_population
-            total_population_error.loc[(compartment, ts), 'percent_error'] = \
-                (simulation_population - historical_population) / historical_population
+            if simulation_population is not None and historical_population is not None:
+                total_population_error.loc[(compartment, ts), 'simulation_population'] = simulation_population
+                total_population_error.loc[(compartment, ts), 'historical_population'] = historical_population
+                total_population_error.loc[(compartment, ts), 'percent_error'] = \
+                    (simulation_population - historical_population) / historical_population
 
-        return total_population_error.sort_index()
+        return total_population_error.sort_index().dropna()

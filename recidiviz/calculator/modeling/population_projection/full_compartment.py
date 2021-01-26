@@ -110,7 +110,6 @@ class FullCompartment(SparkCompartment):
 
         # if historical data available, use that instead
         if self.current_ts in self.outflows_data.columns and self.current_ts < self.policy_ts:
-            # TODO(#4512): correct released population so calculated influx matches observed influx
             model_outflow = pd.Series(outflow_dict, dtype=float)
             outflow_dict = self.outflows_data[self.current_ts].to_dict()
             self.error[self.current_ts] = 100 * (model_outflow - self.outflows_data[self.current_ts]) / \
@@ -119,7 +118,7 @@ class FullCompartment(SparkCompartment):
         # if prior to historical data, interpolate from earliest ts of data
         elif not self.outflows_data.empty and self.current_ts < min(self.outflows_data.columns) \
                 and self.current_ts < self.policy_ts:
-            # TODO(#4512): replace outflows during initialization with better backward projection
+            # TODO(#5431): replace outflows during initialization with better backward projection
             outflow_dict = self.outflows_data[min(self.outflows_data.columns)].to_dict()
 
         # if no outflow, don't ingest to edges
@@ -145,13 +144,18 @@ class FullCompartment(SparkCompartment):
 
     def scale_cohorts(self, total_populations: pd.DataFrame):
 
-        if len(total_populations[total_populations['time_step'] == self.current_ts]) == 0:
-            raise ValueError(f"Total population data must have the time step {self.current_ts}")
+        # TODO(#5428): when this logic is moved to PopulationSimulation it should stop scaling after start_ts
+        #  not policy_ts
+        current_population = self.get_current_population()
+
+        if total_populations[total_populations['time_step'] == self.current_ts].empty \
+                or self.current_ts > self.policy_ts or current_population == 0:
+            return self.current_ts, None
 
         # Use the total population for the latest time step to compute the scale factor
         total_population = total_populations.set_index('time_step').loc[self.current_ts, 'total_population']
 
-        scale_factor = total_population / self.get_current_population()
+        scale_factor = total_population / current_population
 
         self.cohorts.scale_cohort_size(scale_factor)
 
@@ -159,11 +163,11 @@ class FullCompartment(SparkCompartment):
         if not np.isclose(total_population, latest_modeled_population):
             raise ValueError(f"Scaling failed, total_population must equal corresponding model population\n"
                              f"Expected: {total_population}, Actual: {latest_modeled_population}")
-        return scale_factor
+        return self.current_ts, scale_factor
 
     def get_per_ts_population(self):
         """Return the per_ts projected population as a pd.Series of counts per EOTS"""
-        return self.cohorts.get_per_ts_population()
+        return self.end_ts_populations
 
     def get_current_population(self):
         return self.cohorts.get_latest_population().sum()
