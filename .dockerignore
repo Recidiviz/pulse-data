@@ -1,4 +1,7 @@
 **/__pycache__
 **/*.pyc
 
+# Case Triage local files
+recidiviz/case_triage/local/**/*
+
 **/node_modules
