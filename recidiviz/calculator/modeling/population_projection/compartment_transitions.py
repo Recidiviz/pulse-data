@@ -18,7 +18,7 @@
 
 from abc import ABC, abstractmethod
 from copy import deepcopy
-from typing import Dict, List
+from typing import Dict, List, Optional
 import numpy as np
 import pandas as pd
 
@@ -49,7 +49,7 @@ class CompartmentTransitions(ABC):
 
         self.long_sentence_transitions = pd.DataFrame()
 
-    def initialize_transition_table(self, max_sentence: int = -1):
+    def initialize_transition_table(self, max_sentence: Optional[int] = None):
         """Populate the 'before' transition table. Optionally accepts a max sentence length after which sentences are
         grouped into long-sentence bucket. If no max_setence is passed, calculates the 98% stay duration threshold"""
         if self.historical_outflows.empty:
@@ -62,11 +62,8 @@ class CompartmentTransitions(ABC):
                 null_rows = self.historical_outflows[self.historical_outflows[column].isnull()]
                 raise ValueError(f"Transition data '{column}' column cannot contain NULL values {null_rows}")
 
-        if max_sentence <= 0:
-            if self.historical_outflows.empty:
-                # TODO(#4512): do not allow people to create an empty model
-                self.max_sentence = 0
-            elif len(self.historical_outflows) == 1:
+        if max_sentence is None:
+            if len(self.historical_outflows) == 1:
                 self.max_sentence = int(np.ceil(max(self.historical_outflows['compartment_duration'])))
             else:
                 threshold_percentile = 0.98
