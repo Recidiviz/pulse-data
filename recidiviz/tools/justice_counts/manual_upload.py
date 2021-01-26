@@ -34,8 +34,8 @@ import enum
 import logging
 import os
 import sys
-from collections import defaultdict
-from typing import Callable, Dict, Iterable, List, Optional, Tuple, Type, TypeVar, Union, Set
+from collections import defaultdict, Counter
+from typing import Callable, Dict, Iterable, List, Optional, Tuple, Type, TypeVar, Union
 from urllib import parse
 import webbrowser
 
@@ -1071,17 +1071,18 @@ class Table:
                                      "make sure you have one or the other.")
 
     def _validate_aggregate_dimensions(self) -> None:
-        unique_dimensions: Dict[str, Set[Dimension]] = {dimension.dimension_identifier(): set()
-                                                        for dimension in self.dimensions}
+        unique_dimensions_by_identifiers: Dict[str, Counter] = {dimension.dimension_identifier(): Counter()
+                                                                for dimension in self.dimensions}
 
         for dimensions, _value in self.data_points:
             for dimension in dimensions:
-                unique_dimensions[dimension.dimension_identifier()].add(dimension)
-        for _key, unique_dimension in unique_dimensions.items():
-            if len(unique_dimension) == 1:
-                raise AttributeError(f"Attribute '{unique_dimension.pop()}' only has one set value, "
-                                     f"change it to a filtered dimension.")
-
+                unique_dimensions_by_identifiers[dimension.dimension_identifier()][dimension] += 1
+        for _key, unique_dimensions in unique_dimensions_by_identifiers.items():
+            if len(unique_dimensions) == 1:
+                [unique_dimension, occurrences] = unique_dimensions.popitem()
+                if occurrences == len(self.data_points):
+                    raise AttributeError(f"Attribute '{unique_dimension}' only has one set value, "
+                                         f"change it to a filtered dimension.")
 
     def __attrs_post_init__(self) -> None:
         # Validate consistency between `dimensions` and `data`.
