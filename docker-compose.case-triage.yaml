@@ -14,6 +14,7 @@ services:
     image: us.gcr.io/recidiviz-staging/appengine/default:latest
     volumes:
       - "./recidiviz:/app/recidiviz/"
+      - "./frontends:/app/frontends/"
     depends_on:
       - migrations
     ports:
