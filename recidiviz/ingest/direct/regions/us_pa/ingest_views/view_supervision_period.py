@@ -80,21 +80,6 @@ conditions_by_parole_count_id AS (
   FROM {dbo_ConditionCode} cc
   GROUP BY parole_number, parole_count_id
 ),
-case_types AS (
-  SELECT ParoleNumber AS parole_number, STRING_AGG(case_type, ',' ORDER BY case_type) AS case_types_list
-  FROM (
-    SELECT ParoleNumber, 'PA_Sexual' AS case_type FROM {dbo_OffenderDetails} WHERE PA_Sexual = '1'
-    UNION ALL
-    SELECT ParoleNumber, 'PA_DomesticViolence' AS case_type FROM {dbo_OffenderDetails} WHERE PA_DomesticViolence = '1'
-    UNION ALL
-    SELECT ParoleNumber, 'PA_Psychiatric' AS case_type FROM {dbo_OffenderDetails} WHERE PA_Psychiatric = '1'
-    UNION ALL
-    SELECT ParoleNumber, 'PA_Alcoholic' AS case_type FROM {dbo_OffenderDetails} WHERE PA_Alcoholic = '1'
-    UNION ALL
-    SELECT ParoleNumber, 'PA_Drugs' AS case_type FROM {dbo_OffenderDetails} WHERE PA_Drugs = '1'
-  )
-  GROUP BY ParoleNumber
-),
 parole_count_id_level_info AS (
   SELECT * EXCEPT (parole_count_id_start_date, parole_count_id_termination_date), 
     SAFE.PARSE_DATE('%Y%m%d', parole_count_id_start_date) AS parole_count_id_start_date,
@@ -102,8 +87,6 @@ parole_count_id_level_info AS (
   FROM parole_count_id_level_info_base
   LEFT JOIN conditions_by_parole_count_id cp
   USING (parole_number, parole_count_id)
-  LEFT JOIN case_types
-  USING (parole_number)
 ),
 agent_update_dates AS (
   SELECT 
@@ -254,7 +237,6 @@ supervision_periods AS (
     supervision_level,
     supervising_officer_name,
     condition_codes,
-    case_types_list
   FROM 
     supervision_periods_date_filtered
 )
