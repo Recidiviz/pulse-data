@@ -41,6 +41,8 @@ class ETLClient(CaseTriageBase):
     supervision_level = Column(String(255), nullable=False)
     state_code = Column(String(255), nullable=False, index=True)
     employer = Column(String(255))
+    most_recent_assessment_date = Column(Date)
+    most_recent_face_to_face_date = Column(Date)
 
 
 class ETLOfficer(CaseTriageBase):
