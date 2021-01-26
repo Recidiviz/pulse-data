@@ -33,6 +33,7 @@ resource "google_cloud_run_service" "case-triage" {
         "autoscaling.knative.dev/maxScale" = "1000"
         "run.googleapis.com/cloudsql-instances" = local.joined_connection_string
       }
+      name = "case-triage-web-${var.docker_image_tag}"
     }
   }
 
@@ -40,6 +41,8 @@ resource "google_cloud_run_service" "case-triage" {
     percent         = 100
     latest_revision = true
   }
+
+  autogenerate_revision_name = false
 }
 
 resource "google_cloud_run_service_iam_member" "public-access" {
