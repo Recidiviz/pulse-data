@@ -146,3 +146,6 @@ secrets.yaml # keep in case any developers still have them
 
 # Stackdriver Traces
 traces
+
+# Local Case Triage files
+recidiviz/case_triage/local/**/*
