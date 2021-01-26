@@ -38,7 +38,19 @@ WITH
     AND po_report_recipients.officer_external_id = most_recent_metrics.supervising_officer_external_id
   GROUP BY
     supervising_officer_external_id,
-    state_code )
+    state_code ),
+  latest_interaction_dates AS (
+  SELECT
+    person_external_id,
+    state_code,
+    MAX(most_recent_assessment_date) AS most_recent_assessment_date,
+    MAX(most_recent_face_to_face_date) AS most_recent_face_to_face_date
+  FROM
+    `{project_id}.dataflow_metrics_materialized.most_recent_supervision_case_compliance_metrics_materialized`
+  WHERE
+    person_external_id IS NOT NULL
+  GROUP BY person_external_id, state_code
+  )
 SELECT
   {columns}
 FROM
@@ -57,6 +69,9 @@ USING
 -- TODO(#5463): When we ingest employment info, we should replace this joined table with the correct table.
 LEFT JOIN
   `{project_id}.{case_triage_dataset}.employment_periods`
+USING (person_external_id, state_code)
+LEFT JOIN
+  latest_interaction_dates
 USING (person_external_id, state_code)
 WHERE
   supervision_level IS NOT NULL
@@ -79,6 +94,8 @@ CLIENT_LIST_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
         'supervision_level',
         'state_code',
         'employer',
+        'most_recent_assessment_date',
+        'most_recent_face_to_face_date',
     ],
 )
 
