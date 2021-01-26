@@ -1,8 +1,8 @@
-parole_number,parole_count_id,period_sequence_number,status_code,supervision_type,admission_reason,start_date,termination_reason,termination_date,county_of_residence,district_office,district_sub_office_id,supervision_level,supervising_officer_name,condition_codes,case_types_list
-456B,1,1,32,C2,C2,2012-03-16,TRANSFER_WITHIN_STATE,2013-04-01,ALLEGH,02,7124,MAX,"Kramer, Cosmo 555678","MEST,ACT35,GPAR,MVICT,REMC,END","PA_Psychiatric,PA_Drugs"
-456B,1,2,32,C2,TRANSFER_WITHIN_STATE,2013-04-01,43,2014-08-10,ALLEGH,02,7113,MAX,,"MEST,ACT35,GPAR,MVICT,REMC,END","PA_Psychiatric,PA_Drugs"
-456B,2,1,23,C2,C2,2014-08-10,43,2018-01-01,ALLEGH,02,7115,MED,"Benes, Elaine 444123","PN,EST,BL,END,SUBD,AANA","PA_Psychiatric,PA_Drugs"
-789C,1,1,22,05,05,2003-10-10,42,2004-08-10,MERCER,08,7307,MIN,"Bania, K 888888","START,EST,END,AANA,REL,DAM,PARAB,ACT35,BL,MISC,DDU,URI,GPAR,EMP,ALC,PM,PF,PA",
-789C,2,1,25,05,05,2004-08-10,44,2005-12-31,MERCER,08,7307,MIN,"Seinfeld, Jerry 555",,
-789C,3,1,23,04,04,2005-12-31,43,2006-10-10,MERCER,,,ADM,Newman,,
-345E,1,1,23,03,03,2016-01-14,,,PHILAD,01,5112,MED,"Talker, Close 101010","DOMV,AUTO,DDU,REFR,MNOAM,END,RI,RC,MEMON,MCURF,REFC",PA_Sexual
+parole_number,parole_count_id,period_sequence_number,status_code,supervision_type,admission_reason,start_date,termination_reason,termination_date,county_of_residence,district_office,district_sub_office_id,supervision_level,supervising_officer_name,condition_codes
+456B,1,1,32,C2,C2,2012-03-16,TRANSFER_WITHIN_STATE,2013-04-01,ALLEGH,02,7124,MAX,"Kramer, Cosmo 555678","MEST,ACT35,GPAR,MVICT,REMC,END"
+456B,1,2,32,C2,TRANSFER_WITHIN_STATE,2013-04-01,43,2014-08-10,ALLEGH,02,7113,MAX,,"MEST,ACT35,GPAR,MVICT,REMC,END"
+456B,2,1,23,C2,C2,2014-08-10,43,2018-01-01,ALLEGH,02,7115,MED,"Benes, Elaine 444123","PN,EST,BL,END,SUBD,AANA"
+789C,1,1,22,05,05,2003-10-10,42,2004-08-10,MERCER,08,7307,MIN,"Bania, K 888888","START,EST,END,AANA,REL,DAM,PARAB,ACT35,BL,MISC,DDU,URI,GPAR,EMP,ALC,PM,PF,PA"
+789C,2,1,25,05,05,2004-08-10,44,2005-12-31,MERCER,08,7307,MIN,"Seinfeld, Jerry 555",
+789C,3,1,23,04,04,2005-12-31,43,2006-10-10,MERCER,,,ADM,Newman,
+345E,1,1,23,03,03,2016-01-14,,,PHILAD,01,5112,MED,"Talker, Close 101010","DOMV,AUTO,DDU,REFR,MNOAM,END,RI,RC,MEMON,MCURF,REFC"
