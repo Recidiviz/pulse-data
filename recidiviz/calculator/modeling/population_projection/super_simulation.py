@@ -18,6 +18,7 @@
 
 from abc import ABC, abstractmethod
 from typing import Dict, List, Any
+from warnings import warn
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -49,9 +50,9 @@ class SuperSimulation(ABC):
         # Parse the simulation settings from the initialization parameters
         self._set_user_inputs(model_params_dict['user_inputs_raw'])
 
-    def _convert_to_absolute_year(self, time_steps: Any):
+    def _convert_to_absolute_year(self, time_steps: pd.Series):
         """converts a number of time steps relative to reference date into absolute dates"""
-        return np.round(time_steps * self.time_step + self.reference_year, 8)
+        return time_steps.apply(lambda x: np.round(x * self.time_step + self.reference_year, 8))
 
     def _convert_to_relative_date(self, years: Any):
         """converts units of years to units of time steps"""
@@ -119,9 +120,12 @@ class SuperSimulation(ABC):
 
         display_results = pd.DataFrame(index=simulation_results.year.unique())
         for comp in display_compartments:
-            display_results[comp] = \
-                simulation_results[(simulation_results.compartment == comp) & (
-                        simulation_results.year >= self.user_inputs['start_time_step'])].baseline_total_population
+            if comp not in simulation_results.compartment.unique():
+                warn(f"Display compartment not in simulation architecture: {comp}", Warning)
+            else:
+                display_results[comp] = \
+                    simulation_results[(simulation_results.compartment == comp) & (
+                            simulation_results.year >= self.user_inputs['start_time_step'])].baseline_total_population
 
         display_results.plot(title="Baseline Population Projection", ylabel="Estimated Total Population")
         plt.legend(loc='lower left')
@@ -162,9 +166,10 @@ class SuperSimulation(ABC):
         self.output_data['baseline_population_error'] = self.pop_simulations['baseline'].gen_scale_factors_df()
 
     def calculate_outflows_error(self, simulation_title: str):
+        # TODO(#5444): re-factor using self.gen_arima_output_df
         outflows = pd.DataFrame()
         outflows['model'] = self.gen_arima_output_df(simulation_title).groupby(['compartment', 'outflow_to',
-                                                                                'time_step']).pred.sum()
+                                                                                'time_step']).pred_middle.sum()
         if 'run_date' in self.data_dict['outflows_data']:
             outflows_data = self.data_dict['outflows_data'][self.data_dict['outflows_data'].run_date ==
                                                             self.data_dict['outflows_data'].run_date.max()]
@@ -197,13 +202,13 @@ class SuperSimulation(ABC):
         for i, df_to_plot in dfs_to_plot:
             _, ax = plt.subplots(figsize=fig_size)
             sub_plot = df_to_plot.reset_index()
-            sub_plot.index = sub_plot.index.map(self._convert_to_absolute_year)
+            sub_plot.index = self._convert_to_absolute_year(pd.Series(sub_plot.index))
             sub_plot['actuals'].plot(ax=ax, color='tab:cyan', marker='o', label='Actuals')
-            sub_plot['pred'].plot(ax=ax, color='tab:red', marker='o', label='Predictions')
+            sub_plot['pred_middle'].plot(ax=ax, color='tab:red', marker='o', label='Predictions')
 
             ax.fill_between(sub_plot.index, sub_plot['pred_min'], sub_plot['pred_max'], alpha=0.4, color='orange')
 
-            plt.ylim(bottom=0, top=max([sub_plot.pred.max(), sub_plot.actuals.max()]) * 1.1)
+            plt.ylim(bottom=0, top=max([sub_plot.pred_middle.max(), sub_plot.actuals.max()]) * 1.1)
             plt.legend(loc='lower left')
             plt.title('\n'.join([': '.join(z) for z in zip(levels_to_plot, i)]))
             axes.append(ax)
@@ -212,13 +217,13 @@ class SuperSimulation(ABC):
     def gen_total_population_error(self, simulation_type: str):
         # Convert the index from relative time steps to floating point years
         error_results = self.pop_simulations[simulation_type].gen_total_population_error()
-        error_results.index = error_results.index.map(self._convert_to_absolute_year)
+        error_results.index = self._convert_to_absolute_year(pd.Series(error_results.index))
         return error_results
 
     def gen_full_error_output(self, simulation_type: str):
         error_results = self.pop_simulations[simulation_type].gen_full_error()
         # Convert the index from relative time steps to floating point years
         error_results.index = error_results.index.set_levels(
-            error_results.index.levels[1].map(self._convert_to_absolute_year), level=1)
+            self._convert_to_absolute_year(pd.Series(error_results.index.levels[1])), level=1)
         error_results['compartment_type'] = [x.split()[0] for x in error_results.index.get_level_values(0)]
         return error_results

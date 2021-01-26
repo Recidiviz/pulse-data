@@ -27,7 +27,6 @@ from recidiviz.calculator.modeling.population_projection.incarceration_transitio
 from recidiviz.calculator.modeling.population_projection.release_transitions import ReleasedTransitions
 from recidiviz.calculator.modeling.population_projection.spark_compartment import SparkCompartment
 from recidiviz.calculator.modeling.population_projection.spark_policy import SparkPolicy
-# TODO(#4512): test when no data is ingested into one of the compartments, outflows/durations initializations line up
 
 
 class SubSimulation:
@@ -46,8 +45,8 @@ class SubSimulation:
         # A DataFrame with the historical total compartment populations data
         self.total_population_data = total_population_data
 
-        # A Series with the total population error at start_ts
-        self.start_ts_scale_factors = pd.Series(dtype=float)
+        # A DataFrame with total population errors at all time steps with population data
+        self.start_ts_scale_factors = pd.DataFrame(index=total_population_data.time_step.unique())
 
         # A dict with the simulation compartment names and their corresponding transition table types
         self.simulation_architecture = simulation_compartments
@@ -72,7 +71,6 @@ class SubSimulation:
 
     def initialize(self):
         """Initialize the transition tables, and then the compartments, for the SubSimulation"""
-        # TODO(#4512): allow sparse data
         if not self.total_population_data.empty:
             if self.user_inputs['start_time_step'] not in self.total_population_data.time_step.values:
                 raise ValueError(f"Start time must be included in population data input\n"
@@ -152,8 +150,7 @@ class SubSimulation:
                                  shell_policies: Dict[str, List[SparkPolicy]]):
         """Initialize all the SparkCompartments for the subpopulation simulation"""
 
-        for compartment in self.simulation_architecture:
-            transition_type = self.simulation_architecture[compartment]
+        for compartment, transition_type in self.simulation_architecture.items():
             outflows_data = preprocessed_data.loc[compartment].dropna(axis=0, how='all').dropna(axis=1, how='all')
 
             # if no transition table, initialize as shell compartment
@@ -198,8 +195,8 @@ class SubSimulation:
         """scales populations of compartments in simulation. If a FullCompartment isn't included, it won't be scaled"""
 
         for compartment, populations in self.total_population_data.groupby('compartment'):
-            self.start_ts_scale_factors[compartment] = \
-                self.simulation_compartments[compartment].scale_cohorts(populations)
+            ts, scale_factor = self.simulation_compartments[compartment].scale_cohorts(populations)
+            self.start_ts_scale_factors.loc[ts, compartment] = scale_factor
 
     def get_error(self, compartment='prison', unit='abs'):
         return self.simulation_compartments[compartment].get_error(unit=unit)
@@ -218,6 +215,8 @@ class SubSimulation:
         """Run the simulation for one time step"""
         for compartment in self.simulation_compartments.values():
             compartment.step_forward()
+
+        self.scale_total_populations()
 
         for compartment in self.simulation_compartments.values():
             compartment.prepare_for_next_step()
