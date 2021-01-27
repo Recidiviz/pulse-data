@@ -1,4 +1,4 @@
-FROM node:12.18-alpine as yarn-build
+FROM node:12.18-alpine as admin-panel-build
 
 WORKDIR /usr/admin-panel
 COPY ./frontends/admin-panel/package.json ./frontends/admin-panel/yarn.lock /usr/admin-panel/
@@ -10,6 +10,8 @@ COPY ./frontends/admin-panel/src /usr/admin-panel/src
 COPY ./frontends/admin-panel/public /usr/admin-panel/public
 
 RUN yarn build
+
+FROM node:12.18-alpine as case-triage-build
 
 WORKDIR /usr/case-triage
 COPY ./frontends/case-triage/package.json ./frontends/case-triage/yarn.lock /usr/case-triage/
@@ -98,8 +100,8 @@ RUN if [ "$DEV_MODE" = "True" ]; \
 ADD . /app
 
 # Add the built admin panel frontend to the image
-COPY --from=yarn-build /usr/admin-panel/build /app/frontends/admin-panel/build
-COPY --from=yarn-build /usr/case-triage/build /app/frontends/case-triage/build
+COPY --from=admin-panel-build /usr/admin-panel/build /app/frontends/admin-panel/build
+COPY --from=case-triage-build /usr/case-triage/build /app/frontends/case-triage/build
 
 EXPOSE 8080
 CMD pipenv run gunicorn -c gunicorn.conf.py --log-file=- -b :8080 recidiviz.server:app
