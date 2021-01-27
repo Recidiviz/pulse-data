@@ -90,10 +90,10 @@ export default LoginButton;
 
 ReactDOM.render(
   <Auth0Provider
-    domain={window.AUTH0_CONFIG["domain"]}
-    clientId={window.AUTH0_CONFIG["clientId"]}
+    domain={window.AUTH0_CONFIG.domain}
+    clientId={window.AUTH0_CONFIG.clientId}
     redirectUri={window.location.origin}
-    audience={window.AUTH0_CONFIG["audience"]}
+    audience={window.AUTH0_CONFIG.audience}
   >
     <BrowserRouter>
       <LoginButton />
