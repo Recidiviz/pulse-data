@@ -27,6 +27,6 @@ data_inputs:
 
 
 per_year_costs:
-  prison: 2056.92
-  probation: 102.79
+  prison: 24683
+  probation: 1233.5
   release: 0
