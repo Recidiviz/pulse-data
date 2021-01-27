@@ -18,6 +18,11 @@
 import multiprocessing
 import gevent_config
 
+# Note: if we adjust the number of gunicorn workers per cpu upwards,
+# we may have to adjust the number of max connections in our postgres instances.
+# See the dicussion in #5497 for more context, and see the docs:
+# https://cloud.google.com/sql/docs/quotas#postgresql for more.
+
 # To avoid consuming too much instance memory, limit the number of workers.
 # http://docs.gunicorn.org/en/stable/design.html#how-many-workers
 workers = multiprocessing.cpu_count() + 1
