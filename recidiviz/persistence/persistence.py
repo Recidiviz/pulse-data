@@ -51,7 +51,8 @@ from recidiviz.persistence.ingest_info_converter.base_converter import \
     IngestInfoConversionResult
 from recidiviz.persistence.ingest_info_validator import ingest_info_validator
 from recidiviz.persistence.persistence_utils import should_persist
-from recidiviz.utils import monitoring, trace
+from recidiviz.utils import monitoring, trace, metadata
+from recidiviz.utils.environment import GCP_PROJECT_STAGING, GCP_PROJECT_PRODUCTION
 
 m_people = measure.MeasureInt("persistence/num_people",
                               "The number of people persisted", "1")
@@ -103,11 +104,20 @@ SYSTEM_TYPE_TO_ERROR_THRESHOLD: Dict[SystemLevel, Dict[str, float]] = {
     },
 }
 
-STATE_CODE_TO_ENTITY_MATCHING_THRESHOLD_OVERRIDE: Dict[str, float] = {
-    "US_ID": 0.05,
-    # TODO(#5313): Decrease back to 5% once entity matching issues are resolved for ND.
-    "US_ND": 0.20,
-    "US_PA": 0.05,
+STATE_CODE_TO_ENTITY_MATCHING_THRESHOLD_OVERRIDE: Dict[str, Dict[str, float]] = {
+    GCP_PROJECT_STAGING: {
+        "US_ID": 0.05,
+        # TODO(#5313): Decrease back to 5% once entity matching issues are resolved for ND.
+        "US_ND": 0.20,
+    },
+    GCP_PROJECT_PRODUCTION: {
+        "US_ID": 0.05,
+        # TODO(#5313): Decrease back to 5% once entity matching issues are resolved for ND.
+        "US_ND": 0.20,
+        # TODO(#4829): Remove override once entity matching issues have been fully resolved in staging and we're
+        #  starting a new rerun.
+        "US_PA": 0.50,
+    },
 }
 
 
@@ -263,8 +273,15 @@ def _get_thresholds_for_system_level(system_level: SystemLevel, region_code: str
     state_code: str = region_code.upper()
 
     # Override the entity matching threshold from the default value, if applicable.
-    if state_code in STATE_CODE_TO_ENTITY_MATCHING_THRESHOLD_OVERRIDE:
-        state_specific_threshold = STATE_CODE_TO_ENTITY_MATCHING_THRESHOLD_OVERRIDE[state_code]
+    project_id = metadata.project_id()
+    if not project_id or project_id not in STATE_CODE_TO_ENTITY_MATCHING_THRESHOLD_OVERRIDE:
+        raise ValueError(
+            f'Unexpected project id [{project_id}] - must be one of '
+            f'{STATE_CODE_TO_ENTITY_MATCHING_THRESHOLD_OVERRIDE.keys()}.')
+
+    thresholds_for_project = STATE_CODE_TO_ENTITY_MATCHING_THRESHOLD_OVERRIDE[project_id]
+    if state_code in thresholds_for_project:
+        state_specific_threshold = thresholds_for_project[state_code]
         if state_specific_threshold is None:
             raise ValueError(f'Override unexpectedly None for state_code [{state_code}].')
         error_thresholds[ENTITY_MATCHING_THRESHOLD] = state_specific_threshold
@@ -323,7 +340,7 @@ def retry_transaction(session: Session, measurements: MeasurementMap,
 
 
 @trace.span
-def write(ingest_info: IngestInfo, metadata: IngestMetadata,
+def write(ingest_info: IngestInfo, ingest_metadata: IngestMetadata,
           run_txn_fn: Callable[[Session, MeasurementMap, Callable[[Session], bool],
                                 Optional[int]], bool] = retry_transaction) -> bool:
     """
@@ -342,13 +359,13 @@ def write(ingest_info: IngestInfo, metadata: IngestMetadata,
     mtags: Dict[str, Union[bool, str]] = {
         monitoring.TagKey.SHOULD_PERSIST: should_persist(),
         monitoring.TagKey.PERSISTED: False}
-    total_people = _get_total_people(ingest_info, metadata)
+    total_people = _get_total_people(ingest_info, ingest_metadata)
     with monitoring.measurements(mtags) as measurements:
 
         # Convert the people one at a time and count the errors as they happen.
         conversion_result: IngestInfoConversionResult = \
             ingest_info_converter.convert_to_persistence_entities(ingest_info,
-                                                                  metadata)
+                                                                  ingest_metadata)
 
         people, data_validation_errors = entity_validator.validate(
             conversion_result.people)
@@ -364,9 +381,9 @@ def write(ingest_info: IngestInfo, metadata: IngestMetadata,
 
         if _should_abort(
                 total_root_entities=total_people,
-                system_level=metadata.system_level,
+                system_level=ingest_metadata.system_level,
                 conversion_result=conversion_result,
-                region_code=metadata.region,
+                region_code=ingest_metadata.region,
                 data_validation_errors=data_validation_errors):
             #  TODO(#1665): remove once dangling PERSIST session investigation
             #   is complete.
@@ -381,10 +398,10 @@ def write(ingest_info: IngestInfo, metadata: IngestMetadata,
             logging.info("Starting entity matching")
 
             entity_matching_output = entity_matching.match(
-                session, metadata.region, people)
+                session, ingest_metadata.region, people)
             output_people = entity_matching_output.people
             total_root_entities = total_people \
-                if metadata.system_level == SystemLevel.COUNTY \
+                if ingest_metadata.system_level == SystemLevel.COUNTY \
                 else entity_matching_output.total_root_entities
             logging.info(
                 "Completed entity matching with [%s] errors",
@@ -393,9 +410,9 @@ def write(ingest_info: IngestInfo, metadata: IngestMetadata,
                          "to commit to DB", len(output_people))
             if _should_abort(
                     total_root_entities=total_root_entities,
-                    system_level=metadata.system_level,
+                    system_level=ingest_metadata.system_level,
                     conversion_result=conversion_result,
-                    region_code=metadata.region,
+                    region_code=ingest_metadata.region,
                     entity_matching_errors=entity_matching_output.error_count):
                 #  TODO(#1665): remove once dangling PERSIST session
                 #   investigation is complete.
@@ -404,26 +421,26 @@ def write(ingest_info: IngestInfo, metadata: IngestMetadata,
 
             database_invariant_errors = \
                 database_invariant_validator.validate_invariants(
-                    session, metadata.system_level, metadata.region, output_people)
+                    session, ingest_metadata.system_level, ingest_metadata.region, output_people)
 
             if _should_abort(
                     total_root_entities=total_root_entities,
-                    system_level=metadata.system_level,
+                    system_level=ingest_metadata.system_level,
                     conversion_result=conversion_result,
-                    region_code=metadata.region,
+                    region_code=ingest_metadata.region,
                     database_invariant_errors=database_invariant_errors):
                 logging.info("_should_abort_ was true after database invariant validation")
                 return False
 
             database.write_people(
-                session, output_people, metadata,
+                session, output_people, ingest_metadata,
                 orphaned_entities=entity_matching_output.orphaned_entities)
             logging.info("Successfully wrote to the database")
             return True
 
         try:
             if not run_txn_fn(
-                    SessionFactory.for_schema_base(schema_base_for_system_level(metadata.system_level)),
+                    SessionFactory.for_schema_base(schema_base_for_system_level(ingest_metadata.system_level)),
                     measurements, match_and_write_people, 5):
                 return False
 
@@ -438,7 +455,7 @@ def write(ingest_info: IngestInfo, metadata: IngestMetadata,
         return True
 
 
-def _get_total_people(ingest_info: IngestInfo, metadata: IngestMetadata) -> int:
-    if metadata.system_level == SystemLevel.COUNTY:
+def _get_total_people(ingest_info: IngestInfo, ingest_metadata: IngestMetadata) -> int:
+    if ingest_metadata.system_level == SystemLevel.COUNTY:
         return len(ingest_info.people)
     return len(ingest_info.state_people)

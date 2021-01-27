@@ -22,7 +22,7 @@ from datetime import date, datetime, timedelta
 import logging
 import threading
 import time
-from typing import Callable, Optional
+from typing import Callable, Optional, Dict
 from unittest import TestCase
 
 
@@ -127,10 +127,19 @@ ERROR_THRESHOLDS_WITH_FORTY_PERCENT_RATIOS = {
         }
 }
 
+FAKE_PROJECT_ID = 'test-project'
+STATE_CODE_TO_ENTITY_MATCHING_THRESHOLD_OVERRIDE_FAKE_PROJECT: Dict[str, Dict[str, float]] = {
+    FAKE_PROJECT_ID: {
+        "US_XY": 0.4,
+    }
+}
 
-@patch('recidiviz.utils.metadata.project_id', Mock(return_value='test-project'))
+
+@patch('recidiviz.utils.metadata.project_id', Mock(return_value=FAKE_PROJECT_ID))
 @patch('recidiviz.environment.in_gae', Mock(return_value=True))
 @patch.dict('os.environ', {'PERSIST_LOCALLY': 'false'})
+@patch('recidiviz.persistence.persistence.STATE_CODE_TO_ENTITY_MATCHING_THRESHOLD_OVERRIDE',
+       STATE_CODE_TO_ENTITY_MATCHING_THRESHOLD_OVERRIDE_FAKE_PROJECT)
 class TestPersistence(TestCase):
     """Test that the persistence layer correctly writes to the SQL database."""
 
@@ -1079,6 +1088,8 @@ class MultipleStateTestMixin():
 @pytest.mark.uses_db
 @patch('recidiviz.utils.metadata.project_id', Mock(return_value='test-project'))
 @patch('os.getenv', Mock(return_value='production'))
+@patch('recidiviz.persistence.persistence.STATE_CODE_TO_ENTITY_MATCHING_THRESHOLD_OVERRIDE',
+       STATE_CODE_TO_ENTITY_MATCHING_THRESHOLD_OVERRIDE_FAKE_PROJECT)
 class TestPersistenceMultipleThreadsOverlapping(TestCase, MultipleStateTestMixin):
     """Test that the persistence layer writes to Postgres from multiple threads in an overlapping fashion
 
@@ -1207,8 +1218,10 @@ def _get_run_transaction_after_other_fn(other_precommit_event: threading.Event, 
 
 
 @pytest.mark.uses_db
-@patch('recidiviz.utils.metadata.project_id', Mock(return_value='test-project'))
+@patch('recidiviz.utils.metadata.project_id', Mock(return_value=FAKE_PROJECT_ID))
 @patch('os.getenv', Mock(return_value='production'))
+@patch('recidiviz.persistence.persistence.STATE_CODE_TO_ENTITY_MATCHING_THRESHOLD_OVERRIDE',
+       STATE_CODE_TO_ENTITY_MATCHING_THRESHOLD_OVERRIDE_FAKE_PROJECT)
 class TestPersistenceMultipleThreadsInterleaved(TestCase, MultipleStateTestMixin):
     """Test that the persistence layer writes to Postgres from multiple threads in an interleaved fashion
 
