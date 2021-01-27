@@ -179,6 +179,11 @@ function check_for_too_many_serving_versions {
 
     # Query for the serving versions in YAML format, select the IDs, count the number of lines and trim whitespace
     SERVING_VERSIONS=$(gcloud app versions list --project=${PROJECT_ID} --service=default --filter="SERVING_STATUS=SERVING" --format=yaml | pipenv run yq .id | wc -l | xargs) || exit_on_fail
+
+    # Note: if we adjust the number of serving versions upward, we may
+    # have to adjust the number of max connections in our postgres instances.
+    # See the dicussion in #5497 for more context, and see the docs:
+    # https://cloud.google.com/sql/docs/quotas#postgresql for more.
     MAX_ALLOWED_SERVING_VERSIONS=4
     if [[ "$SERVING_VERSIONS" -ge "$MAX_ALLOWED_SERVING_VERSIONS" ]]; then
         echo_error "Found [$SERVING_VERSIONS] already serving versions. You must stop at least one version to proceed"

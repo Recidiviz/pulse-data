@@ -20,12 +20,12 @@ locals {
 }
 
 module "case_triage_database" {
-  source            = "./modules/cloud-sql"
-  base_secret_name  = "case_triage"
-  region            = var.region
-  zone              = var.zone
-  tier              = "db-custom-1-3840" # 1 vCPU, 3.75GB Memory
-  has_readonly_user = true
+  source                 = "./modules/cloud-sql"
+  base_secret_name       = "case_triage"
+  region                 = var.region
+  zone                   = var.zone
+  tier                   = "db-custom-1-3840" # 1 vCPU, 3.75GB Memory
+  has_readonly_user      = true
   require_ssl_connection = true
 }
 
@@ -37,7 +37,7 @@ module "jails_database" {
   region           = "us-east4"
   zone             = local.is_production ? "us-east4-b" : "us-east4-c"
   # 4 vCPU, 15GB Memory | 1 vCPU, 3.75GB Memory
-  tier             = local.is_production ? "db-custom-4-15360" : "db-custom-1-3840"
+  tier              = local.is_production ? "db-custom-4-15360" : "db-custom-1-3840"
   has_readonly_user = local.is_production
 }
 
