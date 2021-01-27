@@ -30,7 +30,8 @@ resource "google_cloud_run_service" "case-triage" {
 
     metadata {
       annotations = {
-        "autoscaling.knative.dev/maxScale" = "1000"
+        "autoscaling.knative.dev/minScale"      = 1
+        "autoscaling.knative.dev/maxScale"      = var.max_case_triage_instances
         "run.googleapis.com/cloudsql-instances" = local.joined_connection_string
       }
 

@@ -36,3 +36,12 @@ variable "git_hash" {
 variable "docker_image_tag" {
   type = string
 }
+
+variable "max_case_triage_instances" {
+  type = number
+  # Note: if we adjust this instance number upward, we may have to adjust
+  # the number of max connections in our postgres instances.
+  # See the dicussion in #5497 for more context, and see the docs:
+  # https://cloud.google.com/sql/docs/quotas#postgresql for more.
+  default = 3
+}
