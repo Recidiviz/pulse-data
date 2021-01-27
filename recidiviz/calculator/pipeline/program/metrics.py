@@ -87,6 +87,9 @@ class ProgramReferralMetric(ProgramMetric, AssessmentMetric, SupervisionLocation
     # The type of ProgramMetric
     metric_type: ProgramMetricType = attr.ib(init=False, default=ProgramMetricType.PROGRAM_REFERRAL)
 
+    # The date on which the referral took place
+    date_of_referral: date = attr.ib(default=None)
+
     # Optional characteristics
 
     # Supervision Type
