@@ -73,6 +73,10 @@ class ProgramReferralEvent(ProgramEvent, AssessmentEventMixin):
     # level 1 is an office.
     level_2_supervision_location_external_id: Optional[str] = attr.ib(default=None)
 
+    @property
+    def date_of_referral(self):
+        return self.event_date
+
 
 @attr.s(frozen=True)
 class ProgramParticipationEvent(ProgramEvent):
