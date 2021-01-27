@@ -17,7 +17,7 @@
 """State tests for persistence.py."""
 
 from datetime import datetime
-from typing import Optional
+from typing import Optional, Dict
 from unittest import TestCase
 
 import pytest
@@ -67,14 +67,24 @@ STATE_ERROR_THRESHOLDS_WITH_FORTY_PERCENT_RATIOS = {
     }
 }
 
+FAKE_PROJECT_ID = 'fake-project'
+
+STATE_CODE_TO_ENTITY_MATCHING_THRESHOLD_OVERRIDE_FAKE_PROJECT: Dict[str, Dict[str, float]] = {
+    FAKE_PROJECT_ID: {
+        "US_XY": 0.4,
+    }
+}
+
 STATE_CODE_TO_ENTITY_MATCHING_THRESHOLD_FORTY_PERCENT = {
-    "US_ND": 0.4,
+    FAKE_PROJECT_ID: {
+        "US_ND": 0.4,
+    }
 }
 
 
 @pytest.mark.uses_db
 @patch('recidiviz.environment.in_gae', Mock(return_value=True))
-@patch('recidiviz.utils.metadata.project_id', Mock(return_value='fake-project'))
+@patch('recidiviz.utils.metadata.project_id', Mock(return_value=FAKE_PROJECT_ID))
 @patch.dict('os.environ', {'PERSIST_LOCALLY': 'false'})
 class TestStatePersistence(TestCase):
     """Test that the persistence layer correctly writes to the SQL database for
@@ -115,6 +125,8 @@ class TestStatePersistence(TestCase):
         return converter.convert_schema_object_to_entity(
             schema_obj, populate_back_edges=True)
 
+    @patch('recidiviz.persistence.persistence.STATE_CODE_TO_ENTITY_MATCHING_THRESHOLD_OVERRIDE',
+           STATE_CODE_TO_ENTITY_MATCHING_THRESHOLD_OVERRIDE_FAKE_PROJECT)
     @patch('recidiviz.persistence.persistence.SYSTEM_TYPE_TO_ERROR_THRESHOLD',
            STATE_ERROR_THRESHOLDS_WITH_FORTY_PERCENT_RATIOS)
     def test_state_threeSentenceGroups_dontPersistAboveThreshold(self):
