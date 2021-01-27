@@ -16,7 +16,7 @@
 # =============================================================================
 """Revocations Matrix Distribution by Gender."""
 # pylint: disable=trailing-whitespace, line-too-long
-
+from recidiviz.calculator.query import bq_utils
 from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
@@ -30,15 +30,17 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_GENDER_DESCRIPTION = """
  violations leading up to the revocation, the most severe violation, gender, and the metric period months.
  """
 
+# TODO(#5473): Remove risk level and other deprecated columns
 REVOCATIONS_MATRIX_DISTRIBUTION_BY_GENDER_QUERY_TEMPLATE = \
     """
     /*{description}*/
+
     WITH supervision_counts AS (
     SELECT
       state_code, 
       violation_type,
       reported_violations,
-      COUNT(DISTINCT person_id) AS total_supervision_count,
+      COUNT(DISTINCT person_id) AS supervision_population_count,
       gender,
       risk_level,
       supervision_type,
@@ -47,8 +49,9 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_GENDER_QUERY_TEMPLATE = \
       level_1_supervision_location,
       level_2_supervision_location,
       metric_period_months    
-    FROM `{project_id}.{reference_views_dataset}.supervision_matrix_by_person_materialized`
-    GROUP BY state_code, violation_type, reported_violations, gender, risk_level, supervision_type, supervision_level, charge_category,
+    FROM `{project_id}.{reference_views_dataset}.supervision_matrix_by_person_materialized`,
+    {gender_dimension}
+    GROUP BY state_code, violation_type, reported_violations, gender, risk_level, supervision_type, supervision_level, charge_category, 
       level_1_supervision_location, level_2_supervision_location, metric_period_months
   ), termination_counts AS (
      SELECT
@@ -64,7 +67,7 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_GENDER_QUERY_TEMPLATE = \
       level_1_supervision_location,
       level_2_supervision_location,
       metric_period_months    
-    FROM `{project_id}.{reference_views_dataset}.supervision_termination_matrix_by_person_materialized` 
+    FROM `{project_id}.{reference_views_dataset}.supervision_termination_matrix_by_person_materialized`
     GROUP BY state_code, violation_type, reported_violations, gender, risk_level, supervision_type, supervision_level, charge_category,
       level_1_supervision_location, level_2_supervision_location, metric_period_months
   ), revocation_counts AS (
@@ -72,7 +75,7 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_GENDER_QUERY_TEMPLATE = \
       state_code,
       violation_type,
       reported_violations,
-      COUNT(DISTINCT person_id) AS population_count,
+      COUNT(DISTINCT person_id) AS revocation_count,
       gender,
       risk_level,
       supervision_type,
@@ -81,19 +84,25 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_GENDER_QUERY_TEMPLATE = \
       level_1_supervision_location,
       level_2_supervision_location,
       metric_period_months
-    FROM `{project_id}.{reference_views_dataset}.revocations_matrix_by_person_materialized`
+    FROM `{project_id}.{reference_views_dataset}.revocations_matrix_by_person_materialized`,
+    {gender_dimension}
     GROUP BY state_code, violation_type, reported_violations, gender, risk_level, supervision_type, supervision_level, charge_category,
       level_1_supervision_location, level_2_supervision_location, metric_period_months
   )
- 
- 
+  
     SELECT
       state_code,
       violation_type,
       reported_violations,
-      IFNULL(population_count, 0) AS population_count, -- Revocation count
-      IFNULL(termination_count, 0) AS total_exit_count,
-      total_supervision_count,
+      -- TODO(#5473): Delete this column
+      IFNULL(gender_rev.revocation_count, 0) AS population_count, -- [DEPRECATED] Gender-specific revocation count
+      IFNULL(gender_rev.revocation_count, 0) AS revocation_count, -- Gender-specific revocation count
+      IFNULL(gender_term.termination_count, 0) AS exit_count, -- Gender-specific termination count
+      IFNULL(gender_sup.supervision_population_count, 0) AS supervision_population_count, -- Gender-specific supervision pop count
+      -- TODO(#5473): Delete this column
+      IFNULL(gender_sup.supervision_population_count, 0) AS total_supervision_count, -- [DEPRECATED] Gender-specific supervision pop count
+      IFNULL(revocation_count_all, 0) AS revocation_count_all, -- Total revocation count, all genders
+      supervision_count_all, -- Total supervision count, all genders
       gender,
       risk_level,
       supervision_type,
@@ -109,15 +118,29 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_GENDER_QUERY_TEMPLATE = \
       level_2_supervision_location,
       metric_period_months
     FROM
-      supervision_counts
+      (SELECT * EXCEPT(gender, supervision_population_count, risk_level), SUM(supervision_population_count) AS supervision_count_all
+       FROM supervision_counts WHERE gender = 'ALL'
+       GROUP BY state_code, violation_type, reported_violations, supervision_type, supervision_level, charge_category,
+      level_1_supervision_location, level_2_supervision_location, metric_period_months) total_pop
     LEFT JOIN
-      revocation_counts
-    USING (state_code, violation_type, reported_violations, gender, risk_level, supervision_type, supervision_level, charge_category,
+      (SELECT * EXCEPT(gender, revocation_count, risk_level), SUM(revocation_count) AS revocation_count_all
+       FROM revocation_counts WHERE gender = 'ALL'
+       GROUP BY state_code, violation_type, reported_violations, supervision_type, supervision_level, charge_category,
+      level_1_supervision_location, level_2_supervision_location, metric_period_months) total_rev
+    USING (state_code, violation_type, reported_violations, supervision_type, supervision_level, charge_category,
       level_1_supervision_location, level_2_supervision_location, metric_period_months)
     LEFT JOIN
-      termination_counts
-    USING (state_code, violation_type, reported_violations, gender, risk_level, supervision_type, supervision_level, charge_category,
-      level_1_supervision_location, level_2_supervision_location, metric_period_months)
+      (SELECT * FROM supervision_counts WHERE gender != 'ALL') gender_sup
+    USING (state_code, violation_type, reported_violations, supervision_type, supervision_level, charge_category,
+      level_1_supervision_location, level_2_supervision_location, metric_period_months)  
+    LEFT JOIN
+      (SELECT * FROM revocation_counts WHERE gender != 'ALL') gender_rev
+    USING (state_code, violation_type, reported_violations, gender, supervision_type, supervision_level, charge_category,
+      level_1_supervision_location, level_2_supervision_location, metric_period_months, risk_level)
+    LEFT JOIN
+      (SELECT * FROM termination_counts WHERE gender != 'ALL') gender_term
+    USING (state_code, violation_type, reported_violations, gender, supervision_type, supervision_level, charge_category,
+      level_1_supervision_location, level_2_supervision_location, metric_period_months, risk_level)
     """
 
 REVOCATIONS_MATRIX_DISTRIBUTION_BY_GENDER_VIEW_BUILDER = MetricBigQueryViewBuilder(
@@ -129,6 +152,7 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_GENDER_VIEW_BUILDER = MetricBigQueryViewBuild
                 'violation_type', 'reported_violations', 'charge_category', 'gender', 'risk_level'],
     description=REVOCATIONS_MATRIX_DISTRIBUTION_BY_GENDER_DESCRIPTION,
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
+    gender_dimension=bq_utils.unnest_column('gender', 'gender')
 )
 
 

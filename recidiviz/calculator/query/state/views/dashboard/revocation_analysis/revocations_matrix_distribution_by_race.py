@@ -16,7 +16,7 @@
 # =============================================================================
 """Revocations Matrix Distribution by Race."""
 # pylint: disable=trailing-whitespace, line-too-long
-
+from recidiviz.calculator.query import bq_utils
 from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
@@ -30,16 +30,18 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_RACE_DESCRIPTION = """
  violations leading up to the revocation, the most severe violation, race, and the metric period.
  """
 
+# TODO(#5473): Remove risk level and other deprecated columns
 REVOCATIONS_MATRIX_DISTRIBUTION_BY_RACE_QUERY_TEMPLATE = \
     """
     /*{description}*/
+    
     WITH supervision_counts AS (
     SELECT
       state_code, 
       violation_type,
       reported_violations,
-      COUNT(DISTINCT person_id) AS total_supervision_count,
-      prioritized_race_or_ethnicity as race,
+      COUNT(DISTINCT person_id) AS supervision_population_count,
+      race,
       risk_level,
       supervision_type,
       supervision_level,
@@ -47,7 +49,8 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_RACE_QUERY_TEMPLATE = \
       level_1_supervision_location,
       level_2_supervision_location,
       metric_period_months    
-    FROM `{project_id}.{reference_views_dataset}.supervision_matrix_by_person_materialized`
+    FROM `{project_id}.{reference_views_dataset}.supervision_matrix_by_person_materialized`,
+    {race_dimension}
     GROUP BY state_code, violation_type, reported_violations, race, risk_level, supervision_type, supervision_level, charge_category, 
       level_1_supervision_location, level_2_supervision_location, metric_period_months
   ), termination_counts AS (
@@ -56,7 +59,7 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_RACE_QUERY_TEMPLATE = \
       violation_type,
       reported_violations,
       COUNT(DISTINCT person_id) AS termination_count,
-      prioritized_race_or_ethnicity as race,
+      prioritized_race_or_ethnicity AS race,
       risk_level,
       supervision_type,
       supervision_level,
@@ -72,8 +75,8 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_RACE_QUERY_TEMPLATE = \
       state_code,
       violation_type,
       reported_violations,
-      COUNT(DISTINCT person_id) AS population_count,
-      prioritized_race_or_ethnicity as race,
+      COUNT(DISTINCT person_id) AS revocation_count,
+      race,
       risk_level,
       supervision_type,
       supervision_level,
@@ -81,18 +84,25 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_RACE_QUERY_TEMPLATE = \
       level_1_supervision_location,
       level_2_supervision_location,
       metric_period_months
-    FROM `{project_id}.{reference_views_dataset}.revocations_matrix_by_person_materialized`
+    FROM `{project_id}.{reference_views_dataset}.revocations_matrix_by_person_materialized`,
+    {race_dimension}
     GROUP BY state_code, violation_type, reported_violations, race, risk_level, supervision_type, supervision_level, charge_category,
       level_1_supervision_location, level_2_supervision_location, metric_period_months
   )
- 
+  
     SELECT
       state_code,
       violation_type,
       reported_violations,
-      IFNULL(population_count, 0) AS population_count, -- Revocation count
-      IFNULL(termination_count, 0) AS total_exit_count,
-      total_supervision_count,
+      -- TODO(#5473): Delete this column
+      IFNULL(race_rev.revocation_count, 0) AS population_count, -- [DEPRECATED] Race-specific revocation count
+      IFNULL(race_rev.revocation_count, 0) AS revocation_count, -- Race-specific revocation count
+      IFNULL(race_term.termination_count, 0) AS exit_count, -- Race-specific termination count
+      IFNULL(race_sup.supervision_population_count, 0) AS supervision_population_count, -- Race-specific supervision pop count,
+      -- TODO(#5473): Delete this column
+      IFNULL(race_sup.supervision_population_count, 0) AS total_supervision_count, -- [DEPRECATED] Race-specific supervision pop count
+      IFNULL(revocation_count_all, 0) AS revocation_count_all, -- Total revocation count, all races
+      supervision_count_all, -- Total supervision count, all races
       race,
       risk_level,
       supervision_type,
@@ -108,15 +118,29 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_RACE_QUERY_TEMPLATE = \
       level_2_supervision_location,
       metric_period_months
     FROM
-      supervision_counts
+      (SELECT * EXCEPT(race, supervision_population_count, risk_level), SUM(supervision_population_count) AS supervision_count_all
+       FROM supervision_counts WHERE race = 'ALL'
+       GROUP BY state_code, violation_type, reported_violations, supervision_type, supervision_level, charge_category,
+      level_1_supervision_location, level_2_supervision_location, metric_period_months) total_pop
     LEFT JOIN
-      revocation_counts
-    USING (state_code, violation_type, reported_violations, race, risk_level, supervision_type, supervision_level, charge_category,
+      (SELECT * EXCEPT(race, revocation_count, risk_level), SUM(revocation_count) AS revocation_count_all
+       FROM revocation_counts WHERE race = 'ALL'
+       GROUP BY state_code, violation_type, reported_violations, supervision_type, supervision_level, charge_category,
+      level_1_supervision_location, level_2_supervision_location, metric_period_months) total_rev
+    USING (state_code, violation_type, reported_violations, supervision_type, supervision_level, charge_category,
       level_1_supervision_location, level_2_supervision_location, metric_period_months)
     LEFT JOIN
-      termination_counts
-    USING (state_code, violation_type, reported_violations, race, risk_level, supervision_type, supervision_level, charge_category,
-      level_1_supervision_location, level_2_supervision_location, metric_period_months)
+      (SELECT * FROM supervision_counts WHERE race != 'ALL') race_sup
+    USING (state_code, violation_type, reported_violations, supervision_type, supervision_level, charge_category,
+      level_1_supervision_location, level_2_supervision_location, metric_period_months)  
+    LEFT JOIN
+      (SELECT * FROM revocation_counts WHERE race != 'ALL') race_rev
+    USING (state_code, violation_type, reported_violations, race, supervision_type, supervision_level, charge_category,
+      level_1_supervision_location, level_2_supervision_location, metric_period_months, risk_level)
+    LEFT JOIN
+      (SELECT * FROM termination_counts WHERE race != 'ALL') race_term
+    USING (state_code, violation_type, reported_violations, race, supervision_type, supervision_level, charge_category,
+      level_1_supervision_location, level_2_supervision_location, metric_period_months, risk_level)
     """
 
 REVOCATIONS_MATRIX_DISTRIBUTION_BY_RACE_VIEW_BUILDER = MetricBigQueryViewBuilder(
@@ -127,7 +151,8 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_RACE_VIEW_BUILDER = MetricBigQueryViewBuilder
                 'level_2_supervision_location', 'supervision_type', 'supervision_level',
                 'violation_type', 'reported_violations', 'charge_category', 'race', 'risk_level'],
     description=REVOCATIONS_MATRIX_DISTRIBUTION_BY_RACE_DESCRIPTION,
-    reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET
+    reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
+    race_dimension=bq_utils.unnest_column('prioritized_race_or_ethnicity', 'race')
 )
 
 if __name__ == '__main__':
