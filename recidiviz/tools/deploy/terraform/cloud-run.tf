@@ -33,6 +33,7 @@ resource "google_cloud_run_service" "case-triage" {
         "autoscaling.knative.dev/minScale"      = 1
         "autoscaling.knative.dev/maxScale"      = var.max_case_triage_instances
         "run.googleapis.com/cloudsql-instances" = local.joined_connection_string
+        "run.googleapis.com/launch-stage"       = "BETA"
       }
 
       name = "case-triage-web-${replace(var.docker_image_tag, ".", "-")}"
