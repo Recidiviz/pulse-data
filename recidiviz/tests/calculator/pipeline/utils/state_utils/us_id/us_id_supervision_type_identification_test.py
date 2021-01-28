@@ -560,5 +560,6 @@ class TestSupervisionPeriodIsOutOfState(unittest.TestCase):
             event_date=date(2010, 1, 1),
             is_on_supervision_last_day_of_month=False,
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
-            supervising_district_external_id=supervising_district_external_id
+            supervising_district_external_id=supervising_district_external_id,
+            is_past_projected_end_date=False
         )
