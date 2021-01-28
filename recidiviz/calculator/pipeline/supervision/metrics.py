@@ -140,6 +140,9 @@ class SupervisionPopulationMetric(SupervisionMetric, PersonLevelMetric, Violatio
     # For person-level metrics only, indicates whether this person was on supervision at the end of the month
     is_on_supervision_last_day_of_month: Optional[bool] = attr.ib(default=None)
 
+    # Whether the person is under supervision even though their projected end date has passed.
+    is_past_projected_end_date: Optional[bool] = attr.ib(default=None)
+
     @staticmethod
     def build_from_metric_key_group(metric_key: Dict[str, Any], job_id: str) -> Optional['SupervisionPopulationMetric']:
         """Builds a SupervisionPopulationMetric object from the given arguments."""

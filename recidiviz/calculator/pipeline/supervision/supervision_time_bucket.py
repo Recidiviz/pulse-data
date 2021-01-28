@@ -157,6 +157,9 @@ class RevocationReturnSupervisionTimeBucket(SupervisionTimeBucket, ViolationType
     # True if the stint of time on supervision this month included the last day of the month
     is_on_supervision_last_day_of_month: bool = attr.ib()
 
+    # Whether the person is under supervision even though their projected completion date has passed.
+    is_past_projected_end_date: Optional[bool] = attr.ib(default=None)
+
     @is_on_supervision_last_day_of_month.default
     def _default_is_on_supervision_last_day_of_month(self) -> None:
         raise ValueError('Must set is_on_supervision_last_day_of_month!')
@@ -178,6 +181,9 @@ class NonRevocationReturnSupervisionTimeBucket(SupervisionTimeBucket, ViolationT
     # TODO(#3600): This field should be removed because the daily output makes this unnecessary
     # True if the stint of time on supervision this month included the last day of the month
     is_on_supervision_last_day_of_month: bool = attr.ib()
+
+    # Whether the person is under supervision even though their projected completion date has passed.
+    is_past_projected_end_date: Optional[bool] = attr.ib(default=None)
 
     # Information related to whether the supervision case is meeting compliance standards
     case_compliance: Optional[SupervisionCaseCompliance] = attr.ib(default=None)
