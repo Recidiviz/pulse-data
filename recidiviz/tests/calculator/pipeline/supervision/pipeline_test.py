@@ -1623,6 +1623,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             supervising_officer_external_id='OFFICER0009',
             level_1_supervision_location_external_id='10',
             judicial_district_code=judicial_district_code,
+            projected_supervision_completion_date=supervision_sentence.projected_completion_date,
         ))
 
         expected_buckets.append(SupervisionTerminationBucket(
@@ -1817,7 +1818,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 level_1_supervision_location_external_id='10',
                 supervision_level=StateSupervisionLevel.HIGH,
                 supervision_level_raw_text='H',
-                is_on_supervision_last_day_of_month=False,
+                is_on_supervision_last_day_of_month=False
             )
         ])
 
@@ -2015,7 +2016,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 level_1_supervision_location_external_id='10',
                 supervision_level=StateSupervisionLevel.HIGH,
                 supervision_level_raw_text='H',
-                is_on_supervision_last_day_of_month=False,
+                is_on_supervision_last_day_of_month=False
             )
         ])
 
@@ -2323,7 +2324,8 @@ class TestCalculateSupervisionMetricCombinations(unittest.TestCase):
                 case_compliance=SupervisionCaseCompliance(
                     date_of_evaluation=date(2015, 3, 31),
                     assessment_up_to_date=True
-                )
+                ),
+                is_past_projected_end_date=False,
             ),
         ]
 
