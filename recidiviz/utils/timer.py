@@ -35,6 +35,7 @@ class RepeatedTimer(threading.Thread):
         self.callback = callback
         self.run_immmediately = run_immediately
 
+        self.daemon = True
         self.stop_event = threading.Event()
 
     def run(self) -> None:
