@@ -33,7 +33,7 @@ from recidiviz.persistence.database.schema_entity_converter import (
     schema_entity_converter as converter)
 
 _ID = 1
-_STATE_CODE = 'NC'
+_STATE_CODE = 'US_XX'
 _EXTERNAL_ID = 'EXTERNAL_ID-1'
 _ID_TYPE = 'ID_TYPE'
 

@@ -21,6 +21,7 @@ from typing import List, Optional, Type
 from recidiviz.common.common_utils import date_spans_overlap_exclusive
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.state.state_supervision_period import StateSupervisionPeriodStatus
+from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.database.database_entity import DatabaseEntity
 from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.database.schema.state.schema import StateSupervisionViolation, StateSupervisionContact
@@ -199,6 +200,9 @@ def _move_events_onto_supervision_periods_for_person(
     a matching supervision period, based on date. If there is no matching supervision period, ensures that the events
     hang off of a placeholder chain.
     """
+    if not StateCode.is_valid(state_code):
+        raise ValueError(f'Invalid state code: [{state_code}]')
+
     for person in matched_persons:
         unmatched_events = _move_events_onto_supervision_periods(person, event_cls, event_field_name)
         if not unmatched_events:

@@ -38,7 +38,7 @@ _EXTERNAL_ID_2 = 'EXTERNAL_ID-2'
 _EXTERNAL_ID_3 = 'EXTERNAL_ID-3'
 _EXTERNAL_ID_4 = 'EXTERNAL_ID-4'
 _ID = 1
-_STATE_CODE = 'NC'
+_STATE_CODE = 'US_XX'
 
 
 # pylint: disable=protected-access
