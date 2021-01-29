@@ -1,0 +1,10 @@
+file_tag: tagPrimaryKeysMissing
+file_description: |-
+  tagPrimaryKeysMissing file description
+primary_key_cols:
+  - PRIMARY_COL1
+  - PRIMARY_COL2
+columns:
+  - name: PRIMARY_COL1
+    is_datetime: False
+    description: PRIMARY_COL1 description
