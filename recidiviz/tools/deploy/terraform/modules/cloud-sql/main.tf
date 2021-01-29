@@ -194,3 +194,20 @@ resource "google_secret_manager_secret_version" "secret_version_server_cert" {
   secret      = google_secret_manager_secret.secret_server_cert.name
   secret_data = google_sql_database_instance.data.server_ca_cert[0].cert
 }
+
+output "cloudsql_instance_id" {
+  value = data.google_secret_manager_secret_version.cloudsql_instance_id.secret_data
+}
+
+output "database_name" {
+  value = "postgres"
+}
+
+output "database_user_name" {
+  value = google_sql_user.postgres.name
+}
+
+output "database_user_password" {
+  value = google_sql_user.postgres.password
+  sensitive   = true
+}
