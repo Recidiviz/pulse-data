@@ -308,10 +308,10 @@ def terminating_supervision_period_supervision_type(
         supervision_period.termination_date, supervision_sentences, incarceration_sentences, supervision_period)
 
 
-def filter_violation_responses_before_revocation(violation_responses: List[StateSupervisionViolationResponse],
+def state_specific_filter_of_violation_responses(violation_responses: List[StateSupervisionViolationResponse],
                                                  include_follow_up_responses: bool) -> \
         List[StateSupervisionViolationResponse]:
-    """State-specific filtering of the violation responses that should be included in pre-revocation analysis."""
+    """State-specific filtering of the violation responses that should be included analysis."""
     if violation_responses:
         state_code = violation_responses[0].state_code
         if state_code.upper() == 'US_MO':
