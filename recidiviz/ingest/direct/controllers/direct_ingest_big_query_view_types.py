@@ -683,6 +683,11 @@ class DirectIngestPreProcessedIngestView(BigQueryView):
         for raw_table_tag in raw_table_dependencies:
             if raw_table_tag not in region_raw_table_config.raw_file_configs:
                 raise ValueError(f'Found unexpected raw table tag [{raw_table_tag}]')
+            # TODO(#5399): Remove exempted regions after in-use columns are documented
+            if not region_raw_table_config.raw_file_configs[raw_table_tag].columns and \
+                    region_raw_table_config.region_code.upper() not in {'US_ID', 'US_MO', 'US_ND', 'US_PA'}:
+                raise ValueError(f'Found empty set of columns in raw table config [{raw_table_tag}]'
+                                 f' in region [{region_raw_table_config.region_code}].')
             if not region_raw_table_config.raw_file_configs[raw_table_tag].primary_key_cols:
                 raise ValueError(f'Empty primary key list in raw file config with tag [{raw_table_tag}]')
             raw_table_dependency_configs.append(region_raw_table_config.raw_file_configs[raw_table_tag])

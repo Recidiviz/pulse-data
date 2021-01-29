@@ -321,6 +321,26 @@ USING (col1);"""
             'specified in `primary_key_tables_for_entity_deletion`; however the raw data file is not marked as always '
             'being exported as historically.'))
 
+    def test_direct_ingest_preprocessed_view_no_raw_file_config_columns_defined(self) -> None:
+        region_config = DirectIngestRegionRawFileConfig(
+            region_code='us_ww',
+            yaml_config_file_dir=fixtures.as_filepath('us_ww'),
+        )
+
+        view_query_template = """SELECT * FROM {tagColumnsMissing};"""
+
+        with self.assertRaises(ValueError) as e:
+            DirectIngestPreProcessedIngestView(
+                ingest_view_name='ingest_view_tag',
+                view_query_template=view_query_template,
+                region_raw_table_config=region_config,
+                order_by_cols=None,
+                is_detect_row_deletion_view=False,
+                primary_key_tables_for_entity_deletion=[],
+            )
+        self.assertEqual(str(e.exception), 'Found empty set of columns in raw table config [tagColumnsMissing]'
+                                           ' in region [us_ww].')
+
     def test_direct_ingest_preprocessed_view_detect_row_deletion_no_pk_tables_specified(self) -> None:
         region_config = DirectIngestRegionRawFileConfig(
             region_code='us_xx',

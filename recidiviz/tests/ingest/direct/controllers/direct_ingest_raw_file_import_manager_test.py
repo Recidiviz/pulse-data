@@ -51,6 +51,15 @@ class DirectIngestRegionRawFileConfigTest(unittest.TestCase):
             )
         self.assertEqual(str(e.exception), 'Missing default raw data configs for region: us_yy')
 
+    def test_missing_primary_key_columns(self) -> None:
+        with self.assertRaises(ValueError) as e:
+            _ = DirectIngestRegionRawFileConfig(
+                region_code='us_zz',
+                yaml_config_file_dir=fixtures.as_filepath('us_zz'),
+            )
+        self.assertEqual(str(e.exception), 'Column(s) marked as primary keys not listed in columns list'
+                                           ' for file [us_zz_tagPrimaryKeysMissing.yaml]: {\'PRIMARY_COL2\'}')
+
     def test_parse_yaml(self) -> None:
         region_config = DirectIngestRegionRawFileConfig(
             region_code='us_xx',
