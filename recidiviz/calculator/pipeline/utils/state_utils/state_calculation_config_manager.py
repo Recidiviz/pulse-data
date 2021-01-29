@@ -138,10 +138,10 @@ def filter_out_federal_and_other_country_supervision_periods(state_code: str) ->
     return state_code.upper() == 'US_ID'
 
 
-def include_decisions_on_follow_up_responses(state_code: str) -> bool:
+def include_decisions_on_follow_up_responses_for_most_severe_response(state_code: str) -> bool:
     """Some StateSupervisionViolationResponses are a 'follow-up' type of response, which is a state-defined response
     that is related to a previously submitted response. This returns whether or not the decision entries on
-    follow-up responses should be considered in the calculations.
+    follow-up responses should be considered in the calculation of the most severe response decision.
 
         - US_ID: False
         - US_MO: True
