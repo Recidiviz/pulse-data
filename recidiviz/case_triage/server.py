@@ -32,7 +32,7 @@ from recidiviz.utils.auth.auth0 import (
     get_userinfo,
     build_auth0_authorization_decorator
 )
-from recidiviz.utils.environment import in_test
+from recidiviz.utils.environment import in_development, in_test
 from recidiviz.utils.timer import RepeatedTimer
 
 static_folder = os.path.abspath(os.path.join(
@@ -84,8 +84,11 @@ def handle_auth_error(ex: AuthorizationError) -> Response:
     return response
 
 
-with open(os.path.join(static_folder, 'index.html'), 'r') as index_file:
-    index_html = index_file.read()
+if not in_development():
+    with open(os.path.join(static_folder, 'index.html'), 'r') as index_file:
+        index_html = index_file.read()
+else:
+    index_html = ''
 
 
 @app.route('/')
