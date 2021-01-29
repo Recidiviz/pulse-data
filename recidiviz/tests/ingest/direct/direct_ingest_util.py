@@ -35,7 +35,7 @@ from recidiviz.ingest.direct.controllers.direct_ingest_big_query_view_types impo
 from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import \
     DirectIngestGCSFileSystem, to_normalized_unprocessed_file_path
 from recidiviz.ingest.direct.controllers.direct_ingest_raw_file_import_manager import \
-    DirectIngestRawFileImportManager, DirectIngestRawFileConfig, DirectIngestRegionRawFileConfig
+    DirectIngestRawFileImportManager, DirectIngestRawFileConfig, DirectIngestRegionRawFileConfig, RawTableColumnInfo
 from recidiviz.ingest.direct.controllers.direct_ingest_view_collector import DirectIngestPreProcessedIngestViewCollector
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_controller import \
     GcsfsDirectIngestController
@@ -90,7 +90,7 @@ class FakeDirectIngestRegionRawFileConfig(DirectIngestRegionRawFileConfig):
                 file_tag='tagA',
                 file_description='file description',
                 primary_key_cols=['mockKey'],
-                columns=[],
+                columns=[RawTableColumnInfo(name='mockKey', description='mockKey description', is_datetime=False)],
                 supplemental_order_by_clause='',
                 encoding='UTF-8',
                 separator=',',
@@ -101,7 +101,7 @@ class FakeDirectIngestRegionRawFileConfig(DirectIngestRegionRawFileConfig):
                 file_tag='tagB',
                 file_description='file description',
                 primary_key_cols=['mockKey'],
-                columns=[],
+                columns=[RawTableColumnInfo(name='mockKey', description='mockKey description', is_datetime=False)],
                 supplemental_order_by_clause='',
                 encoding='UTF-8',
                 separator=',',
@@ -112,7 +112,7 @@ class FakeDirectIngestRegionRawFileConfig(DirectIngestRegionRawFileConfig):
                 file_tag='tagC',
                 file_description='file description',
                 primary_key_cols=['mockKey'],
-                columns=[],
+                columns=[RawTableColumnInfo(name='mockKey', description='mockKey description', is_datetime=False)],
                 supplemental_order_by_clause='',
                 encoding='UTF-8',
                 separator=',',

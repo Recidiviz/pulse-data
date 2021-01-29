@@ -112,14 +112,14 @@ class DirectIngestRawFileConfig:
     def datetime_cols(self) -> List[str]:
         return [column.name for column in self.columns if column.is_datetime]
 
-
     @classmethod
     def from_yaml_dict(cls,
                        region_code: str,
                        file_tag: str,
                        default_encoding: str,
                        default_separator: str,
-                       file_config_dict: YAMLDict) -> 'DirectIngestRawFileConfig':
+                       file_config_dict: YAMLDict,
+                       yaml_filename: str) -> 'DirectIngestRawFileConfig':
         """Returns a DirectIngestRawFileConfig built from a YAMLDict"""
         primary_key_cols = file_config_dict.pop('primary_key_cols', list)
         # TODO(#5399): Migrate raw file configs for all legacy regions to have file descriptions
@@ -137,6 +137,12 @@ class DirectIngestRawFileConfig:
         column_names = [column['name'] for column in columns]
         if len(column_names) != len(set(column_names)):
             raise ValueError(f'Found duplicate columns in raw_file [{file_tag}]')
+
+        missing_columns = set(primary_key_cols) - {column['name'] for column in columns}
+        # TODO(#5399): Remove exempted region codes once legacy primary keys are documented
+        if missing_columns and region_code.upper() not in {'US_MO', 'US_ND', 'US_ID', 'US_PA'}:
+            raise ValueError(f'Column(s) marked as primary keys not listed in'
+                             f' columns list for file [{yaml_filename}]: {missing_columns}')
 
         supplemental_order_by_clause = file_config_dict.pop_optional('supplemental_order_by_clause', str)
         encoding = file_config_dict.pop_optional('encoding', str)
@@ -220,7 +226,8 @@ class DirectIngestRegionRawFileConfig:
                                                                                       file_tag,
                                                                                       default_encoding,
                                                                                       default_separator,
-                                                                                      yaml_contents)
+                                                                                      yaml_contents,
+                                                                                      filename)
         else:
             raise ValueError(f'Missing raw data configs for region: {self.region_code}')
         return raw_data_configs
