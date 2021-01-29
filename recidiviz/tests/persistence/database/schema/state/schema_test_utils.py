@@ -33,7 +33,7 @@ from recidiviz.common.constants.state.state_supervision_period import \
 from recidiviz.persistence.database.schema.state import schema
 
 _ID_TYPE = 'ID_TYPE'
-_STATE_CODE = 'NC'
+_STATE_CODE = 'US_XX'
 
 
 def generate_person(**kwargs) -> schema.StatePerson:

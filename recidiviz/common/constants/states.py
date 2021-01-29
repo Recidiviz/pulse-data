@@ -17,7 +17,12 @@
 """Constants for working with states."""
 
 import enum
+import re
+
 import us
+
+STATE_CODE_PATTERN = re.compile(r'US_[A-Z]{2}')
+
 
 class StateCode(enum.Enum):
     """Code for every state in the US"""
@@ -75,3 +80,9 @@ class StateCode(enum.Enum):
     def get_state(self) -> us.states.State:
         # pylint: disable=unsubscriptable-object
         return getattr(us.states, self.value[len('US_'):])
+
+    @classmethod
+    def is_valid(cls, state_code: str) -> bool:
+        # TODO(#5508): Have this actually check it's one of the valid states once we have a way to handle tests with
+        #  US_XX etc in them. For now, this just checks that it is upper case and matches the correct pattern.
+        return bool(re.match(STATE_CODE_PATTERN, state_code))

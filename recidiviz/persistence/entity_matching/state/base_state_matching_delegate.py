@@ -29,8 +29,8 @@ from recidiviz.utils.regions import get_region, Region
 class BaseStateMatchingDelegate:
     """Base class to handle state specific matching logic."""
 
-    def __init__(self, region_code):
-        self.region_code = region_code
+    def __init__(self, region_code: str) -> None:
+        self.region_code = region_code.upper()
         self.region = get_region(region_code=self.region_code, is_direct_ingest=True)
 
     def get_region_code(self) -> str:
@@ -65,12 +65,12 @@ class BaseStateMatchingDelegate:
         If nothing is returned, entities of type |_cls| will be merged with `default_merge_flat_fields`.
         """
 
-    def perform_match_preprocessing(self, ingested_persons: List[schema.StatePerson]):
+    def perform_match_preprocessing(self, ingested_persons: List[schema.StatePerson]) -> None:
         """This can be overridden by child classes to perform state-specific preprocessing on the |ingested_persons|
         that will occur immediately before the |ingested_persons| are matched with their database counterparts.
         """
 
-    def perform_match_postprocessing(self, matched_persons: List[schema.StatePerson]):
+    def perform_match_postprocessing(self, matched_persons: List[schema.StatePerson]) -> None:
         """This can be overridden by child classes to perform state-specific postprocessing on the |matched_persons|
         that will occur immediately after the |matched_persons| are matched with their database counterparts.
         """

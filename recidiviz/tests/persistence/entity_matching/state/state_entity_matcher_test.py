@@ -89,7 +89,7 @@ _ID_TYPE_ANOTHER = 'ID_TYPE_ANOTHER'
 _FULL_NAME = 'FULL_NAME'
 _FULL_NAME_ANOTHER = 'FULL_NAME_ANOTHER'
 _COUNTY_CODE = 'Iredell'
-_STATE_CODE = 'NC'
+_STATE_CODE = 'US_XX'
 _DATE_1 = datetime.date(year=2019, month=1, day=1)
 _DATE_2 = datetime.date(year=2019, month=2, day=1)
 
