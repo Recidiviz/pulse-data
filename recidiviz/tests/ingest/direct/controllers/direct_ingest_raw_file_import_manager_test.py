@@ -75,7 +75,11 @@ class DirectIngestRegionRawFileConfigTest(unittest.TestCase):
                                                         description='First column.'),
                                      RawTableColumnInfo(name='col_name_1b',
                                                         is_datetime=False,
-                                                        description=expected_column2_description)]
+                                                        description=expected_column2_description),
+                                     RawTableColumnInfo(name='undocumented_column',
+                                                        is_datetime=False,
+                                                        description=None)
+                                     ]
         self.assertEqual(expected_columns_config_1, config_1.columns)
 
         config_2 = region_config.raw_file_configs['file_tag_second']
@@ -99,7 +103,7 @@ class DirectIngestRegionRawFileConfigTest(unittest.TestCase):
         self.assertEqual(',', config_3.separator)
         self.assertEqual([RawTableColumnInfo(name='COL1',
                                              is_datetime=False,
-                                             description='COL1 description')], config_3.columns)
+                                             description=None)], config_3.columns)
 
         config_4 = region_config.raw_file_configs['tagPipeSeparatedNonUTF8']
         self.assertEqual('tagPipeSeparatedNonUTF8', config_4.file_tag)
