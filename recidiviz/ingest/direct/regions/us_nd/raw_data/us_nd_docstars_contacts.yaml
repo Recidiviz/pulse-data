@@ -5,7 +5,6 @@ primary_key_cols:
   - RecID
 columns:
   - name: Remarks
-    is_datetime: False
     description: |-
       The raw text the supervising officer inputs.
   - name: TIME_STAMP

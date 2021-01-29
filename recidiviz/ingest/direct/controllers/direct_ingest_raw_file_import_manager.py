@@ -51,7 +51,7 @@ class RawTableColumnInfo:
     # True if a column is a date/time
     is_datetime: bool = attr.ib(validator=attr.validators.instance_of(bool))
     # Describes the column contents
-    description: str = attr.ib(validator=attr_validators.is_non_empty_str)
+    description: Optional[str] = attr.ib(validator=attr_validators.is_opt_str)
 
 
 @attr.s(frozen=True)
@@ -133,6 +133,11 @@ class DirectIngestRawFileConfig:
             columns = file_config_dict.pop_optional('columns', list) or []
         else:
             columns = file_config_dict.pop('columns', list)
+
+        column_names = [column['name'] for column in columns]
+        if len(column_names) != len(set(column_names)):
+            raise ValueError(f'Found duplicate columns in raw_file [{file_tag}]')
+
         supplemental_order_by_clause = file_config_dict.pop_optional('supplemental_order_by_clause', str)
         encoding = file_config_dict.pop_optional('encoding', str)
         separator = file_config_dict.pop_optional('separator', str)
@@ -149,10 +154,8 @@ class DirectIngestRawFileConfig:
             primary_key_cols=primary_key_cols,
             columns=[
                 RawTableColumnInfo(name=column['name'],
-                                   is_datetime=column['is_datetime'],
-                                   description=column.get('description', 'LEGACY MISSING DESCRIPTION')
-                                   if region_code.upper() in {'US_MO', 'US_ND', 'US_ID', 'US_PA', 'US_XX'}
-                                   else column['description']) for column in columns],
+                                   is_datetime=column.get('is_datetime', False),
+                                   description=column.get('description', None)) for column in columns],
             supplemental_order_by_clause=supplemental_order_by_clause if supplemental_order_by_clause else '',
             encoding=encoding if encoding else default_encoding,
             separator=separator if separator else default_separator,
