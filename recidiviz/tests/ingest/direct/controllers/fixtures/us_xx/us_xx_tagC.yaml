@@ -5,5 +5,3 @@ primary_key_cols:
   - COL1
 columns:
   - name: COL1
-    is_datetime: False
-    description: COL1 description
