@@ -60,3 +60,6 @@ POPULATION_PROJECTION_DATASET: str = 'population_projection_data'
 
 # Where the population projection simulation output tables live
 POPULATION_PROJECTION_OUTPUT_DATASET: str = 'population_projection_output_data'
+
+# Where the views for the vitals report live
+VITALS_REPORT_DATASET: str = 'vitals_report_views'
