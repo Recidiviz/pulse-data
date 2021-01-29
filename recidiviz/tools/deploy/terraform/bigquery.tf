@@ -22,19 +22,19 @@ resource "google_project_service" "bigquery_connection_api" {
   disable_on_destroy = true
 }
 
-# TODO(#5082): Once the Cloud SQL instance exists in terraform, use this to provision the connection.
-# resource "google_bigquery_connection" "justice_counts_connection" {
-#     provider      = google-beta
-#     connection_id = "justice_counts_cloudsql"
-#     friendly_name = "Justice Counts Cloud SQL Postgres"
-#     description   = "Connection to the Justice Counts Cloud SQL database"
-#     cloud_sql {
-#         instance_id = google_sql_database_instance.instance.connection_name
-#         database    = google_sql_database.db.name
-#         type        = "POSTGRES"
-#         credential {
-#           username = google_sql_user.user.name
-#           password = google_sql_user.user.password
-#         }
-#     }
-# }
+resource "google_bigquery_connection" "justice_counts_connection" {
+    provider      = google-beta
+    connection_id = "justice_counts_cloudsql"
+    friendly_name = "Justice Counts Cloud SQL Postgres"
+    location      = "us"
+    description   = "Connection to the Justice Counts Cloud SQL database"
+    cloud_sql {
+        instance_id = module.justice_counts_database.cloudsql_instance_id
+        database    = module.justice_counts_database.database_name
+        type        = "POSTGRES"
+        credential {
+          username = module.justice_counts_database.database_user_name
+          password = module.justice_counts_database.database_user_password
+        }
+    }
+}
