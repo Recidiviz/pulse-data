@@ -31,6 +31,8 @@ from recidiviz.calculator.query.state.views.reference.reference_views import REF
 from recidiviz.calculator.query.state.views.analyst_data.analyst_data_views import ANALYST_DATA_VIEW_BUILDERS
 from recidiviz.calculator.query.state.views.population_projection.population_projection_views import \
     POPULATION_PROJECTION_VIEW_BUILDERS
+from recidiviz.calculator.query.state.views.vitals_report.vitals_report_views import VITALS_REPORT_VIEW_BUILDERS
+
 
 VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE: Sequence[BigQueryViewBuilder] = list(itertools.chain.from_iterable((
     DATAFLOW_METRICS_MATERIALIZED_VIEW_BUILDERS,
@@ -42,4 +44,5 @@ VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE: Sequence[BigQueryViewBuilder] = list(itertool
     PUBLIC_DASHBOARD_VIEW_BUILDERS,
     ANALYST_DATA_VIEW_BUILDERS,
     POPULATION_PROJECTION_VIEW_BUILDERS,
+    VITALS_REPORT_VIEW_BUILDERS,
 )))
