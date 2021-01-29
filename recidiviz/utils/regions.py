@@ -54,6 +54,8 @@ class IngestType(Enum):
 # Cache of the `Region` objects.
 REGIONS: Dict[IngestType, Dict[str, 'Region']] = {}
 
+def _to_lower(s: str) -> str:
+    return s.lower()
 
 @attr.s(frozen=True)
 class Region:
@@ -87,7 +89,7 @@ class Region:
         facility_id: (string) Default facility ID for region
     """
 
-    region_code: str = attr.ib()
+    region_code: str = attr.ib(converter=_to_lower)
     jurisdiction_id: str = attr.ib(validator=attr.validators.instance_of(str))
     agency_name: str = attr.ib()
     agency_type: str = attr.ib()
@@ -272,9 +274,9 @@ def get_region(region_code: str, is_direct_ingest: bool = False) -> Region:
         REGIONS[ingest_type] = {}
 
     if region_code not in REGIONS[ingest_type]:
-        REGIONS[ingest_type][region_code] = Region(region_code=region_code,
+        REGIONS[ingest_type][region_code] = Region(region_code=region_code.lower(),
                                                    is_direct_ingest=is_direct_ingest,
-                                                   **get_region_manifest(region_code, is_direct_ingest))
+                                                   **get_region_manifest(region_code.lower(), is_direct_ingest))
     return REGIONS[ingest_type][region_code]
 
 

@@ -49,7 +49,7 @@ _EXTERNAL_ID_4 = 'EXTERNAL_ID-4'
 _ID = 1
 _ID_2 = 2
 _ID_3 = 3
-_STATE_CODE = 'NC'
+_STATE_CODE = 'US_XX'
 _ID_TYPE = 'ID_TYPE'
 
 

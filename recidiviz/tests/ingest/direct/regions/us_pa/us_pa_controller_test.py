@@ -3684,7 +3684,7 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
         new_placeholder_sp = entities.StateSupervisionPeriod. \
             new_with_defaults(person=person_4,
                               supervision_sentences=person_4.sentence_groups[2].supervision_sentences,
-                              state_code='us_pa',
+                              state_code='US_PA',
                               status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO)
         p4_placeholder_sv.supervision_periods = [new_placeholder_sp]
         new_placeholder_sp.supervision_violation_entries.append(p4_placeholder_sv)

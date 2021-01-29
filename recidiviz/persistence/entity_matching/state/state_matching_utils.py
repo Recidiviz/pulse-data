@@ -24,6 +24,7 @@ from recidiviz.common.constants.state.state_agent import StateAgentType
 from recidiviz.common.constants.state.state_court_case import StateCourtType
 from recidiviz.common.constants.state.state_incarceration import \
     StateIncarcerationType
+from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.database.base_schema import StateBase
 from recidiviz.persistence.database.database_entity import DatabaseEntity
 from recidiviz.persistence.database.schema.state import schema, dao
@@ -492,6 +493,9 @@ def read_db_entity_trees_of_cls_to_merge(
 
     Will assert if schema_cls does not have a person_id or external_id field.
     """
+    if not StateCode.is_valid(state_code):
+        raise ValueError(f'Invalid state code: [{state_code}]')
+
     external_ids = dao.read_external_ids_of_cls_with_external_id_match(
         session, state_code, schema_cls)
     people = dao.read_people_by_cls_external_ids(

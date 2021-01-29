@@ -59,7 +59,7 @@ _ID_TYPE = 'ID_TYPE'
 _FULL_NAME = 'FULL_NAME'
 _COUNTY_CODE = 'Iredell'
 _US_ND = 'US_ND'
-_OTHER_STATE_CODE = 'NC'
+_OTHER_STATE_CODE = 'US_XX'
 _FACILITY = 'FACILITY'
 _FACILITY_2 = 'FACILITY_2'
 _DATE_1 = datetime.date(year=2019, month=1, day=1)
