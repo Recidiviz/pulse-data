@@ -1,0 +1,26 @@
+file_tag: ofndr_loc_hist
+file_description: |-
+  Contains a mapping between people and the facility in which they are currently located.
+primary_key_cols:
+  - ofndr_num
+columns:
+  - name: ofndr_num
+    description: Identifier for incarcerated persons
+  - name: updt_usr_id
+    description: ID of the user who last updated this record
+  - name: updt_dt
+    description: Date this record was last updated
+    is_datetime: True
+  - name: body_loc_cd
+    description: Facility code indicating where the person is located
+  - name: assgn_dt
+    description: Date this assignment was effective
+    is_datetime: True
+  - name: assgn_tm
+    description: Time of the day this assignment was effective
+    is_datetime: True
+  - name: assgn_rsn_cd
+    description: Reason for transfer
+  - name: end_dt
+    description: Date this assignment ended
+    is_datetime: True
