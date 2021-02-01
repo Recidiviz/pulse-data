@@ -1,7 +1,7 @@
 user_inputs:
-    policy_year: 2021
-    start_year: 2018
-    projection_years: 10
+    policy_year: 2021.0
+    start_year: 2018.0
+    projection_years: 10.0
     speed_run: true
 
 model_architecture:
@@ -12,7 +12,7 @@ model_architecture:
     prison_parole_revocations: incarcerated
     release: released
 
-reference_date: 2014
+reference_date: 2014.0
 # january
 time_step: 0.083333333 
 # one month
@@ -28,4 +28,4 @@ per_year_costs:
   prison_parole_revocations: 6307.05
   probation: 285.08
   parole: 285.08
-  release: 0
+  release: 0.0

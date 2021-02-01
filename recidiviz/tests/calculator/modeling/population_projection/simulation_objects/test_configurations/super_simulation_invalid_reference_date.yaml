@@ -6,9 +6,10 @@ user_inputs:
 
 model_architecture:
     PRETRIAL: null
+    RELEASE: released
     PRISON: incarcerated
 
-reference_date: 2010.0
+reference_date: '2010'
 
 time_step: 1.0
 

@@ -1,15 +1,15 @@
 ---
 user_inputs:
-  policy_year: 2020
-  start_year: 2019
-  projection_years: 10
+  policy_year: 2020.0
+  start_year: 2019.0
+  projection_years: 10.0
 
 model_architecture:
     PRETRIAL: null
     RELEASE: released
     PRISON: incarcerated
 
-reference_date: 2010
+reference_date: 2010.0
 
 time_step: 0.4
 
@@ -20,5 +20,5 @@ data_inputs:
   big_query_simulation_tag: test_data
 
 per_year_costs:
-    RELEASE: 0
-    PRISON: 1000
+    RELEASE: 0.0
+    PRISON: 1000.0

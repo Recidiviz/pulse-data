@@ -46,7 +46,8 @@ class YAMLDict:
     @classmethod
     def _assert_type(cls, field: str, value: Any, value_type: Type[T]) -> Optional[T]:
         if value is not None and not isinstance(value, value_type):
-            raise ValueError(f"Invalid {field}, expected {value_type} but received: {repr(value)}")
+            raise ValueError(f"The {field} must be of type {value_type.__name__}. Invalid {field}, expected "
+                             f"{value_type} but received: {repr(value)}")
         return value
 
     def pop_optional(self, field: str, value_type: Type[T]) -> Optional[T]:
@@ -91,3 +92,6 @@ class YAMLDict:
 
     def get(self) -> YAMLDictType:
         return self.raw_yaml
+
+    def keys(self) -> List[str]:
+        return list(self.raw_yaml.keys())

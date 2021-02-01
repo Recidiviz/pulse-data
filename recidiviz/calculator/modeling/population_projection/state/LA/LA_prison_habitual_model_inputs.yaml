@@ -1,7 +1,7 @@
 user_inputs:
-    policy_year: 2021
-    start_year: 2020
-    projection_years: 12
+    policy_year: 2021.0
+    start_year: 2020.0
+    projection_years: 12.0
     speed_run: true
 
 
@@ -13,7 +13,7 @@ model_architecture:
 # probation represents good time/parole supervision in this case
 
 
-reference_date: 2013
+reference_date: 2013.0
 # january
 time_step: 0.083333333 
 # one month
@@ -27,6 +27,6 @@ data_inputs:
 
 
 per_year_costs:
-  prison: 24683
+  prison: 24683.0
   probation: 1233.5
-  release: 0
+  release: 0.0

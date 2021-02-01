@@ -6,6 +6,7 @@ user_inputs:
 
 model_architecture:
     PRETRIAL: null
+    RELEASE: released
     PRISON: incarcerated
 
 reference_date: 2010.0
@@ -21,3 +22,5 @@ data_inputs:
 per_year_costs:
     RELEASE: 0.0
     PRISON: 1000.0
+
+start_year: 2020
