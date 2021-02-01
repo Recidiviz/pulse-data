@@ -1,8 +1,8 @@
 ---
 user_inputs:
-  policy_year: 2021
-  start_year: 2018
-  projection_years: 13
+  policy_year: 2021.0
+  start_year: 2018.0
+  projection_years: 13.0
 
 model_architecture:
     prison_shell: null
@@ -11,7 +11,7 @@ model_architecture:
     probation: incarcerated
     release: released
 
-reference_date: 2016
+reference_date: 2016.0
 
 time_step: 0.083333333333333333333
 
@@ -23,7 +23,7 @@ data_inputs:
 
 per_year_costs:
   # Marginal costs
-  prison: 4045
-  prison_technicals: 4045
-  probation: 2300
-  release: 0
+  prison: 4045.0
+  prison_technicals: 4045.0
+  probation: 2300.0
+  release: 0.0

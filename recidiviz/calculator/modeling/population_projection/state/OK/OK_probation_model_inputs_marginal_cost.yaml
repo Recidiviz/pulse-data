@@ -1,7 +1,7 @@
 user_inputs:
-    policy_year: 2021
-    start_year: 2019
-    projection_years: 10
+    policy_year: 2021.0
+    start_year: 2019.0
+    projection_years: 10.0
     speed_run: true
 
 model_architecture:
@@ -11,7 +11,7 @@ model_architecture:
     prison_new_offense: incarcerated
     release: released
 
-reference_date: 2010
+reference_date: 2010.0
 # january
 time_step: 0.083333333 
 # one month
@@ -26,4 +26,4 @@ per_year_costs:
   prison_technical: 247.13
   prison_new_offense: 247.13
   probation: 32.50
-  release: 0
+  release: 0.0

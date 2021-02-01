@@ -1,8 +1,8 @@
 ---
 user_inputs:
-  policy_year: 2020
-  start_year: 2016
-  projection_years: 10
+  policy_year: 2020.0
+  start_year: 2016.0
+  projection_years: 10.0
 
 model_architecture:
     prison: incarcerated
@@ -11,7 +11,7 @@ model_architecture:
 
 reference_date: 2016.0
 
-time_step: 1
+time_step: 1.0
 
 disaggregation_axes:
   - crime_type
@@ -20,5 +20,5 @@ data_inputs:
   big_query_simulation_tag: NJ_prison
 
 per_year_costs:
-  prison: 6181  # this is the parole cost because prison cost not listed
-  release: 0
+  prison: 6181.0  # this is the parole cost because prison cost not listed
+  release: 0.0
