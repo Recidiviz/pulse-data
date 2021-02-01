@@ -79,19 +79,6 @@ def explore_graph_by_column_query(
 def make_master_person_ids_fragment(v2_filter_clause: str) -> str:
     return f"""recidiviz_master_person_ids AS (
     WITH
-    tblSearchInmateInfo_ids AS (
-        SELECT inmate_number, control_number, state_id_num
-        FROM {{dbo_tblSearchInmateInfo}}
-    ),
-    control_to_sid_inferred_from_inmate_num AS (
-        -- Finds control_number <> state_id edges that we can only infer from matching inmate numbers
-        SELECT DISTINCT a.control_number, b.state_id_num
-        FROM tblSearchInmateInfo_ids a
-        JOIN
-        tblSearchInmateInfo_ids b
-        USING (inmate_number)
-        WHERE (a.state_id_num != b.state_id_num OR a.control_number != b.control_number)
-    ),
     distinct_control_to_sid AS (
         SELECT
           DISTINCT
@@ -99,11 +86,7 @@ def make_master_person_ids_fragment(v2_filter_clause: str) -> str:
           -- this table - clear these out
           IF(REGEXP_CONTAINS(state_id_num, r"[A-Z]") OR state_id_num = '', NULL, state_id_num) AS state_id,
           control_number
-        FROM (
-          SELECT state_id_num, control_number FROM tblSearchInmateInfo_ids
-          UNION ALL
-          SELECT state_id_num, control_number FROM control_to_sid_inferred_from_inmate_num
-        )
+        FROM {{dbo_tblSearchInmateInfo}}
     ),
     control_number_to_state_id_edges AS (
       SELECT * 
