@@ -19,6 +19,7 @@ import datetime
 import os
 import time
 import unittest
+from types import ModuleType
 from typing import List, Optional, Dict, Type, TextIO, Any
 
 import attr
@@ -28,6 +29,7 @@ from mock import Mock, patch, create_autospec
 from recidiviz.big_query.big_query_client import BigQueryClient
 from recidiviz.big_query.big_query_view import BigQueryViewBuilder
 from recidiviz.big_query.big_query_view_collector import BigQueryViewCollector
+from recidiviz.ingest.direct.controllers import direct_ingest_raw_table_migration_collector
 from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import \
     BaseDirectIngestController
 from recidiviz.ingest.direct.controllers.csv_gcsfs_direct_ingest_controller import CsvGcsfsDirectIngestController
@@ -46,6 +48,7 @@ from recidiviz.cloud_storage.gcsfs_path import \
     GcsfsFilePath, GcsfsDirectoryPath, GcsfsPath
 from recidiviz.ingest.direct.controllers.gcsfs_csv_reader import GcsfsCsvReader
 from recidiviz.persistence.entity.operations.entities import DirectIngestFileMetadata
+from recidiviz.tests.ingest.direct.controllers import fixtures as controller_fixtures
 from recidiviz.tests.ingest.direct.fake_direct_ingest_big_query_client import FakeDirectIngestBigQueryClient
 from recidiviz.tests.ingest.direct.fake_async_direct_ingest_cloud_task_manager \
     import FakeAsyncDirectIngestCloudTaskManager
@@ -236,6 +239,7 @@ def build_gcsfs_controller_for_tests(
         fixture_path_prefix: str,
         run_async: bool,
         can_start_ingest: bool = True,
+        regions_module: ModuleType = controller_fixtures,
         **kwargs: Any,
 ) -> GcsfsDirectIngestController:
     """Builds an instance of |controller_cls| for use in tests with several internal classes mocked properly. """
@@ -262,17 +266,19 @@ def build_gcsfs_controller_for_tests(
                     mock_big_query_client_cls.return_value = \
                         FakeDirectIngestBigQueryClient(project_id=metadata.project_id(), fs=fake_fs)
                     with patch.object(GcsfsFactory, 'build', new=mock_build_fs):
-                        controller = controller_cls(
-                            ingest_directory_path=f'{fixture_path_prefix}/fixtures',
-                            storage_directory_path='storage/path',
-                            **kwargs)
-                        controller.csv_reader = _TestSafeGcsCsvReader(fake_fs)
-                        controller.raw_file_import_manager.csv_reader = controller.csv_reader
+                        with patch.object(direct_ingest_raw_table_migration_collector,
+                                         'regions', new=regions_module):
+                            controller = controller_cls(
+                                ingest_directory_path=f'{fixture_path_prefix}/fixtures',
+                                storage_directory_path='storage/path',
+                                **kwargs)
+                            controller.csv_reader = _TestSafeGcsCsvReader(fake_fs)
+                            controller.raw_file_import_manager.csv_reader = controller.csv_reader
 
-                        task_manager.set_controller(controller)
-                        fake_fs.test_set_delegate(
-                            DirectIngestFakeGCSFileSystemDelegate(controller, can_start_ingest=can_start_ingest))
-                        return controller
+                            task_manager.set_controller(controller)
+                            fake_fs.test_set_delegate(
+                                DirectIngestFakeGCSFileSystemDelegate(controller, can_start_ingest=can_start_ingest))
+                            return controller
 
 
 def ingest_args_for_fixture_file(
