@@ -142,7 +142,7 @@ jobs:
         id: cache-postgres
         with:
           path: "~/postgres"
-          key: ${{ runner.os }}-postgres-10
+          key: ${{ runner.os }}-postgres-10-v2
       - name: Install postgres
         env:
           CACHE_HIT: ${{steps.cache-postgres.outputs.cache-hit}}
