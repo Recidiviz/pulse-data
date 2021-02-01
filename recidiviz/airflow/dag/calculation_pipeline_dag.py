@@ -21,10 +21,6 @@ This file is uploaded to GCS on deploy.
 import datetime
 import os
 from base64 import b64encode
-from typing import List, Dict
-import collections
-
-import yaml
 
 from airflow import models
 from airflow.contrib.operators.pubsub_operator import PubSubPublishOperator
@@ -33,6 +29,7 @@ try:
     from recidiviz_dataflow_operator import RecidivizDataflowTemplateOperator  # type: ignore
 except ImportError:
     from recidiviz.airflow.dag.recidiviz_dataflow_operator import RecidivizDataflowTemplateOperator
+from recidiviz.utils.yaml_dict import YAMLDict
 
 # Need a disable pointless statement because Python views the chaining operator ('>>') as a "pointless" statement
 # pylint: disable=W0104 pointless-statement
@@ -61,11 +58,14 @@ def trigger_export_operator(export_name: str) -> PubSubPublishOperator:
     )
 
 
-def pipelines_by_state(pipelines) -> Dict[str, List[str]]:  # type: ignore
-    pipes_by_state = collections.defaultdict(list)
-    for pipe in pipelines:
-        pipes_by_state[pipe['state_code']].append(pipe['job_name'])
-    return pipes_by_state
+def get_zone_for_region(pipeline_region: str) -> str:
+    if pipeline_region in {'us-west1', 'us-west3', 'us-central1'}:
+        return pipeline_region + '-a'
+
+    if pipeline_region == 'us-east1':
+        return 'us-east1-b' # For some reason, 'us-east1-a' doesn't exist
+
+    raise ValueError(f'Unexpected region: {pipeline_region}')
 
 
 with models.DAG(dag_id="{}_calculation_pipeline_dag".format(project_id),
@@ -74,35 +74,42 @@ with models.DAG(dag_id="{}_calculation_pipeline_dag".format(project_id),
     if config_file is None:
         raise Exception('Configuration file not specified')
 
-    with open(config_file) as f:
-        pipeline_yaml_dicts = yaml.full_load(f)
-        if pipeline_yaml_dicts:
-            pipeline_dict = pipelines_by_state(pipeline_yaml_dicts['daily_pipelines'])
+    pipelines = YAMLDict.from_path(config_file).pop_dicts('daily_pipelines')
 
-            covid_export = trigger_export_operator('COVID_DASHBOARD')
-            case_triage_export = trigger_export_operator('CASE_TRIAGE')
+    covid_export = trigger_export_operator('COVID_DASHBOARD')
+    case_triage_export = trigger_export_operator('CASE_TRIAGE')
 
-            dataflow_default_args = {
-                'project': project_id,
-                'region': 'us-west1',
-                'zone': 'us-west1-c',
-                'tempLocation': 'gs://{}-dataflow-templates/staging/'.format(project_id)
-            }
+    states_to_trigger = {pipeline.peek('state_code', str) for pipeline in pipelines}
 
-            for state_code, state_pipelines in pipeline_dict.items():
-                state_export = trigger_export_operator(state_code)
-                for pipeline_to_run in state_pipelines:
-                    calculation_pipeline = RecidivizDataflowTemplateOperator(
-                        task_id=pipeline_to_run,
-                        template="gs://{}-dataflow-templates/templates/{}".format(project_id, pipeline_to_run),
-                        job_name=pipeline_to_run,
-                        dataflow_default_options=dataflow_default_args
-                    )
-                    # This >> ensures that all the calculation pipelines will run before the Pub / Sub message
-                    # is published saying the pipelines are done.
-                    calculation_pipeline >> state_export
-                    calculation_pipeline >> covid_export
-                    if state_code in CASE_TRIAGE_STATES:
-                        calculation_pipeline >> case_triage_export
+    state_trigger_export_operators = {state_code: trigger_export_operator(state_code)
+                                      for state_code in states_to_trigger}
 
-            _ = trigger_export_operator('INGEST_METADATA')
+    for pipeline in pipelines:
+        region = pipeline.pop('region', str)
+        zone = get_zone_for_region(region)
+        state_code = pipeline.pop('state_code', str)
+
+        dataflow_default_args = default_args.copy()
+        dataflow_default_args.update({
+            'project': project_id,
+            'region': region,
+            'zone': zone,
+            'tempLocation': f'gs://{project_id}-dataflow-templates/staging/',
+        })
+
+        pipeline_name = pipeline.pop('job_name', str)
+
+        calculation_pipeline = RecidivizDataflowTemplateOperator(
+            task_id=pipeline_name,
+            template=f'gs://{project_id}-dataflow-templates/templates/{pipeline_name}',
+            job_name=pipeline_name,
+            dataflow_default_options=dataflow_default_args,
+        )
+        # This >> ensures that all the calculation pipelines will run before the Pub / Sub message
+        # is published saying the pipelines are done.
+        calculation_pipeline >> state_trigger_export_operators[state_code]
+        calculation_pipeline >> covid_export
+        if state_code in CASE_TRIAGE_STATES:
+            calculation_pipeline >> case_triage_export
+
+    _ = trigger_export_operator('INGEST_METADATA')

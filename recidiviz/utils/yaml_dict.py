@@ -87,6 +87,15 @@ class YAMLDict:
             return None
         return self._transform_dicts(field, raw_yamls)
 
+    def peek_optional(self, field: str, value_type: Type[T]) -> Optional[T]:
+        return self._assert_type(field, self.raw_yaml.get(field, None), value_type)
+
+    def peek(self, field: str, value_type: Type[T]) -> T:
+        value = self.peek_optional(field, value_type)
+        if value is None:
+            raise KeyError(f"Expected {field} in input: {repr(self.raw_yaml)}")
+        return value
+
     def __len__(self) -> int:
         return len(self.raw_yaml)
 
