@@ -28,7 +28,7 @@ daily_pipelines:
     job_name: us-nd-program-calculations-36
     state_code: US_ND
     calculation_month_count: 36
-    region: us-west3
+    region: us-west1
 
 
   # Daily US_MO calculations for the dashboard
@@ -37,7 +37,7 @@ daily_pipelines:
     state_code: US_MO
     calculation_month_count: 36
     metric_types: SUPERVISION_POPULATION SUPERVISION_REVOCATION_ANALYSIS SUPERVISION_TERMINATION
-    region: us-west1
+    region: us-west3
 
   # Daily US_MO calculations for automated data validation not covered by daily calculation runs
   - pipeline: incarceration

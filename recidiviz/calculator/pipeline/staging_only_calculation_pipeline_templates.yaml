@@ -4,3 +4,6 @@
 #  If you want to deploy a pipeline just to production, add it to production_calculation_pipeline_templates.yaml
 
 # List of pipelines with their necessary details
+
+daily_pipelines: []
+historical_pipelines: []
