@@ -30,6 +30,7 @@ from mock import patch
 from sqlalchemy.ext.declarative import DeclarativeMeta
 
 from recidiviz import IngestInfo
+from recidiviz.ingest.direct import regions
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_controller import \
     GcsfsDirectIngestController
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import GcsfsIngestViewExportArgs
@@ -87,7 +88,9 @@ class BaseDirectIngestControllerTests(unittest.TestCase):
             self.controller_cls(),
             self.fixture_path_prefix(),
             run_async=False,
-            max_delay_sec_between_files=0)
+            max_delay_sec_between_files=0,
+            regions_module=regions
+        )
 
     def tearDown(self) -> None:
         local_postgres_helpers.teardown_on_disk_postgresql_database(OperationsBase)

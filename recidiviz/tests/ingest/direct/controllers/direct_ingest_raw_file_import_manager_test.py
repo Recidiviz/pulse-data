@@ -25,6 +25,7 @@ from mock import create_autospec, call, patch
 from more_itertools import one
 
 from recidiviz.big_query.big_query_client import BigQueryClient
+from recidiviz.ingest.direct.controllers import direct_ingest_raw_table_migration_collector
 from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import DirectIngestGCSFileSystem
 from recidiviz.ingest.direct.controllers.direct_ingest_raw_file_import_manager import \
     DirectIngestRawFileImportManager, DirectIngestRegionRawFileConfig, RawTableColumnInfo
@@ -34,9 +35,11 @@ from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath, GcsfsDirectoryPath
 from recidiviz.persistence.entity.operations.entities import DirectIngestFileMetadata
 from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.tests.ingest import fixtures
+from recidiviz.tests.ingest.direct.controllers.fixtures.us_xx.raw_data.migrations import migrations_tagC
 from recidiviz.tests.ingest.direct.direct_ingest_util import path_for_fixture_file_in_test_gcs_directory, \
     _TestSafeGcsCsvReader
 from recidiviz.tests.ingest.direct import fixture_util
+from recidiviz.tests.ingest.direct.controllers import fixtures as controller_fixtures
 from recidiviz.tests.utils.fake_region import fake_region
 
 
@@ -139,6 +142,11 @@ class DirectIngestRawFileImportManagerTest(unittest.TestCase):
         self.project_id_patcher.start().return_value = self.project_id
         self.test_region = fake_region(region_code='us_xx',
                                        are_raw_data_bq_imports_enabled_in_env=True)
+
+        self.region_module_patcher = patch.object(direct_ingest_raw_table_migration_collector,
+                                                  'regions', new=controller_fixtures)
+        self.region_module_patcher.start()
+
         self.fs = DirectIngestGCSFileSystem(FakeGCSFileSystem())
         self.ingest_directory_path = GcsfsDirectoryPath(bucket_name='direct/controllers/fixtures')
         self.temp_output_path = GcsfsDirectoryPath(bucket_name='temp_bucket')
@@ -174,6 +182,7 @@ class DirectIngestRawFileImportManagerTest(unittest.TestCase):
 
     def tearDown(self) -> None:
         self.time_patcher.stop()
+        self.region_module_patcher.stop()
         self.project_id_patcher.stop()
 
     def mock_import_raw_file_to_big_query(self,
@@ -454,3 +463,21 @@ class DirectIngestRawFileImportManagerTest(unittest.TestCase):
                                                              self._metadata_for_unprocessed_file_path(file_path))
 
         self.assertEqual(str(e.exception), "Multiple columns with name [_4COL] after normalization.")
+
+    def test_import_bq_file_with_migrations(self) -> None:
+        file_datetime = migrations_tagC.DATE_1
+        file_path = path_for_fixture_file_in_test_gcs_directory(
+            directory=self.ingest_directory_path,
+            filename='tagC.csv',
+            should_normalize=True,
+            file_type=GcsfsDirectIngestFileType.RAW_DATA,
+            dt=file_datetime
+        )
+        fixture_util.add_direct_ingest_path(self.fs.gcs_file_system, file_path)
+
+        self.import_manager.import_raw_file_to_big_query(file_path, self._metadata_for_unprocessed_file_path(file_path))
+
+        self.mock_big_query_client.run_query_async.assert_has_calls([
+            mock.call(query_str=f"UPDATE `recidiviz-456.us_xx_raw_data.tagC` SET COL1 = '456' "
+                                f"WHERE update_datetime = '{file_datetime.isoformat()}' AND COL1 = '123';")
+        ])

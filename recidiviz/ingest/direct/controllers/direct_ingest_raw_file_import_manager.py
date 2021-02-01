@@ -32,6 +32,8 @@ from recidiviz.big_query.big_query_client import BigQueryClient
 from recidiviz.cloud_functions.cloud_function_utils import GCSFS_NO_CACHING
 from recidiviz.common import attr_validators
 from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import DirectIngestGCSFileSystem
+from recidiviz.ingest.direct.controllers.direct_ingest_raw_table_migration_collector import \
+    DirectIngestRawTableMigrationCollector
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import filename_parts_from_path, \
     GcsfsDirectIngestFileType
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath, GcsfsDirectoryPath
@@ -50,7 +52,8 @@ class RawTableColumnInfo:
     name: str = attr.ib(validator=attr_validators.is_non_empty_str)
     # True if a column is a date/time
     is_datetime: bool = attr.ib(validator=attr.validators.instance_of(bool))
-    # Describes the column contents
+    # Describes the column contents - if None, this column cannot be used for ingest, nor will you be able to write a
+    # raw data migration involving this column.
     description: Optional[str] = attr.ib(validator=attr_validators.is_opt_str)
 
 
@@ -210,6 +213,9 @@ class DirectIngestRegionRawFileConfig:
                 if filename == default_filename:
                     continue
                 yaml_file_path = os.path.join(self.yaml_config_file_dir, filename)
+                if os.path.isdir(yaml_file_path):
+                    continue
+
                 yaml_contents = YAMLDict.from_path(yaml_file_path)
 
                 file_tag = yaml_contents.pop('file_tag', str)
@@ -273,6 +279,10 @@ class DirectIngestRawFileImportManager:
         self.upload_chunk_size = upload_chunk_size
         self.csv_reader = GcsfsCsvReader(gcsfs.GCSFileSystem(project=metadata.project_id(),
                                                              cache_timeout=GCSFS_NO_CACHING))
+        self.raw_table_migrations = \
+            DirectIngestRawTableMigrationCollector(
+                region_code=self.region.region_code
+            ).collect_raw_table_migration_queries()
 
     def get_unprocessed_raw_files_to_import(self) -> List[GcsfsFilePath]:
         if not self.region.are_raw_data_bq_imports_enabled_in_env():
@@ -316,6 +326,11 @@ class DirectIngestRawFileImportManager:
 
         temp_output_paths = self._upload_contents_to_temp_gcs_paths(path, file_metadata)
         self._load_contents_to_bigquery(path, temp_output_paths)
+
+        if (parts.file_tag, parts.utc_upload_datetime) in self.raw_table_migrations:
+            migration_queries = self.raw_table_migrations[(parts.file_tag, parts.utc_upload_datetime)]
+            for migration_query in migration_queries:
+                self.big_query_client.run_query_async(query_str=migration_query)
 
         logging.info('Completed BigQuery import of [%s]', path.abs_path())
 

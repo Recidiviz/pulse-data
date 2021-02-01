@@ -24,9 +24,12 @@ from mock import patch
 import yaml
 from parameterized import parameterized
 
+from recidiviz.ingest.direct.controllers.direct_ingest_raw_table_migration import UpdateRawTableMigration
+from recidiviz.ingest.direct.controllers.direct_ingest_raw_table_migration_collector import \
+    DirectIngestRawTableMigrationCollector
 from recidiviz.ingest.direct.controllers.direct_ingest_view_collector import DirectIngestPreProcessedIngestViewCollector
 from recidiviz.ingest.direct.controllers.direct_ingest_raw_file_import_manager import \
-    DirectIngestRegionRawFileConfig
+    DirectIngestRegionRawFileConfig, DirectIngestRawFileConfig
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_controller import GcsfsDirectIngestController
 from recidiviz.ingest.direct.direct_ingest_region_utils import get_existing_region_dir_names, \
     get_existing_region_dir_paths
@@ -145,3 +148,34 @@ class DirectIngestRegionDirStructureTest(unittest.TestCase):
                         region, controller_class.get_file_tag_rank_list()).collect_view_builders()
                     for builder in builders:
                         builder.build()
+
+    def test_collect_and_build_raw_table_migrations(self) -> None:
+        with patch('recidiviz.utils.metadata.project_id', return_value='recidiviz-789'):
+            for region_code in get_existing_region_dir_names():
+                raw_file_manager = DirectIngestRegionRawFileConfig(region_code=region_code)
+                collector = DirectIngestRawTableMigrationCollector(region_code)
+                # Test this doesn't crash
+                _ = collector.collect_raw_table_migration_queries()
+
+                # Check that migrations are valid
+                migrations = collector.collect_raw_table_migrations()
+                for migration in migrations:
+                    self.assertTrue(migration.file_tag in raw_file_manager.raw_file_tags,
+                                    f'Tag {migration.file_tag} listed in migration for region [{region_code}] is not '
+                                    f'listed in config.')
+
+                    raw_file_config = raw_file_manager.raw_file_configs[migration.file_tag]
+                    for col_name, _value in migration.filters:
+                        self.assertColumnIsDocumented(migration.file_tag, col_name, raw_file_config)
+                    if isinstance(migration, UpdateRawTableMigration):
+                        for col_name, _value in migration.updates:
+                            self.assertColumnIsDocumented(migration.file_tag, col_name, raw_file_config)
+
+    def assertColumnIsDocumented(
+            self, file_tag: str, col_name: str, raw_file_config: DirectIngestRawFileConfig
+    ) -> None:
+        documented_column_names = {c.name for c in raw_file_config.columns if c.description}
+        self.assertTrue(
+            col_name in documented_column_names,
+            f'Found column [{col_name}] listed as a filter column in a migration for file '
+            f'tag [{file_tag}] which either not listed or missing a docstring.')
