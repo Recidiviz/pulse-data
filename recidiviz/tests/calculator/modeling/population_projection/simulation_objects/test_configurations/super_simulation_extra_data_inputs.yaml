@@ -1,26 +1,23 @@
 ---
 user_inputs:
-  start_year: 2021.0
-  projection_years: 5.0
-  run_date: '2021-01-01'
+  policy_year: 2020.0
+  start_year: 2019.0
+  projection_years: 10.0
 
 model_architecture:
     PRETRIAL: null
     RELEASE: released
     PRISON: incarcerated
 
-reference_date: 2019.0
+reference_date: 2010.0
 
-time_step: 0.08333333333
+time_step: 1.0
 
 disaggregation_axes:
-  - gender
-
-per_year_costs:
-    RELEASE: 0.0
-    PRISON: 0.0
+  - crime_type
 
 data_inputs:
+  big_query_simulation_tag: test_data
   big_query_inputs:
     project_id: recidiviz-staging
     input_dataset: population_projection_data
@@ -31,3 +28,7 @@ data_inputs:
     total_jail_population_data: test_total_jail_population
     total_out_of_state_supervised_population_data: test_total_out_of_state_supervision_population
     state_code: test_state
+
+per_year_costs:
+    RELEASE: 0.0
+    PRISON: 1000.0

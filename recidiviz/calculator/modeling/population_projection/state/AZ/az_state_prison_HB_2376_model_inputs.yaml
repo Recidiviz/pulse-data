@@ -1,8 +1,8 @@
 ---
 user_inputs:
-  policy_year: 2020
-  start_year: 2019
-  projection_years: 14
+  policy_year: 2020.0
+  start_year: 2019.0
+  projection_years: 14.0
   speed_run: true
 
 model_architecture:
@@ -10,7 +10,7 @@ model_architecture:
     prison: incarcerated
     release: released
 
-reference_date: 2020
+reference_date: 2020.0
 
 time_step: 0.08333333
 
@@ -22,4 +22,4 @@ data_inputs:
 
 per_year_costs:
   prison: 25962.45
-  release: 0
+  release: 0.0

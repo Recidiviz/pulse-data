@@ -3,9 +3,11 @@ user_inputs:
   policy_year: 2020.0
   start_year: 2019.0
   projection_years: 10.0
+  end_year: 2021.0
 
 model_architecture:
     PRETRIAL: null
+    RELEASE: released
     PRISON: incarcerated
 
 reference_date: 2010.0
