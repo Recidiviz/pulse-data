@@ -1,0 +1,21 @@
+key_mappings:
+  start_date: state_incarceration_period.admission_date
+  end_date: state_incarceration_period.release_date
+  location: state_incarceration_period.facility
+  program_id: state_incarceration_period.custodial_authority
+  start_movement_id: state_incarceration_period.state_incarceration_period_id
+
+primary_key:
+  start_movement_id: state_incarceration_period.state_incarceration_period_id
+
+ancestor_keys:
+  control_number: state_person.state_person_id
+  inmate_number: state_sentence_group.state_sentence_group_id
+
+enforced_ancestor_types:
+  state_sentence: state_incarceration_sentence
+
+keys_to_ignore:
+  - start_status_code                   # Period start reason - handled manually in the controller
+  - end_status_code                     # Period end reason - handled manually in the controller
+  - start_is_new_revocation             # Whether or not a revocation occurred - handled manually in the controller

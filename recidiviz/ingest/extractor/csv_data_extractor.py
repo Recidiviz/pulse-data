@@ -190,7 +190,7 @@ class CsvDataExtractor(DataExtractor):
             for k, v in row.items():
                 k = k.strip()
                 if k not in self.all_keys:
-                    raise ValueError("Unmapped key: [%s]" % k)
+                    raise ValueError(f"Unmapped key: [{k}]")
 
                 if k in self.keys:
                     cls, field = self.keys[k].split('.')
