@@ -1774,7 +1774,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
                 supervision_level_raw_text='HIGH',
                 case_compliance=SupervisionCaseCompliance(
                     date_of_evaluation=date(2018, 3, 31),
-                    assessment_up_to_date=True,
+                    num_days_assessment_overdue=0,
                     face_to_face_frequency_sufficient=False
                 ),
                 is_past_projected_end_date=False
@@ -1789,7 +1789,7 @@ class TestMapSupervisionCombinations(unittest.TestCase):
                 supervision_level_raw_text='HIGH',
                 case_compliance=SupervisionCaseCompliance(
                     date_of_evaluation=date(2018, 4, 30),
-                    assessment_up_to_date=False,
+                    num_days_assessment_overdue=11,
                     face_to_face_frequency_sufficient=False
                 ),
                 is_past_projected_end_date=False
@@ -1990,7 +1990,7 @@ class TestIncludeEventInMetric(unittest.TestCase):
             supervision_level_raw_text='HIGH',
             case_compliance=SupervisionCaseCompliance(
                 date_of_evaluation=date(2018, 3, 31),
-                assessment_up_to_date=True,
+                num_days_assessment_overdue=0,
                 face_to_face_frequency_sufficient=False
             ),
             is_past_projected_end_date=False

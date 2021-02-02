@@ -66,9 +66,9 @@ PO_MONTHLY_REPORT_DATA_QUERY_TEMPLATE = \
           IGNORE NULLS
         ) AS absconsions_clients,
         SUM(assessment_count) AS assessments,
-        COUNT(DISTINCT IF(assessment_up_to_date, person_id, NULL)) AS assessments_up_to_date,
+        COUNT(DISTINCT IF(num_days_assessment_overdue = 0, person_id, NULL)) AS assessments_up_to_date,
         ARRAY_AGG(
-          IF(assessment_up_to_date IS FALSE, STRUCT(person_external_id, full_name), NULL)
+          IF(num_days_assessment_overdue > 0, STRUCT(person_external_id, full_name), NULL)
           IGNORE NULLS
         ) AS assessments_out_of_date_clients,
         SUM(face_to_face_count) AS facetoface,
@@ -83,7 +83,7 @@ PO_MONTHLY_REPORT_DATA_QUERY_TEMPLATE = \
     compliance_caseloads AS (
       SELECT
         state_code, year, month, officer_external_id,
-        COUNT(DISTINCT IF(assessment_up_to_date IS NOT NULL, person_id, NULL)) AS assessment_compliance_caseload_count,
+        COUNT(DISTINCT IF(num_days_assessment_overdue IS NOT NULL, person_id, NULL)) AS assessment_compliance_caseload_count,
         COUNT(DISTINCT IF(face_to_face_frequency_sufficient IS NOT NULL, person_id, NULL)) AS facetoface_compliance_caseload_count
       FROM `{project_id}.{po_report_dataset}.supervision_compliance_by_person_by_month_materialized`
       GROUP BY state_code, year, month, officer_external_id

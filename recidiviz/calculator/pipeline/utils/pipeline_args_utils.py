@@ -26,7 +26,8 @@ from recidiviz.calculator.query.state.dataset_config import REFERENCE_VIEWS_DATA
     STATE_BASE_DATASET, STATIC_REFERENCE_TABLES_DATASET
 
 
-def add_shared_pipeline_arguments(parser: argparse.ArgumentParser, include_calculation_limit_args: bool = False):
+def add_shared_pipeline_arguments(parser: argparse.ArgumentParser,
+                                  include_calculation_limit_args: bool = False) -> None:
     """Adds argument configs to the |parser| for shared pipeline args that do not get passed through to Apache Beam."""
 
     parser.add_argument('--data_input',

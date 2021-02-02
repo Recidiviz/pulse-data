@@ -110,7 +110,7 @@ def get_job_id(pipeline_options: Dict[str, str]) -> str:
     return pipeline_job_id
 
 
-def get_dataflow_job_with_id(project, job_id, location) -> Dict[str, str]:
+def get_dataflow_job_with_id(project: str, job_id: str, location: str) -> Dict[str, str]:
     """Returns information about the Dataflow job with the given `job_id`."""
     service_name = 'dataflow'
     dataflow_api_version = 'v1b3'
@@ -126,7 +126,7 @@ def get_dataflow_job_with_id(project, job_id, location) -> Dict[str, str]:
         location=location).execute()
 
 
-def calculation_month_count_arg(value) -> int:
+def calculation_month_count_arg(value: str) -> int:
     """Enforces the acceptable values for the calculation_month_count parameter in the pipelines."""
     int_value = int(value)
 
@@ -137,7 +137,7 @@ def calculation_month_count_arg(value) -> int:
     return int_value
 
 
-def calculation_end_month_arg(value) -> str:
+def calculation_end_month_arg(value: str) -> str:
     """Enforces the acceptable values for the calculation_end_month parameter in the pipelines."""
     try:
         end_month_date = datetime.datetime.strptime(value, '%Y-%m').date()

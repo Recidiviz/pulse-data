@@ -213,10 +213,10 @@ class NonRevocationReturnSupervisionTimeBucket(SupervisionTimeBucket, ViolationT
         return self.case_compliance.most_recent_assessment_date
 
     @property
-    def assessment_up_to_date(self) -> Optional[bool]:
+    def num_days_assessment_overdue(self) -> Optional[int]:
         if not self.case_compliance:
             return None
-        return self.case_compliance.assessment_up_to_date
+        return self.case_compliance.num_days_assessment_overdue
 
     @property
     def face_to_face_count(self) -> Optional[int]:
