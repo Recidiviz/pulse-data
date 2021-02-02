@@ -18,6 +18,7 @@
 """Scrapes the texas aggregate site and finds pdfs to download."""
 from typing import Set
 
+import re
 import requests
 from lxml import html
 
@@ -29,4 +30,16 @@ def get_urls_to_download() -> Set[str]:
     page = requests.get(STATE_AGGREGATE_URL).text
     html_tree = html.fromstring(page)
     links = html_tree.xpath('//a/@href')
-    return {link for link in links if 'Abbre' in link and '.pdf' in link}
+    pattern = re.compile(r'(\d{4}).pdf')
+    result = {*()}
+
+    for link in links:
+        if 'Abbre' in link and '.pdf' in link:
+            search = pattern.search(link)
+            # The scraper currently fails on many old reports.
+            # This should be removed once it is extended to support them.
+            if search and search.group(1) < '2020':
+                continue
+            result.add(link)
+
+    return result
