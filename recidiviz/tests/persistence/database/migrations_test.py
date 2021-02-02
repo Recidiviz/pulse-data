@@ -30,6 +30,7 @@ from sqlalchemy import create_engine
 from recidiviz.persistence.database.sqlalchemy_engine_manager import SQLAlchemyEngineManager, SchemaType
 from recidiviz.tools.postgres import local_postgres_helpers
 
+
 @pytest.mark.uses_db
 class MigrationsTestBase:
     """This is the base class for testing that migrations work.
@@ -43,14 +44,14 @@ class MigrationsTestBase:
     def setUp(self) -> None:
         self.db_dir = local_postgres_helpers.start_on_disk_postgresql_database()
         self.overridden_env_vars = local_postgres_helpers.update_local_sqlalchemy_postgres_env_vars()
-        self.engine = create_engine(local_postgres_helpers.on_disk_postgres_db_url())
+        self.engine = create_engine(local_postgres_helpers.postgres_db_url_from_env_vars())
 
     def tearDown(self) -> None:
         local_postgres_helpers.restore_local_env_vars(self.overridden_env_vars)
         local_postgres_helpers.stop_and_clear_on_disk_postgresql_database(self.db_dir)
 
     def fetch_all_enums(self) -> Dict[str, Set[str]]:
-        engine = create_engine(local_postgres_helpers.on_disk_postgres_db_url())
+        engine = create_engine(local_postgres_helpers.postgres_db_url_from_env_vars())
 
         conn = engine.connect()
         rows = conn.execute("""

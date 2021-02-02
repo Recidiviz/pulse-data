@@ -10,7 +10,8 @@ mock = "*"
 pytest = "*"
 pylint = "*"
 pytest-cov = "*"
-mypy = "*"
+# TODO(#5596): Un-pin mypy
+mypy = "<0.800"
 coveralls = "*"
 apache-beam = {extras = ["gcp", "test"],version = "*"}
 freezegun = "*"
@@ -51,6 +52,7 @@ opencensus-ext-stackdriver = "*"
 alembic = "*"
 sqlalchemy = "*"
 flask = "*"
+Flask-SQLAlchemy-Session = "*"
 iteration-utilities = "*"
 "pypdf2" = "*"
 pyyaml = "*"
@@ -101,7 +103,8 @@ psycogreen = "*"
 # marshmallow~=2, but flask-appbuilder does not yet support marshmallow~=3, so we pin marshmallow-sqlalchemy back
 # instead.
 marshmallow-sqlalchemy = "<0.24.0"
-cattrs = "*"
+# TODO(#5628): Un-pin cattrs
+cattrs = "<1.2.0"
 # If the dill version changes be sure to update the pinned version in setup.py
 dill = "*"
 matplotlib = "*"
