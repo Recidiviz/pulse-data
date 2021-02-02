@@ -2,3 +2,12 @@ file_tag: dbo_Miscon
 primary_key_cols:
   - control_number
   - misconduct_number
+columns:
+  - name: control_number
+    is_datetime: False
+    description: |
+      ID that follows a person through all encounters with the PA DOC (ideally). In practice, they make mistakes and
+      this is retroactively edited with some frequency.
+  - name: misconduct_number
+    is_datetime: False
+    description: Unique identifier for a given misconduct entry. Reliably globally unique within this table.
