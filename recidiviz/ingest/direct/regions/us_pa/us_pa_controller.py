@@ -50,9 +50,11 @@ from recidiviz.ingest.direct.controllers.csv_gcsfs_direct_ingest_controller impo
 from recidiviz.ingest.direct.direct_ingest_controller_utils import update_overrides_from_maps, create_if_not_exists
 from recidiviz.ingest.direct.regions.us_pa.us_pa_assessment_level_reference import set_date_specific_lsir_fields
 from recidiviz.ingest.direct.regions.us_pa.us_pa_enum_helpers import incarceration_period_release_reason_mapper, \
-    concatenate_incarceration_period_end_codes, incarceration_period_purpose_mapper, \
-    concatenate_incarceration_period_purpose_codes, incarceration_period_admission_reason_mapper, \
-    concatenate_incarceration_period_start_codes, revocation_type_mapper, assessment_level_mapper
+    concatenate_sci_incarceration_period_end_codes, incarceration_period_purpose_mapper, \
+    concatenate_sci_incarceration_period_purpose_codes, incarceration_period_admission_reason_mapper, \
+    concatenate_sci_incarceration_period_start_codes, revocation_type_mapper, assessment_level_mapper, \
+    concatenate_ccis_incarceration_period_start_codes, concatenate_ccis_incarceration_period_purpose_codes, \
+    concatenate_ccis_incarceration_period_end_codes
 from recidiviz.ingest.direct.regions.us_pa.us_pa_violation_type_reference import violated_condition
 from recidiviz.ingest.direct.state_shared_row_posthooks import copy_name_to_alias, gen_label_single_external_id_hook, \
     gen_rationalize_race_and_ethnicity, gen_set_agent_type, gen_convert_person_ids_to_external_id_objects, \
@@ -87,12 +89,13 @@ class UsPaController(CsvGcsfsDirectIngestController):
             max_delay_sec_between_files=max_delay_sec_between_files)
         self.enum_overrides = self.generate_enum_overrides()
 
-        incarceration_period_row_postprocessors = [
+        sci_incarceration_period_row_postprocessors = [
             gen_label_single_external_id_hook(US_PA_CONTROL),
             self._concatenate_admission_reason_codes,
             self._concatenate_release_reason_codes,
             self._concatenate_incarceration_purpose_codes,
             self._add_incarceration_type,
+            self._set_sci_incarceration_period_custodial_authority,
         ]
 
         doc_person_info_postprocessors: List[Callable] = [
@@ -127,8 +130,14 @@ class UsPaController(CsvGcsfsDirectIngestController):
             ],
             # TODO(#4187): Once v2 views have shipped in production, remove this tag and deprecate all associated ingest
             #  view metadata rows
-            'incarceration_period': incarceration_period_row_postprocessors,
-            'sci_incarceration_period': incarceration_period_row_postprocessors,
+            'incarceration_period': sci_incarceration_period_row_postprocessors,
+            'sci_incarceration_period': sci_incarceration_period_row_postprocessors,
+            'ccis_incarceration_period': [
+                self._concatenate_admission_reason_codes,
+                self._concatenate_release_reason_codes,
+                self._add_incarceration_type,
+                self._concatenate_incarceration_purpose_codes,
+            ],
             'dbo_Miscon': [
                 gen_label_single_external_id_hook(US_PA_CONTROL),
                 self._specify_incident_location,
@@ -155,7 +164,7 @@ class UsPaController(CsvGcsfsDirectIngestController):
                 self._unpack_supervision_period_conditions,
                 self._set_supervising_officer,
                 self._set_supervision_site,
-                self._set_custodial_authority,
+                self._set_supervision_period_custodial_authority,
             ],
             'supervision_violation': [
                 self._append_supervision_violation_entries,
@@ -185,6 +194,9 @@ class UsPaController(CsvGcsfsDirectIngestController):
             ],
             'sci_incarceration_period': [
                 gen_convert_person_ids_to_external_id_objects(self._get_id_type),
+            ],
+            'ccis_incarceration_period': [
+                gen_convert_person_ids_to_external_id_objects(self._get_id_type)
             ],
             'dbo_Miscon': [
                 gen_convert_person_ids_to_external_id_objects(self._get_id_type),
@@ -225,6 +237,7 @@ class UsPaController(CsvGcsfsDirectIngestController):
             #  view metadata rows
             'incarceration_period': _state_incarceration_period_ancestor_chain_overrides,
             'sci_incarceration_period': _state_incarceration_period_ancestor_chain_overrides,
+            'ccis_incarceration_period': _state_incarceration_period_ancestor_chain_overrides,
             'supervision_sentence': _state_supervision_sentence_ancestor_chain_overrides,
             'supervision_violation_response': _state_supervision_violation_response_ancestor_chain_overrides,
         }
@@ -304,7 +317,8 @@ class UsPaController(CsvGcsfsDirectIngestController):
         ],
 
         StateIncarcerationType.COUNTY_JAIL: [
-            'C',  # County
+            'C',     # County
+            'CCIS',  # All CCIS periods are in contracted county facilities
         ],
         StateIncarcerationType.FEDERAL_PRISON: [
             'F',  # Federal
@@ -313,11 +327,13 @@ class UsPaController(CsvGcsfsDirectIngestController):
             'O',  # Transfer out of Pennsylvania
         ],
         StateIncarcerationType.STATE_PRISON: [
-            'S',  # State
-            'I',  # Transfer into Pennsylvania
-            'T',  # County Transfer, i.e. transfer from county to state, usually for mental health services ("5B Case")
-            'P',  # SIP Program
-            'E',  # SIP Evaluation
+            'S',    # State
+            'I',    # Transfer into Pennsylvania
+            'T',    # County Transfer, i.e. transfer from county to state, usually for mental health services
+                    # ("5B Case")
+            'P',    # SIP Program
+            'E',    # SIP Evaluation
+            'SCI',  # State Correctional Institution
         ],
         StateIncarcerationIncidentOutcomeType.CELL_CONFINEMENT: [
             'C',  # Cell Confinement
@@ -539,9 +555,14 @@ class UsPaController(CsvGcsfsDirectIngestController):
             'RESCR12',
         ],
         StateCustodialAuthority.STATE_PRISON: [
+            # SUPERVISION CUSTODIAL AUTHORITY CODES
             '09',  # Emergency Release - used for COVID releases
+            # INCARCERATION CUSTODIAL AUTHORITY CODES
+            '46',  # Technical parole violator being held in a contracted county facility
+            '51',  # Receiving treatment in a contracted county facility
         ],
         StateCustodialAuthority.SUPERVISION_AUTHORITY: [
+            # SUPERVISION CUSTODIAL AUTHORITY CODES
             # These periods are in-state probation cases supervised by PBPP. If we implement decision_making_authority,
             # these would have a type of COURT
             '4A',  # ARD case - Sentenced by County Judge and Supervised by PBPP
@@ -563,6 +584,8 @@ class UsPaController(CsvGcsfsDirectIngestController):
             '06',  # Other States' Parole/Reparole - Paroled/Reparoled by other state and transferred to PA
             '07',  # Other States' Probation - Sentenced to Probation by other state and transferred to PA
             '08',  # Other States' Deferred Sentence (deprecated)
+            # INCARCERATION CUSTODIAL AUTHORITY CODES
+            '26',  # Parolee in a Parole Violator Center
         ]
     }
 
@@ -604,6 +627,7 @@ class UsPaController(CsvGcsfsDirectIngestController):
         else:
             # TODO(#4187): Launch this to staging and then prod with any new reruns
             launched_file_tags.append('sci_incarceration_period')
+            launched_file_tags.append('ccis_incarceration_period')
 
         launched_file_tags += [
             'dbo_Miscon',
@@ -696,6 +720,7 @@ class UsPaController(CsvGcsfsDirectIngestController):
             #  view metadata rows
             'incarceration_period',
             'sci_incarceration_period',
+            'ccis_incarceration_period',
             'dbo_Miscon',
             'board_action',
         ]:
@@ -918,17 +943,21 @@ class UsPaController(CsvGcsfsDirectIngestController):
                     obj.state_charge_id = obj.state_charge_id.strip()
 
     @staticmethod
-    def _concatenate_admission_reason_codes(_file_tag: str,
+    def _concatenate_admission_reason_codes(file_tag: str,
                                             row: Dict[str, str],
                                             extracted_objects: List[IngestObject],
                                             _cache: IngestObjectCache) -> None:
         """Concatenates the incarceration period admission reason-related codes to be parsed in the enum mapper."""
         for obj in extracted_objects:
             if isinstance(obj, StateIncarcerationPeriod):
-                obj.admission_reason = concatenate_incarceration_period_start_codes(row)
+                # TODO(#4187): Once v2 views have shipped in production, only check for sci_incarceration_period
+                if file_tag in ('incarceration_period', 'sci_incarceration_period'):
+                    obj.admission_reason = concatenate_sci_incarceration_period_start_codes(row)
+                elif file_tag == 'ccis_incarceration_period':
+                    obj.admission_reason = concatenate_ccis_incarceration_period_start_codes(row)
 
     @staticmethod
-    def _concatenate_release_reason_codes(_file_tag: str,
+    def _concatenate_release_reason_codes(file_tag: str,
                                           row: Dict[str, str],
                                           extracted_objects: List[IngestObject],
                                           _cache: IngestObjectCache) -> None:
@@ -936,30 +965,43 @@ class UsPaController(CsvGcsfsDirectIngestController):
         for obj in extracted_objects:
             if isinstance(obj, StateIncarcerationPeriod):
                 if obj.release_date:
-                    obj.release_reason = concatenate_incarceration_period_end_codes(row)
+                    # TODO(#4187): Once v2 views have shipped in production, only check for sci_incarceration_period
+                    if file_tag in ('incarceration_period', 'sci_incarceration_period'):
+                        obj.release_reason = concatenate_sci_incarceration_period_end_codes(row)
+                    elif file_tag == 'ccis_incarceration_period':
+                        obj.release_reason = concatenate_ccis_incarceration_period_end_codes(row)
 
     @staticmethod
-    def _concatenate_incarceration_purpose_codes(_file_tag: str,
+    def _concatenate_incarceration_purpose_codes(file_tag: str,
                                                  row: Dict[str, str],
                                                  extracted_objects: List[IngestObject],
                                                  _cache: IngestObjectCache) -> None:
         """Concatenates the incarceration period specialized purpose-related codes to be parsed in the enum mapper."""
         for obj in extracted_objects:
             if isinstance(obj, StateIncarcerationPeriod):
-                obj.specialized_purpose_for_incarceration = concatenate_incarceration_period_purpose_codes(row)
+                # TODO(#4187): Once v2 views have shipped in production, only check for sci_incarceration_period
+                if file_tag in ('incarceration_period', 'sci_incarceration_period'):
+                    obj.specialized_purpose_for_incarceration = concatenate_sci_incarceration_period_purpose_codes(row)
+                elif file_tag == 'ccis_incarceration_period':
+                    obj.specialized_purpose_for_incarceration = concatenate_ccis_incarceration_period_purpose_codes(row)
+
 
     @staticmethod
     def _add_incarceration_type(
-            _file_tag: str,
+            file_tag: str,
             _row: Dict[str, str],
             extracted_objects: List[IngestObject],
             _cache: IngestObjectCache) -> None:
         """Sets incarceration type on incarceration periods based on facility."""
         for obj in extracted_objects:
             if isinstance(obj, StateIncarcerationPeriod):
-                # TODO(#3312): Figure out how to fill out the incarceration_type COUNTY_JAIL/STATE/FEDERAL based on IC
-                #  sentence status + location codes? Ask PA about this!
-                obj.incarceration_type = StateIncarcerationType.STATE_PRISON.value
+                # TODO(#4187): Once v2 views have shipped in production, only check for sci_incarceration_period
+                if file_tag in ('incarceration_period', 'sci_incarceration_period'):
+                    # TODO(#3312): Figure out how to fill out the incarceration_type COUNTY_JAIL/STATE/FEDERAL based on
+                    #  IC sentence status + location codes? Ask PA about this!
+                    obj.incarceration_type = 'SCI'
+                elif file_tag == 'ccis_incarceration_period':
+                    obj.incarceration_type = 'CCIS'
 
     @staticmethod
     def _specify_incident_location(_file_tag: str,
@@ -1194,10 +1236,10 @@ class UsPaController(CsvGcsfsDirectIngestController):
                     obj.supervision_site = district_office
 
     @staticmethod
-    def _set_custodial_authority(_file_tag: str,
-                                 row: Dict[str, str],
-                                 extracted_objects: List[IngestObject],
-                                 _cache: IngestObjectCache) -> None:
+    def _set_supervision_period_custodial_authority(_file_tag: str,
+                                                    row: Dict[str, str],
+                                                    extracted_objects: List[IngestObject],
+                                                    _cache: IngestObjectCache) -> None:
         """Sets the custodial_authority on the supervision period."""
         # TODO(#1882): This row post hook should not be necessary once you can map a column value to multiple fields on
         #  the ingested object.
@@ -1206,6 +1248,16 @@ class UsPaController(CsvGcsfsDirectIngestController):
         for obj in extracted_objects:
             if isinstance(obj, StateSupervisionPeriod):
                 obj.custodial_authority = custodial_authority
+
+    @staticmethod
+    def _set_sci_incarceration_period_custodial_authority(_file_tag: str,
+                                                          _row: Dict[str, str],
+                                                          extracted_objects: List[IngestObject],
+                                                          _cache: IngestObjectCache) -> None:
+        """Sets the custodial_authority on the incarceration period."""
+        for obj in extracted_objects:
+            if isinstance(obj, StateIncarcerationPeriod):
+                obj.custodial_authority = StateCustodialAuthority.STATE_PRISON.value
 
     @staticmethod
     def _append_supervision_violation_entries(_file_tag: str,
@@ -1340,7 +1392,7 @@ def _generate_sci_incarceration_period_primary_key(_file_tag: str, row: Dict[str
 
 
 def _state_incarceration_period_ancestor_chain_overrides(_file_tag: str, row: Dict[str, str]) -> Dict[str, str]:
-    """This creates an incarceration sentence id for specifying the ancestor of a supervision period.
+    """This creates an incarceration sentence id for specifying the ancestor of an incarceration period.
 
     Incarceration periods only have explicit links to sentence groups. However, we know that the vast majority of
     sentence groups in PA have a single sentence with a type number of 01, and the rest have 2 sentences with type

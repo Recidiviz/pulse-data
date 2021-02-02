@@ -75,6 +75,9 @@ WITH inmate_number_with_control_numbers AS (
     'PEND',
     -- Pending Rejected: The facility has rejected the admission the person
     'PREJ',
+    -- Parole to Center: Status Change when any reentrant switches to a new DOC# or if a SIP participant is paroled to
+    -- the center they reside in (very rare). CCIS will automatically generate an “In Residence” code after this entry.
+    'PTCE',
     -- Pending Withdrawn: The person no longer needs to be admitted to the facility
     'PWTH',
     -- Awaiting Transfer - Detainer: This person hasn't moved yet
@@ -127,9 +130,7 @@ WITH inmate_number_with_control_numbers AS (
     'DECX',
     -- Escape
     'ESCP',
-    -- Parole to Center: Released from DOC custody, may stay 
-    'PTCE',
-    -- Parole to Street: Released from a facility to the street
+    -- Parole to Street: Released from a facility to a PBPP approved home plan
     'PTST',
     -- Sentence Completed
     'SENC',
@@ -138,9 +139,10 @@ WITH inmate_number_with_control_numbers AS (
     'TRGH',
     -- Transfer to SCI: Transfer from community facility to SCI
     'TRSC',
-    -- Temporary Transfer - Medical
+    -- TODO(#2002): Count people on temporary medical transfers in the DOC population
+    -- Temporary Transfer - Medical: Transferred to non-DOC funded medical/psychiatric treatment facility
     'TTRN',
-    -- Unsuccessful Discharge: Unsuccessfully discharged from supervision. Were sent to an SCI.
+    -- Unsuccessful Discharge: Removed from parole for rule violations or significant incidents. Sent to an SCI.  
     'UDSC',
     -- Hospital: Temporary medical transfer
     'HOSP',
@@ -170,15 +172,6 @@ WITH inmate_number_with_control_numbers AS (
                                   Program_Id = '46' DESC,
                                   Program_Id = '26' DESC) AS priority_ranking
   FROM {{dbo_vwCCISAllProgDtls}}
-  -- Program IDs that signify being included in the ACT 122 population -- 
-  WHERE Program_Id IN (
-    -- Parole Violator: Revocation to Parole Violator Center:
-    '26',
-    -- Technical Parole Violator: 6-9-12 Month Revocation
-    '46',
-    -- Detox: Treatment Revocation
-    '51'
-  )
 ), program_base AS (
   SELECT
     * EXCEPT (priority_ranking)
@@ -202,12 +195,29 @@ WITH inmate_number_with_control_numbers AS (
   LEFT JOIN
     program_base
   USING (movement_id)
-), periods AS (
+), valid_periods AS (
   SELECT
-    * EXCEPT(movement_type, movement_sequence)
+    * EXCEPT(movement_type, movement_sequence),
+    -- For program change statuses, we need to know the previous program_id to determine if a parole revocation occurred
+    (IF(start_status_code = 'PRCH', LAG(program_id) {PARTITION_CLAUSE}, NULL)) AS previous_program_id
   FROM full_periods
   WHERE movement_type = 'ADM'
-  AND program_id IS NOT NULL
+), periods AS (
+  SELECT 
+    * EXCEPT (previous_program_id), 
+    -- Moving from a non-revocation program to a revocation program_id is a revocation
+    (start_status_code = 'PRCH'  AND program_id IN ('26', '46', '51')
+        AND previous_program_id NOT IN ('26', '46', '51')) AS start_is_new_revocation
+  FROM valid_periods
+  -- Program IDs that signify being included in the ACT 122 population -- 
+  WHERE Program_Id IN (
+    -- Parole Violator: Revocation to Parole Violator Center:
+    '26',
+    -- Technical Parole Violator: 6-9-12 Month Revocation
+    '46',
+    -- Detox: Treatment Revocation
+    '51'
+  )
 )
 
 SELECT *
