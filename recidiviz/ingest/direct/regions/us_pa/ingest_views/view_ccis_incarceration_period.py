@@ -40,7 +40,9 @@ WITH inmate_number_with_control_numbers AS (
     i.control_number
   FROM
     {{dbo_vwCCISAllMvmt}} m
-  LEFT JOIN
+  -- As of writing, there are no movements with control numbers that don't exist in dbo_tblSearchInmateInfo, but we
+  -- do an inner JOIN to make reasoning about entity matching issues and raw data migrations easier.
+  JOIN
     inmate_number_with_control_numbers i
   USING (inmate_number)
   WHERE control_number_order = 1
