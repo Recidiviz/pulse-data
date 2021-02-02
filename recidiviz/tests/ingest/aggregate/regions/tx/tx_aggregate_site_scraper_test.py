@@ -34,9 +34,9 @@ class TestTxAggregateSiteScraper(TestCase):
         mockget.return_value = mockresponse
         mockresponse.text = REPORTS_HTML
         url1 = ('https://www.tcjs.state.tx.us/docs/AbbreviatedPopReports/'
-                'Abbreviated Pop Rpt June 2017.pdf')
+                'Abbreviated Pop Rpt June 2020.pdf')
         url2 = ('https://www.tcjs.state.tx.us/docs/AbbreviatedPopReports/'
-                'Abbreviated Pop Rpt Jan 2016.pdf')
+                'Abbreviated Pop Rpt Jan 2021.pdf')
         expected_urls = {url1, url2}
 
         urls = tx_aggregate_site_scraper.get_urls_to_download()
