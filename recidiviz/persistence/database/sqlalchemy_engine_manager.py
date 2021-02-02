@@ -67,10 +67,10 @@ class SQLAlchemyEngineManager:
     def init_engine_for_postgres_instance(
             cls,
             db_url: str,
-            schema_base: DeclarativeMeta) -> None:
+            schema_base: DeclarativeMeta) -> Engine:
         """Initializes a sqlalchemy Engine object for the given Postgres database / schema and caches it for future use.
         """
-        cls.init_engine_for_db_instance(
+        return cls.init_engine_for_db_instance(
             db_url,
             schema_base,
             # Only reuse connections for up to 10 minutes to avoid failures due to stale connections. Cloud SQL will
@@ -84,7 +84,7 @@ class SQLAlchemyEngineManager:
             cls,
             db_url: str,
             schema_base: DeclarativeMeta,
-            **dialect_specific_kwargs: Any) -> None:
+            **dialect_specific_kwargs: Any) -> Engine:
         """Initializes a sqlalchemy Engine object for the given database / schema and caches it for future use."""
 
         if schema_base in cls._engine_for_schema:
@@ -96,6 +96,7 @@ class SQLAlchemyEngineManager:
             **dialect_specific_kwargs)
         schema_base.metadata.create_all(engine)
         cls._engine_for_schema[schema_base] = engine
+        return engine
 
     @staticmethod
     def get_isolation_level(schema_base: DeclarativeMeta) -> Optional[str]:
@@ -123,9 +124,9 @@ class SQLAlchemyEngineManager:
         cls._engine_for_schema.clear()
 
     @classmethod
-    def init_engine(cls, schema_type: SchemaType) -> None:
-        cls.init_engine_for_postgres_instance(
-            db_url=cls._get_server_postgres_instance_url(schema_type=schema_type),
+    def init_engine(cls, schema_type: SchemaType) -> Engine:
+        return cls.init_engine_for_postgres_instance(
+            db_url=cls.get_server_postgres_instance_url(schema_type=schema_type),
             schema_base=cls._SCHEMA_TO_DECLARATIVE_META[schema_type])
 
     @classmethod
@@ -335,7 +336,7 @@ class SQLAlchemyEngineManager:
         return original_values
 
     @classmethod
-    def _get_server_postgres_instance_url(cls, *, schema_type: SchemaType) -> str:
+    def get_server_postgres_instance_url(cls, *, schema_type: SchemaType) -> str:
         instance_id_key = cls.get_cloudsql_instance_id_key(schema_type)
         if instance_id_key is None:
             raise ValueError(f'Instance id is not configured for schema type [{schema_type}]')

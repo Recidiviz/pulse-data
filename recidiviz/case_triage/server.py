@@ -20,12 +20,18 @@ import os
 from typing import Dict
 
 from flask import Flask, jsonify, Response, session, g
+from flask_sqlalchemy_session import current_session, flask_scoped_session
+from sqlalchemy.orm import sessionmaker
 
 from recidiviz.case_triage.authorization import (
     AuthorizationStore,
     CaseTriageAuthorizationError,
 )
+from recidiviz.case_triage.querier import CaseTriageQuerier
 from recidiviz.case_triage.util import get_local_secret
+from recidiviz.persistence.database.base_schema import CaseTriageBase
+from recidiviz.persistence.database.sqlalchemy_engine_manager import SQLAlchemyEngineManager, SchemaType
+from recidiviz.tools.postgres import local_postgres_helpers
 from recidiviz.utils.auth.auth0 import (
     Auth0Config,
     AuthorizationError,
@@ -42,6 +48,14 @@ static_folder = os.path.abspath(os.path.join(
 
 app = Flask(__name__, static_folder=static_folder, static_url_path="/")
 app.secret_key = get_local_secret("case_triage_secret_key")
+
+if in_development():
+    db_url = local_postgres_helpers.postgres_db_url_from_env_vars()
+else:
+    db_url = SQLAlchemyEngineManager.get_server_postgres_instance_url(schema_type=SchemaType.CASE_TRIAGE)
+engine = SQLAlchemyEngineManager.init_engine_for_postgres_instance(db_url, CaseTriageBase)
+session_factory = sessionmaker(bind=engine)
+app.scoped_session = flask_scoped_session(session_factory, app)
 
 
 def on_successful_authorization(_payload: Dict[str, str], token: str) -> None:
@@ -105,7 +119,9 @@ def auth0_public_config() -> str:
 @app.route('/api/clients')
 @requires_authorization
 def clients() -> str:
-    return json.dumps([
-        {"name": "Dan"},
-        {"name": "Nikhil"},
-    ], indent=4)
+    return jsonify([
+        client.to_json() for client in CaseTriageQuerier.clients_for_officer(
+            current_session,
+            g.current_user['email'],
+        )
+    ])

@@ -215,6 +215,12 @@ def on_disk_postgres_db_url() -> str:
 
 
 @environment.local_only
+def postgres_db_url_from_env_vars() -> str:
+    return f'postgresql://{os.getenv(SQLALCHEMY_DB_USER)}:{os.getenv(SQLALCHEMY_DB_PASSWORD)}@' + \
+        f'{os.getenv(SQLALCHEMY_DB_HOST)}:5432/{os.getenv(SQLALCHEMY_DB_NAME)}'
+
+
+@environment.local_only
 def teardown_on_disk_postgresql_database(declarative_base: DeclarativeMeta) -> None:
     """Clears state in an on-disk postgres database for a given schema, for use once a single test has completed. As an
     optimization, does not actually drop tables, just clears them. As a best practice, you should call
