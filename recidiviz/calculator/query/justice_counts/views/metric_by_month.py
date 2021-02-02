@@ -67,11 +67,11 @@ flattened_zipped as (
   SELECT
     instance_id, cell_id,
     -- Aggregate the unnested dimensions into a single array for that cell, pulling in the dimension value as well
-    ARRAY_AGG(STRUCT(dimension, dimension_values[OFFSET(dimension_offset)] AS dimension_value)) as dimension_values,
+    ARRAY_AGG(STRUCT<dimension string, dimension_value string>(dimension, dimension_values[OFFSET(dimension_offset)])) as dimension_values,
     -- Each cell only has a single value, which has been exploded out to multiple rows. Since we are grouping by cell we
     -- can just pick any value since they are all the same
     ANY_VALUE(value) as value
-  FROM flattened, UNNEST(dimensions) AS dimension WITH OFFSET AS dimension_offset
+  FROM flattened, UNNEST(dimensions) AS dimension WITH OFFSET dimension_offset
   GROUP BY instance_id, cell_id
 ),
 
@@ -79,13 +79,17 @@ flattened_zipped as (
 -- Filters the cells to only those that match the provided filters.
 filtered_values as (
   SELECT instance_id, cell_id, dimension_values, value
-  FROM flattened_zipped
-  WHERE ARRAY_LENGTH(ARRAY(
-    SELECT dimension_value FROM UNNEST(dimension_values)
-    -- Filters the dimension array, only keeping ones that match the filters.
-    WHERE {dimensions_match_filter_clause}
+  FROM (
+    SELECT
+      *, ARRAY(
+        SELECT dimension_value FROM UNNEST(dimension_values)
+        -- Filters the dimension array, only keeping ones that match the filters.
+        WHERE {dimensions_match_filter_clause}
+      ) as matching_filters
+    FROM flattened_zipped
+  ) as matched
   -- Only keep cells where with all filters present.
-  )) = {num_filtered_dimensions}
+  WHERE ARRAY_LENGTH(matched.matching_filters) = {num_filtered_dimensions}
 ),
 
 -- SPATIAL AGGREGATION
@@ -95,17 +99,18 @@ aggregated_values as (
   FROM (
     SELECT
       instance_id, cell_id,
+      -- Rebuild the dimensions array, only including dimensions we want to aggregate by
       ARRAY(
-        SELECT STRUCT(dimension, dimension_value) FROM UNNEST(dimension_values)
+        SELECT STRUCT<dimension string, dimension_value string>(dimension, dimension_value) FROM UNNEST(dimension_values)
         WHERE dimension IN ({aggregated_dimension_identifiers})
       ) as grouped_dimensions,
       value
-    FROM filtered_values
+    FROM filtered_values) as grouped
   -- BigQuery doesn't allow grouping by an array, so we build a string instead. Uses '|' as a delimeter, relying on this
   -- not being present in dimension values to avoid conflicts.
-  ) GROUP BY
+  GROUP BY
     instance_id,
-    ARRAY_TO_STRING(ARRAY(SELECT dimension_value FROM UNNEST(grouped_dimensions) ORDER BY dimension), "|")
+    ARRAY_TO_STRING(ARRAY(SELECT dimension_value FROM UNNEST(grouped_dimensions) ORDER BY dimension), '|')
 ),
 
 -- TIME AGGREGATION
@@ -117,7 +122,7 @@ joined_data as (
     instance.id as instance_id,
     time_window_start, time_window_end, DATE_TRUNC(DATE_SUB(time_window_end, INTERVAL 1 DAY), MONTH) as start_of_month,
     dimensions,
-    ARRAY_TO_STRING(ARRAY(SELECT dimension_value FROM UNNEST(dimensions) ORDER BY dimension), "|") as dimensions_string,
+    ARRAY_TO_STRING(ARRAY(SELECT dimension_value FROM UNNEST(dimensions) ORDER BY dimension), '|') as dimensions_string,
     value
   FROM `{project_id}.{base_dataset}.report_table_instance_materialized` instance
   JOIN `{project_id}.{base_dataset}.report_table_definition_materialized` definition
@@ -148,10 +153,10 @@ combined_periods_data as (
       OVER(PARTITION BY source_id, report_type, definition_id, start_of_month, dimensions_string
            ORDER BY time_window_end DESC, publish_date DESC) as ordinal
     FROM joined_data
-  )
+  ) as partitioned
   -- If it is DELTA then sum them, otherwise just pick one
   -- Note: For AVERAGE we could do a weighted average instead, but for now dropping is okay
-  WHERE measurement_type = 'DELTA' OR ordinal = 1
+  WHERE measurement_type = 'DELTA' OR partitioned.ordinal = 1
   GROUP BY source_id, report_type, definition_id, start_of_month, dimensions_string
 ),
 
@@ -171,7 +176,8 @@ dropped_periods_data as (
     FROM combined_periods_data
   -- TODO(#5517): If this covers more than just that month, do we want to drop more as well? Or are we okay with window
   -- being quarter but output period being month? Same question for if it covers less?
-  ) WHERE ordinal = 1
+  ) as partitioned
+  WHERE partitioned.ordinal = 1
 ),
 
 -- COMPARISON
@@ -191,12 +197,12 @@ compared_data as (
     LEFT JOIN dropped_periods_data compared_data1 ON
       (base_data.dimensions_string  = compared_data1.dimensions_string AND
        compared_data1.start_of_month <= DATE_SUB(base_data.start_of_month, INTERVAL 1 YEAR))
-  )
+  ) as joined_with_prior
   -- Picks the row with the compared data that is the most recent
-  WHERE ordinal = 1
+  WHERE joined_with_prior.ordinal = 1
 )
 
-SELECT {aggregated_dimensions_to_columns_clause},
+SELECT {aggregated_dimensions_array_columns_to_single_value_columns_clause},
        '{metric_output_name}' as metric,
        EXTRACT(YEAR from start_of_month) as year,
        EXTRACT(MONTH from start_of_month) as month,
@@ -207,8 +213,13 @@ SELECT {aggregated_dimensions_to_columns_clause},
        EXTRACT(MONTH from compare_start_of_month) as compared_to_month,
        value - compare_value as value_change,
        -- Note: This can return NULL in the case of divide by zero
-       SAFE_DIVIDE((value - compare_value), compare_value) as percentage_change,
-FROM compared_data
+       SAFE_DIVIDE((value - compare_value), compare_value) as percentage_change
+FROM (
+    SELECT 
+        *,
+        {aggregated_dimensions_array_split_to_columns_clause}
+    FROM compared_data
+) as unnested_dimensions
 ORDER BY {aggregated_dimension_columns}, metric, year DESC, month DESC
 """
 
@@ -219,6 +230,7 @@ ORDER BY {aggregated_dimension_columns}, metric, year DESC, month DESC
 # - summing weeks to a month
 # - monthly data for a quarter
 # - aggregated with null values
+# - divide by zero
 
 @attr.s(frozen=True)
 class Aggregation:
@@ -304,10 +316,14 @@ class CalculatedMetricByMonthViewBuilder(SimpleBigQueryViewBuilder):
             for aggregation in metric_to_calculate.aggregated_dimensions.values()])
 
         # For moving aggregate dimensions to columns in output
-        aggregated_dimensions_to_columns_clause = ', '.join([
+        aggregated_dimensions_array_columns_to_single_value_columns_clause = ', '.join([
+            f"unnested_dimensions.{column_name}_array[ORDINAL(1)] as {column_name}"
+            for column_name in metric_to_calculate.aggregated_dimensions])
+        aggregated_dimensions_array_split_to_columns_clause = ', '.join([
             f"ARRAY(SELECT dimension_value FROM UNNEST(dimensions) "
-            f"WHERE dimension = '{aggregation.dimension.dimension_identifier()}')[OFFSET(0)] as {column_name}"
+            f"WHERE dimension = '{aggregation.dimension.dimension_identifier()}') as {column_name}_array"
             for column_name, aggregation in metric_to_calculate.aggregated_dimensions.items()])
+
         aggregated_dimension_columns = ', '.join(metric_to_calculate.aggregated_dimensions)
 
         super().__init__(
@@ -325,7 +341,9 @@ class CalculatedMetricByMonthViewBuilder(SimpleBigQueryViewBuilder):
             dimensions_match_filter_clause=dimensions_match_filter_clause,
             num_filtered_dimensions=str(len(metric_to_calculate.filtered_dimensions)),
             aggregated_dimension_identifiers=aggregated_dimension_identifiers,
-            aggregated_dimensions_to_columns_clause=aggregated_dimensions_to_columns_clause,
+            aggregated_dimensions_array_columns_to_single_value_columns_clause=\
+                aggregated_dimensions_array_columns_to_single_value_columns_clause,
+            aggregated_dimensions_array_split_to_columns_clause=aggregated_dimensions_array_split_to_columns_clause,
             metric_output_name=metric_to_calculate.output_name,
             aggregated_dimension_columns=aggregated_dimension_columns,
         )
