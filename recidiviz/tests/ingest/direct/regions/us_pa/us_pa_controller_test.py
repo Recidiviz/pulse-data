@@ -454,14 +454,98 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
 
         self.run_parse_file_test(expected, 'dbo_Senrec')
 
-    def test_populate_data_incarceration_period(self) -> None:
+    def test_populate_data_ccis_incarceration_period(self) -> None:
+        je1989_incarceration_periods = [
+            StateIncarcerationPeriod(
+                state_incarceration_period_id='12345',
+                admission_date='2016-12-21 00:00:00',
+                admission_reason='CCIS-false-INRS',
+                release_date='2017-04-26 00:00:00',
+                release_reason='CCIS-TRGH',
+                facility='136: KINTOCK ERIE', incarceration_type='CCIS',
+                specialized_purpose_for_incarceration='CCIS-26',
+                custodial_authority='26'
+            ),
+            StateIncarcerationPeriod(
+                state_incarceration_period_id='23456',
+                admission_date='2017-07-03 00:00:00',
+                admission_reason='CCIS-false-TRRC',
+                release_date='2018-01-03 00:00:00',
+                release_reason='CCIS-DC2P',
+                facility='198: CHESTER COUNTY', incarceration_type='CCIS',
+                specialized_purpose_for_incarceration='CCIS-46',
+                custodial_authority='46'
+            ),
+        ]
+
+        cj1991_incarceration_periods = [
+            StateIncarcerationPeriod(
+                state_incarceration_period_id='34567',
+                admission_date='2014-11-18 00:00:00',
+                admission_reason='CCIS-false-INRS',
+                release_date='2015-01-20 00:00:00',
+                release_reason='CCIS-DC2P',
+                facility='231: WERNERSVILLE CCC#30', incarceration_type='CCIS',
+                specialized_purpose_for_incarceration='CCIS-51',
+                custodial_authority='51'
+            ),
+            StateIncarcerationPeriod(
+                state_incarceration_period_id='45678',
+                admission_date='2016-10-03 00:00:00',
+                admission_reason='CCIS-true-PRCH',
+                release_date='2016-11-14 00:00:00',
+                release_reason='CCIS-PTST',
+                facility='195: LACKAWANNA COUNTY', incarceration_type='CCIS',
+                specialized_purpose_for_incarceration='CCIS-26',
+                custodial_authority='26'
+            ),
+        ]
+
+        expected = IngestInfo(
+            state_people=[
+                StatePerson(
+                    state_person_id='778899',
+                    state_person_external_ids=[
+                        StatePersonExternalId(state_person_external_id_id='778899', id_type=US_PA_CONTROL),
+                    ],
+                    state_sentence_groups=[
+                        StateSentenceGroup(state_sentence_group_id='JE1989',
+                                           state_incarceration_sentences=[
+                                               StateIncarcerationSentence(
+                                                   state_incarceration_sentence_id='JE1989-01',
+                                                   state_incarceration_periods=je1989_incarceration_periods
+                                               )
+                                           ]),
+                    ],
+                ),
+                StatePerson(
+                    state_person_id='445566',
+                    state_person_external_ids=[
+                        StatePersonExternalId(state_person_external_id_id='445566', id_type=US_PA_CONTROL),
+                    ],
+                    state_sentence_groups=[
+                        StateSentenceGroup(state_sentence_group_id='CJ1991',
+                                           state_incarceration_sentences=[
+                                               StateIncarcerationSentence(
+                                                   state_incarceration_sentence_id='CJ1991-01',
+                                                   state_incarceration_periods=cj1991_incarceration_periods
+                                               )
+                                           ]),
+                    ],
+                ),
+            ])
+
+        self.run_parse_file_test(expected, 'ccis_incarceration_period')
+
+    def test_populate_data_sci_incarceration_period(self) -> None:
         gf3374_incarceration_periods = [
             StateIncarcerationPeriod(
                 state_incarceration_period_id='GF3374-1',
                 admission_date='20081010',
                 admission_reason='NA-false-AC',
-                facility='PNG', incarceration_type='STATE_PRISON',
+                facility='PNG', incarceration_type='SCI',
                 specialized_purpose_for_incarceration='NA-P',
+                custodial_authority='STATE_PRISON',
             ),
         ]
 
@@ -470,43 +554,49 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
                 state_incarceration_period_id='CJ1991-1',
                 admission_date='20161011', release_date='20161022',
                 admission_reason='NA-false-AC', release_reason='DC-NA-TRN',
-                facility='GRA', incarceration_type='STATE_PRISON',
+                facility='GRA', incarceration_type='SCI',
                 specialized_purpose_for_incarceration='NA-S',
+                custodial_authority='STATE_PRISON',
             ),
             StateIncarcerationPeriod(
                 state_incarceration_period_id='CJ1991-2',
                 admission_date='20161022', release_date='20170602',
                 admission_reason='NA-false-TRN', release_reason='AS-NA-TRN',
-                facility='CAM', incarceration_type='STATE_PRISON',
+                facility='CAM', incarceration_type='SCI',
                 specialized_purpose_for_incarceration='NA-S',
+                custodial_authority='STATE_PRISON',
             ),
             StateIncarcerationPeriod(
                 state_incarceration_period_id='CJ1991-4',
                 admission_date='20170602', release_date='20170714',
                 admission_reason='NA-false-TRN', release_reason='P-SP-D',
-                facility='WAM', incarceration_type='STATE_PRISON',
+                facility='WAM', incarceration_type='SCI',
                 specialized_purpose_for_incarceration='NA-S',
+                custodial_authority='STATE_PRISON',
             ),
             StateIncarcerationPeriod(
                 state_incarceration_period_id='CJ1991-6',
                 admission_date='20180310', release_date='20180401',
                 admission_reason='PVP-false-APV', release_reason='AS-PVP-TRN',
-                facility='DAL', incarceration_type='STATE_PRISON',
+                facility='DAL', incarceration_type='SCI',
                 specialized_purpose_for_incarceration='PVP-S',
+                custodial_authority='STATE_PRISON',
             ),
             StateIncarcerationPeriod(
                 state_incarceration_period_id='CJ1991-7',
                 admission_date='20180401', release_date='20180723',
                 admission_reason='PVP-false-TRN', release_reason='AS-TPV-SC',
-                facility='WAM', incarceration_type='STATE_PRISON',
+                facility='WAM', incarceration_type='SCI',
                 specialized_purpose_for_incarceration='PVP-S',
+                custodial_authority='STATE_PRISON',
             ),
             StateIncarcerationPeriod(
                 state_incarceration_period_id='CJ1991-8',
                 admission_date='20180723', release_date='20180914',
                 admission_reason='TPV-true-SC', release_reason='P-RP-D',
-                facility='WAM', incarceration_type='STATE_PRISON',
+                facility='WAM', incarceration_type='SCI',
                 specialized_purpose_for_incarceration='TPV-S',
+                custodial_authority='STATE_PRISON',
             ),
         ]
 
@@ -515,71 +605,81 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
                 state_incarceration_period_id='JE1977-1',
                 admission_date='19910305', release_date='19910308',
                 admission_reason='NA-false-AC', release_reason='DC-NA-TRN',
-                facility='GRA', incarceration_type='STATE_PRISON',
+                facility='GRA', incarceration_type='SCI',
                 specialized_purpose_for_incarceration='NA-S',
+                custodial_authority='STATE_PRISON',
             ),
             StateIncarcerationPeriod(
                 state_incarceration_period_id='JE1977-2',
                 admission_date='19910308', release_date='19910425',
                 admission_reason='NA-false-TRN', release_reason='WT-NA-SC',
-                facility='CAM', incarceration_type='STATE_PRISON',
+                facility='CAM', incarceration_type='SCI',
                 specialized_purpose_for_incarceration='NA-S',
+                custodial_authority='STATE_PRISON',
             ),
             StateIncarcerationPeriod(
                 state_incarceration_period_id='JE1977-3',
                 admission_date='19910425', release_date='19910425',
                 admission_reason='NA-false-SC', release_reason='AS-NA-SC',
-                facility='PHI', incarceration_type='STATE_PRISON',
+                facility='PHI', incarceration_type='SCI',
                 specialized_purpose_for_incarceration='NA-S',
+                custodial_authority='STATE_PRISON',
             ),
             StateIncarcerationPeriod(
                 state_incarceration_period_id='JE1977-4',
                 admission_date='19910425', release_date='19910430',
                 admission_reason='NA-false-SC', release_reason='WT-NA-SC',
-                facility='GRA', incarceration_type='STATE_PRISON',
+                facility='GRA', incarceration_type='SCI',
                 specialized_purpose_for_incarceration='NA-S',
+                custodial_authority='STATE_PRISON',
             ),
             StateIncarcerationPeriod(
                 state_incarceration_period_id='JE1977-5',
                 admission_date='19910430', release_date='19910430',
                 admission_reason='NA-false-SC', release_reason='AS-NA-SC',
-                facility='PHI', incarceration_type='STATE_PRISON',
+                facility='PHI', incarceration_type='SCI',
                 specialized_purpose_for_incarceration='NA-S',
+                custodial_authority='STATE_PRISON',
             ),
             StateIncarcerationPeriod(
                 state_incarceration_period_id='JE1977-6',
                 admission_date='19910430', release_date='19910501',
                 admission_reason='NA-false-SC', release_reason='WT-NA-SC',
-                facility='GRA', incarceration_type='STATE_PRISON',
+                facility='GRA', incarceration_type='SCI',
                 specialized_purpose_for_incarceration='NA-S',
+                custodial_authority='STATE_PRISON',
             ),
             StateIncarcerationPeriod(
                 state_incarceration_period_id='JE1977-7',
                 admission_date='19910501', release_date='19910501',
                 admission_reason='NA-false-SC', release_reason='DC-NA-SC',
-                facility='PHI', incarceration_type='STATE_PRISON',
+                facility='PHI', incarceration_type='SCI',
                 specialized_purpose_for_incarceration='NA-S',
+                custodial_authority='STATE_PRISON',
             ),
             StateIncarcerationPeriod(
                 state_incarceration_period_id='JE1977-8',
                 admission_date='19910501', release_date='19911113',
                 admission_reason='NA-false-SC', release_reason='AS-NA-SC',
-                facility='CAM', incarceration_type='STATE_PRISON',
+                facility='CAM', incarceration_type='SCI',
                 specialized_purpose_for_incarceration='NA-S',
+                custodial_authority='STATE_PRISON',
             ),
             StateIncarcerationPeriod(
                 state_incarceration_period_id='JE1977-9',
                 admission_date='19911113', release_date='19911113',
                 admission_reason='NA-false-SC', release_reason='AS-NA-TRN',
-                facility='CAM', incarceration_type='STATE_PRISON',
+                facility='CAM', incarceration_type='SCI',
                 specialized_purpose_for_incarceration='NA-S',
+                custodial_authority='STATE_PRISON',
             ),
             StateIncarcerationPeriod(
                 state_incarceration_period_id='JE1977-10',
                 admission_date='19911113', release_date='19940714',
                 admission_reason='NA-false-TRN', release_reason='P-SP-D',
-                facility='SMI', incarceration_type='STATE_PRISON',
+                facility='SMI', incarceration_type='SCI',
                 specialized_purpose_for_incarceration='NA-S',
+                custodial_authority='STATE_PRISON',
             ),
         ]
 
@@ -588,50 +688,57 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
                 state_incarceration_period_id='JE1989-12',
                 admission_date='20050421', release_date='20050614',
                 admission_reason='PVP-false-APV', release_reason='AS-PVP-TRN',
-                facility='GRA', incarceration_type='STATE_PRISON',
+                facility='GRA', incarceration_type='SCI',
                 specialized_purpose_for_incarceration='PVP-S',
+                custodial_authority='STATE_PRISON',
             ),
             StateIncarcerationPeriod(
                 state_incarceration_period_id='JE1989-15',
                 admission_date='20050614', release_date='20051002',
                 admission_reason='PVP-false-TRN', release_reason='AS-TCV-SC',
-                facility='SMI', incarceration_type='STATE_PRISON',
+                facility='SMI', incarceration_type='SCI',
                 specialized_purpose_for_incarceration='PVP-S',
+                custodial_authority='STATE_PRISON',
             ),
             StateIncarcerationPeriod(
                 state_incarceration_period_id='JE1989-16',
                 admission_date='20051002', release_date='20070904',
                 admission_reason='TCV-true-SC', release_reason='P-RP-D',
-                facility='SMI', incarceration_type='STATE_PRISON',
+                facility='SMI', incarceration_type='SCI',
                 specialized_purpose_for_incarceration='TCV-S',
+                custodial_authority='STATE_PRISON',
             ),
             StateIncarcerationPeriod(
                 state_incarceration_period_id='JE1989-18',
                 admission_date='20080331', release_date='20080422',
                 admission_reason='PVP-false-APV', release_reason='AS-PVP-TRN',
-                facility='GRA', incarceration_type='STATE_PRISON',
+                facility='GRA', incarceration_type='SCI',
                 specialized_purpose_for_incarceration='PVP-S',
+                custodial_authority='STATE_PRISON',
             ),
             StateIncarcerationPeriod(
                 state_incarceration_period_id='JE1989-21',
                 admission_date='20080422', release_date='20080514',
                 admission_reason='PVP-false-TRN', release_reason='AS-TPV-SC',
-                facility='SMI', incarceration_type='STATE_PRISON',
+                facility='SMI', incarceration_type='SCI',
                 specialized_purpose_for_incarceration='PVP-S',
+                custodial_authority='STATE_PRISON',
             ),
             StateIncarcerationPeriod(
                 state_incarceration_period_id='JE1989-22',
                 admission_date='20080514', release_date='20080819',
                 admission_reason='TPV-true-SC', release_reason='AS-TPV-TRN',
-                facility='SMI', incarceration_type='STATE_PRISON',
+                facility='SMI', incarceration_type='SCI',
                 specialized_purpose_for_incarceration='TPV-S',
+                custodial_authority='STATE_PRISON',
             ),
             StateIncarcerationPeriod(
                 state_incarceration_period_id='JE1989-24',
                 admission_date='20080819', release_date='20090813',
                 admission_reason='TPV-false-TRN', release_reason='P-RP-D',
-                facility='CHS', incarceration_type='STATE_PRISON',
+                facility='CHS', incarceration_type='SCI',
                 specialized_purpose_for_incarceration='TPV-S',
+                custodial_authority='STATE_PRISON',
             ),
         ]
 
@@ -2178,9 +2285,11 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
             admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
             admission_reason_raw_text='NA-FALSE-AC',
             facility='PNG',
-            incarceration_type=StateIncarcerationType.STATE_PRISON, incarceration_type_raw_text='STATE_PRISON',
+            incarceration_type=StateIncarcerationType.STATE_PRISON, incarceration_type_raw_text='SCI',
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON,
             specialized_purpose_for_incarceration_raw_text='NA-P',
+            custodial_authority=StateCustodialAuthority.STATE_PRISON,
+            custodial_authority_raw_text=StateCustodialAuthority.STATE_PRISON.value
         )
 
         p2_is.incarceration_periods.append(p2_is_ip1)
@@ -2196,9 +2305,11 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
             admission_reason_raw_text='NA-FALSE-AC',
             release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER, release_reason_raw_text='DC-NA-TRN',
             facility='GRA',
-            incarceration_type=StateIncarcerationType.STATE_PRISON, incarceration_type_raw_text='STATE_PRISON',
+            incarceration_type=StateIncarcerationType.STATE_PRISON, incarceration_type_raw_text='SCI',
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
             specialized_purpose_for_incarceration_raw_text='NA-S',
+            custodial_authority=StateCustodialAuthority.STATE_PRISON,
+            custodial_authority_raw_text=StateCustodialAuthority.STATE_PRISON.value
         )
         p3_is_ip_2 = entities.StateIncarcerationPeriod.new_with_defaults(
             external_id='CJ1991-2', state_code=_STATE_CODE_UPPER,
@@ -2210,9 +2321,11 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
             admission_reason_raw_text='NA-FALSE-TRN',
             release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER, release_reason_raw_text='AS-NA-TRN',
             facility='CAM',
-            incarceration_type=StateIncarcerationType.STATE_PRISON, incarceration_type_raw_text='STATE_PRISON',
+            incarceration_type=StateIncarcerationType.STATE_PRISON, incarceration_type_raw_text='SCI',
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
             specialized_purpose_for_incarceration_raw_text='NA-S',
+            custodial_authority=StateCustodialAuthority.STATE_PRISON,
+            custodial_authority_raw_text=StateCustodialAuthority.STATE_PRISON.value
         )
         p3_is_ip_4 = entities.StateIncarcerationPeriod.new_with_defaults(
             external_id='CJ1991-4', state_code=_STATE_CODE_UPPER,
@@ -2224,9 +2337,11 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
             admission_reason_raw_text='NA-FALSE-TRN',
             release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE, release_reason_raw_text='P-SP-D',
             facility='WAM',
-            incarceration_type=StateIncarcerationType.STATE_PRISON, incarceration_type_raw_text='STATE_PRISON',
+            incarceration_type=StateIncarcerationType.STATE_PRISON, incarceration_type_raw_text='SCI',
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
             specialized_purpose_for_incarceration_raw_text='NA-S',
+            custodial_authority=StateCustodialAuthority.STATE_PRISON,
+            custodial_authority_raw_text=StateCustodialAuthority.STATE_PRISON.value
         )
         p3_is_ip_6 = entities.StateIncarcerationPeriod.new_with_defaults(
             external_id='CJ1991-6', state_code=_STATE_CODE_UPPER,
@@ -2238,9 +2353,11 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
             admission_reason_raw_text='PVP-FALSE-APV',
             release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER, release_reason_raw_text='AS-PVP-TRN',
             facility='DAL',
-            incarceration_type=StateIncarcerationType.STATE_PRISON, incarceration_type_raw_text='STATE_PRISON',
+            incarceration_type=StateIncarcerationType.STATE_PRISON, incarceration_type_raw_text='SCI',
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD,
             specialized_purpose_for_incarceration_raw_text='PVP-S',
+            custodial_authority=StateCustodialAuthority.STATE_PRISON,
+            custodial_authority_raw_text=StateCustodialAuthority.STATE_PRISON.value
         )
         p3_is_ip_7 = entities.StateIncarcerationPeriod.new_with_defaults(
             external_id='CJ1991-7', state_code=_STATE_CODE_UPPER,
@@ -2252,9 +2369,11 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
             admission_reason_raw_text='PVP-FALSE-TRN',
             release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER, release_reason_raw_text='AS-TPV-SC',
             facility='WAM',
-            incarceration_type=StateIncarcerationType.STATE_PRISON, incarceration_type_raw_text='STATE_PRISON',
+            incarceration_type=StateIncarcerationType.STATE_PRISON, incarceration_type_raw_text='SCI',
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD,
             specialized_purpose_for_incarceration_raw_text='PVP-S',
+            custodial_authority=StateCustodialAuthority.STATE_PRISON,
+            custodial_authority_raw_text=StateCustodialAuthority.STATE_PRISON.value
         )
         p3_is_ip_8 = entities.StateIncarcerationPeriod.new_with_defaults(
             external_id='CJ1991-8', state_code=_STATE_CODE_UPPER,
@@ -2266,11 +2385,16 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
             admission_reason_raw_text='TPV-TRUE-SC',
             release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE, release_reason_raw_text='P-RP-D',
             facility='WAM',
-            incarceration_type=StateIncarcerationType.STATE_PRISON, incarceration_type_raw_text='STATE_PRISON',
+            incarceration_type=StateIncarcerationType.STATE_PRISON, incarceration_type_raw_text='SCI',
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
             specialized_purpose_for_incarceration_raw_text='TPV-S',
+            custodial_authority=StateCustodialAuthority.STATE_PRISON,
+            custodial_authority_raw_text=StateCustodialAuthority.STATE_PRISON.value
         )
-        p3_is.incarceration_periods = [p3_is_ip_1, p3_is_ip_2, p3_is_ip_4, p3_is_ip_6, p3_is_ip_7, p3_is_ip_8]
+
+        p3_is.incarceration_periods = [
+            p3_is_ip_1, p3_is_ip_2, p3_is_ip_4, p3_is_ip_6, p3_is_ip_7, p3_is_ip_8,
+        ]
 
         # Person 4 New Sentence Group with Sentence And Periods
         p4_sg_2 = entities.StateSentenceGroup.new_with_defaults(
@@ -2298,9 +2422,11 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
             admission_reason_raw_text='NA-FALSE-AC',
             release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER, release_reason_raw_text='DC-NA-TRN',
             facility='GRA',
-            incarceration_type=StateIncarcerationType.STATE_PRISON, incarceration_type_raw_text='STATE_PRISON',
+            incarceration_type=StateIncarcerationType.STATE_PRISON, incarceration_type_raw_text='SCI',
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
             specialized_purpose_for_incarceration_raw_text='NA-S',
+            custodial_authority=StateCustodialAuthority.STATE_PRISON,
+            custodial_authority_raw_text=StateCustodialAuthority.STATE_PRISON.value
         )
         p4_is_2_ip_2 = entities.StateIncarcerationPeriod.new_with_defaults(
             external_id='JE1977-2', state_code=_STATE_CODE_UPPER,
@@ -2312,9 +2438,11 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
             admission_reason_raw_text='NA-FALSE-TRN',
             release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER, release_reason_raw_text='WT-NA-SC',
             facility='CAM',
-            incarceration_type=StateIncarcerationType.STATE_PRISON, incarceration_type_raw_text='STATE_PRISON',
+            incarceration_type=StateIncarcerationType.STATE_PRISON, incarceration_type_raw_text='SCI',
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
             specialized_purpose_for_incarceration_raw_text='NA-S',
+            custodial_authority=StateCustodialAuthority.STATE_PRISON,
+            custodial_authority_raw_text=StateCustodialAuthority.STATE_PRISON.value
         )
         p4_is_2_ip_3 = entities.StateIncarcerationPeriod.new_with_defaults(
             external_id='JE1977-3', state_code=_STATE_CODE_UPPER,
@@ -2326,9 +2454,11 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
             admission_reason_raw_text='NA-FALSE-SC',
             release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER, release_reason_raw_text='AS-NA-SC',
             facility='PHI',
-            incarceration_type=StateIncarcerationType.STATE_PRISON, incarceration_type_raw_text='STATE_PRISON',
+            incarceration_type=StateIncarcerationType.STATE_PRISON, incarceration_type_raw_text='SCI',
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
             specialized_purpose_for_incarceration_raw_text='NA-S',
+            custodial_authority=StateCustodialAuthority.STATE_PRISON,
+            custodial_authority_raw_text=StateCustodialAuthority.STATE_PRISON.value
         )
         p4_is_2_ip_4 = entities.StateIncarcerationPeriod.new_with_defaults(
             external_id='JE1977-4', state_code=_STATE_CODE_UPPER,
@@ -2340,9 +2470,11 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
             admission_reason_raw_text='NA-FALSE-SC',
             release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER, release_reason_raw_text='WT-NA-SC',
             facility='GRA',
-            incarceration_type=StateIncarcerationType.STATE_PRISON, incarceration_type_raw_text='STATE_PRISON',
+            incarceration_type=StateIncarcerationType.STATE_PRISON, incarceration_type_raw_text='SCI',
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
             specialized_purpose_for_incarceration_raw_text='NA-S',
+            custodial_authority=StateCustodialAuthority.STATE_PRISON,
+            custodial_authority_raw_text=StateCustodialAuthority.STATE_PRISON.value
         )
         p4_is_2_ip_5 = entities.StateIncarcerationPeriod.new_with_defaults(
             external_id='JE1977-5', state_code=_STATE_CODE_UPPER,
@@ -2353,9 +2485,11 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
             admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER, admission_reason_raw_text='NA-FALSE-SC',
             release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER, release_reason_raw_text='AS-NA-SC',
             facility='PHI',
-            incarceration_type=StateIncarcerationType.STATE_PRISON, incarceration_type_raw_text='STATE_PRISON',
+            incarceration_type=StateIncarcerationType.STATE_PRISON, incarceration_type_raw_text='SCI',
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
             specialized_purpose_for_incarceration_raw_text='NA-S',
+            custodial_authority=StateCustodialAuthority.STATE_PRISON,
+            custodial_authority_raw_text=StateCustodialAuthority.STATE_PRISON.value
         )
         p4_is_2_ip_6 = entities.StateIncarcerationPeriod.new_with_defaults(
             external_id='JE1977-6', state_code=_STATE_CODE_UPPER,
@@ -2366,9 +2500,11 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
             admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER, admission_reason_raw_text='NA-FALSE-SC',
             release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER, release_reason_raw_text='WT-NA-SC',
             facility='GRA',
-            incarceration_type=StateIncarcerationType.STATE_PRISON, incarceration_type_raw_text='STATE_PRISON',
+            incarceration_type=StateIncarcerationType.STATE_PRISON, incarceration_type_raw_text='SCI',
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
             specialized_purpose_for_incarceration_raw_text='NA-S',
+            custodial_authority=StateCustodialAuthority.STATE_PRISON,
+            custodial_authority_raw_text=StateCustodialAuthority.STATE_PRISON.value
         )
         p4_is_2_ip_7 = entities.StateIncarcerationPeriod.new_with_defaults(
             external_id='JE1977-7', state_code=_STATE_CODE_UPPER,
@@ -2379,9 +2515,11 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
             admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER, admission_reason_raw_text='NA-FALSE-SC',
             release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER, release_reason_raw_text='DC-NA-SC',
             facility='PHI',
-            incarceration_type=StateIncarcerationType.STATE_PRISON, incarceration_type_raw_text='STATE_PRISON',
+            incarceration_type=StateIncarcerationType.STATE_PRISON, incarceration_type_raw_text='SCI',
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
             specialized_purpose_for_incarceration_raw_text='NA-S',
+            custodial_authority=StateCustodialAuthority.STATE_PRISON,
+            custodial_authority_raw_text=StateCustodialAuthority.STATE_PRISON.value
         )
         p4_is_2_ip_8 = entities.StateIncarcerationPeriod.new_with_defaults(
             external_id='JE1977-8', state_code=_STATE_CODE_UPPER,
@@ -2392,9 +2530,11 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
             admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER, admission_reason_raw_text='NA-FALSE-SC',
             release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER, release_reason_raw_text='AS-NA-SC',
             facility='CAM',
-            incarceration_type=StateIncarcerationType.STATE_PRISON, incarceration_type_raw_text='STATE_PRISON',
+            incarceration_type=StateIncarcerationType.STATE_PRISON, incarceration_type_raw_text='SCI',
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
             specialized_purpose_for_incarceration_raw_text='NA-S',
+            custodial_authority=StateCustodialAuthority.STATE_PRISON,
+            custodial_authority_raw_text=StateCustodialAuthority.STATE_PRISON.value
         )
         p4_is_2_ip_9 = entities.StateIncarcerationPeriod.new_with_defaults(
             external_id='JE1977-9', state_code=_STATE_CODE_UPPER,
@@ -2405,9 +2545,11 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
             admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER, admission_reason_raw_text='NA-FALSE-SC',
             release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER, release_reason_raw_text='AS-NA-TRN',
             facility='CAM',
-            incarceration_type=StateIncarcerationType.STATE_PRISON, incarceration_type_raw_text='STATE_PRISON',
+            incarceration_type=StateIncarcerationType.STATE_PRISON, incarceration_type_raw_text='SCI',
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
             specialized_purpose_for_incarceration_raw_text='NA-S',
+            custodial_authority=StateCustodialAuthority.STATE_PRISON,
+            custodial_authority_raw_text=StateCustodialAuthority.STATE_PRISON.value
         )
         p4_is_2_ip_10 = entities.StateIncarcerationPeriod.new_with_defaults(
             external_id='JE1977-10', state_code=_STATE_CODE_UPPER,
@@ -2418,9 +2560,11 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
             admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER, admission_reason_raw_text='NA-FALSE-TRN',
             release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE, release_reason_raw_text='P-SP-D',
             facility='SMI',
-            incarceration_type=StateIncarcerationType.STATE_PRISON, incarceration_type_raw_text='STATE_PRISON',
+            incarceration_type=StateIncarcerationType.STATE_PRISON, incarceration_type_raw_text='SCI',
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
             specialized_purpose_for_incarceration_raw_text='NA-S',
+            custodial_authority=StateCustodialAuthority.STATE_PRISON,
+            custodial_authority_raw_text=StateCustodialAuthority.STATE_PRISON.value
         )
         p4_is_2_1.incarceration_periods = [
             p4_is_2_ip_1, p4_is_2_ip_2, p4_is_2_ip_3, p4_is_2_ip_4, p4_is_2_ip_5,
@@ -2437,9 +2581,11 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
             admission_reason_raw_text='PVP-FALSE-APV',
             release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER, release_reason_raw_text='AS-PVP-TRN',
             facility='GRA',
-            incarceration_type=StateIncarcerationType.STATE_PRISON, incarceration_type_raw_text='STATE_PRISON',
+            incarceration_type=StateIncarcerationType.STATE_PRISON, incarceration_type_raw_text='SCI',
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD,
             specialized_purpose_for_incarceration_raw_text='PVP-S',
+            custodial_authority=StateCustodialAuthority.STATE_PRISON,
+            custodial_authority_raw_text=StateCustodialAuthority.STATE_PRISON.value
         )
         p4_is_1_ip_15 = entities.StateIncarcerationPeriod.new_with_defaults(
             external_id='JE1989-15', state_code=_STATE_CODE_UPPER,
@@ -2451,9 +2597,11 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
             admission_reason_raw_text='PVP-FALSE-TRN',
             release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER, release_reason_raw_text='AS-TCV-SC',
             facility='SMI',
-            incarceration_type=StateIncarcerationType.STATE_PRISON, incarceration_type_raw_text='STATE_PRISON',
+            incarceration_type=StateIncarcerationType.STATE_PRISON, incarceration_type_raw_text='SCI',
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD,
             specialized_purpose_for_incarceration_raw_text='PVP-S',
+            custodial_authority=StateCustodialAuthority.STATE_PRISON,
+            custodial_authority_raw_text=StateCustodialAuthority.STATE_PRISON.value
         )
         p4_is_1_ip_16 = entities.StateIncarcerationPeriod.new_with_defaults(
             external_id='JE1989-16', state_code=_STATE_CODE_UPPER,
@@ -2465,9 +2613,11 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
             admission_reason_raw_text='TCV-TRUE-SC',
             release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE, release_reason_raw_text='P-RP-D',
             facility='SMI',
-            incarceration_type=StateIncarcerationType.STATE_PRISON, incarceration_type_raw_text='STATE_PRISON',
+            incarceration_type=StateIncarcerationType.STATE_PRISON, incarceration_type_raw_text='SCI',
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
             specialized_purpose_for_incarceration_raw_text='TCV-S',
+            custodial_authority=StateCustodialAuthority.STATE_PRISON,
+            custodial_authority_raw_text=StateCustodialAuthority.STATE_PRISON.value
         )
         p4_is_1_ip_18 = entities.StateIncarcerationPeriod.new_with_defaults(
             external_id='JE1989-18', state_code=_STATE_CODE_UPPER,
@@ -2479,9 +2629,11 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
             admission_reason_raw_text='PVP-FALSE-APV',
             release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER, release_reason_raw_text='AS-PVP-TRN',
             facility='GRA',
-            incarceration_type=StateIncarcerationType.STATE_PRISON, incarceration_type_raw_text='STATE_PRISON',
+            incarceration_type=StateIncarcerationType.STATE_PRISON, incarceration_type_raw_text='SCI',
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD,
             specialized_purpose_for_incarceration_raw_text='PVP-S',
+            custodial_authority=StateCustodialAuthority.STATE_PRISON,
+            custodial_authority_raw_text=StateCustodialAuthority.STATE_PRISON.value
         )
         p4_is_1_ip_21 = entities.StateIncarcerationPeriod.new_with_defaults(
             external_id='JE1989-21', state_code=_STATE_CODE_UPPER,
@@ -2493,9 +2645,11 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
             admission_reason_raw_text='PVP-FALSE-TRN',
             release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER, release_reason_raw_text='AS-TPV-SC',
             facility='SMI',
-            incarceration_type=StateIncarcerationType.STATE_PRISON, incarceration_type_raw_text='STATE_PRISON',
+            incarceration_type=StateIncarcerationType.STATE_PRISON, incarceration_type_raw_text='SCI',
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD,
             specialized_purpose_for_incarceration_raw_text='PVP-S',
+            custodial_authority=StateCustodialAuthority.STATE_PRISON,
+            custodial_authority_raw_text=StateCustodialAuthority.STATE_PRISON.value
         )
         p4_is_1_ip_22 = entities.StateIncarcerationPeriod.new_with_defaults(
             external_id='JE1989-22', state_code=_STATE_CODE_UPPER,
@@ -2507,9 +2661,11 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
             admission_reason_raw_text='TPV-TRUE-SC',
             release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER, release_reason_raw_text='AS-TPV-TRN',
             facility='SMI',
-            incarceration_type=StateIncarcerationType.STATE_PRISON, incarceration_type_raw_text='STATE_PRISON',
+            incarceration_type=StateIncarcerationType.STATE_PRISON, incarceration_type_raw_text='SCI',
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
             specialized_purpose_for_incarceration_raw_text='TPV-S',
+            custodial_authority=StateCustodialAuthority.STATE_PRISON,
+            custodial_authority_raw_text=StateCustodialAuthority.STATE_PRISON.value
         )
         p4_is_1_ip_24 = entities.StateIncarcerationPeriod.new_with_defaults(
             external_id='JE1989-24', state_code=_STATE_CODE_UPPER,
@@ -2521,10 +2677,13 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
             admission_reason_raw_text='TPV-FALSE-TRN',
             release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE, release_reason_raw_text='P-RP-D',
             facility='CHS',
-            incarceration_type=StateIncarcerationType.STATE_PRISON, incarceration_type_raw_text='STATE_PRISON',
+            incarceration_type=StateIncarcerationType.STATE_PRISON, incarceration_type_raw_text='SCI',
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
             specialized_purpose_for_incarceration_raw_text='TPV-S',
+            custodial_authority=StateCustodialAuthority.STATE_PRISON,
+            custodial_authority_raw_text=StateCustodialAuthority.STATE_PRISON.value
         )
+
         p4_is_1.incarceration_periods = [
             p4_is_1_ip_12, p4_is_1_ip_15, p4_is_1_ip_16, p4_is_1_ip_18, p4_is_1_ip_21, p4_is_1_ip_22, p4_is_1_ip_24,
         ]
@@ -2533,6 +2692,93 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
 
         # Act
         self._run_ingest_job_for_filename('sci_incarceration_period.csv')
+
+        # Assert
+        self.assert_expected_db_people(expected_people)
+
+        ######################################
+        # ccis_incarceration_period
+        ######################################
+
+        p3_is_ip_9 = entities.StateIncarcerationPeriod.new_with_defaults(
+            external_id='34567', state_code=_STATE_CODE_UPPER,
+            person=person_3, incarceration_sentences=[p3_is],
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            admission_date=datetime.date(year=2014, month=11, day=18),
+            release_date=datetime.date(year=2015, month=1, day=20),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
+            admission_reason_raw_text='CCIS-FALSE-INRS',
+            release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
+            release_reason_raw_text='CCIS-DC2P',
+            facility='231: WERNERSVILLE CCC#30',
+            incarceration_type=StateIncarcerationType.COUNTY_JAIL, incarceration_type_raw_text='CCIS',
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON,
+            specialized_purpose_for_incarceration_raw_text='CCIS-51',
+            custodial_authority=StateCustodialAuthority.STATE_PRISON,
+            custodial_authority_raw_text='51'
+        )
+        p3_is_ip_10 = entities.StateIncarcerationPeriod.new_with_defaults(
+            external_id='45678', state_code=_STATE_CODE_UPPER,
+            person=person_3, incarceration_sentences=[p3_is],
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            admission_date=datetime.date(year=2016, month=10, day=3),
+            release_date=datetime.date(year=2016, month=11, day=14),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
+            admission_reason_raw_text='CCIS-TRUE-PRCH',
+            release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
+            release_reason_raw_text='CCIS-PTST',
+            facility='195: LACKAWANNA COUNTY',
+            incarceration_type=StateIncarcerationType.COUNTY_JAIL, incarceration_type_raw_text='CCIS',
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+            specialized_purpose_for_incarceration_raw_text='CCIS-26',
+            custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
+            custodial_authority_raw_text='26'
+        )
+
+        p3_is.incarceration_periods.extend([p3_is_ip_9, p3_is_ip_10])
+
+        p4_is_1_ip_25 = entities.StateIncarcerationPeriod.new_with_defaults(
+            external_id='12345', state_code=_STATE_CODE_UPPER,
+            person=person_4, incarceration_sentences=[p4_is_1],
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            admission_date=datetime.date(year=2016, month=12, day=21),
+            release_date=datetime.date(year=2017, month=4, day=26),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
+            admission_reason_raw_text='CCIS-FALSE-INRS',
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
+            release_reason_raw_text='CCIS-TRGH',
+            facility='136: KINTOCK ERIE',
+            incarceration_type=StateIncarcerationType.COUNTY_JAIL,
+            incarceration_type_raw_text='CCIS',
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+            specialized_purpose_for_incarceration_raw_text='CCIS-26',
+            custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
+            custodial_authority_raw_text='26'
+        )
+
+        p4_is_1_ip_26 = entities.StateIncarcerationPeriod.new_with_defaults(
+            external_id='23456', state_code=_STATE_CODE_UPPER,
+            person=person_4, incarceration_sentences=[p4_is_1],
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            admission_date=datetime.date(year=2017, month=7, day=3),
+            release_date=datetime.date(year=2018, month=1, day=3),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
+            admission_reason_raw_text='CCIS-FALSE-TRRC',
+            release_reason=StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE,
+            release_reason_raw_text='CCIS-DC2P',
+            facility='198: CHESTER COUNTY',
+            incarceration_type=StateIncarcerationType.COUNTY_JAIL,
+            incarceration_type_raw_text='CCIS',
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.SHOCK_INCARCERATION,
+            specialized_purpose_for_incarceration_raw_text='CCIS-46',
+            custodial_authority=StateCustodialAuthority.STATE_PRISON,
+            custodial_authority_raw_text='46'
+        )
+
+        p4_is_1.incarceration_periods.extend([p4_is_1_ip_25, p4_is_1_ip_26])
+
+        # Act
+        self._run_ingest_job_for_filename('ccis_incarceration_period.csv')
 
         # Assert
         self.assert_expected_db_people(expected_people)

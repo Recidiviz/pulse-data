@@ -29,23 +29,33 @@ from recidiviz.ingest.direct.direct_ingest_controller_utils import invert_enum_t
 INCARCERATION_PERIOD_ADMISSION_REASON_TO_MOVEMENT_CODE_MAPPINGS: \
     Dict[StateIncarcerationPeriodAdmissionReason, List[str]] = {
         StateIncarcerationPeriodAdmissionReason.EXTERNAL_UNKNOWN: [
+            # SCI CODES
             'AOTH',  # Other - Use Sparingly
             'X',  # Unknown
         ],
         StateIncarcerationPeriodAdmissionReason.INTERNAL_UNKNOWN: [
+            # SCI CODES
             'RTN'  # (Not in PA data dictionary, no instances after 1996)
         ],
         StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION: [
+            # SCI CODES
             'AB',  # Bail
             'AC',  # Court Commitment
             'ACT',  # County Transfer (transferred from a county jail, newly in DOC custody)
             'ADET',  # Detentioner
             'AFED',  # Federal Commitment
         ],
+        StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION: [
+            # CCIS CODES
+            # In Residence: Admitted to CCIS facility. We classify all new admissions to CCIS facilities as revocations.
+            'INRS',
+        ],
         StateIncarcerationPeriodAdmissionReason.RETURN_FROM_ESCAPE: [
+            # SCI CODES
             'AE',  # Escape
         ],
         StateIncarcerationPeriodAdmissionReason.RETURN_FROM_SUPERVISION: [
+            # SCI CODES
             # TODO(#3312): Ask what the difference between these two is - APV is much more common
             'APD',  # Parole Detainee
 
@@ -58,6 +68,18 @@ INCARCERATION_PERIOD_ADMISSION_REASON_TO_MOVEMENT_CODE_MAPPINGS: \
             'APV',  # Parole Violator
         ],
         StateIncarcerationPeriodAdmissionReason.TRANSFER: [
+            # CCIS CODES
+            # Return from DPW: This is used a status change indicating the person's stay in the facility is now being
+            # funded by the DOC
+            'DPWF',
+            # Program Change: Transfer between programs
+            'PRCH',
+            # Return to Residence: Returned to facility from either a temporary medical transfer or after absconding
+            # from the facility
+            'RTRS',
+            'TRRC',  # Transfer Received: Transferred to facility from another DOC-funded facility
+
+            # SCI CODES
             # This is an 'Add Administrative' which will generally follow a 'Delete Administrative' ('DA') directly
             # and is used to do some sort of record-keeping change without meaning this person went anywhere.
             'AA',  # Add - Administrative
@@ -66,8 +88,8 @@ INCARCERATION_PERIOD_ADMISSION_REASON_TO_MOVEMENT_CODE_MAPPINGS: \
             'AIT',  # Add - In Transit
 
             # TODO(#2002): This status represents that this person was returning from a long stay in a state hospital,
-            # it generally follows a 'D' movement code with sentence status code 'SH'. Ideally we'd specify that this
-            # was a transfer from a hospital
+            #  it generally follows a 'D' movement code with sentence status code 'SH'. Ideally we'd specify that this
+            #  was a transfer from a hospital
             'ASH',  # Add - State Hospital
             'ATT',  # Add - [Unlisted Transfer]
 
@@ -88,6 +110,7 @@ INCARCERATION_PERIOD_ADMISSION_REASON_TO_MOVEMENT_CODE_MAPPINGS: \
             'SC',  # Status Change
         ],
         StateIncarcerationPeriodAdmissionReason.TRANSFERRED_FROM_OUT_OF_STATE: [
+            # SCI CODES
             # TODO(#3312): I think this is a person from another state who PA is holding for some short-ish
             #  period of time until they are sent back to that state - need to confirm. They are not being tried by the
             #  PA Parole Board and will have a 'NA' (Not Applicable) parole_stat_cd (parole status code). (ASK PA)
@@ -95,16 +118,30 @@ INCARCERATION_PERIOD_ADMISSION_REASON_TO_MOVEMENT_CODE_MAPPINGS: \
         ],
     }
 
+
 INCARCERATION_PERIOD_RELEASE_REASON_TO_STR_MAPPINGS: Dict[StateIncarcerationPeriodReleaseReason, List[str]] = {
     StateIncarcerationPeriodReleaseReason.COMMUTED: [
+        # SCI CODES
         'RD',  # Release Detentioner
     ],
     StateIncarcerationPeriodReleaseReason.CONDITIONAL_RELEASE: [
+        # CCIS CODES
+        'DC2P',  # Discharge to Parole: Released from a CCIS facility, still on supervision
+        'PTST',  # Parole to Street: Released from a facility to a PBPP approved home plan
+
+        # SCI CODES
         'RP',  # Re-Parole (Paroled for the non-first time in this sentence group)
         'SP',  # State Parole (Paroled for the first time in this sentence group)
-        'P',  # Paroled (relatively rare)
+        'P',   # Paroled (relatively rare)
     ],
     StateIncarcerationPeriodReleaseReason.DEATH: [
+        # CCIS CODES
+        'DECA',  # Deceased - Assault
+        'DECN',  # Deceased - Natural
+        'DECS',  # Deceased - Suicide
+        'DECX',  # Deceased - Accident
+
+        # SCI CODES
         'DA',  # Deceased - Assault
         'DN',  # Deceased - Natural
         'DS',  # Deceased - Suicide
@@ -112,14 +149,20 @@ INCARCERATION_PERIOD_RELEASE_REASON_TO_STR_MAPPINGS: Dict[StateIncarcerationPeri
         'DZ',  # Deceased - Non DOC Location
     ],
     StateIncarcerationPeriodReleaseReason.EXECUTION: [
+        # SCI CODES
         'EX',  # Executed
     ],
     StateIncarcerationPeriodReleaseReason.EXTERNAL_UNKNOWN: [
+        # SCI CODES
         'AOTH',  # Other - Use Sparingly
         'X',  # Unknown
         'O',  # Unknown
     ],
     StateIncarcerationPeriodReleaseReason.INTERNAL_UNKNOWN: [
+        # CCIS CODES
+        'ATA',  # Authorized Temporary Absence (very rare, supposed to be followed by a RTRS status, but usually isn't)
+
+        # SCI CODES
         'AA',    # Administrative
         'AB',    # Bail
         'AC',    # Court Commitment
@@ -132,21 +175,38 @@ INCARCERATION_PERIOD_RELEASE_REASON_TO_STR_MAPPINGS: Dict[StateIncarcerationPeri
         'W',  # Waiting
     ],
     StateIncarcerationPeriodReleaseReason.ESCAPE: [
+        # CCIS CODES
+        'ABSC',  # Parole Absconder: They have left the facility
+        # Awaiting Transfer - Non Report: This person was released from a facility and never showed up at the next
+        # facility
+        'AWNR',
+        'AWOL',  # Unauthorized temporary Absence: Didn't return after being temporarily released
+        'ESCP',  # Escape
+
+
+        # SCI CODES
         'AE',  # Escape
         'EC',  # Escape CSC
         'EI',  # Escape Institution
     ],
     StateIncarcerationPeriodReleaseReason.PARDONED: [
+        # SCI CODES
         'PD',  # Pardoned
     ],
     StateIncarcerationPeriodReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY: [
+        # SCI CODES
         'APV',  # Parole Violator
         'AOPV',  # Out Of State Probation/Parole Violator
     ],
     StateIncarcerationPeriodReleaseReason.RELEASED_FROM_ERRONEOUS_ADMISSION: [
+        # SCI CODES
         'RE',  # Received In Error
     ],
     StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED: [
+        # CCIS CODES
+        'SENC',  # Sentence Completed
+
+        # SCI CODES
         'B',   # Bailed
         'FR',  # Federal Release
         'NC',  # Non-return CSC
@@ -155,6 +215,25 @@ INCARCERATION_PERIOD_RELEASE_REASON_TO_STR_MAPPINGS: Dict[StateIncarcerationPeri
         'NW',  # Non-return Work Release
     ],
     StateIncarcerationPeriodReleaseReason.TRANSFER: [
+        # CCIS CODES
+        # Transfer to DPW: This is used a status change indicating the person's stay in the facility is now being
+        # funded by the DOC
+        'DPWT',
+        # TODO(#2002): Count people on temporary medical transfers in the DOC population
+        'HOSP',  # Hospital: Temporary medical transfer
+        # Transfer from Group Home: Although this sounds like an admission, this is a transfer out to another kind of
+        # facility
+        'TRGH',
+        'TRSC',  # Transfer to SCI: Transfer to SCI for violations, investigations, medical, etc.
+        # Unsuccessful Discharge: Removed from parole for rule violations or significant incidents. Sent to an SCI.
+        'UDSC',
+        # Transfer to County: Transferred from a contracted community facility that is not a county jail to a
+        # contracted county jail
+        'TRTC',
+        # TODO(#2002): Count people on temporary medical transfers in the DOC population
+        'TTRN',  # Temporary Transfer - Medical
+
+        # SCI CODES
         'ACT',  # County Transfer
         'AIT',  # In Transit
         'ASH',  # State Hospital
@@ -178,10 +257,12 @@ INCARCERATION_PERIOD_RELEASE_REASON_TO_STR_MAPPINGS: Dict[StateIncarcerationPeri
         'WT',   # WRIT/ATA
     ],
     StateIncarcerationPeriodReleaseReason.TRANSFERRED_OUT_OF_STATE: [
+        # SCI CODES
         'IC',  # In Custody Elsewhere
         'TS',  # Transfer to Other State
     ],
     StateIncarcerationPeriodReleaseReason.VACATED: [
+        # SCI CODES
         'VC',  # Vacated Conviction
         'VS',  # Vacated Sentence
     ],
@@ -211,12 +292,13 @@ STR_TO_INCARCERATION_PERIOD_RELEASE_REASON_MAPPINGS: Dict[str, StateIncarceratio
 
 
 def incarceration_period_admission_reason_mapper(concatenated_codes: str) -> StateIncarcerationPeriodAdmissionReason:
-    _start_parole_status_code, start_is_new_revocation, start_movement_code = concatenated_codes.split(' ')
+    _, start_is_new_revocation, start_movement_code = concatenated_codes.split(' ')
 
     if start_is_new_revocation == 'TRUE':
         return StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION
 
     admission_reason = MOVEMENT_CODE_TO_INCARCERATION_PERIOD_ADMISSION_REASON_MAPPINGS.get(start_movement_code, None)
+
     if not admission_reason:
         raise ValueError(
             f'No mapping for incarceration period admission reason from movement code {start_movement_code}')
@@ -230,9 +312,11 @@ STR_TO_REVOCATION_TYPE_MAPPINGS: Dict[str, StateSupervisionViolationResponseRevo
 def incarceration_period_release_reason_mapper(concatenated_codes: str) -> StateIncarcerationPeriodReleaseReason:
     """Maps three key incarceration period end codes to a formal release reason.
 
-    The three codes are end_sentence_status_code, end_parole_status_code, and end_movement_code. They are concatenated
-    together in that order, separated by whitespace, in us_pa_controller. Here, we split them up and select a release
-    reason based on the following logic:
+    End codes coming from CCIS are prefixed with `CCIS`. For these codes, the standard enum mapping is used.
+
+    For end codes coming from SCI, the three concatenated codes are end_sentence_status_code, end_parole_status_code,
+    and end_movement_code. They are concatenated together in that order, separated by whitespace, in us_pa_controller.
+    Here, we split them up and select a release reason based on the following logic:
 
     1. If the end_parole_status_code indicates the person was released to parole, we choose a static mapping based on
     that code specifically
@@ -244,40 +328,45 @@ def incarceration_period_release_reason_mapper(concatenated_codes: str) -> State
     end_sentence_status_code, which will be more informative
     5. If none of the above are true, we choose a static mapping based on end_movement_code
     """
-    end_sentence_status_code, end_parole_status_code, end_movement_code = concatenated_codes.split(' ')
+    if concatenated_codes.startswith('CCIS'):
+        # Handle release reason codes from CCIS tables
+        _, end_movement_code = concatenated_codes.split(' ')
+    else:
+        # Handle release reason codes from SCI tables
+        end_sentence_status_code, end_parole_status_code, end_movement_code = concatenated_codes.split(' ')
 
-    if end_movement_code in ('DA', 'DIT'):  # Delete Administrative, Delete In Transit
-        return StateIncarcerationPeriodReleaseReason.TRANSFER
+        if end_movement_code in ('DA', 'DIT'):  # Delete Administrative, Delete In Transit
+            return StateIncarcerationPeriodReleaseReason.TRANSFER
 
-    is_sentence_complete = end_sentence_status_code == 'SC'
-    is_serve_previous = end_sentence_status_code == 'SP'
-    was_released_to_parole = end_parole_status_code in ('RP', 'SP')  # Re-Parole, State Parole
-    is_generic_release = end_movement_code == 'D'  # Delete
+        is_sentence_complete = end_sentence_status_code == 'SC'
+        is_serve_previous = end_sentence_status_code == 'SP'
+        was_released_to_parole = end_parole_status_code in ('RP', 'SP')  # Re-Parole, State Parole
+        is_generic_release = end_movement_code == 'D'  # Delete
 
-    if was_released_to_parole:
-        # In case of a release to parole, the ending parole status code is the most informative
-        return _retrieve_release_reason_mapping(end_parole_status_code)
+        if was_released_to_parole:
+            # In case of a release to parole, the ending parole status code is the most informative
+            return _retrieve_release_reason_mapping(end_parole_status_code)
 
-    if is_sentence_complete:
-        # This is set manually because there are conflicting SC meanings between sentence status code
-        # and movement code (Sentence Completed versus Status Change, respectively)
-        return StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED
+        if is_sentence_complete:
+            # This is set manually because there are conflicting SC meanings between sentence status code
+            # and movement code (Sentence Completed versus Status Change, respectively)
+            return StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED
 
-    if is_serve_previous:
-        # This is set manually because there are conflicting SP meanings between sentence status code
-        # and movement code (Serve Previous (?) versus State Parole, respectively)
-        return StateIncarcerationPeriodReleaseReason.INTERNAL_UNKNOWN
-
-    if is_generic_release:
-        # In case of a generic release reason, the ending sentence status code is the most informative
-        if end_sentence_status_code == 'NONE':
+        if is_serve_previous:
+            # This is set manually because there are conflicting SP meanings between sentence status code
+            # and movement code (Serve Previous (?) versus State Parole, respectively)
             return StateIncarcerationPeriodReleaseReason.INTERNAL_UNKNOWN
 
-        return _retrieve_release_reason_mapping(end_sentence_status_code)
+        if is_generic_release:
+            # In case of a generic release reason, the ending sentence status code is the most informative
+            if end_sentence_status_code == 'NONE':
+                return StateIncarcerationPeriodReleaseReason.INTERNAL_UNKNOWN
 
-    # If none of the above are true, base this on the movement code itself
-    if end_movement_code == 'NONE':
-        return StateIncarcerationPeriodReleaseReason.INTERNAL_UNKNOWN
+            return _retrieve_release_reason_mapping(end_sentence_status_code)
+
+        # If none of the above are true, base this on the movement code itself
+        if end_movement_code == 'NONE':
+            return StateIncarcerationPeriodReleaseReason.INTERNAL_UNKNOWN
 
     return _retrieve_release_reason_mapping(end_movement_code)
 
@@ -285,8 +374,10 @@ def incarceration_period_release_reason_mapper(concatenated_codes: str) -> State
 def incarceration_period_purpose_mapper(concatenated_codes: str) -> StateSpecializedPurposeForIncarceration:
     """Maps a combination of the incarceration period codes to a formal specialized purpose for incarceration.
 
-    The two codes are start_parole_status_code and sentence_type. They are concatenated together in that order,
-    separated by whitespace, in us_pa_controller. Here, we split them up and select a purpose for incarceration
+    Codes from CCIS tables are handled separately from codes from SCI tables. CCIS codes are prefixed with `CCIS`.
+
+    For SCI codes, the two codes are start_parole_status_code and sentence_type. They are concatenated together in that
+    order, separated by whitespace, in us_pa_controller. Here, we split them up and select a purpose for incarceration
     based on the following logic:
 
     1. If the start_parole_status_code indicates the person has a parole status pending, we choose a static mapping
@@ -295,22 +386,34 @@ def incarceration_period_purpose_mapper(concatenated_codes: str) -> StateSpecial
     on the sentence_type
     3. If none of the above are true, we return GENERAL
     """
-    start_parole_status_code, sentence_type = concatenated_codes.split(' ')
+    if concatenated_codes.startswith('CCIS'):
+        # Handle incarceration period purpose codes from CCIS tables
+        _, purpose_for_incarceration = concatenated_codes.split(' ')
 
-    # TODO(#3312): There are 4 cases (ML0641, HJ9463, HM6768, JH9458) where there is a PVP parole status and a 'P'
-    #  sentence type associated with that inmate number. What does it mean for a parole violator to be in on SIP
-    #  Program? Is this just an error?
-    is_parole_violation_pending = start_parole_status_code == 'PVP'
+        if purpose_for_incarceration == '46':
+            return StateSpecializedPurposeForIncarceration.SHOCK_INCARCERATION
+        if purpose_for_incarceration == '26':
+            return StateSpecializedPurposeForIncarceration.GENERAL
+        if purpose_for_incarceration == '51':
+            return StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON
+    else:
+        # Handle incarceration period purpose codes from SCI tables
+        start_parole_status_code, sentence_type = concatenated_codes.split(' ')
 
-    if is_parole_violation_pending:
-        return StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD
+        # TODO(#3312): There are 4 cases (ML0641, HJ9463, HM6768, JH9458) where there is a PVP parole status and a 'P'
+        #  sentence type associated with that inmate number. What does it mean for a parole violator to be in on SIP
+        #  Program? Is this just an error?
+        is_parole_violation_pending = start_parole_status_code == 'PVP'
 
-    is_treatment_program = sentence_type in (
-        'E',  # SIP Evaluation
-        'P'   # SIP Program
-    )
-    if is_treatment_program:
-        return StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON
+        if is_parole_violation_pending:
+            return StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD
+
+        is_treatment_program = sentence_type in (
+            'E',  # SIP Evaluation
+            'P'   # SIP Program
+        )
+        if is_treatment_program:
+            return StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON
 
     return StateSpecializedPurposeForIncarceration.GENERAL
 
@@ -334,7 +437,15 @@ def _retrieve_release_reason_mapping(code: str) -> StateIncarcerationPeriodRelea
     return release_reason
 
 
-def concatenate_incarceration_period_start_codes(row: Dict[str, str]) -> str:
+def concatenate_ccis_incarceration_period_start_codes(row: Dict[str, str]) -> str:
+    code_type = 'CCIS'
+    start_movement_code = row['start_status_code'] or 'None'
+    start_is_new_revocation = row['start_is_new_revocation'] or 'None'
+
+    return f"{code_type}-{start_is_new_revocation}-{start_movement_code}"
+
+
+def concatenate_sci_incarceration_period_start_codes(row: Dict[str, str]) -> str:
     start_parole_status_code = row['start_parole_status_code'] or 'None'
     start_is_new_revocation = row['start_is_new_revocation'] or 'None'
     start_movement_code = row['start_movement_code'] or 'None'
@@ -342,7 +453,7 @@ def concatenate_incarceration_period_start_codes(row: Dict[str, str]) -> str:
     return f"{start_parole_status_code}-{start_is_new_revocation}-{start_movement_code}"
 
 
-def concatenate_incarceration_period_end_codes(row: Dict[str, str]) -> str:
+def concatenate_sci_incarceration_period_end_codes(row: Dict[str, str]) -> str:
     end_sentence_status_code = row['end_sentence_status_code'] or 'None'
     end_parole_status_code = row['end_parole_status_code'] or 'None'
     end_movement_code = row['end_movement_code'] or 'None'
@@ -350,11 +461,25 @@ def concatenate_incarceration_period_end_codes(row: Dict[str, str]) -> str:
     return f"{end_sentence_status_code}-{end_parole_status_code}-{end_movement_code}"
 
 
-def concatenate_incarceration_period_purpose_codes(row: Dict[str, str]) -> str:
+def concatenate_ccis_incarceration_period_end_codes(row: Dict[str, str]) -> str:
+    code_type = 'CCIS'
+    end_movement_code = row['end_status_code'] or 'None'
+
+    return f"{code_type}-{end_movement_code}"
+
+
+def concatenate_sci_incarceration_period_purpose_codes(row: Dict[str, str]) -> str:
     start_parole_status_code = row['start_parole_status_code'] or 'None'
     sentence_type = row['sentence_type'] or 'None'
 
     return f"{start_parole_status_code}-{sentence_type}"
+
+
+def concatenate_ccis_incarceration_period_purpose_codes(row: Dict[str, str]) -> str:
+    code_type = 'CCIS'
+    program_type = row['program_id'] or 'None'
+
+    return f"{code_type}-{program_type}"
 
 
 def assessment_level_mapper(assessment_level_raw_text: Optional[str]) -> Optional[StateAssessmentLevel]:
