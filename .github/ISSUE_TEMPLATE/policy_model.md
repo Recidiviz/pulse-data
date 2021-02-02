@@ -1,9 +1,9 @@
 ---
 name: Policy Modeling
 about: Request modeling of a policy proposal
-title: '[Model me!] State, Bill No., Policy 1-liner'
+title: "[Model me!] State, Bill No., Policy 1-liner"
 labels: 'Type: Feature'
-assignees: 'sychang'
+assignees: sychang
 
 ---
 
