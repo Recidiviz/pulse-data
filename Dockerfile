@@ -2,7 +2,7 @@ FROM node:14-alpine as admin-panel-build
 
 WORKDIR /usr/admin-panel
 COPY ./frontends/admin-panel/package.json ./frontends/admin-panel/yarn.lock /usr/admin-panel/
-COPY ./frontends/admin-panel/tsconfig.json /usr/admin-panel
+COPY ./frontends/admin-panel/tsconfig.json ./frontends/admin-panel/.eslintrc.json /usr/admin-panel/
 
 RUN yarn
 
@@ -15,7 +15,7 @@ FROM node:14-alpine as case-triage-build
 
 WORKDIR /usr/case-triage
 COPY ./frontends/case-triage/package.json ./frontends/case-triage/yarn.lock /usr/case-triage/
-COPY ./frontends/case-triage/tsconfig.json /usr/case-triage
+COPY ./frontends/case-triage/tsconfig.json ./frontends/case-triage/.eslintrc.json /usr/case-triage/
 
 RUN yarn
 
