@@ -19,6 +19,8 @@
 for Case Triage related entities.
 
 """
+from typing import Any, Dict
+
 from sqlalchemy import Column, Boolean, Date, String, Text, UniqueConstraint
 
 from recidiviz.persistence.database.base_schema import CaseTriageBase
@@ -31,7 +33,7 @@ class ETLClient(CaseTriageBase):
         UniqueConstraint('state_code', 'person_external_id'),
     )
     person_external_id = Column(String(255), nullable=False, index=True, primary_key=True)
-    full_name = Column(String(255), primary_key=True)
+    full_name = Column(String(255))
     supervising_officer_external_id = Column(String(255), nullable=False, index=True)
     current_address = Column(Text)
     birthdate = Column(Date)
@@ -39,10 +41,27 @@ class ETLClient(CaseTriageBase):
     supervision_type = Column(String(255), nullable=False)
     case_type = Column(String(255), nullable=False)
     supervision_level = Column(String(255), nullable=False)
-    state_code = Column(String(255), nullable=False, index=True)
+    state_code = Column(String(255), nullable=False, index=True, primary_key=True)
     employer = Column(String(255))
     most_recent_assessment_date = Column(Date)
     most_recent_face_to_face_date = Column(Date)
+
+    def to_json(self) -> Dict[str, Any]:
+        return {
+            'person_external_id': self.person_external_id,
+            'full_name': self.full_name,
+            'supervising_officer_external_id': self.supervising_officer_external_id,
+            'current_address': self.current_address,
+            'birthdate': self.birthdate,
+            'birthdate_inferred_from_age': self.birthdate_inferred_from_age,
+            'supervision_type': self.supervision_type,
+            'case_type': self.case_type,
+            'supervision_level': self.supervision_level,
+            'state_code': self.state_code,
+            'employer': self.employer,
+            'most_recent_assessment_date': self.most_recent_assessment_date,
+            'most_recent_face_to_face_date': self.most_recent_face_to_face_date,
+        }
 
 
 class ETLOfficer(CaseTriageBase):

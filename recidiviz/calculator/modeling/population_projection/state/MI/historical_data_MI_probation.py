@@ -86,11 +86,11 @@ for year in total_population.year:
 mean_completion_duration = mean(total_population['felony']) / mean(admissions['felony'])
 
 # out of total probation population
-mean_completion_fraction = 1 - mean(revocations['totals']) / mean(admissions['felony'])
+mean_completion_fraction = float(1 - mean(revocations['totals']) / mean(admissions['felony']))
 mean_fraction_of_technicals = \
-    (1 - mean_completion_fraction) * mean(revocations['technicals']) / mean(revocations['totals'])
+    float((1 - mean_completion_fraction) * mean(revocations['technicals']) / mean(revocations['totals']))
 mean_fraction_of_new_offenses = \
-    (1 - mean_completion_fraction) * mean(revocations['new_offenses']) / mean(revocations['totals'])
+    float((1 - mean_completion_fraction) * mean(revocations['new_offenses']) / mean(revocations['totals']))
 
 assert round(mean_fraction_of_new_offenses + mean_fraction_of_technicals + mean_completion_fraction) == 1
 
