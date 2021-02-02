@@ -18,3 +18,9 @@
 
 # Where the base tables for the JusticeCounts schema live
 JUSTICE_COUNTS_BASE_DATASET: str = 'justice_counts'
+
+# Where the calculations for Corrections data live
+JUSTICE_COUNTS_CORRECTIONS_DATASET: str = 'justice_counts_corrections'
+
+# Where the views that are exported to the dashboard live
+JUSTICE_COUNTS_DASHBOARD_DATASET: str = 'justice_counts_dashboard'
