@@ -19,5 +19,8 @@ from typing import Sequence
 
 from recidiviz.big_query.big_query_view import BigQueryViewBuilder
 from recidiviz.calculator.query.justice_counts.views.cloudsql import get_table_view_builders
+from recidiviz.calculator.query.justice_counts.views.corrections_metrics_by_month \
+    import CorrectionsMetricsByMonthBigQueryViewCollector
 
-VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE: Sequence[BigQueryViewBuilder] = get_table_view_builders()
+VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE: Sequence[BigQueryViewBuilder] = (
+    get_table_view_builders() + CorrectionsMetricsByMonthBigQueryViewCollector().collect_view_builders())
