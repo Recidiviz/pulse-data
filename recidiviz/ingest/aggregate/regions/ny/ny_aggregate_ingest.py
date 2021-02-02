@@ -117,7 +117,7 @@ def _format_df(df: pd.DataFrame) -> pd.DataFrame:
 
     for column_name in set(result.columns) - {'report_date'}:
         result[column_name] = result[column_name].apply(
-            lambda d: '0' if '(' in d else d).apply(locale.atoi)
+            lambda d: int(d) if isinstance(d, (int, float)) else 0 if '(' in d else locale.atoi(d))
 
     result['facility_name'] = df['FACILITY'].iloc[0]
 
