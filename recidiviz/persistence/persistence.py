@@ -109,13 +109,15 @@ STATE_CODE_TO_ENTITY_MATCHING_THRESHOLD_OVERRIDE: Dict[str, Dict[str, float]] = 
         "US_ID": 0.05,
         # TODO(#5313): Decrease back to 5% once entity matching issues are resolved for ND.
         "US_ND": 0.20,
+        # TODO(#4829): Remove override once entity matching issues have been fully resolved in staging.
+        "US_PA": 0.50,
     },
     GCP_PROJECT_PRODUCTION: {
         "US_ID": 0.05,
         # TODO(#5313): Decrease back to 5% once entity matching issues are resolved for ND.
         "US_ND": 0.20,
         # TODO(#4829): Remove override once entity matching issues have been fully resolved in staging and we're
-        #  starting a new rerun.
+        #  starting a new rerun in production.
         "US_PA": 0.50,
     },
 }
