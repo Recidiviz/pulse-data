@@ -1,0 +1,56 @@
+key_mappings:
+  misconduct_number: state_incarceration_incident.state_incarceration_incident_id
+  misconduct_date: state_incarceration_incident.incident_date
+  institution: state_incarceration_incident.facility
+
+child_key_mappings:
+  hearing_after_date: state_incarceration_incident_outcome.hearing_date
+  report_date: state_incarceration_incident_outcome.report_date
+
+primary_key:
+  misconduct_number: state_incarceration_incident.state_incarceration_incident_id
+
+ancestor_keys:
+  control_number: state_person.state_person_id
+
+enforced_ancestor_types:
+  state_sentence: state_incarceration_sentence
+
+keys_to_ignore:
+  - form_141                # Type of action (administrative vs disciplinary) - unused
+  - data_followup           # Whether a hearing was held - unused (duplicative of hearings_held)
+  - sig_date                # Date record was last updated - unused
+  - sig_time                # Time record was last updated - unused
+  - user_id                 # Id of agent who last updated the record - unused
+  - inst_hvl_desc           # Institution description - unused (duplicative of institution)
+  - place_hvl_desc          # Place within facility description - unused (duplicative of place_hvl_code)
+  - place_hvl_code          # Place within facility - handled manually in controller
+  - place_extended          # Place extended - handled manually in controller
+  - misconduct_time         # Misconduct time - unused (we don't need this precision as of yet)
+  - others_involved         # Others classes of people involved - unused
+  - ctgory_of_chrgs_1       # Category 1 charges - handled manually in controller
+  - ctgory_of_chrgs_2       # Category 2 charges - handled manually in controller
+  - ctgory_of_chrgs_3       # Category 3 charges - handled manually in controller
+  - ctgory_of_chrgs_4       # Category 4 charges - handled manually in controller
+  - ctgory_of_chrgs_5       # Category 5 charges - handled manually in controller
+  - confinement             # Whether confinement is a result - handled manually in controller
+  - confinement_date        # Date confinement began - handled manually in controller
+  - confinement_time        # Time confinement began - unused (we don't need this precision)
+  - hearings_held           # What kind of hearing was held - TODO(#3312): Figure out what these codes mean
+  - witnesses               # Whether or not there were witnesses - unused
+  - inmate_version          # Inmate version (unclear) - unused
+  - recording_staff         # Id of agent who recorded incident - unused
+  - rcrdng_staff_last       # Name of agent who recorded incident - unused
+  - reviewing_staff         # Id of agent who reviewed report - unused
+  - revwng_staff_last       # Name of agent who reviewed report - unused
+  - date_reviewed           # Date report was reviewed - unused
+  - inmate_notice_date      # "Inmate" notice date - unused
+  - inmate_notice_time      # "Inmate" notice time - unused
+  - hearing_after_time      # Hearing time - unused
+  - status_141              # 141 Status - TODO(#3312): Learn more about this
+  - stat_hvl_dsc_141        # 141 Status description - unused (duplicative of status_141)
+  - reason_802              # Reason for 802 administrative custody - TODO(#3312): Learn more about this
+  - rsn_hvl_desc_802        # Reason for 802 administrative custody description - unused (duplicative of reason_802)
+  - comment                 # Whether or not there's a comment (unclear) - unused
+  - drug_related            # Whether it's drug related - handled manually in controller
+  - refer_formal_ind        # Unclear - unused

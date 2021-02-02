@@ -810,7 +810,6 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
                     ],
                     state_sentence_groups=[
                         StateSentenceGroup(
-                            state_sentence_group_id='CJ1991',
                             state_incarceration_sentences=[
                                 StateIncarcerationSentence(
                                     state_incarceration_periods=[
@@ -849,7 +848,6 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
                     ],
                     state_sentence_groups=[
                         StateSentenceGroup(
-                            state_sentence_group_id='JE1977',
                             state_incarceration_sentences=[
                                 StateIncarcerationSentence(
                                     state_incarceration_periods=[
@@ -933,7 +931,7 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
                 ),
             ])
 
-        self.run_parse_file_test(expected, 'dbo_Miscon')
+        self.run_parse_file_test(expected, 'dbo_Miscon_v2')
 
     def test_populate_data_dbo_Offender(self) -> None:
         expected = IngestInfo(
@@ -2788,9 +2786,27 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
         ######################################
 
         # Arrange
+        p3_sg_placeholder = entities.StateSentenceGroup.new_with_defaults(
+            state_code=_STATE_CODE_UPPER, status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+            person=person_3
+        )
+        person_3.sentence_groups.append(p3_sg_placeholder)
+        p3_is_placeholder = entities.StateIncarcerationSentence.new_with_defaults(
+            state_code=_STATE_CODE_UPPER, status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+            incarceration_type=StateIncarcerationType.STATE_PRISON, person=person_3, sentence_group=p3_sg_placeholder,
+        )
+        p3_sg_placeholder.incarceration_sentences.append(p3_is_placeholder)
+
+        p3_ip_placeholder = entities.StateIncarcerationPeriod.new_with_defaults(
+            state_code=_STATE_CODE_UPPER, status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO,
+            incarceration_type=StateIncarcerationType.STATE_PRISON, person=person_3,
+            incarceration_sentences=[p3_is_placeholder],
+        )
+        p3_is_placeholder.incarceration_periods.append(p3_ip_placeholder)
+
         p3_ii = entities.StateIncarcerationIncident.new_with_defaults(
             external_id='A123456', state_code=_STATE_CODE_UPPER,
-            person=person_3, incarceration_period=p3_is_ip_7,
+            person=person_3, incarceration_period=p3_ip_placeholder,
             incident_type=StateIncarcerationIncidentType.REPORT, incident_type_raw_text='REPORT',
             incident_date=datetime.date(year=2018, month=5, day=10), facility='WAM',
             incident_details=json.dumps(
@@ -2804,24 +2820,31 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
             report_date=datetime.date(year=2018, month=5, day=16)
         )
         p3_ii.incarceration_incident_outcomes.append(p3_ii_outcome)
-        p3_is_ip_7.incarceration_incidents.append(p3_ii)
+        p3_ip_placeholder.incarceration_incidents.append(p3_ii)
 
-        p3_is_placeholder = entities.StateIncarcerationSentence.new_with_defaults(
+        p4_sg_placeholder = entities.StateSentenceGroup.new_with_defaults(
+            state_code=_STATE_CODE_UPPER,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+            person=person_4
+        )
+        person_4.sentence_groups.append(p4_sg_placeholder)
+
+        p4_is_placeholder = entities.StateIncarcerationSentence.new_with_defaults(
             state_code=_STATE_CODE_UPPER, status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-            incarceration_type=StateIncarcerationType.STATE_PRISON, person=person_3, sentence_group=p3_sg,
+            incarceration_type=StateIncarcerationType.STATE_PRISON, person=person_4, sentence_group=p4_sg_placeholder,
         )
-        p3_sg.incarceration_sentences.append(p3_is_placeholder)
+        p4_sg_placeholder.incarceration_sentences.append(p4_is_placeholder)
 
-        p3_ip_placeholder = entities.StateIncarcerationPeriod.new_with_defaults(
+        p4_ip_placeholder = entities.StateIncarcerationPeriod.new_with_defaults(
             state_code=_STATE_CODE_UPPER, status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO,
-            incarceration_type=StateIncarcerationType.STATE_PRISON, person=person_3,
-            incarceration_sentences=[p3_is_placeholder],
+            incarceration_type=StateIncarcerationType.STATE_PRISON, person=person_4,
+            incarceration_sentences=[p4_is_placeholder],
         )
-        p3_is_placeholder.incarceration_periods.append(p3_ip_placeholder)
+        p4_is_placeholder.incarceration_periods.append(p4_ip_placeholder)
 
         p4_ii_1 = entities.StateIncarcerationIncident.new_with_defaults(
             external_id='A234567', state_code=_STATE_CODE_UPPER,
-            person=person_4, incarceration_period=p4_is_2_ip_1,
+            person=person_4, incarceration_period=p4_ip_placeholder,
             incident_type=StateIncarcerationIncidentType.REPORT, incident_type_raw_text='REPORT',
             incident_date=datetime.date(year=1991, month=3, day=6), facility='GRA',
             location_within_facility='CELL-AA UNIT',
@@ -2837,11 +2860,11 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
             hearing_date=datetime.date(year=1991, month=3, day=6),
         )
         p4_ii_1.incarceration_incident_outcomes.append(p4_ii_1_outcome)
-        p4_is_2_ip_1.incarceration_incidents.append(p4_ii_1)
+        p4_ip_placeholder.incarceration_incidents.append(p4_ii_1)
 
         p4_ii_2 = entities.StateIncarcerationIncident.new_with_defaults(
             external_id='B222333', state_code=_STATE_CODE_UPPER,
-            person=person_4, incarceration_period=p4_is_2_ip_10,
+            person=person_4, incarceration_period=p4_ip_placeholder,
             incident_type=StateIncarcerationIncidentType.REPORT, incident_type_raw_text='REPORT',
             incident_date=datetime.date(year=1993, month=7, day=6), facility='SMI',
             incident_details=json.dumps(
@@ -2855,11 +2878,11 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
             report_date=datetime.date(year=1993, month=7, day=6),
         )
         p4_ii_2.incarceration_incident_outcomes.append(p4_ii_2_outcome)
-        p4_is_2_ip_10.incarceration_incidents.append(p4_ii_2)
+        p4_ip_placeholder.incarceration_incidents.append(p4_ii_2)
 
         p4_ii_3 = entities.StateIncarcerationIncident.new_with_defaults(
             external_id='B444555', state_code=_STATE_CODE_UPPER,
-            person=person_4, incarceration_period=p4_is_2_ip_10,
+            person=person_4, incarceration_period=p4_ip_placeholder,
             incident_type=StateIncarcerationIncidentType.CONTRABAND, incident_type_raw_text='CONTRABAND',
             incident_date=datetime.date(year=1993, month=12, day=17), facility='SMI',
             location_within_facility='RHU-A 200',
@@ -2872,11 +2895,11 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
             hearing_date=datetime.date(year=1993, month=12, day=18),
         )
         p4_ii_3.incarceration_incident_outcomes.append(p4_ii_3_outcome)
-        p4_is_2_ip_10.incarceration_incidents.append(p4_ii_3)
+        p4_ip_placeholder.incarceration_incidents.append(p4_ii_3)
 
         p4_ii_4 = entities.StateIncarcerationIncident.new_with_defaults(
             external_id='B444556', state_code=_STATE_CODE_UPPER,
-            person=person_4, incarceration_period=p4_is_2_ip_10,
+            person=person_4, incarceration_period=p4_ip_placeholder,
             incident_type=StateIncarcerationIncidentType.CONTRABAND, incident_type_raw_text='CONTRABAND',
             incident_date=datetime.date(year=1993, month=12, day=17), facility='SMI',
             location_within_facility='RHU-A 200',
@@ -2887,25 +2910,12 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
             external_id='B444556', state_code=_STATE_CODE_UPPER, person=person_4, incarceration_incident=p4_ii_4,
         )
         p4_ii_4.incarceration_incident_outcomes.append(p4_ii_4_outcome)
-        p4_is_2_ip_10.incarceration_incidents.append(p4_ii_4)
-
-        p4_is_placeholder = entities.StateIncarcerationSentence.new_with_defaults(
-            state_code=_STATE_CODE_UPPER, status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-            incarceration_type=StateIncarcerationType.STATE_PRISON, person=person_4, sentence_group=p4_sg_2,
-        )
-        p4_sg_2.incarceration_sentences.append(p4_is_placeholder)
-
-        p4_ip_placeholder = entities.StateIncarcerationPeriod.new_with_defaults(
-            state_code=_STATE_CODE_UPPER, status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO,
-            incarceration_type=StateIncarcerationType.STATE_PRISON, person=person_4,
-            incarceration_sentences=[p4_is_placeholder],
-        )
-        p4_is_placeholder.incarceration_periods.append(p4_ip_placeholder)
+        p4_ip_placeholder.incarceration_incidents.append(p4_ii_4)
 
         populate_person_backedges(expected_people)
 
         # Act
-        self._run_ingest_job_for_filename('dbo_Miscon.csv')
+        self._run_ingest_job_for_filename('dbo_Miscon_v2.csv')
 
         # Assert
         self.assert_expected_db_people(expected_people)
@@ -3585,20 +3595,20 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
 
         p4_sp_1_1.supervision_violation_entries.extend([p4_sv_1, p4_sv_2])
 
-        p4_sg_placeholder = entities.StateSentenceGroup.new_with_defaults(
+        p4_sg_placeholder_2 = entities.StateSentenceGroup.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
             status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
             person=person_4
         )
-        person_4.sentence_groups.append(p4_sg_placeholder)
+        person_4.sentence_groups.append(p4_sg_placeholder_2)
 
         p4_ss_placeholder = entities.StateSupervisionSentence.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
             status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-            sentence_group=p4_sg_placeholder,
+            sentence_group=p4_sg_placeholder_2,
             person=person_4,
         )
-        p4_sg_placeholder.supervision_sentences.append(p4_ss_placeholder)
+        p4_sg_placeholder_2.supervision_sentences.append(p4_ss_placeholder)
         p4_sp_placeholder = entities.StateSupervisionPeriod.new_with_defaults(
             state_code=_STATE_CODE_UPPER,
             status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
@@ -3929,12 +3939,21 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
         # TODO(#5292): The following changes account for entity matching behavior we're seeing on rerun.
         new_placeholder_sp = entities.StateSupervisionPeriod. \
             new_with_defaults(person=person_4,
-                              supervision_sentences=person_4.sentence_groups[2].supervision_sentences,
+                              supervision_sentences=person_4.sentence_groups[3].supervision_sentences,
                               state_code='US_PA',
                               status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO)
         p4_placeholder_sv.supervision_periods = [new_placeholder_sp]
         new_placeholder_sp.supervision_violation_entries.append(p4_placeholder_sv)
-        person_4.sentence_groups[2].supervision_sentences[0].supervision_periods.append(new_placeholder_sp)
-        person_4.sentence_groups[4].supervision_sentences[0].supervision_periods[0].supervision_violation_entries = []
 
-        self.assert_expected_db_people(expected_people)
+        person_4.sentence_groups[3].supervision_sentences[0].supervision_periods.append(new_placeholder_sp)
+        person_4.sentence_groups[5].supervision_sentences[0].supervision_periods[0].supervision_violation_entries = []
+
+        # These two placeholder sentence groups get merged during rerun, with the sentences from one being moved to the
+        # other.
+        for ss in person_3.sentence_groups[2].supervision_sentences:
+            ss.sentence_group = person_3.sentence_groups[1]
+            person_3.sentence_groups[1].supervision_sentences.append(ss)
+
+        person_3.sentence_groups[2].supervision_sentences = []
+
+        self.assert_expected_db_people(expected_people, ignore_dangling_placeholders=True)

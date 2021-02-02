@@ -199,10 +199,9 @@ class BaseStateDirectIngestControllerTests(BaseDirectIngestControllerTests):
             expected_db_people = pruned_expected_people
 
         if debug:
+            if is_running_in_ci():
+                self.fail('The |debug| flag should only be used for local debugging.')
             if single_person_to_debug is not None:
-                if is_running_in_ci():
-                    self.fail('The |single_person_to_debug| flag should only be used for local debugging.')
-
                 found_people = [p for p in found_people if person_has_id(p, single_person_to_debug)]
                 expected_db_people = [p for p in expected_db_people if person_has_id(p, single_person_to_debug)]
 
