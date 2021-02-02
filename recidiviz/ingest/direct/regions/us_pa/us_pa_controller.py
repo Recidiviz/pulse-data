@@ -616,7 +616,7 @@ class UsPaController(CsvGcsfsDirectIngestController):
         ]
 
         # Data source: DOC
-        if environment.in_gae():
+        if environment.in_gae_production():
             launched_file_tags.append('doc_person_info')
         else:
             # TODO(#4187): Launch this to staging and then prod with any new reruns
@@ -627,11 +627,11 @@ class UsPaController(CsvGcsfsDirectIngestController):
             'dbo_Senrec',
         ]
 
-        if environment.in_gae():
+        if environment.in_gae_production():
             launched_file_tags.append('incarceration_period')
             launched_file_tags.append('dbo_Miscon')
         else:
-            # TODO(#4187): Launch this to staging and then prod with any new reruns
+            # TODO(#4187): Launch these to prod after staging rerun is validated
             launched_file_tags.append('sci_incarceration_period')
             launched_file_tags.append('ccis_incarceration_period')
             launched_file_tags.append('dbo_Miscon_v2')
@@ -640,13 +640,20 @@ class UsPaController(CsvGcsfsDirectIngestController):
             # Data source: PBPP
             'dbo_Offender',
             'dbo_LSIR',
-            'supervision_sentence',
+        ]
+
+        # TODO(#5590): Once we have ripped the tests out for this file, move this gate to be prod-only.
+        if not environment.in_gae_staging():
+            launched_file_tags.append('supervision_sentence')
+
+        launched_file_tags += [
             'supervision_period',
             'supervision_violation',
             'supervision_violation_response',
         ]
 
         unlaunched_file_tags: List[str] = [
+            # TODO(#5641): Launch this to staging once id structure issues are resolved
             'board_action',
         ]
 
