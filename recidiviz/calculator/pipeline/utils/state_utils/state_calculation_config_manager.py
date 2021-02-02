@@ -54,7 +54,10 @@ from recidiviz.common.constants.state.state_case_type import StateSupervisionCas
 from recidiviz.common.constants.state.state_incarceration_period import is_revocation_admission, \
     StateIncarcerationPeriodAdmissionReason
 from recidiviz.common.constants.state.state_supervision import StateSupervisionType
-from recidiviz.common.constants.state.state_supervision_period import StateSupervisionPeriodSupervisionType
+from recidiviz.common.constants.state.state_supervision_period import (
+    StateSupervisionPeriodSupervisionType,
+    StateSupervisionPeriodAdmissionReason,
+)
 from recidiviz.common.constants.state.state_supervision_violation import StateSupervisionViolationType
 from recidiviz.common.constants.states import StateCode
 from recidiviz.common.date import DateRange, DateRangeDiff
@@ -340,7 +343,7 @@ def incarceration_period_is_from_revocation(
 
 def should_produce_supervision_time_bucket_for_period(supervision_period: StateSupervisionPeriod,
                                                       incarceration_sentences: List[StateIncarcerationSentence],
-                                                      supervision_sentences: List[StateSupervisionSentence]):
+                                                      supervision_sentences: List[StateSupervisionSentence]) -> bool:
     """Whether or not any SupervisionTimeBuckets should be created using the supervision_period. In some cases,
     supervision period pre-processing will not drop periods entirely because we need them for context in some of the
     calculations, but we do not want to create metrics using the periods.
@@ -568,7 +571,7 @@ def revoked_supervision_periods_if_revocation_occurred(
 def state_specific_supervision_admission_reason_override(
         state_code: str,
         supervision_period: StateSupervisionPeriod,
-        supervision_period_index: SupervisionPeriodIndex):
+        supervision_period_index: SupervisionPeriodIndex) -> Optional[StateSupervisionPeriodAdmissionReason]:
     if state_code == 'US_ID':
         return us_id_get_supervision_period_admission_override(
             supervision_period=supervision_period, supervision_period_index=supervision_period_index)

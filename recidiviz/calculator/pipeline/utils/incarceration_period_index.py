@@ -28,7 +28,8 @@ from recidiviz.common.date import DateRange, DateRangeDiff
 from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod
 
 
-def _incarceration_periods_converter(incarceration_periods: List[StateIncarcerationPeriod]):
+def _incarceration_periods_converter(incarceration_periods: List[StateIncarcerationPeriod]) \
+        -> List[StateIncarcerationPeriod]:
     sorted_periods = standard_date_sort_for_incarceration_periods(incarceration_periods)
     return sorted_periods
 

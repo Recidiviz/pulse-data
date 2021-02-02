@@ -2323,7 +2323,7 @@ class TestCalculateSupervisionMetricCombinations(unittest.TestCase):
                 is_on_supervision_last_day_of_month=True,
                 case_compliance=SupervisionCaseCompliance(
                     date_of_evaluation=date(2015, 3, 31),
-                    assessment_up_to_date=True
+                    num_days_assessment_overdue=0
                 ),
                 is_past_projected_end_date=False,
             ),

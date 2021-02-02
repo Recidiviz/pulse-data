@@ -32,9 +32,10 @@ from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.state.entities import StateAssessment, StateSupervisionPeriod, StateSupervisionContact
 
 
-class TestAssessmentsInComplianceMonth(unittest.TestCase):
+class TestAssessmentsCompletedInComplianceMonth(unittest.TestCase):
     """Tests for assessments_in_compliance_month."""
-    def test_assessments_in_compliance_month(self):
+
+    def test_completed_assessments_in_compliance_month(self):
         evaluation_date = date(2018, 4, 30)
         assessment_out_of_range = StateAssessment.new_with_defaults(
             state_code=StateCode.US_ND.value,
@@ -49,14 +50,16 @@ class TestAssessmentsInComplianceMonth(unittest.TestCase):
         assessment_1 = StateAssessment.new_with_defaults(
             state_code=StateCode.US_ND.value,
             assessment_type=StateAssessmentType.LSIR,
+            assessment_score=1,
             assessment_date=date(2018, 4, 2)
         )
         assessment_2 = StateAssessment.new_with_defaults(
             state_code=StateCode.US_ND.value,
             assessment_type=StateAssessmentType.LSIR,
+            assessment_score=100,
             assessment_date=date(2018, 4, 10)
         )
-        assessment_3 = StateAssessment.new_with_defaults(
+        assessment_no_score = StateAssessment.new_with_defaults(
             state_code=StateCode.US_ND.value,
             assessment_type=StateAssessmentType.LSIR,
             assessment_date=date(2018, 4, 28)
@@ -73,8 +76,13 @@ class TestAssessmentsInComplianceMonth(unittest.TestCase):
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
         )
 
-        assessments = [assessment_out_of_range, assessment_out_of_range_2, assessment_1, assessment_2, assessment_3]
-        expected_assessments = [assessment_1, assessment_2, assessment_3]
+        assessments = [
+            assessment_out_of_range,
+            assessment_out_of_range_2,
+            assessment_1,
+            assessment_2,
+            assessment_no_score]
+        expected_assessments = [assessment_1, assessment_2]
 
         us_nd_supervision_compliance = UsNdSupervisionCaseCompliance(supervision_period=supervision_period,
                                                                      case_type=StateSupervisionCaseType.GENERAL,
@@ -83,11 +91,12 @@ class TestAssessmentsInComplianceMonth(unittest.TestCase):
                                                                      supervision_contacts=[])
 
         self.assertEqual(len(expected_assessments), us_nd_supervision_compliance
-                         ._assessments_in_compliance_month(evaluation_date))
+                         ._completed_assessments_in_compliance_month(evaluation_date))
 
 
 class TestFaceToFaceContactsInComplianceMonth(unittest.TestCase):
     """Tests for face_to_face_contacts_in_compliance_month."""
+
     def test_face_to_face_contacts_in_compliance_month(self):
         # TODO(#5199): Update once face to face logic has been implemented.
         evaluation_date = date(2018, 4, 30)
@@ -143,6 +152,7 @@ class TestGuidelinesApplicableForCase(unittest.TestCase):
 
 class TestContactFrequencySufficient(unittest.TestCase):
     """Tests the contact_frequency_is_sufficient function."""
+
     def test_face_to_face_frequency_sufficient(self):
         # TODO(#5199): Update once face to face logic is implemented.
         supervision_period = StateSupervisionPeriod.new_with_defaults(
@@ -177,7 +187,8 @@ class TestContactFrequencySufficient(unittest.TestCase):
 
 class TestReassessmentRequirementAreMet(unittest.TestCase):
     """Tests the reassessment_requirements_are_met function."""
-    def test_reassessment_requirements_are_met(self):
+
+    def test_num_days_past_required_reassessment(self):
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             external_id='sp1',
@@ -204,10 +215,13 @@ class TestReassessmentRequirementAreMet(unittest.TestCase):
                                                                      assessments=[assessment],
                                                                      supervision_contacts=[])
 
-        reassessment_requirements_are_met = us_nd_supervision_compliance.\
-            _reassessment_requirements_are_met(evaluation_date, assessment)
+        days_past_reassessment = us_nd_supervision_compliance._num_days_past_required_reassessment(
+            evaluation_date,
+            assessment.assessment_date,
+            assessment.assessment_score,
+        )
 
-        self.assertTrue(reassessment_requirements_are_met)
+        self.assertEqual(days_past_reassessment, 0)
 
     def test_reassessment_requirements_are_not_met(self):
         supervision_period = StateSupervisionPeriod.new_with_defaults(
@@ -236,7 +250,10 @@ class TestReassessmentRequirementAreMet(unittest.TestCase):
                                                                      assessments=[assessment],
                                                                      supervision_contacts=[])
 
-        reassessment_requirements_are_met = us_nd_supervision_compliance.\
-            _reassessment_requirements_are_met(evaluation_date, assessment)
+        days_past_reassessment = us_nd_supervision_compliance._num_days_past_required_reassessment(
+            evaluation_date,
+            assessment.assessment_date,
+            assessment.assessment_score,
+        )
 
-        self.assertFalse(reassessment_requirements_are_met)
+        self.assertEqual(days_past_reassessment, 2714)

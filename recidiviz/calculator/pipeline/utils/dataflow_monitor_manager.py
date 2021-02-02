@@ -17,8 +17,9 @@
 """Monitors the execution of Dataflow jobs."""
 
 import json
-from http import HTTPStatus
 import logging
+from http import HTTPStatus
+from typing import Tuple
 
 import flask
 from flask import request
@@ -34,7 +35,7 @@ dataflow_monitor_blueprint = flask.Blueprint('dataflow_monitor', __name__)
 
 @dataflow_monitor_blueprint.route('/monitor', methods=['POST'])
 @requires_gae_auth
-def handle_dataflow_monitor_task():
+def handle_dataflow_monitor_task() -> Tuple[str, HTTPStatus]:
     """Worker function to publish a message to a Pub/Sub topic once a Dataflow
     job with the given `job_id` has successfully completed.
 

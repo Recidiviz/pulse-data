@@ -64,7 +64,7 @@ def us_mo_filter_violation_responses(violation_responses: List[StateSupervisionV
 
 
 def _get_violation_report_subtype_should_be_included_in_calculations(response_subtype: Optional[str],
-                                                                     include_follow_up_responses) -> bool:
+                                                                     include_follow_up_responses: bool) -> bool:
     """Returns whether a VIOLATION_REPORT with the given response_subtype should be included in calculations."""
     if response_subtype in ['INI', 'ITR']:
         return True
