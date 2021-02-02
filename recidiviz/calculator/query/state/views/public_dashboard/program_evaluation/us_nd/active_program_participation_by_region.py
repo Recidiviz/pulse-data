@@ -52,6 +52,9 @@ ACTIVE_PROGRAM_PARTICIPATION_BY_REGION_VIEW_QUERY_TEMPLATE = \
         (PARTITION BY state_code, person_id, supervision_type, region_id ORDER BY representation_priority) as inclusion_priority
       FROM
         `{project_id}.{materialized_metrics_dataset}.most_recent_program_participation_metrics_materialized`
+      INNER JOIN
+        most_recent_job_id
+      USING (state_code, job_id, date_of_participation, metric_type)
       LEFT JOIN
         `{project_id}.{static_reference_dataset}.program_locations`
       USING (state_code, program_location_id),
