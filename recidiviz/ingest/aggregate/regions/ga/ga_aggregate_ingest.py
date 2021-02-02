@@ -22,6 +22,7 @@ import pandas as pd
 import tabula
 import us
 from PyPDF2 import PdfFileReader
+from more_itertools.more import one
 from sqlalchemy.ext.declarative import DeclarativeMeta
 
 from recidiviz.common import fips, str_field_utils
@@ -113,27 +114,29 @@ def _parse_table(_: str, filename: str) -> pd.DataFrame:
         result.columns = column_names
     elif filename.endswith('nov20.pdf'):
         # Skip every 48th row for this report
-        result = tabula.read_pdf(
+        result = one(tabula.read_pdf(
             filename,
             pages=pages,
             lattice=use_lattice,
+            multiple_tables=False,
             pandas_options={
                 'names': column_names,
                 'skiprows': [x * 48 for x in range(4)],
                 'skipfooter': 1,  # The last row is the grand totals
                 'engine': 'python'  # Only python engine supports 'skipfooter'
-            })
+            }))
     else:
-        result = tabula.read_pdf(
+        result = one(tabula.read_pdf(
             filename,
             pages=pages,
             lattice=use_lattice,
+            multiple_tables=False,
             pandas_options={
                 'names': column_names,
                 'skiprows': _header_on_each_page(),
                 'skipfooter': 1,  # The last row is the grand totals
                 'engine': 'python'  # Only python engine supports 'skipfooter'
-            })
+            }))
 
     result = aggregate_ingest_utils.rename_columns_and_select(result, {
         'Jurisdiction': 'county_name',

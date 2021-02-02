@@ -22,6 +22,7 @@ import numpy as np
 import pandas as pd
 import tabula
 import us
+from more_itertools.more import one
 from sqlalchemy.ext.declarative import DeclarativeMeta
 
 from recidiviz.common.constants.aggregate import (
@@ -53,11 +54,12 @@ def parse(location: str, filename: str) -> Dict[DeclarativeMeta, pd.DataFrame]:
 
 def _parse_table(_, filename: str) -> pd.DataFrame:
     """Parses the table in the KY PDF."""
-    whole_df = tabula.read_pdf(
+    whole_df = one(tabula.read_pdf(
         filename,
         pages='all',
+        multiple_tables=False,
         lattice=True
-    )
+    ))
 
     if filename.endswith('04-16-20.pdf'):
         whole_df[323:331] = whole_df[323:331].shift(-1, axis='columns')
