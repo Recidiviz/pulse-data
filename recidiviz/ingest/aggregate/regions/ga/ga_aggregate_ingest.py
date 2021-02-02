@@ -111,6 +111,18 @@ def _parse_table(_: str, filename: str) -> pd.DataFrame:
         dfs.append(df4)
         result = pd.concat(df.iloc[1:] for df in dfs)
         result.columns = column_names
+    elif filename.endswith('nov20.pdf'):
+        # Skip every 48th row for this report
+        result = tabula.read_pdf(
+            filename,
+            pages=pages,
+            lattice=use_lattice,
+            pandas_options={
+                'names': column_names,
+                'skiprows': [x * 48 for x in range(4)],
+                'skipfooter': 1,  # The last row is the grand totals
+                'engine': 'python'  # Only python engine supports 'skipfooter'
+            })
     else:
         result = tabula.read_pdf(
             filename,
