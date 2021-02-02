@@ -76,7 +76,6 @@ from recidiviz.calculator.pipeline.utils.supervision_case_compliance_manager imp
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
 from recidiviz.common.constants.state.state_supervision_period import StateSupervisionPeriodSupervisionType, \
     StateSupervisionLevel
-from recidiviz.persistence.entity.state.entities import StateAssessment
 
 SEX_OFFENSE_NEW_SUPERVISION_ASSESSMENT_DEADLINE_DAYS_PROBATION = 45
 SEX_OFFENSE_NEW_SUPERVISION_ASSESSMENT_DEADLINE_DAYS_PAROLE = 90
@@ -149,22 +148,23 @@ class UsIdSupervisionCaseCompliance(StateSupervisionCaseComplianceManager):
 
         raise ValueError(f"Found unexpected case_type: [{self.case_type}]")
 
-    def _reassessment_requirements_are_met(self, compliance_evaluation_date: date,
-                                           most_recent_assessment: StateAssessment) -> bool:
-        """Returns whether the requirements for reassessment have been met."""
+    def _num_days_past_required_reassessment(self,
+                                             compliance_evaluation_date: date,
+                                             most_recent_assessment_date: date,
+                                             most_recent_assessment_score: int) -> int:
+        """Returns the number of days it has been since the required reassessment deadline. Returns 0
+        if the reassessment is not overdue."""
         if self.case_type == StateSupervisionCaseType.GENERAL:
             if self.supervision_period.supervision_level == StateSupervisionLevel.MINIMUM:
-                return True
-            return self._compliance_evaluation_date_before_reassessment_deadline(
-                compliance_evaluation_date, most_recent_assessment.assessment_date)
+                return 0
+            return self._num_days_compliance_evaluation_date_past_reassessment_deadline(
+                compliance_evaluation_date, most_recent_assessment_date)
         if self.case_type == StateSupervisionCaseType.SEX_OFFENSE:
-            if not most_recent_assessment.assessment_score:
-                return False
-            if most_recent_assessment.assessment_score > SEX_OFFENSE_LSIR_MINIMUM_SCORE:
-                return self._compliance_evaluation_date_before_reassessment_deadline(
+            if most_recent_assessment_score > SEX_OFFENSE_LSIR_MINIMUM_SCORE:
+                return self._num_days_compliance_evaluation_date_past_reassessment_deadline(
                     compliance_evaluation_date,
-                    most_recent_assessment.assessment_date)
-        return True
+                    most_recent_assessment_date)
+        return 0
 
     def _face_to_face_contact_frequency_is_sufficient(self, compliance_evaluation_date: date) -> Optional[bool]:
         """Calculates whether the frequency of face-to-face contacts between the officer and the person on supervision
@@ -210,17 +210,16 @@ class UsIdSupervisionCaseCompliance(StateSupervisionCaseComplianceManager):
 
         return len(contacts_within_period) >= required_contacts
 
-    def _compliance_evaluation_date_before_reassessment_deadline(self, compliance_evaluation_date: date,
-                                                                 most_recent_assessment_date: Optional[date]) -> bool:
-        # Their assessment is up to date if the compliance_evaluation_date is within REASSESSMENT_DEADLINE_DAYS
-        # number of days since the last assessment date.
-        if most_recent_assessment_date is None:
-            return False
+    def _num_days_compliance_evaluation_date_past_reassessment_deadline(self,
+                                                                        compliance_evaluation_date: date,
+                                                                        most_recent_assessment_date: date) -> int:
+        """Computes the number of days the compliance is overdue for a reassessment. Returns 0 if it is
+        not overdue."""
         reassessment_deadline = most_recent_assessment_date + relativedelta(days=REASSESSMENT_DEADLINE_DAYS)
         logging.debug(
             "Last assessment was taken on %s. Re-assessment due by %s, and the compliance evaluation date is %s",
             most_recent_assessment_date, reassessment_deadline, compliance_evaluation_date)
-        return compliance_evaluation_date < reassessment_deadline
+        return max(0, (compliance_evaluation_date - reassessment_deadline).days)
 
     def _get_required_face_to_face_contacts_and_period_days_for_level(self) -> \
             Tuple[int, int]:

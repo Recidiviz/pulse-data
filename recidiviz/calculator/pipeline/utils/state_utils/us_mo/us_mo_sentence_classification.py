@@ -37,7 +37,7 @@ class UsMoSentenceStatus(BuildableAttr):
     sentence_status_external_id: str = attr.ib()
 
     # External id for the sentence associated with this status
-    sentence_external_id = attr.ib()
+    sentence_external_id: str = attr.ib()
 
     # Status date
     status_date: Optional[date] = attr.ib()
@@ -61,7 +61,7 @@ class UsMoSentenceStatus(BuildableAttr):
     is_supervision_in_status: bool = attr.ib()
 
     @is_supervision_in_status.default
-    def _get_is_supervision_in_status(self):
+    def _get_is_supervision_in_status(self) -> bool:
         return '5I' in self.status_code
 
     # If True, this is a status that denotes an end to some period of supervision related to this sentence.
@@ -70,7 +70,7 @@ class UsMoSentenceStatus(BuildableAttr):
     is_supervision_out_status: bool = attr.ib()
 
     @is_supervision_out_status.default
-    def _get_is_supervision_out_status(self):
+    def _get_is_supervision_out_status(self) -> bool:
         return '5O' in self.status_code
 
     # If True, this is a status that denotes a start to some period of incarceration related to this sentence.
@@ -79,7 +79,7 @@ class UsMoSentenceStatus(BuildableAttr):
     is_incarceration_in_status: bool = attr.ib()
 
     @is_incarceration_in_status.default
-    def _get_is_incarceration_in_status(self):
+    def _get_is_incarceration_in_status(self) -> bool:
         return '0I' in self.status_code
 
     # If True, this is a status that denotes an end to some period of incarceration related to this sentence.
@@ -88,7 +88,7 @@ class UsMoSentenceStatus(BuildableAttr):
     is_incarceration_out_status: bool = attr.ib()
 
     @is_incarceration_out_status.default
-    def _get_is_incarceration_out_status(self):
+    def _get_is_incarceration_out_status(self) -> bool:
         return '0O' in self.status_code
 
     # Indicates whether the status is related to the start or end of a sentencing investigation/assessment
@@ -106,7 +106,7 @@ class UsMoSentenceStatus(BuildableAttr):
     is_lifetime_supervision_start_status: bool = attr.ib()
 
     @is_lifetime_supervision_start_status.default
-    def _get_is_lifetime_supervision_start_status(self):
+    def _get_is_lifetime_supervision_start_status(self) -> bool:
         return self.status_code in (
             '35I6010',  # Release from DMH for SVP Supv
             '35I6020',  # Lifetime Supervision Revisit
@@ -236,13 +236,13 @@ class UsMoSentenceMixin(Generic[SentenceType]):
     base_sentence: SentenceType = attr.ib()
 
     @base_sentence.default
-    def _base_sentence(self):
+    def _base_sentence(self) -> SentenceType:
         raise ValueError('Must set base_sentence')
 
     sentence_statuses: List[UsMoSentenceStatus] = attr.ib()
 
     @sentence_statuses.default
-    def _sentence_statuses(self):
+    def _sentence_statuses(self) -> List[UsMoSentenceStatus]:
         raise ValueError('Must set sentence_statuses')
 
     # Time span objects that represent time spans where a sentence has a given supervision type
@@ -286,7 +286,7 @@ class UsMoSentenceMixin(Generic[SentenceType]):
     @supervision_type_spans.validator
     def _supervision_type_spans_validator(self,
                                           _attribute: attr.Attribute,
-                                          supervision_type_spans: List[SupervisionTypeSpan]):
+                                          supervision_type_spans: List[SupervisionTypeSpan]) -> None:
         if supervision_type_spans is None:
             raise ValueError('Spans list should not be None')
 
@@ -302,7 +302,8 @@ class UsMoSentenceMixin(Generic[SentenceType]):
                 raise ValueError('Intermediate span must not have None end date')
 
     @staticmethod
-    def _get_sentence_supervision_type_from_critical_day_statuses(critical_day_statuses: List[UsMoSentenceStatus]):
+    def _get_sentence_supervision_type_from_critical_day_statuses(critical_day_statuses: List[UsMoSentenceStatus]) \
+        -> Optional[StateSupervisionType]:
         """Given a set of 'supervision type critical' statuses, returns the supervision type for the
         SupervisionTypeSpan starting on that day."""
 

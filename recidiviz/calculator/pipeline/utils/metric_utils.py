@@ -105,7 +105,7 @@ class RecidivizMetric(BuildableAttr):
     def bq_schema_for_metric_table(cls) -> List[bigquery.SchemaField]:
         """Returns the necessary BigQuery schema for the RecidivizMetric, which is a list of SchemaField objects
         containing the column name and value type for each attribute on the RecidivizMetric."""
-        def schema_type_for_attribute(attribute) -> str:
+        def schema_type_for_attribute(attribute: Any) -> str:
             # Race and ethnicity fields are the only ones that support list form. These are converted to
             # comma-separated lists stored as strings in BigQuery.
             if is_enum(attribute) or is_list(attribute) or is_str(attribute):

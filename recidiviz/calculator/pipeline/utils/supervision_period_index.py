@@ -27,7 +27,7 @@ from recidiviz.common.constants.state.state_supervision_period import StateSuper
 from recidiviz.persistence.entity.state.entities import StateSupervisionPeriod
 
 
-def _supervision_periods_converter(supervision_periods: List[StateSupervisionPeriod]):
+def _supervision_periods_converter(supervision_periods: List[StateSupervisionPeriod]) -> List[StateSupervisionPeriod]:
     supervision_periods.sort(key=lambda b: (b.start_date,
                                             b.termination_date or date.max,
                                             # Official admissions should sort before other admissions on the same day

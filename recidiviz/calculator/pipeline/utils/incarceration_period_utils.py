@@ -135,9 +135,9 @@ def collapse_temporary_custody_and_revocation_periods(
         if previous_period.release_date == incarceration_period.admission_date \
             and previous_period.admission_reason == AdmissionReason.TEMPORARY_CUSTODY \
             and incarceration_period.admission_reason in [
-                    AdmissionReason.DUAL_REVOCATION,
-                    AdmissionReason.PAROLE_REVOCATION,
-                    AdmissionReason.PROBATION_REVOCATION]:
+                AdmissionReason.DUAL_REVOCATION,
+                AdmissionReason.PAROLE_REVOCATION,
+                AdmissionReason.PROBATION_REVOCATION]:
             merged_period = combine_incarceration_periods(
                 previous_period,
                 incarceration_period,
@@ -207,7 +207,8 @@ def combine_incarceration_periods(start: StateIncarcerationPeriod,
     return collapsed_incarceration_period
 
 
-def standard_date_sort_for_incarceration_periods(incarceration_periods: List[StateIncarcerationPeriod]):
+def standard_date_sort_for_incarceration_periods(incarceration_periods: List[StateIncarcerationPeriod]) \
+        -> List[StateIncarcerationPeriod]:
     """Sorts incarceration periods chronologically by admission and release dates. Periods with the same admission
     date will be sorted by release date, with unset release dates coming after set release dates."""
     incarceration_periods.sort(key=lambda b: (b.admission_date, b.release_date or date.max))
@@ -262,7 +263,7 @@ def _filter_and_update_incarceration_periods_for_calculations(
     return filtered_incarceration_periods
 
 
-def _sort_ips_by_set_dates_and_statuses(incarceration_periods: List[StateIncarcerationPeriod]):
+def _sort_ips_by_set_dates_and_statuses(incarceration_periods: List[StateIncarcerationPeriod]) -> None:
     """Sorts incarceration periods chronologically by the admission and release dates according to this logic:
         - Sorts by admission_date, if set, else by release_date
         - For periods with the same admission_date:
@@ -453,7 +454,7 @@ def _infer_missing_dates_and_statuses(
     return updated_periods
 
 
-def _ip_is_nested_in_previous_period(ip: StateIncarcerationPeriod, previous_ip: StateIncarcerationPeriod):
+def _ip_is_nested_in_previous_period(ip: StateIncarcerationPeriod, previous_ip: StateIncarcerationPeriod) -> bool:
     """Returns whether the StateIncarcerationPeriod |ip| is entirely nested within the |previous_ip|. Both periods
     must have set admission and release dates.
 

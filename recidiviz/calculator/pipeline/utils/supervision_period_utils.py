@@ -104,7 +104,7 @@ def get_relevant_supervision_periods_before_admission_date(
 
 def find_last_supervision_period_terminated_before_date(
         upper_bound_date: date, supervision_periods: List[StateSupervisionPeriod],
-        maximum_months_proximity=SUPERVISION_PERIOD_PROXIMITY_MONTH_LIMIT) -> Optional[StateSupervisionPeriod]:
+        maximum_months_proximity: int = SUPERVISION_PERIOD_PROXIMITY_MONTH_LIMIT) -> Optional[StateSupervisionPeriod]:
     """Looks for the supervision period that ended most recently before the upper_bound_date, within the
     month window defined by |maximum_months_proximity|.
 

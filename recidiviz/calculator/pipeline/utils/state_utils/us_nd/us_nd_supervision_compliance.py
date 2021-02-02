@@ -23,13 +23,13 @@ from dateutil.relativedelta import relativedelta
 
 from recidiviz.calculator.pipeline.utils.supervision_case_compliance_manager import \
     StateSupervisionCaseComplianceManager
-from recidiviz.persistence.entity.state.entities import StateAssessment
 
 NUMBER_OF_DAYS_LSIR_INITIAL_NUMBER_OF_DAYS_COMPLIANCE: int = 180
 
 
 class UsNdSupervisionCaseCompliance(StateSupervisionCaseComplianceManager):
     """US_ND specific calculations for supervision case compliance."""
+
     def _get_initial_assessment_number_of_days(self) -> int:
         """Returns the number of days that an initial assessment should take place, given a `case_type` and
         `supervision_type`."""
@@ -39,11 +39,14 @@ class UsNdSupervisionCaseCompliance(StateSupervisionCaseComplianceManager):
         """Returns whether the standard state guidelines are applicable for the given supervision case."""
         return True
 
-    def _reassessment_requirements_are_met(self, compliance_evaluation_date: date,
-                                           most_recent_assessment: StateAssessment) -> bool:
-        """Returns whether the requirements for reassessment have been met."""
-        return self._compliance_evaluation_date_before_reassessment_deadline(compliance_evaluation_date,
-                                                                             most_recent_assessment.assessment_date)
+    def _num_days_past_required_reassessment(self,
+                                             compliance_evaluation_date: date,
+                                             most_recent_assessment_date: date,
+                                             most_recent_assessment_score: int) -> int:
+        """Returns the number of days it has been since the required reassessment deadline. Returns 0
+        if the reassessment is not overdue."""
+        return self._num_days_compliance_evaluation_date_past_reassessment_deadline(compliance_evaluation_date,
+                                                                                    most_recent_assessment_date)
 
     def _face_to_face_contact_frequency_is_sufficient(self, compliance_evaluation_date: date) -> Optional[bool]:
         """Returns whether the frequency of face-to-face contacts between the officer and the person on supervision
@@ -51,18 +54,17 @@ class UsNdSupervisionCaseCompliance(StateSupervisionCaseComplianceManager):
         # TODO(#5199): Update, once face to face contacts are ingested for US_ND.
         return None
 
-    def _compliance_evaluation_date_before_reassessment_deadline(self, compliance_evaluation_date: date,
-                                                                 most_recent_assessment_date: Optional[date]) \
-            -> bool:
-        """Returns whether the compliance evaluation date is before the risk reassessment deadline."""
+    def _num_days_compliance_evaluation_date_past_reassessment_deadline(self,
+                                                                        compliance_evaluation_date: date,
+                                                                        most_recent_assessment_date: date) -> int:
+        """Returns the number of days that the compliance evaluation is overdue, given the latest evaluation.
+        Returns 0 if it is not overdue"""
 
         # Their assessment is up to date if the compliance_evaluation_date is within
         # NUMBER_OF_DAYS_LSIR_INITIAL_NUMBER_OF_DAYS_COMPLIANCE number of days since the last assessment date.
-        if most_recent_assessment_date is None:
-            return False
         reassessment_deadline = \
             most_recent_assessment_date + relativedelta(days=NUMBER_OF_DAYS_LSIR_INITIAL_NUMBER_OF_DAYS_COMPLIANCE)
         logging.debug(
             "Last assessment was taken on %s. Re-assessment due by %s, and the compliance evaluation date is %s",
             most_recent_assessment_date, reassessment_deadline, compliance_evaluation_date)
-        return compliance_evaluation_date < reassessment_deadline
+        return max(0, (compliance_evaluation_date - reassessment_deadline).days)
