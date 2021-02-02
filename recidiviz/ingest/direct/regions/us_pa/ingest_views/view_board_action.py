@@ -61,6 +61,8 @@ sci_actions AS (
              control_number
   FROM board_action_codes 
   LEFT JOIN
+    -- TODO(#5641): Update this query to remove dependence on dbo_tblSearchInmateInfo - we should not be using control
+    -- or inmate numbers (DOC ids) in ingest views for supervision data.
     {dbo_tblSearchInmateInfo}
   ON 
     ParoleNumber = parole_board_num

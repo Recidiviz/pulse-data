@@ -3,3 +3,9 @@ primary_key_cols:
   - inmate_number
   - control_number
   - state_id_num
+columns:
+  - name: control_number
+    is_datetime: False
+    description: |
+      ID that follows a person through all encounters with the PA DOC (ideally). In practice, they make mistakes and
+      this is retroactively edited with some frequency.
