@@ -1,0 +1,10 @@
+file_tag: RECIDIVIZ_REFERENCE_supervision_district_id_to_name
+file_description: |-
+  Recidiviz-generated mapping of ND supervision district ids to their human-readable name.
+primary_key_cols:
+  - supervising_district_external_id
+columns:
+  - name: supervising_district_external_id
+    description: The numeric external district IDs in ND.
+  - name: supervising_district_name
+    description: The associated district names, mapped from a given district external ID.
