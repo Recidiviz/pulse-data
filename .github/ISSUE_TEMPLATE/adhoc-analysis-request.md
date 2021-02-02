@@ -2,8 +2,8 @@
 name: Adhoc Analysis Request
 about: File an analysis request for the Analytics team.
 title: ''
-labels: 'Analytics - Adhoc', 'Subject: Analysis'
-assignees: 'hobuobi','agaidus'
+labels: 'Analytics - Adhoc, Subject: Analysis'
+assignees: agaidus, hobuobi
 
 ---
 
