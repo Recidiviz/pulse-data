@@ -1,6 +1,5 @@
 file_tag: dbo_Miscon
 primary_key_cols:
-  - control_number
   - misconduct_number
 columns:
   - name: control_number

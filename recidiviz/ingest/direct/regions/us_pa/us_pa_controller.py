@@ -109,6 +109,13 @@ class UsPaController(CsvGcsfsDirectIngestController):
             self._compose_current_address,
             self._hydrate_sentence_group_ids
         ]
+        dbo_Miscon_postprocessors: List[Callable] = [
+            gen_label_single_external_id_hook(US_PA_CONTROL),
+            self._specify_incident_location,
+            self._specify_incident_type,
+            self._specify_incident_details,
+            self._specify_incident_outcome,
+        ]
         self.row_post_processors_by_file: Dict[str, List[Callable]] = {
             'person_external_ids': [
                 self._hydrate_person_external_ids
@@ -138,13 +145,8 @@ class UsPaController(CsvGcsfsDirectIngestController):
                 self._add_incarceration_type,
                 self._concatenate_incarceration_purpose_codes,
             ],
-            'dbo_Miscon': [
-                gen_label_single_external_id_hook(US_PA_CONTROL),
-                self._specify_incident_location,
-                self._specify_incident_type,
-                self._specify_incident_details,
-                self._specify_incident_outcome,
-            ],
+            'dbo_Miscon': dbo_Miscon_postprocessors,
+            'dbo_Miscon_v2': dbo_Miscon_postprocessors,
             'dbo_Offender': [
                 gen_label_single_external_id_hook(US_PA_PBPP),
                 self._hydrate_races,
@@ -199,6 +201,9 @@ class UsPaController(CsvGcsfsDirectIngestController):
                 gen_convert_person_ids_to_external_id_objects(self._get_id_type)
             ],
             'dbo_Miscon': [
+                gen_convert_person_ids_to_external_id_objects(self._get_id_type),
+            ],
+            'dbo_Miscon_v2': [
                 gen_convert_person_ids_to_external_id_objects(self._get_id_type),
             ],
             'dbo_Offender': [],
@@ -624,14 +629,14 @@ class UsPaController(CsvGcsfsDirectIngestController):
 
         if environment.in_gae():
             launched_file_tags.append('incarceration_period')
+            launched_file_tags.append('dbo_Miscon')
         else:
             # TODO(#4187): Launch this to staging and then prod with any new reruns
             launched_file_tags.append('sci_incarceration_period')
             launched_file_tags.append('ccis_incarceration_period')
+            launched_file_tags.append('dbo_Miscon_v2')
 
         launched_file_tags += [
-            'dbo_Miscon',
-
             # Data source: PBPP
             'dbo_Offender',
             'dbo_LSIR',
@@ -722,6 +727,7 @@ class UsPaController(CsvGcsfsDirectIngestController):
             'sci_incarceration_period',
             'ccis_incarceration_period',
             'dbo_Miscon',
+            'dbo_Miscon_v2',
             'board_action',
         ]:
             return US_PA_CONTROL
