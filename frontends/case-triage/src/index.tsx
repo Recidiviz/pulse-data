@@ -15,11 +15,18 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 import "./window.d";
-import * as React from "react";
-import { useEffect, useState } from "react";
-import * as ReactDOM from "react-dom";
+import React, { useEffect, useState } from "react";
+import ReactDOM from "react-dom";
+import styled from "styled-components/macro";
 import { BrowserRouter } from "react-router-dom";
 import { Auth0Provider, useAuth0 } from "@auth0/auth0-react";
+import {
+  Assets,
+  Button,
+  ButtonPalette,
+  GlobalStyle,
+  Header,
+} from "@recidiviz/case-triage-components";
 
 const ClientList: React.FC = () => {
   const {
@@ -73,20 +80,31 @@ const LoginButton: React.FC = () => {
 
   if (isAuthenticated) {
     return (
-      <button type="button" onClick={() => logout()}>
-        Log Out
-      </button>
+      <Button
+        label="Log Out"
+        onClick={() => logout()}
+        primary
+        palette={ButtonPalette.primary}
+      />
     );
   }
 
   return (
-    <button type="button" onClick={() => loginWithRedirect()}>
-      Log In
-    </button>
+    <Button
+      label="Log In"
+      onClick={() => loginWithRedirect()}
+      primary
+      palette={ButtonPalette.primary}
+    />
   );
 };
 
 export default LoginButton;
+
+const Container = styled.div`
+  margin: 0 auto;
+  max-width: 800px;
+`;
 
 ReactDOM.render(
   <Auth0Provider
@@ -96,8 +114,16 @@ ReactDOM.render(
     audience={window.AUTH0_CONFIG.audience}
   >
     <BrowserRouter>
-      <LoginButton />
-      <ClientList />
+      <GlobalStyle />
+      <Header
+        left={<img src={Assets.LOGO} alt="Recidiviz - Case Triage" />}
+        right={<img src={Assets.HAMBURGER} alt="Menu" />}
+      />
+      <Container>
+        <LoginButton />
+
+        <ClientList />
+      </Container>
     </BrowserRouter>
   </Auth0Provider>,
   document.getElementById("root")
