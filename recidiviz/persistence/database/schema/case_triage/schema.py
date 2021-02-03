@@ -21,7 +21,9 @@ for Case Triage related entities.
 """
 from typing import Any, Dict
 
-from sqlalchemy import Column, Boolean, Date, String, Text, UniqueConstraint
+from sqlalchemy import Column, Boolean, Date, DateTime, String, Text, UniqueConstraint
+from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.sql import func
 
 from recidiviz.persistence.database.base_schema import CaseTriageBase
 
@@ -72,3 +74,20 @@ class ETLOfficer(CaseTriageBase):
     email_address = Column(String(255), nullable=False)
     given_names = Column(String(255), nullable=False)
     surname = Column(String(255), nullable=False)
+
+
+class UserAction(CaseTriageBase):
+    """Represents an action that an officer indicates they have taken on behalf of
+    a client. We only store one active row per officer/client pair.
+    """
+    __tablename__ = 'user_actions'
+
+    person_external_id = Column(String(255), nullable=False, index=True, primary_key=True)
+    officer_external_id = Column(String(255), nullable=False, index=True, primary_key=True)
+    state_code = Column(String(255), nullable=False, index=True, primary_key=True)
+
+    # To start, we're just keeping things in json. We will eventually migrate this to
+    # some other format when we know better what we need, but for the moment we will
+    # enforce schema decisions and/or migrations largely in code.
+    action_metadata = Column(JSONB, nullable=False)
+    action_ts = Column(DateTime, nullable=False, server_default=func.now(), onupdate=func.now())
