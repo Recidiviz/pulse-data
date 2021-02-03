@@ -15,6 +15,33 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 
+# Create a new service account for all things Cloud Run
+resource "google_service_account" "cloud_run" {
+  account_id   = "cloud-run-service-account"
+  display_name = "Cloud Run Service Account"
+}
+
+resource "google_project_iam_member" "cloud_run_admin" {
+  role   = "roles/run.admin"
+  member = "serviceAccount:${google_service_account.cloud_run.email}"
+}
+
+resource "google_project_iam_member" "cloud_run_secret_accessor" {
+  role   = "roles/secretmanager.secretAccessor"
+  member = "serviceAccount:${google_service_account.cloud_run.email}"
+}
+
+resource "google_project_iam_member" "cloud_run_cloud_sql" {
+  role   = "roles/cloudsql.client"
+  member = "serviceAccount:${google_service_account.cloud_run.email}"
+}
+
+resource "google_project_iam_member" "cloud_run_gcs_access" {
+  role   = "roles/storage.objectViewer"
+  member = "serviceAccount:${google_service_account.cloud_run.email}"
+}
+
+# Initializes actual service
 resource "google_cloud_run_service" "case-triage" {
   name     = "case-triage-web"
   location = var.region
@@ -25,7 +52,20 @@ resource "google_cloud_run_service" "case-triage" {
         image   = "us.gcr.io/recidiviz-staging/appengine/default:${var.docker_image_tag}"
         command = ["pipenv"]
         args    = ["run", "gunicorn", "-c", "gunicorn.conf.py", "--log-file=-", "-b", ":$PORT", "recidiviz.case_triage.server:app"]
+
+        env {
+          name  = "RECIDIVIZ_ENV"
+          value = var.project_id == "recidiviz-123" ? "production" : "staging"
+        }
+
+        resources {
+          limits = {
+            memory = "1024Mi"
+          }
+        }
       }
+
+      service_account_name = google_service_account.cloud_run.email
     }
 
     metadata {
@@ -38,7 +78,7 @@ resource "google_cloud_run_service" "case-triage" {
       name = "case-triage-web-${replace(var.docker_image_tag, ".", "-")}"
     }
   }
-  
+
   metadata {
     annotations = {
       "run.googleapis.com/launch-stage" = "BETA"
@@ -53,6 +93,7 @@ resource "google_cloud_run_service" "case-triage" {
   autogenerate_revision_name = false
 }
 
+# Sets up public access
 resource "google_cloud_run_service_iam_member" "public-access" {
   location = google_cloud_run_service.case-triage.location
   project  = google_cloud_run_service.case-triage.project
