@@ -33,6 +33,7 @@ import pytest
 from mock import patch
 
 from recidiviz.calculator.pipeline.utils import extractor_utils
+from recidiviz.common.constants.charge import ChargeStatus
 from recidiviz.common.constants.state.state_assessment import (
     StateAssessmentClass,
     StateAssessmentType
@@ -1426,6 +1427,7 @@ class TestHydrateEntity(unittest.TestCase):
             charge_id=6666,
             person_id=111,
             state_code='US_XX',
+            status=ChargeStatus.PRESENT_WITHOUT_INFO,
             court_case_id=222,
         )
 
@@ -1466,6 +1468,7 @@ class TestHydrateEntity(unittest.TestCase):
             charge_id=6666,
             person_id=111,
             state_code='US_XX',
+            status=ChargeStatus.PRESENT_WITHOUT_INFO,
             court_case_id=222,
         )
 
@@ -1507,6 +1510,7 @@ class TestHydrateEntity(unittest.TestCase):
             charge_id=6666,
             person_id=111,
             state_code='US_XX',
+            status=ChargeStatus.PRESENT_WITHOUT_INFO,
             court_case_id=222,
         )
 
@@ -1641,8 +1645,8 @@ class TestHydrateRootEntityWithRelationshipPropertyEntities(unittest.TestCase):
         charge_2_1 = schema.StateCharge(
             charge_id=1209,
             person_id=person_id,
-            status=entities.ChargeStatus.PENDING.value,
-            state_code='us_ca'
+            status=entities.ChargeStatus.PENDING,
+            state_code='us_ca',
         )
 
         fine_entity_1 = StateSchemaToEntityConverter().convert(fine_1)

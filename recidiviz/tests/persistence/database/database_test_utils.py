@@ -1,6 +1,7 @@
 """Utils for testing the database."""
 
 import datetime
+from typing import Optional
 
 from recidiviz.common.constants.bond import BondStatus, BondType
 from recidiviz.common.constants.charge import ChargeStatus
@@ -218,13 +219,15 @@ def generate_test_bond(person_id) -> state_schema.StateBond:
     return instance
 
 
-def generate_test_charge(person_id, charge_id, court_case=None, bond=None, state_code='us_ca') -> \
-        state_schema.StateCharge:
+def generate_test_charge(person_id: int, charge_id: int,
+                         court_case: Optional[state_schema.StateCourtCase] = None,
+                         bond: Optional[state_schema.StateBond] = None,
+                         state_code: str = 'us_ca') -> state_schema.StateCharge:
     instance = state_schema.StateCharge(
         charge_id=charge_id,
         person_id=person_id,
-        status=ChargeStatus.PENDING.value,
         state_code=state_code,
+        status=ChargeStatus.PRESENT_WITHOUT_INFO.value,
         court_case=court_case,
         bond=bond,
     )

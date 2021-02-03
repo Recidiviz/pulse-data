@@ -33,6 +33,7 @@ from recidiviz.calculator.pipeline.incarceration.incarceration_event import \
     IncarcerationAdmissionEvent, IncarcerationReleaseEvent, \
     IncarcerationStayEvent, IncarcerationEvent
 from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_sentence_classification import SupervisionTypeSpan
+from recidiviz.common.constants.charge import ChargeStatus
 from recidiviz.common.constants.state.state_incarceration import \
     StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_period import StateSpecializedPurposeForIncarceration, \
@@ -87,6 +88,7 @@ class TestFindIncarcerationEvents(unittest.TestCase):
             charges=[
                 StateCharge.new_with_defaults(
                     state_code='US_XX',
+                    status=ChargeStatus.PRESENT_WITHOUT_INFO,
                     offense_date=date(2007, 12, 11),
                     ncic_code='0901',
                     statute='9999'
@@ -172,6 +174,7 @@ class TestFindIncarcerationEvents(unittest.TestCase):
             charges=[
                 StateCharge.new_with_defaults(
                     state_code='US_XX',
+                    status=ChargeStatus.PRESENT_WITHOUT_INFO,
                     offense_date=date(2007, 12, 11),
                     ncic_code='5511',
                     statute='9999'
@@ -449,6 +452,7 @@ class TestFindIncarcerationEvents(unittest.TestCase):
             charges=[
                 StateCharge.new_with_defaults(
                     state_code='US_ND',
+                    status=ChargeStatus.PRESENT_WITHOUT_INFO,
                     offense_date=date(2007, 12, 11),
                     ncic_code='0901',
                     statute='9999'
@@ -548,6 +552,7 @@ class TestFindIncarcerationEvents(unittest.TestCase):
                     charges=[
                         StateCharge.new_with_defaults(
                             state_code='US_MO',
+                            status=ChargeStatus.PRESENT_WITHOUT_INFO,
                             offense_date=date(2007, 12, 11),
                             ncic_code='0901',
                             statute='9999'
@@ -1975,18 +1980,21 @@ class TestFindMostSeriousOffenseStatuteInSentenceGroup(unittest.TestCase):
             charges=[
                 StateCharge.new_with_defaults(
                     state_code='US_XX',
+                    status=ChargeStatus.PRESENT_WITHOUT_INFO,
                     offense_date=date(2007, 12, 11),
                     ncic_code='2703',
                     statute='9999'
                 ),
                 StateCharge.new_with_defaults(
                     state_code='US_XX',
+                    status=ChargeStatus.PRESENT_WITHOUT_INFO,
                     offense_date=date(2007, 12, 11),
                     ncic_code='1316',
                     statute='8888'
                 ),
                 StateCharge.new_with_defaults(
                     state_code='US_XX',
+                    status=ChargeStatus.PRESENT_WITHOUT_INFO,
                     offense_date=date(2007, 12, 11),
                     ncic_code='3619',
                     statute='7777'
@@ -2027,18 +2035,21 @@ class TestFindMostSeriousOffenseStatuteInSentenceGroup(unittest.TestCase):
             charges=[
                 StateCharge.new_with_defaults(
                     state_code='US_XX',
+                    status=ChargeStatus.PRESENT_WITHOUT_INFO,
                     offense_date=date(2007, 12, 11),
                     ncic_code='3606',
                     statute='3606',
                 ),
                 StateCharge.new_with_defaults(
                     state_code='US_XX',
+                    status=ChargeStatus.PRESENT_WITHOUT_INFO,
                     offense_date=date(2007, 12, 11),
                     ncic_code='3611',
                     statute='3611',
                 ),
                 StateCharge.new_with_defaults(
                     state_code='US_XX',
+                    status=ChargeStatus.PRESENT_WITHOUT_INFO,
                     offense_date=date(2007, 12, 11),
                     ncic_code='3623',
                     statute='3623',
@@ -2065,18 +2076,21 @@ class TestFindMostSeriousOffenseStatuteInSentenceGroup(unittest.TestCase):
             charges=[
                 StateCharge.new_with_defaults(
                     state_code='US_XX',
+                    status=ChargeStatus.PRESENT_WITHOUT_INFO,
                     offense_date=date(2001, 12, 11),
                     ncic_code='3907',
                     statute='3907'
                 ),
                 StateCharge.new_with_defaults(
                     state_code='US_XX',
+                    status=ChargeStatus.PRESENT_WITHOUT_INFO,
                     offense_date=date(2001, 12, 11),
                     ncic_code='3909',
                     statute='3909'
                 ),
                 StateCharge.new_with_defaults(
                     state_code='US_XX',
+                    status=ChargeStatus.PRESENT_WITHOUT_INFO,
                     offense_date=date(2001, 12, 11),
                     ncic_code='3912',
                     statute='3912'
@@ -2121,12 +2135,14 @@ class TestFindMostSeriousOffenseStatuteInSentenceGroup(unittest.TestCase):
             charges=[
                 StateCharge.new_with_defaults(
                     state_code='US_XX',
+                    status=ChargeStatus.PRESENT_WITHOUT_INFO,
                     offense_date=date(2007, 12, 11),
                     ncic_code='3611',
                     statute='1111'
                 ),
                 StateCharge.new_with_defaults(
                     state_code='US_XX',
+                    status=ChargeStatus.PRESENT_WITHOUT_INFO,
                     offense_date=date(2007, 12, 11),
                     ncic_code='3623',
                     statute='3333'
@@ -2141,6 +2157,7 @@ class TestFindMostSeriousOffenseStatuteInSentenceGroup(unittest.TestCase):
             charges=[
                 StateCharge.new_with_defaults(
                     state_code='US_XX',
+                    status=ChargeStatus.PRESENT_WITHOUT_INFO,
                     offense_date=date(2010, 12, 11),
                     ncic_code='3606',
                     statute='9999'
@@ -2182,16 +2199,19 @@ class TestFindMostSeriousOffenseStatuteInSentenceGroup(unittest.TestCase):
             charges=[
                 StateCharge.new_with_defaults(
                     state_code='US_XX',
+                    status=ChargeStatus.PRESENT_WITHOUT_INFO,
                     offense_date=date(2010, 12, 11),
                     statute='9999'
                 ),
                 StateCharge.new_with_defaults(
                     state_code='US_XX',
+                    status=ChargeStatus.PRESENT_WITHOUT_INFO,
                     offense_date=date(2007, 12, 11),
                     statute='1111'
                 ),
                 StateCharge.new_with_defaults(
                     state_code='US_XX',
+                    status=ChargeStatus.PRESENT_WITHOUT_INFO,
                     offense_date=date(2007, 12, 11),
                     statute='3333'
                 )
@@ -2232,18 +2252,21 @@ class TestFindMostSeriousOffenseStatuteInSentenceGroup(unittest.TestCase):
             charges=[
                 StateCharge.new_with_defaults(
                     state_code='US_XX',
+                    status=ChargeStatus.PRESENT_WITHOUT_INFO,
                     offense_date=date(2007, 12, 11),
                     ncic_code='040A',
                     statute='xxxx'
                 ),
                 StateCharge.new_with_defaults(
                     state_code='US_XX',
+                    status=ChargeStatus.PRESENT_WITHOUT_INFO,
                     offense_date=date(2007, 12, 11),
                     ncic_code='0101',
                     statute='9999'
                 ),
                 StateCharge.new_with_defaults(
                     state_code='US_XX',
+                    status=ChargeStatus.PRESENT_WITHOUT_INFO,
                     offense_date=date(2007, 12, 11),
                     ncic_code='5301',
                     statute='1111'
@@ -2285,16 +2308,19 @@ class TestFindMostSeriousOffenseStatuteInSentenceGroup(unittest.TestCase):
             charges=[
                 StateCharge.new_with_defaults(
                     state_code='US_XX',
+                    status=ChargeStatus.PRESENT_WITHOUT_INFO,
                     ncic_code='2703',
                     statute='9999'
                 ),
                 StateCharge.new_with_defaults(
                     state_code='US_XX',
+                    status=ChargeStatus.PRESENT_WITHOUT_INFO,
                     ncic_code='1316',
                     statute='8888'
                 ),
                 StateCharge.new_with_defaults(
                     state_code='US_XX',
+                    status=ChargeStatus.PRESENT_WITHOUT_INFO,
                     ncic_code='3619',
                     statute='7777'
                 )
@@ -2336,18 +2362,21 @@ class TestFindMostSeriousOffenseStatuteInSentenceGroup(unittest.TestCase):
             charges=[
                 StateCharge.new_with_defaults(
                     state_code='US_XX',
+                    status=ChargeStatus.PRESENT_WITHOUT_INFO,
                     offense_date=date(2007, 12, 10),
                     ncic_code='2703',
                     statute='9999'
                 ),
                 StateCharge.new_with_defaults(
                     state_code='US_XX',
+                    status=ChargeStatus.PRESENT_WITHOUT_INFO,
                     offense_date=date(2007, 12, 10),
                     ncic_code='1316',
                     statute='8888'
                 ),
                 StateCharge.new_with_defaults(
                     state_code='US_XX',
+                    status=ChargeStatus.PRESENT_WITHOUT_INFO,
                     offense_date=date(2007, 12, 10),
                     ncic_code='3619',
                     statute='7777'
@@ -2390,18 +2419,21 @@ class TestFindMostSeriousOffenseStatuteInSentenceGroup(unittest.TestCase):
             charges=[
                 StateCharge.new_with_defaults(
                     state_code='US_XX',
+                    status=ChargeStatus.PRESENT_WITHOUT_INFO,
                     offense_date=date(2009, 12, 10),
                     ncic_code='2703',
                     statute='9999'
                 ),
                 StateCharge.new_with_defaults(
                     state_code='US_XX',
+                    status=ChargeStatus.PRESENT_WITHOUT_INFO,
                     offense_date=date(2009, 12, 10),
                     ncic_code='1316',
                     statute='8888'
                 ),
                 StateCharge.new_with_defaults(
                     state_code='US_XX',
+                    status=ChargeStatus.PRESENT_WITHOUT_INFO,
                     offense_date=date(2009, 12, 10),
                     ncic_code='3619',
                     statute='7777'

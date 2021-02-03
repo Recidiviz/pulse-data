@@ -20,6 +20,7 @@ import attr
 import pytest
 from more_itertools import one
 
+from recidiviz.common.constants.charge import ChargeStatus
 from recidiviz.common.constants.state.state_incarceration import \
     StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_period import \
@@ -238,7 +239,9 @@ class TestStateMatchingUtils(BaseStateMatchingUtilsTest):
         self.assertEqual(expected_sentence_group, sentence_group)
 
     def test_addChildToEntity_singular(self) -> None:
-        charge = StateCharge.new_with_defaults(state_code=_STATE_CODE, charge_id=_ID)
+        charge = StateCharge.new_with_defaults(state_code=_STATE_CODE,
+                                               status=ChargeStatus.PRESENT_WITHOUT_INFO,
+                                               charge_id=_ID)
         court_case = StateCourtCase.new_with_defaults(state_code=_STATE_CODE, court_case_id=_ID)
 
         expected_charge = attr.evolve(charge, court_case=court_case)
@@ -399,16 +402,18 @@ class TestStateMatchingUtils(BaseStateMatchingUtilsTest):
         is_revocation_admission(StateIncarcerationPeriodAdmissionReason.parse_from_canonical_string(None))
 
     def test_nonnullFieldsEntityMatch_placeholder(self) -> None:
-        charge = StateCharge.new_with_defaults(state_code=_STATE_CODE)
-        charge_another = StateCharge.new_with_defaults(state_code=_STATE_CODE)
+        charge = StateCharge.new_with_defaults(state_code=_STATE_CODE, status=ChargeStatus.PRESENT_WITHOUT_INFO)
+        charge_another = StateCharge.new_with_defaults(state_code=_STATE_CODE, status=ChargeStatus.PRESENT_WITHOUT_INFO)
         self.assertFalse(
             nonnull_fields_entity_match(
                 ingested_entity=EntityTree(entity=charge, ancestor_chain=[]),
                 db_entity=EntityTree(entity=charge_another, ancestor_chain=[])))
 
     def test_nonnullFieldsEntityMatch_externalIdCompare(self) -> None:
-        charge = StateCharge.new_with_defaults(state_code=_STATE_CODE, external_id=_EXTERNAL_ID)
-        charge_another = StateCharge.new_with_defaults(state_code=_STATE_CODE)
+        charge = StateCharge.new_with_defaults(state_code=_STATE_CODE,
+                                               status=ChargeStatus.PRESENT_WITHOUT_INFO,
+                                               external_id=_EXTERNAL_ID)
+        charge_another = StateCharge.new_with_defaults(state_code=_STATE_CODE, status=ChargeStatus.PRESENT_WITHOUT_INFO)
         self.assertFalse(
             nonnull_fields_entity_match(
                 ingested_entity=EntityTree(entity=charge, ancestor_chain=[]),
@@ -423,8 +428,12 @@ class TestStateMatchingUtils(BaseStateMatchingUtilsTest):
         charge = StateCharge.new_with_defaults(
             state_code=_STATE_CODE,
             ncic_code='1234',
-            county_code=_COUNTY_CODE)
-        charge_another = StateCharge.new_with_defaults(state_code=_STATE_CODE, ncic_code='1234')
+            county_code=_COUNTY_CODE,
+            status=ChargeStatus.PRESENT_WITHOUT_INFO)
+        charge_another = StateCharge.new_with_defaults(
+            state_code=_STATE_CODE,
+            ncic_code='1234',
+            status=ChargeStatus.PRESENT_WITHOUT_INFO)
 
         # If one of the entities is merely missing a field, we still consider it a match
         self.assertTrue(
