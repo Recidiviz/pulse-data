@@ -54,6 +54,8 @@ REVOCATIONS_MATRIX_BY_MONTH_QUERY_TEMPLATE = \
     FROM `{project_id}.{reference_views_dataset}.revocations_matrix_by_person_materialized`
     -- We want MoM revocation admissions for the last 36 months
     WHERE revocation_admission_date >= DATE_SUB(DATE_TRUNC(CURRENT_DATE('US/Pacific'), MONTH), INTERVAL 35 MONTH)
+        -- Filter out any rows that don't have a specified violation_type
+        AND violation_type != 'NO_VIOLATION_TYPE'
     GROUP BY state_code, year, month, violation_type, reported_violations, supervision_type, supervision_level,
         charge_category, level_1_supervision_location, level_2_supervision_location
     """
