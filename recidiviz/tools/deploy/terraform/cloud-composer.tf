@@ -95,3 +95,9 @@ resource "google_storage_bucket_object" "airflow_cfg" {
   bucket = local.composer_dag_bucket
   source = "${local.recidiviz_root}/airflow/airflow.cfg"
 }
+
+resource "google_storage_bucket_object" "yaml_dict" {
+  name   = "dags/yaml_dict.py"
+  bucket = local.composer_dag_bucket
+  source = "${local.recidiviz_root}/utils/yaml_dict.py"
+}
