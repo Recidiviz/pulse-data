@@ -117,6 +117,8 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_OFFICER_QUERY_TEMPLATE = \
       termination_counts
     USING (state_code, violation_type, reported_violations, officer, supervision_type, supervision_level, charge_category,
       level_1_supervision_location, level_2_supervision_location, metric_period_months)
+    WHERE revocation_count > 0
+        AND officer != 'EXTERNAL_UNKNOWN'
     """
 
 REVOCATIONS_MATRIX_DISTRIBUTION_BY_OFFICER_VIEW_BUILDER = MetricBigQueryViewBuilder(

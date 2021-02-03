@@ -53,7 +53,7 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_VIOLATION_QUERY_TEMPLATE = \
           level_1_supervision_location,
           level_2_supervision_location,
           reported_violations,
-          reported_violations AS violation_count,
+          response_count AS violation_count,
           -- Rows that count towards the number of violations don't count towards any violation type entry counts --
           '' as violation_type_entry
         FROM `{project_id}.{reference_views_dataset}.revocations_matrix_by_person_materialized`
@@ -120,6 +120,8 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_VIOLATION_QUERY_TEMPLATE = \
     FROM
       violation_counts_with_type_entries
     WHERE {state_specific_supervision_location_optimization_filter}
+        -- Filter out any rows that don't have a specified violation_type
+        AND violation_type != 'NO_VIOLATION_TYPE'
     GROUP BY state_code, metric_period_months, supervision_type, supervision_level, charge_category,
       level_1_supervision_location, level_2_supervision_location, reported_violations, violation_type
 """

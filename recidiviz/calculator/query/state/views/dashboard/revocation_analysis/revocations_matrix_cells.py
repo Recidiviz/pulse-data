@@ -50,7 +50,8 @@ REVOCATIONS_MATRIX_CELLS_QUERY_TEMPLATE = \
         level_2_supervision_location,
         metric_period_months
     FROM `{project_id}.{reference_views_dataset}.revocations_matrix_by_person_materialized`
-    WHERE reported_violations > 0
+    -- Filter to rows that have a specified violation type and number of violations --
+    WHERE reported_violations != 'ALL' AND violation_type NOT IN ('ALL', 'NO_VIOLATION_TYPE')
     GROUP BY state_code, violation_type, reported_violations, supervision_type, supervision_level, charge_category,
         level_1_supervision_location, level_2_supervision_location, metric_period_months
     """
