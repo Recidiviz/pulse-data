@@ -125,16 +125,23 @@ def state_specific_supervision_location_optimization_filter() -> str:
     """ State-specific logic for filtering rows based on supervision location values that are unused by the front end.
     """
     return """level_1_supervision_location != 'EXTERNAL_UNKNOWN'
-    AND level_2_supervision_location != 'EXTERNAL_UNKNOWN'
-    AND CASE
-        -- TODO(#3829): MO does not have level 2 values ingested, so level_2_supervision_location values are only
-        -- 'EXTERNAL_UNKNOWN'. For scale reasons, we filter for only rows that are aggregated on
-        -- level_2_supervision_location to filter out the "duplicate" rows with 'EXTERNAL_UNKNOWN'.
-        WHEN state_code = 'US_MO' THEN level_2_supervision_location = 'ALL'
+      AND level_2_supervision_location != 'EXTERNAL_UNKNOWN'
+      AND CASE
+            -- TODO(#3829): MO does not have level 2 values ingested, so level_2_supervision_location values are only
+            -- 'EXTERNAL_UNKNOWN'. For scale reasons, we filter for only rows that are aggregated on
+            -- level_2_supervision_location to filter out the "duplicate" rows with 'EXTERNAL_UNKNOWN'.
+            WHEN state_code = 'US_MO' THEN level_2_supervision_location = 'ALL'
+    
+            -- TODO(#4524): Un-comment the `OR` clause once we can support the file size increase and have multi-level
+            -- supervision location support on the front end.
+            ELSE level_1_supervision_location = 'ALL' -- OR level_2_supervision_location != 'ALL'
+        END"""
 
-        -- TODO(#4524): Un-comment the `OR` clause once we can support the file size increase and have multi-level
-        -- supervision location support on the front end.
-        ELSE level_1_supervision_location = 'ALL' -- OR level_2_supervision_location != 'ALL'
 
-    END
-    """
+def state_specific_dimension_filter() -> str:
+    """State-specific logic for filtering rows based on dimensions that are supported on the FE. This helps us avoid
+    sending data to the FE that is never used."""
+    return """-- US_MO doesn't support the supervision_level dimension
+        (state_code != 'US_MO' OR supervision_level = 'ALL')
+        -- US_PA doesn't support the supervision_type or 
+        AND (state_code != 'US_PA' OR (supervision_type = 'ALL' AND charge_category = 'ALL'))"""

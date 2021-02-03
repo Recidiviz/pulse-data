@@ -64,9 +64,11 @@ REVOCATIONS_MATRIX_FILTERED_CASELOAD_QUERY_TEMPLATE = \
         WHEN state_code = 'US_MO' THEN true
         ELSE level_2_supervision_location != 'ALL'
     END 
-    AND supervision_type != 'ALL'
-    AND charge_category != 'ALL'
-    AND supervision_level != 'ALL'
+    -- State-specific filtering to allow ALL values for states where the dimension is disabled on the FE --
+    AND (state_code = 'US_PA' OR (supervision_type != 'ALL' AND charge_category != 'ALL'))
+    AND (state_code = 'US_MO' or (supervision_level != 'ALL'))
+    AND violation_type != 'ALL'
+    AND reported_violations != 'ALL'
     """
 
 REVOCATIONS_MATRIX_FILTERED_CASELOAD_VIEW_BUILDER = MetricBigQueryViewBuilder(

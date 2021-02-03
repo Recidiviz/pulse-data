@@ -39,8 +39,9 @@ REVOCATIONS_MATRIX_BY_PERSON_QUERY_TEMPLATE = \
             state_code,
             metric_period_months,
             revocation_admission_date,
-            most_severe_violation_type,
-            most_severe_violation_type_subtype,
+            {most_severe_violation_type_subtype_grouping},
+            IF(response_count > 8, 8, response_count) as reported_violations,
+            -- For record of the actual number of responses --
             response_count,
             person_id,
             person_external_id,
@@ -64,37 +65,67 @@ REVOCATIONS_MATRIX_BY_PERSON_QUERY_TEMPLATE = \
         FROM `{project_id}.{reference_views_dataset}.event_based_revocations_for_matrix_materialized`,
         {metric_period_dimension}
         WHERE {metric_period_condition}
+    ), person_based_unnested AS (
+        SELECT
+            state_code,
+            metric_period_months,
+            revocation_admission_date,
+            violation_type,
+            reported_violations,
+            response_count,
+            supervision_type,
+            {state_specific_supervision_level},
+            charge_category,
+            level_1_supervision_location,
+            level_2_supervision_location,
+            officer,
+            person_id,
+            person_external_id,
+            IFNULL(gender, 'EXTERNAL_UNKNOWN') as gender,
+            age_bucket,
+            {state_specific_assessment_bucket},
+            IFNULL(prioritized_race_or_ethnicity, 'EXTERNAL_UNKNOWN') AS prioritized_race_or_ethnicity,
+            officer_recommendation,
+            violation_record,
+            violation_type_frequency_counter
+        FROM revocations,
+        {level_1_supervision_location_dimension},
+        {level_2_supervision_location_dimension},
+        {supervision_type_dimension},
+        {supervision_level_dimension},
+        {charge_category_dimension},
+        {reported_violations_dimension},
+        {violation_type_dimension}
+        WHERE ranking = 1
     )
+    
     SELECT
         state_code,
         metric_period_months,
         revocation_admission_date,
-        {most_severe_violation_type_subtype_grouping},
-        IF(response_count > 8, 8, response_count) as reported_violations,
+        violation_type,
+        reported_violations,
+        response_count,
         supervision_type,
-        {state_specific_supervision_level},
+        supervision_level,
         charge_category,
         level_1_supervision_location,
         level_2_supervision_location,
         officer,
         person_id,
         person_external_id,
-        IFNULL(gender, 'EXTERNAL_UNKNOWN') as gender,
+        gender,
         age_bucket,
-        {state_specific_assessment_bucket},
-        IFNULL(prioritized_race_or_ethnicity, 'EXTERNAL_UNKNOWN') AS prioritized_race_or_ethnicity,
+        risk_level,
+        prioritized_race_or_ethnicity,
         officer_recommendation,
         violation_record,
         violation_type_frequency_counter
-    FROM revocations,
-    {level_1_supervision_location_dimension},
-    {level_2_supervision_location_dimension},
-    {supervision_type_dimension},
-    {supervision_level_dimension},
-    {charge_category_dimension}
-    WHERE ranking = 1
-      AND supervision_type IN ('ALL', 'DUAL', 'PAROLE', 'PROBATION')
+    FROM person_based_unnested
+    WHERE supervision_type IN ('ALL', 'DUAL', 'PAROLE', 'PROBATION')
       AND {state_specific_supervision_location_optimization_filter}
+      AND {state_specific_dimension_filter}
+      AND (reported_violations = 'ALL' OR violation_type != 'ALL')
     """
 
 REVOCATIONS_MATRIX_BY_PERSON_VIEW_BUILDER = SimpleBigQueryViewBuilder(
@@ -113,13 +144,16 @@ REVOCATIONS_MATRIX_BY_PERSON_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     supervision_type_dimension=bq_utils.unnest_supervision_type(),
     supervision_level_dimension=bq_utils.unnest_column('supervision_level', 'supervision_level'),
     charge_category_dimension=bq_utils.unnest_charge_category(),
+    violation_type_dimension=bq_utils.unnest_column('violation_type', 'violation_type'),
+    reported_violations_dimension=bq_utils.unnest_reported_violations(),
     metric_period_dimension=bq_utils.unnest_metric_period_months(),
     metric_period_condition=bq_utils.metric_period_condition(),
     state_specific_assessment_bucket=
     state_specific_query_strings.state_specific_assessment_bucket(output_column_name='risk_level'),
     state_specific_supervision_level=state_specific_query_strings.state_specific_supervision_level(),
     state_specific_supervision_location_optimization_filter=
-    state_specific_query_strings.state_specific_supervision_location_optimization_filter()
+    state_specific_query_strings.state_specific_supervision_location_optimization_filter(),
+    state_specific_dimension_filter=state_specific_query_strings.state_specific_dimension_filter(),
 )
 
 if __name__ == '__main__':

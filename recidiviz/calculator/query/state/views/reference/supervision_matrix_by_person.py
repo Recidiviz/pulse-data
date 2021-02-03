@@ -56,7 +56,21 @@ SUPERVISION_MATRIX_BY_PERSON_QUERY_TEMPLATE = \
         WHERE {thirty_six_month_filter}
     ), revocations_matrix AS (
         SELECT
-            * EXCEPT(revocation_admission_date, officer_recommendation, violation_record, violation_type_frequency_counter),
+            state_code, year, month,
+            most_severe_violation_type,
+            most_severe_violation_type_subtype,
+            response_count,
+            person_id, person_external_id,
+            gender,
+            assessment_score_bucket,
+            age_bucket,
+            prioritized_race_or_ethnicity,
+            supervision_type,
+            supervision_level,
+            case_type,
+            level_1_supervision_location,
+            level_2_supervision_location,
+            officer,
             revocation_admission_date AS date_of_supervision,
             TRUE as is_revocation
         FROM `{project_id}.{reference_views_dataset}.event_based_revocations_for_matrix_materialized`
@@ -64,7 +78,7 @@ SUPERVISION_MATRIX_BY_PERSON_QUERY_TEMPLATE = \
       SELECT * FROM supervision_matrix
         UNION ALL
       SELECT * FROM revocations_matrix
-    ), person_based_supervision AS (
+    ), supervision_with_ranking AS (
       SELECT
         *,
         ROW_NUMBER() OVER (PARTITION BY state_code, metric_period_months, person_id
@@ -74,16 +88,15 @@ SUPERVISION_MATRIX_BY_PERSON_QUERY_TEMPLATE = \
       FROM revocations_and_supervisions,
       {metric_period_dimension}
       WHERE {metric_period_condition}
-    )
-
-    SELECT
+    ), person_based_supervision AS (
+      SELECT
         state_code,
         metric_period_months, 
         {most_severe_violation_type_subtype_grouping},
         IF(response_count > 8, 8, response_count) as reported_violations,
         supervision_type,
         {state_specific_supervision_level},
-        charge_category,
+        case_type,
         level_1_supervision_location,
         level_2_supervision_location,
         officer,
@@ -92,15 +105,58 @@ SUPERVISION_MATRIX_BY_PERSON_QUERY_TEMPLATE = \
         age_bucket,
         {state_specific_assessment_bucket},
         IFNULL(prioritized_race_or_ethnicity, 'EXTERNAL_UNKNOWN') AS prioritized_race_or_ethnicity,
-    FROM person_based_supervision,
-    {level_1_supervision_location_dimension},
-    {level_2_supervision_location_dimension},
-    {supervision_type_dimension},
-    {supervision_level_dimension},
-    {charge_category_dimension}
-    WHERE ranking = 1
-      AND supervision_type IN ('ALL', 'DUAL', 'PAROLE', 'PROBATION')
+      FROM supervision_with_ranking
+      WHERE ranking = 1
+    ), unnested_supervision AS (
+      SELECT
+        state_code,
+        metric_period_months,
+        violation_type,
+        reported_violations,
+        supervision_type,
+        supervision_level,
+        charge_category,
+        level_1_supervision_location,
+        level_2_supervision_location,
+        officer,
+        person_id,
+        person_external_id,
+        gender,
+        age_bucket,
+        risk_level,
+        prioritized_race_or_ethnicity
+      FROM person_based_supervision,
+      {level_1_supervision_location_dimension},
+      {level_2_supervision_location_dimension},
+      {supervision_type_dimension},
+      {supervision_level_dimension},
+      {charge_category_dimension},
+      {reported_violations_dimension},
+      {violation_type_dimension}
+    )
+    
+    SELECT
+        state_code,
+        metric_period_months,
+        violation_type,
+        reported_violations,
+        supervision_type,
+        supervision_level,
+        charge_category,
+        level_1_supervision_location,
+        level_2_supervision_location,
+        officer,
+        person_id,
+        person_external_id,
+        gender,
+        age_bucket,
+        risk_level,
+        prioritized_race_or_ethnicity
+    FROM unnested_supervision
+    WHERE supervision_type IN ('ALL', 'DUAL', 'PAROLE', 'PROBATION')
       AND {state_specific_supervision_location_optimization_filter}
+      AND {state_specific_dimension_filter}
+      AND (reported_violations = 'ALL' OR violation_type != 'ALL')
     """
 
 SUPERVISION_MATRIX_BY_PERSON_VIEW_BUILDER = SimpleBigQueryViewBuilder(
@@ -123,11 +179,14 @@ SUPERVISION_MATRIX_BY_PERSON_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     supervision_type_dimension=bq_utils.unnest_supervision_type(),
     supervision_level_dimension=bq_utils.unnest_column('supervision_level', 'supervision_level'),
     charge_category_dimension=bq_utils.unnest_charge_category(),
+    violation_type_dimension=bq_utils.unnest_column('violation_type', 'violation_type'),
+    reported_violations_dimension=bq_utils.unnest_reported_violations(),
     metric_period_dimension=bq_utils.unnest_metric_period_months(),
     metric_period_condition=bq_utils.metric_period_condition(),
     state_specific_supervision_location_optimization_filter=
     state_specific_query_strings.state_specific_supervision_location_optimization_filter(),
     thirty_six_month_filter=bq_utils.thirty_six_month_filter(),
+    state_specific_dimension_filter=state_specific_query_strings.state_specific_dimension_filter(),
 )
 
 if __name__ == '__main__':
