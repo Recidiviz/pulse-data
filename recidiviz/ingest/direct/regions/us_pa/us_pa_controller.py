@@ -284,6 +284,7 @@ class UsPaController(CsvGcsfsDirectIngestController):
             'NR',  # [Unlisted]
             'NW',  # Non-Return Work Release
             'P',   # Paroled
+            'RP',  # Re-paroled (extremely rare)
             'SC',  # Sentence Complete
             'SP',  # Serve Previous
             'TC',  # Transfer to County
