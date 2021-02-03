@@ -20,6 +20,8 @@ from typing import List
 from recidiviz.big_query.big_query_view import BigQueryViewBuilder
 from recidiviz.calculator.query.state.views.vitals_report.overdue_lsir_by_po_by_day import \
     OVERDUE_LSIR_BY_PO_BY_DAY_VIEW_BUILDER
+from recidiviz.calculator.query.state.views.vitals_report.supervision_population_due_for_release_by_po_by_day import \
+    SUPERVISION_POPULATION_DUE_FOR_RELEASE_BY_PO_BY_DAY_VIEW_BUILDER
 from recidiviz.calculator.query.state.views.vitals_report.us_nd.pending_ftr_by_po_by_day import \
     PENDING_FTR_BY_PO_BY_DAY_VIEW_BUILDER
 from recidiviz.calculator.query.state.views.vitals_report.technical_revocations_count_by_po_by_admission_date import \
@@ -32,4 +34,5 @@ VITALS_REPORT_VIEW_BUILDERS: List[BigQueryViewBuilder] = [
     TECHNICAL_REVOCATIONS_COUNT_BY_PO_BY_DAY_VIEW_BUILDER,
     PENDING_FTR_BY_PO_BY_DAY_VIEW_BUILDER,
     OVERDUE_LSIR_BY_PO_BY_DAY_VIEW_BUILDER,
+    SUPERVISION_POPULATION_DUE_FOR_RELEASE_BY_PO_BY_DAY_VIEW_BUILDER,
 ]
