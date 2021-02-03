@@ -87,6 +87,12 @@ function pre_deploy_configure_infrastructure {
     DOCKER_IMAGE_TAG=$2
     DEBUG_BUILD_NAME=$3
 
+    if [[ -z ${DEBUG_BUILD_NAME} ]]; then
+        deploy_terraform_infrastructure ${PROJECT} $(git rev-parse HEAD) ${DOCKER_IMAGE_TAG} || exit_on_fail
+    else
+        echo "Skipping terraform changes for debug build."
+    fi
+
     echo "Deploying cron.yaml"
     run_cmd gcloud -q app deploy cron.yaml --project=${PROJECT}
 
@@ -115,12 +121,6 @@ function pre_deploy_configure_infrastructure {
         run_cmd pipenv run python -m recidiviz.tools.deploy.deploy_pipeline_templates --project_id ${PROJECT} --templates_to_deploy production
     else
         echo "Skipping pipeline template deploy for debug build."
-    fi
-
-    if [[ -z ${DEBUG_BUILD_NAME} ]]; then
-        deploy_terraform_infrastructure ${PROJECT} $(git rev-parse HEAD) ${DOCKER_IMAGE_TAG} || exit_on_fail
-    else
-        echo "Skipping terraform changes for debug build."
     fi
 }
 
