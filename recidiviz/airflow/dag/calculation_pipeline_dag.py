@@ -27,9 +27,11 @@ from airflow.contrib.operators.pubsub_operator import PubSubPublishOperator
 
 try:
     from recidiviz_dataflow_operator import RecidivizDataflowTemplateOperator  # type: ignore
+    from yaml_dict import YAMLDict  # type: ignore
 except ImportError:
     from recidiviz.airflow.dag.recidiviz_dataflow_operator import RecidivizDataflowTemplateOperator
-from recidiviz.utils.yaml_dict import YAMLDict
+    from recidiviz.utils.yaml_dict import YAMLDict
+
 
 # Need a disable pointless statement because Python views the chaining operator ('>>') as a "pointless" statement
 # pylint: disable=W0104 pointless-statement
