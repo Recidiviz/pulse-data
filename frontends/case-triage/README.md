@@ -1,7 +1,23 @@
 # Running the app
 
-To spin up the backend: from the root of the repo, run `docker-compose -f docker-compose.case-triage.yaml up`.
+## Backend
+```bash
+docker-compose -f docker-compose.case-triage.yaml up
+````
 
-For the frontend, run `yarn` from this directory to install all dependencies, and then run `yarn run dev`.
+We use `docker-compose` to run our development services locally, this includes:
+- [`flask`](https://flask.palletsprojects.com/en/1.1.x/) web server
+- [`postgres`](https://www.postgresql.org/) database
+- `migrations` container, which automatically runs [`alembic`](https://alembic.sqlalchemy.org/) migrations
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+
+## Frontend
+### Running
+Install the dependencies by running `yarn` from this directory.
+Run the frontend development server with `yarn run dev`.
+
+To use a local version of `@recidiviz/case-triage-components` in conjunction with your development server,
+follow these instructions: [Development alongside dependent projects](https://github.com/recidiviz/case-triage#2-development-alongside-dependent-projects)
+
+
+This project was bootstrapped with [craco](https://github.com/gsoft-inc/craco).

@@ -7,16 +7,17 @@
   "license": "GNU General Public License v3",
   "dependencies": {
     "@auth0/auth0-react": "^1.2.0",
+    "@recidiviz/case-triage-components": "^0.0.1",
+    "craco": "^0.0.3",
     "react": "^17.0.0",
     "react-dom": "^17.0.0",
     "react-router-dom": "^5.2.0"
   },
   "scripts": {
-    "dev": "react-scripts start",
-    "build": "react-scripts build",
-    "lint": "tsc && eslint '**/*.{js,ts,tsx}'",
-    "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "dev": "craco start",
+    "build": "craco build",
+    "lint": "tsc && eslint '**/*.{ts,tsx}'",
+    "test": "craco test"
   },
   "browserslist": [
     ">0.2%",
@@ -31,6 +32,7 @@
     "@types/react": "^17.0.0",
     "@types/react-dom": "^17.0.0",
     "@types/react-router-dom": "^5.1.6",
+    "@types/styled-components": "^5.1.7",
     "@typescript-eslint/eslint-plugin": "^4.11.0",
     "@typescript-eslint/parser": "^4.11.0",
     "babel-plugin-import": "^1.11.0",
@@ -44,6 +46,7 @@
     "lodash": "^4.17.20",
     "prettier": "^2.2.1",
     "react-scripts": "^4.0.1",
+    "styled-components": "^5.1.1",
     "typescript": "4.0.2"
   }
 }
