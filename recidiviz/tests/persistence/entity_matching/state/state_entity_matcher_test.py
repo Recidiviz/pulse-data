@@ -2752,6 +2752,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
                                 StateCharge.new_with_defaults(
                                     state_code=_STATE_CODE,
                                     external_id=_EXTERNAL_ID,
+                                    status=ChargeStatus.PRESENT_WITHOUT_INFO,
                                     court_case=StateCourtCase.new_with_defaults(
                                         state_code=_STATE_CODE,
                                         external_id=_EXTERNAL_ID,
@@ -2835,6 +2836,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
                             charges=[
                                 StateCharge.new_with_defaults(
                                     state_code=_STATE_CODE,
+                                    status=ChargeStatus.PRESENT_WITHOUT_INFO,
                                     court_case=StateCourtCase.new_with_defaults(
                                         state_code=_STATE_CODE,
                                         external_id=_EXTERNAL_ID,
