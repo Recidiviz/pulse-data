@@ -40,6 +40,7 @@ from recidiviz.calculator.pipeline.incarceration.metrics import \
     IncarcerationReleaseMetric
 from recidiviz.calculator.pipeline.utils.person_utils import PersonMetadata, \
     ExtractPersonEventsMetadata
+from recidiviz.common.constants.charge import ChargeStatus
 from recidiviz.common.constants.state.state_incarceration import \
     StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_period import \
@@ -561,6 +562,7 @@ class TestClassifyIncarcerationEvents(unittest.TestCase):
             charges=[
                 StateCharge.new_with_defaults(
                     state_code='US_XX',
+                    status=ChargeStatus.PRESENT_WITHOUT_INFO,
                     ncic_code='5699',
                     statute='30A123',
                     offense_date=date(2009, 1, 9)
