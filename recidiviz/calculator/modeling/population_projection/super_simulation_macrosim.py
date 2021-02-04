@@ -16,7 +16,7 @@
 # =============================================================================
 """Highest level simulation object -- runs various comparative scenarios"""
 
-from typing import Dict, List, Tuple, Any
+from typing import Dict, List, Tuple, Any, Optional
 from copy import deepcopy
 import matplotlib.pyplot as plt
 import numpy as np
@@ -63,12 +63,14 @@ class MacroSuperSimulation(SuperSimulation):
             max_sentence = max(self.data_dict['transitions_data'].compartment_duration)
         return self.user_inputs['start_time_step'] - int(2 * max_sentence)
 
-    def simulate_policy(self, policy_list: List[SparkPolicy], output_compartment: str):
+    def simulate_policy(self, policy_list: List[SparkPolicy], output_compartment: str,
+                        cost_multipliers: Optional[pd.DataFrame] = None):
         """
         Run one PopulationSimulation with policy implemented and one baseline, returns cumulative and non-cumulative
             life-years diff, cost diff, total pop diff, all by compartment
         `policy_list` should be a list of SparkPolicy objects to be applied in the policy scenario
         `output_compartment` should be the primary compartment to be graphed at the end (doesn't affect calculation)
+        `cost_multipliers` should be a df with one column per disaggregation axis and a column `multiplier`
         """
         self._reset_pop_simulations()
 
@@ -98,14 +100,24 @@ class MacroSuperSimulation(SuperSimulation):
         results = {i: results[i][results[i]['time_step'] >= self.user_inputs['start_time_step']] for i in results}
         self.output_data['policy_simulation'] = self._graph_results(results, output_compartment)
 
-        return self._get_output_metrics()
+        if cost_multipliers is None:
+            cost_multipliers = pd.DataFrame(columns=self.data_dict['disaggregation_axes'] + ['multiplier'])
+
+        missing_disaggregation_axes = [axis for axis in self.data_dict['disaggregation_axes']
+                                       if axis not in cost_multipliers]
+        if len(missing_disaggregation_axes) > 0:
+            raise ValueError(f"Cost multipliers df missing disaggregation axes: {missing_disaggregation_axes}")
+
+        # fill in missing subgroups with identity multiplier = 1
+        for subgroup_dict in self.pop_simulations['control'].sub_group_ids_dict.values():
+            if cost_multipliers[(cost_multipliers[self.data_dict['disaggregation_axes']] ==
+                                pd.Series(subgroup_dict)).all(axis=1)].empty:
+                cost_multipliers = cost_multipliers.append({**subgroup_dict, **{'multiplier': 1}}, ignore_index=True)
+
+        return self._get_output_metrics(cost_multipliers)
 
     def _graph_results(self, simulations: Dict[str, pd.DataFrame], output_compartment: str):
-        simulation_keys = list(simulations.keys())
-        simulation_results = self._format_simulation_results(simulations[simulation_keys[0]], simulation_keys[0])
-        for simulation_name in simulation_keys[1:]:
-            formatted_result = self._format_simulation_results(simulations[simulation_name], simulation_name)
-            simulation_results = simulation_results.merge(formatted_result, on=['compartment', 'year'])
+        simulation_results = self._format_simulation_results(collapse_compartments=True)
 
         simulation_results[simulation_results['compartment'] == output_compartment].plot(
             x='year', y=[f'{simulation_name}_total_population' for simulation_name in simulations.keys()])
@@ -116,28 +128,51 @@ class MacroSuperSimulation(SuperSimulation):
 
         return simulation_results
 
-    def _get_output_metrics(self):
+    def _get_output_metrics(self, cost_multipliers: pd.DataFrame):
         """
         Generates savings and life-years saved; helper function for simulate_policy()
-        `output_compartment` should be the compartment for which to calculate life-years saved
+        `cost_multipliers` should be a df of how to scale the per_year_cost for each subgroup
         """
-        projection = self.output_data['policy_simulation'].copy().set_index('year').sort_values('year')
-        compartment_life_years_diff = pd.DataFrame(0, index=projection.index.unique(),
-                                                   columns=projection.compartment.unique())
+        simulation_results = self._format_simulation_results()
 
-        for compartment_name, compartment_data in projection.groupby('compartment'):
-            compartment_life_years_diff.loc[compartment_data.index, compartment_name] = \
-                (compartment_data['control_total_population']
-                 - compartment_data['policy_total_population']) * self.time_step
+        compartment_life_years_diff = pd.DataFrame()
+        spending_diff_non_cumulative = pd.DataFrame()
+        spending_diff = pd.DataFrame()
 
-        spending_diff_non_cumulative = compartment_life_years_diff.copy()
-        compartment_life_years_diff = compartment_life_years_diff.cumsum()
+        # go through and calculate differences for each subgroup
+        for subgroup_tag, subgroup_dict in self.pop_simulations['control'].sub_group_ids_dict.items():
+            subgroup_data = simulation_results[
+                simulation_results['simulation_group'] == subgroup_tag]
 
-        spending_diff = compartment_life_years_diff.copy()
+            subgroup_life_years_diff = pd.DataFrame(index=subgroup_data.year.unique(),
+                                                    columns=subgroup_data.compartment.unique())
 
-        for compartment in self.compartment_costs:
-            spending_diff[compartment] *= self.compartment_costs[compartment]
-            spending_diff_non_cumulative[compartment] *= self.compartment_costs[compartment]
+            for compartment_name, compartment_data in subgroup_data.groupby('compartment'):
+                subgroup_life_years_diff.loc[compartment_data.year, compartment_name] = \
+                    (compartment_data['control_total_population']
+                     - compartment_data['policy_total_population']) * self.time_step
+
+            subgroup_spending_diff_non_cumulative = subgroup_life_years_diff.copy() / self.time_step
+            subgroup_life_years_diff = subgroup_life_years_diff.cumsum()
+            subgroup_spending_diff = subgroup_life_years_diff.copy()
+
+            # pull out cost multiplier for this subgroup
+            multiplier = cost_multipliers[(cost_multipliers[self.data_dict['disaggregation_axes']] ==
+                                          pd.Series(subgroup_dict)).all(axis=1)].iloc[0].multiplier
+
+            for compartment in self.compartment_costs:
+                subgroup_spending_diff[compartment] *= self.compartment_costs[compartment] * multiplier
+                subgroup_spending_diff_non_cumulative[compartment] *= self.compartment_costs[compartment] * multiplier
+
+            # add subgroup outputs to total outputs
+            compartment_life_years_diff = compartment_life_years_diff.add(subgroup_life_years_diff, fill_value=0)
+            spending_diff_non_cumulative = spending_diff_non_cumulative.add(subgroup_spending_diff_non_cumulative,
+                                                                            fill_value=0)
+            spending_diff = spending_diff.add(subgroup_spending_diff, fill_value=0)
+
+        spending_diff.index.name = 'year'
+        compartment_life_years_diff.index.name = 'year'
+        spending_diff_non_cumulative.index.name = 'year'
 
         # Store output metrics in the output_data dict
         self.output_data['cost_avoidance'] = spending_diff
