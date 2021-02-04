@@ -1,0 +1,29 @@
+---
+user_inputs:
+  policy_year: 2021.0
+  start_year: 2019.0
+  projection_years: 13.0
+  speed_run: true
+
+model_architecture:
+    pretrial: null
+    prison: incarcerated
+    parole: incarcerated
+    revocations: released
+    release: released
+
+reference_date: 2019.0
+
+time_step: 0.08333333333
+
+disaggregation_axes:
+  - crime_type
+
+data_inputs:
+  big_query_simulation_tag: MS_SB_2123
+
+per_year_costs:
+  prison: 14087.18
+  parole: 941.70
+  revocations: 0.0
+  release: 0.0

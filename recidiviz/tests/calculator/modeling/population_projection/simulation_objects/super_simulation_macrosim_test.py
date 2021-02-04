@@ -17,14 +17,17 @@
 """Test the MacroSuperSimulation object"""
 
 import unittest
+from functools import partial
 from mock import patch
 import pandas as pd
+from pandas.util.testing import assert_frame_equal
 
 from recidiviz.tests.calculator.modeling.population_projection.simulation_objects.super_simulation_test \
     import get_inputs_path
 from recidiviz.calculator.modeling.population_projection.simulations.super_simulation_factory import \
     SuperSimulationFactory
-
+from recidiviz.calculator.modeling.population_projection.spark_policy import SparkPolicy
+from recidiviz.calculator.modeling.population_projection.compartment_transitions import CompartmentTransitions
 
 outflows_data = pd.DataFrame({
     'compartment': ['PRETRIAL'] * 12,
@@ -90,3 +93,37 @@ class TestMacroSuperSimulation(unittest.TestCase):
         self.assertFalse(self.macrosim.data_dict['outflows_data'].empty)
         self.assertFalse(self.macrosim.data_dict['transitions_data'].empty)
         self.assertFalse(self.macrosim.data_dict['total_population_data'].empty)
+
+    def test_cost_multipliers_multiplicative(self):
+
+        # test doubling multiplier doubles costs
+        policy_function = partial(CompartmentTransitions.apply_reduction,
+                                  reduction_df=pd.DataFrame({'outflow': ['RELEASE'], 'reduction_size': [0.5],
+                                                             'affected_fraction': [0.75]}),
+                                  reduction_type='*',
+                                  retroactive=True)
+        cost_multipliers = pd.DataFrame({'crime_type': ['NONVIOLENT', 'VIOLENT'], 'multiplier': [2, 2]})
+
+        policy_list = [SparkPolicy(policy_fn=policy_function,
+                                   spark_compartment='PRISON',
+                                   sub_population={'crime_type': crime_type},
+                                   apply_retroactive=True) for crime_type in ['NONVIOLENT', 'VIOLENT']]
+        spending_diff_scaled, _, spending_diff_non_cumulative_scaled = \
+            self.macrosim.simulate_policy(policy_list, 'PRISON', cost_multipliers)
+        spending_diff, _, spending_diff_non_cumulative = \
+            self.macrosim.simulate_policy(policy_list, 'PRISON')
+        assert_frame_equal(spending_diff * 2, spending_diff_scaled)
+        assert_frame_equal(spending_diff_non_cumulative * 2, spending_diff_non_cumulative_scaled)
+
+        # same test but for only one subgroup
+        partial_cost_multipliers_double = pd.DataFrame({'crime_type': ['NONVIOLENT'], 'multiplier': [2]})
+        partial_cost_multipliers_triple = pd.DataFrame({'crime_type': ['NONVIOLENT'], 'multiplier': [3]})
+        spending_diff_partial_double, _, spending_diff_non_cumulative_partial_double = \
+            self.macrosim.simulate_policy(policy_list, 'PRISON', partial_cost_multipliers_double)
+        spending_diff_partial_triple, _, spending_diff_non_cumulative_partial_triple = \
+            self.macrosim.simulate_policy(policy_list, 'PRISON', partial_cost_multipliers_triple)
+
+        assert_frame_equal((spending_diff_partial_triple - spending_diff),
+                           (spending_diff_partial_double - spending_diff) * 2)
+        assert_frame_equal((spending_diff_non_cumulative_partial_triple - spending_diff_non_cumulative),
+                           (spending_diff_non_cumulative_partial_double - spending_diff_non_cumulative) * 2)

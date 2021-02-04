@@ -61,14 +61,27 @@ class SuperSimulation(ABC):
             raise ValueError(f"Cannot convert years {years} to integers {ts}")
         return round(ts)
 
-    def _format_simulation_results(self, results: pd.DataFrame, simulation_type: str):
-        grouped_results = \
-            results.groupby(['compartment', 'time_step'], as_index=False).agg({'total_population': ['sum']})
-        grouped_results = grouped_results.rename({
-            'total_population': f'{simulation_type}_total_population', 'time_step': 'year'}, axis=1)
-        grouped_results.columns = grouped_results.columns.droplevel(1)
-        grouped_results['year'] = self._convert_to_absolute_year(grouped_results['year'])
-        return grouped_results
+    def _format_simulation_results(self, collapse_compartments=False) -> pd.DataFrame:
+        """Re-format PopulationSimulation results so each simulation is a column"""
+        simulation_results = pd.DataFrame()
+        for scenario, simulation in self.pop_simulations.items():
+            results = simulation.population_projections[simulation.population_projections.time_step >=
+                                                        self.user_inputs['start_time_step']]
+            results = results.rename({'time_step': 'year', 'total_population': f'{scenario}_total_population'}, axis=1)
+            results.year = self._convert_to_absolute_year(results.year)
+
+            if simulation_results.empty:
+                simulation_results = results
+            else:
+                simulation_results = simulation_results.merge(
+                    results, on=['compartment', 'year', 'simulation_group'])
+
+        if collapse_compartments:
+            simulation_results = simulation_results.groupby(['compartment', 'year'], as_index=False).sum()
+
+        simulation_results.index = simulation_results.year
+
+        return simulation_results
 
     @abstractmethod
     def _initialize_data(self, data_inputs_params: Dict[str, Any]):
@@ -115,8 +128,7 @@ class SuperSimulation(ABC):
         self.user_inputs['projection_type'] = 'middle'
         self._simulate_baseline(simulation_title='baseline', first_relevant_ts=first_relevant_ts)
 
-        simulation_results = self._format_simulation_results(self.output_data['baseline'], 'baseline')
-        simulation_results.index = simulation_results.year
+        simulation_results = self._format_simulation_results(collapse_compartments=True)
 
         display_results = pd.DataFrame(index=simulation_results.year.unique())
         for comp in display_compartments:

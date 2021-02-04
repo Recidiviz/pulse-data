@@ -1,0 +1,26 @@
+---
+user_inputs:
+  policy_year: 2021.0
+  start_year: 2020.0
+  projection_years: 12.0
+
+model_architecture:
+    incarceration: incarcerated
+    probation: incarcerated
+    pretrial: null
+    release: released
+
+reference_date: 2010.0
+
+time_step: 0.083333333
+
+disaggregation_axes:
+  - crime_type
+
+data_inputs:
+  big_query_simulation_tag: VA_HB2303
+
+per_year_costs:
+  incarceration: 32146.0
+  probation: 1426.0
+  release: 0.0
