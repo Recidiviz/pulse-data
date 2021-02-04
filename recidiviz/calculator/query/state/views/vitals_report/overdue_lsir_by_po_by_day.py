@@ -35,7 +35,7 @@ OVERDUE_LSIR_BY_PO_BY_DAY_QUERY_TEMPLATE = \
         date_of_supervision,
         supervising_officer_external_id,
         supervising_district_external_id,
-        COUNT (DISTINCT(IF(assessment_up_to_date = false, person_id, NULL))) as total_overdue,
+        COUNT (DISTINCT(IF(num_days_assessment_overdue > 0, person_id, NULL))) as total_overdue,
         supervision_type,
         case_type
     FROM `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_case_compliance_metrics_materialized`
