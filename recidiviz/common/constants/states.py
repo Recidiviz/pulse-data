@@ -86,3 +86,11 @@ class StateCode(enum.Enum):
         # TODO(#5508): Have this actually check it's one of the valid states once we have a way to handle tests with
         #  US_XX etc in them. For now, this just checks that it is upper case and matches the correct pattern.
         return bool(re.match(STATE_CODE_PATTERN, state_code))
+
+    @classmethod
+    def is_state_code(cls, state_code: str) -> bool:
+        try:
+            StateCode(state_code.upper())
+            return True
+        except ValueError as _:
+            return False

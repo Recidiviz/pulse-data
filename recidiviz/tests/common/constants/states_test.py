@@ -22,11 +22,22 @@ import us
 
 from recidiviz.common.constants import states
 
+
 class TestStates(unittest.TestCase):
-    def test_hasStates(self):
+    def test_hasStates(self) -> None:
         self.assertEqual(50, len(states.StateCode))
         self.assertEqual('US_AK', list(states.StateCode)[0].value)
         self.assertEqual('US_WY', list(states.StateCode)[-1].value)
 
-    def test_getState(self):
+    def test_getState(self) -> None:
         self.assertEqual(us.states.AK, states.StateCode.US_AK.get_state())
+
+    def test_is_state_code(self) -> None:
+        valid_states = ['us_wa', 'US_MD', 'us_ma']
+        invalid_states = ['us_xx', 'US_XX', 'us_gu', 'us_dc', 'US_PR', 'UX_CA', ]
+
+        for state_code in valid_states:
+            self.assertTrue(states.StateCode.is_state_code(state_code))
+
+        for state_code in invalid_states:
+            self.assertFalse(states.StateCode.is_state_code(state_code))
