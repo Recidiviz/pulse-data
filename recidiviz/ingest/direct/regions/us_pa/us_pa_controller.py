@@ -606,6 +606,9 @@ class UsPaController(CsvGcsfsDirectIngestController):
     ENUM_IGNORES: Dict[EntityEnumMeta, List[str]] = {
         Gender: ['W', 'B', 'U', 'A', '1'],  # Unexplained rare values
         Race: ['M', 'U', 'F', 'QW', 'WSW', 'QB', 'EW', 'Q', 'S'],  # Unexplained rare values
+        StateIncarcerationType: [
+            '\''  # The dbo_Senrec table has several rows where the value type_of_sent is a single quotation mark
+        ]
     }
     ENUM_IGNORE_PREDICATES: Dict[EntityEnumMeta, EnumIgnorePredicate] = {}
 
