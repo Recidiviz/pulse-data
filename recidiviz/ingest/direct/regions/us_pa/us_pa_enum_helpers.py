@@ -470,7 +470,11 @@ def concatenate_ccis_incarceration_period_end_codes(row: Dict[str, str]) -> str:
 
 def concatenate_sci_incarceration_period_purpose_codes(row: Dict[str, str]) -> str:
     start_parole_status_code = row['start_parole_status_code'] or 'None'
-    sentence_type = row['sentence_type'] or 'None'
+    sentence_type_raw = row['sentence_type']
+
+    # The dbo_Senrec table has several rows where the value of type_of_sent (used to derive sentence_type) is a single
+    # quotation mark.
+    sentence_type = sentence_type_raw if sentence_type_raw and sentence_type_raw != '\'' else 'None'
 
     return f"{start_parole_status_code}-{sentence_type}"
 
