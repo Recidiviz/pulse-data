@@ -45,9 +45,9 @@ FTR_REFERRALS_BY_AGE_BY_PERIOD_QUERY_TEMPLATE = \
         district,
         metric_period_months,
         age_bucket,
-        -- Use the age bucket from the most recent supervision
+        -- Use the age bucket from the most recent date_of_supervision
         ROW_NUMBER() OVER (PARTITION BY state_code, supervision_type, district, metric_period_months, person_id
-                           ORDER BY year DESC, month DESC) AS supervision_rank
+                           ORDER BY date_of_supervision DESC) AS supervision_rank
       FROM `{project_id}.{reference_views_dataset}.event_based_supervision_populations`,
       {metric_period_dimension}
       WHERE {metric_period_condition}
@@ -62,7 +62,7 @@ FTR_REFERRALS_BY_AGE_BY_PERIOD_QUERY_TEMPLATE = \
         age_bucket,
         -- Use the age bucket from the most recent referral
         ROW_NUMBER() OVER (PARTITION BY state_code, supervision_type, district, metric_period_months, person_id
-                           ORDER BY year DESC, month DESC) AS referral_rank
+                           ORDER BY date_of_referral DESC) AS referral_rank
       FROM `{project_id}.{reference_views_dataset}.event_based_program_referrals`,
       {metric_period_dimension}
       WHERE {metric_period_condition}
