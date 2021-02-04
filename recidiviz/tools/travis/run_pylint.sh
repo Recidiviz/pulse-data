@@ -1,5 +1,25 @@
 #!/usr/bin/env bash
 
+#
+#  Recidiviz - a data platform for criminal justice reform
+#  Copyright (C) 2021 Recidiviz, Inc.
+#
+#  This program is free software: you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation, either version 3 of the License, or
+#  (at your option) any later version.
+#
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
+#
+#  You should have received a copy of the GNU General Public License
+#  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#  =============================================================================
+#
+#
+
 BASH_SOURCE_DIR=$(dirname "$BASH_SOURCE")
 source ${BASH_SOURCE_DIR}/../script_base.sh
 
@@ -53,7 +73,12 @@ echo "Checking for TODO format"
 # - Skips '.pylintrc' as it is allowed to have 'TODO' that doesn't match the format
 # - Runs grep for each updated file, getting all lines containing 'TODO' (and including the line number in the output via -n)
 # - Filters to only the lines that don't contain 'TODO' with the correct format
-invalid_lines=$(${changed_files_cmd} | grep --invert-match -e 'run_pylint\.sh' | grep --invert-match -e '\.pylintrc' | xargs grep -n -e 'TODO' | grep --invert-match -e 'TODO(\(.*#[0-9]\+\)\|\(http.*\))')
+invalid_lines=$(${changed_files_cmd} \
+    | grep --invert-match -e 'run_pylint\.sh' \
+    | grep --invert-match -e '\.pylintrc' \
+    | xargs grep -n -e 'TODO' \
+    | grep --invert-match -e 'TODO(\(.*#[0-9]\+\)\|\(http.*\))')
+
 if [[ -n ${invalid_lines} ]]
 then
     echo "TODOs must be of format TODO(#123), TODO(organization/repo#123), or TODO(https://issues.com/123"

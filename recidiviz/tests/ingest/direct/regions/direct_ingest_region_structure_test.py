@@ -24,6 +24,7 @@ from mock import patch
 import yaml
 from parameterized import parameterized
 
+from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.controllers.direct_ingest_raw_table_migration import UpdateRawTableMigration
 from recidiviz.ingest.direct.controllers.direct_ingest_raw_table_migration_collector import \
     DirectIngestRawTableMigrationCollector
@@ -170,6 +171,11 @@ class DirectIngestRegionDirStructureTest(unittest.TestCase):
                     if isinstance(migration, UpdateRawTableMigration):
                         for col_name, _value in migration.updates:
                             self.assertColumnIsDocumented(migration.file_tag, col_name, raw_file_config)
+
+    def test_regions_are_clean(self) -> None:
+        """Check that all existing region directories start with a valid state code."""
+        for region in get_existing_region_dir_names():
+            self.assertTrue(StateCode.is_state_code(region[:5]))
 
     def assertColumnIsDocumented(
             self, file_tag: str, col_name: str, raw_file_config: DirectIngestRawFileConfig
