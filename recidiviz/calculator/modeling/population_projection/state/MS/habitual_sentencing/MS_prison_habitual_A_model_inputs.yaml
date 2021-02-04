@@ -1,0 +1,26 @@
+user_inputs:
+    policy_year: 2017.0
+    start_year: 2017.0
+    projection_years: 10.0
+
+model_architecture:
+    pretrial: null
+    prison: incarcerated
+    parole: incarcerated
+
+reference_date: 2018.0
+time_step: 1.0
+# one year
+
+disaggregation_axes: 
+- age
+
+data_inputs:
+  big_query_simulation_tag: MS_habitual_offenders_A
+
+per_year_costs:
+  prison: 5978.70
+  parole: 252.0
+
+# used marginal cost of incarceration and parole. add extra 1802.07 in medical costs for 60+ population
+# used discharge to parole as default in policy enacted case; can change to release if desired
