@@ -36,7 +36,9 @@ EVENT_BASED_PROGRAM_REFERRALS_QUERY_TEMPLATE = \
     """
     /*{description}*/
     SELECT
-      person_id, state_code, year, month,
+      state_code,
+      person_id,
+      year, month, date_of_referral,
       supervision_type, district,
       participation_status,
       gender, age_bucket, race, ethnicity, assessment_score_bucket

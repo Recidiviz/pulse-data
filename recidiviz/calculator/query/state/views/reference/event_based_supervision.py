@@ -36,7 +36,9 @@ EVENT_BASED_SUPERVISION_QUERY_TEMPLATE = \
     """
     /*{description}*/
     SELECT
-      person_id, state_code, year, month,
+      state_code,
+      person_id,
+      year, month, date_of_supervision,
       supervision_type,
       district,
       supervising_officer_external_id AS officer_external_id,
