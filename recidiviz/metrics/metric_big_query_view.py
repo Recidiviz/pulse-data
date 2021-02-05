@@ -72,7 +72,7 @@ class MetricBigQueryViewBuilder(BigQueryViewBuilder[MetricBigQueryView]):
         self.should_materialize = should_materialize
         self.query_format_kwargs = query_format_kwargs
 
-    def build(self, *, dataset_overrides: Optional[Dict[str, str]] = None) -> MetricBigQueryView:
+    def _build(self, *, dataset_overrides: Optional[Dict[str, str]] = None) -> MetricBigQueryView:
         return MetricBigQueryView(
             dataset_id=self.dataset_id,
             view_id=self.view_id,
@@ -82,7 +82,5 @@ class MetricBigQueryViewBuilder(BigQueryViewBuilder[MetricBigQueryView]):
             dataset_overrides=dataset_overrides,
             **self.query_format_kwargs)
 
-    def build_and_print(self) -> None:
-        """Builds the MetricBigQueryView and prints the view's view_query."""
-        view = self.build()
-        print(view.view_query)
+    def should_build(self) -> bool:
+        return True

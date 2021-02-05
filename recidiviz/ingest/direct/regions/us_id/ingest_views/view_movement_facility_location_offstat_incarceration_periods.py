@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Query that generates incarceration periods."""
-from recidiviz.ingest.direct.controllers.direct_ingest_big_query_view_types import \
+from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import \
     DirectIngestPreProcessedIngestViewBuilder
 from recidiviz.ingest.direct.regions.us_id.ingest_views.templates_periods import get_all_periods_query_fragment, \
     PeriodType

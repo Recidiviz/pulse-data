@@ -14,25 +14,18 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Query containing offenses table information."""
+"""Direct ingest metadata view configuration."""
+import itertools
+from typing import Sequence
 
-from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import \
-    DirectIngestPreProcessedIngestViewBuilder
-from recidiviz.utils.environment import GCP_PROJECT_STAGING
-from recidiviz.utils.metadata import local_project_id_override
+from recidiviz.big_query.big_query_view import BigQueryViewBuilder
+from recidiviz.ingest.direct.views.direct_ingest_latest_view_collector import \
+    DirectIngestRawDataTableLatestViewCollector
 
-VIEW_QUERY_TEMPLATE = """
-SELECT *
-FROM {docstars_offensestable}
-"""
 
-VIEW_BUILDER = DirectIngestPreProcessedIngestViewBuilder(
-    region='us_nd',
-    ingest_view_name='docstars_offensestable',
-    view_query_template=VIEW_QUERY_TEMPLATE,
-    order_by_cols='RecID',
-)
+DIRECT_INGEST_VIEW_BUILDERS: Sequence[BigQueryViewBuilder] = list(itertools.chain.from_iterable((
+    # This returns a list of DirectIngestRawTableLatestViewBuilder, one per raw table in all regions
+    DirectIngestRawDataTableLatestViewCollector().collect_view_builders(),
+)))
 
-if __name__ == '__main__':
-    with local_project_id_override(GCP_PROJECT_STAGING):
-        VIEW_BUILDER.build_and_print()
+VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE: Sequence[BigQueryViewBuilder] = DIRECT_INGEST_VIEW_BUILDERS

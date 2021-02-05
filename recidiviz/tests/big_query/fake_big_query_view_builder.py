@@ -26,8 +26,11 @@ class FakeBigQueryViewBuilder(BigQueryViewBuilder):
         self.view = view
 
     # pylint: disable=unused-argument
-    def build(self, *, dataset_overrides: Optional[Dict[str, str]] = None) -> BigQueryViewType:
+    def _build(self, *, dataset_overrides: Optional[Dict[str, str]] = None) -> BigQueryViewType:
         return self.view
 
     def build_and_print(self) -> None:
         print(self.view.view_query)
+
+    def should_build(self) -> bool:
+        return True

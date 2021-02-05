@@ -25,7 +25,7 @@ from mock import patch
 import recidiviz
 from recidiviz.big_query.big_query_view import BigQueryView
 from recidiviz.big_query.big_query_view_collector import BigQueryViewCollector
-from recidiviz.ingest.direct.controllers.direct_ingest_big_query_view_types import \
+from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import \
     DirectIngestPreProcessedIngestViewBuilder
 from recidiviz.tests.big_query import test_views
 from recidiviz.tests.big_query.fake_big_query_view_builder import FakeBigQueryViewBuilder

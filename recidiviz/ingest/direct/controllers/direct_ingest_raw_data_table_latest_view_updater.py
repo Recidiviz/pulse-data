@@ -24,7 +24,7 @@ from recidiviz.utils import monitoring
 from recidiviz.big_query.big_query_client import BigQueryClient
 from recidiviz.ingest.direct.controllers.direct_ingest_raw_file_import_manager import DirectIngestRegionRawFileConfig, \
     DirectIngestRawFileConfig
-from recidiviz.ingest.direct.controllers.direct_ingest_big_query_view_types import \
+from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import \
     DirectIngestRawDataTableLatestView
 
 m_failed_latest_views_update = measure.MeasureInt(
@@ -73,7 +73,9 @@ class DirectIngestRawDataTableLatestViewUpdater:
 
         latest_view = DirectIngestRawDataTableLatestView(
             region_code=self.state_code,
-            raw_file_config=raw_file_config)
+            raw_file_config=raw_file_config,
+            dataset_overrides=None
+        )
 
         if self.dry_run:
             logging.info('[DRY RUN] would have created/updated view %s with query:\n %s',

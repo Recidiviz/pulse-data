@@ -23,7 +23,7 @@ from google.cloud import bigquery
 from google.cloud.bigquery import DatasetReference
 
 from recidiviz.big_query.big_query_client import BigQueryClient
-from recidiviz.ingest.direct.controllers.direct_ingest_big_query_view_types import DirectIngestRawDataTableLatestView
+from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import DirectIngestRawDataTableLatestView
 from recidiviz.ingest.direct.controllers.direct_ingest_raw_data_table_latest_view_updater import \
     DirectIngestRawDataTableLatestViewUpdater
 from recidiviz.tests.ingest.direct.direct_ingest_util import FakeDirectIngestRegionRawFileConfig
@@ -79,9 +79,11 @@ class DirectIngestRawDataUpdateControllerTest(unittest.TestCase):
             ])
 
             mock_views = [DirectIngestRawDataTableLatestView(region_code=self.test_region.region_code,
-                                                             raw_file_config=self.mock_raw_file_configs['tagA']),
+                                                             raw_file_config=self.mock_raw_file_configs['tagA'],
+                                                             dataset_overrides=None),
                           DirectIngestRawDataTableLatestView(region_code=self.test_region.region_code,
-                                                             raw_file_config=self.mock_raw_file_configs['tagC'])]
+                                                             raw_file_config=self.mock_raw_file_configs['tagC'],
+                                                             dataset_overrides=None)]
             views_dataset = DatasetReference(self.project_id, 'us_xx_raw_data_up_to_date_views')
 
             self.mock_big_query_client.create_or_update_view.assert_has_calls([mock.call(views_dataset, x)

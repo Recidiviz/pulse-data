@@ -17,7 +17,7 @@
 """Query containing board action information extracted from multiple PADOC files, corresponding to condition codes
 'RESCR', 'RESCR6', 'RESCR9', 'RESCR12'."""
 
-from recidiviz.ingest.direct.controllers.direct_ingest_big_query_view_types import \
+from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import \
     DirectIngestPreProcessedIngestViewBuilder
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override

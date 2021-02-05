@@ -23,7 +23,7 @@ from typing import List
 
 import recidiviz
 from recidiviz.big_query.big_query_view_collector import BigQueryViewCollector
-from recidiviz.ingest.direct.controllers.direct_ingest_big_query_view_types import \
+from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import \
     DirectIngestPreProcessedIngestViewBuilder
 from recidiviz.utils.regions import Region
 

@@ -28,7 +28,7 @@ from recidiviz.big_query.big_query_view_collector import BigQueryViewCollector
 from recidiviz.big_query.export.export_query_config import ExportQueryConfig
 from recidiviz.big_query.view_update_manager import TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS
 from recidiviz.cloud_storage.gcs_file_system import GCSFileSystem
-from recidiviz.ingest.direct.controllers.direct_ingest_big_query_view_types import DirectIngestPreProcessedIngestView, \
+from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import DirectIngestPreProcessedIngestView, \
     DirectIngestPreProcessedIngestViewBuilder, RawTableViewType, DestinationTableType
 from recidiviz.ingest.direct.controllers.direct_ingest_file_metadata_manager import DirectIngestFileMetadataManager
 from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import to_normalized_unprocessed_file_name
