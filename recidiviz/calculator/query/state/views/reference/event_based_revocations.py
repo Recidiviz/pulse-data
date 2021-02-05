@@ -38,7 +38,7 @@ EVENT_BASED_REVOCATIONS_QUERY_TEMPLATE = \
     SELECT
       person_id, state_code, year, month,
       supervision_type,
-      district,
+      IFNULL(district, 'EXTERNAL_UNKNOWN') as district,
       judicial_district_code,
       supervising_officer_external_id AS officer_external_id,
       source_violation_type,
