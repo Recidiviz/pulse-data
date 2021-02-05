@@ -15,16 +15,12 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # ============================================================================
 """Converts an ingest_info proto StateSentenceGroup to a persistence entity."""
+from recidiviz.common import common_utils
+from recidiviz.common.constants.enum_parser import EnumParser
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
-from recidiviz.common.str_field_utils import normalize, parse_date, \
-    parse_days, parse_bool
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.ingest.models.ingest_info_pb2 import StateSentenceGroup
 from recidiviz.persistence.entity.state import entities
-from recidiviz.persistence.ingest_info_converter.utils.converter_utils import (
-    fn, parse_external_id, parse_region_code_with_override)
-from recidiviz.persistence.ingest_info_converter.utils.enum_mappings \
-    import EnumMappings
 
 
 def copy_fields_to_builder(
@@ -38,23 +34,16 @@ def copy_fields_to_builder(
     """
     new = sentence_group_builder
 
-    enum_fields = {
-        'status': StateSentenceStatus,
-    }
-    enum_mappings = EnumMappings(proto, enum_fields, metadata.enum_overrides)
-
     # Enum mappings
-    new.status = enum_mappings.get(
-        StateSentenceStatus,
-        default=StateSentenceStatus.PRESENT_WITHOUT_INFO)
-    new.status_raw_text = fn(normalize, 'status', proto)
+    new.status = EnumParser(getattr(proto, 'status'), StateSentenceStatus, metadata.enum_overrides)
+    new.status_raw_text = getattr(proto, 'status')
 
     # 1-to-1 mappings
-    new.external_id = fn(parse_external_id, 'state_sentence_group_id', proto)
-    new.date_imposed = fn(parse_date, 'date_imposed', proto)
-    new.state_code = parse_region_code_with_override(
-        proto, 'state_code', metadata)
-    new.county_code = fn(normalize, 'county_code', proto)
-    new.min_length_days = fn(parse_days, 'min_length', proto)
-    new.max_length_days = fn(parse_days, 'max_length', proto)
-    new.is_life = fn(parse_bool, 'is_life', proto)
+    state_sentence_group_id = getattr(proto, 'state_sentence_group_id')
+    new.external_id = None if common_utils.is_generated_id(state_sentence_group_id) else state_sentence_group_id
+    new.date_imposed = getattr(proto, 'date_imposed')
+    new.state_code = metadata.region
+    new.county_code = getattr(proto, 'county_code')
+    new.min_length_days = getattr(proto, 'min_length')
+    new.max_length_days = getattr(proto, 'max_length')
+    new.is_life = getattr(proto, 'is_life')

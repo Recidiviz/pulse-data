@@ -24,7 +24,8 @@ from recidiviz.ingest.models.ingest_info_pb2 import StateSentenceGroup, \
     StateIncarcerationIncident, StateAssessment, StateCourtCase, \
     StateSupervisionViolationResponse, StateProgramAssignment, StateEarlyDischarge, StateSupervisionContact
 from recidiviz.persistence.entity.state import entities
-from recidiviz.persistence.entity.state.deserialize_entity_factories import StatePersonFactory
+from recidiviz.persistence.entity.state.deserialize_entity_factories import StatePersonFactory, \
+    StateSentenceGroupFactory
 from recidiviz.persistence.ingest_info_converter.base_converter import \
     BaseConverter
 from recidiviz.persistence.ingest_info_converter.state.entity_helpers import \
@@ -241,7 +242,7 @@ class StateConverter(BaseConverter[entities.StatePerson]):
         ]
         sentence_group_builder.fines = converted_fines
 
-        return sentence_group_builder.build()
+        return sentence_group_builder.build(StateSentenceGroupFactory.deserialize)
 
     def _convert_supervision_sentence(
             self, ingest_supervision_sentence: StateSupervisionSentence) \

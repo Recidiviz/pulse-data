@@ -23,32 +23,32 @@ import pytest
 
 from recidiviz.common.str_field_utils import parse_days, parse_dollars, \
     parse_bool, parse_date, parse_datetime, parse_days_from_duration_pieces, parse_int, parse_date_from_date_pieces, \
-    safe_parse_date_from_date_pieces, normalize_flat_json
+    safe_parse_date_from_date_pieces, normalize_flat_json, safe_parse_days_from_duration_str
 
 
 class TestStrFieldUtils(TestCase):
     """Test conversion util methods."""
 
-    def test_parseInt(self):
+    def test_parseInt(self) -> None:
         assert parse_int('123') == 123
 
-    def test_parseInt_floatProvided(self):
+    def test_parseInt_floatProvided(self) -> None:
         assert parse_int('123.6') == 123
 
-    def test_parseInt_invalidStr(self):
+    def test_parseInt_invalidStr(self) -> None:
         with pytest.raises(ValueError):
             parse_int('hello')
 
-    def test_parseTimeDurationDays(self):
+    def test_parseTimeDurationDays(self) -> None:
         assert parse_days('10') == 10
 
-    def test_parseTimeDurationFormat(self):
+    def test_parseTimeDurationFormat(self) -> None:
         source_date = datetime.datetime(2001, 1, 1)
         # 2000 was a leap year
         assert parse_days(
             '1 YEAR 2 DAYS', from_dt=source_date) == 368
 
-    def test_parseDaysFromDurationPieces(self):
+    def test_parseDaysFromDurationPieces(self) -> None:
         two_years_in_days = parse_days_from_duration_pieces(years_str='2')
         assert two_years_in_days == (365 * 2)
 
@@ -81,7 +81,7 @@ class TestStrFieldUtils(TestCase):
 
         assert combo_duration_with_start_date == (2 * 30 + 3)
 
-    def test_parseDaysFromDurationPieces_negativePieces(self):
+    def test_parseDaysFromDurationPieces_negativePieces(self) -> None:
         duration = parse_days_from_duration_pieces(years_str='2',
                                                    months_str='-5')
 
@@ -93,99 +93,106 @@ class TestStrFieldUtils(TestCase):
 
         assert duration == (2*365 + -5*30 - 15)
 
-    def test_parseDateFromDatePieces(self):
+    def test_parseDaysFromDurationStr(self) -> None:
+        self.assertEqual(365, safe_parse_days_from_duration_str('1Y'))
+        self.assertEqual(30, safe_parse_days_from_duration_str('1M 0D'))
+        self.assertEqual(100, safe_parse_days_from_duration_str('100D'))
+        self.assertEqual(40, safe_parse_days_from_duration_str('1M 10D'))
+        self.assertEqual(405, safe_parse_days_from_duration_str('1Y 1M 10D'))
+
+    def test_parseDateFromDatePieces(self) -> None:
         parsed = parse_date_from_date_pieces('2005', '10', '12')
         assert parsed == datetime.date(year=2005, month=10, day=12)
 
-    def test_parseDateFromDatePieces_noneValues(self):
+    def test_parseDateFromDatePieces_noneValues(self) -> None:
         parsed = parse_date_from_date_pieces(None, None, None)
         assert parsed is None
 
-    def test_parseDateFromDatePieces_invalidValues(self):
+    def test_parseDateFromDatePieces_invalidValues(self) -> None:
         with pytest.raises(ValueError):
             parse_date_from_date_pieces('abc', 'def', 'LIFE')
 
-    def test_safeParseDateFromDatePieces_invalidValues(self):
+    def test_safeParseDateFromDatePieces_invalidValues(self) -> None:
         parsed = safe_parse_date_from_date_pieces('abc', 'def', 'LIFE')
         assert parsed is None
 
-    def test_parseBadTimeDuration(self):
+    def test_parseBadTimeDuration(self) -> None:
         with pytest.raises(ValueError):
             parse_days('ABC')
 
-    def test_parseDollarAmount(self):
+    def test_parseDollarAmount(self) -> None:
         assert parse_dollars('$100.00') == 100
         assert parse_dollars('$') == 0
 
-    def test_parseBadDollarAmount(self):
+    def test_parseBadDollarAmount(self) -> None:
         with pytest.raises(ValueError):
             parse_dollars('ABC')
 
-    def test_parseBool(self):
+    def test_parseBool(self) -> None:
         assert parse_bool("True") is True
 
-    def test_parseBadBoolField(self):
+    def test_parseBadBoolField(self) -> None:
         with pytest.raises(ValueError):
             parse_bool('ABC')
 
-    def test_parseDateTime(self):
+    def test_parseDateTime(self) -> None:
         assert parse_datetime('Jan 1, 2018 1:40') == \
                datetime.datetime(year=2018, month=1, day=1, hour=1, minute=40)
 
-    def test_parseDateTime_yearMonth(self):
+    def test_parseDateTime_yearMonth(self) -> None:
         assert parse_datetime(
             '2018-04', from_dt=datetime.datetime(2019, 3, 15)) == \
                datetime.datetime(year=2018, month=4, day=1)
 
-    def test_parseDateTime_yyyymmdd_format(self):
+    def test_parseDateTime_yyyymmdd_format(self) -> None:
         assert parse_datetime(
             '19990629', from_dt=None) == \
                datetime.datetime(year=1999, month=6, day=29)
 
-    def test_parseDateTime_relative(self):
+    def test_parseDateTime_relative(self) -> None:
         assert parse_datetime(
             '1y 1m 1d', from_dt=datetime.datetime(2000, 1, 1)) == \
                datetime.datetime(year=1998, month=11, day=30)
 
-    def test_parseDateTime_zero(self):
+    def test_parseDateTime_zero(self) -> None:
         assert parse_datetime('0') is None
 
-    def test_parseDateTime_zeroes(self):
+    def test_parseDateTime_zeroes(self) -> None:
         assert parse_datetime('00000000') is None
 
-    def test_parseDateTime_zeroes_weird(self):
+    def test_parseDateTime_zeroes_weird(self) -> None:
         assert parse_datetime('0 0 0') is None
         assert parse_datetime('0000-00-00') is None
 
-    def test_parseDate(self):
+    def test_parseDate(self) -> None:
         assert parse_date('Jan 1, 2018') == \
                datetime.date(year=2018, month=1, day=1)
 
-    def test_parseDate_zero(self):
+    def test_parseDate_zero(self) -> None:
         assert parse_date('0') is None
 
-    def test_parseDate_zeroes(self):
+    def test_parseDate_zeroes(self) -> None:
         assert parse_date('00000000') is None
 
-    def test_parseDate_zeroes_weird(self):
+    def test_parseDate_zeroes_weird(self) -> None:
         assert parse_date('0 0 0') is None
         assert parse_date('0000-00-00') is None
 
-    def test_parseNoDate(self):
+    def test_parseNoDate(self) -> None:
         assert parse_date('None set') is None
 
-    def test_parseBadDate(self):
+    def test_parseBadDate(self) -> None:
         with pytest.raises(ValueError):
             parse_datetime('ABC')
 
-    def test_parseJSON(self):
+    def test_parseJSON(self) -> None:
         self.assertEqual('{}', normalize_flat_json('{}'))
         self.assertEqual('{"foo": "HELLO"}', normalize_flat_json('{"foo": "hello"}'))
         self.assertEqual('{"bar": "123", "foo": "HELLO"}', normalize_flat_json('{"foo": "hello", "bar": "123"}'))
         self.assertEqual('{"bar": "123", "foo": "HELLO"}', normalize_flat_json('{"bar": "123", "foo": "hello"}'))
         self.assertEqual('{"foo": "A &&&"}', normalize_flat_json('{"foo": "a    &&& "}'))
 
-    def test_parseJSON_NotFlatStringJSON(self):
+    def test_parseJSON_NotFlatStringJSON(self) -> None:
         with pytest.raises(ValueError):
             normalize_flat_json('{"foo": "hello", "bar": 123}')
         with pytest.raises(ValueError):
@@ -193,11 +200,11 @@ class TestStrFieldUtils(TestCase):
         with pytest.raises(ValueError):
             normalize_flat_json('[{"foo": "hello"}]')
 
-    def test_parseJSON_Malformed(self):
+    def test_parseJSON_Malformed(self) -> None:
         with pytest.raises(TypeError):
-            normalize_flat_json(None)
+            normalize_flat_json(None)  # type: ignore[arg-type]
         with pytest.raises(TypeError):
-            normalize_flat_json({'foo': 'bar'})
+            normalize_flat_json({'foo': 'bar'})  # type: ignore[arg-type]
         with pytest.raises(JSONDecodeError):
             normalize_flat_json("")
         with pytest.raises(JSONDecodeError):
