@@ -32,6 +32,7 @@ from recidiviz.big_query.big_query_client import BigQueryClient
 from recidiviz.cloud_functions.cloud_function_utils import GCSFS_NO_CACHING
 from recidiviz.common import attr_validators
 from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import DirectIngestGCSFileSystem
+from recidiviz.ingest.direct.controllers.direct_ingest_raw_table_migration import UPDATE_DATETIME_AGNOSTIC_DATETIME
 from recidiviz.ingest.direct.controllers.direct_ingest_raw_table_migration_collector import \
     DirectIngestRawTableMigrationCollector
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import filename_parts_from_path, \
@@ -327,10 +328,16 @@ class DirectIngestRawFileImportManager:
         temp_output_paths = self._upload_contents_to_temp_gcs_paths(path, file_metadata)
         self._load_contents_to_bigquery(path, temp_output_paths)
 
+        migration_queries: List[str] = []
         if (parts.file_tag, parts.utc_upload_datetime) in self.raw_table_migrations:
-            migration_queries = self.raw_table_migrations[(parts.file_tag, parts.utc_upload_datetime)]
-            for migration_query in migration_queries:
-                self.big_query_client.run_query_async(query_str=migration_query)
+            migration_queries.extend(self.raw_table_migrations[(parts.file_tag, parts.utc_upload_datetime)])
+
+        if (parts.file_tag, UPDATE_DATETIME_AGNOSTIC_DATETIME) in self.raw_table_migrations:
+            # There are migration that should be run on all versions of the file
+            migration_queries.extend(self.raw_table_migrations[(parts.file_tag, UPDATE_DATETIME_AGNOSTIC_DATETIME)])
+
+        for migration_query in migration_queries:
+            self.big_query_client.run_query_async(query_str=migration_query)
 
         logging.info('Completed BigQuery import of [%s]', path.abs_path())
 
