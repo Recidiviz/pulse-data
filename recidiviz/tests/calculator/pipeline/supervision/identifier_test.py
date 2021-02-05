@@ -4559,7 +4559,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
             # TODO(#4821): Count this as a revocation once Lantern is ready for PVC revocations
             # Program 26 indicates a revocation to a PVC
-            specialized_purpose_for_incarceration_raw_text='26',
+            specialized_purpose_for_incarceration_raw_text='CCIS-26',
             release_date=date(2019, 3, 3),
             release_reason=ReleaseReason.SENTENCE_SERVED,
             custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY
