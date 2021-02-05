@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Query for supervision sentences."""
-from recidiviz.ingest.direct.controllers.direct_ingest_big_query_view_types import \
+from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import \
     DirectIngestPreProcessedIngestViewBuilder
 from recidiviz.ingest.direct.regions.us_id.ingest_views.templates_sentences import sentence_view_template, SentenceType
 from recidiviz.utils.environment import GCP_PROJECT_STAGING

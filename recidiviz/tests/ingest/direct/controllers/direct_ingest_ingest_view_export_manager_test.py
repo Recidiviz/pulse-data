@@ -29,7 +29,7 @@ from more_itertools import one
 
 from recidiviz.big_query.big_query_view import BigQueryViewBuilder
 from recidiviz.big_query.big_query_view_collector import BigQueryViewCollector
-from recidiviz.ingest.direct.controllers.direct_ingest_big_query_view_types import DirectIngestPreProcessedIngestView
+from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import DirectIngestPreProcessedIngestView
 from recidiviz.ingest.direct.controllers.direct_ingest_ingest_view_export_manager import \
     DirectIngestIngestViewExportManager
 from recidiviz.ingest.direct.controllers.direct_ingest_raw_file_import_manager import DirectIngestRegionRawFileConfig
@@ -194,7 +194,7 @@ class _FakeDirectIngestViewBuilder(BigQueryViewBuilder[DirectIngestPreProcessedI
         self.is_detect_row_deletion_view = is_detect_row_deletion_view
         self.materialize_raw_data_table_views = materialize_raw_data_table_views
 
-    def build(self,
+    def _build(self,
               *,
               dataset_overrides: Optional[Dict[str, str]] = None  # pylint: disable=unused-argument
               ) -> DirectIngestPreProcessedIngestView:
@@ -218,6 +218,9 @@ class _FakeDirectIngestViewBuilder(BigQueryViewBuilder[DirectIngestPreProcessedI
 
     def build_and_print(self) -> None:
         self.build()
+
+    def should_build(self) -> bool:
+        return True
 
     @property
     def file_tag(self) -> str:

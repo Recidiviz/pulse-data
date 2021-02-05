@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Query for deleted early discharges hanging off of supervision sentences."""
-from recidiviz.ingest.direct.controllers.direct_ingest_big_query_view_types import \
+from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import \
     DirectIngestPreProcessedIngestViewBuilder
 from recidiviz.ingest.direct.regions.us_id.ingest_views.templates_early_discharge import \
     early_discharge_view_template, EarlyDischargeType

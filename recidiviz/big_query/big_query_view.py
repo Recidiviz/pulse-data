@@ -167,13 +167,26 @@ class BigQueryViewBuilder(Generic[BigQueryViewType]):
     dataset_id: str
     view_id: str
 
-    @abc.abstractmethod
     def build(self, *, dataset_overrides: Optional[Dict[str, str]] = None) -> BigQueryViewType:
-        pass
+        """Builds and returns the view object. Throws an exception of type  `BigQueryViewBuilderShouldNotBuildError`
+        if `should_build()` is false for this view."""
+        if not self.should_build():
+            raise BigQueryViewBuilderShouldNotBuildError()
+        return self._build(dataset_overrides=dataset_overrides)
 
     @abc.abstractmethod
+    def _build(self, *, dataset_overrides: Optional[Dict[str, str]] = None) -> BigQueryViewType:
+        """Should be implemented by subclasses to build the view. Will only be called if should_build() returns True."""
+
     def build_and_print(self) -> None:
-        pass
+        """Builds the view and prints it to stdout."""
+        view = self.build()
+        print(view.view_query)
+
+    @abc.abstractmethod
+    def should_build(self) -> bool:
+        """Should be implemented by subclasses to return True if this view can be built
+        (e.g. if all dependent tables /columns exist). Returns False otherwise."""
 
 
 BigQueryViewBuilderType = TypeVar('BigQueryViewBuilderType', bound=BigQueryViewBuilder)
@@ -200,10 +213,7 @@ class SimpleBigQueryViewBuilder(BigQueryViewBuilder):
         self.should_build_predicate = should_build_predicate
         self.query_format_kwargs = query_format_kwargs
 
-    def build(self, *, dataset_overrides: Dict[str, str] = None) -> BigQueryView:
-        if self.should_build_predicate is not None and not self.should_build_predicate():
-            raise SimpleBigQueryViewBuilderShouldNotBuildError()
-
+    def _build(self, *, dataset_overrides: Dict[str, str] = None) -> BigQueryView:
         return BigQueryView(
             dataset_id=self.dataset_id,
             view_id=self.view_id,
@@ -212,11 +222,9 @@ class SimpleBigQueryViewBuilder(BigQueryViewBuilder):
             dataset_overrides=dataset_overrides,
             **self.query_format_kwargs)
 
-    def build_and_print(self) -> None:
-        """Builds the BigQueryView and prints the view's view_query."""
-        view = self.build()
-        print(view.view_query)
+    def should_build(self) -> bool:
+        return not self.should_build_predicate or self.should_build_predicate()
 
 
-class SimpleBigQueryViewBuilderShouldNotBuildError(Exception):
-    """Error thrown when the condition for a SimpleBigQueryViewBUilder fails."""
+class BigQueryViewBuilderShouldNotBuildError(Exception):
+    """Error thrown when the should_build() check for a BigQueryView fails."""

@@ -33,7 +33,7 @@ from recidiviz.ingest.direct.controllers import direct_ingest_raw_table_migratio
 from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import \
     BaseDirectIngestController
 from recidiviz.ingest.direct.controllers.csv_gcsfs_direct_ingest_controller import CsvGcsfsDirectIngestController
-from recidiviz.ingest.direct.controllers.direct_ingest_big_query_view_types import DirectIngestPreProcessedIngestView
+from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import DirectIngestPreProcessedIngestView
 from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import \
     DirectIngestGCSFileSystem, to_normalized_unprocessed_file_path
 from recidiviz.ingest.direct.controllers.direct_ingest_raw_file_import_manager import \
@@ -167,7 +167,7 @@ class FakeDirectIngestPreProcessedIngestViewBuilder(BigQueryViewBuilder[DirectIn
         self.tag = tag
         self.view_query_template = view_query_template or f'SELECT * FROM {{{self.tag}}}'
 
-    def build(self,
+    def _build(self,
               *,
               dataset_overrides: Optional[Dict[str, str]] = None  # pylint: disable=unused-argument
               ) -> DirectIngestPreProcessedIngestView:
@@ -182,6 +182,9 @@ class FakeDirectIngestPreProcessedIngestViewBuilder(BigQueryViewBuilder[DirectIn
 
     def build_and_print(self) -> None:
         self.build()
+
+    def should_build(self) -> bool:
+        return True
 
     @property
     def file_tag(self) -> str:

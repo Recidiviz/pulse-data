@@ -29,7 +29,7 @@ from recidiviz.big_query.big_query_view import BigQueryView
 from recidiviz.big_query.big_query_view_dag_walker import BigQueryViewDagWalker, BigQueryViewDagNode
 from recidiviz.big_query.view_update_manager import VIEW_BUILDERS_BY_NAMESPACE, VIEW_SOURCE_TABLE_DATASETS
 from recidiviz.ingest.direct.controllers.direct_ingest_raw_file_import_manager import DirectIngestRegionRawFileConfig
-from recidiviz.ingest.views.metadata_helpers import BigQueryTableColumnChecker
+from recidiviz.ingest.views.metadata_helpers import BigQueryTableChecker
 
 LATEST_VIEW_DATASET_REGEX = re.compile(r'(us_[a-z]{2})_raw_data_up_to_date_views')
 MOCK_VIEW_PROCESS_TIME_SECONDS = 0.01
@@ -41,8 +41,10 @@ class TestBigQueryViewDagWalker(unittest.TestCase):
         self.project_id_patcher = patch('recidiviz.utils.metadata.project_id')
         self.project_id_patcher.start().return_value = 'recidiviz-456'
 
-        with patch.object(BigQueryTableColumnChecker, '_table_has_column') as mock_table_has_column:
+        with patch.object(BigQueryTableChecker, '_table_has_column') as mock_table_has_column, \
+                patch.object(BigQueryTableChecker, '_table_exists') as mock_table_exists:
             mock_table_has_column.return_value = True
+            mock_table_exists.return_value = True
 
             self.all_views = []
             for view_builder_list in VIEW_BUILDERS_BY_NAMESPACE.values():
@@ -265,17 +267,10 @@ class TestBigQueryViewDagWalker(unittest.TestCase):
 
         self.fail(node.dag_key)
 
-    def assertIsValidSourceDataTable(self, child_view_key: Tuple[str, str], source_table_key: Tuple[str, str]) -> None:
+    @staticmethod
+    def assertIsValidSourceDataTable(child_view_key: Tuple[str, str], source_table_key: Tuple[str, str]) -> None:
         source_table_dataset_id, _ = source_table_key
         if source_table_dataset_id in VIEW_SOURCE_TABLE_DATASETS:
-            return
-
-        up_to_date_view_match = re.match(LATEST_VIEW_DATASET_REGEX, source_table_dataset_id)
-        if up_to_date_view_match:
-            # Raw data views are created in a separate process from the rest of view creation because they require that
-            # a raw table has actually been ingested. We allow these tables as valid root parents if they meet certain
-            # sanity checks.
-            self.assertIsValidRawTableViewDependency(child_view_key=child_view_key, raw_data_view_key=source_table_key)
             return
 
         raise ValueError(

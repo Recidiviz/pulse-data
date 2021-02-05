@@ -25,7 +25,7 @@ from recidiviz.calculator.query.state import view_config
 from recidiviz.big_query.big_query_view import (
     BigQueryView,
     BigQueryViewBuilder,
-    SimpleBigQueryViewBuilderShouldNotBuildError,
+    BigQueryViewBuilderShouldNotBuildError,
 )
 from recidiviz.persistence.database.base_schema import JailsBase
 from recidiviz.tests.utils import fakes
@@ -56,7 +56,7 @@ class ViewExportConfigTest(unittest.TestCase):
 
                 try:
                     view = view_builder.build()
-                except SimpleBigQueryViewBuilderShouldNotBuildError:
+                except BigQueryViewBuilderShouldNotBuildError:
                     continue
 
                 self.assertIsInstance(view, BigQueryView)

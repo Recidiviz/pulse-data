@@ -46,7 +46,7 @@ def get_state_tables() -> List[Tuple[Type[DatabaseEntity], str]]:
     return [(e, e.get_entity_name()) for e in get_non_history_state_database_entities()]
 
 
-class BigQueryTableColumnChecker:
+class BigQueryTableChecker:
     """Class that fetches the BQ schema for a given Table/View and exposes functionality for checking if a column
     exists in the table."""
 
@@ -73,3 +73,12 @@ class BigQueryTableColumnChecker:
         def has_column() -> bool:
             return self._table_has_column(col)
         return has_column
+
+    def _table_exists(self) -> bool:
+        bq_client = BigQueryClientImpl()
+        return bq_client.table_exists(bq_client.dataset_ref_for_id(self.dataset_id), self.table_id)
+
+    def get_table_exists_predicate(self) -> Callable[[], bool]:
+        def table_exists() -> bool:
+            return self._table_exists()
+        return table_exists
