@@ -555,7 +555,7 @@ def revoked_supervision_periods_if_revocation_occurred(
     elif state_code == StateCode.US_PA.value:
         admission_is_revocation = is_revocation_admission(incarceration_period.admission_reason)
 
-        if admission_is_revocation and incarceration_period.specialized_purpose_for_incarceration_raw_text == '26':
+        if admission_is_revocation and incarceration_period.specialized_purpose_for_incarceration_raw_text == 'CCIS-26':
             return False, revoked_periods
 
         revoked_periods = get_relevant_supervision_periods_before_admission_date(incarceration_period.admission_date,
