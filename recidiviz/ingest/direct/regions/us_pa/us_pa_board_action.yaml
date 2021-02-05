@@ -2,15 +2,15 @@ key_mappings:
   ActionDate: state_supervision_violation_response.response_date
 
 ancestor_keys:
-  control_number: state_person.state_person_id
+  ParoleNumber: state_person.state_person_id
 
 enforced_ancestor_types:
   state_sentence: state_supervision_sentence
 
 # Primary key override for Board Action Supervision Violation Response in controller
-# in format of [control_number]-[ParoleNumber]-[inmate_number]
+# in format of [ParoleNumber]-[ParoleCountID]-[BdActionID]
 
 keys_to_ignore:
   - CndConditionCode       # Condition Code - handled manually in the controller
-  - ParoleNumber           # Parole Board ID - handled manually in the controller
-  - inmate_number          # Inmate number - handled manually in the controller
+  - ParoleCountID          # Parole Count ID - handled manually in the controller
+  - BdActionID             # Board Action ID - handled manually in the controller

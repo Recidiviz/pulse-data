@@ -541,7 +541,7 @@ class UsPaController(CsvGcsfsDirectIngestController):
             'RESCR',
             'RESCR6',
             'RESCR9',
-            'RESCR12',
+            'RESCR12'
         ],
         StateSupervisionViolationResponseDecision.TREATMENT_IN_FIELD: [
             'OPAT',  # Placement in Out-Patient D&A Treatment
@@ -558,7 +558,7 @@ class UsPaController(CsvGcsfsDirectIngestController):
             'RESCR',
             'RESCR6',
             'RESCR9',
-            'RESCR12',
+            'RESCR12'
         ],
         StateCustodialAuthority.STATE_PRISON: [
             # SUPERVISION CUSTODIAL AUTHORITY CODES
@@ -656,9 +656,12 @@ class UsPaController(CsvGcsfsDirectIngestController):
             'supervision_violation_response',
         ]
 
+        if not environment.in_gae_production():
+            # TODO(#4187): Launch this to prod after staging rerun is validated
+            launched_file_tags.append('board_action')
+
         unlaunched_file_tags: List[str] = [
-            # TODO(#5641): Launch this to staging once id structure issues are resolved
-            'board_action',
+            # Empty for now
         ]
 
         file_tags = launched_file_tags
@@ -739,14 +742,15 @@ class UsPaController(CsvGcsfsDirectIngestController):
             'ccis_incarceration_period',
             'dbo_Miscon',
             'dbo_Miscon_v2',
-            'board_action',
         ]:
             return US_PA_CONTROL
 
         if file_tag in ['supervision_sentence',
                         'supervision_period',
                         'supervision_violation',
-                        'supervision_violation_response']:
+                        'supervision_violation_response',
+                        'board_action',
+                        ]:
             return US_PA_PBPP
         return None
 
@@ -1355,9 +1359,9 @@ class UsPaController(CsvGcsfsDirectIngestController):
 
     @staticmethod
     def _set_board_action_violation_response_fields(_file_tag: str,
-                                                  _row: Dict[str, str],
-                                                  extracted_objects: List[IngestObject],
-                                                  _cache: IngestObjectCache) -> None:
+                                                    _row: Dict[str, str],
+                                                    extracted_objects: List[IngestObject],
+                                                    _cache: IngestObjectCache) -> None:
         """Sets relevant fields specific to a board action supervision violation response.
         """
         for obj in extracted_objects:
@@ -1372,9 +1376,9 @@ class UsPaController(CsvGcsfsDirectIngestController):
                                                                     _cache: IngestObjectCache) -> None:
         """Appends board action violation response decision entries to the parent supervision violation response."""
         parole_number = row['ParoleNumber']
-        inmate_number = row['inmate_number']
-        control_number = row['control_number']
-        entry_id = f"{control_number}-{parole_number}-{inmate_number}"
+        parole_count_id = row['ParoleCountID']
+        board_action_id = row['BdActionID']
+        entry_id = f"{parole_number}-{parole_count_id}-{board_action_id}"
         condition_code = row['CndConditionCode']
         for obj in extracted_objects:
             if isinstance(obj, StateSupervisionViolationResponse):
@@ -1487,10 +1491,10 @@ def _generate_supervision_violation_response_primary_key(_file_tag: str, row: Di
 
 def _generate_board_action_supervision_violation_response_primary_key(_file_tag: str, row: Dict[str, str])\
         -> IngestFieldCoordinates:
-    person_id = row['control_number']
     parole_id = row['ParoleNumber']
-    sentence_id = row['inmate_number']
-    response_id = f"{person_id}-{parole_id}-{sentence_id}"
+    parole_count_id = row['ParoleCountID']
+    board_action_id = row['BdActionID']
+    response_id = f"{parole_id}-{parole_count_id}-{board_action_id}"
 
     return IngestFieldCoordinates('state_supervision_violation_response',
                                   'state_supervision_violation_response_id',
