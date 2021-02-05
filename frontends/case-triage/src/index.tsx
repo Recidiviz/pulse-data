@@ -17,6 +17,8 @@
 import "./window.d";
 import React, { useEffect, useState } from "react";
 import ReactDOM from "react-dom";
+import * as Sentry from "@sentry/react";
+import { Integrations } from "@sentry/tracing";
 import styled from "styled-components/macro";
 import { BrowserRouter } from "react-router-dom";
 import { Auth0Provider, useAuth0 } from "@auth0/auth0-react";
@@ -27,6 +29,17 @@ import {
   GlobalStyle,
   Header,
 } from "@recidiviz/case-triage-components";
+
+if (process.env.NODE_ENV !== "development") {
+  Sentry.init({
+    dsn:
+      "https://1aa10e823cad49d9a662d71cedb3365b@o432474.ingest.sentry.io/5623757",
+    integrations: [new Integrations.BrowserTracing()],
+
+    // This value may need to be adjusted over time as usage increases.
+    tracesSampleRate: 1.0,
+  });
+}
 
 const ClientList: React.FC = () => {
   const {
