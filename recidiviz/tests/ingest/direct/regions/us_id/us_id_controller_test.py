@@ -1040,6 +1040,9 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
                                                             supervision_violation_response_decisions=[
                                                                 StateSupervisionViolationResponseDecisionEntry(
                                                                     decision='Reinstatement',
+                                                                ),
+                                                                StateSupervisionViolationResponseDecisionEntry(
+                                                                    decision='Treatment Court',
                                                                 )
                                                             ]
                                                         )
@@ -2408,6 +2411,13 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
             supervision_violation_response=svr_3333_7,
             person=svr_3333_7.person,
         )
+        svrd_3333_7_r2 = entities.StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+            state_code=_STATE_CODE_UPPER,
+            decision=StateSupervisionViolationResponseDecision.SPECIALIZED_COURT,
+            decision_raw_text='TREATMENT COURT',
+            supervision_violation_response=svr_3333_7,
+            person=svr_3333_7.person,
+        )
         person_3.sentence_groups.append(sg_3333_placeholder)
         sg_3333_placeholder.supervision_sentences.append(ss_3333_placeholder)
         ss_3333_placeholder.supervision_periods.append(sp_3333_placeholder)
@@ -2415,6 +2425,7 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
         sv_3333_7.supervision_violation_types.append(vte_3333_7_t)
         sv_3333_7.supervision_violation_responses.append(svr_3333_7)
         svr_3333_7.supervision_violation_response_decisions.append(svrd_3333_7_r)
+        svr_3333_7.supervision_violation_response_decisions.append(svrd_3333_7_r2)
 
         # Act
         self._run_ingest_job_for_filename('ofndr_tst_tst_qstn_rspns_violation_reports.csv')

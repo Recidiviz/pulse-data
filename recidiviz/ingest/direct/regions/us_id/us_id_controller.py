@@ -990,9 +990,9 @@ class UsIdController(CsvGcsfsDirectIngestController):
         """Adds fields/children to the SupervisionViolationResponses as necessary. This assumes all
         SupervisionViolationResponses are of violation reports.
         """
-        parole_recommendation = row.get('parolee_placement_recommendation', '')
-        probation_recommendation = row.get('probationer_placement_recommendation', '')
-        recommendations = list(filter(None, [parole_recommendation, probation_recommendation]))
+        parole_recommendations = row.get('parolee_placement_recommendation', '').split(',')
+        probation_recommendations = row.get('probationer_placement_recommendation', '').split(',')
+        recommendations = [rec for rec in parole_recommendations + probation_recommendations if rec]
 
         for obj in extracted_objects:
             if isinstance(obj, StateSupervisionViolationResponse):
