@@ -24,52 +24,36 @@ from recidiviz.utils.metadata import local_project_id_override
 
 
 VIEW_QUERY_TEMPLATE = """
-WITH board_action_codes AS (
+WITH distinct_codes AS(
   SELECT
-    dbo_BdActionType.ParoleNumber,
-    dbo_BoardAction.BdActEntryDateMonth,
-    dbo_BoardAction.BdActEntryDateDay,
-    dbo_BoardAction.BdActEntryDateYear,
-    dbo_ConditionCode.CndConditionCode
+    ParoleNumber,
+    ParoleCountID,
+    BdActionID,
+    -- There is an uncommon case (~5 examples) in which there are two distinct condition codes for a given action. We take the max of those condition codes to avoid nondeterminism.--
+    MAX(dbo_ConditionCode.CndConditionCode) AS CndConditionCode
+  FROM
+    {dbo_ConditionCode} dbo_ConditionCode
+  WHERE
+    dbo_ConditionCode.CndConditionCode IN ('RESCR', 'RESCR6', 'RESCR9', 'RESCR12')
+  GROUP BY
+    ParoleNumber,
+    ParoleCountID,
+    BdActionID
+),
+sci_actions AS (
+  SELECT
+     ParoleNumber,
+     ParoleCountID,
+     BdActionID,
+     CONCAT(BdActEntryDateYear, BdActEntryDateMonth, BdActEntryDateDay) as ActionDate,
+     CndConditionCode
   FROM
     {dbo_BoardAction} dbo_BoardAction
-  INNER JOIN 
-    ({dbo_BdActionType} dbo_BdActionType
-      INNER JOIN
-        {dbo_ConditionCode} dbo_ConditionCode
-      ON 
-        dbo_BdActionType.BdActionID = dbo_ConditionCode.BdActionID
-      AND 
-        dbo_BdActionType.ParoleCountID = dbo_ConditionCode.ParoleCountID
-      AND
-        dbo_BdActionType.ParoleNumber = dbo_ConditionCode.ParoleNumber
-    )
-  ON 
-    dbo_BoardAction.BdActionID = dbo_BdActionType.BdActionID 
-  AND 
-    dbo_BoardAction.ParoleNumber = dbo_BdActionType.ParoleNumber 
-  AND 
-    dbo_BoardAction.ParoleCountID = dbo_BdActionType.ParoleCountID
-), 
-sci_actions AS (
-  -- Distict because it's common for there to be multiple entries for the same person with the same CndConditionCode on the same day that list various conditions in raw text --
-  SELECT
-    DISTINCT ParoleNumber,
-             CONCAT(BdActEntryDateYear, BdActEntryDateMonth, BdActEntryDateDay) as ActionDate,
-             CndConditionCode,
-             inmate_number,
-             control_number
-  FROM board_action_codes 
-  LEFT JOIN
-    -- TODO(#5641): Update this query to remove dependence on dbo_tblSearchInmateInfo - we should not be using control
-    -- or inmate numbers (DOC ids) in ingest views for supervision data.
-    {dbo_tblSearchInmateInfo}
-  ON 
-    ParoleNumber = parole_board_num
-  WHERE
-    CndConditionCode IN ('RESCR', 'RESCR6', 'RESCR9', 'RESCR12')
+  INNER JOIN
+    distinct_codes 
+  USING 
+    (ParoleNumber, ParoleCountID, BdActionID)
 )
-
 SELECT * 
 FROM sci_actions
 """
