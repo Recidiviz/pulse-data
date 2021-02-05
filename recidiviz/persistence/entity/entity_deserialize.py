@@ -16,7 +16,7 @@
 # =============================================================================
 """Provides a decorator for augmenting Entity classes with a deserialization constructor."""
 
-from typing import Dict, Callable, Any, Type, Union, TypeVar
+from typing import Dict, Callable, Any, Type, Union, TypeVar, Generic
 
 import attr
 
@@ -24,9 +24,18 @@ from recidiviz.common.attr_utils import is_forward_ref, is_list, is_str, is_date
 from recidiviz.common.str_field_utils import normalize, parse_date, parse_int, parse_bool
 from recidiviz.persistence.entity.base_entity import Entity
 from recidiviz.common.constants.enum_parser import EnumParser
+from recidiviz.utils.types import T
 
-EntityFieldConverter = Callable[[str], Any]
 EntityT = TypeVar('EntityT', bound=Entity)
+
+
+@attr.s
+class EntityFieldConverter(Generic[T]):
+    field_type: Type[T] = attr.ib(validator=attr.validators.in_({str, EnumParser}))
+    conversion_function: Callable[[T], Any] = attr.ib()
+
+    def convert(self, field_value: T) -> Any:
+        return self.conversion_function(field_value)
 
 
 def entity_deserialize(cls: Type[EntityT],
@@ -47,12 +56,24 @@ def entity_deserialize(cls: Type[EntityT],
         raise ValueError(
             f'Can only deserialize Entity classes with entity_deserialize() - found class [{cls}].')
 
-    def convert_field_value(field: attr.Attribute, field_value: Any) -> Any:
+    def convert_field_value(field: attr.Attribute, field_value: Union[str, EnumParser]) -> Any:
         if field_value is None:
             return None
 
         if is_forward_ref(field) or is_list(field):
             return field_value
+
+        if isinstance(field_value, str):
+            if not field_value or not field_value.strip():
+                return None
+
+        if field.name in converter_overrides:
+            converter = converter_overrides[field.name]
+            if not isinstance(field_value, converter.field_type):
+                raise ValueError(f'Found converter for field [{field.name}] in the converter_overrides, but expected '
+                                 f'field type [{converter.field_type}] does not match actual field type '
+                                 f'[{type(field_value)}]')
+            return converter.convert(field_value)
 
         if isinstance(field_value, EnumParser):
             if is_enum(field):
@@ -60,11 +81,6 @@ def entity_deserialize(cls: Type[EntityT],
             raise ValueError(f'Found field value [{field_value}] for field that is not an enum [{field}].')
 
         if isinstance(field_value, str):
-            if not field_value or not field_value.strip():
-                return None
-
-            if field.name in converter_overrides:
-                return converter_overrides[field.name](field_value)
             if is_str(field):
                 return normalize(field_value)
             if is_date(field):

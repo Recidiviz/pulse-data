@@ -24,6 +24,7 @@ from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.ingest_metadata import IngestMetadata, SystemLevel
 from recidiviz.ingest.models import ingest_info_pb2
 from recidiviz.persistence.entity.state import entities
+from recidiviz.persistence.entity.state.deserialize_entity_factories import StateSentenceGroupFactory
 from recidiviz.persistence.ingest_info_converter.state.entity_helpers import \
     state_sentence_group
 
@@ -41,8 +42,8 @@ class StateSentenceGroupConverterTest(unittest.TestCase):
             state_sentence_group_id='GROUP_ID',
             date_imposed='1/2/2111',
             county_code='CO',
-            min_length='200D',
-            max_length='600D',
+            min_length='200',
+            max_length='600',
             is_life='false',
         )
 
@@ -50,7 +51,7 @@ class StateSentenceGroupConverterTest(unittest.TestCase):
         group_builder = entities.StateSentenceGroup.builder()
         state_sentence_group.copy_fields_to_builder(
             group_builder, ingest_group, METADATA)
-        result = group_builder.build()
+        result = group_builder.build(StateSentenceGroupFactory.deserialize)
 
         # Assert
         expected_result = entities.StateSentenceGroup(

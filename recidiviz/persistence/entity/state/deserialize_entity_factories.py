@@ -18,9 +18,10 @@
 
 from typing import Union
 
-from recidiviz.common.constants.enum_parser import EnumParser
+from recidiviz.common.constants.enum_parser import EnumParser, get_parser_for_enum_with_default
+from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.str_field_utils import normalize_flat_json
-from recidiviz.persistence.entity.entity_deserialize import entity_deserialize
+from recidiviz.persistence.entity.entity_deserialize import entity_deserialize, EntityFieldConverter
 from recidiviz.persistence.entity.state import entities
 from recidiviz.persistence.ingest_info_converter.utils.converter_utils import parse_residency_status
 
@@ -41,8 +42,41 @@ class StatePersonFactory:
         return entity_deserialize(
             cls=entities.StatePerson,
             converter_overrides={
-                'residency_status': parse_residency_status,
-                'full_name': normalize_flat_json,
+                'residency_status': EntityFieldConverter(str, parse_residency_status),
+                'full_name': EntityFieldConverter(str, normalize_flat_json),
+            },
+            **kwargs
+        )
+
+
+class StatePersonRaceFactory:
+    @staticmethod
+    def deserialize(**kwargs: Union[str, EnumParser]) -> entities.StatePersonRace:
+        return entity_deserialize(
+            cls=entities.StatePersonRace,
+            converter_overrides={},
+            **kwargs
+        )
+
+
+class StatePersonEthnicityFactory:
+    @staticmethod
+    def deserialize(**kwargs: Union[str, EnumParser]) -> entities.StatePersonEthnicity:
+        return entity_deserialize(
+            cls=entities.StatePersonEthnicity,
+            converter_overrides={},
+            **kwargs
+        )
+
+
+class StateSentenceGroupFactory:
+    @staticmethod
+    def deserialize(**kwargs: Union[str, EnumParser]) -> entities.StateSentenceGroup:
+        return entity_deserialize(
+            cls=entities.StateSentenceGroup,
+            converter_overrides={
+                'status': EntityFieldConverter(
+                    EnumParser, get_parser_for_enum_with_default(StateSentenceStatus.PRESENT_WITHOUT_INFO)),
             },
             **kwargs
         )

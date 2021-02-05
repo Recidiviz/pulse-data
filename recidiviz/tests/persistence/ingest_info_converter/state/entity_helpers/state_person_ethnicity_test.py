@@ -25,7 +25,9 @@ from recidiviz.persistence.entity.state import entities
 from recidiviz.persistence.ingest_info_converter.state.entity_helpers import \
     state_person_ethnicity
 
-_EMPTY_METADATA = IngestMetadata.new_with_defaults()
+_EMPTY_METADATA = IngestMetadata.new_with_defaults(
+    region='us_nd',
+)
 
 
 class StatePersonEthnicityConverterTest(unittest.TestCase):

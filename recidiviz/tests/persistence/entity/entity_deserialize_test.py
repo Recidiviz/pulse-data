@@ -25,7 +25,7 @@ from recidiviz.common.constants.enum_overrides import EnumOverrides
 from recidiviz.common.constants.enum_parser import EnumParser
 from recidiviz.common.constants.person_characteristics import Race
 from recidiviz.persistence.entity.base_entity import Entity
-from recidiviz.persistence.entity.entity_deserialize import entity_deserialize
+from recidiviz.persistence.entity.entity_deserialize import entity_deserialize, EntityFieldConverter
 
 
 @attr.s(eq=False)
@@ -55,7 +55,9 @@ class TestEntityDeserialize(TestCase):
             @attr.s
             class _NotAnEntity:
                 an_int_field: int = attr.ib(default=1)
-            _ = entity_deserialize(_NotAnEntity, converter_overrides={}, an_int_field='1')  # type: ignore[type-var]
+            _ = entity_deserialize(_NotAnEntity,  # type: ignore[type-var]
+                                   converter_overrides={},
+                                   an_int_field='1')
 
         self.assertTrue(
             str(e.exception).startswith('Can only deserialize Entity classes with entity_deserialize()'))
@@ -65,7 +67,9 @@ class TestEntityDeserialize(TestCase):
             class _NotAnAttr:
                 def __init__(self) -> None:
                     self.an_int_field = 1
-            _ = entity_deserialize(_NotAnAttr, converter_overrides={}, an_int_field='1')  # type: ignore[type-var]
+            _ = entity_deserialize(_NotAnAttr,  # type: ignore[type-var]
+                                   converter_overrides={},
+                                   an_int_field='1')
 
         self.assertTrue(
             str(e.exception).startswith('Can only deserialize attrs classes with entity_deserialize()'))
@@ -142,26 +146,36 @@ class TestEntityDeserialize(TestCase):
         def parse_int_and_double(int_str: str) -> int:
             return int(int_str) * 2
 
+        def set_race_to_white(_race_enum_parser: EnumParser) -> Race:
+            return Race.WHITE
+
         @attr.s(eq=False)
         class MyEntityWithFieldOverrides(Entity):
             str_with_override: str = attr.ib(validator=attr_validators.is_str)
             int_with_override: int = attr.ib(validator=attr_validators.is_int)
+            enum_with_override: Race = attr.ib(validator=attr.validators.instance_of(Race))
             str_no_override: str = attr.ib(validator=attr_validators.is_str)
             int_no_override: int = attr.ib(validator=attr_validators.is_int)
+            enum_no_override: Race = attr.ib(validator=attr.validators.instance_of(Race))
 
         class MyEntityWithFieldOverridesFactory:
             @staticmethod
             def deserialize(**kwargs: Union[str, EnumParser]) -> MyEntityWithFieldOverrides:
-                return entity_deserialize(MyEntityWithFieldOverrides, converter_overrides={
-                    'str_with_override': str.lower,
-                    'int_with_override': parse_int_and_double
-                }, **kwargs)
+                return entity_deserialize(MyEntityWithFieldOverrides,
+                                          converter_overrides={
+                                              'str_with_override': EntityFieldConverter(str, str.lower),
+                                              'int_with_override': EntityFieldConverter(str, parse_int_and_double),
+                                              'enum_with_override': EntityFieldConverter(EnumParser, set_race_to_white),
+                                          },
+                                          **kwargs)
 
         entity = MyEntityWithFieldOverridesFactory.deserialize(
             str_with_override="AbCd",
             int_with_override="3",
+            enum_with_override=EnumParser(raw_text="BLACK", enum_cls=Race, enum_overrides=EnumOverrides.empty()),
             str_no_override="AbCd",
             int_no_override="3",
+            enum_no_override=EnumParser(raw_text="BLACK", enum_cls=Race, enum_overrides=EnumOverrides.empty()),
         )
 
         self.assertEqual(
@@ -169,8 +183,10 @@ class TestEntityDeserialize(TestCase):
             MyEntityWithFieldOverrides(
                 str_with_override="abcd",
                 int_with_override=6,
+                enum_with_override=Race.WHITE,
                 str_no_override="ABCD",
-                int_no_override=3
+                int_no_override=3,
+                enum_no_override=Race.BLACK,
             )
         )
 
@@ -182,7 +198,9 @@ class TestEntityDeserialize(TestCase):
         class MyEntitySubclassFactory:
             @staticmethod
             def deserialize(**kwargs: Union[str, EnumParser]) -> MyEntitySubclass:
-                return entity_deserialize(MyEntitySubclass, converter_overrides={}, **kwargs)
+                return entity_deserialize(MyEntitySubclass,
+                                          converter_overrides={},
+                                          **kwargs)
 
         subclass_entity = MyEntitySubclassFactory.deserialize(subclass_field='1234')
         self.assertIsInstance(subclass_entity, MyEntitySubclass)
