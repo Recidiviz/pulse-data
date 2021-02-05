@@ -126,7 +126,8 @@ def make_iap_request(url: str, client_id: str, method='GET', **kwargs):
 
 
 def trigger_dataflow_job_from_template(project_id: str, bucket: str,
-                                       template: str, job_name: str):
+                                       template: str, job_name: str,
+                                       location: str):
     """Trigger the Dataflow job at the given template location and execute it
     with the given `job_name`."""
     credentials = GoogleCredentials.get_application_default()
@@ -142,7 +143,7 @@ def trigger_dataflow_job_from_template(project_id: str, bucket: str,
     }
 
     request = service.projects().locations().templates().create(
-        projectId=project_id, body=body, location="us-west1")
+        projectId=project_id, body=body, location=location)
     response = request.execute()
     return response
 

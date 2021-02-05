@@ -58,9 +58,7 @@ def deploy_pipeline_templates(template_yaml_path: str, project_id: str) -> None:
                 pipeline_config_yaml['historical_pipelines']
             for pipeline_yaml_dict in pipeline_config_yaml_all_pipelines:
                 argv = ['--project', project_id,
-                        '--save_as_template',
-                        # Hard-coded region until there's a need to allow deploying into separate regions
-                        '--region', 'us-west1']
+                        '--save_as_template']
 
                 pipeline_type = ''
 
