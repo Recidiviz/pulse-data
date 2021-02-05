@@ -204,18 +204,18 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
                 StatePerson(state_sentence_groups=[
                     StateSentenceGroup(state_sentence_group_id='105640',
                                        date_imposed='2/12/2004',
-                                       max_length='2Y 28D',
+                                       max_length='759',
                                        state_incarceration_sentences=[incarceration_sentence_105640]),
                     StateSentenceGroup(state_sentence_group_id='114909',
                                        date_imposed='2/27/2018',
-                                       max_length='10M 12D'),
+                                       max_length='315'),
                     StateSentenceGroup(state_sentence_group_id='113377',
                                        date_imposed='3/27/2018',
-                                       max_length='9M 10D',
+                                       max_length='285',
                                        state_incarceration_sentences=[incarceration_sentence_113377]),
                     StateSentenceGroup(state_sentence_group_id='115077',
                                        date_imposed='10/29/2018',
-                                       max_length='3Y 7M 8D'),
+                                       max_length='1316'),
                     StateSentenceGroup(state_sentence_group_id='44444',
                                        date_imposed='10/29/2018',
                                        is_life='True')
@@ -1645,14 +1645,14 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
             sentence_group=sentence_group_113377, person=person_2)
         sentence_group_105640.incarceration_sentences.append(incarceration_sentence_1)
         sentence_group_105640.date_imposed = datetime.date(year=2004, month=2, day=12)
-        sentence_group_105640.max_length_days = 758
+        sentence_group_105640.max_length_days = 759
 
         sentence_group_113377.incarceration_sentences.append(incarceration_sentence_2)
         sentence_group_113377.date_imposed = datetime.date(year=2018, month=3, day=27)
-        sentence_group_113377.max_length_days = 284
+        sentence_group_113377.max_length_days = 285
 
         sentence_group_114909.date_imposed = datetime.date(year=2018, month=2, day=27)
-        sentence_group_114909.max_length_days = 316
+        sentence_group_114909.max_length_days = 315
 
         person_4 = entities.StatePerson.new_with_defaults(state_code=_STATE_CODE)
         sentence_group_115077 = entities.StateSentenceGroup.new_with_defaults(

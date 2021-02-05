@@ -16,7 +16,7 @@
 # =============================================================================
 """Class that parses an enum value from raw text, given a provided set of enum mappings."""
 
-from typing import Generic, Optional, Type
+from typing import Generic, Optional, Type, Callable
 
 import attr
 
@@ -42,3 +42,10 @@ class EnumParser(Generic[EntityEnumT]):
                 f'Unexpected type for parsed enum. Expected type [{self.enum_cls}], found [{type(parsed)}]. '
                 f'Parsed value: [{parsed}].')
         return parsed
+
+
+def get_parser_for_enum_with_default(default: EntityEnumT) -> Callable[[EnumParser[EntityEnumT]], EntityEnumT]:
+    """Returns a converter function that parses a particular enum, but returns the default if parsing returns None."""
+    def _parse_enum_with_default(enum_parser: EnumParser[EntityEnumT]) -> EntityEnumT:
+        return enum_parser.parse() or default
+    return _parse_enum_with_default

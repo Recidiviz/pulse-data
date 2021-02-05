@@ -16,16 +16,12 @@
 # ============================================================================
 
 """Converts an ingest_info proto StatePersonRace to a persistence entity."""
-
+from recidiviz.common.constants.enum_parser import EnumParser
 from recidiviz.common.constants.person_characteristics import Race
-from recidiviz.common.str_field_utils import normalize
 from recidiviz.common.ingest_metadata import IngestMetadata
 from recidiviz.ingest.models.ingest_info_pb2 import StatePersonRace
 from recidiviz.persistence.entity.state import entities
-from recidiviz.persistence.ingest_info_converter.utils.converter_utils import \
-    fn, parse_region_code_with_override
-from recidiviz.persistence.ingest_info_converter.utils.enum_mappings import \
-    EnumMappings
+from recidiviz.persistence.entity.state.deserialize_entity_factories import StatePersonRaceFactory
 
 
 def convert(proto: StatePersonRace,
@@ -33,17 +29,11 @@ def convert(proto: StatePersonRace,
     """Converts an ingest_info proto Hold to a persistence entity."""
     new = entities.StatePersonRace.builder()
 
-    enum_fields = {
-        'race': Race,
-    }
-    enum_mappings = EnumMappings(proto, enum_fields, metadata.enum_overrides)
-
     # Enum mappings
-    new.race = enum_mappings.get(Race)
-    new.race_raw_text = fn(normalize, 'race', proto)
+    new.race = EnumParser(getattr(proto, 'race'), Race, metadata.enum_overrides)
+    new.race_raw_text = getattr(proto, 'race')
 
     # 1-to-1 mappings
-    new.state_code = parse_region_code_with_override(
-        proto, 'state_code', metadata)
+    new.state_code = metadata.region
 
-    return new.build()
+    return new.build(StatePersonRaceFactory.deserialize)

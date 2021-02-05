@@ -51,7 +51,7 @@ from recidiviz.common.constants.state.state_supervision_violation_response impor
     StateSupervisionViolationResponseDecision, StateSupervisionViolationResponseType, \
     StateSupervisionViolationResponseRevocationType
 from recidiviz.common.ingest_metadata import SystemLevel
-from recidiviz.common.str_field_utils import parse_days_from_duration_pieces
+from recidiviz.common.str_field_utils import parse_days_from_duration_pieces, safe_parse_days_from_duration_str
 from recidiviz.ingest.direct.controllers.csv_gcsfs_direct_ingest_controller import CsvGcsfsDirectIngestController
 from recidiviz.ingest.direct.direct_ingest_controller_utils import create_if_not_exists, update_overrides_from_maps
 from recidiviz.ingest.direct.regions.us_nd.us_nd_enum_helpers import incarceration_period_status_mapper
@@ -104,7 +104,7 @@ class UsNdController(CsvGcsfsDirectIngestController):
             'elite_offenderidentifier': [self._normalize_external_id_type],
             'elite_offendersentenceaggs': [
                 gen_set_is_life_sentence_hook('MAX_TERM', 'LIFE', StateSentenceGroup),
-                self._rationalize_max_length
+                self._set_sentence_group_length_max_length,
             ],
             'elite_offendersentences': [
                 gen_set_is_life_sentence_hook('SENTENCE_CALC_TYPE', 'LIFE', StateIncarcerationSentence)
@@ -355,26 +355,33 @@ class UsNdController(CsvGcsfsDirectIngestController):
                     updated_person_races.append(person_race)
             person.state_person_races = updated_person_races
 
-    @staticmethod
-    def _rationalize_max_length(_file_tag: str,
-                                row: Dict[str, str],
-                                extracted_objects: List[IngestObject],
-                                _cache: IngestObjectCache) -> None:
-        """
-        There are several values that sometimes appear in the MAX_TERM field which we need to clear out since they
-        don't actually give us valid length information.
+    @classmethod
+    def _set_sentence_group_length_max_length(cls,
+                                              _file_tag: str,
+                                              row: Dict[str, str],
+                                              extracted_objects: List[IngestObject],
+                                              _cache: IngestObjectCache) -> None:
+        """ Parses the sentence group max length from the MAX_TERM field."""
 
-        A value of 'PRI' means Prison sentence, which is redundant. It is only ever used in a small number of erroneous
-        cases long ago that had no data on max sentence length available.
+        max_term = row['MAX_TERM']
 
-        LIFE indicates a life sentence.
-        """
-        is_redundant_pri = row['MAX_TERM'] == 'PRI'
-        is_life_sentence = row['MAX_TERM'] == 'LIFE'
+        # Means Prison sentence, which is redundant. It is only ever used in a small number of erroneous cases long ago
+        # that had no data on max sentence length available.
+        is_redundant_pri = max_term == 'PRI'
+
+        # Indicates a life sentence.
+        is_life_sentence = max_term == 'LIFE'
 
         for extracted_object in extracted_objects:
-            if (is_life_sentence or is_redundant_pri) and isinstance(extracted_object, StateSentenceGroup):
-                extracted_object.__setattr__('max_length', None)
+            if isinstance(extracted_object, StateSentenceGroup):
+                if not (is_life_sentence or is_redundant_pri):
+                    max_duration_str = max_term.strip()
+                    if max_duration_str:
+                        max_length_days = safe_parse_days_from_duration_str(
+                            duration_str=max_duration_str,
+                            start_dt_str=extracted_object.date_imposed)
+                        if max_length_days is not None:
+                            extracted_object.max_length = str(max_length_days)
 
     @staticmethod
     def _normalize_external_id_type(_file_tag: str,

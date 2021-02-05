@@ -1,6 +1,5 @@
 key_mappings:
   EARLIEST_SENT_START_DATE: state_sentence_group.date_imposed
-  MAX_TERM: state_sentence_group.max_length
 
 child_key_mappings:
   PAROLE_DATE: state_incarceration_sentence.parole_eligibility_date
@@ -9,6 +8,7 @@ primary_key:
   OFFENDER_BOOK_ID: state_sentence_group.state_sentence_group_id
 
 keys_to_ignore:
+  - MAX_TERM              # Max length of term - handled manually in the controller
   - FINAL_SENT_EXP_DATE   # Provided in Sentences file on a per-Sentence basis
   - CALC_POS_REL_DATE     # Provided in Sentences file on a per-Sentence basis
   - OVR_POS_REL_DATE      # TODO(#1698) Should this live on SentenceGroup?
