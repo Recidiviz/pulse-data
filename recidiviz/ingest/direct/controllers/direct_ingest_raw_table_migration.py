@@ -20,13 +20,16 @@ import abc
 import datetime
 import os
 import re
-from typing import List, Dict, Tuple
+from typing import List, Dict, Tuple, Optional
 
 from recidiviz.utils import metadata
 
 RAW_DATA_SUBDIR = 'raw_data'
 MIGRATIONS_SUBDIR = 'migrations'
 RAW_TABLE_MIGRATION_FILE_PREFIX = 'migrations_'
+
+# The file_update_datetime that is used when a migration should run every time we see that file
+UPDATE_DATETIME_AGNOSTIC_DATETIME = datetime.datetime.max
 
 
 class RawTableMigration:
@@ -35,19 +38,24 @@ class RawTableMigration:
     def __init__(
             self,
             migrations_file: str,
-            file_update_datetimes: List[datetime.datetime],
-            filters: List[Tuple[str, str]]
+            filters: List[Tuple[str, str]],
+            update_datetime_filters: Optional[List[datetime.datetime]]
     ):
         """
         Args:
             migrations_file: The path of the file where this migration is defined, used to derive the raw table region
                 and file tag. Expected to end with /{region_code}/raw_data/migrations/migrations_{file_tag}.py.
-            file_update_datetimes: List of datetimes corresponding to the update_datetime values for the raw data rows
-                we want to change.
             filters: List of (column name, value) tuples that will be translated to filter statements in the
                 WHERE clause of the migration query.
+            update_datetime_filters: Optional list of datetimes to filter which update_datetime values the migration
+                should be run on. If null, the migration will be run on all versions of the migrations_file.
         """
-        self.file_update_datetimes = file_update_datetimes
+        if update_datetime_filters and UPDATE_DATETIME_AGNOSTIC_DATETIME in update_datetime_filters:
+            raise ValueError("To have a migration that will run on all file versions, pass in "
+                             "update_datetime_filters=None. The UPDATE_DATETIME_AGNOSTIC_DATETIME cannot be included"
+                             "in the list of update_datetime_filters.")
+
+        self.update_datetime_filters = update_datetime_filters
         self.file_tag = self._file_tag_from_migrations_file(migrations_file)
         self.filters = filters
         self._region_code_lower = self._region_code_lower_from_migrations_file(migrations_file)
@@ -59,8 +67,13 @@ class RawTableMigration:
         """Returns a map of migration queries, indexed by the update datetime for that migration. This map can be used
         to find queries to run for a given raw data file that has been just uploaded to BQ.
         """
-        return {update_datetime: self._migration_query_for_update_datetime(update_datetime)
-                for update_datetime in self.file_update_datetimes}
+        if self.update_datetime_filters:
+            return {update_datetime: self._migration_query_for_update_datetime(update_datetime)
+                    for update_datetime in self.update_datetime_filters}
+        return {
+            UPDATE_DATETIME_AGNOSTIC_DATETIME:
+                self._migration_query_for_update_datetime(UPDATE_DATETIME_AGNOSTIC_DATETIME)
+        }
 
     @classmethod
     def print_list(cls, migrations: List['RawTableMigration']) -> None:
@@ -118,39 +131,59 @@ class UpdateRawTableMigration(RawTableMigration):
     """Class for generating UPDATE migration queries for a given raw data table."""
 
     UPDATE_MIGRATION_TEMPLATE = \
-        """UPDATE `{raw_table}` SET {update_clause} WHERE update_datetime = '{update_datetime}' AND {filter_clause};"""
+        """UPDATE `{raw_table}` SET {update_clause} WHERE {filter_clause}{update_datetime_clause};"""
+
+    UPDATE_DATETIME_FILTER_TEMPLATE = """ AND update_datetime = '{update_datetime}'"""
 
     def __init__(
         self,
         migrations_file: str,
-        file_update_datetimes: List[datetime.datetime],
         filters: List[Tuple[str, str]],
-        updates: List[Tuple[str, str]]
+        updates: List[Tuple[str, str]],
+        update_datetime_filters: Optional[List[datetime.datetime]],
     ):
-        super().__init__(migrations_file, file_update_datetimes, filters)
+        super().__init__(migrations_file, filters, update_datetime_filters)
         self._validate_column_value_list('updates', updates)
         self.updates = updates
         self._update_clause = ", ".join([f"{field} = '{value}'" for field, value in updates])
 
     def _migration_query_for_update_datetime(self, file_update_datetime: datetime.datetime) -> str:
-        return self.UPDATE_MIGRATION_TEMPLATE.format(
+        if file_update_datetime != UPDATE_DATETIME_AGNOSTIC_DATETIME:
+            update_datetime_clause = self.UPDATE_DATETIME_FILTER_TEMPLATE.format(
+                update_datetime=file_update_datetime.isoformat(),
+            )
+        else:
+            update_datetime_clause = ""
+
+        query = self.UPDATE_MIGRATION_TEMPLATE.format(
             raw_table=self._raw_table,
-            update_datetime=file_update_datetime.isoformat(),
             update_clause=self._update_clause,
             filter_clause=self._filter_clause,
+            update_datetime_clause=update_datetime_clause,
         )
+
+        return query
 
 
 class DeleteFromRawTableMigration(RawTableMigration):
     """Class for generating DELETE FROM migration queries for a given raw data table."""
 
-    DELETE_FROM_MIGRATION_TEMPLATE = \
-        """DELETE FROM `{raw_table}` WHERE update_datetime = '{update_datetime}' AND {filter_clause};"""
+    DELETE_FROM_MIGRATION_TEMPLATE = """DELETE FROM `{raw_table}` WHERE {filter_clause}{update_datetime_clause};"""
+
+    UPDATE_DATETIME_FILTER_TEMPLATE = """ AND update_datetime = '{update_datetime}'"""
 
     def _migration_query_for_update_datetime(self, file_update_datetime: datetime.datetime) -> str:
-        return self.DELETE_FROM_MIGRATION_TEMPLATE.format(
-            project_id=metadata.project_id(),
+        if file_update_datetime != UPDATE_DATETIME_AGNOSTIC_DATETIME:
+            update_datetime_clause = self.UPDATE_DATETIME_FILTER_TEMPLATE.format(
+                update_datetime=file_update_datetime.isoformat(),
+            )
+        else:
+            update_datetime_clause = ""
+
+        query = self.DELETE_FROM_MIGRATION_TEMPLATE.format(
             raw_table=self._raw_table,
-            update_datetime=file_update_datetime.isoformat(),
             filter_clause=self._filter_clause,
+            update_datetime_clause=update_datetime_clause,
         )
+
+        return query

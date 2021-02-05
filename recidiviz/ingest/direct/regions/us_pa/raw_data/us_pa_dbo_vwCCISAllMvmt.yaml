@@ -1,11 +1,19 @@
 file_tag: dbo_vwCCISAllMvmt
+file_description: |-
+  Movements of individuals in contracted county facilities.
 primary_key_cols:
   - CCISMvmt_ID
 columns:
   - name: Bed_Dt
     is_datetime: True
+    description: The date the person was scheduled to arrive at the facility.
+  - name: CCISMvmt_ID
+    is_datetime: False
+    description: Unique identifier for a given movement entry. Reliably globally unique within this table.
   - name: LstMod_Dt
     is_datetime: True
+    description: The last datetime at which a given entry was updated.
   - name: Status_Dt
     is_datetime: True
+    description: The date that the movement occurred.
 encoding: ISO-8859-1

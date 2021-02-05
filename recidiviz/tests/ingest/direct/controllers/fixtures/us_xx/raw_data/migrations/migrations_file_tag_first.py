@@ -30,7 +30,7 @@ DATE_2 = datetime.datetime.fromisoformat('2020-09-21T00:00:00')
 MIGRATIONS: List[RawTableMigration] = [
     UpdateRawTableMigration(
         migrations_file=__file__,
-        file_update_datetimes=[
+        update_datetime_filters=[
             DATE_1,
             DATE_2,
         ],
@@ -39,7 +39,7 @@ MIGRATIONS: List[RawTableMigration] = [
     ),
     DeleteFromRawTableMigration(
         migrations_file=__file__,
-        file_update_datetimes=[
+        update_datetime_filters=[
             DATE_2
         ],
         filters=[(COLUMN_1a, '00000000')],

@@ -479,5 +479,6 @@ class DirectIngestRawFileImportManagerTest(unittest.TestCase):
 
         self.mock_big_query_client.run_query_async.assert_has_calls([
             mock.call(query_str=f"UPDATE `recidiviz-456.us_xx_raw_data.tagC` SET COL1 = '456' "
-                                f"WHERE update_datetime = '{file_datetime.isoformat()}' AND COL1 = '123';")
+                                f"WHERE COL1 = '123' AND update_datetime = '{file_datetime.isoformat()}';"),
+            mock.call(query_str="DELETE FROM `recidiviz-456.us_xx_raw_data.tagC` WHERE COL1 = '789';")
         ])
