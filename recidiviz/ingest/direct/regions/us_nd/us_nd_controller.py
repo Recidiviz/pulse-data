@@ -952,6 +952,8 @@ class UsNdController(CsvGcsfsDirectIngestController):
             ],
 
             StateProgramAssignmentParticipationStatus.PENDING: ['Submitted', 'Pending Coordinator'],
+            # TODO(#5725): Change mapping once we have a StateProgramAssignmentParticipationStatus.REFUSED enum value
+            StateProgramAssignmentParticipationStatus.EXTERNAL_UNKNOWN: ['Refused'],
 
             StateSupervisionCaseType.GENERAL: ['0'],
             StateSupervisionCaseType.SEX_OFFENSE: ['-1'],
