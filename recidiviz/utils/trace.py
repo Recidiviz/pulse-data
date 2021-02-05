@@ -19,7 +19,7 @@
 from contextvars import ContextVar
 from functools import wraps
 import time
-from typing import Callable, Dict, List
+from typing import Any, Callable, Dict, List
 
 from flask import request
 from opencensus.stats import measure, view, aggregation
@@ -40,6 +40,7 @@ monitoring.register_views([duration_distribution_view])
 # detect recursion.
 stack: ContextVar[List[int]] = ContextVar("stack", default=[])
 
+
 def span(func: Callable) -> Callable:
     """Creates a new span for this function in the trace.
 
@@ -48,7 +49,7 @@ def span(func: Callable) -> Callable:
     """
 
     @wraps(func)
-    def run_inside_new_span(*args, **kwargs):
+    def run_inside_new_span(*args: Any, **kwargs: Any) -> None:
         tracer: tracer_module.Tracer = execution_context.get_opencensus_tracer()
         with tracer.span(name=func.__qualname__) as new_span:
             new_span.add_attribute('recidiviz.function.module', func.__module__)
@@ -71,8 +72,10 @@ def span(func: Callable) -> Callable:
 
     return run_inside_new_span
 
+
 class CompositeSampler(samplers.Sampler):
     """Dispatches to a sampler based on the path of the currently active flask request, if any."""
+
     def __init__(
         self, path_prefix_to_sampler: Dict[str, samplers.Sampler], default_sampler: samplers.Sampler
     ) -> None:
