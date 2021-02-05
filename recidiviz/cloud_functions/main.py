@@ -241,8 +241,13 @@ def start_and_monitor_calculation_pipeline(_event, _context) -> None:
         logging.error('No on-completion topic set, returning.')
         return
 
+    region = os.environ.get('REGION')
+    if not region:
+        logging.error('No region set, returning.')
+        return
+
     response = trigger_dataflow_job_from_template(project_id, bucket,
-                                                  template_name, job_name)
+                                                  template_name, job_name, region)
 
     logging.info("The response to triggering the Dataflow job is: %s", response)
 

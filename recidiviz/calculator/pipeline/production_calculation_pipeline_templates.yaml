@@ -87,10 +87,14 @@ historical_pipelines:
     state_code: US_ND
     calculation_month_count: 240
     metric_types: SUPERVISION_POPULATION
+    # This region value must stay in-sync with the REGION arg in the
+    # cloud-functions.tf config for this pipeline
     region: us-central1
   - pipeline: incarceration
     job_name: us-nd-incarceration-population-240
     state_code: US_ND
     calculation_month_count: 240
     metric_types: INCARCERATION_POPULATION
+    # This region value must stay in-sync with the REGION arg in the
+    # cloud-functions.tf config for this pipeline
     region: us-west3
