@@ -216,11 +216,18 @@ INCARCERATION_PERIOD_RELEASE_REASON_TO_STR_MAPPINGS: Dict[StateIncarcerationPeri
     ],
     StateIncarcerationPeriodReleaseReason.TRANSFER: [
         # CCIS CODES
+        # TODO(#5708): These are admission codes that need to be removed once we successfully implement a filter of IN
+        #  edges as the release edge of a CCIS period
+        'RTRS',
+        'TRRC',
+        'INRS',
         # Transfer to DPW: This is used a status change indicating the person's stay in the facility is now being
         # funded by the DOC
         'DPWT',
         # TODO(#2002): Count people on temporary medical transfers in the DOC population
         'HOSP',  # Hospital: Temporary medical transfer
+        # Program Change: Transfer between programs
+        'PRCH',
         # Transfer from Group Home: Although this sounds like an admission, this is a transfer out to another kind of
         # facility
         'TRGH',
