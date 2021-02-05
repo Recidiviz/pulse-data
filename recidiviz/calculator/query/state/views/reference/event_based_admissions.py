@@ -36,7 +36,8 @@ EVENT_BASED_ADMISSIONS_QUERY_TEMPLATE = \
     /*{description}*/
     SELECT
       person_id, state_code, year, month,
-      district, facility,
+      IFNULL(district, 'EXTERNAL_UNKNOWN') as district,
+      facility,
       admission_reason, admission_date
     FROM `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_admission_metrics_materialized`,
     {district_dimension}
