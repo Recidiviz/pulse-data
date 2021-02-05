@@ -73,7 +73,7 @@ def get_bool_param_value(arg_key: str, args: MultiDict, default: bool) -> bool:
     return str_to_bool(str_value)
 
 
-def str_to_bool(bool_str: str, arg_key=None) -> bool:
+def str_to_bool(bool_str: str, arg_key: Optional[str] = None) -> bool:
     bool_str_lower = bool_str.lower()
     if bool_str_lower == 'true':
         return True
