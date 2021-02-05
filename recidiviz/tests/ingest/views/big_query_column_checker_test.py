@@ -20,7 +20,7 @@ from unittest import TestCase, mock
 from google.cloud import bigquery
 
 from recidiviz.ingest.views.metadata_helpers import (
-    BigQueryTableColumnChecker,
+    BigQueryTableChecker,
 )
 
 
@@ -35,7 +35,7 @@ class TestBigQueryColumnChecker(TestCase):
         self.mock_project_id_fn = self.metadata_patcher.start()
         self.mock_project_id_fn.return_value = 'test-project'
 
-        self.checker = BigQueryTableColumnChecker('fake-dataset', 'fake-table')
+        self.checker = BigQueryTableChecker('fake-dataset', 'fake-table')
 
         self.mock_table = mock.MagicMock()
         self.mock_table.schema = [

@@ -20,7 +20,7 @@ import attr
 
 from mock import patch
 
-from recidiviz.ingest.direct.controllers.direct_ingest_big_query_view_types import \
+from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import \
     DirectIngestRawDataTableLatestView, RAW_DATA_LATEST_VIEW_QUERY_TEMPLATE, \
     DirectIngestRawDataTableUpToDateView, RAW_DATA_UP_TO_DATE_VIEW_QUERY_TEMPLATE, DirectIngestPreProcessedIngestView, \
     RAW_DATA_LATEST_HISTORICAL_FILE_VIEW_QUERY_TEMPLATE, RAW_DATA_UP_TO_DATE_HISTORICAL_FILE_VIEW_QUERY_TEMPLATE, \
@@ -64,7 +64,8 @@ class DirectIngestBigQueryViewTypesTest(unittest.TestCase):
                 separator='@',
                 ignore_quotes=False,
                 always_historical_export=False,
-            )
+            ),
+            dataset_overrides=None
         )
 
         self.assertEqual(self.PROJECT_ID, view.project)
@@ -99,7 +100,8 @@ class DirectIngestBigQueryViewTypesTest(unittest.TestCase):
                 separator='@',
                 ignore_quotes=False,
                 always_historical_export=True,
-            )
+            ),
+            dataset_overrides=None
         )
 
         self.assertEqual(self.PROJECT_ID, view.project)

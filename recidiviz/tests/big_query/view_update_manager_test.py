@@ -28,7 +28,7 @@ from recidiviz.big_query import view_update_manager
 from recidiviz.big_query.big_query_view import BigQueryView, SimpleBigQueryViewBuilder
 from recidiviz.big_query.view_update_manager import BigQueryViewNamespace, VIEW_BUILDERS_BY_NAMESPACE, \
     VIEW_SOURCE_TABLE_DATASETS
-from recidiviz.ingest.views.metadata_helpers import BigQueryTableColumnChecker
+from recidiviz.ingest.views.metadata_helpers import BigQueryTableChecker
 
 _PROJECT_ID = 'fake-recidiviz-project'
 _DATASET_NAME = 'my_views_dataset'
@@ -222,8 +222,10 @@ class ViewManagerTest(unittest.TestCase):
                                                                 any_order=True)
 
     def test_no_duplicate_views_in_update_list(self) -> None:
-        with patch.object(BigQueryTableColumnChecker, '_table_has_column') as mock_table_has_column:
+        with patch.object(BigQueryTableChecker, '_table_has_column') as mock_table_has_column,\
+                patch.object(BigQueryTableChecker, '_table_exists') as mock_table_exists:
             mock_table_has_column.return_value = True
+            mock_table_exists.return_value = True
             all_views = []
             for view_builder_list in VIEW_BUILDERS_BY_NAMESPACE.values():
                 for view_builder in view_builder_list:

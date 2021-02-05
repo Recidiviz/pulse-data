@@ -26,7 +26,7 @@ from recidiviz.big_query.big_query_view_collector import BigQueryViewCollector
 from recidiviz.ingest.views.dataset_config import VIEWS_DATASET
 from recidiviz.ingest.views.metadata_helpers import (
     METADATA_EXCLUDED_PROPERTIES,
-    BigQueryTableColumnChecker,
+    BigQueryTableChecker,
     get_enum_property_names,
     get_non_enum_property_names,
 )
@@ -85,7 +85,7 @@ STATE_PERSON_TABLE_NAME = 'state_person'
 
 class StatePersonBigQueryViewCollector(BigQueryViewCollector[SimpleBigQueryViewBuilder]):
     def collect_view_builders(self) -> List[SimpleBigQueryViewBuilder]:
-        table_column_checker = BigQueryTableColumnChecker('state', STATE_PERSON_TABLE_NAME)
+        table_column_checker = BigQueryTableChecker('state', STATE_PERSON_TABLE_NAME)
         entity = get_state_database_entity_with_name(STATE_PERSON_ENTITY_NAME)
         builders = [
             SimpleBigQueryViewBuilder(

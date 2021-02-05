@@ -19,7 +19,7 @@
    TODO(#5057): Update description once we ingest contact codes 2 - 6.
    NOTE: This is only capturing contacts logged by the supervising officer."""
 
-from recidiviz.ingest.direct.controllers.direct_ingest_big_query_view_types import \
+from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import \
     DirectIngestPreProcessedIngestViewBuilder
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override

@@ -18,7 +18,7 @@
 (SCIs), extracted from multiple PADOC files.
 """
 
-from recidiviz.ingest.direct.controllers.direct_ingest_big_query_view_types import \
+from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import \
     DirectIngestPreProcessedIngestViewBuilder
 from recidiviz.ingest.direct.regions.us_pa.ingest_views.templates_person_external_ids import \
     MASTER_STATE_IDS_FRAGMENT_V2

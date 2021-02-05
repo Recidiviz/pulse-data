@@ -174,7 +174,8 @@ class DirectIngestRawDataTableBigQueryView(BigQueryView):
                  region_code: str,
                  view_id: str,
                  view_query_template: str,
-                 raw_file_config: DirectIngestRawFileConfig):
+                 raw_file_config: DirectIngestRawFileConfig,
+                 dataset_overrides: Optional[Dict[str, str]] = None,):
         if not raw_file_config.primary_key_cols:
             raise ValueError(f'Empty primary key list in raw file config with tag [{raw_file_config.file_tag}] during '
                              f'construction of DirectIngestRawDataTableBigQueryView')
@@ -192,7 +193,8 @@ class DirectIngestRawDataTableBigQueryView(BigQueryView):
                          raw_table_primary_key_str=raw_file_config.primary_key_str,
                          except_clause=except_clause,
                          datetime_cols_clause=datetime_cols_clause,
-                         supplemental_order_by_clause=supplemental_order_by_clause)
+                         supplemental_order_by_clause=supplemental_order_by_clause,
+                         dataset_overrides=dataset_overrides)
 
     @staticmethod
     def _supplemental_order_by_clause_for_config(raw_file_config: DirectIngestRawFileConfig) -> str:
@@ -233,7 +235,8 @@ class DirectIngestRawDataTableLatestView(DirectIngestRawDataTableBigQueryView):
                  *,
                  project_id: str = None,
                  region_code: str,
-                 raw_file_config: DirectIngestRawFileConfig):
+                 raw_file_config: DirectIngestRawFileConfig,
+                 dataset_overrides: Optional[Dict[str, str]]):
         view_id = f'{raw_file_config.file_tag}_latest'
         view_query_template = RAW_DATA_LATEST_HISTORICAL_FILE_VIEW_QUERY_TEMPLATE \
             if raw_file_config.always_historical_export else RAW_DATA_LATEST_VIEW_QUERY_TEMPLATE
@@ -241,7 +244,8 @@ class DirectIngestRawDataTableLatestView(DirectIngestRawDataTableBigQueryView):
                          region_code=region_code,
                          view_id=view_id,
                          view_query_template=view_query_template,
-                         raw_file_config=raw_file_config)
+                         raw_file_config=raw_file_config,
+                         dataset_overrides=dataset_overrides)
 
 
 # NOTE: BigQuery does not support parametrized queries for views, so we can't actually upload this as a view until this
@@ -710,7 +714,8 @@ class DirectIngestPreProcessedIngestView(BigQueryView):
             return DirectIngestRawDataTableUpToDateView(region_code=region_code,
                                                         raw_file_config=raw_table_config).view_query
         return DirectIngestRawDataTableLatestView(region_code=region_code,
-                                                  raw_file_config=raw_table_config).select_query_uninjected_project_id
+                                                  raw_file_config=raw_table_config,
+                                                  dataset_overrides=None).select_query_uninjected_project_id
 
     @staticmethod
     def _validate_order_by(ingest_view_name: str, view_query_template: str) -> None:
@@ -786,9 +791,9 @@ class DirectIngestPreProcessedIngestViewBuilder(BigQueryViewBuilder[DirectIngest
         return self.ingest_view_name
 
     # pylint: disable=unused-argument
-    def build(self,
-              *,
-              dataset_overrides: Optional[Dict[str, str]] = None) -> DirectIngestPreProcessedIngestView:
+    def _build(self,
+               *,
+               dataset_overrides: Optional[Dict[str, str]] = None) -> DirectIngestPreProcessedIngestView:
         """Builds an instance of a DirectIngestPreProcessedIngestView with the provided args."""
         return DirectIngestPreProcessedIngestView(
             ingest_view_name=self.ingest_view_name,
@@ -815,3 +820,6 @@ class DirectIngestPreProcessedIngestViewBuilder(BigQueryViewBuilder[DirectIngest
                 raw_table_view_type=RawTableViewType.LATEST,
             )
         ))
+
+    def should_build(self) -> bool:
+        return True

@@ -34,7 +34,7 @@ from recidiviz.big_query.big_query_client import BigQueryClientImpl, BigQueryCli
 from recidiviz.big_query.big_query_view import (
     BigQueryView,
     BigQueryViewBuilder,
-    SimpleBigQueryViewBuilderShouldNotBuildError,
+    BigQueryViewBuilderShouldNotBuildError,
 )
 from recidiviz.big_query.big_query_view_dag_walker import BigQueryViewDagWalker
 from recidiviz.calculator.query.county.dataset_config import COUNTY_BASE_DATASET
@@ -47,6 +47,8 @@ from recidiviz.calculator.query.state.dataset_config import STATE_BASE_DATASET, 
     DATAFLOW_METRICS_DATASET, COVID_DASHBOARD_REFERENCE_DATASET, POPULATION_PROJECTION_OUTPUT_DATASET
 from recidiviz.calculator.query.state.view_config import VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE as STATE_VIEW_BUILDERS
 from recidiviz.case_triage.views.view_config import VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE as CASE_TRIAGE_VIEW_BUILDERS
+from recidiviz.common.constants.states import StateCode
+from recidiviz.ingest.direct.views.view_config import VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE as DIRECT_INGEST_VIEW_BUILDERS
 from recidiviz.ingest.views.view_config import VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE as INGEST_METADATA_VIEW_BUILDERS
 from recidiviz.utils import monitoring
 from recidiviz.utils.params import str_to_bool
@@ -75,19 +77,21 @@ class BigQueryViewNamespace(Enum):
     VALIDATION = 'validation'
     CASE_TRIAGE = 'case_triage'
     INGEST_METADATA = 'ingest_metadata'
+    DIRECT_INGEST = 'direct_ingest'
 
 
 VIEW_BUILDERS_BY_NAMESPACE: Dict[BigQueryViewNamespace, Sequence[BigQueryViewBuilder]] = {
     BigQueryViewNamespace.COUNTY: COUNTY_VIEW_BUILDERS,
     BigQueryViewNamespace.JUSTICE_COUNTS: JUSTICE_COUNTS_VIEW_BUILDERS,
+    BigQueryViewNamespace.DIRECT_INGEST: DIRECT_INGEST_VIEW_BUILDERS,
     BigQueryViewNamespace.STATE: STATE_VIEW_BUILDERS,
     BigQueryViewNamespace.VALIDATION: VALIDATION_VIEW_BUILDERS,
     BigQueryViewNamespace.CASE_TRIAGE: CASE_TRIAGE_VIEW_BUILDERS,
     BigQueryViewNamespace.INGEST_METADATA: INGEST_METADATA_VIEW_BUILDERS,
 }
 
-# These datasets should only contain tables that provide the source data for our view graph.
-VIEW_SOURCE_TABLE_DATASETS = {
+RAW_TABLE_DATASETS = {f'{state_code.value.lower()}_raw_data' for state_code in StateCode}
+OTHER_SOURCE_TABLE_DATASETS = {
     COUNTY_BASE_DATASET,
     COVID_DASHBOARD_REFERENCE_DATASET,
     DATAFLOW_METRICS_DATASET,
@@ -99,6 +103,8 @@ VIEW_SOURCE_TABLE_DATASETS = {
     VERA_DATASET
 }
 
+# These datasets should only contain tables that provide the source data for our view graph.
+VIEW_SOURCE_TABLE_DATASETS = OTHER_SOURCE_TABLE_DATASETS | RAW_TABLE_DATASETS
 
 # When creating temporary datasets with prefixed names, set the default table expiration to 24 hours
 TEMP_DATASET_DEFAULT_TABLE_EXPIRATION_MS = 24 * 60 * 60 * 1000
@@ -136,7 +142,7 @@ def create_dataset_and_update_views_for_view_builders(
 
             try:
                 view = view_builder.build(dataset_overrides=dataset_overrides)
-            except SimpleBigQueryViewBuilderShouldNotBuildError:
+            except BigQueryViewBuilderShouldNotBuildError:
                 logging.warning('Condition failed for view builder %s in dataset %s. Continuing without it.',
                                 view_builder.view_id,
                                 view_builder.dataset_id)

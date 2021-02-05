@@ -17,7 +17,7 @@
 """Implements tests for conditions on SimpleBigQueryViewBuilder."""
 from unittest import TestCase, mock
 
-from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder, SimpleBigQueryViewBuilderShouldNotBuildError
+from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder, BigQueryViewBuilderShouldNotBuildError
 
 
 class TestSimpleBigQueryViewBuilderConditions(TestCase):
@@ -38,7 +38,7 @@ class TestSimpleBigQueryViewBuilderConditions(TestCase):
             view_query_template='SELECT NULL LIMIT 0',
             should_build_predicate=(lambda: False)
         )
-        with self.assertRaises(SimpleBigQueryViewBuilderShouldNotBuildError):
+        with self.assertRaises(BigQueryViewBuilderShouldNotBuildError):
             builder.build()
 
     def test_no_raise_when_condition_succeeds(self) -> None:
