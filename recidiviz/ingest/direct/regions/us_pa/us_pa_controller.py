@@ -25,6 +25,7 @@ from typing import List, Dict, Optional, Callable
 from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
 from recidiviz.common.constants.enum_overrides import EnumOverrides, EnumMapper, EnumIgnorePredicate
 from recidiviz.common.constants.person_characteristics import Race, Gender, Ethnicity
+from recidiviz.common.constants.standard_enum_overrides import get_standard_enum_overrides
 from recidiviz.common.constants.state.external_id_types import US_PA_SID, US_PA_CONTROL, US_PA_PBPP
 from recidiviz.common.constants.state.shared_enums import StateCustodialAuthority
 from recidiviz.common.constants.state.state_agent import StateAgentType
@@ -432,6 +433,18 @@ class UsPaController(CsvGcsfsDirectIngestController):
             '42',  # Recommitment to prison for convictions of new crimes and technical parole
                    # violations while under supervision
         ],
+        StateSupervisionLevel.MAXIMUM: [
+            'MA',  # Maximum (shorter)
+            'MAX',  # Maximum
+        ],
+        StateSupervisionLevel.MEDIUM: [
+            'ME',  # Medium (shorter)
+            'MED',  # Medium
+        ],
+        StateSupervisionLevel.MINIMUM: [
+            'MI',  # Minimum (shorter)
+            'MIN',  # Minimum
+        ],
         StateSupervisionLevel.ELECTRONIC_MONITORING_ONLY: [
             'MON',  # Monitoring
         ],
@@ -444,6 +457,31 @@ class UsPaController(CsvGcsfsDirectIngestController):
         ],
         StateSupervisionLevel.INTERNAL_UNKNOWN: [
             'SPC',  # Special Circumstance
+            'NOT',  # <Unclear what this is>
+
+            # These are very old status codes that only show up in history table (dbo_Hist_Release), largely in records
+            # from the 80s.
+            '00',
+            '50',
+            '51',
+            '52',
+            '53',
+            '54',
+            '55',
+            '56',
+            '57',
+            '58',
+            '59',
+            '5A',
+            '5B',
+            '5C',
+            '5D',
+            '5E',
+            '5F',
+            '5G',
+            '5H',
+            '5J',
+            '5K',
         ],
         StateSupervisionViolationType.ABSCONDED: [
             'H06',  # Failure to report upon release
@@ -682,11 +720,12 @@ class UsPaController(CsvGcsfsDirectIngestController):
 
         return file_tags
 
-    def generate_enum_overrides(self) -> EnumOverrides:
+    @classmethod
+    def generate_enum_overrides(cls) -> EnumOverrides:
         """Provides Pennsylvania-specific overrides for enum mappings."""
-        base_overrides = super().get_enum_overrides()
+        base_overrides = get_standard_enum_overrides()
         return update_overrides_from_maps(
-            base_overrides, self.ENUM_OVERRIDES, self.ENUM_IGNORES, self.ENUM_MAPPERS, self.ENUM_IGNORE_PREDICATES)
+            base_overrides, cls.ENUM_OVERRIDES, cls.ENUM_IGNORES, cls.ENUM_MAPPERS, cls.ENUM_IGNORE_PREDICATES)
 
     def get_enum_overrides(self) -> EnumOverrides:
         return self.enum_overrides
