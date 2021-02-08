@@ -31,6 +31,7 @@ from recidiviz.ingest.models.ingest_info import Arrest, Bond, Booking, Charge, \
 from recidiviz.persistence.database.base_schema import JailsBase
 from recidiviz.persistence.persistence import OVERALL_THRESHOLD, ENUM_THRESHOLD, ENTITY_MATCHING_THRESHOLD, \
     DATABASE_INVARIANT_THRESHOLD
+from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.tests.ingest.direct.direct_ingest_util import \
     path_for_fixture_file, process_task_queues
 from recidiviz.tests.ingest.direct import fixture_util
@@ -82,7 +83,7 @@ class UsTxBrazosControllerTest(IndividualIngestTest,
 
         self.entity_matching_error_threshold_patcher.stop()
 
-    def testParse(self):
+    def testParse(self) -> None:
         expected_info = IngestInfo(
             people=[
                 Person(
@@ -95,8 +96,7 @@ class UsTxBrazosControllerTest(IndividualIngestTest,
                         Booking(
                             booking_id='321 (Individual ID: 12345)',
                             admission_date='3/31/2019 12:00:00 AM',
-                            custody_status=
-                            'L. Pretrial State Jail Felons (SJF)',
+                            custody_status='L. Pretrial State Jail Felons (SJF)',
                             facility='BCDC',
                             arrest=Arrest(
                                 agency="College Station Police Department"),
@@ -179,8 +179,7 @@ class UsTxBrazosControllerTest(IndividualIngestTest,
                         Booking(
                             booking_id='432 (Individual ID: 23456)',
                             admission_date='5/14/2018 12:00:00 AM',
-                            custody_status=
-                            'L. Pretrial State Jail Felons (SJF)',
+                            custody_status='L. Pretrial State Jail Felons (SJF)',
                             facility='BCDC',
                             arrest=Arrest(
                                 agency="Unlisted"),
@@ -222,7 +221,7 @@ class UsTxBrazosControllerTest(IndividualIngestTest,
 
         self.validate_ingest(ingest_info, expected_info, metadata)
 
-    def test_run_full_ingest_all_files(self):
+    def test_run_full_ingest_all_files(self) -> None:
         file_tags = sorted(self.controller.get_file_tag_rank_list())
         file_path = path_for_fixture_file(
             self.controller, 'VERABrazosJailData_01012019_115703.csv', False)

@@ -51,12 +51,12 @@ def _create_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def _configure_logging(level) -> None:
+def _configure_logging(level: int) -> None:
     root = logging.getLogger()
     root.setLevel(level)
 
 
-def _cleanup_run(tmp_postgres_db_dir, clean_up_db):
+def _cleanup_run(tmp_postgres_db_dir: str, clean_up_db: bool) -> None:
     if clean_up_db:
         local_postgres_helpers.stop_and_clear_on_disk_postgresql_database(tmp_postgres_db_dir)
         logging.info("Db automatically cleaned up")
@@ -73,7 +73,6 @@ if __name__ == '__main__':
 
     _configure_logging(arguments.log)
 
-    recidiviz.called_from_test = True
     tmp_db_dir = local_postgres_helpers.start_on_disk_postgresql_database()
     local_postgres_helpers.use_on_disk_postgresql_database(JusticeCountsBase)
 

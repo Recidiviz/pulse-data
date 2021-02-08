@@ -41,7 +41,7 @@ class TestUsMaMiddlesexDirectIngestParser(IndividualIngestTest, TestCase):
 
     FIXTURE_PATH_PREFIX = 'direct/regions/us_ma_middlesex'
 
-    def testParse(self):
+    def testParse(self) -> None:
         region = regions.get_region('us_ma_middlesex', is_direct_ingest=True)
         controller = build_controller_for_tests(UsMaMiddlesexController,
                                                 run_async=False)
@@ -51,6 +51,9 @@ class TestUsMaMiddlesexDirectIngestParser(IndividualIngestTest, TestCase):
             region.jurisdiction_id,
             _FAKE_START_TIME,
             controller.get_enum_overrides())
+
+        if not isinstance(_ROSTER_JSON, list):
+            raise ValueError('Expected roster to be a list of dicts')
 
         ingest_info = UsMaMiddlesexParser().parse(_ROSTER_JSON)
 

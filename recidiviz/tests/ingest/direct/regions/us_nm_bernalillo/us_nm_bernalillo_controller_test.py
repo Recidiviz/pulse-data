@@ -34,6 +34,7 @@ from recidiviz.ingest.models.ingest_info import Arrest, Bond, Booking, Charge, \
 from recidiviz.persistence.database.base_schema import JailsBase
 from recidiviz.persistence.persistence import OVERALL_THRESHOLD, ENUM_THRESHOLD, ENTITY_MATCHING_THRESHOLD, \
     DATABASE_INVARIANT_THRESHOLD
+from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.tests.ingest.direct.direct_ingest_util import \
     path_for_fixture_file, process_task_queues
 from recidiviz.tests.ingest.direct import fixture_util
@@ -85,7 +86,7 @@ class UsNmBernalilloControllerTest(IndividualIngestTest,
 
         self.entity_matching_error_threshold_patcher.stop()
 
-    def testParse(self):
+    def testParse(self) -> None:
         expected_info = IngestInfo(
             people=[
                 Person(
@@ -231,7 +232,7 @@ class UsNmBernalilloControllerTest(IndividualIngestTest,
 
         self.validate_ingest(ingest_info, expected_info, metadata)
 
-    def testBondTypes(self):
+    def testBondTypes(self) -> None:
         bond_types = [
             '10% CASH/SURETY',
             '10% TO COURT',
@@ -298,7 +299,7 @@ class UsNmBernalilloControllerTest(IndividualIngestTest,
             self.assertTrue(BondType.can_parse(
                 bond_type, self.controller.get_enum_overrides()))
 
-    def testParseColFail(self):
+    def testParseColFail(self) -> None:
         expected_info = IngestInfo(
             people=[
                 Person(
@@ -336,7 +337,7 @@ class UsNmBernalilloControllerTest(IndividualIngestTest,
                                      'MDC_VERA_20200303_02')
         assert str(e.value) == "Found more columns than expected in charge row"
 
-    def test_run_full_ingest_all_files(self):
+    def test_run_full_ingest_all_files(self) -> None:
         file_tags = sorted(self.controller.get_file_tag_rank_list())
         file_path = path_for_fixture_file(
             self.controller, 'MDC_VERA_20200303_01.csv', False)

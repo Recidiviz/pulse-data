@@ -10,8 +10,7 @@ mock = "*"
 pytest = "*"
 pylint = "*"
 pytest-cov = "*"
-# TODO(#5596): Un-pin mypy
-mypy = "<0.800"
+mypy = "*"
 coveralls = "*"
 apache-beam = {extras = ["gcp", "test"],version = "*"}
 freezegun = "*"

@@ -39,7 +39,7 @@ def attr_to_json_dict(attr_obj: attr.Attribute) -> Dict[str, Any]:
     and __classname__ fields to reconstruct the object using the same Converter
     used to unstructure it here."""
     converter = cattr.Converter()
-    converter.register_unstructure_hook(
+    converter.register_unstructure_hook( # type: ignore[misc]
         datetime.datetime,
         lambda d: datetime_to_serializable(d))
     attr_dict = cattr.unstructure(attr_obj)

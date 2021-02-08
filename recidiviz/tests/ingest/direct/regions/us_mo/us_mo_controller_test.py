@@ -3755,7 +3755,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
         conversion from 'NA' to NaN that Pandas produced when it read the raw
         file in to be split.
         """
-        self.controller.file_split_line_limit = 1
+        self.controller.ingest_file_split_line_limit = 1
 
         # SQL Preprocessing View
         self._run_ingest_job_for_filename(

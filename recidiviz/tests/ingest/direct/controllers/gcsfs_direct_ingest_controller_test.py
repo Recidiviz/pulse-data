@@ -47,15 +47,11 @@ from recidiviz.ingest.direct.errors import DirectIngestError
 from recidiviz.persistence.database.base_schema import OperationsBase
 from recidiviz.persistence.database.schema.operations import schema
 from recidiviz.persistence.database.session_factory import SessionFactory
-from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.tests.ingest.direct.direct_ingest_util import \
     build_gcsfs_controller_for_tests, add_paths_with_tags_and_process, \
     path_for_fixture_file, \
     run_task_queues_to_empty, check_all_paths_processed, FakeDirectIngestRawFileImportManager, add_paths_with_tags
 from recidiviz.tests.ingest.direct.fake_direct_ingest_big_query_client import FakeDirectIngestBigQueryClient
-from recidiviz.tests.ingest.direct. \
-    fake_synchronous_direct_ingest_cloud_task_manager import \
-    FakeSynchronousDirectIngestCloudTaskManager
 from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.tests.ingest.direct.fake_synchronous_direct_ingest_cloud_task_manager import \
     FakeSynchronousDirectIngestCloudTaskManager
@@ -256,7 +252,7 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
         # TODO(#3020): Update this to better test that metadata for split files gets properly registered
 
     def run_async_file_order_test_for_controller_cls(
-            self, controller_cls: Type[CsvGcsfsDirectIngestControllerT]) -> CsvGcsfsDirectIngestControllerT:
+            self, controller_cls: Type[CsvGcsfsDirectIngestControllerT]) -> BaseTestCsvGcsfsDirectIngestController:
         """Writes all expected files to the mock fs, then kicks the controller
         and ensures that all jobs are run to completion in the proper order."""
 
@@ -269,13 +265,31 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
 
         add_paths_with_tags_and_process(self, controller, file_tags)
 
-        self.assertIsInstance(controller,
-                              BaseTestCsvGcsfsDirectIngestController)
+        if not isinstance(controller,
+                          BaseTestCsvGcsfsDirectIngestController):
+            self.fail('Controller is not of type BaseTestCsvGcsfsDirectIngestController.')
         self.assertFalse(controller.has_temp_paths_in_disk())
 
         self.validate_file_metadata(controller)
 
         return controller
+
+    def check_tags(self, controller: GcsfsDirectIngestController, tags: List[str]) -> None:
+        self.assertIsInstance(controller.ingest_view_export_manager.big_query_client, FakeDirectIngestBigQueryClient)
+        if not isinstance(controller.ingest_view_export_manager.big_query_client, FakeDirectIngestBigQueryClient):
+            self.fail('Expected FakeDirectIngestBigQueryClient but did not find one.')
+        self.assertCountEqual(tags, controller.ingest_view_export_manager.big_query_client.exported_file_tags)
+
+    def get_fake_task_manager(self, controller: GcsfsDirectIngestController)\
+            -> FakeSynchronousDirectIngestCloudTaskManager:
+        if not isinstance(controller.cloud_task_manager, FakeSynchronousDirectIngestCloudTaskManager):
+            self.fail("Expected FakeSynchronousDirectIngestCouldManager")
+        return controller.cloud_task_manager
+
+    def check_imported_path_count(self, controller: GcsfsDirectIngestController, expected_count: int) -> None:
+        if not isinstance(controller.raw_file_import_manager, FakeDirectIngestRawFileImportManager):
+            self.fail(f'Unexpected type for raw_file_import_manager: {controller.raw_file_import_manager}')
+        self.assertEqual(expected_count, len(controller.raw_file_import_manager.imported_paths))
 
     @patch("recidiviz.utils.regions.get_region",
            Mock(return_value=TEST_STATE_REGION))
@@ -289,26 +303,17 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
         controller = self.run_async_file_order_test_for_controller_cls(
             StateTestGcsfsDirectIngestController)
 
-        if not isinstance(controller.raw_file_import_manager, FakeDirectIngestRawFileImportManager):
-            self.fail(f'Unexpected type for raw_file_import_manager: {controller.raw_file_import_manager}')
-        self.assertEqual(3, len(controller.raw_file_import_manager.imported_paths))
+        self.check_imported_path_count(controller, 3)
 
-        if not isinstance(controller.ingest_view_export_manager.big_query_client, FakeDirectIngestBigQueryClient):
-            self.fail(f'Unexpected type for big_query_client: {controller.ingest_view_export_manager.big_query_client}')
-        self.assertCountEqual([], controller.ingest_view_export_manager.big_query_client.exported_file_tags)
+        self.check_tags(controller, [])
 
     @patch("recidiviz.utils.regions.get_region", Mock(return_value=TEST_SQL_PRE_PROCESSING_LAUNCHED_REGION))
     def test_state_runs_files_in_order_sql_preprocessing_fully_launched(self) -> None:
         controller = self.run_async_file_order_test_for_controller_cls(StateTestGcsfsDirectIngestController)
 
-        if not isinstance(controller.raw_file_import_manager, FakeDirectIngestRawFileImportManager):
-            self.fail(f'Unexpected type for raw_file_import_manager: {controller.raw_file_import_manager}')
-        self.assertEqual(3, len(controller.raw_file_import_manager.imported_paths))
+        self.check_imported_path_count(controller, 3)
 
-        if not isinstance(controller.ingest_view_export_manager.big_query_client, FakeDirectIngestBigQueryClient):
-            self.fail(f'Unexpected type for big_query_client: {controller.ingest_view_export_manager.big_query_client}')
-        self.assertCountEqual(controller.get_file_tag_rank_list(),
-                              controller.ingest_view_export_manager.big_query_client.exported_file_tags)
+        self.check_tags(controller, controller.get_file_tag_rank_list())
 
     @patch("recidiviz.utils.regions.get_region",
            Mock(return_value=TEST_COUNTY_REGION))
@@ -330,9 +335,14 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
         add_paths_with_tags_and_process(
             self, controller, file_tags, unexpected_tags)
 
+        if not isinstance(controller.fs.gcs_file_system, FakeGCSFileSystem):
+            raise ValueError(f"Controller fs must have type "
+                             f"FakeGCSFileSystem. Found instead "
+                             f"type [{type(controller.fs.gcs_file_system)}]")
         split_paths = {path
                        for path in controller.fs.gcs_file_system.all_paths
-                       if controller.fs.is_split_file(path)}
+                       if isinstance(path, GcsfsFilePath) and
+                       controller.fs.is_split_file(path)}
         self.assertFalse(split_paths)
         self.validate_file_metadata(controller)
 
@@ -349,15 +359,18 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
         add_paths_with_tags_and_process(
             self, controller, file_tags, unexpected_tags)
 
+        if not isinstance(controller.fs.gcs_file_system, FakeGCSFileSystem):
+            raise ValueError(f"Controller fs must have type "
+                             f"FakeGCSFileSystem. Found instead "
+                             f"type [{type(controller.fs.gcs_file_system)}]")
         split_paths = {path
                        for path in controller.fs.gcs_file_system.all_paths
-                       if controller.fs.is_split_file(path)}
+                       if isinstance(path, GcsfsFilePath) and
+                       controller.fs.is_split_file(path)}
         self.assertFalse(split_paths)
 
-        self.assertIsInstance(controller.raw_file_import_manager, FakeDirectIngestRawFileImportManager)
-        self.assertEqual(3, len(controller.raw_file_import_manager.imported_paths))
-        self.assertIsInstance(controller.ingest_view_export_manager.big_query_client, FakeDirectIngestBigQueryClient)
-        self.assertCountEqual([], controller.ingest_view_export_manager.big_query_client.exported_file_tags)
+        self.check_imported_path_count(controller, 3)
+        self.check_tags(controller, [])
 
         expected_raw_metadata_tags_with_is_processed = [('tagA', True), ('tagB', True), ('tagC', True),
                                                         ('Unexpected_Tag', False)]
@@ -382,7 +395,13 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
             self, controller, file_tags, unexpected_tags)
 
         processed_split_file_paths = defaultdict(list)
+        if not isinstance(controller.fs.gcs_file_system, FakeGCSFileSystem):
+            raise ValueError(f"Controller fs must have type "
+                             f"FakeGCSFileSystem. Found instead "
+                             f"type [{type(controller.fs.gcs_file_system)}]")
         for path in controller.fs.gcs_file_system.all_paths:
+            if not isinstance(path, GcsfsFilePath):
+                self.fail(f'Unexpected path type: {path.abs_path()}')
             if self._path_in_split_file_storage_subdir(path, controller):
                 file_tag = filename_parts_from_path(path).file_tag
                 processed_split_file_paths[file_tag].append(path)
@@ -391,12 +410,12 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
         self.assertEqual(2, len(processed_split_file_paths['tagC']))
 
         found_suffixes = {filename_parts_from_path(p).filename_suffix
-                          for p in processed_split_file_paths['tagC']}
+                          for p in processed_split_file_paths['tagC']
+                          if isinstance(p, GcsfsFilePath)}
         self.assertEqual(found_suffixes, {'00001_file_split_size1',
                                           '00002_file_split_size1'})
 
-        self.assertIsInstance(controller.raw_file_import_manager, FakeDirectIngestRawFileImportManager)
-        self.assertEqual(1, len(controller.raw_file_import_manager.imported_paths))
+        self.check_imported_path_count(controller, 1)
 
         expected_raw_metadata_tags_with_is_processed = [('tagC', True)]
         expected_ingest_metadata_tags_with_is_processed = [('tagC', True), ('tagC', True), ('tagC', True)]
@@ -406,9 +425,7 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
             expected_ingest_metadata_tags_with_is_processed=expected_ingest_metadata_tags_with_is_processed
         )
 
-        self.assertIsInstance(controller.ingest_view_export_manager.big_query_client, FakeDirectIngestBigQueryClient)
-        self.assertCountEqual(controller.get_file_tag_rank_list(),
-                              controller.ingest_view_export_manager.big_query_client.exported_file_tags)
+        self.check_tags(controller, controller.get_file_tag_rank_list())
 
     @patch("recidiviz.utils.regions.get_region", Mock(return_value=TEST_SQL_PRE_PROCESSING_LAUNCHED_REGION))
     def test_state_unexpected_tag_sql_preprocessing_fully_launched(self) -> None:
@@ -423,13 +440,17 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
         add_paths_with_tags_and_process(
             self, controller, file_tags, unexpected_tags)
 
+        if not isinstance(controller.fs.gcs_file_system, FakeGCSFileSystem):
+            raise ValueError(f"Controller fs must have type "
+                             f"FakeGCSFileSystem. Found instead "
+                             f"type [{type(controller.fs.gcs_file_system)}]")
         split_paths = {path
                        for path in controller.fs.gcs_file_system.all_paths
-                       if controller.fs.is_split_file(path)}
+                       if isinstance(path, GcsfsFilePath) and
+                       controller.fs.is_split_file(path)}
         self.assertFalse(split_paths)
 
-        self.assertIsInstance(controller.raw_file_import_manager, FakeDirectIngestRawFileImportManager)
-        self.assertEqual(3, len(controller.raw_file_import_manager.imported_paths))
+        self.check_imported_path_count(controller, 3)
 
         expected_raw_metadata_tags_with_is_processed = [('tagA', True), ('tagB', True), ('tagC', True),
                                                         ('Unexpected_Tag', False)]
@@ -440,9 +461,7 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
             expected_ingest_metadata_tags_with_is_processed=expected_ingest_metadata_tags_with_is_processed
         )
 
-        self.assertIsInstance(controller.ingest_view_export_manager.big_query_client, FakeDirectIngestBigQueryClient)
-        self.assertCountEqual(controller.get_file_tag_rank_list(),
-                              controller.ingest_view_export_manager.big_query_client.exported_file_tags)
+        self.check_tags(controller, controller.get_file_tag_rank_list())
 
     @patch("recidiviz.utils.regions.get_region", Mock(return_value=TEST_BQ_IMPORT_ENABLED_REGION))
     def test_state_tag_we_import_but_do_not_ingest(self) -> None:
@@ -455,14 +474,20 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
 
         add_paths_with_tags_and_process(self, controller, file_tags)
 
+        if not isinstance(controller.fs.gcs_file_system, FakeGCSFileSystem):
+            raise ValueError(f"Controller fs must have type "
+                             f"FakeGCSFileSystem. Found instead "
+                             f"type [{type(controller.fs.gcs_file_system)}]")
         split_paths = {path
                        for path in controller.fs.gcs_file_system.all_paths
-                       if controller.fs.is_split_file(path)}
+                       if isinstance(path, GcsfsFilePath) and
+                       controller.fs.is_split_file(path)}
         self.assertFalse(split_paths)
 
-        self.assertIsInstance(controller.raw_file_import_manager, FakeDirectIngestRawFileImportManager)
-        self.assertEqual(4, len(controller.raw_file_import_manager.imported_paths))
-        self.assertCountEqual([], controller.ingest_view_export_manager.big_query_client.exported_file_tags)
+        if not isinstance(controller.raw_file_import_manager, FakeDirectIngestRawFileImportManager):
+            self.fail('Expected FakeDirectIngestRawFileImportManager but did not find one.')
+
+        self.check_tags(controller, [])
         self.validate_file_metadata(
             controller,
             expected_raw_metadata_tags_with_is_processed=[(tag, True) for tag in file_tags])
@@ -478,22 +503,24 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
 
         add_paths_with_tags_and_process(self, controller, file_tags)
 
+        if not isinstance(controller.fs.gcs_file_system, FakeGCSFileSystem):
+            raise ValueError(f"Controller fs must have type "
+                             f"FakeGCSFileSystem. Found instead "
+                             f"type [{type(controller.fs.gcs_file_system)}]")
         split_paths = {path
                        for path in controller.fs.gcs_file_system.all_paths
-                       if controller.fs.is_split_file(path)}
+                       if isinstance(path, GcsfsFilePath) and
+                       controller.fs.is_split_file(path)}
         self.assertFalse(split_paths)
 
-        self.assertIsInstance(controller.raw_file_import_manager, FakeDirectIngestRawFileImportManager)
-        self.assertEqual(4, len(controller.raw_file_import_manager.imported_paths))
+        self.check_imported_path_count(controller, 4)
 
         self.validate_file_metadata(
             controller,
             expected_raw_metadata_tags_with_is_processed=[(tag, True) for tag in file_tags],
             expected_ingest_metadata_tags_with_is_processed=[(tag, True) for tag in ['tagA', 'tagB', 'tagC']])
 
-        self.assertIsInstance(controller.ingest_view_export_manager.big_query_client, FakeDirectIngestBigQueryClient)
-        self.assertCountEqual(['tagA', 'tagB', 'tagC'],
-                              controller.ingest_view_export_manager.big_query_client.exported_file_tags)
+        self.check_tags(controller, ['tagA', 'tagB', 'tagC'])
 
     @patch("recidiviz.utils.regions.get_region", Mock(return_value=TEST_STATE_REGION))
     def test_do_not_queue_same_job_twice(self) -> None:
@@ -501,11 +528,8 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
             StateTestGcsfsDirectIngestController,
             self.FIXTURE_PATH_PREFIX,
             run_async=False)
-        self.assertIsInstance(
-            controller.cloud_task_manager,
-            FakeSynchronousDirectIngestCloudTaskManager,
-            "Expected FakeSynchronousDirectIngestCloudTaskManager")
-        task_manager = controller.cloud_task_manager
+
+        task_manager = self.get_fake_task_manager(controller)
 
         file_path = \
             path_for_fixture_file(controller, 'tagA.csv',
@@ -557,11 +581,7 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
             StateTestGcsfsDirectIngestController,
             self.FIXTURE_PATH_PREFIX,
             run_async=False)
-        self.assertIsInstance(
-            controller.cloud_task_manager,
-            FakeSynchronousDirectIngestCloudTaskManager,
-            "Expected FakeSynchronousDirectIngestCloudTaskManager")
-        task_manager = controller.cloud_task_manager
+        task_manager = self.get_fake_task_manager(controller)
 
         file_path = \
             path_for_fixture_file(controller, 'tagA.csv',
@@ -615,11 +635,11 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
             StateTestGcsfsDirectIngestController,
             self.FIXTURE_PATH_PREFIX,
             run_async=False)
-        self.assertIsInstance(
-            controller.cloud_task_manager,
-            FakeSynchronousDirectIngestCloudTaskManager,
-            "Expected FakeSynchronousDirectIngestCloudTaskManager")
-        task_manager = controller.cloud_task_manager
+
+        if not isinstance(controller.fs.gcs_file_system, FakeGCSFileSystem):
+            self.fail("Expected FakeGCSFileSystem")
+
+        task_manager = self.get_fake_task_manager(controller)
 
         dt = datetime.datetime.now()
         file_path = \
@@ -654,7 +674,7 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
 
         task = task_manager.test_pop_finished_process_job_task()
 
-        task_manager.create_direct_ingest_process_job_task(*task)
+        task_manager.create_direct_ingest_process_job_task(*task)  # type: ignore[arg-type]
 
         # Now run the repeated task
         task_manager.test_run_next_process_job_task()
@@ -682,11 +702,8 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
             run_async=False,
             max_delay_sec_between_files=300
         )
-        self.assertIsInstance(
-            controller.cloud_task_manager,
-            FakeSynchronousDirectIngestCloudTaskManager,
-            "Expected FakeSynchronousDirectIngestCloudTaskManager")
-        task_manager = controller.cloud_task_manager
+
+        task_manager = self.get_fake_task_manager(controller)
 
         path = path_for_fixture_file(controller,
                                      'tagB.csv',
@@ -771,7 +788,13 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
                                         pre_normalize_filename=True)
 
         processed_split_file_paths = defaultdict(list)
+        if not isinstance(controller.fs.gcs_file_system, FakeGCSFileSystem):
+            raise ValueError(f"Controller fs must have type "
+                             f"FakeGCSFileSystem. Found instead "
+                             f"type [{type(controller.fs.gcs_file_system)}]")
         for path in controller.fs.gcs_file_system.all_paths:
+            if not isinstance(path, GcsfsFilePath):
+                self.fail(f'Unexpected path type: {path.abs_path()}')
             if self._path_in_split_file_storage_subdir(path, controller):
                 file_tag = filename_parts_from_path(path).file_tag
                 processed_split_file_paths[file_tag].append(path)
@@ -780,7 +803,8 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
         self.assertEqual(2, len(processed_split_file_paths['tagC']))
 
         found_suffixes = {filename_parts_from_path(p).filename_suffix
-                          for p in processed_split_file_paths['tagC']}
+                          for p in processed_split_file_paths['tagC']
+                          if isinstance(p, GcsfsFilePath)}
         self.assertEqual(found_suffixes, {'00001_file_split_size1',
                                           '00002_file_split_size1'})
         self.validate_file_metadata(controller)
@@ -805,7 +829,13 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
                                         file_type=GcsfsDirectIngestFileType.INGEST_VIEW)
 
         processed_split_file_paths = defaultdict(list)
+        if not isinstance(controller.fs.gcs_file_system, FakeGCSFileSystem):
+            raise ValueError(f"Controller fs must have type "
+                             f"FakeGCSFileSystem. Found instead "
+                             f"type [{type(controller.fs.gcs_file_system)}]")
         for path in controller.fs.gcs_file_system.all_paths:
+            if not isinstance(path, GcsfsFilePath):
+                self.fail(f'Unexpected path type: {path.abs_path()}')
             if self._path_in_split_file_storage_subdir(path, controller):
                 file_tag = filename_parts_from_path(path).file_tag
                 processed_split_file_paths[file_tag].append(path)
@@ -841,7 +871,13 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
                                         file_type=GcsfsDirectIngestFileType.RAW_DATA)
 
         processed_split_file_paths = defaultdict(list)
+        if not isinstance(controller.fs.gcs_file_system, FakeGCSFileSystem):
+            raise ValueError(f"Controller fs must have type "
+                             f"FakeGCSFileSystem. Found instead "
+                             f"type [{type(controller.fs.gcs_file_system)}]")
         for path in controller.fs.gcs_file_system.all_paths:
+            if not isinstance(path, GcsfsFilePath):
+                self.fail(f'Unexpected path type: {path.abs_path()}')
             if self._path_in_split_file_storage_subdir(path, controller):
                 file_tag = filename_parts_from_path(path).file_tag
                 processed_split_file_paths[file_tag].append(path)
@@ -850,7 +886,8 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
         self.assertEqual(2, len(processed_split_file_paths['tagC']))
 
         found_suffixes = {filename_parts_from_path(p).filename_suffix
-                          for p in processed_split_file_paths['tagC']}
+                          for p in processed_split_file_paths['tagC']
+                          if isinstance(p, GcsfsFilePath)}
         self.assertEqual(found_suffixes, {'00001_file_split_size1',
                                           '00002_file_split_size1'})
         self.validate_file_metadata(
@@ -859,12 +896,9 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
             expected_ingest_metadata_tags_with_is_processed=[
                 ('tagA', True), ('tagB', True), ('tagC', True), ('tagC', True), ('tagC', True)])
 
-        self.assertIsInstance(controller.raw_file_import_manager, FakeDirectIngestRawFileImportManager)
-        self.assertEqual(3, len(controller.raw_file_import_manager.imported_paths))
+        self.check_imported_path_count(controller, 3)
 
-        self.assertIsInstance(controller.ingest_view_export_manager.big_query_client, FakeDirectIngestBigQueryClient)
-        self.assertCountEqual(controller.get_file_tag_rank_list(),
-                              controller.ingest_view_export_manager.big_query_client.exported_file_tags)
+        self.check_tags(controller, controller.get_file_tag_rank_list())
 
     @patch("recidiviz.utils.regions.get_region",
            Mock(return_value=TEST_BQ_IMPORT_ENABLED_REGION))
@@ -887,7 +921,13 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
                                         file_type=GcsfsDirectIngestFileType.RAW_DATA)
 
         processed_split_file_paths = defaultdict(list)
+        if not isinstance(controller.fs.gcs_file_system, FakeGCSFileSystem):
+            raise ValueError(f"Controller fs must have type "
+                             f"FakeGCSFileSystem. Found instead "
+                             f"type [{type(controller.fs.gcs_file_system)}]")
         for path in controller.fs.gcs_file_system.all_paths:
+            if not isinstance(path, GcsfsFilePath):
+                self.fail(f'Unexpected path type: {path.abs_path()}')
             if self._path_in_split_file_storage_subdir(path, controller):
                 file_tag = filename_parts_from_path(path).file_tag
                 processed_split_file_paths[file_tag].append(path)
@@ -909,11 +949,8 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
             StateTestGcsfsDirectIngestController,
             self.FIXTURE_PATH_PREFIX,
             run_async=False)
-        self.assertIsInstance(
-            controller.cloud_task_manager,
-            FakeSynchronousDirectIngestCloudTaskManager,
-            "Expected FakeSynchronousDirectIngestCloudTaskManager")
-        task_manager = controller.cloud_task_manager
+
+        task_manager = self.get_fake_task_manager(controller)
 
         # Set line limit to 1
         controller.ingest_file_split_line_limit = 1
@@ -984,6 +1021,10 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
                                         unexpected_tags=['Unexpected_Tag'])
 
         paths_from_prev_date = []
+        if not isinstance(controller.fs.gcs_file_system, FakeGCSFileSystem):
+            raise ValueError(f"Controller fs must have type "
+                             f"FakeGCSFileSystem. Found instead "
+                             f"type [{type(controller.fs.gcs_file_system)}]")
         for path in controller.fs.gcs_file_system.all_paths:
             expected_storage_dir_str = os.path.join(
                 controller.storage_directory_path.abs_path(), previous_date)
@@ -1035,7 +1076,13 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
                                         unexpected_tags=unexpected_tags)
 
         paths_from_prev_date = []
+        if not isinstance(controller.fs.gcs_file_system, FakeGCSFileSystem):
+            raise ValueError(f"Controller fs must have type "
+                             f"FakeGCSFileSystem. Found instead "
+                             f"type [{type(controller.fs.gcs_file_system)}]")
         for path in controller.fs.gcs_file_system.all_paths:
+            if not isinstance(path, GcsfsFilePath):
+                self.fail(f'Unexpected path type: {path.abs_path()}')
             parts = filename_parts_from_path(path)
             expected_storage_dir_str = os.path.join(
                 controller.storage_directory_path.abs_path(),
@@ -1095,7 +1142,13 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
                                         unexpected_tags=unexpected_tags)
 
         paths_from_prev_date = []
+        if not isinstance(controller.fs.gcs_file_system, FakeGCSFileSystem):
+            raise ValueError(f"Controller fs must have type "
+                             f"FakeGCSFileSystem. Found instead "
+                             f"type [{type(controller.fs.gcs_file_system)}]")
         for path in controller.fs.gcs_file_system.all_paths:
+            if not isinstance(path, GcsfsFilePath):
+                self.fail(f'Unexpected path type: {path.abs_path()}')
             parts = filename_parts_from_path(path)
             expected_storage_dir_str = os.path.join(
                 controller.storage_directory_path.abs_path(),
@@ -1115,9 +1168,7 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
             expected_raw_metadata_tags_with_is_processed=expected_raw_metadata_tags_with_is_processed,
             expected_ingest_metadata_tags_with_is_processed=[(tag, True) for tag in file_tags])
 
-        self.assertIsInstance(controller.ingest_view_export_manager.big_query_client, FakeDirectIngestBigQueryClient)
-        self.assertCountEqual(controller.get_file_tag_rank_list(),
-                              controller.ingest_view_export_manager.big_query_client.exported_file_tags)
+        self.check_tags(controller, controller.get_file_tag_rank_list())
 
     @patch("recidiviz.utils.regions.get_region", Mock(return_value=TEST_STATE_REGION))
     def test_move_files_from_previous_days_to_storage_incomplete_current_day(
@@ -1162,6 +1213,8 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
 
         run_task_queues_to_empty(controller)
 
+        if not isinstance(controller.fs.gcs_file_system, FakeGCSFileSystem):
+            self.fail(f'Unexpected real GCS file system: {type(controller.fs.gcs_file_system)}')
         self.assertTrue(len(controller.fs.gcs_file_system.all_paths), 3)
 
         storage_paths: List[GcsfsFilePath] = []
@@ -1246,6 +1299,10 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
 
         run_task_queues_to_empty(controller)
 
+        if not isinstance(controller.fs.gcs_file_system, FakeGCSFileSystem):
+            raise ValueError(f"Controller fs must have type "
+                             f"FakeGCSFileSystem. Found instead "
+                             f"type [{type(controller.fs.gcs_file_system)}]")
         self.assertTrue(len(controller.fs.gcs_file_system.all_paths), 3)
 
         storage_paths: List[GcsfsFilePath] = []
@@ -1335,6 +1392,10 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
 
         run_task_queues_to_empty(controller)
 
+        if not isinstance(controller.fs.gcs_file_system, FakeGCSFileSystem):
+            raise ValueError(f"Controller fs must have type "
+                             f"FakeGCSFileSystem. Found instead "
+                             f"type [{type(controller.fs.gcs_file_system)}]")
         self.assertTrue(len(controller.fs.gcs_file_system.all_paths), 3)
 
         storage_paths: List[GcsfsFilePath] = []
@@ -1383,9 +1444,7 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
             expected_raw_metadata_tags_with_is_processed=[('Unexpected_Tag', False), ('tagA', True), ('tagB', True)],
             expected_ingest_metadata_tags_with_is_processed=[('tagA', True), ('tagB', True)])
 
-        self.assertIsInstance(controller.ingest_view_export_manager.big_query_client, FakeDirectIngestBigQueryClient)
-        self.assertCountEqual(['tagA', 'tagB'],
-                              controller.ingest_view_export_manager.big_query_client.exported_file_tags)
+        self.check_tags(controller, ['tagA', 'tagB'])
 
     @patch("recidiviz.utils.regions.get_region", Mock(return_value=TEST_STATE_REGION))
     def test_cloud_function_fails_on_new_file(self) -> None:
@@ -1393,11 +1452,8 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
             StateTestGcsfsDirectIngestController,
             self.FIXTURE_PATH_PREFIX,
             run_async=False)
-        self.assertIsInstance(
-            controller.cloud_task_manager,
-            FakeSynchronousDirectIngestCloudTaskManager,
-            "Expected FakeSynchronousDirectIngestCloudTaskManager")
-        task_manager = controller.cloud_task_manager
+
+        task_manager = self.get_fake_task_manager(controller)
 
         file_path = \
             path_for_fixture_file(controller, 'tagA.csv',
@@ -1441,11 +1497,8 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
             StateTestGcsfsDirectIngestController,
             self.FIXTURE_PATH_PREFIX,
             run_async=False)
-        self.assertIsInstance(
-            controller.cloud_task_manager,
-            FakeSynchronousDirectIngestCloudTaskManager,
-            "Expected FakeSynchronousDirectIngestCloudTaskManager")
-        task_manager = controller.cloud_task_manager
+
+        task_manager = self.get_fake_task_manager(controller)
 
         file_path = \
             path_for_fixture_file(controller, 'tagA.csv',
@@ -1474,7 +1527,13 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
             0,
             task_manager.get_process_job_queue_info(controller.region).size())
 
+        if not isinstance(controller.fs.gcs_file_system, FakeGCSFileSystem):
+            raise ValueError(f"Controller fs must have type "
+                             f"FakeGCSFileSystem. Found instead "
+                             f"type [{type(controller.fs.gcs_file_system)}]")
         for path in controller.fs.gcs_file_system.all_paths:
+            if not isinstance(path, GcsfsFilePath):
+                self.fail(f'Unexpected path type: {path.abs_path()}')
             self.assertFalse(controller.fs.is_normalized_file_path(path))
 
         # Cron job to handle unseen files triggers later
@@ -1485,6 +1544,8 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
         run_task_queues_to_empty(controller)
 
         for path in controller.fs.gcs_file_system.all_paths:
+            if not isinstance(path, GcsfsFilePath):
+                self.fail(f'Unexpected path type: {path.abs_path()}')
             self.assertTrue(controller.fs.is_normalized_file_path(path))
 
         self.validate_file_metadata(controller)
@@ -1503,7 +1564,13 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
         add_paths_with_tags(controller, file_tags, pre_normalize_filename=False)
         run_task_queues_to_empty(controller)
 
+        if not isinstance(controller.fs.gcs_file_system, FakeGCSFileSystem):
+            raise ValueError(f"Controller fs must have type "
+                             f"FakeGCSFileSystem. Found instead "
+                             f"type [{type(controller.fs.gcs_file_system)}]")
         for path in controller.fs.gcs_file_system.all_paths:
+            if not isinstance(path, GcsfsFilePath):
+                self.fail(f'Unexpected path type: {path.abs_path()}')
             self.assertTrue(controller.fs.is_normalized_file_path(path))
             self.assertTrue(controller.fs.is_seen_unprocessed_file(path))
             self.assertFalse(controller.fs.is_split_file(path))
@@ -1528,7 +1595,13 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
         add_paths_with_tags(controller, file_tags, pre_normalize_filename=False)
         run_task_queues_to_empty(controller)
 
+        if not isinstance(controller.fs.gcs_file_system, FakeGCSFileSystem):
+            raise ValueError(f"Controller fs must have type "
+                             f"FakeGCSFileSystem. Found instead "
+                             f"type [{type(controller.fs.gcs_file_system)}]")
         for path in controller.fs.gcs_file_system.all_paths:
+            if not isinstance(path, GcsfsFilePath):
+                self.fail(f'Unexpected path type: {path.abs_path()}')
             self.assertTrue(controller.fs.is_normalized_file_path(path))
             self.assertTrue(controller.fs.is_seen_unprocessed_file(path))
             self.assertFalse(controller.fs.is_split_file(path))
@@ -1552,7 +1625,13 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
 
         self.assertEqual(str(e.exception), 'Bad environment [production] for region [us_xx].')
 
+        if not isinstance(controller.fs.gcs_file_system, FakeGCSFileSystem):
+            raise ValueError(f"Controller fs must have type "
+                             f"FakeGCSFileSystem. Found instead "
+                             f"type [{type(controller.fs.gcs_file_system)}]")
         for path in controller.fs.gcs_file_system.all_paths:
+            if not isinstance(path, GcsfsFilePath):
+                self.fail(f'Unexpected path type: {path.abs_path()}')
             self.assertTrue(controller.fs.is_normalized_file_path(path))
             self.assertTrue(controller.fs.is_seen_unprocessed_file(path))
             self.assertFalse(controller.fs.is_split_file(path))
@@ -1577,7 +1656,13 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
         self.assertTrue(str(e.exception).startswith(
             'The can_start_ingest flag should only be used for regions where ingest is not yet launched'))
 
+        if not isinstance(controller.fs.gcs_file_system, FakeGCSFileSystem):
+            raise ValueError(f"Controller fs must have type "
+                             f"FakeGCSFileSystem. Found instead "
+                             f"type [{type(controller.fs.gcs_file_system)}]")
         for path in controller.fs.gcs_file_system.all_paths:
+            if not isinstance(path, GcsfsFilePath):
+                self.fail(f'Unexpected path type: {path.abs_path()}')
             self.assertFalse(controller.fs.is_normalized_file_path(path))
 
         self.validate_file_metadata(controller,

@@ -19,19 +19,24 @@
 import os
 from typing import Union
 
+from recidiviz.cloud_storage.gcs_file_system import GCSFileSystem
 from recidiviz.cloud_storage.gcsfs_path import GcsfsDirectoryPath, GcsfsFilePath
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import filename_parts_from_path
 from recidiviz.ingest.direct.errors import DirectIngestError, DirectIngestErrorType
 from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.tests.ingest import fixtures
 
+
 def add_direct_ingest_path(
-        fs: FakeGCSFileSystem, path: Union[GcsfsFilePath, GcsfsDirectoryPath], has_fixture: bool = True,
+        fs: GCSFileSystem, path: Union[GcsfsFilePath, GcsfsDirectoryPath], has_fixture: bool = True,
         fail_handle_file_call: bool = False) -> None:
+    if not isinstance(fs, FakeGCSFileSystem):
+        raise ValueError('add_direct_ingest_path can only be called on FakeGCSFileSystems')
     local_path = None
     if has_fixture and isinstance(path, GcsfsFilePath):
         local_path = _get_fixture_for_direct_ingest_path(path)
     fs.test_add_path(path, local_path, fail_handle_file_call)
+
 
 def _get_fixture_for_direct_ingest_path(path: GcsfsFilePath) -> str:
     """Gets the path to the fixture file based on the input path.
