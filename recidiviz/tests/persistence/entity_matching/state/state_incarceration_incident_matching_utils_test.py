@@ -16,6 +16,7 @@
 # =============================================================================
 """Tests for state_incarceration_incident_matching_utils.py"""
 import datetime
+from copy import deepcopy
 
 import attr
 
@@ -23,6 +24,8 @@ from recidiviz.common.constants.state.state_incarceration_period import \
     StateIncarcerationPeriodStatus, StateIncarcerationPeriodAdmissionReason, \
     StateIncarcerationPeriodReleaseReason
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
+from recidiviz.persistence.database.schema.state import schema
+from recidiviz.persistence.database.schema_entity_converter.schema_entity_converter import convert_entity_to_schema_object
 from recidiviz.persistence.entity.state.entities import StatePerson, StateSentenceGroup, StateIncarcerationPeriod, \
     StateIncarcerationIncident, StateIncarcerationSentence
 from recidiviz.persistence.entity_matching.state.state_incarceration_incident_matching_utils import \
@@ -136,8 +139,12 @@ class TestIncidentMatchingUtils(BaseStateMatchingUtilsTest):
         expected_sentence_group = attr.evolve(
             sentence_group, incarceration_sentences=[
                 expected_sentence, expected_placeholder_sentence])
-        expected_person = attr.evolve(
-            person, sentence_groups=[expected_sentence_group])
+        expected_person = convert_entity_to_schema_object(attr.evolve(
+            person, sentence_groups=[expected_sentence_group]))
 
-        move_incidents_onto_periods([person])
-        self.assertEqual(expected_person, person)
+        schema_person = convert_entity_to_schema_object(person)
+        if not isinstance(schema_person, schema.StatePerson):
+            self.fail(f'Expected schema.StatePerson. Found {schema_person}')
+
+        move_incidents_onto_periods([schema_person])
+        self.assert_schema_objects_equal(expected_person, schema_person)

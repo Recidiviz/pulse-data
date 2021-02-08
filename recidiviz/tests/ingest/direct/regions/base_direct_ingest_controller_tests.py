@@ -135,6 +135,8 @@ class BaseDirectIngestControllerTests(unittest.TestCase):
         # pylint:disable=protected-access
         fixture_contents_handle = self.controller._get_contents_handle(args)
 
+        if fixture_contents_handle is None:
+            self.fail('fixture_contents_handle should not be None')
         final_info = self.controller._parse(args, fixture_contents_handle)
 
         print_visible_header_label('FINAL')

@@ -459,7 +459,10 @@ class TestStateDateBasedMatchingUtils(BaseStateMatchingUtilsTest):
         sentence = StateSupervisionSentence.new_with_defaults(state_code=_STATE_CODE)
         for status in StateSentenceStatus:
             sentence.status = status
-            _is_sentence_ended_by_status(converter.convert_entity_to_schema_object(sentence))
+            db_entity = converter.convert_entity_to_schema_object(sentence)
+            if not isinstance(db_entity, schema.StateSupervisionSentence):
+                self.fail(f'Unexpected type for db_entity: {[db_entity]}.')
+            _is_sentence_ended_by_status(db_entity)
 
     def test_moveViolationsOntoSupervisionPeriodsForSentence(self) -> None:
         # Arrange

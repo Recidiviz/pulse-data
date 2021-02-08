@@ -31,7 +31,7 @@ from recidiviz.tools.justice_counts import manual_upload
 class PrisonPopulationViewTest(BaseViewTest):
     """Tests the Justice Counts Prison Population view."""
 
-    def test_recent_population(self):
+    def test_recent_population(self) -> None:
         # Arrange
         self.create_mock_bq_table(
             dataset_id='justice_counts', table_id='report_materialized',
@@ -85,12 +85,12 @@ class PrisonPopulationViewTest(BaseViewTest):
         # Act
         dimensions = ['state_code', 'metric', 'year', 'month']
         prison_population_metric = metric_by_month.CalculatedMetricByMonth(
-           system=schema.System.CORRECTIONS,
-           metric=schema.MetricType.POPULATION,
-           filtered_dimensions=[manual_upload.PopulationType.PRISON],
-           aggregated_dimensions={'state_code': metric_by_month.Aggregation(
-               dimension=manual_upload.State, comprehensive=False)},
-           output_name='POPULATION_PRISON'
+            system=schema.System.CORRECTIONS,
+            metric=schema.MetricType.POPULATION,
+            filtered_dimensions=[manual_upload.PopulationType.PRISON],
+            aggregated_dimensions={'state_code': metric_by_month.Aggregation(
+                dimension=manual_upload.State, comprehensive=False)},
+            output_name='POPULATION_PRISON'
         )
         results = self.query_view(
             metric_by_month.CalculatedMetricByMonthViewBuilder(
@@ -100,13 +100,13 @@ class PrisonPopulationViewTest(BaseViewTest):
 
         # Assert
         expected = pd.DataFrame(
-                [['US_XX', 'POPULATION_PRISON', 2020, 11, np.datetime64('2020-11-30'), 3000, None, None, None, None],
-                 ['US_XX', 'POPULATION_PRISON', 2020, 12, np.datetime64('2020-12-31'), 4000, None, None, None, None],
-                 ['US_YY', 'POPULATION_PRISON', 2020, 11, np.datetime64('2020-11-30'), 1000, None, None, None, None],
-                 ['US_YY', 'POPULATION_PRISON', 2020, 12, np.datetime64('2020-12-31'), 1020, None, None, None, None],
-                 ['US_ZZ', 'POPULATION_PRISON', 2020, 11, np.datetime64('2020-11-30'), 400, None, None, None, None],
-                 ['US_ZZ', 'POPULATION_PRISON', 2020, 12, np.datetime64('2020-12-31'), 500, None, None, None, None]],
-                columns=['state_code', 'metric', 'year', 'month', 'date_reported', 'value', 'compared_to_year',
-                         'compared_to_month', 'value_change', 'percentage_change'])
+            [['US_XX', 'POPULATION_PRISON', 2020, 11, np.datetime64('2020-11-30'), 3000, None, None, None, None],
+             ['US_XX', 'POPULATION_PRISON', 2020, 12, np.datetime64('2020-12-31'), 4000, None, None, None, None],
+             ['US_YY', 'POPULATION_PRISON', 2020, 11, np.datetime64('2020-11-30'), 1000, None, None, None, None],
+             ['US_YY', 'POPULATION_PRISON', 2020, 12, np.datetime64('2020-12-31'), 1020, None, None, None, None],
+             ['US_ZZ', 'POPULATION_PRISON', 2020, 11, np.datetime64('2020-11-30'), 400, None, None, None, None],
+             ['US_ZZ', 'POPULATION_PRISON', 2020, 12, np.datetime64('2020-12-31'), 500, None, None, None, None]],
+            columns=['state_code', 'metric', 'year', 'month', 'date_reported', 'value', 'compared_to_year',
+                     'compared_to_month', 'value_change', 'percentage_change'])
         expected = expected.set_index(dimensions)
         assert_frame_equal(expected, results)

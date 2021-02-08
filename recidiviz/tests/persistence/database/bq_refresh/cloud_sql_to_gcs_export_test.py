@@ -63,7 +63,7 @@ class CloudSqlToGcsExportTest(unittest.TestCase):
         self.tables_to_export = [Table('first_table'),
                                  Table('second_table')]
 
-        HttpErrorResponse = collections.namedtuple('Response', ['status', 'reason'])
+        HttpErrorResponse = collections.namedtuple('HttpErrorResponse', ['status', 'reason'])
         self.http_error_response = HttpErrorResponse(404, 'CloudSQL operation instance does not exist.')
 
         self.mock_get_operation = self.mock_client.operations.return_value.get.return_value

@@ -63,6 +63,7 @@ def convert_entity_people_to_schema_people(
     return [_as_schema_person_type(p)
             for p in convert_entities_to_schema(people, populate_back_edges)]
 
+
 def convert_entities_to_schema(
         entities: Sequence[Entity],
         populate_back_edges: bool = True) -> List[DatabaseEntity]:
@@ -93,7 +94,7 @@ def convert_entities_to_schema(
 
 
 def convert_schema_objects_to_entity(
-        schema_objects: List[DatabaseEntity],
+        schema_objects: Sequence[DatabaseEntity],
         populate_back_edges: bool = True) -> List[Entity]:
     def _is_county_schema_object(obj: Any) -> bool:
         return _is_obj_in_module(obj, county_schema) and \

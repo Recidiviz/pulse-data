@@ -29,9 +29,6 @@ from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.persistence.database.base_schema import StateBase
 from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.database.session_factory import SessionFactory
-from recidiviz.persistence.entity.state.entities import StatePersonExternalId, \
-    StatePerson, StateCharge, StateSentenceGroup, StateFine, \
-    StateCourtCase
 from recidiviz.persistence.entity_matching.state.state_matching_utils import \
     _is_match, generate_child_entity_trees, add_child_to_entity, \
     remove_child_from_entity, \
@@ -201,14 +198,14 @@ class TestStateMatchingUtils(BaseStateMatchingUtilsTest):
         self.assert_schema_objects_equal(expected_entity, merged_entity)
 
     def test_generateChildEntitiesWithAncestorChain(self) -> None:
-        fine = StateFine.new_with_defaults(state_code=_STATE_CODE, fine_id=_ID)
-        fine_another = StateFine.new_with_defaults(state_code=_STATE_CODE, fine_id=_ID_2)
-        person = StatePerson.new_with_defaults(state_code=_STATE_CODE, person_id=_ID)
-        sentence_group = StateSentenceGroup.new_with_defaults(
+        fine = schema.StateFine(state_code=_STATE_CODE, fine_id=_ID)
+        fine_another = schema.StateFine(state_code=_STATE_CODE, fine_id=_ID_2)
+        person = schema.StatePerson(state_code=_STATE_CODE, person_id=_ID)
+        sentence_group = schema.StateSentenceGroup(
             status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
             state_code=_STATE_CODE,
             fines=[fine, fine_another],
-            person=[person], sentence_group_id=_ID)
+            person=person, sentence_group_id=_ID)
         sentence_group_tree = EntityTree(
             entity=sentence_group, ancestor_chain=[person])
 
@@ -225,45 +222,41 @@ class TestStateMatchingUtils(BaseStateMatchingUtilsTest):
                 'fines', [sentence_group_tree]))
 
     def test_addChildToEntity(self) -> None:
-        fine = StateFine.new_with_defaults(state_code=_STATE_CODE, fine_id=_ID)
-        sentence_group = StateSentenceGroup.new_with_defaults(
+        fine = schema.StateFine(state_code=_STATE_CODE, fine_id=_ID)
+        sentence_group = schema.StateSentenceGroup(
             status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
             state_code=_STATE_CODE,
             fines=[], sentence_group_id=_ID)
 
-        expected_sentence_group = attr.evolve(
-            sentence_group, fines=[fine])
         add_child_to_entity(entity=sentence_group,
                             child_field_name='fines',
                             child_to_add=fine)
-        self.assertEqual(expected_sentence_group, sentence_group)
+        self.assertEqual(sentence_group.fines, [fine])
 
     def test_addChildToEntity_singular(self) -> None:
-        charge = StateCharge.new_with_defaults(state_code=_STATE_CODE,
-                                               status=ChargeStatus.PRESENT_WITHOUT_INFO,
-                                               charge_id=_ID)
-        court_case = StateCourtCase.new_with_defaults(state_code=_STATE_CODE, court_case_id=_ID)
+        charge = schema.StateCharge(state_code=_STATE_CODE,
+                                    status=ChargeStatus.PRESENT_WITHOUT_INFO,
+                                    charge_id=_ID)
+        court_case = schema.StateCourtCase(state_code=_STATE_CODE, court_case_id=_ID)
 
-        expected_charge = attr.evolve(charge, court_case=court_case)
         add_child_to_entity(entity=charge,
                             child_field_name='court_case',
                             child_to_add=court_case)
-        self.assertEqual(expected_charge, charge)
+        self.assertEqual(charge.court_case, court_case)
 
     def test_removeChildFromEntity(self) -> None:
-        fine = StateFine.new_with_defaults(state_code=_STATE_CODE, fine_id=_ID)
-        fine_another = StateFine.new_with_defaults(state_code=_STATE_CODE, fine_id=_ID_2)
-        sentence_group = StateSentenceGroup.new_with_defaults(
+        fine = schema.StateFine(state_code=_STATE_CODE, fine_id=_ID)
+        fine_another = schema.StateFine(state_code=_STATE_CODE, fine_id=_ID_2)
+        sentence_group = schema.StateSentenceGroup(
             status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
             state_code=_STATE_CODE,
             fines=[fine, fine_another],
             sentence_group_id=_ID)
 
-        expected_sentence_group = attr.evolve(sentence_group, fines=[fine])
         remove_child_from_entity(
             entity=sentence_group, child_field_name='fines',
             child_to_remove=fine_another)
-        self.assertEqual(expected_sentence_group, sentence_group)
+        self.assertEqual(sentence_group.fines, [fine])
 
     def test_getRootEntity(self) -> None:
         # Arrange
@@ -402,18 +395,20 @@ class TestStateMatchingUtils(BaseStateMatchingUtilsTest):
         is_revocation_admission(StateIncarcerationPeriodAdmissionReason.parse_from_canonical_string(None))
 
     def test_nonnullFieldsEntityMatch_placeholder(self) -> None:
-        charge = StateCharge.new_with_defaults(state_code=_STATE_CODE, status=ChargeStatus.PRESENT_WITHOUT_INFO)
-        charge_another = StateCharge.new_with_defaults(state_code=_STATE_CODE, status=ChargeStatus.PRESENT_WITHOUT_INFO)
+        charge = schema.StateCharge(state_code=_STATE_CODE, status=ChargeStatus.PRESENT_WITHOUT_INFO)
+        charge_another = schema.StateCharge(
+            state_code=_STATE_CODE, status=ChargeStatus.PRESENT_WITHOUT_INFO)
         self.assertFalse(
             nonnull_fields_entity_match(
                 ingested_entity=EntityTree(entity=charge, ancestor_chain=[]),
                 db_entity=EntityTree(entity=charge_another, ancestor_chain=[])))
 
     def test_nonnullFieldsEntityMatch_externalIdCompare(self) -> None:
-        charge = StateCharge.new_with_defaults(state_code=_STATE_CODE,
-                                               status=ChargeStatus.PRESENT_WITHOUT_INFO,
-                                               external_id=_EXTERNAL_ID)
-        charge_another = StateCharge.new_with_defaults(state_code=_STATE_CODE, status=ChargeStatus.PRESENT_WITHOUT_INFO)
+        charge = schema.StateCharge(state_code=_STATE_CODE,
+                                    status=ChargeStatus.PRESENT_WITHOUT_INFO,
+                                    external_id=_EXTERNAL_ID)
+        charge_another = schema.StateCharge(
+            state_code=_STATE_CODE, status=ChargeStatus.PRESENT_WITHOUT_INFO)
         self.assertFalse(
             nonnull_fields_entity_match(
                 ingested_entity=EntityTree(entity=charge, ancestor_chain=[]),
@@ -425,12 +420,12 @@ class TestStateMatchingUtils(BaseStateMatchingUtilsTest):
                 db_entity=EntityTree(entity=charge_another, ancestor_chain=[])))
 
     def test_nonnullFieldsEntityMatch_flatFieldsCompare(self) -> None:
-        charge = StateCharge.new_with_defaults(
+        charge = schema.StateCharge(
             state_code=_STATE_CODE,
             ncic_code='1234',
             county_code=_COUNTY_CODE,
             status=ChargeStatus.PRESENT_WITHOUT_INFO)
-        charge_another = StateCharge.new_with_defaults(
+        charge_another = schema.StateCharge(
             state_code=_STATE_CODE,
             ncic_code='1234',
             status=ChargeStatus.PRESENT_WITHOUT_INFO)
@@ -478,12 +473,12 @@ class TestStateMatchingUtils(BaseStateMatchingUtilsTest):
         self.assertFalse(is_placeholder(entity))
 
     def test_isPlaceholder_personWithExternalId(self) -> None:
-        sentence_group = StateSentenceGroup.new_with_defaults(
+        sentence_group = schema.StateSentenceGroup(
             state_code=_STATE_CODE, status=StateSentenceStatus.PRESENT_WITHOUT_INFO)
-        person = StatePerson.new_with_defaults(state_code=_STATE_CODE, sentence_groups=[sentence_group])
+        person = schema.StatePerson(state_code=_STATE_CODE, sentence_groups=[sentence_group])
         self.assertTrue(is_placeholder(person))
         person.external_ids.append(
-            StatePersonExternalId.new_with_defaults(
+            schema.StatePersonExternalId(
                 state_code=_STATE_CODE, external_id=_EXTERNAL_ID,
                 id_type=_ID_TYPE))
         self.assertFalse(is_placeholder(person))
@@ -599,11 +594,14 @@ class TestStateMatchingUtils(BaseStateMatchingUtilsTest):
         sentence_group_trees_to_merge = one(trees_to_merge)
         self.assertEqual(len(sentence_group_trees_to_merge), 2)
 
+        sentence_group_ids = set()
+
         for entity_tree in sentence_group_trees_to_merge:
             self.assertIsInstance(entity_tree, EntityTree)
-            self.assertIsInstance(entity_tree.entity, schema.StateSentenceGroup)
-            self.assertEqual(entity_tree.entity.external_id, _EXTERNAL_ID)
+            entity = entity_tree.entity
+            if not isinstance(entity, schema.StateSentenceGroup):
+                self.fail(f'Expected StateSentenceGroup. Found {entity}')
+            self.assertEqual(entity.external_id, _EXTERNAL_ID)
+            sentence_group_ids.add(entity.sentence_group_id)
 
-        self.assertEqual({entity_tree.entity.sentence_group_id
-                          for entity_tree in sentence_group_trees_to_merge},
-                         {1, 2})
+        self.assertEqual(sentence_group_ids, {1, 2})

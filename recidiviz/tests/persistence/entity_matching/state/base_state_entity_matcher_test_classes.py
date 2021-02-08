@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Base classes for various state entity matcher test classes."""
-from typing import List, Optional
+from typing import List, Optional, Sequence
 from unittest.case import TestCase
 
 import pytest
@@ -154,7 +154,7 @@ class BaseStateMatchingUtilsTest(TestCase):
             converter.convert_schema_objects_to_entity(actual))
 
     def assert_people_match(
-            self, expected_people: List[StatePerson], matched_people: List[schema.StatePerson], debug: bool = False):
+            self, expected_people: List[StatePerson], matched_people: Sequence[schema.StatePerson], debug: bool = False):
         converted_matched = converter.convert_schema_objects_to_entity(matched_people)
         db_expected_with_backedges = converter.convert_entity_people_to_schema_people(expected_people)
         expected_with_backedges = converter.convert_schema_objects_to_entity(db_expected_with_backedges)

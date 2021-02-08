@@ -52,20 +52,22 @@ class TestDagIntegrity(unittest.TestCase):
         """
         Verify that Airflow will be able to import all DAGs in the repository without errors
         """
-        dagbag = DagBag(dag_folder=dag_folder, include_examples=False)
-        self.assertEqual(
-            len(dagbag.import_errors), 0,
-            'There should be no DAG failures. Got: {}'.format(
-                dagbag.import_errors
-            )
-        )
+        # TODO(#5101): Un-comment and re-enable tests below once we can include apache-airflow in our Pipfile dependencies
+        # dagbag = DagBag(dag_folder=dag_folder, include_examples=False)
+        # self.assertEqual(
+        #     len(dagbag.import_errors), 0,
+        #     'There should be no DAG failures. Got: {}'.format(
+        #         dagbag.import_errors
+        #     )
+        # )
 
     @unittest.skip("TODO(#5101): Re-enable once we can include apache-airflow in our Pipfile dependencies")
     def test_correct_dag(self) -> None:
         """
         Verify that there is one DAG with the correct name
         """
-        dagbag = DagBag(dag_folder=dag_folder, include_examples=False)
-        self.assertEqual(len(dagbag.dag_ids), 1)
-        for dag_id in dagbag.dag_ids:
-            self.assertEqual(dag_id, "recidiviz-testing_calculation_pipeline_dag")
+        # TODO(#5101): Un-comment and re-enable tests below once we can include apache-airflow in our Pipfile dependencies
+        # dagbag = DagBag(dag_folder=dag_folder, include_examples=False)
+        # self.assertEqual(len(dagbag.dag_ids), 1)
+        # for dag_id in dagbag.dag_ids:
+        #     self.assertEqual(dag_id, "recidiviz-testing_calculation_pipeline_dag")

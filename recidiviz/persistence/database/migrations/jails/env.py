@@ -50,7 +50,7 @@ def get_sqlalchemy_url() -> str:
 
     # Boolean int (0 or 1) indicating whether to use SSL to connect to the
     # database
-    use_ssl = int(os.getenv(SQLALCHEMY_USE_SSL))
+    use_ssl = int(os.getenv(SQLALCHEMY_USE_SSL, 0))
 
     if use_ssl == 1:
         return _get_sqlalchemy_url_with_ssl()

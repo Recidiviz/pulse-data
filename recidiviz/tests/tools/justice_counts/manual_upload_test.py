@@ -38,7 +38,7 @@ from recidiviz.tools.postgres import local_postgres_helpers
 from recidiviz.utils.yaml_dict import YAMLDict
 
 
-def manifest_filepath(report_id: str, manifest_name: Optional[str] = None):
+def manifest_filepath(report_id: str, manifest_name: Optional[str] = None) -> str:
     return os.path.join(os.path.dirname(__file__), 'fixtures', report_id, manifest_name or 'manifest.yaml')
 
 
@@ -150,7 +150,7 @@ class ManualUploadTest(unittest.TestCase):
     def tearDownClass(cls) -> None:
         local_postgres_helpers.stop_and_clear_on_disk_postgresql_database(cls.temp_db_dir)
 
-    def test_ingestReport_isPersisted(self):
+    def test_ingestReport_isPersisted(self) -> None:
         # Act
         manual_upload.ingest(self.fs, test_utils.prepare_files(self.fs, manifest_filepath('report1')))
 
@@ -215,7 +215,7 @@ class ManualUploadTest(unittest.TestCase):
 
         session.close()
 
-    def test_ingestAndUpdateReport_isPersisted(self):
+    def test_ingestAndUpdateReport_isPersisted(self) -> None:
         # Act
         manual_upload.ingest(self.fs, test_utils.prepare_files(self.fs, manifest_filepath('report1')))
         # This contains a new table for Jul20, with the state prisons population increased by 100.
@@ -247,7 +247,7 @@ class ManualUploadTest(unittest.TestCase):
 
         # TODO(#4476): Add a case where a row is dropped to ensure that is reflected.
 
-    def test_ingestMultiDimensionReport_isPersisted(self):
+    def test_ingestMultiDimensionReport_isPersisted(self) -> None:
         # Act
         manual_upload.ingest(self.fs, test_utils.prepare_files(self.fs, manifest_filepath('report2_multidimension')))
 
@@ -315,13 +315,13 @@ class ManualUploadTest(unittest.TestCase):
 
         session.close()
 
-    def test_ingestReport_dynamicDateSnapshot(self):
+    def test_ingestReport_dynamicDateSnapshot(self) -> None:
         self._test_ingestReport_dynamicSnapshot('report3_date_snapshot')
 
-    def test_ingestReport_dynamicLastDayOfMonthSnapshot(self):
+    def test_ingestReport_dynamicLastDayOfMonthSnapshot(self) -> None:
         self._test_ingestReport_dynamicSnapshot('report3_last_day_of_month_snapshot')
 
-    def _test_ingestReport_dynamicSnapshot(self, report_id):
+    def _test_ingestReport_dynamicSnapshot(self, report_id: str) -> None:
         """Ingests a report with a dynamic snapshot time window and verifies the output."""
         # Act
         manual_upload.ingest(self.fs, test_utils.prepare_files(self.fs, manifest_filepath(report_id)))
@@ -372,15 +372,15 @@ class ManualUploadTest(unittest.TestCase):
         ]
         self.assertEqual(EXPECTED, results)
 
-    def test_ingestReport_dynamicCustomRange(self):
+    def test_ingestReport_dynamicCustomRange(self) -> None:
         self._test_ingestReport_dynamicDateRange('report4_custom_range')
 
-    def test_ingestReport_dynamicMonthRange(self):
+    def test_ingestReport_dynamicMonthRange(self) -> None:
         self._test_ingestReport_dynamicDateRange('report4_month_range')
 
     # TODO(#4483): This doesn't actually make sense for Population, we should change this to Admission or a different
     # metric once supported.
-    def _test_ingestReport_dynamicDateRange(self, report_id):
+    def _test_ingestReport_dynamicDateRange(self, report_id: str) -> None:
         """Ingests a report with a dynamic range time window and verifies the output."""
         # Act
         manual_upload.ingest(self.fs, test_utils.prepare_files(self.fs, manifest_filepath(report_id)))
@@ -433,7 +433,7 @@ class ManualUploadTest(unittest.TestCase):
         ]
         self.assertEqual(EXPECTED, results)
 
-    def test_ingestSubtypeNotStrict_isPersisted(self):
+    def test_ingestSubtypeNotStrict_isPersisted(self) -> None:
         # Act
         manual_upload.ingest(self.fs, test_utils.prepare_files(self.fs, manifest_filepath('report5_subtype')))
 
@@ -452,12 +452,12 @@ class ManualUploadTest(unittest.TestCase):
             ([None, 'C', 'C', 'C'], decimal.Decimal(444)),
         ], [(cell.aggregated_dimension_values, cell.value) for cell in cells])
 
-    def test_ingestSubtypeStrict_isNotPersisted(self):
+    def test_ingestSubtypeStrict_isNotPersisted(self) -> None:
         # Act
         with self.assertRaises(EnumParsingError):
             manual_upload.ingest(self.fs, test_utils.prepare_files(self.fs, manifest_filepath('report5_subtype_fail')))
 
-    def test_ingestAdditionalFilters_isPersisted(self):
+    def test_ingestAdditionalFilters_isPersisted(self) -> None:
         # Act
         manual_upload.ingest(self.fs, test_utils.prepare_files(self.fs, manifest_filepath('report6_filters')))
 
@@ -493,7 +493,7 @@ class ManualUploadTest(unittest.TestCase):
                           ],
                          [(cell.aggregated_dimension_values, cell.value) for cell in cells])
 
-    def test_supportCommaNumbers_isPersisted(self):
+    def test_supportCommaNumbers_isPersisted(self) -> None:
         # Act
         manual_upload.ingest(self.fs, test_utils.prepare_files(self.fs, manifest_filepath('report6_commas')))
 
@@ -521,7 +521,7 @@ class ManualUploadTest(unittest.TestCase):
         for assertion_value in assertion_values:
             self.assertIn(assertion_value, actual_values)
 
-    def test_ingestReport_populationTypeDimension(self):
+    def test_ingestReport_populationTypeDimension(self) -> None:
         # Act
         manual_upload.ingest(self.fs, test_utils.prepare_files(self.fs, manifest_filepath('report7_population_types')))
 
@@ -535,7 +535,7 @@ class ManualUploadTest(unittest.TestCase):
             (['SUPERVISION', 'Probationeers', 'PROBATION', 'Probationeers'], decimal.Decimal(200784)),
         ], [(cell.aggregated_dimension_values, cell.value) for cell in cells])
 
-    def test_ingestReport_parolePopulation(self):
+    def test_ingestReport_parolePopulation(self) -> None:
         # Act
         manual_upload.ingest(self.fs, test_utils.prepare_files(self.fs, manifest_filepath('report_parole_population')))
 
@@ -552,7 +552,7 @@ class ManualUploadTest(unittest.TestCase):
         self.assertEqual([], cell.aggregated_dimension_values)
         self.assertEqual(decimal.Decimal(5592), cell.value)
 
-    def test_raiseError_noPopulationTypeDimensionOrMetric(self):
+    def test_raiseError_noPopulationTypeDimensionOrMetric(self) -> None:
         # Act
         with pytest.raises(AttributeError) as exception_info:
             manual_upload.ingest(self.fs,
@@ -562,7 +562,7 @@ class ManualUploadTest(unittest.TestCase):
         # Assert
         assert "metric and dimension column not specified" in str(exception_info.value)
 
-    def test_raiseError_hasBothPopulationTypeDimensionAndMetric(self):
+    def test_raiseError_hasBothPopulationTypeDimensionAndMetric(self) -> None:
         # Act
         with pytest.raises(AttributeError) as exception_info:
             manual_upload.ingest(self.fs,
@@ -572,7 +572,7 @@ class ManualUploadTest(unittest.TestCase):
         # Assert
         assert "metric and dimension column specified" in str(exception_info.value)
 
-    def test_admissionMetric_isPersisted(self):
+    def test_admissionMetric_isPersisted(self) -> None:
         # Act
         manual_upload.ingest(self.fs, test_utils.prepare_files(self.fs, manifest_filepath('report_admissions')))
 
@@ -598,7 +598,7 @@ class ManualUploadTest(unittest.TestCase):
                            session.query(schema.Cell)
                            .filter(schema.Cell.report_table_instance == type_table).all()}
 
-        EXPECTED_TOTALS = {
+        EXPECTED_RAW_TYPE_TOTALS = {
             ('FROM_SUPERVISION', 'Probation Revocations', 'PROBATION', 'Probation Revocations'): 244,
             ('NEW_COMMITMENT', 'New Commitments', None, 'New Commitments'): 125,
             ('OTHER', 'Other', None, 'Other'): 27,
@@ -606,7 +606,7 @@ class ManualUploadTest(unittest.TestCase):
             ('OTHER', 'Returned Escapees', None, 'Returned Escapees'): 53,
             ('NEW_COMMITMENT', 'Split Sentence', None, 'Split Sentence'): 166,
         }
-        self.assertEqual(EXPECTED_TOTALS, raw_type_values)
+        self.assertEqual(EXPECTED_RAW_TYPE_TOTALS, raw_type_values)
 
         type_values = {
             (result[0], result[1]): int(result[2]) for result in
@@ -615,13 +615,13 @@ class ManualUploadTest(unittest.TestCase):
             .filter(schema.Cell.report_table_instance == type_table)
             .group_by(schema.Cell.aggregated_dimension_values[1], schema.Cell.aggregated_dimension_values[3])
             .all()}
-        EXPECTED_TOTALS = {
+        EXPECTED_TYPE_TOTALS = {
             ('FROM_SUPERVISION', 'PAROLE'): 128,
             ('FROM_SUPERVISION', 'PROBATION'): 244,
             ('NEW_COMMITMENT', None): 291,
             ('OTHER', None): 80,
         }
-        self.assertEqual(EXPECTED_TOTALS, type_values)
+        self.assertEqual(EXPECTED_TYPE_TOTALS, type_values)
 
         [[total_from_types]] = session.query(sql.func.sum(schema.Cell.value)) \
             .filter(schema.Cell.report_table_instance == type_table).group_by().all()
@@ -631,7 +631,7 @@ class ManualUploadTest(unittest.TestCase):
 
         session.close()
 
-    def test_releasesMetric_isPersisted(self):
+    def test_releasesMetric_isPersisted(self) -> None:
         # Act
         manual_upload.ingest(self.fs, test_utils.prepare_files(self.fs, manifest_filepath('report_releases')))
 
@@ -658,7 +658,7 @@ class ManualUploadTest(unittest.TestCase):
 
         session.close()
 
-    def test_reincarcerationsWithViolationType_arePersisted(self):
+    def test_reincarcerationsWithViolationType_arePersisted(self) -> None:
         # Act
         manual_upload.ingest(self.fs, test_utils.prepare_files(self.fs, manifest_filepath('report8_reincarcerations')))
 
@@ -686,7 +686,7 @@ class ManualUploadTest(unittest.TestCase):
         self.assertEqual(EXPECTED_TOTALS, violation_type_values)
         session.close()
 
-    def test_ingestReport_fixed_range_month(self):
+    def test_ingestReport_fixed_range_month(self) -> None:
         # Act
         manual_upload.ingest(self.fs, test_utils.prepare_files(self.fs, manifest_filepath('report6_fixed_month_range')))
 
@@ -698,7 +698,7 @@ class ManualUploadTest(unittest.TestCase):
             (datetime.date(2020, 9, 1), datetime.date(2020, 10, 1)),
         ], [(row.time_window_start, row.time_window_end) for row in report_table])
 
-    def test_ingestReport_fixed_range_year(self):
+    def test_ingestReport_fixed_range_year(self) -> None:
         # Act
         manual_upload.ingest(self.fs, test_utils.prepare_files(self.fs, manifest_filepath('report6_fixed_year_range')))
 
@@ -710,7 +710,7 @@ class ManualUploadTest(unittest.TestCase):
             (datetime.date(2019, 1, 1), datetime.date(2020, 1, 1)),
         ], [(row.time_window_start, row.time_window_end) for row in report_table])
 
-    def test_raiseError_race_not_properly_mapped(self):
+    def test_raiseError_race_not_properly_mapped(self) -> None:
         # Act
         with pytest.raises(EnumParsingError) as exception_info:
             manual_upload.ingest(self.fs,
@@ -720,7 +720,7 @@ class ManualUploadTest(unittest.TestCase):
         # Assert
         assert "Could not parse RANDOM" in str(exception_info.value)
 
-    def test_ingestReport_synthetic_column(self):
+    def test_ingestReport_synthetic_column(self) -> None:
         # Act
         manual_upload.ingest(self.fs, test_utils.prepare_files(self.fs, manifest_filepath('report_synthetic_column')))
 
@@ -739,7 +739,7 @@ class ManualUploadTest(unittest.TestCase):
                           'source/colorado_department_of_corrections/population_subtype/raw'],
                          table_definition.aggregated_dimensions)
 
-    def test_ingestAgeRaw_isPersisted(self):
+    def test_ingestAgeRaw_isPersisted(self) -> None:
         # Act
         manual_upload.ingest(self.fs, test_utils.prepare_files(self.fs, manifest_filepath('report_age_raw')))
 
@@ -762,7 +762,7 @@ class ManualUploadTest(unittest.TestCase):
             (['45+', 'FEMALE', 'Female'], decimal.Decimal(0))
         ], [(cell.aggregated_dimension_values, cell.value) for cell in cells])
 
-    def test_parse_date_range_raiseChronologicalError(self):
+    def test_parse_date_range_raiseChronologicalError(self) -> None:
         range_input = YAMLDict({
             "type": "RANGE",
             "input": [
@@ -778,7 +778,7 @@ class ManualUploadTest(unittest.TestCase):
         # Assert
         assert "Parsed date has to be in chronological order" in str(exception_info.value)
 
-    def test_parse_date_range_input_raiseMaximumDatesError(self):
+    def test_parse_date_range_input_raiseMaximumDatesError(self) -> None:
         range_input = YAMLDict({
             "type": "RANGE",
             "input": [
@@ -795,7 +795,7 @@ class ManualUploadTest(unittest.TestCase):
         # Assert
         assert "Have a maximum of 2 dates for input" in str(exception_info.value)
 
-    def test_DynamicDateRangeProducer_convert_chronolicalError(self):
+    def test_DynamicDateRangeProducer_convert_chronolicalError(self) -> None:
         converter = manual_upload.RANGE_CONVERTERS[manual_upload.RangeType.CUSTOM]
         columns = {
             'Start': manual_upload.DATE_FORMAT_PARSERS[manual_upload.DateFormatType.MONTH],
@@ -806,12 +806,12 @@ class ManualUploadTest(unittest.TestCase):
 
         # Act
         with pytest.raises(ValueError) as exception_info:
-            dynamic_range_producer._convert(args)  # pylint: disable=protected-access
+            dynamic_range_producer._convert(list(args))  # pylint: disable=protected-access
 
         # Assert
         assert "Parsed date has to be in chronological order" in str(exception_info.value)
 
-    def test_raiseAggregatedDimensionsShouldBeFilteredDimension(self):
+    def test_raiseAggregatedDimensionsShouldBeFilteredDimension(self) -> None:
         date_range = manual_upload.NonNegativeDateRange(datetime.date(2019, 10, 1), datetime.date(2019, 11, 1))
         metric = manual_upload.Population(schema.MeasurementType.INSTANT)
 
@@ -825,7 +825,7 @@ class ManualUploadTest(unittest.TestCase):
         # Assert
         assert "change it to a filtered dimension" in str(exception_info.value)
 
-    def test_genericSpreadsheet_isParsed(self):
+    def test_genericSpreadsheet_isParsed(self) -> None:
         # Act
         manual_upload.ingest(self.fs, test_utils.prepare_files(
             self.fs, manifest_filepath('report_generic_sheet', 'AL_A.yaml')))
@@ -836,12 +836,12 @@ class ManualUploadTest(unittest.TestCase):
         self.assertEqual([([], decimal.Decimal(1000))],
                          [(cell.aggregated_dimension_values, cell.value) for cell in cells])
 
-    def test_NaNs_fail(self):
+    def test_NaNs_fail(self) -> None:
         # Act
         with self.assertRaisesRegex(ValueError, "Invalid value 'NaN'"):
             manual_upload.ingest(self.fs, test_utils.prepare_files(self.fs, manifest_filepath('report_nans')))
 
-    def test_reingestReport(self):
+    def test_reingestReport(self) -> None:
         # Act
         manual_upload.ingest(self.fs, test_utils.prepare_files(self.fs, manifest_filepath('report_reingest/original')))
 
