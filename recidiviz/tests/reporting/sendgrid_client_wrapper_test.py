@@ -30,7 +30,7 @@ class SendGridClientWrapperTest(TestCase):
     """Tests for the wrapper class SendGridClientWrapper"""
 
     def setUp(self) -> None:
-        HttpResponse = collections.namedtuple('Response', ['status_code'])
+        HttpResponse = collections.namedtuple('HttpResponse', ['status_code'])
         self.error_response = HttpResponse(404)
         self.success_response = HttpResponse(202)
         self.client_patcher = patch('recidiviz.reporting.sendgrid_client_wrapper.SendGridAPIClient')
@@ -77,8 +77,8 @@ class SendGridClientWrapperTest(TestCase):
         """Given cc_addresses, test that _create_message creates a list of Cc objects for the Mail message."""
         self.mock_client.send.return_value = self.success_response
 
-        mail_message = collections.namedtuple('Mail', [])
-        mock_message = MagicMock(return_value=mail_message())
+        Mail = collections.namedtuple('Mail', [])
+        mock_message = MagicMock(return_value=Mail())
         self.mock_mail_helpers.Mail.return_value = mock_message
 
         mock_parent = Mock()

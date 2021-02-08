@@ -17,12 +17,14 @@
 """Tests for justice counts request handlers"""
 
 import unittest
+from typing import Dict
 
 from flask import Flask
 from mock import ANY, patch, Mock
 
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.ingest.justice_counts import control
+
 
 @patch('recidiviz.utils.metadata.project_id', Mock(return_value='test-project'))
 @patch('recidiviz.utils.metadata.project_number', Mock(return_value='123456789'))
@@ -42,7 +44,7 @@ class TestDirectIngestControl(unittest.TestCase):
         self.storage_client_patcher.stop()
 
     @patch('recidiviz.tools.justice_counts.manual_upload.ingest')
-    def test_withManifest_succeeds(self, mock_ingest):
+    def test_withManifest_succeeds(self, mock_ingest: unittest.mock.MagicMock) -> None:
         # Act
         request_args = {'manifest_path': 'gs://fake-bucket/foo/manifest.yaml'}
         headers = {'X-Appengine-Cron': 'test-cron'}
@@ -52,9 +54,9 @@ class TestDirectIngestControl(unittest.TestCase):
         self.assertEqual(200, response.status_code)
         mock_ingest.assert_called_with(ANY, GcsfsFilePath(bucket_name='fake-bucket', blob_name='foo/manifest.yaml'))
 
-    def test_withoutManifest_rejectsQuery(self):
+    def test_withoutManifest_rejectsQuery(self) -> None:
         # Act
-        request_args = {}
+        request_args: Dict[str, str] = {}
         headers = {'X-Appengine-Cron': 'test-cron'}
         response = self.client.get('/ingest', query_string=request_args, headers=headers)
 
@@ -62,7 +64,7 @@ class TestDirectIngestControl(unittest.TestCase):
         self.assertEqual(400, response.status_code)
 
     @patch('recidiviz.tools.justice_counts.manual_upload.ingest')
-    def test_ingestFails_raisesError(self, mock_ingest):
+    def test_ingestFails_raisesError(self, mock_ingest: unittest.mock.MagicMock) -> None:
         # Arrange
         mock_ingest.side_effect = ValueError('Malformed manifest')
 
