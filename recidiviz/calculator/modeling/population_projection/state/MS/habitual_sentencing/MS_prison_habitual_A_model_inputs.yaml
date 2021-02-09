@@ -4,9 +4,9 @@ user_inputs:
     projection_years: 10.0
 
 model_architecture:
-    pretrial: null
-    prison: incarcerated
-    parole: incarcerated
+    pretrial: shell
+    prison: full
+    parole: full
 
 reference_date: 2018.0
 time_step: 1.0

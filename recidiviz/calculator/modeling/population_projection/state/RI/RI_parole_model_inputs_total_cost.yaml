@@ -5,12 +5,12 @@ user_inputs:
     speed_run: true
 
 model_architecture:
-    pretrial: null
-    prison: incarcerated
-    parole: incarcerated
-    prison_technical: incarcerated 
-    prison_new_offense: incarcerated
-    release: released
+    pretrial: shell
+    prison: full
+    parole: full
+    prison_technical: full
+    prison_new_offense: full
+    release: full
 
 reference_date: 2014.0
 # january

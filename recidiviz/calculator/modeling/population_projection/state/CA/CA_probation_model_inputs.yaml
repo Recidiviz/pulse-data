@@ -5,10 +5,10 @@ user_inputs:
   projection_years: 10.0
 
 model_architecture:
-    prison_shell: null
-    prison: incarcerated
-    probation: incarcerated
-    release: released
+    prison_shell: shell
+    prison: full
+    probation: full
+    release: full
 
 reference_date: 2016.0
 

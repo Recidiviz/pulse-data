@@ -158,7 +158,7 @@ class SuperSimulationFactory:
             compartment_costs_dict[k] = compartment_costs_raw.pop(k, float)
 
         # Ensure there are compartment costs for every compartment in the model architecture
-        model_compartments = set(c for c in model_architecture_keys if model_architecture_dict[c] is not None)
+        model_compartments = set(c for c in model_architecture_keys if model_architecture_dict[c] != 'shell')
         compartment_costs = set(compartment_costs_keys)
         if compartment_costs != model_compartments:
             raise ValueError(

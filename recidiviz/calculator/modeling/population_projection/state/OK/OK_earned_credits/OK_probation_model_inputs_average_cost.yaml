@@ -1,15 +1,14 @@
 user_inputs:
     policy_year: 2021.0
     start_year: 2019.0
-    projection_years: 11.0
+    projection_years: 10.0
     speed_run: true
 
 model_architecture:
     pre-supervision: shell
     probation: full
-    parole: full
-    prison_probation_revocations: full
-    prison_parole_revocations: full
+    prison_technical: full
+    prison_new_offense: full
     release: full
 
 reference_date: 2010.0
@@ -21,11 +20,10 @@ disaggregation_axes:
 - crime_type
 
 data_inputs:
-  big_query_simulation_tag: GA_prison
+  big_query_simulation_tag: OK_probation
 
 per_year_costs:
-  prison_probation_revocations: 5300.0
-  prison_parole_revocations: 5300.0
-  probation: 474.12
-  parole: 501.0
+  prison_technical: 16497.0
+  prison_new_offense: 16497.0
+  probation: 1044.0
   release: 0.0

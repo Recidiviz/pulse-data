@@ -5,8 +5,8 @@ user_inputs:
   projection_years: 10.0
 
 model_architecture:
-    PRETRIAL: null
-    PRISON: incarcerated
+    PRETRIAL: shell
+    PRISON: full
 
 reference_date: 2010.0
 

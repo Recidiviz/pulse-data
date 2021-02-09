@@ -45,8 +45,8 @@ class TestSubSimulation(unittest.TestCase):
             'time_step': [-4, -3, -2, -1, 0],
         })
 
-        self.test_architecture = {'pretrial': None, 'supervision': 'released',
-                                  'prison': 'incarcerated'}
+        self.test_architecture = {'pretrial': 'shell', 'supervision': 'full',
+                                  'prison': 'full'}
 
         self.compartment_policies = []
 

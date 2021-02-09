@@ -21,7 +21,8 @@ import pandas as pd
 from pandas.testing import assert_index_equal
 
 from recidiviz.calculator.modeling.population_projection.population_simulation import PopulationSimulation
-from recidiviz.calculator.modeling.population_projection.incarceration_transitions import IncarceratedTransitions
+from recidiviz.calculator.modeling.population_projection.simulations.compartment_transitions import \
+    CompartmentTransitions
 from recidiviz.calculator.modeling.population_projection.spark_policy import SparkPolicy
 
 
@@ -62,7 +63,7 @@ class TestPopulationSimulation(unittest.TestCase):
             'speed_run': False
         }
         self.simulation_architecture = {
-            'pretrial': None, 'prison': 'incarcerated', 'supervision': 'released'
+            'pretrial': 'shell', 'prison': 'full', 'supervision': 'full'
         }
 
     def test_disaggregation_axes_must_be_in_data_dfs(self):
@@ -128,7 +129,7 @@ class TestPopulationSimulation(unittest.TestCase):
         population_simulation = PopulationSimulation()
         with self.assertRaises(ValueError):
             user_inputs = deepcopy(self.user_inputs)
-            user_inputs['policy_list'] = [SparkPolicy(IncarceratedTransitions.test_non_retroactive_policy,
+            user_inputs['policy_list'] = [SparkPolicy(CompartmentTransitions.test_non_retroactive_policy,
                                                       'supervision', {'crime': 'NAR'})]
             population_simulation.simulate_policies(
                 outflows_data=self.test_outflows_data,
