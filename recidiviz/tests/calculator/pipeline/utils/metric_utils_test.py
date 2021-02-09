@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2019 Recidiviz, Inc.
+# Copyright (C) 2021 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -33,69 +33,13 @@ from recidiviz.calculator.pipeline.supervision.metrics import SupervisionMetricT
     SuccessfulSupervisionSentenceDaysServedMetric, SupervisionCaseComplianceMetric, SupervisionDowngradeMetric, \
     SupervisionStartMetric, SupervisionOutOfStatePopulationMetric
 from recidiviz.calculator.pipeline.utils.metric_utils import json_serializable_metric_key, RecidivizMetric
-from recidiviz.common.constants.person_characteristics import Gender, Race, Ethnicity
+from recidiviz.common.constants.person_characteristics import Gender
 
 
 class TestJsonSerializableMetricKey(unittest.TestCase):
     """Tests the json_serializable_metric_key function."""
     def test_json_serializable_metric_key(self):
         metric_key = {'gender': Gender.MALE,
-                      'race': [Race.BLACK, Race.WHITE],
-                      'year': 1999,
-                      'month': 3,
-                      'state_code': 'CA'}
-
-        expected_output = {'gender': 'MALE',
-                           'race': 'BLACK,WHITE',
-                           'year': 1999,
-                           'month': 3,
-                           'state_code': 'CA'}
-
-        updated_metric_key = json_serializable_metric_key(metric_key)
-
-        self.assertEqual(expected_output, updated_metric_key)
-
-    def test_json_serializable_metric_key_OneRace(self):
-        metric_key = {'gender': Gender.MALE,
-                      'race': [Race.BLACK],
-                      'year': 1999,
-                      'month': 3,
-                      'state_code': 'CA'}
-
-        expected_output = {'gender': 'MALE',
-                           'race': 'BLACK',
-                           'year': 1999,
-                           'month': 3,
-                           'state_code': 'CA'}
-
-        updated_metric_key = json_serializable_metric_key(metric_key)
-
-        self.assertEqual(expected_output, updated_metric_key)
-
-    def test_json_serializable_metric_key_RaceEthnicity(self):
-        metric_key = {'gender': Gender.MALE,
-                      'race': [Race.BLACK],
-                      'ethnicity': [Ethnicity.HISPANIC, Ethnicity.EXTERNAL_UNKNOWN],
-                      'year': 1999,
-                      'month': 3,
-                      'state_code': 'CA'}
-
-        expected_output = {'gender': 'MALE',
-                           'race': 'BLACK',
-                           'ethnicity': 'EXTERNAL_UNKNOWN,HISPANIC',
-                           'year': 1999,
-                           'month': 3,
-                           'state_code': 'CA'}
-
-        updated_metric_key = json_serializable_metric_key(metric_key)
-
-        self.assertEqual(expected_output, updated_metric_key)
-
-    def test_json_serializable_metric_key_RaceEthnicityNone(self):
-        # This should never happen due to the way this dictionary is constructed.
-        metric_key = {'gender': Gender.MALE,
-                      'race': [None],
-                      'ethnicity': [None],
                       'year': 1999,
                       'month': 3,
                       'state_code': 'CA'}
@@ -111,7 +55,6 @@ class TestJsonSerializableMetricKey(unittest.TestCase):
 
     def test_json_serializable_metric_key_ViolationTypeFrequencyCounter(self):
         metric_key = {'gender': Gender.MALE,
-                      'race': [Race.BLACK, Race.WHITE],
                       'year': 1999,
                       'month': 3,
                       'state_code': 'CA',
@@ -119,7 +62,6 @@ class TestJsonSerializableMetricKey(unittest.TestCase):
                       }
 
         expected_output = {'gender': 'MALE',
-                           'race': 'BLACK,WHITE',
                            'year': 1999,
                            'month': 3,
                            'state_code': 'CA',
@@ -149,8 +91,6 @@ class TestBQSchemaForMetricTable(unittest.TestCase):
             SchemaField('job_id', bigquery.enums.SqlTypeNames.STRING.value),
             SchemaField('state_code', bigquery.enums.SqlTypeNames.STRING.value),
             SchemaField('age_bucket', bigquery.enums.SqlTypeNames.STRING.value),
-            SchemaField('race', bigquery.enums.SqlTypeNames.STRING.value),
-            SchemaField('ethnicity', bigquery.enums.SqlTypeNames.STRING.value),
             SchemaField('prioritized_race_or_ethnicity', bigquery.enums.SqlTypeNames.STRING.value),
             SchemaField('gender', bigquery.enums.SqlTypeNames.STRING.value),
             SchemaField('created_on', bigquery.enums.SqlTypeNames.DATE.value),
