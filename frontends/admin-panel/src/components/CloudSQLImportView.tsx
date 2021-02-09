@@ -15,12 +15,50 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 import * as React from "react";
-import { Alert, Button, Form, Input, PageHeader, message } from "antd";
+import { Alert, Button, Form, PageHeader, Result, Spin, Select } from "antd";
 import { WarningFilled } from "@ant-design/icons";
 
-import { runCloudSQLImport } from "../AdminPanelAPI";
+import { fetchETLViewIds, runCloudSQLImport } from "../AdminPanelAPI";
+import useFetchedData from "../hooks";
 
 const CloudSQLImportView = (): JSX.Element => {
+  const [importStatus, setImportStatus] = React.useState<
+    "not-started" | "started" | "done" | "errored"
+  >("not-started");
+  const [errorText, setErrorText] = React.useState<string>("");
+  const { loading, data } = useFetchedData<string[]>(fetchETLViewIds);
+
+  if (loading) {
+    return (
+      <div className="center">
+        <Spin size="large" />
+      </div>
+    );
+  }
+
+  if (importStatus === "started") {
+    return (
+      <Result
+        title="Import has been started..."
+        subTitle="This page will update when import has completed successfully."
+      />
+    );
+  }
+  if (importStatus === "done") {
+    return (
+      <Result status="success" title="Import has completed successfully!" />
+    );
+  }
+  if (importStatus === "errored") {
+    return (
+      <Result
+        status="error"
+        title="Something went wrong during import."
+        subTitle={errorText}
+      />
+    );
+  }
+
   const layout = {
     labelCol: { span: 4 },
     wrapperCol: { span: 20 },
@@ -30,29 +68,19 @@ const CloudSQLImportView = (): JSX.Element => {
   };
 
   const onFinish = async (values: { [key: string]: string }) => {
-    let columns = [];
-    try {
-      columns = JSON.parse(values.columns);
-    } catch (e) {
-      message.error("Invalid JSON provided");
-      return;
-    }
-    if (!Array.isArray(columns)) {
-      message.error("The provided columns are not a valid json array");
-      return;
-    }
-    message.info("Import started");
-    const r = await runCloudSQLImport(
-      values.destinationTable,
-      values.gcsURI,
-      columns
-    );
+    // This is a hack needed to get typescript to realize that the provided value is
+    // a string[] and not just a string. See
+    // https://basarat.gitbook.io/typescript/type-system/type-assertion#double-assertion
+    // for more.
+    const viewIds = (values.viewIds as unknown) as string[];
+    setImportStatus("started");
+    const r = await runCloudSQLImport(viewIds);
     if (r.status >= 400) {
-      const text = await r.text();
-      message.error(`Error loading data: ${text}`);
+      setErrorText(await r.text());
+      setImportStatus("errored");
       return;
     }
-    message.success("Import succeeded!");
+    setImportStatus("done");
   };
   return (
     <>
@@ -68,23 +96,19 @@ const CloudSQLImportView = (): JSX.Element => {
       />
       <Form {...layout} className="buffer" onFinish={onFinish}>
         <Form.Item
-          label="Destination Table"
-          name="destinationTable"
+          label="Views to Export"
+          name="viewIds"
           rules={[{ required: true }]}
         >
-          <Input />
-        </Form.Item>
-
-        <Form.Item label="GCS URI" name="gcsURI" rules={[{ required: true }]}>
-          <Input />
-        </Form.Item>
-
-        <Form.Item
-          label="Columns (as JSON)"
-          name="columns"
-          rules={[{ required: true }]}
-        >
-          <Input />
+          <Select mode="multiple">
+            {data?.map((viewId: string) => {
+              return (
+                <Select.Option key={viewId} value={viewId}>
+                  {viewId}
+                </Select.Option>
+              );
+            })}
+          </Select>
         </Form.Item>
 
         <Form.Item {...tailLayout}>
