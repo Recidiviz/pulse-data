@@ -27,7 +27,8 @@ from recidiviz.tests.calculator.modeling.population_projection.simulation_object
 from recidiviz.calculator.modeling.population_projection.simulations.super_simulation_factory import \
     SuperSimulationFactory
 from recidiviz.calculator.modeling.population_projection.spark_policy import SparkPolicy
-from recidiviz.calculator.modeling.population_projection.compartment_transitions import CompartmentTransitions
+from recidiviz.calculator.modeling.population_projection.simulations.compartment_transitions import \
+    CompartmentTransitions
 
 outflows_data = pd.DataFrame({
     'compartment': ['PRETRIAL'] * 12,

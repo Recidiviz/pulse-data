@@ -22,7 +22,8 @@ import numpy as np
 
 from recidiviz.calculator.modeling.population_projection.cohort_table import CohortTable
 from recidiviz.calculator.modeling.population_projection.spark_compartment import SparkCompartment
-from recidiviz.calculator.modeling.population_projection.compartment_transitions import CompartmentTransitions
+from recidiviz.calculator.modeling.population_projection.simulations.compartment_transitions import \
+    CompartmentTransitions
 
 
 class FullCompartment(SparkCompartment):
@@ -54,8 +55,7 @@ class FullCompartment(SparkCompartment):
     def _generate_outflow_dict(self):
         """step forward all cohorts one time step and generate outflow dict"""
 
-        per_ts_transitions, long_sentence_transitions = self.transition_tables.get_per_ts_transition_table(
-            self.current_ts, self.policy_ts)
+        per_ts_transitions = self.transition_tables.get_per_ts_transition_table(self.current_ts, self.policy_ts)
 
         latest_ts_pop = self.cohorts.get_latest_population()
 
@@ -69,24 +69,24 @@ class FullCompartment(SparkCompartment):
                              f"Cohort start times: {self.current_ts - latest_ts_pop.index}")
 
         latest_ts_pop_short = latest_ts_pop[latest_ts_pop.index <= len(per_ts_transitions)]
-        latest_ts_pop_long = pd.DataFrame(latest_ts_pop[latest_ts_pop.index > len(per_ts_transitions)])
-        if not latest_ts_pop_long.empty:
-            latest_ts_pop_long.columns = [0]
+        latest_ts_pop_long = latest_ts_pop[latest_ts_pop.index > len(per_ts_transitions)]
+        if not latest_ts_pop_long.sum().sum() == 0:
+            raise ValueError(f"cohorts not empty after max sentence: {latest_ts_pop_long}")
 
         # broadcast latest cohort populations onto transition table
         latest_ts_pop_short = per_ts_transitions.mul(latest_ts_pop_short, axis=0)
 
-        # dot latest long sentence cohort populations with long sentence probabilities
-        latest_ts_pop_long = latest_ts_pop_long.dot(long_sentence_transitions)
+        latest_ts_pop = latest_ts_pop_long.append(latest_ts_pop_short.remaining)
 
-        latest_ts_pop = latest_ts_pop_long.append(latest_ts_pop_short).fillna(0)
+        if latest_ts_pop_short.iloc[-1, ].remaining > 0:
+            print('here it is')
 
         # convert index back to starting year from years in compartment
         latest_ts_pop.index = self.current_ts - latest_ts_pop.index
 
-        self.cohorts.append_ts_end_count(latest_ts_pop['remaining'].sort_index(), self.current_ts)
+        self.cohorts.append_ts_end_count(latest_ts_pop.sort_index(), self.current_ts)
 
-        outflow_dict = {outflow: latest_ts_pop.sum(axis=0)[outflow] for outflow in latest_ts_pop.columns
+        outflow_dict = {outflow: latest_ts_pop_short.sum(axis=0)[outflow] for outflow in latest_ts_pop_short.columns
                         if outflow not in ['death', 'remaining']}
         return outflow_dict
 

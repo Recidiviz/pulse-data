@@ -6,10 +6,10 @@ user_inputs:
     speed_run: true
 
 model_architecture:
-    pretrial: null
-    prison: incarcerated
-    probation: incarcerated
-    release: released
+    pretrial: shell
+    prison: full
+    probation: full
+    release: full
 # probation represents mandatory supervised release in this case
 
 reference_date: 2011.0

@@ -5,9 +5,9 @@ user_inputs:
   run_date: '2021-01-01'
 
 model_architecture:
-    PRETRIAL: null
-    RELEASE: released
-    PRISON: incarcerated
+    PRETRIAL: shell
+    RELEASE: full
+    PRISON: full
 
 reference_date: 2019.0
 

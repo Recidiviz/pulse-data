@@ -20,11 +20,10 @@ from typing import Dict, Optional, List
 from warnings import warn
 import pandas as pd
 
-from recidiviz.calculator.modeling.population_projection.compartment_transitions import CompartmentTransitions
+from recidiviz.calculator.modeling.population_projection.simulations.compartment_transitions import \
+    CompartmentTransitions
 from recidiviz.calculator.modeling.population_projection.shell_compartment import ShellCompartment
 from recidiviz.calculator.modeling.population_projection.full_compartment import FullCompartment
-from recidiviz.calculator.modeling.population_projection.incarceration_transitions import IncarceratedTransitions
-from recidiviz.calculator.modeling.population_projection.release_transitions import ReleasedTransitions
 from recidiviz.calculator.modeling.population_projection.spark_compartment import SparkCompartment
 from recidiviz.calculator.modeling.population_projection.spark_policy import SparkPolicy
 
@@ -81,24 +80,24 @@ class SubSimulation:
         transitions_per_compartment = {}
         unused_transitions_data = self.transitions_data
         for compartment in self.simulation_architecture:
-            transition_type = self.simulation_architecture[compartment]
+            compartment_type = self.simulation_architecture[compartment]
             compartment_duration_data = self.transitions_data[self.transitions_data['compartment'] == compartment]
             unused_transitions_data = unused_transitions_data.drop(compartment_duration_data.index)
 
             if compartment_duration_data.empty:
-                if transition_type is not None:
+                if compartment_type != 'shell':
                     raise ValueError(f"Transition data missing for compartment {compartment}. Data is required for all "
                                      "disaggregtion axes. Even the 'release' compartment needs transition data even if "
                                      "it's just outflow to 'release'")
             else:
-                if transition_type == 'incarcerated':
-                    transition_class = IncarceratedTransitions(compartment_duration_data)
-                elif transition_type == 'released':
-                    transition_class = ReleasedTransitions(compartment_duration_data)
+                if compartment_type == 'full':
+                    transition_class = CompartmentTransitions(compartment_duration_data)
+                elif compartment_type == 'shell':
+                    raise ValueError(f'Cannot provide transitions data for shell compartment \n '
+                                     f'{compartment_duration_data}')
                 else:
-                    raise ValueError(f'unrecognized transition table type {transition_type}')
+                    raise ValueError(f'unrecognized transition table type {compartment_type}')
 
-                transition_class.initialize_transition_table()
                 transitions_per_compartment[compartment] = transition_class
 
         if len(unused_transitions_data) > 0:
@@ -150,11 +149,11 @@ class SubSimulation:
                                  shell_policies: Dict[str, List[SparkPolicy]]):
         """Initialize all the SparkCompartments for the subpopulation simulation"""
 
-        for compartment, transition_type in self.simulation_architecture.items():
+        for compartment, compartment_type in self.simulation_architecture.items():
             outflows_data = preprocessed_data.loc[compartment].dropna(axis=0, how='all').dropna(axis=1, how='all')
 
             # if no transition table, initialize as shell compartment
-            if transition_type is None:
+            if compartment_type == 'shell':
                 if outflows_data.empty:
                     raise ValueError(f"outflows_data for shell compartment {compartment} cannot be empty")
                 self.simulation_compartments[compartment] = ShellCompartment(

@@ -19,8 +19,8 @@
 import unittest
 import pandas as pd
 from recidiviz.calculator.modeling.population_projection.full_compartment import FullCompartment
-from recidiviz.calculator.modeling.population_projection.incarceration_transitions import IncarceratedTransitions
-from recidiviz.calculator.modeling.population_projection.release_transitions import ReleasedTransitions
+from recidiviz.calculator.modeling.population_projection.simulations.compartment_transitions import \
+    CompartmentTransitions
 
 
 class TestFullCompartment(unittest.TestCase):
@@ -42,11 +42,11 @@ class TestFullCompartment(unittest.TestCase):
 
         self.compartment_policies = []
 
-        self.incarceration_transition_table = IncarceratedTransitions(self.test_incarceration_data)
+        self.incarceration_transition_table = CompartmentTransitions(self.test_incarceration_data)
         self.incarceration_transition_table.initialize_transition_table()
         self.incarceration_transition_table.initialize(self.compartment_policies)
 
-        self.release_transition_table = ReleasedTransitions(self.test_supervision_data)
+        self.release_transition_table = CompartmentTransitions(self.test_supervision_data)
         self.release_transition_table.initialize_transition_table()
         self.release_transition_table.initialize(self.compartment_policies)
 
