@@ -91,17 +91,6 @@ def person_characteristics(person: StatePerson,
         characteristics['age_bucket'] = event_age_bucket
     if person.gender is not None:
         characteristics['gender'] = person.gender
-    # TODO(#4294): Remove the support of the race and ethnicity attributes, which have been replaced by
-    #  prioritized_race_or_ethnicity
-    if person.races:
-        races = [race_object.race for race_object in person.races if race_object.race is not None]
-        if races:
-            characteristics['race'] = races
-    if person.ethnicities:
-        ethnicities = [ethnicity_object.ethnicity for ethnicity_object in person.ethnicities
-                       if ethnicity_object.ethnicity is not None]
-        if ethnicities:
-            characteristics['ethnicity'] = ethnicities
     if person_metadata and person_metadata.prioritized_race_or_ethnicity:
         characteristics['prioritized_race_or_ethnicity'] = person_metadata.prioritized_race_or_ethnicity
 

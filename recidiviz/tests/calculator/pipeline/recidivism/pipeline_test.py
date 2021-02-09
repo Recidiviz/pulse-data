@@ -1055,11 +1055,11 @@ class MetricGroup:
 
     recidivism_metric_with_race = ReincarcerationRecidivismRateMetric(
         job_id='12345', state_code='US_XX', release_cohort=2015,
-        follow_up_period=1, race=[Race.BLACK], did_recidivate=True)
+        follow_up_period=1, did_recidivate=True)
 
     recidivism_metric_with_ethnicity = ReincarcerationRecidivismRateMetric(
         job_id='12345', state_code='US_XX', release_cohort=2015,
-        follow_up_period=1, ethnicity=[Ethnicity.HISPANIC], did_recidivate=True)
+        follow_up_period=1, did_recidivate=True)
 
     recidivism_metric_with_release_facility = \
         ReincarcerationRecidivismRateMetric(

@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2019 Recidiviz, Inc.
+# Copyright (C) 2021 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -27,8 +27,8 @@ from recidiviz.calculator.pipeline.utils.person_utils import PersonMetadata
 from recidiviz.common.constants.person_characteristics import Gender
 from recidiviz.common.constants.state.state_supervision_violation_response import \
     StateSupervisionViolationResponseDecision
-from recidiviz.persistence.entity.state.entities import StatePerson, \
-    StatePersonRace, Race, StatePersonEthnicity, Ethnicity, StatePersonExternalId
+from recidiviz.persistence.entity.state.entities import StatePerson, StatePersonRace, StatePersonEthnicity, \
+    StatePersonExternalId
 
 
 def test_age_at_date_earlier_month():
@@ -223,12 +223,7 @@ class TestAddPersonCharacteristics(unittest.TestCase):
             person_id=12345,
             birthdate=date(1984, 8, 31),
             gender=Gender.FEMALE,
-            races=[
-                StatePersonRace.new_with_defaults(
-                    state_code='US_XX',
-                    race=Race.ASIAN
-                )
-            ])
+        )
 
         event_date = date(2010, 9, 1)
 
@@ -239,78 +234,8 @@ class TestAddPersonCharacteristics(unittest.TestCase):
         expected_output = {
             'person_id': person.person_id,
             'age_bucket': '25-29',
-            'race': [Race.ASIAN],
             'prioritized_race_or_ethnicity': 'ASIAN',
             'gender': Gender.FEMALE
-        }
-
-        self.assertEqual(updated_characteristics, expected_output)
-
-    def test_add_person_characteristics_MultipleRaces(self):
-        person = StatePerson.new_with_defaults(
-            state_code='US_XX',
-            person_id=12345,
-            birthdate=date(1984, 8, 31),
-            gender=Gender.FEMALE,
-            races=[
-                StatePersonRace.new_with_defaults(
-                    state_code='US_XX',
-                    race=Race.ASIAN
-                ),
-                StatePersonRace.new_with_defaults(
-                    state_code='US_XX',
-                    race=Race.BLACK
-                )
-            ])
-
-        event_date = date(2010, 9, 1)
-
-        person_metadata = PersonMetadata(prioritized_race_or_ethnicity='BLACK')
-
-        updated_characteristics = person_characteristics(person, event_date, person_metadata, 'pipeline')
-
-        expected_output = {
-            'age_bucket': '25-29',
-            'race': [Race.ASIAN, Race.BLACK],
-            'gender': Gender.FEMALE,
-            'person_id': person.person_id,
-            'prioritized_race_or_ethnicity': 'BLACK'
-        }
-
-        self.assertEqual(updated_characteristics, expected_output)
-
-    def test_add_person_characteristics_RaceEthnicity(self):
-        person = StatePerson.new_with_defaults(
-            state_code='US_XX',
-            person_id=12345,
-            birthdate=date(1984, 8, 31),
-            gender=Gender.FEMALE,
-            races=[
-                StatePersonRace.new_with_defaults(
-                    state_code='US_XX',
-                    race=Race.ASIAN
-                )
-            ],
-            ethnicities=[
-                StatePersonEthnicity.new_with_defaults(
-                    state_code='US_XX',
-                    ethnicity=Ethnicity.HISPANIC
-                )
-            ])
-
-        event_date = date(2010, 9, 1)
-
-        person_metadata = PersonMetadata(prioritized_race_or_ethnicity='HISPANIC')
-
-        updated_characteristics = person_characteristics(person, event_date, person_metadata, 'pipeline')
-
-        expected_output = {
-            'age_bucket': '25-29',
-            'race': [Race.ASIAN],
-            'gender': Gender.FEMALE,
-            'ethnicity': [Ethnicity.HISPANIC],
-            'person_id': person.person_id,
-            'prioritized_race_or_ethnicity': 'HISPANIC'
         }
 
         self.assertEqual(updated_characteristics, expected_output)
@@ -321,16 +246,7 @@ class TestAddPersonCharacteristics(unittest.TestCase):
             person_id=12345,
             birthdate=date(1984, 8, 31),
             gender=Gender.FEMALE,
-            races=[
-                StatePersonRace.new_with_defaults(
-                    state_code='US_XX',
-                )
-            ],
-            ethnicities=[
-                StatePersonEthnicity.new_with_defaults(
-                    state_code='US_XX',
-                )
-            ])
+        )
 
         event_date = date(2010, 9, 1)
 
