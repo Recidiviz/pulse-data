@@ -40,6 +40,7 @@ from recidiviz.utils import metadata
 
 
 def _get_columns_by_file(state_code: str, project_id: str) -> Dict[str, List[RawTableColumnInfo]]:
+    """Creates a list of RawTableColumnInfo for each raw file in a given state"""
     columns_by_file: Dict[str, List[RawTableColumnInfo]] = {}
 
     raw_data_dataset = f"{state_code.lower()}_raw_data"
@@ -56,8 +57,11 @@ ORDER BY
     bq_client = BigQueryClientImpl()
     query_job = bq_client.run_query_async(query_string)
     for row in query_job:
-        file_name = row['table_name']
         column_name = row['column_name']
+        if column_name in {'file_id', 'update_datetime'}:
+            continue
+
+        file_name = row['table_name']
         is_datetime = row['data_type'].upper() == 'DATETIME'
 
         if file_name not in columns_by_file:
