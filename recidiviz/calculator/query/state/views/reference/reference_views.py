@@ -44,7 +44,7 @@ from recidiviz.calculator.query.state.views.reference.event_based_program_referr
     EVENT_BASED_PROGRAM_REFERRALS_VIEW_BUILDER
 from recidiviz.calculator.query.state.views.reference.event_based_revocations import \
     EVENT_BASED_REVOCATIONS_VIEW_BUILDER
-from recidiviz.calculator.query.state.views.reference.event_based_supervision import \
+from recidiviz.calculator.query.state.views.reference.event_based_supervision_populations import \
     EVENT_BASED_SUPERVISION_VIEW_BUILDER
 from recidiviz.calculator.query.state.views.reference.revocations_matrix_by_person import \
     REVOCATIONS_MATRIX_BY_PERSON_VIEW_BUILDER

@@ -31,7 +31,6 @@ EVENT_BASED_PROGRAM_REFERRALS_DESCRIPTION = """
  Expanded Dimensions: district, supervision_type
  """
 
-# TODO(#4294): Replace the race and ethnicity fields with prioritized_race_or_ethnicity
 EVENT_BASED_PROGRAM_REFERRALS_QUERY_TEMPLATE = \
     """
     /*{description}*/
@@ -41,7 +40,8 @@ EVENT_BASED_PROGRAM_REFERRALS_QUERY_TEMPLATE = \
       year, month, date_of_referral,
       supervision_type, district,
       participation_status,
-      gender, age_bucket, race, ethnicity, assessment_score_bucket
+      prioritized_race_or_ethnicity as race_or_ethnicity,
+      gender, age_bucket, assessment_score_bucket
     FROM `{project_id}.{materialized_metrics_dataset}.most_recent_program_referral_metrics_materialized`,
     {district_dimension},
     {supervision_type_dimension}

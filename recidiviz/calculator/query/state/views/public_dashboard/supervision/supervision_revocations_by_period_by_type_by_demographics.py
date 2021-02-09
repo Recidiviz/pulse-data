@@ -32,16 +32,14 @@ SUPERVISION_REVOCATIONS_BY_PERIOD_BY_TYPE_BY_DEMOGRAPHICS_VIEW_VIEW_DESCRIPTION 
     with respect to metric_period_months and supervision_type. If a person has more than one revocation of the same
     supervision type in a given metric period, the most recent one is chosen."""
 
-# TODO(#4294): Replace the race and ethnicity fields with prioritized_race_or_ethnicity
 SUPERVISION_REVOCATIONS_BY_PERIOD_BY_TYPE_BY_DEMOGRAPHICS_VIEW_VIEW_QUERY_TEMPLATE = \
     """
     /*{description}*/
-    WITH revocations_by_period AS (
+    WITH revocations_by_period_by_person AS (
       SELECT
         state_code,
         metric_period_months,
-        race,
-        ethnicity,
+        race_or_ethnicity,
         person_id,
         supervision_type,
         IFNULL(source_violation_type, 'EXTERNAL_UNKNOWN') as source_violation_type,
@@ -52,18 +50,6 @@ SUPERVISION_REVOCATIONS_BY_PERIOD_BY_TYPE_BY_DEMOGRAPHICS_VIEW_VIEW_QUERY_TEMPLA
         UNNEST ([36]) AS metric_period_months
       WHERE {metric_period_condition}
       AND supervision_type IN ('ALL', 'PAROLE', 'PROBATION')
-    ), revocations_by_period_by_person AS (
-      SELECT
-        *,
-        ROW_NUMBER () OVER (PARTITION BY state_code, metric_period_months, supervision_type, person_id
-             ORDER BY representation_priority) as inclusion_priority
-      FROM
-        revocations_by_period,
-        {race_or_ethnicity_dimension}
-      LEFT JOIN
-        `{project_id}.{static_reference_dataset}.state_race_ethnicity_population_counts`
-      USING (state_code, race_or_ethnicity)
-      WHERE revocation_ranking = 1
     )
     
     SELECT
@@ -82,7 +68,7 @@ SUPERVISION_REVOCATIONS_BY_PERIOD_BY_TYPE_BY_DEMOGRAPHICS_VIEW_VIEW_QUERY_TEMPLA
       {unnested_race_or_ethnicity_dimension},
       {gender_dimension},
       {age_dimension}
-    WHERE inclusion_priority = 1
+    WHERE revocation_ranking = 1
       AND ((race_or_ethnicity != 'ALL' AND gender = 'ALL' AND age_bucket = 'ALL') -- Race breakdown
       OR (race_or_ethnicity = 'ALL' AND gender != 'ALL' AND age_bucket = 'ALL') -- Gender breakdown
       OR (race_or_ethnicity = 'ALL' AND gender = 'ALL' AND age_bucket != 'ALL') -- Age breakdown
@@ -99,7 +85,6 @@ SUPERVISION_REVOCATIONS_BY_PERIOD_BY_TYPE_BY_DEMOGRAPHICS_VIEW_VIEW_BUILDER = Me
     description=SUPERVISION_REVOCATIONS_BY_PERIOD_BY_TYPE_BY_DEMOGRAPHICS_VIEW_VIEW_DESCRIPTION,
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
     static_reference_dataset=dataset_config.STATIC_REFERENCE_TABLES_DATASET,
-    race_or_ethnicity_dimension=bq_utils.unnest_race_and_ethnicity(),
     metric_period_condition=bq_utils.metric_period_condition(),
     unnested_race_or_ethnicity_dimension=bq_utils.unnest_column('race_or_ethnicity', 'race_or_ethnicity'),
     gender_dimension=bq_utils.unnest_column('gender', 'gender'),
