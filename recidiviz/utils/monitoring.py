@@ -16,7 +16,6 @@
 # =============================================================================
 
 """Creates monitoring client for measuring and recording stats."""
-import logging
 from contextlib import contextmanager
 from functools import wraps
 from typing import Any, Dict, List, Optional
@@ -90,11 +89,6 @@ def measurements(tags=None):
         tag_map = context_tags()
         for key, value in tags.items():
             tag_map.insert(key, str(value))
-        if not tag_map.map.get(TagKey.REGION):
-            logging.warning("No region set for metrics %s, tags are: %s",
-                            [measure.name for measure in mmap.measurement_map],
-                            tag_map.map)
-
         mmap.record(tag_map)
 
 
