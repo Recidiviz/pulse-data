@@ -69,7 +69,7 @@ WITH
 file_tag_first_generated_view AS (
     WITH rows_with_recency_rank AS (
         SELECT
-            * EXCEPT (file_id, update_datetime),
+            col_name_1a, col_name_1b,
             ROW_NUMBER() OVER (PARTITION BY col_name_1a, col_name_1b
                                ORDER BY update_datetime DESC) AS recency_rank
         FROM
@@ -102,7 +102,7 @@ tagFullHistoricalExport_generated_view AS (
     ),
     rows_with_recency_rank AS (
         SELECT
-            * EXCEPT (file_id, update_datetime),
+            COL_1,
             ROW_NUMBER() OVER (PARTITION BY COL_1
                                ORDER BY update_datetime DESC) AS recency_rank
         FROM
@@ -125,7 +125,7 @@ _DATE_2_UPPER_BOUND_MATERIALIZED_RAW_TABLE_CREATE_TABLE_SCRIPT = \
     """CREATE TEMP TABLE file_tag_first_generated_view AS (
     WITH rows_with_recency_rank AS (
         SELECT
-            * EXCEPT (file_id, update_datetime),
+            col_name_1a, col_name_1b,
             ROW_NUMBER() OVER (PARTITION BY col_name_1a, col_name_1b
                                ORDER BY update_datetime DESC) AS recency_rank
         FROM
@@ -158,7 +158,7 @@ CREATE TEMP TABLE tagFullHistoricalExport_generated_view AS (
     ),
     rows_with_recency_rank AS (
         SELECT
-            * EXCEPT (file_id, update_datetime),
+            COL_1,
             ROW_NUMBER() OVER (PARTITION BY COL_1
                                ORDER BY update_datetime DESC) AS recency_rank
         FROM
@@ -691,7 +691,7 @@ WITH
 file_tag_first_generated_view AS (
     WITH rows_with_recency_rank AS (
         SELECT
-            * EXCEPT (file_id, update_datetime),
+            col_name_1a, col_name_1b,
             ROW_NUMBER() OVER (PARTITION BY col_name_1a, col_name_1b
                                ORDER BY update_datetime DESC) AS recency_rank
         FROM
@@ -724,7 +724,7 @@ tagFullHistoricalExport_generated_view AS (
     ),
     rows_with_recency_rank AS (
         SELECT
-            * EXCEPT (file_id, update_datetime),
+            COL_1,
             ROW_NUMBER() OVER (PARTITION BY COL_1
                                ORDER BY update_datetime DESC) AS recency_rank
         FROM
@@ -747,7 +747,7 @@ WITH
 file_tag_first_generated_view AS (
     WITH rows_with_recency_rank AS (
         SELECT
-            * EXCEPT (file_id, update_datetime),
+            col_name_1a, col_name_1b,
             ROW_NUMBER() OVER (PARTITION BY col_name_1a, col_name_1b
                                ORDER BY update_datetime DESC) AS recency_rank
         FROM
@@ -780,7 +780,7 @@ tagFullHistoricalExport_generated_view AS (
     ),
     rows_with_recency_rank AS (
         SELECT
-            * EXCEPT (file_id, update_datetime),
+            COL_1,
             ROW_NUMBER() OVER (PARTITION BY COL_1
                                ORDER BY update_datetime DESC) AS recency_rank
         FROM
@@ -825,7 +825,7 @@ ORDER BY colA, colC;"""
             """CREATE TEMP TABLE upper_file_tag_first_generated_view AS (
     WITH rows_with_recency_rank AS (
         SELECT
-            * EXCEPT (file_id, update_datetime),
+            col_name_1a, col_name_1b,
             ROW_NUMBER() OVER (PARTITION BY col_name_1a, col_name_1b
                                ORDER BY update_datetime DESC) AS recency_rank
         FROM
@@ -858,7 +858,7 @@ CREATE TEMP TABLE upper_tagFullHistoricalExport_generated_view AS (
     ),
     rows_with_recency_rank AS (
         SELECT
-            * EXCEPT (file_id, update_datetime),
+            COL_1,
             ROW_NUMBER() OVER (PARTITION BY COL_1
                                ORDER BY update_datetime DESC) AS recency_rank
         FROM
@@ -880,7 +880,7 @@ ORDER BY colA, colC
 CREATE TEMP TABLE lower_file_tag_first_generated_view AS (
     WITH rows_with_recency_rank AS (
         SELECT
-            * EXCEPT (file_id, update_datetime),
+            col_name_1a, col_name_1b,
             ROW_NUMBER() OVER (PARTITION BY col_name_1a, col_name_1b
                                ORDER BY update_datetime DESC) AS recency_rank
         FROM
@@ -913,7 +913,7 @@ CREATE TEMP TABLE lower_tagFullHistoricalExport_generated_view AS (
     ),
     rows_with_recency_rank AS (
         SELECT
-            * EXCEPT (file_id, update_datetime),
+            COL_1,
             ROW_NUMBER() OVER (PARTITION BY COL_1
                                ORDER BY update_datetime DESC) AS recency_rank
         FROM
