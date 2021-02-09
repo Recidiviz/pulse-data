@@ -219,6 +219,10 @@ class BaseViewTest(unittest.TestCase):
         query = _replace_iter(
             query, r'DATE_TRUNC\((?P<first>.+?), (?P<second>.+?)\)', "DATE_TRUNC('{second}', {first})")
 
+        # LAST_DAY doesn't exist in postgres, so replace with the logic to calculate it
+        query = _replace_iter(
+            query, r'LAST_DAY\((?P<column>.+?)\)', "(DATE_TRUNC('MONTH', {column} + INTERVAL '1 MONTH')::date - 1)")
+
         # Postgres doesn't have SAFE_DIVIDE, instead we use NULLIF to make the denominator NULL if it was going to be
         # zero, which will make the whole expression NULL, the same behavior as SAFE_DIVIDE.
         query = _replace_iter(
