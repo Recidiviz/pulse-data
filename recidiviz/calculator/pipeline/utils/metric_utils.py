@@ -26,7 +26,7 @@ from google.cloud import bigquery
 
 from recidiviz.common.attr_mixins import BuildableAttr
 from recidiviz.common.attr_utils import is_enum, is_list, is_date, is_str, is_int, is_float, is_bool
-from recidiviz.common.constants.person_characteristics import Gender, Race, Ethnicity
+from recidiviz.common.constants.person_characteristics import Gender
 from recidiviz.common.constants.state.state_assessment import StateAssessmentType
 
 
@@ -58,14 +58,6 @@ class RecidivizMetric(BuildableAttr):
     # The age bucket string of the persons the metric describes, e.g. '<25' or
     # '35-39'
     age_bucket: Optional[str] = attr.ib(default=None)
-
-    # TODO(#4294): Remove this attribute, which is replaced by prioritized_race_or_ethnicity
-    # The race of the persons the metric describes
-    race: Optional[List[Race]] = attr.ib(default=None)
-
-    # TODO(#4294): Remove this attribute, which is replaced by prioritized_race_or_ethnicity
-    # The ethnicity of the persons the metric describes
-    ethnicity: Optional[List[Ethnicity]] = attr.ib(default=None)
 
     # The race or ethnicity value of the persons the metric describes that is least represented in the state’s
     # population
@@ -179,11 +171,7 @@ def json_serializable_metric_key(metric_key: Dict[str, Any]) -> Dict[str, Any]:
             serializable_dict[key] = v.strftime('%Y-%m-%d')
         elif isinstance(v, list):
             # These are the only metric fields that support lists
-            if key in ('race', 'ethnicity'):
-                # TODO(#4294): Remove the support of the race and ethnicity attributes, which have been replaced by
-                #  prioritized_race_or_ethnicity
-                values = [f"{entry.value}" for entry in v if entry is not None]
-            elif key == 'violation_type_frequency_counter':
+            if  key == 'violation_type_frequency_counter':
                 values = []
                 for violation_type_list in v:
                     values.append(f"[{', '.join(sorted(violation_type_list))}]")
