@@ -5611,7 +5611,8 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             state_code='US_MO',
             admission_date=date(2018, 5, 25),
             admission_reason=StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
-            source_supervision_violation_response=source_supervision_violation_response
+            source_supervision_violation_response=source_supervision_violation_response,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.SHOCK_INCARCERATION
         )
 
         relevant_assessment = StateAssessment.new_with_defaults(
@@ -6107,7 +6108,8 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 state_code='US_MO',
                 admission_date=date(2018, 5, 25),
                 admission_reason=StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
-                source_supervision_violation_response=source_supervision_violation_response
+                source_supervision_violation_response=source_supervision_violation_response,
+                specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.SHOCK_INCARCERATION
             )
 
         assessment = StateAssessment.new_with_defaults(
@@ -6325,7 +6327,8 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 state_code='US_MO',
                 admission_date=date(2018, 5, 25),
                 admission_reason=StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
-                source_supervision_violation_response=source_supervision_violation_response
+                source_supervision_violation_response=source_supervision_violation_response,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.SHOCK_INCARCERATION
             )
 
         assessment = StateAssessment.new_with_defaults(
@@ -6566,7 +6569,8 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 state_code='US_MO',
                 admission_date=date(2018, 5, 25),
                 admission_reason=StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
-                source_supervision_violation_response=source_supervision_violation_response
+                source_supervision_violation_response=source_supervision_violation_response,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.SHOCK_INCARCERATION
             )
 
         assessment = StateAssessment.new_with_defaults(
@@ -10861,43 +10865,6 @@ class TestSortedViolationResponsesInWindow(unittest.TestCase):
         ], responses_in_window)
 
 
-class TestIdentifyMostSevereRevocationType(unittest.TestCase):
-    """Tests the _identify_most_severe_revocation_type function."""
-
-    def test_identify_most_severe_revocation_type(self):
-        response_decision_entries = [
-            StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
-                state_code='US_XX',
-                revocation_type=StateSupervisionViolationResponseRevocationType.REINCARCERATION
-            ),
-            StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
-                state_code='US_XX',
-                revocation_type=StateSupervisionViolationResponseRevocationType.SHOCK_INCARCERATION
-            )]
-
-        most_severe_revocation_type = identifier._identify_most_severe_revocation_type(
-            response_decision_entries)
-
-        self.assertEqual(most_severe_revocation_type,
-                         StateSupervisionViolationResponseRevocationType.SHOCK_INCARCERATION)
-
-    def test_identify_most_severe_revocation_type_test_all_types(self):
-        for revocation_type in StateSupervisionViolationResponseRevocationType:
-            response_decision_entries = [
-                StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
-                    state_code='US_XX',
-                    revocation_type=revocation_type
-                )
-            ]
-
-            # RETURN_TO_SUPERVISION is not included as a revocation type for a revocation return to prison
-            if revocation_type != StateSupervisionViolationResponseRevocationType.RETURN_TO_SUPERVISION:
-                most_severe_revocation_type = identifier._identify_most_severe_revocation_type(
-                    response_decision_entries)
-
-                self.assertEqual(most_severe_revocation_type, revocation_type)
-
-
 class TestIdentifyMostSevereCaseType(unittest.TestCase):
     """Tests the _identify_most_severe_case_type function."""
 
@@ -11003,7 +10970,8 @@ class TestGetRevocationDetails(unittest.TestCase):
             state_code='US_XX',
             admission_date=date(2018, 5, 25),
             admission_reason=StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
-            source_supervision_violation_response=source_supervision_violation_response
+            source_supervision_violation_response=source_supervision_violation_response,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.SHOCK_INCARCERATION
         )
 
         revocation_details = identifier._get_revocation_details(incarceration_period, supervision_period,
@@ -11046,17 +11014,6 @@ class TestGetRevocationDetails(unittest.TestCase):
             state_code='US_ND',
             supervision_violation_response_id=_DEFAULT_SSVR_ID,
             response_date=date(2018, 4, 23),
-            supervision_violation_response_decisions=[
-                StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
-                    state_code='US_ND',
-                    decision=StateSupervisionViolationResponseDecision.REVOCATION,
-                    revocation_type=StateSupervisionViolationResponseRevocationType.REINCARCERATION
-                ),
-                StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
-                    state_code='US_ND',
-                    revocation_type=StateSupervisionViolationResponseRevocationType.SHOCK_INCARCERATION,
-                )
-            ],
             supervision_violation=supervision_violation
         )
 
@@ -11075,7 +11032,7 @@ class TestGetRevocationDetails(unittest.TestCase):
 
         self.assertEqual(revocation_details,
                          identifier.RevocationDetails(
-                             revocation_type=StateSupervisionViolationResponseRevocationType.SHOCK_INCARCERATION,
+                             revocation_type=StateSupervisionViolationResponseRevocationType.REINCARCERATION,
                              source_violation_type=StateSupervisionViolationType.MISDEMEANOR,
                              level_1_supervision_location_external_id=supervision_period.supervision_site,
                              level_2_supervision_location_external_id=None,
@@ -11188,7 +11145,8 @@ class TestGetRevocationDetails(unittest.TestCase):
             state_code='US_MO',
             admission_date=date(2018, 5, 25),
             admission_reason=StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
-            source_supervision_violation_response=source_supervision_violation_response
+            source_supervision_violation_response=source_supervision_violation_response,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.SHOCK_INCARCERATION
         )
 
         revocation_details = identifier._get_revocation_details(incarceration_period, None,
