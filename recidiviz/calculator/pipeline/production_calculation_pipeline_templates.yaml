@@ -10,7 +10,8 @@ daily_pipelines:
   - pipeline: recidivism
     job_name: full-us-nd-recidivism-calculations
     state_code: US_ND
-    region: us-west1
+    region: us-west3
+    zone: a
 
   # Daily US_ND calculations for the dashboards
   - pipeline: supervision
@@ -18,17 +19,20 @@ daily_pipelines:
     state_code: US_ND
     calculation_month_count: 36
     metric_types: SUPERVISION_POPULATION SUPERVISION_REVOCATION SUPERVISION_SUCCESS SUPERVISION_TERMINATION SUPERVISION_COMPLIANCE
-    region: us-east1
+    region: us-west1
+    zone: c
   - pipeline: incarceration
     job_name: us-nd-incarceration-calculations-36
     state_code: US_ND
     calculation_month_count: 36
-    region: us-central1
+    region: us-west3
+    zone: c
   - pipeline: program
     job_name: us-nd-program-calculations-36
     state_code: US_ND
     calculation_month_count: 36
-    region: us-west1
+    region: us-west3
+    zone: a
 
 
   # Daily US_MO calculations for the dashboard
@@ -37,7 +41,8 @@ daily_pipelines:
     state_code: US_MO
     calculation_month_count: 36
     metric_types: SUPERVISION_POPULATION SUPERVISION_REVOCATION_ANALYSIS SUPERVISION_TERMINATION
-    region: us-west3
+    region: us-central1
+    zone: f
 
   # Daily US_MO calculations for automated data validation not covered by daily calculation runs
   - pipeline: incarceration
@@ -47,6 +52,7 @@ daily_pipelines:
     calculation_month_count: 1
     metric_types: INCARCERATION_POPULATION
     region: us-east1
+    zone: d
 
   # Daily US_ID supervision calculations for the COVID and PO reports
   - pipeline: supervision
@@ -54,7 +60,8 @@ daily_pipelines:
     state_code: US_ID
     calculation_month_count: 24
     metric_types: SUPERVISION_POPULATION SUPERVISION_OUT_OF_STATE_POPULATION SUPERVISION_REVOCATION SUPERVISION_REVOCATION_ANALYSIS SUPERVISION_COMPLIANCE SUPERVISION_TERMINATION SUPERVISION_START SUPERVISION_DOWNGRADE
-    region: us-central1
+    region: us-east1
+    zone: c
 
   # Daily US_ID incarceration calculations for the COVID report
   - pipeline: incarceration
@@ -62,6 +69,7 @@ daily_pipelines:
     state_code: US_ID
     calculation_month_count: 24
     region: us-west3
+    zone: b
 
   # Daily US_PA calculations for the dashboard
   - pipeline: supervision
@@ -69,7 +77,8 @@ daily_pipelines:
     state_code: US_PA
     calculation_month_count: 36
     metric_types: SUPERVISION_POPULATION SUPERVISION_REVOCATION_ANALYSIS SUPERVISION_TERMINATION
-    region: us-west1
+    region: us-central1
+    zone: c
 
   # Daily US_PA calculations for automated data validation not covered by daily calculation runs
   - pipeline: incarceration
@@ -78,7 +87,8 @@ daily_pipelines:
     calculation_end_month: 2020-05
     calculation_month_count: 6
     metric_types: INCARCERATION_POPULATION
-    region: us-east1
+    region: us-west1
+    zone: b
 
 # Historical US_ND population calculations for the dashboards
 historical_pipelines:
@@ -97,4 +107,4 @@ historical_pipelines:
     metric_types: INCARCERATION_POPULATION
     # This region value must stay in-sync with the REGION arg in the
     # cloud-functions.tf config for this pipeline
-    region: us-west3
+    region: us-west1
