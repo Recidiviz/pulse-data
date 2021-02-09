@@ -35,7 +35,7 @@ UPDATE_DATETIME_PARAM_NAME = "update_timestamp"
 RAW_DATA_UP_TO_DATE_VIEW_QUERY_TEMPLATE = f"""
 WITH rows_with_recency_rank AS (
     SELECT
-        * {{except_clause}},{{datetime_cols_clause}}
+        {{columns_clause}}{{legacy_except_clause}},{{legacy_datetime_cols_clause}}
         ROW_NUMBER() OVER (PARTITION BY {{raw_table_primary_key_str}}
                            ORDER BY update_datetime DESC{{supplemental_order_by_clause}}) AS recency_rank
     FROM
@@ -69,7 +69,7 @@ max_file_id AS (
 ),
 rows_with_recency_rank AS (
     SELECT
-        * {{except_clause}},{{datetime_cols_clause}}
+        {{columns_clause}}{{legacy_except_clause}},{{legacy_datetime_cols_clause}}
         ROW_NUMBER() OVER (PARTITION BY {{raw_table_primary_key_str}}
                            ORDER BY update_datetime DESC{{supplemental_order_by_clause}}) AS recency_rank
     FROM
@@ -88,7 +88,7 @@ WHERE recency_rank = 1
 RAW_DATA_LATEST_VIEW_QUERY_TEMPLATE = """
 WITH rows_with_recency_rank AS (
     SELECT 
-        * {except_clause},{datetime_cols_clause}
+        {columns_clause}{legacy_except_clause},{legacy_datetime_cols_clause}
         ROW_NUMBER() OVER (PARTITION BY {raw_table_primary_key_str}
                            ORDER BY update_datetime DESC{supplemental_order_by_clause}) AS recency_rank
     FROM 
@@ -118,7 +118,7 @@ max_file_id AS (
 ),
 rows_with_recency_rank AS (
     SELECT 
-        * {except_clause},{datetime_cols_clause}
+        {columns_clause}{legacy_except_clause},{legacy_datetime_cols_clause}
         ROW_NUMBER() OVER (PARTITION BY {raw_table_primary_key_str}
                            ORDER BY update_datetime DESC{supplemental_order_by_clause}) AS recency_rank
     FROM 
@@ -181,8 +181,9 @@ class DirectIngestRawDataTableBigQueryView(BigQueryView):
                              f'construction of DirectIngestRawDataTableBigQueryView')
         view_dataset_id = f'{region_code.lower()}_raw_data_up_to_date_views'
         raw_table_dataset_id = DirectIngestRawFileImportManager.raw_tables_dataset_for_region(region_code)
-        except_clause = self._except_clause_for_config(raw_file_config)
-        datetime_cols_clause = self._datetime_cols_clause_for_config(raw_file_config)
+        columns_clause = self._columns_clause_for_config(raw_file_config, region_code)
+        legacy_except_clause = self._legacy_except_clause_for_config(raw_file_config, region_code)
+        legacy_datetime_cols_clause = self._legacy_datetime_cols_clause_for_config(raw_file_config, region_code)
         supplemental_order_by_clause = self._supplemental_order_by_clause_for_config(raw_file_config)
         super().__init__(project_id=project_id,
                          dataset_id=view_dataset_id,
@@ -191,8 +192,9 @@ class DirectIngestRawDataTableBigQueryView(BigQueryView):
                          raw_table_dataset_id=raw_table_dataset_id,
                          raw_table_name=raw_file_config.file_tag,
                          raw_table_primary_key_str=raw_file_config.primary_key_str,
-                         except_clause=except_clause,
-                         datetime_cols_clause=datetime_cols_clause,
+                         columns_clause=columns_clause,
+                         legacy_except_clause=legacy_except_clause,
+                         legacy_datetime_cols_clause=legacy_datetime_cols_clause,
                          supplemental_order_by_clause=supplemental_order_by_clause,
                          dataset_overrides=dataset_overrides)
 
@@ -208,16 +210,31 @@ class DirectIngestRawDataTableBigQueryView(BigQueryView):
         return supplemental_order_by_clause
 
     @staticmethod
-    def _except_clause_for_config(raw_file_config: DirectIngestRawFileConfig) -> str:
+    def _columns_clause_for_config(raw_file_config: DirectIngestRawFileConfig, region_code: str) -> str:
+        # TODO(#5399): Migrate raw file configs for all legacy regions to have column descriptions
+        if region_code.upper() in {'US_MO', 'US_ND', 'US_ID', 'US_PA'}:
+            columns_str = '*'
+        else:
+            columns_str = ', '.join([column.name if not column.is_datetime and column.description
+                                     else DATETIME_COL_NORMALIZATION_TEMPLATE.format(col_name=column.name)
+                                     for column in raw_file_config.columns if column.description])
+        return f'{columns_str}'
+
+    @staticmethod
+    def _legacy_except_clause_for_config(raw_file_config: DirectIngestRawFileConfig, region_code: str) -> str:
         # TODO(#3020): Update the raw data yaml format to allow for us to specify other columns that should always be
         #  excluded for the purposes of diffing (e.g. update date cols that change with every new import).
         except_cols = raw_file_config.datetime_cols + [_FILE_ID_COL_NAME, _UPDATE_DATETIME_COL_NAME]
         except_cols_str = ', '.join(except_cols)
-        return f'EXCEPT ({except_cols_str})'
+
+        # TODO(#5399): Migrate raw file configs for all legacy regions to have column descriptions
+        return f' EXCEPT ({except_cols_str})' if region_code.upper() in {'US_MO', 'US_ND', 'US_ID', 'US_PA'}\
+            else ''
 
     @staticmethod
-    def _datetime_cols_clause_for_config(raw_file_config: DirectIngestRawFileConfig) -> str:
-        if not raw_file_config.datetime_cols:
+    def _legacy_datetime_cols_clause_for_config(raw_file_config: DirectIngestRawFileConfig, region_code: str) -> str:
+        if not raw_file_config.datetime_cols\
+                or region_code.upper() not in {'US_MO', 'US_ND', 'US_ID', 'US_PA'}:
             return ''
 
         formatted_clauses = [
