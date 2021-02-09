@@ -149,8 +149,8 @@ COMPARTMENT_SENTENCES_QUERY_TEMPLATE = \
     FROM `{project_id}.{analyst_dataset}.compartment_sessions_materialized`  sessions
     JOIN deduped_sentence_id_cte sentences 
         ON sessions.person_id = sentences.person_id
-        -- Session start date must be before the sentence completion date
-        AND sessions.start_date < COALESCE(sentences.completion_date, '9999-01-01')
+        -- Session start date must be before the projected max completion date
+        AND sessions.start_date < COALESCE(sentences.projected_completion_date_max, '9999-01-01')
         -- Sentence start date (or date imposed for ID) must be before the session end date
         AND estimated_start_date < COALESCE(sessions.end_date, '9999-01-01')
         AND sessions.compartment_level_1 in ('INCARCERATION','SUPERVISION') 
