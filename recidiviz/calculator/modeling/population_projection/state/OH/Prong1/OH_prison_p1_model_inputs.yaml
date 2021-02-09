@@ -7,11 +7,11 @@ user_inputs:
   speed_run: true
 
 model_architecture:
-    pretrial: null
-    prison: incarcerated
-    treatment_residential: incarcerated
-    treatment_non_residential: incarcerated
-    release: released
+    pretrial: shell
+    prison: full
+    treatment_residential: full
+    treatment_non_residential: full
+    release: full
 
 reference_date: 2020.0
 

@@ -19,7 +19,8 @@ import unittest
 import pandas as pd
 
 from recidiviz.calculator.modeling.population_projection.full_compartment import FullCompartment
-from recidiviz.calculator.modeling.population_projection.incarceration_transitions import IncarceratedTransitions
+from recidiviz.calculator.modeling.population_projection.simulations.compartment_transitions import \
+    CompartmentTransitions
 from recidiviz.calculator.modeling.population_projection.shell_compartment import ShellCompartment
 
 
@@ -42,8 +43,7 @@ class TestShellCompartment(unittest.TestCase):
 
         self.compartment_policies = []
 
-        self.test_transition_table = IncarceratedTransitions(self.test_outflow_data)
-        self.test_transition_table.initialize_transition_table()
+        self.test_transition_table = CompartmentTransitions(self.test_outflow_data)
         self.test_transition_table.initialize(self.compartment_policies)
 
     def test_all_edges_fed_to(self):

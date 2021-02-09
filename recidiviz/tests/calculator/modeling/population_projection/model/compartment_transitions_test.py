@@ -23,17 +23,9 @@ import pandas as pd
 from pandas.testing import assert_frame_equal
 import numpy as np
 
-from recidiviz.calculator.modeling.population_projection.compartment_transitions import CompartmentTransitions
+from recidiviz.calculator.modeling.population_projection.simulations.compartment_transitions import \
+    CompartmentTransitions
 from recidiviz.calculator.modeling.population_projection.spark_policy import SparkPolicy
-
-
-class CompartmentTransitionsStub(CompartmentTransitions):
-    """Create a child class from the abstract CompartmentTransitions class"""
-    def normalize_long_sentences(self):
-        super().normalize_long_sentences()
-
-    def set_max_sentence_from_threshold(self, threshold_percentile: float):
-        super()._set_max_sentence_from_threshold(threshold_percentile)
 
 
 class TestTransitionTable(unittest.TestCase):
@@ -55,11 +47,11 @@ class TestInitialization(TestTransitionTable):
         broken_test_data = self.test_data.copy()
         broken_test_data.loc[broken_test_data['outflow_to'] == 'jail', 'outflow_to'] = 'remaining'
         with self.assertRaises(ValueError):
-            CompartmentTransitionsStub(broken_test_data)
+            CompartmentTransitions(broken_test_data)
 
     def test_normalize_transitions_requires_non_normalized_before_table(self):
         """Tests that transitory transitions table rejects a pre-normalized 'before' table"""
-        transitions_table = CompartmentTransitionsStub(self.test_data)
+        transitions_table = CompartmentTransitions(self.test_data)
         transitions_table.initialize_transition_table()
         transitions_table.transition_dfs['after'] = deepcopy(transitions_table.transition_dfs['before'])
         transitions_table.normalize_transitions(state='before')
@@ -69,7 +61,7 @@ class TestInitialization(TestTransitionTable):
                                                     before_table=transitions_table.transition_dfs['before'])
 
     def test_normalize_transitions_requires_generated_transition_table(self):
-        compartment_transitions = CompartmentTransitionsStub(self.test_data)
+        compartment_transitions = CompartmentTransitions(self.test_data)
         # manually initializing without the self._generate_transition_table()
         compartment_transitions.transition_dfs = {
             'before': pd.DataFrame({outflow: np.zeros(10) for outflow in compartment_transitions.outflows},
@@ -83,17 +75,8 @@ class TestInitialization(TestTransitionTable):
 
     def test_normalize_transitions_requires_initialized_transition_table(self):
         with self.assertRaises(ValueError):
-            compartment_transitions = CompartmentTransitionsStub(self.test_data)
+            compartment_transitions = CompartmentTransitions(self.test_data)
             compartment_transitions.normalize_transitions(state='after_retroactive')
-
-    def test_max_sentence_is_clipped(self):
-        transitions_table = CompartmentTransitionsStub(self.test_data)
-
-        transitions_table.set_max_sentence_from_threshold(0.98)
-        self.assertEqual(10, transitions_table.max_sentence)
-
-        transitions_table.set_max_sentence_from_threshold(0.8)
-        self.assertEqual(3, transitions_table.max_sentence)
 
 
 class TestTableHydration(TestTransitionTable):
@@ -113,28 +96,27 @@ class TestTableHydration(TestTransitionTable):
             'outflow_to': ['jail', 'prison', 'jail', 'prison', 'prison'],
             'compartment': ['test_compartment'] * 5
         })
-        compartment_transitions = CompartmentTransitionsStub(negative_duration_data)
-        with self.assertRaises(ValueError):
-            compartment_transitions.initialize_transition_table()
 
-        compartment_transitions = CompartmentTransitionsStub(negative_population_data)
         with self.assertRaises(ValueError):
-            compartment_transitions.initialize_transition_table()
+            CompartmentTransitions(negative_duration_data)
+
+        with self.assertRaises(ValueError):
+            CompartmentTransitions(negative_population_data)
 
     def test_results_independent_of_data_order(self):
 
         compartment_policies = [
-            SparkPolicy(policy_fn=CompartmentTransitionsStub.test_retroactive_policy,
+            SparkPolicy(policy_fn=CompartmentTransitions.test_retroactive_policy,
                         sub_population={'compartment': 'test_compartment'},
                         spark_compartment='test_compartment',
                         apply_retroactive=True),
-            SparkPolicy(policy_fn=CompartmentTransitionsStub.test_non_retroactive_policy,
+            SparkPolicy(policy_fn=CompartmentTransitions.test_non_retroactive_policy,
                         sub_population={'compartment': 'test_compartment'},
                         spark_compartment='test_compartment',
                         apply_retroactive=False),
         ]
-        compartment_transitions_default = CompartmentTransitionsStub(self.test_data)
-        compartment_transitions_shuffled = CompartmentTransitionsStub(self.test_data.sample(frac=1))
+        compartment_transitions_default = CompartmentTransitions(self.test_data)
+        compartment_transitions_shuffled = CompartmentTransitions(self.test_data.sample(frac=1))
 
         compartment_transitions_default.initialize_transition_table()
         compartment_transitions_default.initialize(compartment_policies)
@@ -146,13 +128,13 @@ class TestTableHydration(TestTransitionTable):
 
     def test_non_retroactive_policy_cannot_affect_retroactive_table(self):
         compartment_policies = [
-            SparkPolicy(policy_fn=CompartmentTransitionsStub.test_retroactive_policy,
+            SparkPolicy(policy_fn=CompartmentTransitions.test_retroactive_policy,
                         sub_population={'compartment': 'test_compartment'},
                         spark_compartment='test_compartment',
                         apply_retroactive=False)
         ]
 
-        compartment_transitions = CompartmentTransitionsStub(self.test_data)
+        compartment_transitions = CompartmentTransitions(self.test_data)
         compartment_transitions.initialize_transition_table()
         with self.assertRaises(ValueError):
             compartment_transitions.initialize(compartment_policies)
@@ -162,7 +144,7 @@ class TestPolicyFunctions(TestTransitionTable):
     """Test the policy functions used for Spark modeling"""
 
     def test_unnormalized_table_inverse_of_normalize_table(self):
-        compartment_transitions = CompartmentTransitionsStub(self.test_data)
+        compartment_transitions = CompartmentTransitions(self.test_data)
         compartment_transitions.initialize_transition_table()
         original_before_table = compartment_transitions.transition_dfs['before'].copy()
         # 'normalize' table (in the classical mathematical sense) to match scale of unnormalized table
@@ -187,11 +169,11 @@ class TestPolicyFunctions(TestTransitionTable):
             apply_retroactive=False
         )
 
-        compartment_transitions = CompartmentTransitionsStub(self.test_data)
+        compartment_transitions = CompartmentTransitions(self.test_data)
         compartment_transitions.initialize_transition_table()
         compartment_transitions.initialize([policy_function])
 
-        alternate_data_transitions = CompartmentTransitionsStub(alternate_data)
+        alternate_data_transitions = CompartmentTransitions(alternate_data)
         alternate_data_transitions.initialize_transition_table()
         alternate_data_transitions.initialize([])
 
@@ -200,22 +182,22 @@ class TestPolicyFunctions(TestTransitionTable):
 
     def test_preserve_normalized_outflow_behavior_preserves_normalized_outflow_behavior(self):
         compartment_policies = [
-            SparkPolicy(policy_fn=CompartmentTransitionsStub.test_retroactive_policy,
+            SparkPolicy(policy_fn=CompartmentTransitions.test_retroactive_policy,
                         sub_population={'compartment': 'test_compartment'},
                         spark_compartment='test_compartment',
                         apply_retroactive=True),
-            SparkPolicy(policy_fn=partial(CompartmentTransitionsStub.preserve_normalized_outflow_behavior,
+            SparkPolicy(policy_fn=partial(CompartmentTransitions.preserve_normalized_outflow_behavior,
                                           outflows=['prison'], state='after_retroactive', before_state='before'),
                         sub_population={'compartment': 'test_compartment'},
                         spark_compartment='test_compartment',
                         apply_retroactive=True)
         ]
 
-        compartment_transitions = CompartmentTransitionsStub(self.test_data)
+        compartment_transitions = CompartmentTransitions(self.test_data)
         compartment_transitions.initialize_transition_table()
         compartment_transitions.initialize(compartment_policies)
 
-        baseline_transitions = CompartmentTransitionsStub(self.test_data)
+        baseline_transitions = CompartmentTransitions(self.test_data)
         baseline_transitions.initialize_transition_table()
         baseline_transitions.initialize([])
 
@@ -224,13 +206,13 @@ class TestPolicyFunctions(TestTransitionTable):
 
     def test_apply_reduction_with_trivial_reductions_doesnt_change_transition_table(self):
 
-        policy_mul = partial(CompartmentTransitionsStub.apply_reduction,
+        policy_mul = partial(CompartmentTransitions.apply_reduction,
                              reduction_df=pd.DataFrame({'outflow': ['prison'] * 2, 'affected_fraction': [0, 0.5],
                                                         'reduction_size': [0.5, 0]}),
                              reduction_type='*',
                              retroactive=False)
 
-        policy_add = partial(CompartmentTransitionsStub.apply_reduction,
+        policy_add = partial(CompartmentTransitions.apply_reduction,
                              reduction_df=pd.DataFrame({'outflow': ['prison'] * 2, 'affected_fraction': [0, 0.5],
                                                         'reduction_size': [0.5, 0]}),
                              reduction_type='+',
@@ -241,7 +223,7 @@ class TestPolicyFunctions(TestTransitionTable):
             SparkPolicy(policy_add, 'test_compartment', {'sub_group': 'test_population'}, False)
         ]
 
-        compartment_transitions = CompartmentTransitionsStub(self.test_data)
+        compartment_transitions = CompartmentTransitions(self.test_data)
         compartment_transitions.initialize_transition_table()
         compartment_transitions.initialize(compartment_policies)
 
@@ -249,9 +231,9 @@ class TestPolicyFunctions(TestTransitionTable):
                            compartment_transitions.transition_dfs['after_non_retroactive'])
 
     def test_apply_reduction_matches_example_by_hand(self):
-        compartment_transitions = CompartmentTransitionsStub(self.test_data)
+        compartment_transitions = CompartmentTransitions(self.test_data)
         compartment_policy = [
-            SparkPolicy(policy_fn=partial(CompartmentTransitionsStub.apply_reduction,
+            SparkPolicy(policy_fn=partial(CompartmentTransitions.apply_reduction,
                                           reduction_df=pd.DataFrame({'outflow': ['prison'],
                                                                      'affected_fraction': [0.25],
                                                                      'reduction_size': [0.5]}),
@@ -278,7 +260,7 @@ class TestPolicyFunctions(TestTransitionTable):
 
     def test_reallocate_outflow_preserves_total_population(self):
         compartment_policies = [
-            SparkPolicy(policy_fn=partial(CompartmentTransitionsStub.reallocate_outflow,
+            SparkPolicy(policy_fn=partial(CompartmentTransitions.reallocate_outflow,
                                           reallocation_df=pd.DataFrame({'outflow': ['jail', 'jail'],
                                                                         'affected_fraction': [0.25, 0.25],
                                                                         'new_outflow': ['prison', 'treatment']}),
@@ -289,9 +271,16 @@ class TestPolicyFunctions(TestTransitionTable):
                         apply_retroactive=True)
         ]
 
-        compartment_transitions = CompartmentTransitionsStub(self.test_data)
+        compartment_transitions = CompartmentTransitions(self.test_data)
         compartment_transitions.initialize_transition_table()
         compartment_transitions.initialize(compartment_policies)
 
         self.assertTrue((compartment_transitions.transition_dfs['before'].sum(axis=1) ==
                          compartment_transitions.transition_dfs['after_retroactive'].sum(axis=1)).all())
+
+    def test_extend_table_extends_table(self):
+        """make sure CompartmentTransitions.extend_table is actually adding empty rows"""
+
+        compartment_transitions = CompartmentTransitions(self.test_data)
+        compartment_transitions.extend_tables(15)
+        self.assertTrue(set(compartment_transitions.transition_dfs['before'].index) == set(range(1, 16)))

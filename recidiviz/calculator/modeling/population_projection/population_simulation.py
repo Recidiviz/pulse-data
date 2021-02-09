@@ -22,7 +22,8 @@ from warnings import warn
 from functools import partial
 import pandas as pd
 
-from recidiviz.calculator.modeling.population_projection.compartment_transitions import CompartmentTransitions
+from recidiviz.calculator.modeling.population_projection.simulations.compartment_transitions import \
+    CompartmentTransitions
 from recidiviz.calculator.modeling.population_projection.spark_policy import SparkPolicy
 from recidiviz.calculator.modeling.population_projection.sub_simulation import SubSimulation
 
@@ -150,7 +151,7 @@ class PopulationSimulation:
 
             # add one policy per compartment to switch transitions data from remaining sentence data to transitions data
             for full_comp in [i for i in simulation_compartments
-                              if simulation_compartments[i] is not None]:
+                              if simulation_compartments[i] != 'shell']:
                 user_inputs['policy_list'].append(SparkPolicy(
                     policy_fn=partial(
                         CompartmentTransitions.use_alternate_transitions_data,

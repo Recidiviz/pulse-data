@@ -5,11 +5,11 @@ user_inputs:
     speed_run: true
 
 model_architecture:
-    pre-supervision: null
-    probation: incarcerated
-    prison_technical_revocations: incarcerated 
-    prison_crime_revocations: incarcerated
-    release: released
+    pre-supervision: shell
+    probation: full
+    prison_technical_revocations: full
+    prison_crime_revocations: full
+    release: full
 
 reference_date: 2015.0
 # january

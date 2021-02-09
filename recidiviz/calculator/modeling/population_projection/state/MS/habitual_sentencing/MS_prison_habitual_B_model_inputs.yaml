@@ -5,9 +5,9 @@ user_inputs:
     constant_admissions: true
 
 model_architecture:
-    pretrial: null
-    prison: incarcerated
-    release: released
+    pretrial: shell
+    prison: full
+    release: full
 
 reference_date: 2013.0
 time_step: 1.0

@@ -6,9 +6,9 @@ user_inputs:
   speed_run: true
 
 model_architecture:
-    pre-trial: null
-    prison: incarcerated
-    release: released
+    pre-trial: shell
+    prison: full
+    release: full
 
 reference_date: 2020.0
 
