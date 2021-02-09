@@ -72,8 +72,7 @@ from recidiviz.common.constants.state.state_supervision_violation_response \
 from recidiviz.common.date import DateRange, DateRangeDiff, last_day_of_month
 from recidiviz.persistence.entity.entity_utils import get_single_state_code
 from recidiviz.persistence.entity.state.entities import \
-    StateIncarcerationPeriod, StateSupervisionPeriod, \
-    StateSupervisionViolationResponseDecisionEntry, StateSupervisionSentence, \
+    StateIncarcerationPeriod, StateSupervisionPeriod, StateSupervisionSentence, \
     StateAssessment, StateSupervisionViolation, \
     StateSupervisionViolationResponse, StateIncarcerationSentence, StateSupervisionContact, PeriodType
 
@@ -81,12 +80,6 @@ from recidiviz.persistence.entity.state.entities import \
 # should be considered when producing metrics related to a person's violation history leading up to the revocation
 VIOLATION_HISTORY_WINDOW_MONTHS = 12
 
-
-REVOCATION_TYPE_SEVERITY_ORDER = [
-    StateSupervisionViolationResponseRevocationType.SHOCK_INCARCERATION,
-    StateSupervisionViolationResponseRevocationType.TREATMENT_IN_PRISON,
-    StateSupervisionViolationResponseRevocationType.REINCARCERATION
-]
 
 CASE_TYPE_SEVERITY_ORDER = [
     StateSupervisionCaseType.SEX_OFFENSE,
@@ -670,30 +663,27 @@ def _get_revocation_details(incarceration_period: StateIncarcerationPeriod,
 
     source_violation_response = incarceration_period.source_supervision_violation_response
     if source_violation_response:
-        response_decisions = source_violation_response.supervision_violation_response_decisions
-        if response_decisions:
-            revocation_type = _identify_most_severe_revocation_type(response_decisions)
-
-        # TODO(#2840): Remove this once revocation type is being set on the proper fields on the response decisions
-        if revocation_type is None:
-            revocation_type = source_violation_response.revocation_type
-
         source_violation = source_violation_response.supervision_violation
         if source_violation:
             source_violation_type, _ = identify_most_severe_violation_type_and_subtype([source_violation])
 
-    if revocation_type is None:
-        # TODO(#3341): Consider removing revocation_type and always looking at the specialized_purpose_for_incarceration
-        #  on the revoked period
-        if incarceration_period.specialized_purpose_for_incarceration == \
-                StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON:
-            revocation_type = StateSupervisionViolationResponseRevocationType.TREATMENT_IN_PRISON
-        elif incarceration_period.specialized_purpose_for_incarceration == \
-                StateSpecializedPurposeForIncarceration.SHOCK_INCARCERATION:
-            revocation_type = StateSupervisionViolationResponseRevocationType.SHOCK_INCARCERATION
-        else:
-            # If the person is not admitted for treatment or shock incarceration, assume this is a reincarceration
-            revocation_type = StateSupervisionViolationResponseRevocationType.REINCARCERATION
+    specialized_purpose_for_incarceration = incarceration_period.specialized_purpose_for_incarceration
+
+    if specialized_purpose_for_incarceration == StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON:
+        revocation_type = StateSupervisionViolationResponseRevocationType.TREATMENT_IN_PRISON
+    elif specialized_purpose_for_incarceration == StateSpecializedPurposeForIncarceration.SHOCK_INCARCERATION:
+        revocation_type = StateSupervisionViolationResponseRevocationType.SHOCK_INCARCERATION
+    elif (specialized_purpose_for_incarceration == StateSpecializedPurposeForIncarceration.GENERAL
+          or specialized_purpose_for_incarceration is None):
+        # Assume no specialized_purpose_for_incarceration is a reincarceration
+        revocation_type = StateSupervisionViolationResponseRevocationType.REINCARCERATION
+    elif incarceration_period.specialized_purpose_for_incarceration not in (
+        StateSpecializedPurposeForIncarceration.EXTERNAL_UNKNOWN,
+        StateSpecializedPurposeForIncarceration.INTERNAL_UNKNOWN,
+        StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD
+    ):
+        raise ValueError("Unhandled StateSpecializedPurposeForIncarceration: "
+                         f"[{specialized_purpose_for_incarceration}]")
 
     revocation_details_result = RevocationDetails(
         revocation_type, source_violation_type,
@@ -1271,20 +1261,6 @@ def _include_termination_in_success_metric(
         return True
 
     raise ValueError(f"Unexpected StateSupervisionPeriodTerminationReason: {termination_reason}")
-
-
-def _identify_most_severe_revocation_type(
-        response_decision_entries:
-        List[StateSupervisionViolationResponseDecisionEntry]) -> \
-        Optional[StateSupervisionViolationResponseRevocationType]:
-    """Identifies the most severe revocation type on the violation response
-    according to the static revocation type ranking."""
-    # Note: RETURN_TO_SUPERVISION is not included as a revocation type for a
-    # revocation return to prison
-    revocation_types = [resp.revocation_type for resp in response_decision_entries]
-
-    return next((revocation_type for revocation_type in REVOCATION_TYPE_SEVERITY_ORDER
-                 if revocation_type in revocation_types), None)
 
 
 def _identify_most_severe_case_type(supervision_period: StateSupervisionPeriod) -> StateSupervisionCaseType:
