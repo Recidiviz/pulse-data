@@ -24,7 +24,10 @@ from flask import Blueprint, Response, jsonify, request, send_from_directory
 
 from recidiviz.admin_panel.gcs_import_to_cloud_sql import import_gcs_csv_to_cloud_sql
 from recidiviz.admin_panel.ingest_metadata_store import IngestMetadataCountsStore, IngestMetadataResult
+from recidiviz.case_triage.views.view_config import CASE_TRIAGE_EXPORTED_VIEW_BUILDERS
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
+from recidiviz.metrics.export.export_config import CASE_TRIAGE_VIEWS_OUTPUT_DIRECTORY_URI
+from recidiviz.utils import metadata
 from recidiviz.utils.auth.gae import requires_gae_auth
 from recidiviz.utils.environment import (
     GCP_PROJECT_STAGING,
@@ -90,24 +93,37 @@ def fetch_data_freshness() -> Tuple[str, HTTPStatus]:
 
 
 # GCS CSV -> Cloud SQL Import
+@admin_panel.route('/api/case_triage/fetch_etl_view_ids', methods=['POST'])
+@requires_gae_auth
+def fetch_etl_view_ids() -> Tuple[str, HTTPStatus]:
+    return jsonify([builder.view_id for builder in CASE_TRIAGE_EXPORTED_VIEW_BUILDERS]), HTTPStatus.OK
+
+
 @admin_panel.route('/api/case_triage/run_gcs_import', methods=['POST'])
 @requires_gae_auth
 def run_gcs_import() -> Tuple[str, HTTPStatus]:
-    if 'destinationTable' not in request.json or 'gcsURI' not in request.json or 'columns' not in request.json:
-        return 'not all required arguments provided', HTTPStatus.BAD_REQUEST
-    columns = request.json['columns']
-    if not isinstance(columns, list):
-        return 'provided columns are not a list', HTTPStatus.BAD_REQUEST
-    try:
-        gcs_uri = GcsfsFilePath.from_absolute_path(request.json['gcsURI'])
-    except ValueError:
-        return 'improper format for GCS URI', HTTPStatus.BAD_REQUEST
+    if 'viewIds' not in request.json:
+        return '`viewIds` must be present in arugment list', HTTPStatus.BAD_REQUEST
 
-    import_gcs_csv_to_cloud_sql(
-        request.json['destinationTable'],
-        gcs_uri,
-        columns,
-    )
+    known_view_builders = {builder.view_id: builder for builder in CASE_TRIAGE_EXPORTED_VIEW_BUILDERS}
+    for view_id in request.json['viewIds']:
+        if view_id not in known_view_builders:
+            logging.warning('Unexpected view_id (%s) found in call to run_gcs_import', view_id)
+            continue
+
+        # NOTE: We are currently taking advantage of the fact that the destination table name
+        # matches the view id of the corresponding builder here. This invariant isn't enforced
+        # in code (yet), but the aim is to preserve this invariant for as long as possible.
+        import_gcs_csv_to_cloud_sql(
+            view_id,
+            GcsfsFilePath.from_absolute_path(
+                os.path.join(
+                    CASE_TRIAGE_VIEWS_OUTPUT_DIRECTORY_URI.format(
+                        project_id=metadata.project_id()), f'{view_id}.csv')),
+            known_view_builders[view_id].columns,
+        )
+        logging.info('View (%s) successfully exported', view_id)
+
     return '', HTTPStatus.OK
 
 
