@@ -53,8 +53,7 @@ FTR_REFERRALS_BY_RACE_AND_ETHNICITY_BY_PERIOD_QUERY_TEMPLATE = \
         metric_period_months,
         race_or_ethnicity
       FROM `{project_id}.{reference_views_dataset}.event_based_supervision_populations`,
-      {metric_period_dimension},
-      {race_or_ethnicity_dimension}
+      {metric_period_dimension}
       WHERE {metric_period_condition}
       GROUP BY state_code, supervision_type, district, metric_period_months, race_or_ethnicity
     ) pop
@@ -67,8 +66,7 @@ FTR_REFERRALS_BY_RACE_AND_ETHNICITY_BY_PERIOD_QUERY_TEMPLATE = \
         metric_period_months,
         race_or_ethnicity
       FROM `{project_id}.{reference_views_dataset}.event_based_program_referrals`,
-      {metric_period_dimension},
-      {race_or_ethnicity_dimension}
+      {metric_period_dimension}
       WHERE {metric_period_condition}
       GROUP BY state_code, supervision_type, district, metric_period_months, race_or_ethnicity
     ) ref
@@ -88,7 +86,6 @@ FTR_REFERRALS_BY_RACE_AND_ETHNICITY_BY_PERIOD_VIEW_BUILDER = MetricBigQueryViewB
     description=FTR_REFERRALS_BY_RACE_AND_ETHNICITY_BY_PERIOD_DESCRIPTION,
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
     metric_period_dimension=bq_utils.unnest_metric_period_months(),
-    race_or_ethnicity_dimension=bq_utils.unnest_race_and_ethnicity(),
     metric_period_condition=bq_utils.metric_period_condition(),
 )
 

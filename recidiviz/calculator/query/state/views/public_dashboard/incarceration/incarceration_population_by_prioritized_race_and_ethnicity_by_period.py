@@ -29,7 +29,6 @@ INCARCERATION_POPULATION_BY_PRIORITIZED_RACE_AND_ETHNICITY_BY_PERIOD_VIEW_NAME =
 INCARCERATION_POPULATION_BY_PRIORITIZED_RACE_AND_ETHNICITY_BY_PERIOD_VIEW_DESCRIPTION = """..."""
 
 
-# TODO(#4294): Use the prioritized_race_or_ethnicity column
 INCARCERATION_POPULATION_BY_PRIORITIZED_RACE_AND_ETHNICITY_BY_PERIOD_VIEW_QUERY_TEMPLATE = \
     """
     /*{description}*/
@@ -38,21 +37,12 @@ INCARCERATION_POPULATION_BY_PRIORITIZED_RACE_AND_ETHNICITY_BY_PERIOD_VIEW_QUERY_
         DISTINCT state_code,
         metric_period_months,
         person_id,
-        race_or_ethnicity
+        prioritized_race_or_ethnicity as race_or_ethnicity,
       FROM `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_population_metrics_materialized`,
             -- We only want a 36-month period for this view --
-      UNNEST ([36]) AS metric_period_months,
-      {race_or_ethnicity_dimension}
+      UNNEST ([36]) AS metric_period_months
       WHERE {metric_period_condition}
         AND {state_specific_facility_exclusion}
-    ), population_with_race_or_ethnicity_priorities AS (
-      SELECT
-        *,
-        ROW_NUMBER() OVER (PARTITION BY state_code, metric_period_months, person_id ORDER BY representation_priority) as inclusion_priority
-      FROM population_with_race_or_ethnicities
-      LEFT JOIN
-         `{project_id}.{static_reference_dataset}.state_race_ethnicity_population_counts`
-      USING (state_code, race_or_ethnicity)
     )
     
     SELECT
@@ -61,9 +51,8 @@ INCARCERATION_POPULATION_BY_PRIORITIZED_RACE_AND_ETHNICITY_BY_PERIOD_VIEW_QUERY_
       {state_specific_race_or_ethnicity_groupings},
       COUNT(DISTINCT(person_id)) as population_count
     FROM
-      population_with_race_or_ethnicity_priorities,
+      population_with_race_or_ethnicities,
       {unnested_race_or_ethnicity_dimension}
-    WHERE inclusion_priority = 1
     GROUP BY state_code, metric_period_months, race_or_ethnicity 
     ORDER BY state_code, metric_period_months, race_or_ethnicity 
     """
@@ -75,10 +64,7 @@ INCARCERATION_POPULATION_BY_PRIORITIZED_RACE_AND_ETHNICITY_BY_PERIOD_VIEW_BUILDE
     dimensions=['state_code', 'metric_period_months', 'race_or_ethnicity'],
     description=INCARCERATION_POPULATION_BY_PRIORITIZED_RACE_AND_ETHNICITY_BY_PERIOD_VIEW_DESCRIPTION,
     materialized_metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
-    reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
-    static_reference_dataset=dataset_config.STATIC_REFERENCE_TABLES_DATASET,
     metric_period_condition=bq_utils.metric_period_condition(),
-    race_or_ethnicity_dimension=bq_utils.unnest_race_and_ethnicity(),
     unnested_race_or_ethnicity_dimension=bq_utils.unnest_column('race_or_ethnicity', 'race_or_ethnicity'),
     state_specific_race_or_ethnicity_groupings=state_specific_query_strings.state_specific_race_or_ethnicity_groupings(),
     state_specific_facility_exclusion=state_specific_query_strings.state_specific_facility_exclusion(),

@@ -27,12 +27,10 @@ ACTIVE_PROGRAM_PARTICIPATION_BY_REGION_VIEW_NAME = 'active_program_participation
 ACTIVE_PROGRAM_PARTICIPATION_BY_REGION_VIEW_DESCRIPTION = \
     """Active program participation counts by the region of the program location."""
 
-
-# TODO(#4294): Use the prioritized_race_or_ethnicity column
 ACTIVE_PROGRAM_PARTICIPATION_BY_REGION_VIEW_QUERY_TEMPLATE = \
     """
     /*{description}*/
-    WITH most_recent_job_id AS (
+     WITH most_recent_job_id AS (
       SELECT
         state_code,
         metric_date as date_of_participation,
@@ -46,10 +44,7 @@ ACTIVE_PROGRAM_PARTICIPATION_BY_REGION_VIEW_QUERY_TEMPLATE = \
         supervision_type,
         region_id,
         person_id,
-        race_or_ethnicity,
-        ROW_NUMBER() OVER
-        -- People can be counted on multiple types of supervision and enrolled in multiple regions simultaneously --
-        (PARTITION BY state_code, person_id, supervision_type, region_id ORDER BY representation_priority) as inclusion_priority
+        prioritized_race_or_ethnicity as race_or_ethnicity,
       FROM
         `{project_id}.{materialized_metrics_dataset}.most_recent_program_participation_metrics_materialized`
       INNER JOIN
@@ -57,11 +52,7 @@ ACTIVE_PROGRAM_PARTICIPATION_BY_REGION_VIEW_QUERY_TEMPLATE = \
       USING (state_code, job_id, date_of_participation, metric_type)
       LEFT JOIN
         `{project_id}.{static_reference_dataset}.program_locations`
-      USING (state_code, program_location_id),
-        {race_or_ethnicity_dimension}
-      LEFT JOIN
-         `{project_id}.{static_reference_dataset}.state_race_ethnicity_population_counts`
-      USING (state_code, race_or_ethnicity)
+      USING (state_code, program_location_id)
       WHERE state_code = 'US_ND'
         AND supervision_type IN ('PAROLE', 'PROBATION')
     )
@@ -77,7 +68,6 @@ ACTIVE_PROGRAM_PARTICIPATION_BY_REGION_VIEW_QUERY_TEMPLATE = \
       {unnested_race_or_ethnicity_dimension},
       {region_dimension},
       {supervision_type_dimension}
-    WHERE inclusion_priority = 1
     GROUP BY state_code, supervision_type, race_or_ethnicity, region_id
     ORDER BY state_code, supervision_type, race_or_ethnicity, region_id
     """
@@ -88,13 +78,10 @@ ACTIVE_PROGRAM_PARTICIPATION_BY_REGION_VIEW_BUILDER = MetricBigQueryViewBuilder(
     view_query_template=ACTIVE_PROGRAM_PARTICIPATION_BY_REGION_VIEW_QUERY_TEMPLATE,
     dimensions=['state_code', 'supervision_type', 'race_or_ethnicity', 'region_id'],
     description=ACTIVE_PROGRAM_PARTICIPATION_BY_REGION_VIEW_DESCRIPTION,
-    base_dataset=dataset_config.STATE_BASE_DATASET,
     static_reference_dataset=dataset_config.STATIC_REFERENCE_TABLES_DATASET,
     materialized_metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
-    current_month_condition=bq_utils.current_month_condition(),
     state_specific_race_or_ethnicity_groupings=
     state_specific_query_strings.state_specific_race_or_ethnicity_groupings(),
-    race_or_ethnicity_dimension=bq_utils.unnest_race_and_ethnicity(),
     unnested_race_or_ethnicity_dimension=bq_utils.unnest_column('race_or_ethnicity', 'race_or_ethnicity'),
     region_dimension=bq_utils.unnest_column('region_id', 'region_id'),
     supervision_type_dimension=bq_utils.unnest_supervision_type(),

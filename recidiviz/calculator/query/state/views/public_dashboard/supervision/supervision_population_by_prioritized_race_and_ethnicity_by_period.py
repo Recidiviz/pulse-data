@@ -31,30 +31,9 @@ SUPERVISION_POPULATION_BY_PRIORITIZED_RACE_AND_ETHNICITY_BY_PERIOD_VIEW_DESCRIPT
     the race/ethnicity category that is least represented in the population of the state."""
 
 
-# TODO(#4294): Use the prioritized_race_or_ethnicity column
 SUPERVISION_POPULATION_BY_PRIORITIZED_RACE_AND_ETHNICITY_BY_PERIOD_VIEW_QUERY_TEMPLATE = \
     """
     /*{description}*/
-    WITH supervision_population_with_prioritized_races_and_ethnicities AS (
-      SELECT
-        state_code,
-        metric_period_months,
-        person_id,
-        supervision_type,
-        race_or_ethnicity,
-        ROW_NUMBER() OVER
-        -- People can be counted on multiple types of supervision simultaneously --
-        (PARTITION BY state_code, metric_period_months, person_id, supervision_type ORDER BY representation_priority) as inclusion_priority
-      FROM `{project_id}.{reference_views_dataset}.event_based_supervision_populations`,
-      -- We only want a 36-month period for this view --
-      UNNEST ([36]) AS metric_period_months,
-      {race_or_ethnicity_dimension}
-      LEFT JOIN
-         `{project_id}.{static_reference_dataset}.state_race_ethnicity_population_counts`
-      USING (state_code, race_or_ethnicity)
-      WHERE {metric_period_condition}
-      AND supervision_type IN ('ALL', 'PAROLE', 'PROBATION')
-    )
 
     SELECT
       state_code,
@@ -63,9 +42,11 @@ SUPERVISION_POPULATION_BY_PRIORITIZED_RACE_AND_ETHNICITY_BY_PERIOD_VIEW_QUERY_TE
       {state_specific_race_or_ethnicity_groupings},
       COUNT(DISTINCT(person_id)) AS total_supervision_population
     FROM
-      supervision_population_with_prioritized_races_and_ethnicities,
-      {unnested_race_or_ethnicity_dimension}
-    WHERE inclusion_priority = 1
+      `{project_id}.{reference_views_dataset}.event_based_supervision_populations`,
+      {unnested_race_or_ethnicity_dimension},
+    UNNEST ([36]) AS metric_period_months
+    WHERE {metric_period_condition}
+      AND supervision_type IN ('ALL', 'PAROLE', 'PROBATION')
     GROUP BY state_code, metric_period_months, supervision_type, race_or_ethnicity
     ORDER BY state_code, metric_period_months, supervision_type, race_or_ethnicity
     """
@@ -79,7 +60,6 @@ SUPERVISION_POPULATION_BY_PRIORITIZED_RACE_AND_ETHNICITY_BY_PERIOD_VIEW_BUILDER 
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
     static_reference_dataset=dataset_config.STATIC_REFERENCE_TABLES_DATASET,
     metric_period_condition=bq_utils.metric_period_condition(),
-    race_or_ethnicity_dimension=bq_utils.unnest_race_and_ethnicity(),
     unnested_race_or_ethnicity_dimension=bq_utils.unnest_column('race_or_ethnicity', 'race_or_ethnicity'),
     gender_dimension=bq_utils.unnest_column('gender', 'gender'),
     age_dimension=bq_utils.unnest_column('age_bucket', 'age_bucket'),
