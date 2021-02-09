@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Implements admin panel route for importing GCS to Cloud SQL."""
+import logging
 from typing import List
 
 from recidiviz.cloud_sql.cloud_sql_client import CloudSQLClientImpl
@@ -37,24 +38,32 @@ def import_gcs_csv_to_cloud_sql(destination_table: str,
     with engine.connect() as conn:
         conn.execute(f'CREATE TABLE tmp__{destination_table} AS TABLE {destination_table} WITH NO DATA')
 
-    # Start actual Cloud SQL import
-    cloud_sql_client = CloudSQLClientImpl()
-    instance_name = SQLAlchemyEngineManager.get_stripped_cloudsql_instance_id(SchemaType.CASE_TRIAGE)
-    if instance_name is None:
-        raise ValueError('Could not find instance name.')
-    operation_id = cloud_sql_client.import_gcs_csv(
-        instance_name=instance_name,
-        table_name=f'tmp__{destination_table}',
-        gcs_uri=gcs_uri,
-        columns=columns,
-    )
-    if operation_id is None:
-        raise RuntimeError('Cloud SQL import operation was not started successfully.')
+    try:
+        # Start actual Cloud SQL import
+        logging.info('Starting import from GCS URI: %s', gcs_uri)
+        logging.info('Starting import to destination table: %s', destination_table)
+        logging.info('Starting import using columns: %s', columns)
+        cloud_sql_client = CloudSQLClientImpl()
+        instance_name = SQLAlchemyEngineManager.get_stripped_cloudsql_instance_id(SchemaType.CASE_TRIAGE)
+        if instance_name is None:
+            raise ValueError('Could not find instance name.')
+        operation_id = cloud_sql_client.import_gcs_csv(
+            instance_name=instance_name,
+            table_name=f'tmp__{destination_table}',
+            gcs_uri=gcs_uri,
+            columns=columns,
+        )
+        if operation_id is None:
+            raise RuntimeError('Cloud SQL import operation was not started successfully.')
 
-    operation_succeeded = cloud_sql_client.wait_until_operation_completed(operation_id)
+        operation_succeeded = cloud_sql_client.wait_until_operation_completed(operation_id)
 
-    if not operation_succeeded:
-        raise RuntimeError('Cloud SQL import failed.')
+        if not operation_succeeded:
+            raise RuntimeError('Cloud SQL import failed.')
+    except Exception as e:
+        logging.warning('Dropping newly created table due to raised exception.')
+        conn.execute(f'DROP TABLE tmp__{destination_table}')
+        raise e
 
     # Swap in new table
     with engine.begin() as conn:

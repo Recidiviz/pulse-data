@@ -60,14 +60,14 @@ export const fetchDataFreshness = async (): Promise<Response> => {
 };
 
 // GCS CSV -> Cloud SQL Import
+export const fetchETLViewIds = async (): Promise<Response> => {
+  return postWithURLAndBody("/api/case_triage/fetch_etl_view_ids", {});
+};
+
 export const runCloudSQLImport = async (
-  destinationTable: string,
-  gcsURI: string,
-  columns: string[]
+  viewIds: string[]
 ): Promise<Response> => {
   return postWithURLAndBody("/api/case_triage/run_gcs_import", {
-    destinationTable,
-    gcsURI,
-    columns,
+    viewIds,
   });
 };
