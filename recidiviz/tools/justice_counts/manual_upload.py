@@ -492,7 +492,7 @@ class Race(Dimension):
 
     @classmethod
     def dimension_identifier(cls) -> str:
-        return 'global/race/type'
+        return 'global/race'
 
     @property
     def dimension_value(self) -> str:
@@ -518,7 +518,7 @@ class Ethnicity(Dimension):
 
     @classmethod
     def dimension_identifier(cls) -> str:
-        return 'global/ethnicity/type'
+        return 'global/ethnicity'
 
     @property
     def dimension_value(self) -> str:
@@ -544,7 +544,7 @@ class Gender(Dimension):
 
     @classmethod
     def dimension_identifier(cls) -> str:
-        return 'global/gender/type'
+        return 'global/gender'
 
     @property
     def dimension_value(self) -> str:

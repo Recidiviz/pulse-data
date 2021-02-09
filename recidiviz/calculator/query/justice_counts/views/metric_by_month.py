@@ -95,10 +95,12 @@ filtered_values as (
 -- SPATIAL AGGREGATION
 -- Note: Right now we do spatial then time which works because we don't ever do spatial aggregation across tables.
 aggregated_values as (
-  SELECT instance_id, ANY_VALUE(grouped_dimensions) as dimensions, SUM(value) as value
+  SELECT
+    instance_id, ANY_VALUE(grouped_dimensions) as dimensions,
+    ANY_VALUE(num_original_dimensions) as num_original_dimensions, SUM(value) as value
   FROM (
     SELECT
-      instance_id, cell_id,
+      instance_id, cell_id, ARRAY_LENGTH(dimension_values) as num_original_dimensions,
       -- Rebuild the dimensions array, only including dimensions we want to aggregate by
       ARRAY(
         SELECT STRUCT<dimension string, dimension_value string>(dimension, dimension_value) FROM UNNEST(dimension_values)
@@ -123,6 +125,7 @@ joined_data as (
     time_window_start, time_window_end, DATE_TRUNC(DATE_SUB(time_window_end, INTERVAL 1 DAY), MONTH) as start_of_month,
     dimensions,
     ARRAY_TO_STRING(ARRAY(SELECT dimension_value FROM UNNEST(dimensions) ORDER BY dimension), '|') as dimensions_string,
+    num_original_dimensions,
     value
   FROM `{project_id}.{base_dataset}.report_table_instance_materialized` instance
   JOIN `{project_id}.{base_dataset}.report_table_definition_materialized` definition
@@ -146,12 +149,17 @@ combined_periods_data as (
     -- since they are all the same for a single dimensions_string.
     ANY_VALUE(dimensions) as dimensions,
     dimensions_string,
+    -- This will be the same since we grouped by defintion_id
+    ANY_VALUE(num_original_dimensions) as num_original_dimensions,
     SUM(value) as value
   FROM (
     -- TODO(#5517): order by how much of the month it covers, then time_window_end, then publish date?
+    -- Prioritize data that is the most recent for a month (time_window_end), then data that was published most recently
+    -- (publish_date), then data from definitions with the fewest dimensions as that will help us accidentally avoid
+    -- missing categories (num_original_dimensions)
     SELECT *, ROW_NUMBER()
       OVER(PARTITION BY source_id, report_type, definition_id, start_of_month, dimensions_string
-           ORDER BY time_window_end DESC, publish_date DESC) as ordinal
+           ORDER BY time_window_end DESC, publish_date DESC, num_original_dimensions ASC) as ordinal
     FROM joined_data
   ) as partitioned
   -- If it is DELTA then sum them, otherwise just pick one
@@ -172,7 +180,8 @@ dropped_periods_data as (
   SELECT start_of_month, time_window_start, time_window_end, dimensions, dimensions_string, value FROM (
     -- TODO(#5517): order by how much of the month it covers, then time_window_end, then publish date?
     SELECT *, ROW_NUMBER()
-      OVER(PARTITION BY dimensions_string, start_of_month ORDER BY time_window_end DESC, publish_date DESC) as ordinal
+      OVER(PARTITION BY dimensions_string, start_of_month
+           ORDER BY time_window_end DESC, publish_date DESC, num_original_dimensions ASC) as ordinal
     FROM combined_periods_data
   -- TODO(#5517): If this covers more than just that month, do we want to drop more as well? Or are we okay with window
   -- being quarter but output period being month? Same question for if it covers less?
@@ -222,15 +231,6 @@ FROM (
 ) as unnested_dimensions
 ORDER BY {aggregated_dimension_columns}, metric, year DESC, month DESC
 """
-
-# TODO(#5519): Testing
-# - Aggregated by population type
-#   - propertly includes
-#   - no cells include PRISON
-# - summing weeks to a month
-# - monthly data for a quarter
-# - aggregated with null values
-# - divide by zero
 
 @attr.s(frozen=True)
 class Aggregation:

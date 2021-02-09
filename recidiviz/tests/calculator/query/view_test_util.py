@@ -17,7 +17,7 @@
 """Utility class for testing BQ views against Postgres"""
 
 import re
-from typing import Dict, List, Optional, Set, Tuple, Type
+from typing import Dict, Iterator, List, Optional, Set, Tuple, Type
 import unittest
 import attr
 from google.cloud import bigquery
@@ -74,6 +74,27 @@ class MockTableSchema:
             data_types[field.name] = data_type
         return cls(data_types)
 
+_INITIAL_SUFFIX_ASCII = ord('a')
+
+class NameGenerator(Iterator[str]):
+    def __init__(self, prefix: str = '') -> None:
+        self.prefix = prefix
+        self.counter = 0
+
+    def _get_name(self, counter: int) -> str:
+        return self.prefix + chr(_INITIAL_SUFFIX_ASCII + counter)
+
+    def __next__(self) -> str:
+        type_name = self._get_name(self.counter)
+        self.counter += 1
+        return type_name
+
+    def __iter__(self) -> Iterator[str]:
+        return self
+
+    def all_names_generated(self) -> List[str]:
+        return [self._get_name(i) for i in range(self.counter)]
+
 @pytest.mark.uses_db
 class BaseViewTest(unittest.TestCase):
     """This is a utility class that allows BQ views to be tested using Postgres instead.
@@ -99,14 +120,15 @@ class BaseViewTest(unittest.TestCase):
 
     postgres_engine: Optional[Engine]
 
-    # Stores the list of mock tables that have been created as (dataset_id, table_id) tuples.
-    mock_bq_tables: Set[Tuple[str, str]] = set()
-
     @classmethod
     def setUpClass(cls) -> None:
         cls.temp_db_dir = local_postgres_helpers.start_on_disk_postgresql_database()
 
     def setUp(self) -> None:
+        # Stores the list of mock tables that have been created as (dataset_id, table_id) tuples.
+        self.mock_bq_tables: Set[Tuple[str, str]] = set()
+
+        self.type_name_generator = NameGenerator('__type_')
         self.postgres_engine = create_engine(local_postgres_helpers.on_disk_postgres_db_url())
 
     def tearDown(self) -> None:
@@ -116,14 +138,15 @@ class BaseViewTest(unittest.TestCase):
             session = Session(bind=self.postgres_engine)
             try:
                 for dataset_id, table_id in self.mock_bq_tables:
-                    session.execute(f"DELETE FROM {self._to_postgres_table_name(dataset_id, table_id)}")
+                    session.execute(f"DROP TABLE {self._to_postgres_table_name(dataset_id, table_id)}")
+                for type_name in self.type_name_generator.all_names_generated():
+                    session.execute(f"DROP TYPE {type_name}")
                 session.commit()
             except Exception as e:
                 session.rollback()
                 raise e
             finally:
                 session.close()
-        self.mock_bq_tables = set()
 
         if self.postgres_engine is not None:
             self.postgres_engine.dispose()
@@ -169,8 +192,14 @@ class BaseViewTest(unittest.TestCase):
         # Array concatenation is performed with the || operator
         query = _replace_iter(query, r'ARRAY_CONCAT\((?P<first>.+?), (?P<second>.+?)\)', "({first} || {second})")
 
-        # In ARRAY_LENGTH you must specify the dimension
-        query = _replace_iter(query, r'ARRAY_LENGTH\((?P<array>.+?)\)', "ARRAY_LENGTH({array}, 1)")
+        # Postgres requires you to specify the dimension of the array to measure the length of. BigQuery doesn't
+        # support multi-dimensional arrays so mapping to cardinality, which returns the total number of elements in an
+        # array, provides the same behavior. Simply specifying 1 as the dimension to measure will differ in behavior
+        # for empty arrays.
+        query = _replace_iter(query, r'ARRAY_LENGTH', "CARDINALITY")
+
+        # IN UNNEST doesn't work in postgres when passing an array column, instead use = ANY
+        query = _replace_iter(query, r'IN UNNEST', "= ANY")
 
         # Postgres doesn't have ANY_VALUE, but since we don't care what the value is we can just use MIN
         query = _replace_iter(query, r'ANY_VALUE\((?P<column>.+?)\)', "MIN({column})")
@@ -217,7 +246,7 @@ class BaseViewTest(unittest.TestCase):
 
         # Postgres requires a table alias when aliasing the outputs of unnest and it must be unique for each unnest. We
         # just use the letters of the alphabet for this starting with 'a'.
-        table_alias_ascii = ord('a')
+        table_alias_name_generator = NameGenerator()
         with_offset_regex = re.compile(r',\s+UNNEST\((?P<colname>.+?)\) AS (?P<unnestname>\w+?) '
                                        r'WITH OFFSET (?P<offsetname>\w+?)(?P<end>\W)')
         match = re.search(with_offset_regex, query)
@@ -225,9 +254,8 @@ class BaseViewTest(unittest.TestCase):
             query = query.replace(
                 match[0],
                 f"\nLEFT JOIN LATERAL UNNEST({match[1]}) "
-                f"WITH ORDINALITY AS {chr(table_alias_ascii)}({match[2]}, {match[3]}) ON TRUE{match[4]}")
+                f"WITH ORDINALITY AS {next(table_alias_name_generator)}({match[2]}, {match[3]}) ON TRUE{match[4]}")
             match = re.search(with_offset_regex, query)
-            table_alias_ascii += 1
         return query
 
     def _rewrite_structs(self, query: str) -> str:
@@ -239,11 +267,10 @@ class BaseViewTest(unittest.TestCase):
         """
         # TODO(#5081): If we move dimensions to their own tables, we may be able to get rid of the structs as well as
         # this logic to rewrite them.
-        complex_type_suffix_ascii = ord('a')
         struct_regex = re.compile(r'STRUCT<(?P<types>.+)>\((?P<fields>.+?)\)')
         match = re.search(struct_regex, query)
         while match:
-            type_name = f"__type_{chr(complex_type_suffix_ascii)}"
+            type_name = next(self.type_name_generator)
 
             converted_fields = []
             # The fields are of the form "field1 type1, field2 type2, ..."
@@ -264,5 +291,4 @@ class BaseViewTest(unittest.TestCase):
             query = query.replace(match[0], f"CAST(ROW({match[2]}) AS {type_name})")
 
             match = re.search(struct_regex, query)
-            complex_type_suffix_ascii += 1
         return query
