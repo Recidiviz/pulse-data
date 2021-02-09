@@ -228,7 +228,7 @@ resource "google_cloudfunctions_function" "trigger_calculation_pipeline_historic
     "TEMPLATE_NAME"                    = "us-nd-incarceration-population-240"
     "JOB_NAME"                         = "us-nd-incarceration-population-240"
     "ON_DATAFLOW_JOB_COMPLETION_TOPIC" = "v1.do.nothing"
-    "REGION"                           = "us-west3"
+    "REGION"                           = "us-west1"
   }
 
   source_repository {
