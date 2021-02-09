@@ -257,8 +257,8 @@ class ManualUploadTest(unittest.TestCase):
         [facility_totals_definition, facility_demographics_definition] = session.query(schema.ReportTableDefinition) \
             .order_by(sql.func.array_length(schema.ReportTableDefinition.aggregated_dimensions, 1)).all()
         self.assertEqual(['global/facility/raw'], facility_totals_definition.aggregated_dimensions)
-        self.assertEqual(['global/ethnicity/type', 'global/ethnicity/type/raw', 'global/facility/raw',
-                          'global/gender/type', 'global/gender/type/raw', 'global/race/type', 'global/race/type/raw'],
+        self.assertEqual(['global/ethnicity', 'global/ethnicity/raw', 'global/facility/raw',
+                          'global/gender', 'global/gender/raw', 'global/race', 'global/race/raw'],
                          facility_demographics_definition.aggregated_dimensions)
 
         [facility_totals_table] = session.query(schema.ReportTableInstance) \
@@ -468,8 +468,8 @@ class ManualUploadTest(unittest.TestCase):
         self.assertEqual(['global/facility/raw', 'global/location/state', 'metric/population/type'],
                          table_definition.filtered_dimensions)
         self.assertEqual(['MSP', 'US_CO', 'PRISON'], table_definition.filtered_dimension_values)
-        self.assertEqual(['global/ethnicity/type', 'global/ethnicity/type/raw', 'global/gender/type',
-                          'global/gender/type/raw', 'global/race/type', 'global/race/type/raw'],
+        self.assertEqual(['global/ethnicity', 'global/ethnicity/raw', 'global/gender',
+                          'global/gender/raw', 'global/race', 'global/race/raw'],
                          table_definition.aggregated_dimensions)
 
         cells = session.query(schema.Cell).all()
@@ -669,7 +669,7 @@ class ManualUploadTest(unittest.TestCase):
         self.assertEqual(['global/location/state', 'metric/admission/type', 'metric/supervision/type'],
                          table_definition.filtered_dimensions)
         self.assertEqual(['US_MI', 'FROM_SUPERVISION', 'PAROLE'], table_definition.filtered_dimension_values)
-        self.assertEqual(['global/gender/type', 'global/gender/type/raw', 'metric/supervision_violation/type',
+        self.assertEqual(['global/gender', 'global/gender/raw', 'metric/supervision_violation/type',
                           'metric/supervision_violation/type/raw'], table_definition.aggregated_dimensions)
 
         self.assertEqual(schema.MeasurementType.DELTA, table_definition.measurement_type)
@@ -747,7 +747,7 @@ class ManualUploadTest(unittest.TestCase):
         session = SessionFactory.for_schema_base(JusticeCountsBase)
 
         [table_definition] = session.query(schema.ReportTableDefinition).all()
-        self.assertEqual(['global/age/raw', 'global/gender/type', 'global/gender/type/raw'],
+        self.assertEqual(['global/age/raw', 'global/gender', 'global/gender/raw'],
                          table_definition.aggregated_dimensions)
 
         cells = session.query(schema.Cell).all()
