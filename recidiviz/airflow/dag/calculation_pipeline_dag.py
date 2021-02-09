@@ -61,7 +61,7 @@ def trigger_export_operator(export_name: str) -> PubSubPublishOperator:
 
 
 def get_zone_for_region(pipeline_region: str) -> str:
-    if pipeline_region in {'us-west1', 'us-west3', 'us-central1'}:
+    if pipeline_region in {'us-west1', 'us-west2', 'us-west3', 'us-central1', 'us-east4'}:
         return pipeline_region + '-a'
 
     if pipeline_region == 'us-east1':
@@ -88,7 +88,8 @@ with models.DAG(dag_id="{}_calculation_pipeline_dag".format(project_id),
 
     for pipeline in pipelines:
         region = pipeline.pop('region', str)
-        zone = get_zone_for_region(region)
+        zone = pipeline.pop_optional('zone', str)
+        zone = f'{region}-{zone}' if zone else get_zone_for_region(region)
         state_code = pipeline.pop('state_code', str)
 
         dataflow_default_args = default_args.copy()
