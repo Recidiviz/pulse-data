@@ -539,12 +539,13 @@ class PrisonPopulationViewTest(BaseViewTest):
                 # November - matches month
                 [[1, 1, 1, '2020-11-01', '2020-11-15', None],
                  [2, 1, 1, '2020-11-15', '2020-12-01', None],
-                # December - reports on Mondays, count towards month of end
+                # December - reports on Mondays, doesn't align with month, skipped
                  [3, 1, 1, '2020-11-29', '2020-12-06', None],
                  [4, 1, 1, '2020-12-06', '2020-12-13', None],
                  [5, 1, 1, '2020-12-13', '2020-12-20', None],
                  [6, 1, 1, '2020-12-20', '2020-12-27', None],
-                 [7, 1, 1, '2020-12-27', '2021-01-03', None], # this goes to Jan
+                 # January - doesn't cover month, also skipped
+                 [7, 1, 1, '2020-12-27', '2021-01-03', None],
                  # February - overlapping, all still get counted
                  [8, 1, 1, '2021-02-01', '2021-02-21', None],
                  [9, 1, 1, '2021-02-07', '2021-03-01', None],
@@ -586,8 +587,6 @@ class PrisonPopulationViewTest(BaseViewTest):
         # Assert
         expected = pd.DataFrame(
                 [['US_XX', 'ADMISSIONS', 2020, 11, np.datetime64('2020-11-30'),   3] + [None] * 4,
-                 ['US_XX', 'ADMISSIONS', 2020, 12, np.datetime64('2020-12-26'),  60] + [None] * 4,
-                 ['US_XX', 'ADMISSIONS', 2021,  1, np.datetime64('2021-01-02'),  64] + [None] * 4,
                  ['US_XX', 'ADMISSIONS', 2021,  2, np.datetime64('2021-02-28'), 384] + [None] * 4],
                 columns=['state_code', 'metric', 'year', 'month', 'date_reported', 'value',
                          'compared_to_year', 'compared_to_month', 'value_change', 'percentage_change'])
@@ -653,13 +652,10 @@ class PrisonPopulationViewTest(BaseViewTest):
 
         # Assert
         expected = pd.DataFrame(
-                [['US_XX', 'ADMISSIONS', 2019, 12, np.datetime64('2019-12-31'), 16] + [None] * 4,
-                 ['US_XX', 'ADMISSIONS', 2020,  3, np.datetime64('2020-03-31'),  1] + [None] * 4,
-                 ['US_XX', 'ADMISSIONS', 2020,  6, np.datetime64('2020-06-30'),  2] + [None] * 4,
-                 ['US_XX', 'ADMISSIONS', 2020,  9, np.datetime64('2020-09-30'),  4] + [None] * 4,
-                 ['US_XX', 'ADMISSIONS', 2020, 12, np.datetime64('2020-12-31'),  8, 2019, 12, -8, -0.5]],
-                columns=['state_code', 'metric', 'year', 'month', 'date_reported', 'value',
-                         'compared_to_year', 'compared_to_month', 'value_change', 'percentage_change'])
+            [],
+            columns=['state_code', 'metric', 'year', 'month', 'date_reported',
+                     'value', 'compared_to_year', 'compared_to_month', 'value_change', 'percentage_change'])
+        expected = expected.astype({'year': int, 'month': int, 'value': int})
         expected = expected.set_index(dimensions)
         assert_frame_equal(expected, results)
 
@@ -900,9 +896,9 @@ class PrisonPopulationViewTest(BaseViewTest):
             dataset_id='justice_counts', table_id='report_table_instance_materialized',
             mock_schema=MockTableSchema.from_sqlalchemy_table(schema.ReportTableInstance.__table__),
             mock_data=pd.DataFrame(
-                [[1, 1, 1, '2022-01-01', '2022-01-02', None],
-                 [2, 1, 1, '2021-01-01', '2021-01-02', None],
-                 [3, 1, 1, '2020-01-01', '2020-01-02', None]],
+                [[1, 1, 1, '2022-01-01', '2022-02-01', None],
+                 [2, 1, 1, '2021-01-01', '2021-02-01', None],
+                 [3, 1, 1, '2020-01-01', '2020-02-01', None]],
                 columns=['id', 'report_id', 'report_table_definition_id', 'time_window_start', 'time_window_end',
                          'methodology']))
         self.create_mock_bq_table(
@@ -932,10 +928,10 @@ class PrisonPopulationViewTest(BaseViewTest):
 
         # Assert
         expected = pd.DataFrame(
-                [['US_XX', 'ADMISSIONS', 2020, 1, np.datetime64('2020-01-01'),  2, None, None, None, None],
-                 ['US_XX', 'ADMISSIONS', 2021, 1, np.datetime64('2021-01-01'),  0, 2020, 1, -2, -1.00],
+                [['US_XX', 'ADMISSIONS', 2020, 1, np.datetime64('2020-01-31'),  2, None, None, None, None],
+                 ['US_XX', 'ADMISSIONS', 2021, 1, np.datetime64('2021-01-31'),  0, 2020, 1, -2, -1.00],
                  # Percentage change is None as prior value was 0
-                 ['US_XX', 'ADMISSIONS', 2022, 1, np.datetime64('2022-01-01'),  3, 2021, 1,  3, None]],
+                 ['US_XX', 'ADMISSIONS', 2022, 1, np.datetime64('2022-01-31'),  3, 2021, 1,  3, None]],
                 columns=['state_code', 'metric', 'year', 'month', 'date_reported', 'value',
                          'compared_to_year', 'compared_to_month', 'value_change', 'percentage_change'])
         expected = expected.set_index(dimensions)

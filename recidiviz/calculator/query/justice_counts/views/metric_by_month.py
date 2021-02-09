@@ -143,7 +143,7 @@ combined_periods_data as (
   -- TODO(#5517): ensure non-overlapping, contiguous blocks (e.g. four weeks of a month)
   SELECT
     source_id, report_type, MAX(publish_date) as publish_date,
-    definition_id,
+    definition_id, ANY_VALUE(measurement_type) as measurement_type,
     start_of_month, MIN(time_window_start) as time_window_start, MAX(time_window_end) as time_window_end,
     -- Since BQ won't allow us to group by dimensions, we are grouping by dimensions_string and just pick any dimensions
     -- since they are all the same for a single dimensions_string.
@@ -182,7 +182,11 @@ dropped_periods_data as (
     SELECT *, ROW_NUMBER()
       OVER(PARTITION BY dimensions_string, start_of_month
            ORDER BY time_window_end DESC, publish_date DESC, num_original_dimensions ASC) as ordinal
-    FROM combined_periods_data
+    FROM (
+      -- For now, just filter out any DELTA points that don't cover the same number of days as the month
+      SELECT * FROM combined_periods_data
+      WHERE measurement_type != 'DELTA' OR (DATE_DIFF(time_window_end, time_window_start, DAY) = EXTRACT(DAY FROM LAST_DAY(start_of_month)))
+    ) as filtered_to_month
   -- TODO(#5517): If this covers more than just that month, do we want to drop more as well? Or are we okay with window
   -- being quarter but output period being month? Same question for if it covers less?
   ) as partitioned
