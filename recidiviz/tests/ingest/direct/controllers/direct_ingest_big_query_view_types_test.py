@@ -58,7 +58,8 @@ class DirectIngestBigQueryViewTypesTest(unittest.TestCase):
                 file_tag='table_name',
                 file_description='file description',
                 primary_key_cols=['col1', 'col2'],
-                columns=[],
+                columns=[RawTableColumnInfo(name='col1', is_datetime=False, description='col1 description'),
+                         RawTableColumnInfo(name='col2', is_datetime=False, description='col2 description')],
                 supplemental_order_by_clause='CAST(seq_num AS INT64)',
                 encoding='any-encoding',
                 separator='@',
@@ -78,8 +79,9 @@ class DirectIngestBigQueryViewTypesTest(unittest.TestCase):
             raw_table_primary_key_str='col1, col2',
             raw_table_dataset_id='us_xx_raw_data',
             raw_table_name='table_name',
-            except_clause='EXCEPT (file_id, update_datetime)',
-            datetime_cols_clause='',
+            columns_clause='col1, col2',
+            legacy_except_clause='',
+            legacy_datetime_cols_clause='',
             supplemental_order_by_clause=', CAST(seq_num AS INT64)'
         )
 
@@ -94,7 +96,8 @@ class DirectIngestBigQueryViewTypesTest(unittest.TestCase):
                 file_tag='table_name',
                 file_description='file description',
                 primary_key_cols=['col1', 'col2'],
-                columns=[],
+                columns=[RawTableColumnInfo(name='col1', is_datetime=False, description='col1 description'),
+                         RawTableColumnInfo(name='col2', is_datetime=False, description='col2 description')],
                 supplemental_order_by_clause='CAST(seq_num AS INT64)',
                 encoding='any-encoding',
                 separator='@',
@@ -114,8 +117,9 @@ class DirectIngestBigQueryViewTypesTest(unittest.TestCase):
             raw_table_primary_key_str='col1, col2',
             raw_table_dataset_id='us_xx_raw_data',
             raw_table_name='table_name',
-            except_clause='EXCEPT (file_id, update_datetime)',
-            datetime_cols_clause='',
+            columns_clause='col1, col2',
+            legacy_except_clause='',
+            legacy_datetime_cols_clause='',
             supplemental_order_by_clause=', CAST(seq_num AS INT64)'
         )
 
@@ -131,7 +135,8 @@ class DirectIngestBigQueryViewTypesTest(unittest.TestCase):
                 file_description='file description',
                 primary_key_cols=['col1'],
                 columns=[RawTableColumnInfo(name='col1', is_datetime=False, description='col1 description'),
-                         RawTableColumnInfo(name='col2', is_datetime=True, description='col2 description')],
+                         RawTableColumnInfo(name='col2', is_datetime=True, description='col2 description'),
+                         RawTableColumnInfo(name='undocumented_column', is_datetime=True, description=None)],
                 supplemental_order_by_clause='',
                 encoding='any-encoding',
                 separator='@',
@@ -160,8 +165,9 @@ class DirectIngestBigQueryViewTypesTest(unittest.TestCase):
             raw_table_primary_key_str='col1',
             raw_table_dataset_id='us_xx_raw_data',
             raw_table_name='table_name',
-            except_clause='EXCEPT (col2, file_id, update_datetime)',
-            datetime_cols_clause=expected_datetime_cols_clause,
+            columns_clause=f'col1, {expected_datetime_cols_clause}',
+            legacy_except_clause='',
+            legacy_datetime_cols_clause='',
             supplemental_order_by_clause=''
         )
 
@@ -206,8 +212,9 @@ class DirectIngestBigQueryViewTypesTest(unittest.TestCase):
             raw_table_primary_key_str='col1',
             raw_table_dataset_id='us_xx_raw_data',
             raw_table_name='table_name',
-            except_clause='EXCEPT (col2, file_id, update_datetime)',
-            datetime_cols_clause=expected_datetime_cols_clause,
+            columns_clause=f'col1, {expected_datetime_cols_clause}',
+            legacy_except_clause='',
+            legacy_datetime_cols_clause='',
             supplemental_order_by_clause=''
         )
 
@@ -255,7 +262,7 @@ ORDER BY col1, col2;"""
 file_tag_first_generated_view AS (
     WITH rows_with_recency_rank AS (
         SELECT
-            * EXCEPT (file_id, update_datetime),
+            col_name_1a, col_name_1b,
             ROW_NUMBER() OVER (PARTITION BY col_name_1a, col_name_1b
                                ORDER BY update_datetime DESC) AS recency_rank
         FROM
@@ -272,7 +279,7 @@ file_tag_first_generated_view AS (
 file_tag_second_generated_view AS (
     WITH rows_with_recency_rank AS (
         SELECT
-            * EXCEPT (file_id, update_datetime),
+            col_name_2a,
             ROW_NUMBER() OVER (PARTITION BY col_name_2a
                                ORDER BY update_datetime DESC) AS recency_rank
         FROM
@@ -431,7 +438,7 @@ ORDER BY col1, col2;"""
 file_tag_first_generated_view AS (
     WITH rows_with_recency_rank AS (
         SELECT
-            * EXCEPT (file_id, update_datetime),
+            col_name_1a, col_name_1b,
             ROW_NUMBER() OVER (PARTITION BY col_name_1a, col_name_1b
                                ORDER BY update_datetime DESC) AS recency_rank
         FROM
@@ -464,7 +471,7 @@ tagFullHistoricalExport_generated_view AS (
     ),
     rows_with_recency_rank AS (
         SELECT
-            * EXCEPT (file_id, update_datetime),
+            COL_1,
             ROW_NUMBER() OVER (PARTITION BY COL_1
                                ORDER BY update_datetime DESC) AS recency_rank
         FROM
@@ -526,7 +533,7 @@ ORDER BY col1, col2;"""
 file_tag_first_generated_view AS (
     WITH rows_with_recency_rank AS (
         SELECT
-            * EXCEPT (file_id, update_datetime),
+            col_name_1a, col_name_1b,
             ROW_NUMBER() OVER (PARTITION BY col_name_1a, col_name_1b
                                ORDER BY update_datetime DESC) AS recency_rank
         FROM
@@ -628,7 +635,7 @@ ORDER BY col1, col2;"""
 file_tag_first_generated_view AS (
     WITH rows_with_recency_rank AS (
         SELECT
-            * EXCEPT (file_id, update_datetime),
+            col_name_1a, col_name_1b,
             ROW_NUMBER() OVER (PARTITION BY col_name_1a, col_name_1b
                                ORDER BY update_datetime DESC) AS recency_rank
         FROM
@@ -645,7 +652,7 @@ file_tag_first_generated_view AS (
 file_tag_second_generated_view AS (
     WITH rows_with_recency_rank AS (
         SELECT
-            * EXCEPT (file_id, update_datetime),
+            col_name_2a,
             ROW_NUMBER() OVER (PARTITION BY col_name_2a
                                ORDER BY update_datetime DESC) AS recency_rank
         FROM
@@ -751,7 +758,7 @@ ORDER BY col1, col2;"""
         expected_parameterized_view_query = """CREATE TEMP TABLE file_tag_first_generated_view AS (
     WITH rows_with_recency_rank AS (
         SELECT
-            * EXCEPT (file_id, update_datetime),
+            col_name_1a, col_name_1b,
             ROW_NUMBER() OVER (PARTITION BY col_name_1a, col_name_1b
                                ORDER BY update_datetime DESC) AS recency_rank
         FROM
@@ -768,7 +775,7 @@ ORDER BY col1, col2;"""
 CREATE TEMP TABLE file_tag_second_generated_view AS (
     WITH rows_with_recency_rank AS (
         SELECT
-            * EXCEPT (file_id, update_datetime),
+            col_name_2a,
             ROW_NUMBER() OVER (PARTITION BY col_name_2a
                                ORDER BY update_datetime DESC) AS recency_rank
         FROM
@@ -862,7 +869,7 @@ ORDER BY col1, col2;"""
         expected_parameterized_view_query = """CREATE TEMP TABLE file_tag_first_generated_view AS (
     WITH rows_with_recency_rank AS (
         SELECT
-            * EXCEPT (file_id, update_datetime),
+            col_name_1a, col_name_1b,
             ROW_NUMBER() OVER (PARTITION BY col_name_1a, col_name_1b
                                ORDER BY update_datetime DESC) AS recency_rank
         FROM
@@ -879,7 +886,7 @@ ORDER BY col1, col2;"""
 CREATE TEMP TABLE file_tag_second_generated_view AS (
     WITH rows_with_recency_rank AS (
         SELECT
-            * EXCEPT (file_id, update_datetime),
+            col_name_2a,
             ROW_NUMBER() OVER (PARTITION BY col_name_2a
                                ORDER BY update_datetime DESC) AS recency_rank
         FROM
@@ -973,7 +980,7 @@ ORDER BY col1, col2
         expected_parameterized_view_query = """CREATE TEMP TABLE file_tag_first_generated_view AS (
     WITH rows_with_recency_rank AS (
         SELECT
-            * EXCEPT (file_id, update_datetime),
+            col_name_1a, col_name_1b,
             ROW_NUMBER() OVER (PARTITION BY col_name_1a, col_name_1b
                                ORDER BY update_datetime DESC) AS recency_rank
         FROM
@@ -990,7 +997,7 @@ ORDER BY col1, col2
 CREATE TEMP TABLE file_tag_second_generated_view AS (
     WITH rows_with_recency_rank AS (
         SELECT
-            * EXCEPT (file_id, update_datetime),
+            col_name_2a,
             ROW_NUMBER() OVER (PARTITION BY col_name_2a
                                ORDER BY update_datetime DESC) AS recency_rank
         FROM
@@ -1085,7 +1092,7 @@ WITH
 file_tag_first_generated_view AS (
     WITH rows_with_recency_rank AS (
         SELECT
-            * EXCEPT (file_id, update_datetime),
+            col_name_1a, col_name_1b,
             ROW_NUMBER() OVER (PARTITION BY col_name_1a, col_name_1b
                                ORDER BY update_datetime DESC) AS recency_rank
         FROM
@@ -1102,7 +1109,7 @@ file_tag_first_generated_view AS (
 file_tag_second_generated_view AS (
     WITH rows_with_recency_rank AS (
         SELECT
-            * EXCEPT (file_id, update_datetime),
+            col_name_2a,
             ROW_NUMBER() OVER (PARTITION BY col_name_2a
                                ORDER BY update_datetime DESC) AS recency_rank
         FROM
