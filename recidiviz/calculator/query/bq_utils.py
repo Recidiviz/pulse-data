@@ -22,15 +22,15 @@ def unnest_column(input_column_name: str, output_column_name: str) -> str:
     return f"UNNEST ([{input_column_name}, 'ALL']) AS {output_column_name}"
 
 
-def unnest_district(district_column: str ='supervising_district_external_id') -> str:
+def unnest_district(district_column: str = 'supervising_district_external_id') -> str:
     return unnest_column(district_column, 'district')
 
 
-def unnest_supervision_type(supervision_type_column: str ='supervision_type') -> str:
+def unnest_supervision_type(supervision_type_column: str = 'supervision_type') -> str:
     return unnest_column(supervision_type_column, 'supervision_type')
 
 
-def unnest_charge_category(category_column: str ='case_type') -> str:
+def unnest_charge_category(category_column: str = 'case_type') -> str:
     return unnest_column(category_column, 'charge_category')
 
 
@@ -46,23 +46,7 @@ def unnest_rolling_average_months() -> str:
     return "UNNEST ([1, 3, 6]) AS rolling_average_months"
 
 
-# TODO(#4294): Remove this once all views are using the prioritized_race_or_ethnicity field
-def unnest_race_and_ethnicity() -> str:
-    return """UNNEST(
-            SPLIT(
-              IFNULL(
-                ARRAY_TO_STRING((
-                    SELECT ARRAY_AGG(col) 
-                    FROM UNNEST(ARRAY_CONCAT(COALESCE(SPLIT(race, ','), []), 
-                                             COALESCE(SPLIT(ethnicity, ','), []))) AS col
-                    WHERE col IS NOT NULL AND col != 'NOT_HISPANIC' AND col != 'EXTERNAL_UNKNOWN'
-                  ),
-                  ','), 
-                'EXTERNAL_UNKNOWN')
-            )) race_or_ethnicity"""
-
-
-def metric_period_condition(month_offset: int =1) -> str:
+def metric_period_condition(month_offset: int = 1) -> str:
     return f"""DATE(year, month, 1) >= DATE_SUB(DATE_TRUNC(CURRENT_DATE('US/Pacific'), MONTH),
                                                 INTERVAL metric_period_months - {month_offset} MONTH)"""
 

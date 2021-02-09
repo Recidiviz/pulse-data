@@ -28,7 +28,6 @@ SUPERVISION_SUCCESS_BY_PERIOD_BY_DEMOGRAPHICS_VIEW_DESCRIPTION = \
     """Rates of successful completion of supervision by period, grouped by demographic dimensions."""
 
 
-# TODO(#4294): Use the prioritized_race_or_ethnicity column
 SUPERVISION_SUCCESS_BY_PERIOD_BY_DEMOGRAPHICS_VIEW_QUERY_TEMPLATE = \
     """
     /*{description}*/
@@ -40,12 +39,11 @@ SUPERVISION_SUCCESS_BY_PERIOD_BY_DEMOGRAPHICS_VIEW_QUERY_TEMPLATE = \
         person_id,
         IFNULL(district, 'EXTERNAL_UNKNOWN') as district,
         IFNULL(gender, 'EXTERNAL_UNKNOWN') as gender,
-        race_or_ethnicity,
+        prioritized_race_or_ethnicity as race_or_ethnicity,
         IFNULL(age_bucket, 'EXTERNAL_UNKNOWN') as age_bucket,
         supervision_type,
         metric_period_months
       FROM `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_success_metrics_materialized` success_metrics,
-      {race_or_ethnicity_dimension},
       {gender_dimension},
       {age_dimension},
       UNNEST ([{grouped_districts}, 'ALL']) AS district,
@@ -53,19 +51,6 @@ SUPERVISION_SUCCESS_BY_PERIOD_BY_DEMOGRAPHICS_VIEW_QUERY_TEMPLATE = \
       UNNEST ([36]) AS metric_period_months
       WHERE {metric_period_condition}
       GROUP BY state_code, person_id, metric_period_months, district, gender, race_or_ethnicity, age_bucket, supervision_type
-    ), terminations_with_race_or_ethnicity_priorities AS (
-       SELECT
-        *,
-        ROW_NUMBER () OVER
-            -- People can be counted on multiple types of supervision and in multiple districts simultaneously. --
-            -- Partitioning over gender and age_bucket have no effect. --
-            (PARTITION BY state_code, person_id, metric_period_months, supervision_type, district, gender, age_bucket
-             ORDER BY representation_priority) as inclusion_priority
-       FROM
-          supervision_completions
-       LEFT JOIN
-        `{project_id}.{static_reference_dataset}.state_race_ethnicity_population_counts`
-      USING (state_code, race_or_ethnicity) 
     ), successful_termination_counts AS (
       SELECT
           state_code,
@@ -78,9 +63,8 @@ SUPERVISION_SUCCESS_BY_PERIOD_BY_DEMOGRAPHICS_VIEW_QUERY_TEMPLATE = \
           COUNT(DISTINCT IF(successful_termination, person_id, NULL)) as successful_termination_count,
           COUNT(DISTINCT person_id) as projected_completion_count
       FROM
-          terminations_with_race_or_ethnicity_priorities,
+          supervision_completions,
           {unnested_race_or_ethnicity_dimension}
-      WHERE inclusion_priority = 1
       GROUP BY state_code, metric_period_months, district, supervision_type, race_or_ethnicity, gender, age_bucket
     )
     
@@ -106,10 +90,8 @@ SUPERVISION_SUCCESS_BY_PERIOD_BY_DEMOGRAPHICS_VIEW_BUILDER = MetricBigQueryViewB
     description=SUPERVISION_SUCCESS_BY_PERIOD_BY_DEMOGRAPHICS_VIEW_DESCRIPTION,
     materialized_metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
-    static_reference_dataset=dataset_config.STATIC_REFERENCE_TABLES_DATASET,
     grouped_districts=
     state_specific_query_strings.state_supervision_specific_district_groupings('supervising_district_external_id', 'judicial_district_code'),
-    race_or_ethnicity_dimension=bq_utils.unnest_race_and_ethnicity(),
     metric_period_condition=bq_utils.metric_period_condition(month_offset=1),
     unnested_race_or_ethnicity_dimension=bq_utils.unnest_column('race_or_ethnicity', 'race_or_ethnicity'),
     gender_dimension=bq_utils.unnest_column('gender', 'gender'),

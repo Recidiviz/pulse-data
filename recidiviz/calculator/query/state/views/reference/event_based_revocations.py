@@ -31,7 +31,6 @@ EVENT_BASED_REVOCATIONS_DESCRIPTION = """
  Expanded Dimensions: district, supervision_type
  """
 
-# TODO(#4294): Replace the race and ethnicity fields with prioritized_race_or_ethnicity
 EVENT_BASED_REVOCATIONS_QUERY_TEMPLATE = \
     """
     /*{description}*/
@@ -43,11 +42,10 @@ EVENT_BASED_REVOCATIONS_QUERY_TEMPLATE = \
       supervising_officer_external_id AS officer_external_id,
       source_violation_type,
       revocation_admission_date,
-      race,
-      ethnicity,
+      prioritized_race_or_ethnicity as race_or_ethnicity,
       gender,
       age_bucket
-    FROM `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_revocation_metrics_materialized` m,
+    FROM `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_revocation_metrics_materialized`,
     {district_dimension},
     {supervision_type_dimension}
     WHERE {thirty_six_month_filter}

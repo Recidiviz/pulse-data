@@ -35,7 +35,6 @@ INCARCERATION_LENGTHS_BY_DEMOGRAPHICS_VIEW_DESCRIPTION = \
     from an incarceration for a new charge, and notably excludes time spent incarcerated following a parole revocation.     
     """
 
-# TODO(#4294): Replace the race and ethnicity fields with prioritized_race_or_ethnicity
 # TODO(#3657): Update this query exclude US_ND releases from 'CPP' once we are classifying transfers to CPP as releases
 INCARCERATION_LENGTHS_BY_DEMOGRAPHICS_VIEW_QUERY_TEMPLATE = \
     """
@@ -47,8 +46,7 @@ INCARCERATION_LENGTHS_BY_DEMOGRAPHICS_VIEW_QUERY_TEMPLATE = \
           month,
           person_id,
           release_date,
-          race,
-          ethnicity,
+          prioritized_race_or_ethnicity as race_or_ethnicity,
           IFNULL(gender, 'EXTERNAL_UNKNOWN') as gender,
           IFNULL(age_bucket, 'EXTERNAL_UNKNOWN') as age_bucket,
           IEEE_DIVIDE(total_days_incarcerated, 365.25) as years_incarcerated 
@@ -65,17 +63,6 @@ INCARCERATION_LENGTHS_BY_DEMOGRAPHICS_VIEW_QUERY_TEMPLATE = \
           -- We only want a 36-month period for this view --
           UNNEST([36]) AS metric_period_months
         WHERE {metric_period_condition}
-    ), releases_by_period AS (
-      SELECT
-        * EXCEPT(race, ethnicity, release_ranking),
-        ROW_NUMBER () OVER (PARTITION BY state_code, metric_period_months, person_id ORDER BY representation_priority) as inclusion_priority
-      FROM
-        ranked_releases_by_period,
-        {race_or_ethnicity_dimension}
-      LEFT JOIN
-         `{project_id}.{static_reference_dataset}.state_race_ethnicity_population_counts`
-      USING (state_code, race_or_ethnicity)
-      WHERE release_ranking = 1
     )
     
     SELECT
@@ -93,11 +80,11 @@ INCARCERATION_LENGTHS_BY_DEMOGRAPHICS_VIEW_QUERY_TEMPLATE = \
       COUNT(DISTINCT IF(20 <= years_incarcerated, person_id, NULL)) as years_20_plus,
       COUNT(DISTINCT(person_id)) as total_release_count
     FROM
-      releases_by_period,
+      ranked_releases_by_period,
       {unnested_race_or_ethnicity_dimension},
       {gender_dimension},
       {age_dimension}
-    WHERE inclusion_priority = 1
+    WHERE release_ranking = 1
       AND ((race_or_ethnicity != 'ALL' AND gender = 'ALL' AND age_bucket = 'ALL') -- Race breakdown
       OR (race_or_ethnicity = 'ALL' AND gender != 'ALL' AND age_bucket = 'ALL') -- Gender breakdown
       OR (race_or_ethnicity = 'ALL' AND gender = 'ALL' AND age_bucket != 'ALL') -- Age breakdown
@@ -116,7 +103,6 @@ INCARCERATION_LENGTHS_BY_DEMOGRAPHICS_VIEW_BUILDER = MetricBigQueryViewBuilder(
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
     static_reference_dataset=dataset_config.STATIC_REFERENCE_TABLES_DATASET,
     metric_period_condition=bq_utils.metric_period_condition(),
-    race_or_ethnicity_dimension=bq_utils.unnest_race_and_ethnicity(),
     unnested_race_or_ethnicity_dimension=bq_utils.unnest_column('race_or_ethnicity', 'race_or_ethnicity'),
     gender_dimension=bq_utils.unnest_column('gender', 'gender'),
     age_dimension=bq_utils.unnest_column('age_bucket', 'age_bucket'),

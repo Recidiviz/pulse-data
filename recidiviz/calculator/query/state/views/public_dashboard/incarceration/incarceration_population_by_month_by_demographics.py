@@ -28,48 +28,38 @@ INCARCERATION_POPULATION_BY_MONTH_BY_DEMOGRAPHICS_VIEW_NAME = 'incarceration_pop
 INCARCERATION_POPULATION_BY_MONTH_BY_DEMOGRAPHICS_VIEW_DESCRIPTION = \
         """First of the month incarceration population counts broken down by demographics."""
 
-# TODO(#4294): Migrate this view to use the prioritized_race_or_ethnicity in the metric table, rather than the
-#   manually derived value from population_with_prioritized_race_or_ethnicity below.
 INCARCERATION_POPULATION_BY_MONTH_BY_DEMOGRAPHICS_VIEW_QUERY_TEMPLATE = \
     """
     /*{description}*/
     
-    WITH population_with_race_or_ethnicity_priorities AS (
+    WITH state_specific_incarceration_groupings AS (
       SELECT
-         * EXCEPT (prioritized_race_or_ethnicity),
-         ROW_NUMBER () OVER (PARTITION BY state_code, year, month, date_of_stay, person_id ORDER BY representation_priority) as inclusion_priority
+        person_id,
+        state_code,
+        date_of_stay as population_date,
+        {state_specific_race_or_ethnicity_groupings},
+        gender,
+        age_bucket,
       FROM
-        `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_population_metrics_materialized`,
-        {race_ethnicity_dimension}
-      LEFT JOIN
-         `{project_id}.{static_reference_dataset}.state_race_ethnicity_population_counts`
-      USING (state_code, race_or_ethnicity)
+        `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_population_metrics_materialized`
       WHERE date_of_stay = DATE(year, month, 1)
         AND {state_specific_facility_exclusion}
         -- 20 years worth of monthly population metrics --
         AND date_of_stay >= DATE_SUB(DATE_TRUNC(CURRENT_DATE('US/Pacific'), MONTH), INTERVAL 239 MONTH)
-    ), population_with_prioritized_race_or_ethnicity AS (
-      SELECT
-        * EXCEPT(race_or_ethnicity),
-        race_or_ethnicity as prioritized_race_or_ethnicity
-      FROM
-        population_with_race_or_ethnicity_priorities 
-      WHERE inclusion_priority = 1
     )
-    
     
     SELECT
       state_code,
-      date_of_stay as population_date,
-      {state_specific_race_or_ethnicity_groupings},
+      population_date,
+      race_or_ethnicity,
       gender,
       age_bucket,
       COUNT(DISTINCT(person_id)) AS population_count
     FROM
-      population_with_prioritized_race_or_ethnicity,
-    {unnested_race_or_ethnicity_dimension},
-    {gender_dimension},
-    {age_dimension}
+      state_specific_incarceration_groupings,
+      {unnested_race_or_ethnicity_dimension},
+      {gender_dimension},
+      {age_dimension}
     WHERE (race_or_ethnicity != 'ALL' AND gender = 'ALL' AND age_bucket = 'ALL') -- Race breakdown
       OR (race_or_ethnicity = 'ALL' AND gender != 'ALL' AND age_bucket = 'ALL') -- Gender breakdown
       OR (race_or_ethnicity = 'ALL' AND gender = 'ALL' AND age_bucket != 'ALL') -- Age breakdown
@@ -87,11 +77,11 @@ INCARCERATION_POPULATION_BY_MONTH_BY_DEMOGRAPHICS_VIEW_BUILDER = MetricBigQueryV
     materialized_metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
     reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
     static_reference_dataset=dataset_config.STATIC_REFERENCE_TABLES_DATASET,
-    race_ethnicity_dimension=bq_utils.unnest_race_and_ethnicity(),
-    unnested_race_or_ethnicity_dimension=bq_utils.unnest_column('prioritized_race_or_ethnicity', 'race_or_ethnicity'),
+    unnested_race_or_ethnicity_dimension=bq_utils.unnest_column('race_or_ethnicity', 'race_or_ethnicity'),
     gender_dimension=bq_utils.unnest_column('gender', 'gender'),
     age_dimension=bq_utils.unnest_column('age_bucket', 'age_bucket'),
-    state_specific_race_or_ethnicity_groupings=state_specific_query_strings.state_specific_race_or_ethnicity_groupings(),
+    state_specific_race_or_ethnicity_groupings=
+    state_specific_query_strings.state_specific_race_or_ethnicity_groupings('prioritized_race_or_ethnicity'),
     state_specific_facility_exclusion=state_specific_query_strings.state_specific_facility_exclusion(),
 )
 
