@@ -1,14 +1,120 @@
 file_tag: docstars_offendercasestable
+file_description: |-
+  Each row represents a distinct "case" for a particular person under supervision, i.e. a period of supervision served by
+  some person for some reason. This includes metadata about the sentence length, the actual period being served, the
+  needs of the person during this period, and whether a revocation has occurred and why.
 primary_key_cols:
   - CASE_NUMBER
 columns:
+  - name: CASE_NUMBER
+    description: |-
+      ID of the specific case within the Docstars system.
+  - name: SID
+    description: |-
+      External id for a unique person from the Docstars system.
+  - name: SENT_TYPE
+    description: |-
+      Type of supervision sentence to be served by this person.
+  - name: DESCRIPTION
+    description: |-
+      Type of supervision period to be served by this person.
+  - name: SENT_YY
+    description: |-
+      Years component of the length of the supervision sentence.
+  - name: SENT_MM
+    description: |-
+      Months component of the length of the supervision sentence.
+  - name: JUDGE
+    description: |-
+      Name of the judge who imposed this supervision sentence.
   - name: PAROLE_FR
     is_datetime: True
+    description: |-
+      When the sentence imposition began.
   - name: PAROLE_TO
     is_datetime: True
+    description: |-
+      When the sentence expires.
+  - name: TERM_DATE
+    is_datetime: True
+    description: |-
+      When the period of supervision was terminated.
+  - name: TA_TYPE
+    description: |-
+      Why the period of supervision was terminated.<br>Values:<br>- Case 1: "Terminated - Dismissal (Deferred Imp.)"<br>- Probation Type: Deferred Imposition of Sentence<br>- This is for a lower level sentence, people with very little criminal history<br>- Judge says that you are on probation for X years, but if you “mess up”, then there will be a consequence (it’s discretionary)<br>- Case 2: "Terminated - Early Dismissal (Deferred Imp.)"<br>- Case 3: "Terminated - Termination (Deferred Imp.)"<br>- Case 4: "Terminated - Expiration (Susp. Sentence)"<br>- Probation Type: Suspended Sentence<br>- Judge says that you are on probation for X years, but if you “mess up”, then you will go to jail for Y years<br>- Case 5: "Terminated - Termination-Positive (Susp. Sent)"<br>- Ex: 4 years in to a 5 year probation, the officer decides to end the probation early<br>- With a probation type of Suspended Sentence<br>- Case 6: "Terminated - Termination-Negative (Susp. Sent)"<br>- Ex: 2 different counties have different supervision sentences for the same supervisee, but the supervisee violated one of the cases so the other county decides to revoke the supervisee, now the other county will end it with “termination-negative”<br>- Case 7: "Terminated - Expiration (Parole)"<br>- Case 8: "Terminated - Released from Community Placement"<br>- Case 9: "Terminated - Revocation"<br>- Case 10: "Terminated - Revocation with Continuation"<br>- The person was revoked, but instead of being thrown into jail permanently, they may do a certain “trial period” in jail, and then continue with supervision <br>- This is likely due to an absconsion or technical violation<br>- Case 11: "Terminated - Death"<br>- Case 12: "Terminated - Returned to Original State-Voluntary"<br>- Case 13: "Terminated - Absconded (Active Petition To Revoke)"<br>- Case 14: "Terminated - Other"<br>- Case 15: "Terminated - Released from Custody"<br>- Case 16: "Terminated - CCC"<br>- **C**ivil **C**ommunity **C**onfinement (typically involuntary)<br>- Ex: state hospital<br>- Talk to Pat to get more info<br>- Case 17: "Terminated - Returned to Original State-Violation"<br>- Case 18: "Terminated"<br>- Case 19: "Terminated - Expiration (IC Parole)"<br>- **Interstate Compact** (someone from ND goes to another state and checks in with the local parole/probation authority) → and vice versa<br>- Case 20: "Terminated - Expiration (IC Probation)"<br>- *Pretrial Case Closure Types:*<br>- Case 21: "Guilty"<br>- Case 22: "Guilty of Lesser Charge"<br>- Case 23: "Not Guilty"<br>- Case 24: "Dismissed"<br>- Case 25: "Mistrial"<br>- Jury couldn’t come to a conclusion<br>- Case 26: "Deferred Prosecution"<br>- Holding off on prosecuting for now (could be many reasons for this)<br>- Talk to Pat/Adam Anderson about this<br>- Case 27: "Post-Conviction Supervision"<br>- Would this be unsupervised? Supervised?<br>- Talk to Pat/Adam Anderson about this<br>- Case 28: "Closed with Active FTA"<br>- Failure to Appear
+  - name: TB_CTY
+    description: |-
+      The county where the supervision period was served.
+  - name: TD_PUB_AST
+    description: |-
+      Whether the person received public assistance/welfare during the period of supervision.
+  - name: TE_EMPLOY
+    description: |-
+      Employment status of the person at the end of the period of supervision.
+  - name: TF_RESPNSE
+    description: |-
+      ??? of the person at the end of the period of supervision.
+  - name: TG_COMMRES
+    description: |-
+      ??? of the person at the end of the period of supervision.
+  - name: TH_MARITAL
+    description: |-
+      Marital status of the person at the end of the period of supervision.
+  - name: TI_EMPLOY
+    description: |-
+      Employment status of the person at the end of the period of supervision.
+  - name: TJ_INCOME
+    description: |-
+      Income range of the person at the end of the period of supervision.
+  - name: TK_LAST_GR
+    description: |-
+      Last academic grade completed by the end of the period of supervision.
+  - name: TL_LIV_ARR
+    description: |-
+      Living arrangement of the person at the end of the period of supervision.
+  - name: REV_DATE
+    is_datetime: True
+    description: |-
+      When the revocation occurred, if applicable.
+  - name: NEW_OFF
+    description: |-
+      Code of the new offense that was committed which led to a revocation, if applicable.
+  - name: NEW_OFF2
+    description: |-
+      Code of the second new offense that was committed which led to a revocation, if applicable.
+  - name: NEW_OFF3
+    description: |-
+      Code of the third new offense that was committed which led to a revocation, if applicable.
+  - name: TERMINATING_OFFICER
+    description: |-
+      ID of the supervising officer at the end of the period of supervision.
+  - name: REV_NOFF_YN
+    description: |-
+      Whether the revocation occurred due in part to a new offense, if applicable.
+  - name: REV_ABSC_YN
+    description: |-
+      Whether the revocation occurred due in part to absconsion, if applicable.
+  - name: REV_TECH_YN
+    description: |-
+      Whether the revocation occurred due in part to a technical violation, if applicable.
+  - name: LAST_UPDATE
+    description: |-
+      When this record was most recently updated.
   - name: INACTIVEDATE
     is_datetime: True
+    description: |-
+      When this record became inactive, if applicable.
   - name: RECORDCRDATE
     is_datetime: True
+    description: |-
+      When this record was first created in the source system.
+  - name: RevoDispo
+    description: |-
+      Type of revocation which occurred, if applicable.
   - name: RecDate
     is_datetime: True
+    description: |-
+      When this record was first created in the source system.
+  - name: CHANGE_DATE_REASON
+    description: |-
+      Why this record was changed, if modified.

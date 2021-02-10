@@ -1,8 +1,44 @@
 file_tag: elite_alias
+file_description: |-
+  Each row represents some alias that has been recorded for a particular person who has been incarcerated.
 primary_key_cols:
   - OFFENDER_ID
 columns:
+  - name: ROOT_OFFENDER_ID
+    description: |-
+      External id for a unique person from the Elite system.
+  - name: ALIAS_NAME_TYPE
+    description: |-
+      Type of alias.
+  - name: ALIAS_OFFENDER_ID
+    description: |-
+      External id for a unique person from the Elite system (duplicate of ROOT_OFFENDER_ID).
+  - name: FIRST_NAME
+    description: |-
+      First/given name in the alias.
+  - name: LAST_NAME
+    description: |-
+      Surname in the alias.
+  - name: SUFFIX
+    description: |-
+      Name suffix in the alias.
+  - name: MIDDLE_NAME
+    description: |-
+      Middle name in the alias.
+  - name: OFFENDER_ID
+    description: |-
+      External id for the alias specifically, unused elsewhere.
+  - name: RACE_CODE
+    description: |-
+      Race or ethnicity of the person with this alias.
+  - name: SEX_CODE
+    description: |-
+      Sex of the person with this alias.
   - name: CREATE_DATETIME
     is_datetime: True
+    description: |-
+      When this record was first created in the source system.
   - name: MODIFY_DATETIME
     is_datetime: True
+    description: |-
+      When this record was most recently modified in the source system.

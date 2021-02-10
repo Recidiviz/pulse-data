@@ -1,19 +1,66 @@
 file_tag: elite_offendersentences
+file_description: |-
+  Each row represents a single sentence of incarceration handed down to a particular person. This includes date
+  information about the terms of the sentence as well as metadata about how this sentence relates to other sentences.
 primary_key_cols:
   - OFFENDER_BOOK_ID
   - SENTENCE_SEQ
 columns:
+  - name: OFFENDER_BOOK_ID
+    description: |-
+      External ID of a booking for a particular person, i.e. a new series of interactions with the justice system due to a new offense.
+  - name: CHARGE_SEQ
+    description: |-
+      The ordered index of the particular charge among the full set of charges associated with this sentence.
+  - name: CONSEC_TO_SENTENCE_SEQ
+    description: |-
+      The index of the sentence that this sequence is being served consecutively with, if applicable.
+  - name: COMMENT_TEXT
+    description: |-
+      Free text notes about the sentence entered by a system admin.
+  - name: CONSECUTIVE_COUNT_FLAG
+    description: |-
+      Whether this sentence is to be served consecutively with any other sentence.
+  - name: COUNTS
+    description: |-
+      The number of charges associated with this sentence.
   - name: EFFECTIVE_DATE
     is_datetime: True
+    description: |-
+      When this sentence becomes effective.
   - name: EIGHTYFIVE_PERCENT_DATE
     is_datetime: True
+    description: |-
+      The 85% date associated with this sentence, based on its start date and the length of the sentence.
+  - name: GOOD_TIME
+    description: |-
+      The amount of good time accrued towards this sentence.
   - name: PROBABLE_RELEASE_DATE
     is_datetime: True
+    description: |-
+      When the person is likely to be released from incarceration due to this sentence.
+  - name: SENTENCE_CALC_TYPE
+    description: |-
+      The type of calculation that is being performed for this sentence duration.
   - name: SENTENCE_EXPIRY_DATE
     is_datetime: True
+    description: |-
+      When serving of this sentence expires.
+  - name: SENTENCE_SEQ
+    description: |-
+      The ordered index of this sentence among the full set of sentences associated with this booking.
+  - name: SENTENCE_STATUS
+    description: |-
+      Current status of this sentence.
   - name: START_DATE
     is_datetime: True
+    description: |-
+      When serving of this sentence first began.
   - name: CREATE_DATETIME
     is_datetime: True
+    description: |-
+      When this record was first created in the source system.
   - name: MODIFY_DATETIME
     is_datetime: True
+    description: |-
+      When this record was most recently modified in the source system.

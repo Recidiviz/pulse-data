@@ -1,12 +1,55 @@
 file_tag: elite_offenderbookingstable
+file_description: |-
+  Each row represents a "booking" into DOCR, i.e. a new series of interactions with the justice system due to a new
+  offense. For example, a new booking is created when a person has their first ever conviction and sentencing under DOCR
+  jurisdiction, or when a person who was previously incarcerated and is now at libery has a new conviction and sentencing.
+  However, a new booking is not created when a person under supervision is revoked and sentenced back to incarceration.
+
+  Each row contains some basic "roll-up" fields that are rolled up from other tables to give a snapshot of the current
+  status of the booking.
 primary_key_cols:
   - OFFENDER_BOOK_ID
 columns:
+  - name: OFFENDER_BOOK_ID
+    description: |-
+      External ID of a booking for a particular person, i.e. a new series of interactions with the justice system due to a new offense.
+  - name: ROOT_OFFENDER_ID
+    description: |-
+      External id for a unique person from the Elite system.
   - name: BOOKING_BEGIN_DATE
     is_datetime: True
+    description: |-
+      When the booking began, i.e. when the series of interactions first began. Self-reported as unreliable.
   - name: BOOKING_END_DATE
     is_datetime: True
+    description: |-
+      When the booking ended, i.e. when the series of interactions was finally closed. Self-reported as unreliable.
+  - name: BOOKING_NO
+    description: |-
+      A separate external ID for the booking, unused elsewhere in the system.
+  - name: AGY_LOC_ID
+    description: |-
+      ID of the facility where the person in this booking is currently located.
+  - name: LIVING_UNIT_ID
+    description: |-
+      ID of the living unit where the person in this booking is currently located.
+  - name: IN_OUT_STATUS
+    description: |-
+      Whether the person is currently incarcerated as a result of this booking or not.
+  - name: ACTIVE_FLAG
+    description: |-
+      Whether this booking is still active.
+  - name: BOOKING_STATUS
+    description: |-
+      Current status of the booking.
+  - name: BOOKING_TYPE
+    description: |-
+      Type of booking. Always institution commitment (INST), which is implied.
   - name: CREATE_DATETIME
     is_datetime: True
+    description: |-
+      When this record was first created in the source system.
   - name: MODIFY_DATETIME
     is_datetime: True
+    description: |-
+      When this record was most recently modified in the source system.
