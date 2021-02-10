@@ -56,7 +56,7 @@ from recidiviz.ingest.direct.regions.us_pa.us_pa_enum_helpers import incarcerati
     concatenate_ccis_incarceration_period_end_codes
 from recidiviz.ingest.direct.regions.us_pa.us_pa_violation_type_reference import violated_condition
 from recidiviz.ingest.direct.state_shared_row_posthooks import copy_name_to_alias, gen_label_single_external_id_hook, \
-    gen_rationalize_race_and_ethnicity, gen_set_agent_type, gen_convert_person_ids_to_external_id_objects, \
+    gen_rationalize_race_and_ethnicity, gen_convert_person_ids_to_external_id_objects, \
     create_supervision_site
 from recidiviz.ingest.extractor.csv_data_extractor import IngestFieldCoordinates
 from recidiviz.ingest.models.ingest_info import IngestObject, StatePerson, StatePersonExternalId, StateAssessment, \
@@ -132,7 +132,6 @@ class UsPaController(CsvGcsfsDirectIngestController):
                 self._set_incarceration_sentence_id,
                 self._enrich_incarceration_sentence,
                 self._strip_id_whitespace,
-                gen_set_agent_type(StateAgentType.JUDGE),
             ],
             # TODO(#4187): Once v2 views have shipped in production, remove this tag and deprecate all associated ingest
             #  view metadata rows

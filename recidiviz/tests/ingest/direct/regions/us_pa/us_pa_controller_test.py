@@ -28,7 +28,6 @@ from recidiviz.common.constants.state.shared_enums import StateCustodialAuthorit
 from recidiviz.common.constants.state.state_agent import StateAgentType
 from recidiviz.common.constants.state.state_assessment import StateAssessmentClass, StateAssessmentType, \
     StateAssessmentLevel
-from recidiviz.common.constants.state.state_court_case import StateCourtCaseStatus, StateCourtType
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_incident import StateIncarcerationIncidentType, \
     StateIncarcerationIncidentOutcomeType
@@ -48,7 +47,7 @@ from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_controller import G
 from recidiviz.ingest.direct.regions.us_pa.us_pa_controller import UsPaController
 from recidiviz.ingest.models.ingest_info import StatePerson, StatePersonExternalId, StatePersonRace, StateAlias, \
     StatePersonEthnicity, StateAssessment, StateSentenceGroup, StateIncarcerationSentence, StateCharge, \
-    StateCourtCase, StateAgent, StateIncarcerationPeriod, StateIncarcerationIncident, \
+    StateAgent, StateIncarcerationPeriod, StateIncarcerationIncident, \
     StateIncarcerationIncidentOutcome, StateSupervisionSentence, StateSupervisionPeriod, StateSupervisionViolation, \
     StateSupervisionViolationTypeEntry, StateSupervisionViolatedConditionEntry, StateSupervisionViolationResponse, \
     StateSupervisionViolationResponseDecisionEntry
@@ -338,10 +337,6 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
                                     state_charges=[
                                         StateCharge(
                                             state_charge_id="N7825555", statute="CC3701A ",
-                                            state_court_case=StateCourtCase(
-                                                state_court_case_id="CP0001111 CT",
-                                                judge=StateAgent(full_name="REYNOLDS, FRANK", agent_type="JUDGE")
-                                            )
                                         )
                                     ]
                                 )
@@ -366,10 +361,6 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
                                     state_charges=[
                                         StateCharge(
                                             state_charge_id="U1196666", statute="CC3701A ",
-                                            state_court_case=StateCourtCase(
-                                                state_court_case_id="CP0002222 CT",
-                                                judge=StateAgent(full_name="REYNOLDS, FRANK", agent_type="JUDGE")
-                                            )
                                         )
                                     ]
                                 )
@@ -394,10 +385,6 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
                                     state_charges=[
                                         StateCharge(
                                             state_charge_id="L3947777", statute="CC6318A1",
-                                            state_court_case=StateCourtCase(
-                                                state_court_case_id="CP0003333 CT",
-                                                judge=StateAgent(full_name="REYNOLDS, DEE", agent_type="JUDGE")
-                                            )
                                         )
                                     ]
                                 )
@@ -422,10 +409,6 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
                                     state_charges=[
                                         StateCharge(
                                             state_charge_id="L7858888", statute="CC3503A ",
-                                            state_court_case=StateCourtCase(
-                                                state_court_case_id="CP0004444 CT",
-                                                judge=StateAgent(full_name="REYNOLDS, DEE", agent_type="JUDGE")
-                                            )
                                         )
                                     ]
                                 ),
@@ -438,10 +421,6 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
                                     state_charges=[
                                         StateCharge(
                                             state_charge_id="L7858890", statute="CC3503B ",
-                                            state_court_case=StateCourtCase(
-                                                state_court_case_id="CP0004445 CT",
-                                                judge=StateAgent(full_name="REYNOLDS, DEE", agent_type="JUDGE")
-                                            )
                                         )
                                     ]
                                 )
@@ -2028,19 +2007,6 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
         )
         p1_is.charges.append(p1_is_charge)
 
-        p1_is_charge_case = entities.StateCourtCase.new_with_defaults(
-            external_id="CP0001111 CT", state_code=_STATE_CODE_UPPER,
-            status=StateCourtCaseStatus.PRESENT_WITHOUT_INFO,
-            court_type=StateCourtType.PRESENT_WITHOUT_INFO,
-            judge=entities.StateAgent.new_with_defaults(
-                full_name='{"full_name": "REYNOLDS, FRANK"}',
-                agent_type=StateAgentType.JUDGE, agent_type_raw_text="JUDGE",
-                state_code=_STATE_CODE_UPPER
-            ),
-            person=person_1, charges=[p1_is_charge]
-        )
-        p1_is_charge.court_case = p1_is_charge_case
-
         # Person 2 updates
         p2_is = entities.StateIncarcerationSentence.new_with_defaults(
             external_id="GF3374-01", state_code=_STATE_CODE_UPPER, county_code="PHI",
@@ -2058,19 +2024,6 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
             person=person_2, incarceration_sentences=[p2_is]
         )
         p2_is.charges.append(p2_is_charge)
-
-        p2_is_charge_case = entities.StateCourtCase.new_with_defaults(
-            external_id="CP0002222 CT", state_code=_STATE_CODE_UPPER,
-            status=StateCourtCaseStatus.PRESENT_WITHOUT_INFO,
-            court_type=StateCourtType.PRESENT_WITHOUT_INFO,
-            judge=entities.StateAgent.new_with_defaults(
-                full_name='{"full_name": "REYNOLDS, FRANK"}',
-                agent_type=StateAgentType.JUDGE, agent_type_raw_text="JUDGE",
-                state_code=_STATE_CODE_UPPER
-            ),
-            person=person_2, charges=[p2_is_charge]
-        )
-        p2_is_charge.court_case = p2_is_charge_case
 
         # Person 3 updates
         p3_is = entities.StateIncarcerationSentence.new_with_defaults(
@@ -2090,19 +2043,6 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
             person=person_3, incarceration_sentences=[p3_is]
         )
         p3_is.charges.append(p3_is_charge)
-
-        p3_is_charge_case = entities.StateCourtCase.new_with_defaults(
-            external_id="CP0003333 CT", state_code=_STATE_CODE_UPPER,
-            status=StateCourtCaseStatus.PRESENT_WITHOUT_INFO,
-            court_type=StateCourtType.PRESENT_WITHOUT_INFO,
-            judge=entities.StateAgent.new_with_defaults(
-                full_name='{"full_name": "REYNOLDS, DEE"}',
-                agent_type=StateAgentType.JUDGE, agent_type_raw_text="JUDGE",
-                state_code=_STATE_CODE_UPPER
-            ),
-            person=person_3, charges=[p3_is_charge]
-        )
-        p3_is_charge.court_case = p3_is_charge_case
 
         # Person 4 updates
         p4_is_1 = entities.StateIncarcerationSentence.new_with_defaults(
@@ -2138,28 +2078,6 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
             person=person_4, incarceration_sentences=[p4_is_2]
         )
         p4_is_2.charges.append(p4_is_2_charge)
-
-        p4_is_1_charge_case = entities.StateCourtCase.new_with_defaults(
-            external_id="CP0004444 CT", state_code=_STATE_CODE_UPPER,
-            status=StateCourtCaseStatus.PRESENT_WITHOUT_INFO, court_type=StateCourtType.PRESENT_WITHOUT_INFO,
-            judge=entities.StateAgent.new_with_defaults(
-                full_name='{"full_name": "REYNOLDS, DEE"}',
-                agent_type=StateAgentType.JUDGE, agent_type_raw_text="JUDGE", state_code=_STATE_CODE_UPPER
-            ),
-            person=person_4, charges=[p4_is_1_charge]
-        )
-        p4_is_1_charge.court_case = p4_is_1_charge_case
-
-        p4_is_2_charge_case = entities.StateCourtCase.new_with_defaults(
-            external_id="CP0004445 CT", state_code=_STATE_CODE_UPPER,
-            status=StateCourtCaseStatus.PRESENT_WITHOUT_INFO, court_type=StateCourtType.PRESENT_WITHOUT_INFO,
-            judge=entities.StateAgent.new_with_defaults(
-                full_name='{"full_name": "REYNOLDS, DEE"}',
-                agent_type=StateAgentType.JUDGE, agent_type_raw_text="JUDGE", state_code=_STATE_CODE_UPPER
-            ),
-            person=person_4, charges=[p4_is_2_charge]
-        )
-        p4_is_2_charge.court_case = p4_is_2_charge_case
 
         populate_person_backedges(expected_people)
 

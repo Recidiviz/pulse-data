@@ -11,8 +11,6 @@ child_key_mappings:
   sentcing_cnty: state_incarceration_sentence.county_code
   offense_track_num: state_charge.state_charge_id
   offense_code: state_charge.statute
-  indictment_num: state_court_case.state_court_case_id
-  judge: state_agent.full_name
 
 primary_key:
   curr_inmate_num: state_sentence_group.state_sentence_group_id
@@ -64,3 +62,5 @@ keys_to_ignore:
   - sig_time                # Time entered - unused
   - user_id                 # Id of employee who entered - unused
   - cntinued_frm_doc_n      # Prior Inmate Number when an inmate rolls over into a new sentence without being released - unused as of yet
+  - indictment_num          # Court case id - unused
+  - judge                   # Judge name - unused
