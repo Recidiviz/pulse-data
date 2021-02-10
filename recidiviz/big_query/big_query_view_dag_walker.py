@@ -33,7 +33,7 @@ DAG_WALKER_MAX_WORKERS = 10
 
 DagKey = Tuple[str, str]
 ViewResultT = TypeVar('ViewResultT')
-ParentResultsT = Dict[BigQueryView, ViewResultT]
+
 
 class BigQueryViewDagNode:
     def __init__(self, view: BigQueryView, is_root: bool = False):
@@ -110,10 +110,7 @@ class BigQueryViewDagWalker:
 
                 paths_to_explore.append((child_key, path+[child_key]))
 
-    def process_dag(
-            self,
-            view_process_fn: Callable[[BigQueryView, ParentResultsT], ViewResultT]
-    ) -> Dict[BigQueryView, ViewResultT]:
+    def process_dag(self, view_process_fn: Callable[[BigQueryView], ViewResultT]) -> Dict[BigQueryView, ViewResultT]:
         """This method provides a level-by-level "breadth-first" traversal of a DAG and executes
         view_process_fn on every node in level order."""
         processed: Set[DagKey] = set()
@@ -121,7 +118,7 @@ class BigQueryViewDagWalker:
         result: Dict[BigQueryView, ViewResultT] = {}
         with futures.ThreadPoolExecutor(max_workers=DAG_WALKER_MAX_WORKERS) as executor:
             future_to_view = {
-                executor.submit(structured_logging.with_context(view_process_fn), node.view, {}): node
+                executor.submit(structured_logging.with_context(view_process_fn), node.view): node
                 for node in self.roots
             }
             processing = {node.dag_key for node in future_to_view.values()}
@@ -147,18 +144,12 @@ class BigQueryViewDagWalker:
                             continue
 
                         parents_all_processed = True
-                        parent_results = {}
                         for parent_key in child_node.parent_keys:
                             if parent_key in self.nodes_by_key and parent_key not in processed:
                                 parents_all_processed = False
                                 break
-                            if parent_key in self.nodes_by_key:
-                                parent_view = self.nodes_by_key[parent_key].view
-                                parent_results[parent_view] = result[parent_view]
                         if parents_all_processed:
-                            future = executor.submit(structured_logging.with_context(view_process_fn),
-                                                     child_node.view,
-                                                     parent_results)
+                            future = executor.submit(structured_logging.with_context(view_process_fn), child_node.view)
                             future_to_view[future] = child_node
                             processing.add(child_node.dag_key)
         return result

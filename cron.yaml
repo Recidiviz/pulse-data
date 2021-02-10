@@ -274,7 +274,7 @@ cron:
       job_age_limit: 9h
 
   - description: Run automated data validation task
-    url: /validation_manager/validate
+    url: /validation_manager/validate?should_update_views=true
     schedule: every day 12:00
     timezone: America/Los_Angeles
     retry_parameters:
