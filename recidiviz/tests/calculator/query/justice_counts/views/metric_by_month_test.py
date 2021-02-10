@@ -26,6 +26,8 @@ from recidiviz.calculator.query.justice_counts.views import metric_by_month
 from recidiviz.tests.calculator.query.view_test_util import BaseViewTest, MockTableSchema
 from recidiviz.tools.justice_counts import manual_upload
 
+_npd = np.datetime64
+
 
 @patch('recidiviz.utils.metadata.project_id', Mock(return_value='t'))
 class PrisonPopulationViewTest(BaseViewTest):
@@ -35,12 +37,16 @@ class PrisonPopulationViewTest(BaseViewTest):
         """Tests the basic use case of calculating population from various table definitions"""
         # Arrange
         self.create_mock_bq_table(
+            dataset_id='justice_counts', table_id='source_materialized',
+            mock_schema=MockTableSchema.from_sqlalchemy_table(schema.Source.__table__),
+            mock_data=pd.DataFrame([[1, 'XX'], [2, 'YY'], [3, 'ZZ']], columns=['id', 'name']))
+        self.create_mock_bq_table(
             dataset_id='justice_counts', table_id='report_materialized',
             mock_schema=MockTableSchema.from_sqlalchemy_table(schema.Report.__table__),
             mock_data=pd.DataFrame(
-                [[1, 1, 'Summary', 'All', '2021-01-01', 'https://www.xx.gov/doc', 'MANUALLY_ENTERED', 'John'],
-                 [2, 2, 'Summary', 'All', '2021-01-02', 'https://www.doc.yy.gov', 'MANUALLY_ENTERED', 'Jane'],
-                 [3, 3, 'Summary', 'All', '2021-01-02', 'https://doc.zz.gov', 'MANUALLY_ENTERED', 'Jude']],
+                [[1, 1, '_', 'All', '2021-01-01', 'xx.gov', 'MANUALLY_ENTERED', 'John'],
+                 [2, 2, '_', 'All', '2021-01-02', 'yy.gov', 'MANUALLY_ENTERED', 'Jane'],
+                 [3, 3, '_', 'All', '2021-01-02', 'zz.gov', 'MANUALLY_ENTERED', 'Jude']],
                 columns=['id', 'source_id', 'type', 'instance', 'publish_date', 'url', 'acquisition_method',
                          'acquired_by']))
         self.create_mock_bq_table(
@@ -91,7 +97,7 @@ class PrisonPopulationViewTest(BaseViewTest):
            filtered_dimensions=[manual_upload.PopulationType.PRISON],
            aggregated_dimensions={
                'state_code': metric_by_month.Aggregation(dimension=manual_upload.State, comprehensive=False)},
-           output_name='POPULATION_PRISON'
+           output_name='POP'
         )
         results = self.query_view(
             metric_by_month.CalculatedMetricByMonthViewBuilder(
@@ -101,14 +107,15 @@ class PrisonPopulationViewTest(BaseViewTest):
 
         # Assert
         expected = pd.DataFrame(
-            [['US_XX', 'POPULATION_PRISON', 2020, 11, np.datetime64('2020-11-30'), 3000, None, None, None, None],
-             ['US_XX', 'POPULATION_PRISON', 2020, 12, np.datetime64('2020-12-31'), 4000, None, None, None, None],
-             ['US_YY', 'POPULATION_PRISON', 2020, 11, np.datetime64('2020-11-30'), 1000, None, None, None, None],
-             ['US_YY', 'POPULATION_PRISON', 2020, 12, np.datetime64('2020-12-31'), 1020, None, None, None, None],
-             ['US_ZZ', 'POPULATION_PRISON', 2020, 11, np.datetime64('2020-11-30'), 400, None, None, None, None],
-             ['US_ZZ', 'POPULATION_PRISON', 2020, 12, np.datetime64('2020-12-31'), 500, None, None, None, None]],
-            columns=['state_code', 'metric', 'year', 'month', 'date_reported', 'value', 'compared_to_year',
-                     'compared_to_month', 'value_change', 'percentage_change'])
+            [['US_XX', 'POP', 2020, 11, _npd('2020-11-30'), 'XX', 'xx.gov', '_', [], 3000] + [None] * 4,
+             ['US_XX', 'POP', 2020, 12, _npd('2020-12-31'), 'XX', 'xx.gov', '_', [], 4000] + [None] * 4,
+             ['US_YY', 'POP', 2020, 11, _npd('2020-11-30'), 'YY', 'yy.gov', '_', [], 1000] + [None] * 4,
+             ['US_YY', 'POP', 2020, 12, _npd('2020-12-31'), 'YY', 'yy.gov', '_', [], 1020] + [None] * 4,
+             ['US_ZZ', 'POP', 2020, 11, _npd('2020-11-30'), 'ZZ', 'zz.gov', '_', [], 400] + [None] * 4,
+             ['US_ZZ', 'POP', 2020, 12, _npd('2020-12-31'), 'ZZ', 'zz.gov', '_', [], 500] + [None] * 4],
+             columns=['state_code', 'metric', 'year', 'month', 'date_reported',
+                      'source_name', 'source_url', 'report_name', 'raw_source_categories',
+                      'value', 'compared_to_year', 'compared_to_month', 'value_change', 'percentage_change'])
         expected = expected.set_index(dimensions)
         assert_frame_equal(expected, results)
 
@@ -116,13 +123,18 @@ class PrisonPopulationViewTest(BaseViewTest):
         """Tests performing a query with multiple filters (population_type=SUPERVISION and supervision_type=PAROLE"""
         # Arrange
         self.create_mock_bq_table(
+            dataset_id='justice_counts', table_id='source_materialized',
+            mock_schema=MockTableSchema.from_sqlalchemy_table(schema.Source.__table__),
+            mock_data=pd.DataFrame(
+                [[1, 'AA'], [2, 'XX'], [3, 'YY'], [4, 'ZZ']], columns=['id', 'name']))
+        self.create_mock_bq_table(
             dataset_id='justice_counts', table_id='report_materialized',
             mock_schema=MockTableSchema.from_sqlalchemy_table(schema.Report.__table__),
             mock_data=pd.DataFrame(
-                [[1, 1, 'Summary', 'All', '2021-01-01', 'https://www.aa.gov/doc', 'MANUALLY_ENTERED', 'John'],
-                 [2, 2, 'Summary', 'All', '2021-01-02', 'https://www.doc.xx.gov', 'MANUALLY_ENTERED', 'Jane'],
-                 [3, 3, 'Summary', 'All', '2021-01-02', 'https://www.doc.yy.gov', 'MANUALLY_ENTERED', 'Jane'],
-                 [4, 4, 'Summary', 'All', '2021-01-02', 'https://doc.zz.gov', 'MANUALLY_ENTERED', 'Jude']],
+                [[1, 1, '_', 'All', '2021-01-01', 'aa.gov', 'MANUALLY_ENTERED', 'John'],
+                 [2, 2, '_', 'All', '2021-01-02', 'xx.gov', 'MANUALLY_ENTERED', 'Jane'],
+                 [3, 3, '_', 'All', '2021-01-02', 'yy.gov', 'MANUALLY_ENTERED', 'Jane'],
+                 [4, 4, '_', 'All', '2021-01-02', 'zz.gov', 'MANUALLY_ENTERED', 'Jude']],
                 columns=['id', 'source_id', 'type', 'instance', 'publish_date', 'url', 'acquisition_method',
                          'acquired_by']))
         self.create_mock_bq_table(
@@ -191,7 +203,7 @@ class PrisonPopulationViewTest(BaseViewTest):
            filtered_dimensions=[manual_upload.PopulationType.SUPERVISION, manual_upload.SupervisionType.PAROLE],
            aggregated_dimensions={
                'state_code': metric_by_month.Aggregation(dimension=manual_upload.State, comprehensive=False)},
-           output_name='POPULATION_PAROLE'
+           output_name='POP'
         )
         results = self.query_view(
             metric_by_month.CalculatedMetricByMonthViewBuilder(
@@ -201,14 +213,15 @@ class PrisonPopulationViewTest(BaseViewTest):
 
         # Assert
         expected = pd.DataFrame(
-                [['US_AA', 'POPULATION_PAROLE', 2020, 11, np.datetime64('2020-11-30'), 3000, None, None, None, None],
-                 ['US_AA', 'POPULATION_PAROLE', 2020, 12, np.datetime64('2020-12-31'), 4000, None, None, None, None],
-                 ['US_XX', 'POPULATION_PAROLE', 2020, 11, np.datetime64('2020-11-30'), 5000, None, None, None, None],
-                 ['US_XX', 'POPULATION_PAROLE', 2020, 12, np.datetime64('2020-12-31'), 5001, None, None, None, None],
-                 ['US_YY', 'POPULATION_PAROLE', 2020, 11, np.datetime64('2020-11-30'), 400, None, None, None, None],
-                 ['US_YY', 'POPULATION_PAROLE', 2020, 12, np.datetime64('2020-12-31'), 500, None, None, None, None]],
-                columns=['state_code', 'metric', 'year', 'month', 'date_reported', 'value', 'compared_to_year',
-                         'compared_to_month', 'value_change', 'percentage_change'])
+            [['US_AA', 'POP', 2020, 11, _npd('2020-11-30'), 'AA', 'aa.gov', '_', ['Parole'], 3000] + [None] * 4,
+             ['US_AA', 'POP', 2020, 12, _npd('2020-12-31'), 'AA', 'aa.gov', '_', ['Parole'], 4000] + [None] * 4,
+             ['US_XX', 'POP', 2020, 11, _npd('2020-11-30'), 'XX', 'xx.gov', '_', ['Parole'], 5000] + [None] * 4,
+             ['US_XX', 'POP', 2020, 12, _npd('2020-12-31'), 'XX', 'xx.gov', '_', ['Parole'], 5001] + [None] * 4,
+             ['US_YY', 'POP', 2020, 11, _npd('2020-11-30'), 'YY', 'yy.gov', '_', [], 400] + [None] * 4,
+             ['US_YY', 'POP', 2020, 12, _npd('2020-12-31'), 'YY', 'yy.gov', '_', [], 500] + [None] * 4],
+            columns=['state_code', 'metric', 'year', 'month', 'date_reported',
+                     'source_name', 'source_url', 'report_name', 'raw_source_categories',
+                     'value', 'compared_to_year', 'compared_to_month', 'value_change', 'percentage_change'])
         expected = expected.set_index(dimensions)
         assert_frame_equal(expected, results)
 
@@ -216,13 +229,18 @@ class PrisonPopulationViewTest(BaseViewTest):
         """Tests aggregating a dimension other than state code (in this case gender) and keeping it in the output"""
         # Arrange
         self.create_mock_bq_table(
+            dataset_id='justice_counts', table_id='source_materialized',
+            mock_schema=MockTableSchema.from_sqlalchemy_table(schema.Source.__table__),
+            mock_data=pd.DataFrame(
+                [[1, 'XX'], [2, 'YY'], [3, 'ZZ'], [4, 'XA']], columns=['id', 'name']))
+        self.create_mock_bq_table(
             dataset_id='justice_counts', table_id='report_materialized',
             mock_schema=MockTableSchema.from_sqlalchemy_table(schema.Report.__table__),
             mock_data=pd.DataFrame(
-                [[1, 1, 'Summary', 'All', '2021-01-01', 'https://www.xx.gov/doc', 'MANUALLY_ENTERED', 'John'],
-                 [2, 2, 'Summary', 'All', '2021-01-02', 'https://www.doc.yy.gov', 'MANUALLY_ENTERED', 'Jane'],
-                 [3, 3, 'Summary', 'All', '2021-01-02', 'https://doc.zz.gov', 'MANUALLY_ENTERED', 'Jude'],
-                 [4, 4, 'Summary', 'All', '2021-01-02', 'https://doc.xa.gov', 'MANUALLY_ENTERED', 'Jude']],
+                [[1, 1, '_', 'All', '2021-01-01', 'xx.gov', 'MANUALLY_ENTERED', 'John'],
+                 [2, 2, '_', 'All', '2021-01-02', 'yy.gov', 'MANUALLY_ENTERED', 'Jane'],
+                 [3, 3, '_', 'All', '2021-01-02', 'zz.gov', 'MANUALLY_ENTERED', 'Jude'],
+                 [4, 4, '_', 'All', '2021-01-02', 'xa.gov', 'MANUALLY_ENTERED', 'Jude']],
                 columns=['id', 'source_id', 'type', 'instance', 'publish_date', 'url', 'acquisition_method',
                          'acquired_by']))
         self.create_mock_bq_table(
@@ -241,7 +259,7 @@ class PrisonPopulationViewTest(BaseViewTest):
                   ['US_ZZ', 'PRISON', 'FEMALE'], []],
                  # Matches - aggregated further
                  [4, 'CORRECTIONS', 'POPULATION', 'INSTANT', ['global/location/state', 'metric/population/type'],
-                  ['US_XA', 'PRISON'], ['global/gender', 'global/gender/raw', 'source/XA DOC/facility/raw']]],
+                  ['US_XA', 'PRISON'], ['global/gender', 'global/gender/raw', 'source/XA/facility/raw']]],
                 columns=['id', 'system', 'metric_type', 'measurement_type', 'filtered_dimensions',
                          'filtered_dimension_values', 'aggregated_dimensions']))
         self.create_mock_bq_table(
@@ -289,7 +307,7 @@ class PrisonPopulationViewTest(BaseViewTest):
            aggregated_dimensions={
                'state_code': metric_by_month.Aggregation(dimension=manual_upload.State, comprehensive=False),
                'gender': metric_by_month.Aggregation(dimension=manual_upload.Gender, comprehensive=True)},
-           output_name='GENDER_POP'
+           output_name='POP'
         )
         results = self.query_view(
             metric_by_month.CalculatedMetricByMonthViewBuilder(
@@ -299,16 +317,25 @@ class PrisonPopulationViewTest(BaseViewTest):
 
         # Assert
         expected = pd.DataFrame(
-                [['US_XA', 'FEMALE', 'GENDER_POP', 2020, 11, np.datetime64('2020-11-30'), 110] + [None] * 4,
-                 ['US_XA', 'FEMALE', 'GENDER_POP', 2020, 12, np.datetime64('2020-12-31'), 220] + [None] * 4,
-                 ['US_XA', 'MALE',   'GENDER_POP', 2020, 11, np.datetime64('2020-11-30'), 220] + [None] * 4,
-                 ['US_XA', 'MALE',   'GENDER_POP', 2020, 12, np.datetime64('2020-12-31'), 330] + [None] * 4,
-                 ['US_XX', 'FEMALE', 'GENDER_POP', 2020, 11, np.datetime64('2020-11-30'), 1000] + [None] * 4,
-                 ['US_XX', 'FEMALE', 'GENDER_POP', 2020, 12, np.datetime64('2020-12-31'), 1500] + [None] * 4,
-                 ['US_XX', 'MALE',   'GENDER_POP', 2020, 11, np.datetime64('2020-11-30'), 3000] + [None] * 4,
-                 ['US_XX', 'MALE',   'GENDER_POP', 2020, 12, np.datetime64('2020-12-31'), 4000] + [None] * 4],
-                columns=['state_code', 'gender', 'metric', 'year', 'month', 'date_reported', 'value',
-                         'compared_to_year', 'compared_to_month', 'value_change', 'percentage_change'])
+            [['US_XA', 'FEMALE', 'POP', 2020, 11, _npd('2020-11-30'), 'XA', 'xa.gov', '_',
+              ['Female', 'Offsite', 'Onsite'], 110] + [None] * 4,
+             ['US_XA', 'FEMALE', 'POP', 2020, 12, _npd('2020-12-31'), 'XA', 'xa.gov', '_',
+              ['Female', 'Offsite', 'Onsite'], 220] + [None] * 4,
+             ['US_XA', 'MALE',   'POP', 2020, 11, _npd('2020-11-30'), 'XA', 'xa.gov', '_',
+              ['Male', 'Offsite', 'Onsite'], 220] + [None] * 4,
+             ['US_XA', 'MALE',   'POP', 2020, 12, _npd('2020-12-31'), 'XA', 'xa.gov', '_',
+              ['Male', 'Offsite', 'Onsite'], 330] + [None] * 4,
+             ['US_XX', 'FEMALE', 'POP', 2020, 11, _npd('2020-11-30'), 'XX', 'xx.gov', '_',
+              ['Female'], 1000] + [None] * 4,
+             ['US_XX', 'FEMALE', 'POP', 2020, 12, _npd('2020-12-31'), 'XX', 'xx.gov', '_',
+              ['Female'], 1500] + [None] * 4,
+             ['US_XX', 'MALE',   'POP', 2020, 11, _npd('2020-11-30'), 'XX', 'xx.gov', '_',
+              ['Male'], 3000] + [None] * 4,
+             ['US_XX', 'MALE',   'POP', 2020, 12, _npd('2020-12-31'), 'XX', 'xx.gov', '_',
+              ['Male'], 4000] + [None] * 4],
+            columns=['state_code', 'gender', 'metric', 'year', 'month', 'date_reported',
+                     'source_name', 'source_url', 'report_name', 'raw_source_categories',
+                     'value', 'compared_to_year', 'compared_to_month', 'value_change', 'percentage_change'])
         expected = expected.set_index(dimensions)
         assert_frame_equal(expected, results)
 
@@ -316,11 +343,15 @@ class PrisonPopulationViewTest(BaseViewTest):
         """Tests prioritization of sources -- when multiple provide matching data it picks the most recent"""
         # Arrange
         self.create_mock_bq_table(
+            dataset_id='justice_counts', table_id='source_materialized',
+            mock_schema=MockTableSchema.from_sqlalchemy_table(schema.Source.__table__),
+            mock_data=pd.DataFrame([[1, 'XX'], [2, 'XX Courts']], columns=['id', 'name']))
+        self.create_mock_bq_table(
             dataset_id='justice_counts', table_id='report_materialized',
             mock_schema=MockTableSchema.from_sqlalchemy_table(schema.Report.__table__),
             mock_data=pd.DataFrame(
-                [[1, 1, 'Summary', 'All', '2021-01-01', 'https://www.xx.gov/doc', 'MANUALLY_ENTERED', 'John'],
-                 [2, 2, 'Summary', 'All', '2021-01-02', 'https://courts.xx.gov', 'MANUALLY_ENTERED', 'Jane']],
+                [[1, 1, '_', 'All', '2021-01-01', 'xx.gov', 'MANUALLY_ENTERED', 'John'],
+                 [2, 2, '_', 'All', '2021-01-02', 'courts.xx.gov', 'MANUALLY_ENTERED', 'Jane']],
                 columns=['id', 'source_id', 'type', 'instance', 'publish_date', 'url', 'acquisition_method',
                          'acquired_by']))
         self.create_mock_bq_table(
@@ -375,10 +406,11 @@ class PrisonPopulationViewTest(BaseViewTest):
 
         # Assert
         expected = pd.DataFrame(
-                [['US_XX', 'POP', 2020, 11, np.datetime64('2020-11-30'), 1000] + [None] * 4,
-                 ['US_XX', 'POP', 2020, 12, np.datetime64('2020-12-31'), 1010] + [None] * 4],
-                columns=['state_code', 'metric', 'year', 'month', 'date_reported', 'value',
-                         'compared_to_year', 'compared_to_month', 'value_change', 'percentage_change'])
+            [['US_XX', 'POP', 2020, 11, _npd('2020-11-30'), 'XX Courts', 'courts.xx.gov', '_', [], 1000] + [None] * 4,
+             ['US_XX', 'POP', 2020, 12, _npd('2020-12-31'), 'XX Courts', 'courts.xx.gov', '_', [], 1010] + [None] * 4],
+            columns=['state_code', 'metric', 'year', 'month', 'date_reported',
+                     'source_name', 'source_url', 'report_name', 'raw_source_categories',
+                     'value', 'compared_to_year', 'compared_to_month', 'value_change', 'percentage_change'])
         expected = expected.set_index(dimensions)
         assert_frame_equal(expected, results)
 
@@ -389,10 +421,14 @@ class PrisonPopulationViewTest(BaseViewTest):
         """
         # Arrange
         self.create_mock_bq_table(
+            dataset_id='justice_counts', table_id='source_materialized',
+            mock_schema=MockTableSchema.from_sqlalchemy_table(schema.Source.__table__),
+            mock_data=pd.DataFrame([[1, 'XX']], columns=['id', 'name']))
+        self.create_mock_bq_table(
             dataset_id='justice_counts', table_id='report_materialized',
             mock_schema=MockTableSchema.from_sqlalchemy_table(schema.Report.__table__),
             mock_data=pd.DataFrame(
-                [[1, 1, 'Summary', 'All', '2021-01-01', 'https://www.xx.gov/doc', 'MANUALLY_ENTERED', 'John']],
+                [[1, 1, '_', 'All', '2021-01-01', 'xx.gov', 'MANUALLY_ENTERED', 'John']],
                 columns=['id', 'source_id', 'type', 'instance', 'publish_date', 'url', 'acquisition_method',
                          'acquired_by']))
         self.create_mock_bq_table(
@@ -446,10 +482,11 @@ class PrisonPopulationViewTest(BaseViewTest):
 
         # Assert
         expected = pd.DataFrame(
-                [['US_XX', 'POP', 2020, 11, np.datetime64('2020-11-30'), 1000] + [None] * 4,
-                 ['US_XX', 'POP', 2020, 12, np.datetime64('2020-12-31'), 2000] + [None] * 4],
-                columns=['state_code', 'metric', 'year', 'month', 'date_reported', 'value',
-                         'compared_to_year', 'compared_to_month', 'value_change', 'percentage_change'])
+            [['US_XX', 'POP', 2020, 11, _npd('2020-11-30'), 'XX', 'xx.gov', '_', [], 1000] + [None] * 4,
+             ['US_XX', 'POP', 2020, 12, _npd('2020-12-31'), 'XX', 'xx.gov', '_', [], 2000] + [None] * 4],
+            columns=['state_code', 'metric', 'year', 'month', 'date_reported',
+                     'source_name', 'source_url', 'report_name', 'raw_source_categories',
+                     'value', 'compared_to_year', 'compared_to_month', 'value_change', 'percentage_change'])
         expected = expected.set_index(dimensions)
         assert_frame_equal(expected, results)
 
@@ -457,10 +494,14 @@ class PrisonPopulationViewTest(BaseViewTest):
         """Tests that aggregations work correctly with null dimension values (mapped to empty string in BQ)"""
         # Arrange
         self.create_mock_bq_table(
+            dataset_id='justice_counts', table_id='source_materialized',
+            mock_schema=MockTableSchema.from_sqlalchemy_table(schema.Source.__table__),
+            mock_data=pd.DataFrame([[1, 'XX']], columns=['id', 'name']))
+        self.create_mock_bq_table(
             dataset_id='justice_counts', table_id='report_materialized',
             mock_schema=MockTableSchema.from_sqlalchemy_table(schema.Report.__table__),
             mock_data=pd.DataFrame(
-                [[1, 1, 'Summary', 'All', '2021-01-01', 'https://www.xx.gov/doc', 'MANUALLY_ENTERED', 'John']],
+                [[1, 1, '_', 'All', '2021-01-01', 'xx.gov', 'MANUALLY_ENTERED', 'John']],
                 columns=['id', 'source_id', 'type', 'instance', 'publish_date', 'url', 'acquisition_method',
                          'acquired_by']))
         self.create_mock_bq_table(
@@ -506,11 +547,12 @@ class PrisonPopulationViewTest(BaseViewTest):
 
         # Assert
         expected = pd.DataFrame(
-                [['US_XX', '',      'POP', 2020, 11, np.datetime64('2020-11-30'), 103] + [None] * 4,
-                 ['US_XX', 'BLACK', 'POP', 2020, 11, np.datetime64('2020-11-30'), 101] + [None] * 4,
-                 ['US_XX', 'WHITE', 'POP', 2020, 11, np.datetime64('2020-11-30'), 102] + [None] * 4],
-                columns=['state_code', 'race', 'metric', 'year', 'month', 'date_reported', 'value',
-                         'compared_to_year', 'compared_to_month', 'value_change', 'percentage_change'])
+            [['US_XX', '',      'POP', 2020, 11, _npd('2020-11-30'), 'XX', 'xx.gov', '_', [], 103] + [None] * 4,
+             ['US_XX', 'BLACK', 'POP', 2020, 11, _npd('2020-11-30'), 'XX', 'xx.gov', '_', [], 101] + [None] * 4,
+             ['US_XX', 'WHITE', 'POP', 2020, 11, _npd('2020-11-30'), 'XX', 'xx.gov', '_', [], 102] + [None] * 4],
+            columns=['state_code', 'race', 'metric', 'year', 'month', 'date_reported',
+                     'source_name', 'source_url', 'report_name', 'raw_source_categories',
+                     'value', 'compared_to_year', 'compared_to_month', 'value_change', 'percentage_change'])
         expected = expected.set_index(dimensions)
         assert_frame_equal(expected, results)
 
@@ -518,11 +560,15 @@ class PrisonPopulationViewTest(BaseViewTest):
         """Tests that delta metrics covering windows less than a month are summed within a report"""
         # Arrange
         self.create_mock_bq_table(
+            dataset_id='justice_counts', table_id='source_materialized',
+            mock_schema=MockTableSchema.from_sqlalchemy_table(schema.Source.__table__),
+            mock_data=pd.DataFrame([[1, 'XX'], [2, 'XX Courts']], columns=['id', 'name']))
+        self.create_mock_bq_table(
             dataset_id='justice_counts', table_id='report_materialized',
             mock_schema=MockTableSchema.from_sqlalchemy_table(schema.Report.__table__),
             mock_data=pd.DataFrame(
-                [[1, 1, 'Summary', 'All', '2021-01-02', 'https://www.xx.gov/doc', 'MANUALLY_ENTERED', 'John'],
-                 [2, 2, 'Summary', 'All', '2021-01-01', 'https://courts.xx.gov', 'MANUALLY_ENTERED', 'Jane']],
+                [[1, 1, '_', 'All', '2021-01-02', 'xx.gov', 'MANUALLY_ENTERED', 'John'],
+                 [2, 2, '_', 'All', '2021-01-01', 'courts.xx.gov', 'MANUALLY_ENTERED', 'Jane']],
                 columns=['id', 'source_id', 'type', 'instance', 'publish_date', 'url', 'acquisition_method',
                          'acquired_by']))
         self.create_mock_bq_table(
@@ -586,10 +632,11 @@ class PrisonPopulationViewTest(BaseViewTest):
 
         # Assert
         expected = pd.DataFrame(
-                [['US_XX', 'ADMISSIONS', 2020, 11, np.datetime64('2020-11-30'),   3] + [None] * 4,
-                 ['US_XX', 'ADMISSIONS', 2021,  2, np.datetime64('2021-02-28'), 384] + [None] * 4],
-                columns=['state_code', 'metric', 'year', 'month', 'date_reported', 'value',
-                         'compared_to_year', 'compared_to_month', 'value_change', 'percentage_change'])
+            [['US_XX', 'ADMISSIONS', 2020, 11, _npd('2020-11-30'), 'XX', 'xx.gov', '_', [],   3] + [None] * 4,
+             ['US_XX', 'ADMISSIONS', 2021,  2, _npd('2021-02-28'), 'XX', 'xx.gov', '_', [], 384] + [None] * 4],
+            columns=['state_code', 'metric', 'year', 'month', 'date_reported',
+                     'source_name', 'source_url', 'report_name', 'raw_source_categories',
+                     'value', 'compared_to_year', 'compared_to_month', 'value_change', 'percentage_change'])
         expected = expected.set_index(dimensions)
         assert_frame_equal(expected, results)
 
@@ -597,10 +644,14 @@ class PrisonPopulationViewTest(BaseViewTest):
         """Tests that delta metrics covering windows more than a month are accounted to the month of their end date"""
         # Arrange
         self.create_mock_bq_table(
+            dataset_id='justice_counts', table_id='source_materialized',
+            mock_schema=MockTableSchema.from_sqlalchemy_table(schema.Source.__table__),
+            mock_data=pd.DataFrame([[1, 'XX']], columns=['id', 'name']))
+        self.create_mock_bq_table(
             dataset_id='justice_counts', table_id='report_materialized',
             mock_schema=MockTableSchema.from_sqlalchemy_table(schema.Report.__table__),
             mock_data=pd.DataFrame(
-                [[1, 1, 'Summary', 'All', '2021-01-01', 'https://www.xx.gov/doc', 'MANUALLY_ENTERED', 'John']],
+                [[1, 1, '_', 'All', '2021-01-01', 'xx.gov', 'MANUALLY_ENTERED', 'John']],
                 columns=['id', 'source_id', 'type', 'instance', 'publish_date', 'url', 'acquisition_method',
                          'acquired_by']))
         self.create_mock_bq_table(
@@ -654,6 +705,7 @@ class PrisonPopulationViewTest(BaseViewTest):
         expected = pd.DataFrame(
             [],
             columns=['state_code', 'metric', 'year', 'month', 'date_reported',
+                     'source_name', 'source_url', 'report_name', 'raw_source_categories',
                      'value', 'compared_to_year', 'compared_to_month', 'value_change', 'percentage_change'])
         expected = expected.astype({'year': int, 'month': int, 'value': int})
         expected = expected.set_index(dimensions)
@@ -663,10 +715,14 @@ class PrisonPopulationViewTest(BaseViewTest):
         """Tests that for average metrics covering windows less than a month, the last one in each month is used"""
         # Arrange
         self.create_mock_bq_table(
+            dataset_id='justice_counts', table_id='source_materialized',
+            mock_schema=MockTableSchema.from_sqlalchemy_table(schema.Source.__table__),
+            mock_data=pd.DataFrame([[1, 'XX']], columns=['id', 'name']))
+        self.create_mock_bq_table(
             dataset_id='justice_counts', table_id='report_materialized',
             mock_schema=MockTableSchema.from_sqlalchemy_table(schema.Report.__table__),
             mock_data=pd.DataFrame(
-                [[1, 1, 'Summary', 'All', '2021-01-01', 'https://www.xx.gov/doc', 'MANUALLY_ENTERED', 'John']],
+                [[1, 1, '_', 'All', '2021-01-01', 'xx.gov', 'MANUALLY_ENTERED', 'John']],
                 columns=['id', 'source_id', 'type', 'instance', 'publish_date', 'url', 'acquisition_method',
                          'acquired_by']))
         self.create_mock_bq_table(
@@ -727,12 +783,13 @@ class PrisonPopulationViewTest(BaseViewTest):
 
         # Assert
         expected = pd.DataFrame(
-                [['US_XX', 'POP', 2020, 11, np.datetime64('2020-11-30'),   2] + [None] * 4,
-                 ['US_XX', 'POP', 2020, 12, np.datetime64('2020-12-26'),  32] + [None] * 4,
-                 ['US_XX', 'POP', 2021,  1, np.datetime64('2021-01-02'),  64] + [None] * 4,
-                 ['US_XX', 'POP', 2021,  2, np.datetime64('2021-02-28'), 256] + [None] * 4],
-                columns=['state_code', 'metric', 'year', 'month', 'date_reported', 'value',
-                         'compared_to_year', 'compared_to_month', 'value_change', 'percentage_change'])
+            [['US_XX', 'POP', 2020, 11, _npd('2020-11-30'), 'XX', 'xx.gov', '_', [],   2] + [None] * 4,
+             ['US_XX', 'POP', 2020, 12, _npd('2020-12-26'), 'XX', 'xx.gov', '_', [],  32] + [None] * 4,
+             ['US_XX', 'POP', 2021,  1, _npd('2021-01-02'), 'XX', 'xx.gov', '_', [],  64] + [None] * 4,
+             ['US_XX', 'POP', 2021,  2, _npd('2021-02-28'), 'XX', 'xx.gov', '_', [], 256] + [None] * 4],
+            columns=['state_code', 'metric', 'year', 'month', 'date_reported',
+                     'source_name', 'source_url', 'report_name', 'raw_source_categories',
+                     'value', 'compared_to_year', 'compared_to_month', 'value_change', 'percentage_change'])
         expected = expected.set_index(dimensions)
         assert_frame_equal(expected, results)
 
@@ -740,10 +797,14 @@ class PrisonPopulationViewTest(BaseViewTest):
         """Tests that average metrics covering windows more than a month are accounted to the month of their end date"""
         # Arrange
         self.create_mock_bq_table(
+            dataset_id='justice_counts', table_id='source_materialized',
+            mock_schema=MockTableSchema.from_sqlalchemy_table(schema.Source.__table__),
+            mock_data=pd.DataFrame([[1, 'XX']], columns=['id', 'name']))
+        self.create_mock_bq_table(
             dataset_id='justice_counts', table_id='report_materialized',
             mock_schema=MockTableSchema.from_sqlalchemy_table(schema.Report.__table__),
             mock_data=pd.DataFrame(
-                [[1, 1, 'Summary', 'All', '2021-01-01', 'https://www.xx.gov/doc', 'MANUALLY_ENTERED', 'John']],
+                [[1, 1, '_', 'All', '2021-01-01', 'xx.gov', 'MANUALLY_ENTERED', 'John']],
                 columns=['id', 'source_id', 'type', 'instance', 'publish_date', 'url', 'acquisition_method',
                          'acquired_by']))
         self.create_mock_bq_table(
@@ -795,13 +856,14 @@ class PrisonPopulationViewTest(BaseViewTest):
 
         # Assert
         expected = pd.DataFrame(
-                [['US_XX', 'POP', 2019, 12, np.datetime64('2019-12-31'), 16] + [None] * 4,
-                 ['US_XX', 'POP', 2020,  3, np.datetime64('2020-03-31'),  1] + [None] * 4,
-                 ['US_XX', 'POP', 2020,  6, np.datetime64('2020-06-30'),  2] + [None] * 4,
-                 ['US_XX', 'POP', 2020,  9, np.datetime64('2020-09-30'),  4] + [None] * 4,
-                 ['US_XX', 'POP', 2020, 12, np.datetime64('2020-12-31'),  8, 2019, 12, -8, -0.5]],
-                columns=['state_code', 'metric', 'year', 'month', 'date_reported', 'value',
-                         'compared_to_year', 'compared_to_month', 'value_change', 'percentage_change'])
+            [['US_XX', 'POP', 2019, 12, _npd('2019-12-31'), 'XX', 'xx.gov', '_', [], 16] + [None] * 4,
+             ['US_XX', 'POP', 2020,  3, _npd('2020-03-31'), 'XX', 'xx.gov', '_', [],  1] + [None] * 4,
+             ['US_XX', 'POP', 2020,  6, _npd('2020-06-30'), 'XX', 'xx.gov', '_', [],  2] + [None] * 4,
+             ['US_XX', 'POP', 2020,  9, _npd('2020-09-30'), 'XX', 'xx.gov', '_', [],  4] + [None] * 4,
+             ['US_XX', 'POP', 2020, 12, _npd('2020-12-31'), 'XX', 'xx.gov', '_', [],  8, 2019, 12, -8, -0.5]],
+            columns=['state_code', 'metric', 'year', 'month', 'date_reported',
+                     'source_name', 'source_url', 'report_name', 'raw_source_categories',
+                     'value', 'compared_to_year', 'compared_to_month', 'value_change', 'percentage_change'])
         expected = expected.set_index(dimensions)
         assert_frame_equal(expected, results)
 
@@ -809,10 +871,14 @@ class PrisonPopulationViewTest(BaseViewTest):
         """Tests comparison logic -- compares to most recent point that is at least a year older"""
         # Arrange
         self.create_mock_bq_table(
+            dataset_id='justice_counts', table_id='source_materialized',
+            mock_schema=MockTableSchema.from_sqlalchemy_table(schema.Source.__table__),
+            mock_data=pd.DataFrame([[1, 'XX']], columns=['id', 'name']))
+        self.create_mock_bq_table(
             dataset_id='justice_counts', table_id='report_materialized',
             mock_schema=MockTableSchema.from_sqlalchemy_table(schema.Report.__table__),
             mock_data=pd.DataFrame(
-                [[1, 1, 'Summary', 'All', '2021-01-01', 'https://www.xx.gov/doc', 'MANUALLY_ENTERED', 'John']],
+                [[1, 1, '_', 'All', '2021-01-01', 'xx.gov', 'MANUALLY_ENTERED', 'John']],
                 columns=['id', 'source_id', 'type', 'instance', 'publish_date', 'url', 'acquisition_method',
                          'acquired_by']))
         self.create_mock_bq_table(
@@ -864,14 +930,15 @@ class PrisonPopulationViewTest(BaseViewTest):
 
         # Assert
         expected = pd.DataFrame(
-                [['US_XX', 'POP', 2017, 3, np.datetime64('2017-03-01'), 16, None, None, None, None],
-                 ['US_XX', 'POP', 2018, 2, np.datetime64('2018-02-01'),  8, None, None, None, None],
-                 ['US_XX', 'POP', 2019, 2, np.datetime64('2019-02-01'),  4, 2018, 2, -4, -0.50],
-                 ['US_XX', 'POP', 2020, 1, np.datetime64('2020-01-31'),  2, 2018, 2, -6, -0.75],
-                 ['US_XX', 'POP', 2021, 1, np.datetime64('2021-01-01'),  2, 2020, 1,  0,  0.00],
-                 ['US_XX', 'POP', 2022, 1, np.datetime64('2022-01-01'),  3, 2021, 1,  1,  0.50]],
-                columns=['state_code', 'metric', 'year', 'month', 'date_reported', 'value',
-                         'compared_to_year', 'compared_to_month', 'value_change', 'percentage_change'])
+            [['US_XX', 'POP', 2017, 3, _npd('2017-03-01'), 'XX', 'xx.gov', '_', [], 16, None, None, None, None],
+             ['US_XX', 'POP', 2018, 2, _npd('2018-02-01'), 'XX', 'xx.gov', '_', [],  8, None, None, None, None],
+             ['US_XX', 'POP', 2019, 2, _npd('2019-02-01'), 'XX', 'xx.gov', '_', [],  4, 2018, 2, -4, -0.50],
+             ['US_XX', 'POP', 2020, 1, _npd('2020-01-31'), 'XX', 'xx.gov', '_', [],  2, 2018, 2, -6, -0.75],
+             ['US_XX', 'POP', 2021, 1, _npd('2021-01-01'), 'XX', 'xx.gov', '_', [],  2, 2020, 1,  0,  0.00],
+             ['US_XX', 'POP', 2022, 1, _npd('2022-01-01'), 'XX', 'xx.gov', '_', [],  3, 2021, 1,  1,  0.50]],
+            columns=['state_code', 'metric', 'year', 'month', 'date_reported',
+                     'source_name', 'source_url', 'report_name', 'raw_source_categories',
+                     'value', 'compared_to_year', 'compared_to_month', 'value_change', 'percentage_change'])
         expected = expected.set_index(dimensions)
         assert_frame_equal(expected, results)
 
@@ -879,10 +946,14 @@ class PrisonPopulationViewTest(BaseViewTest):
         """Tests that percentage change is null when the prior value was zero"""
         # Arrange
         self.create_mock_bq_table(
+            dataset_id='justice_counts', table_id='source_materialized',
+            mock_schema=MockTableSchema.from_sqlalchemy_table(schema.Source.__table__),
+            mock_data=pd.DataFrame([[1, 'XX']], columns=['id', 'name']))
+        self.create_mock_bq_table(
             dataset_id='justice_counts', table_id='report_materialized',
             mock_schema=MockTableSchema.from_sqlalchemy_table(schema.Report.__table__),
             mock_data=pd.DataFrame(
-                [[1, 1, 'Summary', 'All', '2021-01-01', 'https://www.xx.gov/doc', 'MANUALLY_ENTERED', 'John']],
+                [[1, 1, '_', 'All', '2021-01-01', 'xx.gov', 'MANUALLY_ENTERED', 'John']],
                 columns=['id', 'source_id', 'type', 'instance', 'publish_date', 'url', 'acquisition_method',
                          'acquired_by']))
         self.create_mock_bq_table(
@@ -928,11 +999,81 @@ class PrisonPopulationViewTest(BaseViewTest):
 
         # Assert
         expected = pd.DataFrame(
-                [['US_XX', 'ADMISSIONS', 2020, 1, np.datetime64('2020-01-31'),  2, None, None, None, None],
-                 ['US_XX', 'ADMISSIONS', 2021, 1, np.datetime64('2021-01-31'),  0, 2020, 1, -2, -1.00],
-                 # Percentage change is None as prior value was 0
-                 ['US_XX', 'ADMISSIONS', 2022, 1, np.datetime64('2022-01-31'),  3, 2021, 1,  3, None]],
-                columns=['state_code', 'metric', 'year', 'month', 'date_reported', 'value',
-                         'compared_to_year', 'compared_to_month', 'value_change', 'percentage_change'])
+            [['US_XX', 'ADMISSIONS', 2020, 1, _npd('2020-01-31'), 'XX', 'xx.gov', '_', [],  2, None, None, None, None],
+             ['US_XX', 'ADMISSIONS', 2021, 1, _npd('2021-01-31'), 'XX', 'xx.gov', '_', [],  0, 2020, 1, -2, -1.00],
+             # Percentage change is None as prior value was 0
+             ['US_XX', 'ADMISSIONS', 2022, 1, _npd('2022-01-31'), 'XX', 'xx.gov', '_', [],  3, 2021, 1,  3, None]],
+            columns=['state_code', 'metric', 'year', 'month', 'date_reported',
+                     'source_name', 'source_url', 'report_name', 'raw_source_categories',
+                     'value', 'compared_to_year', 'compared_to_month', 'value_change', 'percentage_change'])
+        expected = expected.set_index(dimensions)
+        assert_frame_equal(expected, results)
+
+    def test_collapsed_dimensions(self) -> None:
+        """Tests that percentage change is null when the prior value was zero"""
+        # Arrange
+        self.create_mock_bq_table(
+            dataset_id='justice_counts', table_id='source_materialized',
+            mock_schema=MockTableSchema.from_sqlalchemy_table(schema.Source.__table__),
+            mock_data=pd.DataFrame([[1, 'XX']], columns=['id', 'name']))
+        self.create_mock_bq_table(
+            dataset_id='justice_counts', table_id='report_materialized',
+            mock_schema=MockTableSchema.from_sqlalchemy_table(schema.Report.__table__),
+            mock_data=pd.DataFrame(
+                [[1, 1, '_', 'All', '2021-01-01', 'xx.gov', 'MANUALLY_ENTERED', 'John']],
+                columns=['id', 'source_id', 'type', 'instance', 'publish_date', 'url', 'acquisition_method',
+                         'acquired_by']))
+        self.create_mock_bq_table(
+            dataset_id='justice_counts', table_id='report_table_definition_materialized',
+            mock_schema=MockTableSchema.from_sqlalchemy_table(schema.ReportTableDefinition.__table__),
+            mock_data=pd.DataFrame(
+                [[1, 'CORRECTIONS', 'ADMISSIONS', 'DELTA', ['global/location/state'], ['US_XX'],
+                 ['metric/admission/type', 'metric/admission/type/raw']]],
+                columns=['id', 'system', 'metric_type', 'measurement_type', 'filtered_dimensions',
+                         'filtered_dimension_values', 'aggregated_dimensions']))
+        self.create_mock_bq_table(
+            dataset_id='justice_counts', table_id='report_table_instance_materialized',
+            mock_schema=MockTableSchema.from_sqlalchemy_table(schema.ReportTableInstance.__table__),
+            mock_data=pd.DataFrame(
+                [[1, 1, 1, '2021-01-01', '2021-02-01', None],
+                 [2, 1, 1, '2020-01-01', '2020-02-01', None]],
+                columns=['id', 'report_id', 'report_table_definition_id', 'time_window_start', 'time_window_end',
+                         'methodology']))
+        self.create_mock_bq_table(
+            dataset_id='justice_counts', table_id='cell_materialized',
+            mock_schema=MockTableSchema.from_sqlalchemy_table(schema.Cell.__table__),
+            mock_data=pd.DataFrame(
+                [[1, 1, ['NEW_COMMITMENT', 'A'], 3],
+                 [2, 1, ['NEW_COMMITMENT', 'B'], 2],
+                 [3, 1, ['FROM_SUPERVISION', 'C'], 1],
+                 [4, 2, ['NEW_COMMITMENT', 'B'], 6],
+                 [5, 2, ['NEW_COMMITMENT', 'D'], 4]],
+                columns=['id', 'report_table_instance_id', 'aggregated_dimension_values', 'value']))
+
+        # Act
+        dimensions = ['state_code', 'metric', 'year', 'month']
+        parole_population = metric_by_month.CalculatedMetricByMonth(
+           system=schema.System.CORRECTIONS,
+           metric=schema.MetricType.ADMISSIONS,
+           filtered_dimensions=[manual_upload.AdmissionType.NEW_COMMITMENT],
+           aggregated_dimensions={
+               'state_code': metric_by_month.Aggregation(dimension=manual_upload.State, comprehensive=False)},
+           output_name='ADMISSIONS'
+        )
+        results = self.query_view(
+            metric_by_month.CalculatedMetricByMonthViewBuilder(
+                dataset_id='fake-dataset', metric_to_calculate=parole_population),
+            data_types={'year': int, 'month': int, 'value': int},
+            dimensions=dimensions)
+
+        # Assert
+        expected = pd.DataFrame(
+            [['US_XX', 'ADMISSIONS', 2020, 1, _npd('2020-01-31'), 'XX', 'xx.gov', '_', ['B', 'D'], 10,
+              None, None, None, None],
+             ['US_XX', 'ADMISSIONS', 2021, 1, _npd('2021-01-31'), 'XX', 'xx.gov', '_', ['A', 'B'], 5,
+              2020, 1, -5, -0.5]],
+            columns=['state_code', 'metric', 'year', 'month', 'date_reported',
+                     'source_name', 'source_url', 'report_name', 'raw_source_categories',
+                     'value', 'compared_to_year', 'compared_to_month', 'value_change', 'percentage_change'])
         expected = expected.set_index(dimensions)
         assert_frame_equal(expected, results)
