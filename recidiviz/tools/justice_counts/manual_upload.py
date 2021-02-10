@@ -1668,7 +1668,7 @@ def upload_table(
 
 def trigger_ingest(gcs_path: GcsfsFilePath, app_url: Optional[str]) -> None:
     app_url = app_url or f'https://{metadata.project_id()}.appspot.com'
-    webbrowser.open(url=f'{app_url}/justice_counts/ingest?manifest_path={gcs_path.uri()}')
+    webbrowser.open(url=f"{app_url}/justice_counts/ingest?{parse.urlencode({'manifest_path': gcs_path.uri()})}")
 
 
 def main(manifest_path: str, app_url: Optional[str]) -> None:
