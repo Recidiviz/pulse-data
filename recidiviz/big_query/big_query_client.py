@@ -37,13 +37,6 @@ def client(project_id: str) -> bigquery.Client:
     return _clients_by_project_id[project_id]
 
 
-# The urllib3 library (used by the Google BigQuery client) has a default limit of 10 connections and when we do
-# concurrent operations with the same client we see "urllib3.connectionpool:Connection pool is full, discarding
-# connection" errors when this number increased.
-# In the future, we could increase this number by playing around with increasing the pool size per this post:
-# https://github.com/googleapis/python-storage/issues/253
-BIG_QUERY_CLIENT_MAX_CONNECTIONS = 10
-
 class BigQueryClient:
     """Interface for a wrapper around the bigquery.Client with convenience functions for querying, creating, copying and
      exporting BigQuery tables and views.
