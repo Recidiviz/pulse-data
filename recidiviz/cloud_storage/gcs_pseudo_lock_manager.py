@@ -23,6 +23,9 @@ from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.utils import metadata
 
+EXPORT_RUNNING_LOCK_NAME = 'EXPORT_PROCESS_RUNNING'
+INGEST_RUNNING_LOCK_PREFIX = 'INGEST_PROCESS_RUNNING_'
+
 
 class GCSPseudoLockManager:
     """Class implementing pseudo lock manager using GCS File System. Not a general locks class - may have race
@@ -36,6 +39,10 @@ class GCSPseudoLockManager:
             project_id = metadata.project_id()
         self.fs = GcsfsFactory.build()
         self.bucket_name = f'{project_id}-gcslock'
+
+    def no_active_locks_with_prefix(self, prefix: str) -> bool:
+        """Checks to see if any locks exist with prefix"""
+        return len(self.fs.ls_with_blob_prefix(blob_prefix=prefix, bucket_name=self.bucket_name)) == 0
 
     def lock(self, name: str, contents: Optional[str] = None) -> None:
         """"Locks @param name by generating new file"""

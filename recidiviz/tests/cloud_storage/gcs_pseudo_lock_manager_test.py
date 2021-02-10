@@ -20,8 +20,8 @@ import unittest
 from datetime import datetime
 from unittest import mock
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
-from recidiviz.utils.gcs_pseudo_lock_manager import GCSPseudoLockManager, GCSPseudoLockAlreadyExists, \
-    GCSPseudoLockDoesNotExist
+from recidiviz.cloud_storage.gcs_pseudo_lock_manager import GCSPseudoLockManager, GCSPseudoLockAlreadyExists, \
+    GCSPseudoLockDoesNotExist, INGEST_RUNNING_LOCK_PREFIX
 from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 
 
@@ -33,11 +33,12 @@ class GCSPseudoLockManagerTest(unittest.TestCase):
     TIME_FORMAT = "%m/%d/%Y, %H:%M:%S"
     CONTENTS = "CONTENTS"
     CONTENTS2 = "CONTENTS2"
+    REGION = 'region'
 
     def setUp(self) -> None:
-        self.project_id_patcher = mock.patch('recidiviz.utils.gcs_pseudo_lock_manager.metadata')
+        self.project_id_patcher = mock.patch('recidiviz.cloud_storage.gcs_pseudo_lock_manager.metadata')
         self.project_id_patcher.start().return_value = 'recidiviz-123'
-        self.gcs_factory_patcher = mock.patch('recidiviz.utils.gcs_pseudo_lock_manager.GcsfsFactory.build')
+        self.gcs_factory_patcher = mock.patch('recidiviz.cloud_storage.gcs_pseudo_lock_manager.GcsfsFactory.build')
         fake_gcs = FakeGCSFileSystem()
         self.gcs_factory_patcher.start().return_value = fake_gcs
         self.fs = fake_gcs
@@ -155,3 +156,16 @@ class GCSPseudoLockManagerTest(unittest.TestCase):
         path = GcsfsFilePath(bucket_name=lock_manager.bucket_name, blob_name=self.LOCK_NAME)
         actual_contents = self.fs.download_as_string(path)
         self.assertEqual(self.CONTENTS2, actual_contents)
+
+    def test_region_are_running(self) -> None:
+        """Ensures lock manager can see regions are running"""
+        lock_manager = GCSPseudoLockManager(self.PROJECT_ID)
+        lock_manager.lock(INGEST_RUNNING_LOCK_PREFIX + self.REGION.upper())
+        self.assertFalse(lock_manager.no_active_locks_with_prefix(INGEST_RUNNING_LOCK_PREFIX))
+
+    def test_region_are_not_running(self) -> None:
+        """Ensures lock manager can see regions are not running"""
+        lock_manager = GCSPseudoLockManager(self.PROJECT_ID)
+        lock_manager.lock(INGEST_RUNNING_LOCK_PREFIX + self.REGION.upper())
+        lock_manager.unlock(INGEST_RUNNING_LOCK_PREFIX + self.REGION.upper())
+        self.assertTrue(lock_manager.no_active_locks_with_prefix(INGEST_RUNNING_LOCK_PREFIX))
