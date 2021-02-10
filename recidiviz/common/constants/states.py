@@ -18,10 +18,33 @@
 
 import enum
 import re
+from typing import Dict
 
 import us
 
+from recidiviz.utils import environment
+
 STATE_CODE_PATTERN = re.compile(r'US_[A-Z]{2}')
+TEST_STATE_CODE = 'US_XX'
+
+TEST_STATE_INFO = {
+    TEST_STATE_CODE: us.states.State(
+        **{
+            "fips": "XX",
+            "name": "Test State",
+            "abbr": "XX",
+            "is_territory": False,
+            "is_obsolete": False,
+            "is_contiguous": False,
+            "is_continental": True,
+            "statehood_year": 9999,
+            "capital": "Test",
+            "capital_tz": "America/Test",
+            "ap_abbr": "Test",
+            "time_zones": ["America/Test", "America/Test"],
+            "name_metaphone": "TEST",
+        })
+}
 
 
 class StateCode(enum.Enum):
@@ -77,15 +100,29 @@ class StateCode(enum.Enum):
     US_WV = "US_WV"
     US_WY = "US_WY"
 
+    if environment.in_test():
+        US_XX = TEST_STATE_CODE
+
     def get_state(self) -> us.states.State:
-        # pylint: disable=unsubscriptable-object
-        return getattr(us.states, self.value[len('US_'):])
+        return self._state_info_map()[self.value]
+
+    @classmethod
+    def _state_info_map(cls) -> Dict[str, us.states.State]:
+        info_map = {}
+        for e in cls:
+            state_abbrev = e.value[len('US_'):]
+            if hasattr(us.states, state_abbrev):
+                info_map[e.value] = getattr(us.states, state_abbrev)
+            elif e.value in TEST_STATE_INFO:
+                info_map[e.value] = TEST_STATE_INFO[e.value]
+            else:
+                raise ValueError(f'Unexpected state code [{e.value}] has no state info.')
+
+        return info_map
 
     @classmethod
     def is_valid(cls, state_code: str) -> bool:
-        # TODO(#5508): Have this actually check it's one of the valid states once we have a way to handle tests with
-        #  US_XX etc in them. For now, this just checks that it is upper case and matches the correct pattern.
-        return bool(re.match(STATE_CODE_PATTERN, state_code))
+        return cls.is_state_code(state_code)
 
     @classmethod
     def is_state_code(cls, state_code: str) -> bool:
