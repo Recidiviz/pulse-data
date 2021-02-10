@@ -1,17 +1,75 @@
 file_tag: elite_institutionalactivities
+file_description: |-
+  Each row represents some activity (e.g. work assignment) or program (e.g. mental health treatment, educational program)
+  undertaken by an incarcerated person. This includes metadata about the activity/program itself, when it was undertaken,
+  their referral into the program, and free text notes about the person's participation.
+
+  Importantly, DOCR has itself noted that the trustworthiness of this data is questionable, as it is a bit of a dumping
+  ground for a lot of only loosely affiliated kinds of data and as it is not commonly kept up-to-date, i.e. many rows
+  indicating that programs or activities from many, many years ago are still ongoing.
 # Using these primary keys, there's a few dupes, only differing by end_date and offender_end_reason.
 primary_key_cols:
   - OFFENDER_BOOK_ID
   - PROGRAM_ID
   - START_DATE
 columns:
+  - name: OFFENDER_BOOK_ID
+    description: |-
+      External ID of a booking for a particular person, i.e. a new series of interactions with the justice system due to a new offense.
+  - name: DESCRIPTION
+    description: |-
+      Description of the program/activity being undertaken.
+  - name: PROGRAM_CODE
+    description: |-
+      Code of the program/activity being undertaken.
   - name: START_DATE
     is_datetime: True
+    description: |-
+      When the person first started this program/activity.
   - name: END_DATE
     is_datetime: True
+    description: |-
+      When the person finished this program/activity.
+  - name: OFFENDER_END_REASON
+    description: |-
+      The reason the person finished this program/activity.
+  - name: OFFENDER_END_COMMENT_TEXT
+    description: |-
+      Free text notes about the finishing of this program/activity entered by an admin.
+  - name: REFERRAL_DATE
+    is_datetime: True
+    description: |-
+      When the person was referred to this program/activity.
+  - name: PROGRAM_ID
+    description: |-
+      ID of the program/activity being undertaken.
   - name: CREATE_DATETIME
     is_datetime: True
+    description: |-
+      When this record was first created in the source system.
   - name: MODIFY_DATETIME
     is_datetime: True
+    description: |-
+      When this record was most recently modified in the source system.
+  - name: OFFENDER_PROGRAM_STATUS
+    description: |-
+      The current status of the person within this program/activity.
+  - name: REFERRAL_PRIORITY
+    description: |-
+      The relative priority of this person's referral to this program/activity relative to other referrals.
+  - name: REFERRAL_COMMENT_TEXT
+    description: |-
+      Free text notes about why the person was referred to this program/activity entered by an admin.
   - name: REJECT_DATE
     is_datetime: True
+    description: |-
+      When the person was rejected from being admitted to this program/activity, if rejected.
+  - name: REJECT_REASON_CODE
+    description: |-
+      When the person was rejected from being admitted to this program/activity, if rejected.
+  - name: AGY_LOC_ID
+    description: |-
+      ID of the facility where the program/activity takes place.
+  - name: COURSE_ACTIVITIES_DESCRIPTION
+    description: |-
+      Description of the specific activities undertaken during this program/activity.

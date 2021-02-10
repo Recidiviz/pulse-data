@@ -1,12 +1,92 @@
 file_tag: docstars_ftr_episode
+file_description: |-
+  Each row represents a particular instance of a referral of a particular person to a particular program within
+  FTR (Free Through Recovery). This includes metadata about the referral as well as the program interaction itself.
 primary_key_cols:
   - EPISODE_ID
 columns:
+  - name: EPISODE_ID
+    description: |-
+      ID of the FTR program episode, i.e. interaction with an FTR provider.
+  - name: SID
+    description: |-
+      External id for a unique person from the Docstars system.
+  - name: PREFERRED_PROVIDER_ID
+    description: |-
+      ID of the preferred FTR provider for this episode.
+  - name: PREFERRED_LOCATION_ID
+    description: |-
+      ID of the location of the preferred FTR provider for this episode.
+  - name: COORDINATOR_GUID
+    description: |-
+      ID of the FTR coordinator agent/organization.
+  - name: ASSIGNED_PROVIDER_ID
+    description: |-
+      ID of the assigned FTR provider for this episode.
+  - name: PENDING_CODE
+    description: |-
+      Code describing whether this episode is pending.
+  - name: LOCATION_ID
+    description: |-
+      ID of the location of the assigned FTR provider for this episode.
+  - name: FUNCTIONAL_IMPAIRMENTS
+    description: |-
+      Codes of functional impairments to be treated during this episode.
+  - name: IS_CLINICAL_ASSESSMENT
+    description: |-
+      Whether a clinical assessment was performed during this episode.
+  - name: ASSESSMENT_LOCATION
+    description: |-
+      Where the assessment took place, if applicable.
+  - name: REFERRAL_REASON
+    description: |-
+      Why the person is being referred for this particular FTR episode.
+  - name: STATUS
+    description: |-
+      Current status of this FTR episode.
   - name: STATUS_DATE
     is_datetime: True
+    description: |-
+      When the current status became true for this FTR episode, i.e. when the status most recently changed.
+  - name: STRENGTHS
+    description: |-
+      Assessed strengths of this person, written as free text notes.
+  - name: NEEDS
+    description: |-
+      Assessed needs of this person, written as free text notes.
   - name: SN_LAST_UPDATED_DATE
     is_datetime: True
+    description: |-
+      When this record was most recently updated.
   - name: SUBMITTED
     is_datetime: True
+    description: |-
+      When the record of this FTR episode was submitted to Docstars.
+  - name: SUBMITTED_BY
+    description: |-
+      ID of the person who submitted the record of this FTR episode to Docstars.
+  - name: SUBMITTED_BY_NAME
+    description: |-
+      Name of the person who submitted the record of this FTR episode to Docstars.
   - name: ADMITTED_DATE
     is_datetime: True
+    description: |-
+      When the person was admitted to this episode.
+  - name: ALLOW_VIEWING
+    description: |-
+      Whether this record can be viewed by users with read access. Always yes.
+  - name: PEER_SUPPORT_OFFERED
+    description: |-
+      Whether peer support was offered to the person during this episode.
+  - name: PEER_SUPPORT_ACCEPTED
+    description: |-
+      Whether peer support was accepted by the person during this episode.
+  - name: SPECIALIST_LAST_NAME
+    description: |-
+      Surname of the specialist conducting this FTR episode.
+  - name: SPECIALIST_FIRST_NAME
+    description: |-
+      First/given name of the specialist conducting this FTR episode.
+  - name: SPECIALIST_INITIAL
+    description: |-
+      Middle initial of the specialist conducting this FTR episode.

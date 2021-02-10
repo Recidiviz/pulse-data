@@ -1,9 +1,25 @@
 file_tag: elite_offenderidentifier
+file_description: |-
+  Each row represents some unique external identifier provided by DOCR data systems for a particular person. In effect,
+  this is a DOCR-provided join table to bring together "Elite offender ids" with "Docstars state ids".
 primary_key_cols:
   - ROOT_OFFENDER_ID
   - IDENTIFIER
 columns:
+  - name: ROOT_OFFENDER_ID
+    description: |-
+      External id for a unique person from the Elite system.
+  - name: IDENTIFIER_TYPE
+    description: |-
+      Type of external id, i.e. the source system providing the identifier.
+  - name: IDENTIFIER
+    description: |-
+      Actual identifier value for this particular identifier type.
   - name: CREATE_DATETIME
     is_datetime: True
+    description: |-
+      When this record was first created in the source system.
   - name: MODIFY_DATETIME
     is_datetime: True
+    description: |-
+      When this record was most recently modified in the source system.

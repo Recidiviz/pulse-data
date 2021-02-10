@@ -1,6 +1,35 @@
 file_tag: elite_livingunits
+file_description: |-
+  Each row represents a particular living unit which is available for people to be incarcerated in within a particular
+  facility.
 primary_key_cols:
   - LIVING_UNIT_ID
 columns:
+  - name: LIVING_UNIT_ID
+    description: |-
+      ID of the living unit/location where a person may be incarcerated.
+  - name: AGY_LOC_ID
+    description: |-
+      ID of the facility where the living unit is located.
+  - name: DESCRIPTION
+    description: |-
+      Description of the living unit/location.
+  - name: LEVEL_1_CODE
+    description: |-
+      Code describing the jurisdiction controlling the living unit/location.
+  - name: LEVEL_2_CODE
+    description: |-
+      Sub-code describing the jurisdiction controlling the living unit/location.
+  - name: LEVEL_3_CODE
+    description: |-
+      Sub-code describing the jurisdiction controlling the living unit/location.
+  - name: LEVEL_4_CODE
+    description: |-
+      Sub-code describing the jurisdiction controlling the living unit/location.
   - name: DEACTIVATE_DATE
     is_datetime: True
+    description: |-
+      When this living unit/location was deactivated, if no longer active.
+  - name: ACTIVE_FLAG
+    description: |-
+      Whether this living unit/location is still in active use.

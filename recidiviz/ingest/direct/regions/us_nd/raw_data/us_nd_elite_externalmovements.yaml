@@ -1,11 +1,54 @@
 file_tag: elite_externalmovements
+file_description: |-
+  Each row represents a single movement of an incarcerated person from one incarceration facility to another, or in some
+  cases to a different institution or to the outside world in the case of release. Sequences of rows in this table, for
+  a given person and ordered by the MOVEMENT_SEQ, can be used to identify periods of incarceration.
 primary_key_cols:
   - OFFENDER_BOOK_ID
   - MOVEMENT_SEQ
 columns:
+  - name: OFFENDER_BOOK_ID
+    description: |-
+      External ID of a booking for a particular person, i.e. a new series of interactions with the justice system due to a new offense.
+  - name: ACTIVE_FLAG
+    description: |-
+      Whether this is the most recent movement, representing the "active" movement/destination for the booking.
+  - name: ARREST_AGENCY_LOC_ID
+    description: |-
+      External id of the agency that made the arrest which led to the movement.
+  - name: COMMENT_TEXT
+    description: |-
+      Free text notes from the admin who entered the movement record in the source system.
+  - name: DIRECTION_CODE
+    description: |-
+      Whether this movement is an admission (movement into an incarceration period) or a release (movement out of an incarceration period).
+  - name: ESCORT_CODE
+    description: |-
+      ID of the agency providing the escort along the physical movement.
+  - name: FROM_AGY_LOC_ID
+    description: |-
+      ID of the facility that the movement came from.
+  - name: MOVEMENT_SEQ
+    description: |-
+      The ordered index of the movement among the full set of movements associated with a particular booking.
+  - name: MOVEMENT_TYPE
+    description: |-
+      The type of movement (redundant of DIRECTION_CODE).
+  - name: MOVEMENT_REASON_CODE
+    description: |-
+      Why the movement occurred, i.e. an admission or release reason depending on the movement direction.
   - name: MOVEMENT_DATE
     is_datetime: True
+    description: |-
+      When the movement occurred.
+  - name: TO_AGY_LOC_ID
+    description: |-
+      ID of the facility that the movement went to.
   - name: CREATE_DATETIME
     is_datetime: True
+    description: |-
+      When this record was first created in the source system.
   - name: MODIFY_DATETIME
     is_datetime: True
+    description: |-
+      When this record was most recently modified in the source system.

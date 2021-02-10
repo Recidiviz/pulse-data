@@ -1,20 +1,191 @@
 file_tag: docstars_offenders
+file_description: |-
+  Each row represents a single person who has been or is currently under supervision. This contains basic demographic
+  information about the person, as well as a variety of "roll-up" fields that Docstars rolls up from other tables into
+  this one to capture the latest state of the field. These include metadata about a person's latest documented needs,
+  latest assessment results, whether they are being revoked, whether they are absconding, and more.
 primary_key_cols:
   - SID
 columns:
+  - name: SID
+    description: |-
+      External id for a unique person from the Docstars system.
+  - name: ITAGROOT_ID
+    description: |-
+      External id for a unique person from the Elite system (synced with Docstars).
+  - name: LAST_NAME
+    description: |-
+      Surname of the person.
+  - name: FIRST
+    description: |-
+      First/given name of the person.
+  - name: MIDDLE
+    description: |-
+      Middle name of the person.
+  - name: ADDRESS
+    description: |-
+      Street address of the person.
+  - name: CITY
+    description: |-
+      City portion of the address of the person.
+  - name: STATE
+    description: |-
+      State portion of the address of the person.
+  - name: ZIP
+    description: |-
+      Zip code portion of the address of the person.
   - name: DOB
     is_datetime: True
+    description: |-
+      Date of birth of the person.
+  - name: AGENT
+    description: |-
+      Current supervising officer for the person.
+  - name: SUP_LVL
+    description: |-
+      Current supervision level for the person.<br>Values:<br>- 1 - Minimum<br>- General *only* (Sex offense has a minimum of 2)<br>- 2 - Medium<br>- 3 - Maximum<br>- ~~4~~ (NO LONGER USE THIS)<br>- 5 - NC<br>- Not Classified (ex: haven’t done an LSI yet, they are still in jail and haven’t gone on supervision yet, they are about to go in to jail)<br>- 6 - Drug Court<br>- Supervised the same as maximum (if not more)<br>- Drug Court officers work with these people<br>- 7 - Diversion<br>- Monthly report and seen once a year (as close to unsupervised probation)<br>- ~~8~~ - (DOESN’T SEEM TO BE USED)<br>- 9 - IC Out<br>- Interstate Compact Out: the person is going elsewhere
+  - name: SUPER_OVERRIDE
+    description: |-
+      Overridden (by an officer) supervision level for the person.<br>Values:<br>- 1 - Minimum<br>- General *only* (Sex offense has a minimum of 2)<br>- 2 - Medium<br>- 3 - Maximum<br>- ~~4~~ (NO LONGER USE THIS)<br>- 5 - NC<br>- Not Classified (ex: haven’t done an LSI yet, they are still in jail and haven’t gone on supervision yet, they are about to go in to jail)<br>- 6 - Drug Court<br>- Supervised the same as maximum (if not more)<br>- Drug Court officers work with these people<br>- 7 - Diversion<br>- Monthly report and seen once a year (as close to unsupervised probation)<br>- ~~8~~ - (DOESN’T SEEM TO BE USED)<br>- only used twice (once in 2001 and 2004)<br>- 9 - IC Out<br>- Interstate Compact Out: the person is going elsewhere
+  - name: PREVIOUS_AGENT
+    description: |-
+      The most recent supervising officer for the person.
+  - name: RECORD_STATUS
+    description: |-
+      Current status of the record for the person.
+  - name: COMPLETION_IND
+    description: |-
+      Whether this person's record-keeping within Docstars is complete.
+  - name: ALIASFLAG
+    description: |-
+      Whether this person has an alias.
+  - name: ADDRESS2
+    description: |-
+      Second street address of the person.
+  - name: CITY2
+    description: |-
+      City portion of the second address of the person.
+  - name: STATE2
+    description: |-
+      State portion of the second address of the person.
+  - name: ZIP2
+    description: |-
+      Zip code portion of the second address of the person.
+  - name: SITEID
+    description: |-
+      ID of the site where this person is being supervised.
+  - name: ABSCONDER
+    description: |-
+      Whether this person is actively absconding from supervision.
+  - name: SEXOFF
+    description: |-
+      Whether this person is a registered sex offender.
   - name: GOODTIMEDATE
     is_datetime: True
+    description: |-
+      The good time date upon which this person can be released from supervision.
+  - name: RACE
+    description: |-
+      Race or ethnicity of the person.
+  - name: SEX
+    description: |-
+      Sex of the person.
+  - name: C_MARITAL
+    description: |-
+      Marital status of the person.
+  - name: D_DEP
+    description: |-
+      Number of dependents of the person.
+  - name: E_LIV_ARR
+    description: |-
+      Living arrangement of the person.
+  - name: F_VETERAN
+    description: |-
+      Whether this person is a veteran.
+  - name: G_INCOME
+    description: |-
+      Income range of the person.
+  - name: H_EMPLOY
+    description: |-
+      Employment status of the person.
+  - name: I_JOB_CL
+    description: |-
+      Job classification of the person.
+  - name: J_LAST_GR
+    description: |-
+      Last academic grade completed by the person.
+  - name: K_PUB_ASST
+    description: |-
+      Whether this person receives any public assistance/welfare.
   - name: INACTIVEDATE
     is_datetime: True
+    description: |-
+      When this person's recordkeeping in Docstars became inactive.
+  - name: BIGSIXT1
+    description: |-
+      LSIR assessment domain with the highest score for this person, based on their most recent assessment.
+  - name: BIGSIXT2
+    description: |-
+      LSIR assessment domain with the second highest score for this person, based on their most recent assessment.
+  - name: BIGSIXT3
+    description: |-
+      LSIR assessment domain with the third highest score for this person, based on their most recent assessment.
+  - name: BIGSIXT4
+    description: |-
+      LSIR assessment domain with the fourth highest score for this person, based on their most recent assessment.
+  - name: BIGSIXT5
+    description: |-
+      LSIR assessment domain with the fifth highest score for this person, based on their most recent assessment.
+  - name: BIGSIXT6
+    description: |-
+      LSIR assessment domain with the sixth highest score for this person, based on their most recent assessment.
+  - name: ACTIVEREVOCATION_IND
+    description: |-
+      Whether this person is currently undergoing a revocation back to incarceration.
+  - name: LSITOTAL
+    description: |-
+      Total LSIR assessment score for this person, based on their most recent assessment.
+  - name: CCCFLAG
+    description: |-
+      Whether this person is currently in a CCC facility.
   - name: RecDate
     is_datetime: True
+    description: |-
+      When this record was first created in the source system.
+  - name: SORAC_SCORE
+    description: |-
+      Total SORAC assessment score for this person, based on their most recent assessment.
+  - name: HOMELESS
+    description: |-
+      Whether this person is homeless.
+  - name: CREATED_BY
+    description: |-
+      Who originally created this Docstars record.
   - name: RECORDCRDATE
     is_datetime: True
+    description: |-
+      When this record was first created in the source system.
   - name: LAST_HOME_VISIT
     is_datetime: True
+    description: |-
+      When the last home visit by the supervising officer occurred for this person.
   - name: LAST_FACE_TO_FACE
     is_datetime: True
+    description: |-
+      When the last face-to-face visit by the supervising officer occurred for this person.
+  - name: MAILING_ADDRESS2
+    description: |-
+      The second mailing address for this person.
+  - name: PHYSICAL_ADDRESS2
+    description: |-
+      The second physical address for this person.
+  - name: COUNTY_RESIDENCE
+    description: |-
+      County of residence for this person, auto-generated from other address fields within Docstars.
   - name: EARLY_TERMINATION_DATE
     is_datetime: True
+    description: |-
+      When this person's supervision was early terminated.
+  - name: EARLY_TERMINATION_ACKNOWLEDGED
+    description: |-
+      Whether this person's supervision was early terminated.

@@ -1,10 +1,41 @@
 file_tag: elite_offenders
+file_description: |-
+  Each row represents a single person who has been or is currently incarcerated. This contains basic demographic
+  information about the person as well as a note about what kind of name (alias) is stored on the record.
 primary_key_cols:
   - ROOT_OFFENDER_ID
 columns:
+  - name: ROOT_OFFENDER_ID
+    description: |-
+      External id for a unique person from the Elite system.
+  - name: LAST_NAME
+    description: |-
+      Surname of the person.
+  - name: FIRST_NAME
+    description: |-
+      First/given name of the person.
   - name: BIRTH_DATE
     is_datetime: True
+    description: |-
+      Date of birth of the person.
+  - name: SEX_CODE
+    description: |-
+      Sex of the person.
+  - name: ALIAS_NAME_TYPE
+    description: |-
+      The type of name/alias for this person record.
+  - name: RACE_CODE
+    description: |-
+      Race or ethnicity of the person.
   - name: CREATE_DATETIME
     is_datetime: True
+    description: |-
+      When this record was first created in the source system.
   - name: MODIFY_DATETIME
     is_datetime: True
+    description: |-
+      When this record was most recently modified in the source system.
+  - name: ModifyDate
+    is_datetime: True
+    description: |-
+      Row modify date.

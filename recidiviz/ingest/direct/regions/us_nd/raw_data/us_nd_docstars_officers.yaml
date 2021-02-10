@@ -1,6 +1,34 @@
 file_tag: docstars_officers
+file_description: |-
+  Each row represents a unique supervision officer, which field office they work from, and who their supervisor is.
 primary_key_cols:
   - OFFICER
 columns:
+  - name: OFFICER
+    description: |-
+      ID of the officer.
+  - name: LNAME
+    description: |-
+      Surname of the officer.
+  - name: FNAME
+    description: |-
+      First/given name of the officer.
+  - name: SITEID
+    description: |-
+      ID of the site where this officer serves.
+  - name: STATUS
+    description: |-
+      Current employment status of this officer.
+  - name: SUPERVISOR
+    description: |-
+      Name of the supervisor of this officer.
+  - name: SUPERVISOR_ID
+    description: |-
+      ID of the supervisor of this officer.
   - name: RecDate
     is_datetime: True
+    description: |-
+      When this record was first created in the source system.
+  - name: LOGINNAME
+    description: |-
+      System login name of the officer.

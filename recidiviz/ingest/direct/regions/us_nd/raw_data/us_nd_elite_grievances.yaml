@@ -1,2 +1,73 @@
 file_tag: elite_grievances
+file_description: |-
+  Each row represents a grievance filed by an incarcerated person within the facility they are incarcerated, e.g. a
+  conflict with another incarcerated person or a staff member. This includes metadata about the grievance itself as well
+  as the facility's investigation and response thereof.
 primary_key_cols: []
+columns:
+  - name: G_GRIEVANCE_ID
+    description: |-
+      External ID of the grievance record.
+  - name: G_OFFENDER_BOOK_ID
+    description: |-
+      External ID of a booking for a particular person, i.e. a new series of interactions with the justice system due to a new offense.
+  - name: G_REPORT_DATE
+    is_datetime: True
+    description: |-
+      When the grievance report was officially filed.
+  - name: G_GRIEV_TYPE
+    description: |-
+      The type of grievance being reported.
+  - name: G_GRIEV_REASON_CODE
+    description: |-
+      The reason the grievance was reported.
+  - name: G_AGY_LOC_ID
+    description: |-
+      ID of the facility where the grievance occurred.
+  - name: G_COMMENT_TEXT
+    description: |-
+      Free text notes input by an admin at the time the report was filed.
+  - name: G_MODIFY_DATETIME
+    is_datetime: True
+    description: |-
+      When the grievance record was most recently modified.
+  - name: T_TXN_SEQ
+    description: |-
+      The ordered index of the response among the full set of responses associated with this grievance.
+  - name: T_START_DATE
+    is_datetime: True
+    description: |-
+      When this response to the grievance occurred or began (if durational).
+  - name: T_END_DATE
+    is_datetime: True
+    description: |-
+      When this response to the grievance ended (if durational).
+  - name: T_GRIEV_TYPE
+    description: |-
+      The type of grievance being reported (duplicate of G_GRIEV_TYPE).
+  - name: T_TXN_TYPE
+    description: |-
+      The type of response to the grievance.
+  - name: T_FINDING
+    description: |-
+      The finding of the investigation into the grievance.
+  - name: T_GRIEV_LEVEL
+    description: |-
+      The severity level assigned to the reported grievance.
+  - name: T_STATUS
+    description: |-
+      The status of the response.
+  - name: T_PROPOSED_RESPONSE
+    description: |-
+      Whether this response is simply proposed.
+  - name: T_OFFICIAL_RESPONSE
+    description: |-
+      Whether this response is official.
+  - name: T_MODIFY_DATETIME
+    is_datetime: True
+    description: |-
+      When the response record was most recently modified.
+  - name: T_ASSIGNED_STAFF_ID
+    description: |-
+      ID of the staff member assigned to responding to the grievance.
+

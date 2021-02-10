@@ -1,2 +1,88 @@
 file_tag: elite_offender_trust_details
+file_description: |-
+  Each row represents a financial transaction into an incarcerated person's trust account. This includes metadata about
+  the transaction itself and detailed information about the reason for the transaction.
 primary_key_cols: []
+columns:
+  - name: TXN_ID
+    description: |-
+      ID of a particular financial transaction into a person's financial trust.
+  - name: TXN_ENTRY_SEQ
+    description: |-
+      The ordered index of this transaction entered into a particular trust for all transactions associated with a person.
+  - name: OFFENDER_ID
+    description: |-
+      External id for a unique person from the Elite system.
+  - name: OFFENDER_BOOK_ID
+    description: |-
+      External ID of a booking for a particular person, i.e. a new series of interactions with the justice system due to a new offense.
+  - name: TXN_POSTING_TYPE
+    description: |-
+      The type of financial posting for the transaction.
+  - name: TXN_TYPE
+    description: |-
+      The type of financial transaction.
+  - name: TXN_ENTRY_DESC
+    description: |-
+      Description of the initial entry of the transaction into the trust.
+  - name: TXN_ENTRY_AMOUNT
+    description: |-
+      Dollar amount of the transaction entered into the trust.
+  - name: TXN_ENTRY_DATE
+    is_datetime: True
+    description: |-
+      When the transaction was entered into the trust.
+  - name: OFFENDER_WORK_ID
+    description: |-
+      ID of the kind of work being done by the person which led to the financial transaction.
+  - name: WORK_ASSIGNMENT_ID
+    description: |-
+      ID of the particular work assignment for the person which led to the financial transaction.
+  - name: PAY_START_DATE
+    is_datetime: True
+    description: |-
+      When the payment occurred, or first started if durational.
+  - name: PAY_END_DATE
+    is_datetime: True
+    description: |-
+      When the payments ended, if durational.
+  - name: PAY_RANGE_CODE
+    description: |-
+      Code describing the range of pay.
+  - name: UNIT_CODE
+    description: |-
+      Unit of time over which the activity leading to the payment occurred, e.g. wages for a day or week of work.
+  - name: COMPENSATION_CODE
+    description: |-
+      Kind of compensation being paid.
+  - name: PERFORMANCE_CODE
+    description: |-
+      Kind of performance-associated payment being made, e.g. some kind of bonus.
+  - name: NUMBER_OF_UNITS
+    description: |-
+      Number of units, as described by the UNIT_CODE, encompassed by this payment.
+  - name: SCH_PERFORMANCE_CODE
+    description: |-
+      Kind of performance-associated payment being made, e.g. some kind of bonus.
+  - name: SCH_COMPENSATION_CODE
+    description: |-
+      Kind of compensation being paid.
+  - name: SCH_NUMBER_OF_UNITS
+    description: |-
+      Number of units, as described by the UNIT_CODE, encompassed by this payment.
+  - name: WORK_RATE
+    description: |-
+      Payment rate for the work being done that led to the financial transaction.
+  - name: WORK_TYPE
+    description: |-
+      Type of work being done that led to the financial transaction.
+  - name: TXN_TYPE_1
+    description: |-
+      The sub-type of financial transaction.
+  - name: DEDUCTION_TYPE
+    description: |-
+      Type of deduction taken from the transaction, if applicable.
+  - name: MODIFY_DATETIME
+    is_datetime: True
+    description: |-
+      When this record was most recently modified in the source system.

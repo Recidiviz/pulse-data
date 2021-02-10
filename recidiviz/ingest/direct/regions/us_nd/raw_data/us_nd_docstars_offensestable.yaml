@@ -1,12 +1,67 @@
 file_tag: docstars_offensestable
+file_description: |-
+  Each row represents a particular offense that a person is being charged with, leading to a sentence to supervision.
 primary_key_cols:
   - RecID
 columns:
+  - name: RecID
+    description: |-
+      ID of this record within the source system.
+  - name: CASE_NUMBER
+    description: |-
+      ID of the specific case within the Docstars system.
+  - name: SID
+    description: |-
+      External id for a unique person from the Docstars system.
+  - name: CODE
+    description: |-
+      NCIC code of the charge that led to this case (and period of supervision).
+  - name: Common_Statute_Number
+    description: |-
+      Common Statute statute number of the charge that led to this case (and period of supervision).
+  - name: Common_Statute_NCIC_Code
+    description: |-
+      Common Statute NCIC code of the charge that led to this case (and period of supervision).
+  - name: LEVEL
+    description: |-
+      Classification of the charge that led to this case.
+  - name: COUNTY
+    description: |-
+      County where the offense occurred.
+  - name: COURT_NUMBER
+    description: |-
+      ID of the sentence that this charge is associated with.
   - name: LAST_UPDATE
     is_datetime: True
+    description: |-
+      When this record was most recently updated in the source system.
+  - name: COUNTS
+    description: |-
+      Number of counts of this particular offense that the person is being charged with.
   - name: INACTIVEDATE
     is_datetime: True
+    description: |-
+      When this offense became inactive, if applicable.
   - name: OFFENSEDATE
     is_datetime: True
+    description: |-
+      When this offense occurred.
   - name: RecDate
     is_datetime: True
+    description: |-
+      When this record was first created in the source system.
+  - name: YEAR
+    description: |-
+      Year when this offense occurred.
+  - name: CREATED_BY
+    description: |-
+      Who this record was created by.
+  - name: MASTER_OFFENSE_IND
+    description: |-
+      Whether this is the controlling offense for the case.
+  - name: COUNT
+    description: |-
+      Unclear meaning.
+  - name: REQUIRES_REGISTRATION
+    description: |-
+      Unclear meaning.

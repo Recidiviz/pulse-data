@@ -1,16 +1,52 @@
 file_tag: elite_orderstable
+file_description: |-
+  Each row represents a single court order, and the court case it comes from, that has been or is going to be handed down
+  for some set of charges. This includes metadata about the court case itself as well as the results of the order.
 primary_key_cols:
   - ORDER_ID
 columns:
+  - name: ORDER_ID
+    description: |-
+      ID of the court order under which the offense is being charged.
+  - name: OFFENDER_BOOK_ID
+    description: |-
+      External ID of a booking for a particular person, i.e. a new series of interactions with the justice system due to a new offense.
   - name: CONVICTION_DATE
     is_datetime: True
+    description: |-
+      Date that the conviction occurred at the end of this court order.
+  - name: COUNTY_CODE
+    description: |-
+      Code of the county where the court order is taking place.
   - name: COURT_DATE
     is_datetime: True
+    description: |-
+      When the court order began.
+  - name: COURT_INFO_ID
+    description: |-
+      ID of the courthouse where the order is being presided over.
   - name: EFFECTIVE_DATE
     is_datetime: True
+    description: |-
+      When the result of the court order became effective.
+  - name: JUDGE_NAME
+    description: |-
+      Name of the judge presiding over the court order.
+  - name: ORDER_STATUS
+    description: |-
+      Current state of the court order.
   - name: SENTENCE_START_DATE
     is_datetime: True
+    description: |-
+      When the sentence that resulted from this court order began, if applicable.
+  - name: ISSUING_AGY_LOC_ID
+    description: |-
+      ID of the agency with jurisdiction over this court order.
   - name: CREATE_DATETIME
     is_datetime: True
+    description: |-
+      When this record was first created in the source system.
   - name: MODIFY_DATETIME
     is_datetime: True
+    description: |-
+      When this record was most recently modified in the source system.

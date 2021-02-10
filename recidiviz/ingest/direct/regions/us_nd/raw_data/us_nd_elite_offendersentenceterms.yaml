@@ -1,14 +1,46 @@
 file_tag: elite_offendersentenceterms
+file_description: |-
+  Each row represents the terms of a single sentence of incarceration handed down to a particular person. This includes
+  additional information about the terms of the sentence.
 primary_key_cols:
   - OFFENDER_BOOK_ID
   - SENTENCE_SEQ
   - TERM_SEQ
 columns:
+  - name: OFFENDER_BOOK_ID
+    description: |-
+      External ID of a booking for a particular person, i.e. a new series of interactions with the justice system due to a new offense.
   - name: START_DATE
     is_datetime: True
+    description: |-
+      When this sentence was first imposed.
   - name: END_DATE
     is_datetime: True
+    description: |-
+      When this sentence expires.
+  - name: YEARS
+    description: |-
+      Years component of the maximum sentence length.
+  - name: MONTHS
+    description: |-
+      Months component of the maximum sentence length.
+  - name: DAYS
+    description: |-
+      Days component of the maximum sentence length.
   - name: CREATE_DATETIME
     is_datetime: True
+    description: |-
+      When this record was first created in the source system.
   - name: MODIFY_DATETIME
     is_datetime: True
+    description: |-
+      When this record was most recently modified in the source system.
+  - name: SENTENCE_SEQ
+    description: |-
+      The ordered index of this sentence among the full set of sentences associated with this booking.
+  - name: TERM_SEQ
+    description: |-
+      The ordered sequence of this particular term of incarceration among the full set of terms associated with this sentence.
+  - name: SENTENCE_TERM_CODE
+    description: |-
+      Code of the term of incarceration to be served for this sentence.

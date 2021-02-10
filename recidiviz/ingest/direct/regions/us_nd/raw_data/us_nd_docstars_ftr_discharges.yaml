@@ -1,8 +1,92 @@
 file_tag: docstars_ftr_discharges
+file_description: |-
+  Each row represents a discharge from a particular FTR episode, i.e. the end of a particular instance of a referral of a
+  person to a program coordinated through FTR (Free Through Recovery).This includes documented outcomes of the person's
+  interaction with FTR and metadata about the discharge: why it was requested, whether it was granted, when it occurred,
+  etc.
 primary_key_cols:
   - DISCHARGE_ID
 columns:
+  - name: DISCHARGE_ID
+    description: |-
+      ID of a person's discharge from an FTR episode.
+  - name: DISCHARGE_CODE
+    description: |-
+      The kind/reason of discharge which occurred.
+  - name: EPISODE_ID
+    description: |-
+      ID of the FTR program episode, i.e. interaction with an FTR provider.
+  - name: COMMUNITY_SUPPORT
+    description: |-
+      Upon discharge, whether this person has adequate community support.
+  - name: COMMUNITY_SUPPORT_COMMENTS
+    description: |-
+      Free text notes about the community support available to this person.
   - name: DISCHARGE_DATE
     is_datetime: True
+    description: |-
+      When the person was discharged from this episode.
+  - name: EMPLOYMENT
+    description: |-
+      Upon discharge, whether this person has active employment.
+  - name: FORMAL_TREATMENT
+    description: |-
+      Upon discharge, whether this person is receiving formal treatment.
+  - name: FORMAL_TREATMENT_COMMENTS
+    description: |-
+      Free text notes about the formal treatment this person is receiving.
+  - name: HOUSING
+    description: |-
+      Upon discharge, whether this person has active housing.
+  - name: LAW_ENFORCEMENT
+    description: |-
+      Upon discharge, whether this person has active employment.
+  - name: PEER_SUPPORT
+    description: |-
+      Upon discharge, whether this person has adequate peer support.
+  - name: PROGRESS
+    description: |-
+      Whether this person has made notable progress during their FTR episode.
+  - name: STATUS
+    description: |-
+      Whether their discharge has been approved or not.
   - name: STATUS_DATE
     is_datetime: True
+    description: |-
+      When the status most recently changed.
+  - name: OUTCOME1
+    description: |-
+      Boolean YES/NO flag of debatable meaning.
+  - name: OUTCOME1_COMMENT
+    description: |-
+      Free text notes describing an outcome of the person's FTR episode.
+  - name: OUTCOME2
+    description: |-
+      Boolean YES/NO flag of debatable meaning.
+  - name: OUTCOME2_COMMENT
+    description: |-
+      Free text notes describing an outcome of the person's FTR episode.
+  - name: OUTCOME3
+    description: |-
+      Boolean YES/NO flag of debatable meaning.
+  - name: OUTCOME3_COMMENT
+    description: |-
+      Free text notes describing an outcome of the person's FTR episode.
+  - name: OUTCOME4
+    description: |-
+      Boolean YES/NO flag of debatable meaning.
+  - name: OUTCOME4_COMMENT
+    description: |-
+      Free text notes describing an outcome of the person's FTR episode.
+  - name: CHRONO_COMMENTS
+    description: |-
+      Free text notes about the discharge request, generally.
+  - name: SUBMITTED_BY
+    description: |-
+      ID of the person who submitted this discharge record to Docstars.
+  - name: SUBMITTED_BY_NAME
+    description: |-
+      Name of the person who submitted this discharge record to Docstars.
+  - name: DENY_COMMENTS
+    description: |-
+      Free text notes describing why discharge from the FTR episode was denied, if applicable.
