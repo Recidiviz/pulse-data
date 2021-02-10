@@ -65,6 +65,7 @@ REVOCATIONS_MATRIX_BY_PERSON_QUERY_TEMPLATE = \
         FROM `{project_id}.{reference_views_dataset}.event_based_revocations_for_matrix_materialized`,
         {metric_period_dimension}
         WHERE {metric_period_condition}
+        AND {state_specific_inclusion_filter}
     ), person_based_unnested AS (
         SELECT
             state_code,
@@ -154,6 +155,7 @@ REVOCATIONS_MATRIX_BY_PERSON_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     state_specific_supervision_location_optimization_filter=
     state_specific_query_strings.state_specific_supervision_location_optimization_filter(),
     state_specific_dimension_filter=state_specific_query_strings.state_specific_dimension_filter(),
+    state_specific_inclusion_filter=state_specific_query_strings.state_specific_inclusion_filter(),
 )
 
 if __name__ == '__main__':

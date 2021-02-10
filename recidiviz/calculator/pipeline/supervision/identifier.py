@@ -50,8 +50,6 @@ from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_ma
     state_specific_supervision_admission_reason_override, filter_out_federal_and_other_country_supervision_periods
 from recidiviz.calculator.pipeline.utils.supervision_period_index import SupervisionPeriodIndex
 from recidiviz.calculator.pipeline.utils.supervision_period_utils import prepare_supervision_periods_for_calculations
-from recidiviz.calculator.pipeline.utils.supervision_type_identification import \
-    get_supervision_type_from_sentences
 from recidiviz.calculator.pipeline.utils.violation_utils import identify_most_severe_violation_type_and_subtype, \
     shorthand_description_for_ranked_violation_counts, get_violation_type_frequency_counter, \
     prepare_violation_responses_for_calculations
@@ -1169,8 +1167,10 @@ def _get_projected_completion_bucket(
         logging.warning("Supervision sentence completion date is before the start date: %s", supervision_sentence)
         return None
 
-    supervision_type = get_supervision_type_from_sentences(incarceration_sentences=[],
-                                                           supervision_sentences=[supervision_sentence])
+    supervision_type = get_month_supervision_type(completion_date,
+                                                  supervision_sentences=[supervision_sentence],
+                                                  incarceration_sentences=[],
+                                                  supervision_period=supervision_period)
 
     sentence_days_served = (completion_date - start_date).days
 

@@ -4300,18 +4300,9 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             start_date=date(2018, 3, 5),
             termination_date=date(2018, 5, 19),
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
             supervision_level=StateSupervisionLevel.MINIMUM,
             supervision_level_raw_text='LOW'
-        )
-
-        supervision_sentence = StateSupervisionSentence.new_with_defaults(
-                state_code='US_XX',
-            supervision_sentence_id=111,
-            start_date=date(2017, 1, 1),
-            external_id='ss1',
-            status=StateSentenceStatus.COMPLETED,
-            supervision_periods=[supervision_period]
         )
 
         assessment = StateAssessment.new_with_defaults(
@@ -4322,7 +4313,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             assessment_date=date(2018, 3, 1)
         )
 
-        supervision_sentences = [supervision_sentence]
+        supervision_sentences = []
         supervision_periods = [supervision_period]
         incarceration_periods = []
         assessments = [assessment]
@@ -4353,7 +4344,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 year=supervision_period.termination_date.year,
                 month=supervision_period.termination_date.month,
                 event_date=supervision_period.termination_date,
-                supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+                supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
                 supervision_level=supervision_period.supervision_level,
                 supervision_level_raw_text=supervision_period.supervision_level_raw_text,
                 supervising_district_external_id='DISTRICT_1',
@@ -4366,7 +4357,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
 
         expected_buckets.extend(expected_non_revocation_return_time_buckets(
             supervision_period,
-            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
             assessment_score=assessment.assessment_score,
             assessment_level=StateAssessmentLevel.HIGH,
             assessment_type=assessment.assessment_type,
@@ -4401,21 +4392,25 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             supervision_level_raw_text='LOW'
         )
 
-        supervision_sentence = StateSupervisionSentence.new_with_defaults(
-            state_code=state_code,
-            supervision_sentence_id=111,
-            start_date=date(2017, 1, 1),
-            external_id='ss1',
-            status=StateSentenceStatus.COMPLETED,
-            supervision_periods=[supervision_period]
-        )
-
         assessment = StateAssessment.new_with_defaults(
             state_code=state_code,
             assessment_type=StateAssessmentType.LSIR,
             assessment_level=StateAssessmentLevel.HIGH,
             assessment_score=33,
             assessment_date=date(2018, 3, 1)
+        )
+
+        parole_board_hold = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=111,
+            external_id='ip1',
+            state_code=state_code,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            admission_date=date(2018, 3, 11),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.RETURN_FROM_SUPERVISION,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD,
+            release_date=date(2018, 5, 19),
+            release_reason=ReleaseReason.TRANSFER
         )
 
         shock_incarceration_revocation = StateIncarcerationPeriod.new_with_defaults(
@@ -4433,9 +4428,9 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             release_reason=ReleaseReason.SENTENCE_SERVED
         )
 
-        supervision_sentences = [supervision_sentence]
+        supervision_sentences = []
         supervision_periods = [supervision_period]
-        incarceration_periods = [shock_incarceration_revocation]
+        incarceration_periods = [parole_board_hold, shock_incarceration_revocation]
         assessments = [assessment]
         violation_responses = []
         supervision_contacts = []
@@ -4464,7 +4459,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 year=supervision_period.termination_date.year,
                 month=supervision_period.termination_date.month,
                 event_date=supervision_period.termination_date,
-                supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+                supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
                 supervision_level=supervision_period.supervision_level,
                 supervision_level_raw_text=supervision_period.supervision_level_raw_text,
                 supervising_district_external_id='DISTRICT_1',
@@ -4477,7 +4472,8 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
 
         expected_buckets.extend(expected_non_revocation_return_time_buckets(
             supervision_period,
-            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            end_date=parole_board_hold.admission_date,
+            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
             assessment_score=assessment.assessment_score,
             assessment_level=StateAssessmentLevel.HIGH,
             assessment_type=assessment.assessment_type,
@@ -4531,15 +4527,6 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             supervision_level_raw_text='LOW'
         )
 
-        supervision_sentence = StateSupervisionSentence.new_with_defaults(
-            state_code=state_code,
-            supervision_sentence_id=111,
-            start_date=date(2017, 1, 1),
-            external_id='ss1',
-            status=StateSentenceStatus.COMPLETED,
-            supervision_periods=[supervision_period]
-        )
-
         assessment = StateAssessment.new_with_defaults(
             state_code=state_code,
             assessment_type=StateAssessmentType.LSIR,
@@ -4565,7 +4552,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY
         )
 
-        supervision_sentences = [supervision_sentence]
+        supervision_sentences = []
         supervision_periods = [supervision_period]
         incarceration_periods = [pvc_revocation]
         assessments = [assessment]
@@ -4596,7 +4583,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 year=supervision_period.termination_date.year,
                 month=supervision_period.termination_date.month,
                 event_date=supervision_period.termination_date,
-                supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+                supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
                 supervision_level=supervision_period.supervision_level,
                 supervision_level_raw_text=supervision_period.supervision_level_raw_text,
                 supervising_district_external_id='DISTRICT_1',
@@ -4609,7 +4596,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
 
         expected_buckets.extend(expected_non_revocation_return_time_buckets(
             supervision_period,
-            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
             assessment_score=assessment.assessment_score,
             assessment_level=StateAssessmentLevel.HIGH,
             assessment_type=assessment.assessment_type,

@@ -143,5 +143,11 @@ def state_specific_dimension_filter() -> str:
     sending data to the FE that is never used."""
     return """-- US_MO doesn't support the supervision_level dimension
         (state_code != 'US_MO' OR supervision_level = 'ALL')
-        -- US_PA doesn't support the supervision_type or 
+        -- US_PA doesn't support the supervision_type or charge category filters
         AND (state_code != 'US_PA' OR (supervision_type = 'ALL' AND charge_category = 'ALL'))"""
+
+
+def state_specific_inclusion_filter() -> str:
+    """State-specific logic for filtering rows based on dimension values that are not supported for a given state."""
+    return """-- US_PA only includes PAROLE
+        (state_code != 'US_PA' OR supervision_type = 'PAROLE')"""
