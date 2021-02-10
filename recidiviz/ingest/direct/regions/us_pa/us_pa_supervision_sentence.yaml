@@ -1,3 +1,4 @@
+# TODO(#5502): Delete this file once this tag is fully deprecated in prod
 key_mappings:
   SenProbInd: state_supervision_sentence.supervision_type
   SentCounty: state_supervision_sentence.county_code

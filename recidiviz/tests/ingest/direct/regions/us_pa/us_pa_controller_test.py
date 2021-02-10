@@ -37,7 +37,6 @@ from recidiviz.common.constants.state.state_incarceration_period import StateInc
     StateSpecializedPurposeForIncarceration
 from recidiviz.common.constants.state.state_person_alias import StatePersonAliasType
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
-from recidiviz.common.constants.state.state_supervision import StateSupervisionType
 from recidiviz.common.constants.state.state_supervision_period import StateSupervisionPeriodStatus, \
     StateSupervisionPeriodSupervisionType, StateSupervisionPeriodAdmissionReason, \
     StateSupervisionPeriodTerminationReason, StateSupervisionLevel
@@ -1037,106 +1036,6 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
 
         self.run_parse_file_test(expected, 'dbo_LSIR')
 
-    def test_populate_data_supervision_sentence(self) -> None:
-        expected = IngestInfo(
-            state_people=[
-                StatePerson(state_person_id='456B',
-                            state_person_external_ids=[
-                                StatePersonExternalId(state_person_external_id_id='456B', id_type=US_PA_PBPP),
-                            ],
-                            state_sentence_groups=[
-                                StateSentenceGroup(
-                                    state_sentence_group_id='456B-1-1',
-                                    state_supervision_sentences=[
-                                        StateSupervisionSentence(
-                                            state_supervision_sentence_id='456B-1-1-1', county_code='YORK',
-                                            supervision_type='Y', date_imposed='20120307',
-                                            start_date='2012-03-16', projected_completion_date='2018-03-16',
-                                            max_length='1096',
-                                            state_charges=[
-                                                StateCharge(state_charge_id='CO555555', description='BURG',
-                                                            state_court_case=
-                                                            StateCourtCase(state_court_case_id='CRA110000111')
-                                                            ),
-                                                StateCharge(description='CRIM CONSPIRACY'),
-                                            ],
-                                        ),
-                                        StateSupervisionSentence(
-                                            state_supervision_sentence_id='456B-1-1-2', county_code='YORK',
-                                            supervision_type='Y', date_imposed='20120307',
-                                            start_date='2012-03-16', projected_completion_date='2018-03-16',
-                                            max_length='1096',
-                                            state_charges=[
-                                                StateCharge(description='BURG (4 CTS)',
-                                                            state_court_case=
-                                                            StateCourtCase(state_court_case_id='CRA110000222')
-                                                            ),
-                                            ],
-                                        ),
-                                    ],
-                                ),
-                            ]),
-                StatePerson(state_person_id='789C',
-                            state_person_external_ids=[
-                                StatePersonExternalId(state_person_external_id_id='789C', id_type=US_PA_PBPP),
-                            ],
-                            state_sentence_groups=[
-                                StateSentenceGroup(
-                                    state_sentence_group_id='789C-1-1',
-                                    state_supervision_sentences=[
-                                        StateSupervisionSentence(
-                                            state_supervision_sentence_id='789C-1-1-1', county_code='YORK',
-                                            supervision_type='PAROLE', date_imposed='20031005',
-                                            projected_completion_date='2006-10-10',
-                                            max_length='416',
-                                            state_charges=[
-                                                StateCharge(state_charge_id='CO666666', description='POSSESSION',
-                                                            statute='ABC123',
-                                                            state_court_case=
-                                                            StateCourtCase(state_court_case_id='CRA110000333')
-                                                            ),
-                                                StateCharge(description='INTENT TO TRAFFIC', statute='DEF456'),
-                                                StateCharge(description='RESISTANCE'),
-                                            ],
-                                        ),
-                                    ],
-                                ),
-                                StateSentenceGroup(
-                                    state_sentence_group_id='789C-1-2',
-                                    state_supervision_sentences=[
-                                        StateSupervisionSentence(
-                                            state_supervision_sentence_id='789C-1-2-1', county_code='YORK',
-                                            supervision_type='PAROLE', date_imposed='20040205',
-                                            projected_completion_date='2004-11-20',
-                                            max_length='92',
-                                            state_charges=[
-                                                StateCharge(state_charge_id='CO777777', description='RESISTANCE',
-                                                            state_court_case=
-                                                            StateCourtCase(state_court_case_id='CRA110000444')
-                                                            ),
-                                            ],
-                                        ),
-                                    ],
-                                ),
-                                StateSentenceGroup(
-                                    state_sentence_group_id='789C-2-1',
-                                    state_supervision_sentences=[
-                                        StateSupervisionSentence(
-                                            state_supervision_sentence_id='789C-2-1-1', county_code='YORK',
-                                            supervision_type='PAROLE', date_imposed='20140512',
-                                            state_charges=[
-                                                StateCharge(state_charge_id='CO888888', description='RESISTANCE',
-                                                            state_court_case=
-                                                            StateCourtCase(state_court_case_id='CRA110000555')
-                                                            ),
-                                            ],
-                                        ),
-                                    ],
-                                ),
-                            ]),
-            ])
-
-        self.run_parse_file_test(expected, 'supervision_sentence')
 
     def test_populate_data_supervision_period(self) -> None:
         expected = IngestInfo(
@@ -3032,178 +2931,7 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
         self.assert_expected_db_people(expected_people)
 
         ######################################
-        # supervision_sentence
-        ######################################
-
-        # Arrange
-        p2_sg_2 = entities.StateSentenceGroup.new_with_defaults(
-            external_id='456B-1-1', state_code=_STATE_CODE_UPPER, status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-            person=person_2,
-        )
-        person_2.sentence_groups.append(p2_sg_2)
-
-        p2_ss_2_1 = entities.StateSupervisionSentence.new_with_defaults(
-            external_id="456B-1-1-1", state_code=_STATE_CODE_UPPER, county_code='YORK',
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-            supervision_type=StateSupervisionType.PROBATION, supervision_type_raw_text='Y',
-            date_imposed=datetime.date(year=2012, month=3, day=7), start_date=datetime.date(year=2012, month=3, day=16),
-            projected_completion_date=datetime.date(year=2018, month=3, day=16),
-            max_length_days=1096,
-            person=person_2, sentence_group=p2_sg_2,
-        )
-        p2_ss_2_1_c1 = entities.StateCharge.new_with_defaults(
-            external_id='CO555555', state_code=_STATE_CODE_UPPER,
-            status=ChargeStatus.PRESENT_WITHOUT_INFO,
-            description='BURG', person=person_2, supervision_sentences=[p2_ss_2_1],
-        )
-        p2_ss_2_1_c1_case = entities.StateCourtCase.new_with_defaults(
-            external_id="CRA110000111", state_code=_STATE_CODE_UPPER,
-            status=StateCourtCaseStatus.PRESENT_WITHOUT_INFO,
-            court_type=StateCourtType.PRESENT_WITHOUT_INFO,
-            person=person_2, charges=[p2_ss_2_1_c1]
-        )
-        p2_ss_2_1_c1.court_case = p2_ss_2_1_c1_case
-
-        p2_ss_2_1_c2 = entities.StateCharge.new_with_defaults(
-            state_code=_STATE_CODE_UPPER,
-            status=ChargeStatus.PRESENT_WITHOUT_INFO,
-            description='CRIM CONSPIRACY', person=person_2, supervision_sentences=[p2_ss_2_1],
-        )
-        p2_ss_2_1.charges.extend([p2_ss_2_1_c1, p2_ss_2_1_c2])
-
-        p2_ss_2_2 = entities.StateSupervisionSentence.new_with_defaults(
-            external_id="456B-1-1-2", state_code=_STATE_CODE_UPPER, county_code='YORK',
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-            supervision_type=StateSupervisionType.PROBATION, supervision_type_raw_text='Y',
-            date_imposed=datetime.date(year=2012, month=3, day=7), start_date=datetime.date(year=2012, month=3, day=16),
-            projected_completion_date=datetime.date(year=2018, month=3, day=16),
-            max_length_days=1096,
-            person=person_2, sentence_group=p2_sg_2,
-        )
-        p2_ss_2_2_c1 = entities.StateCharge.new_with_defaults(
-            state_code=_STATE_CODE_UPPER,
-            status=ChargeStatus.PRESENT_WITHOUT_INFO,
-            description='BURG (4 CTS)', person=person_2, supervision_sentences=[p2_ss_2_2],
-        )
-        p2_ss_2_2_c1_case = entities.StateCourtCase.new_with_defaults(
-            external_id="CRA110000222", state_code=_STATE_CODE_UPPER,
-            status=StateCourtCaseStatus.PRESENT_WITHOUT_INFO,
-            court_type=StateCourtType.PRESENT_WITHOUT_INFO,
-            person=person_2, charges=[p2_ss_2_2_c1]
-        )
-        p2_ss_2_2_c1.court_case = p2_ss_2_2_c1_case
-        p2_ss_2_2.charges.append(p2_ss_2_2_c1)
-
-        p2_sg_2.supervision_sentences.extend([p2_ss_2_1, p2_ss_2_2])
-
-        p5_sg_1 = entities.StateSentenceGroup.new_with_defaults(
-            external_id='789C-1-1', state_code=_STATE_CODE_UPPER, status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-            person=person_5,
-        )
-        p5_sg_2 = entities.StateSentenceGroup.new_with_defaults(
-            external_id='789C-1-2', state_code=_STATE_CODE_UPPER, status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-            person=person_5,
-        )
-        p5_sg_3 = entities.StateSentenceGroup.new_with_defaults(
-            external_id='789C-2-1', state_code=_STATE_CODE_UPPER, status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-            person=person_5,
-        )
-        person_5.sentence_groups.extend([p5_sg_1, p5_sg_2, p5_sg_3])
-
-        p5_ss_1_1 = entities.StateSupervisionSentence.new_with_defaults(
-            external_id="789C-1-1-1", state_code=_STATE_CODE_UPPER, county_code='YORK',
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-            supervision_type=StateSupervisionType.PAROLE, supervision_type_raw_text='PAROLE',
-            date_imposed=datetime.date(year=2003, month=10, day=5),
-            projected_completion_date=datetime.date(year=2006, month=10, day=10),
-            max_length_days=416,
-            person=person_5, sentence_group=p5_sg_1,
-        )
-        p5_ss_1_1_c1 = entities.StateCharge.new_with_defaults(
-            external_id='CO666666', state_code=_STATE_CODE_UPPER,
-            status=ChargeStatus.PRESENT_WITHOUT_INFO,
-            description='POSSESSION', statute='ABC123', person=person_5, supervision_sentences=[p5_ss_1_1],
-        )
-        p5_ss_1_1_c1_case = entities.StateCourtCase.new_with_defaults(
-            external_id="CRA110000333", state_code=_STATE_CODE_UPPER,
-            status=StateCourtCaseStatus.PRESENT_WITHOUT_INFO,
-            court_type=StateCourtType.PRESENT_WITHOUT_INFO,
-            person=person_5, charges=[p5_ss_1_1_c1]
-        )
-        p5_ss_1_1_c1.court_case = p5_ss_1_1_c1_case
-
-        p5_ss_1_1_c2 = entities.StateCharge.new_with_defaults(
-            state_code=_STATE_CODE_UPPER,
-            status=ChargeStatus.PRESENT_WITHOUT_INFO,
-            description='INTENT TO TRAFFIC', statute='DEF456', person=person_5, supervision_sentences=[p5_ss_1_1],
-        )
-        p5_ss_1_1_c3 = entities.StateCharge.new_with_defaults(
-            state_code=_STATE_CODE_UPPER,
-            status=ChargeStatus.PRESENT_WITHOUT_INFO,
-            description='RESISTANCE', person=person_5, supervision_sentences=[p5_ss_1_1],
-        )
-        p5_ss_1_1.charges.extend([p5_ss_1_1_c1, p5_ss_1_1_c2, p5_ss_1_1_c3])
-
-        p5_sg_1.supervision_sentences.append(p5_ss_1_1)
-
-        p5_ss_2_1 = entities.StateSupervisionSentence.new_with_defaults(
-            external_id="789C-1-2-1", state_code=_STATE_CODE_UPPER, county_code='YORK',
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-            supervision_type=StateSupervisionType.PAROLE, supervision_type_raw_text='PAROLE',
-            date_imposed=datetime.date(year=2004, month=2, day=5),
-            projected_completion_date=datetime.date(year=2004, month=11, day=20),
-            max_length_days=92,
-            person=person_5, sentence_group=p5_sg_2,
-        )
-        p5_ss_2_1_c1 = entities.StateCharge.new_with_defaults(
-            external_id='CO777777', state_code=_STATE_CODE_UPPER,
-            status=ChargeStatus.PRESENT_WITHOUT_INFO,
-            description='RESISTANCE', person=person_5, supervision_sentences=[p5_ss_2_1],
-        )
-        p5_ss_2_1_c1_case = entities.StateCourtCase.new_with_defaults(
-            external_id="CRA110000444", state_code=_STATE_CODE_UPPER,
-            status=StateCourtCaseStatus.PRESENT_WITHOUT_INFO,
-            court_type=StateCourtType.PRESENT_WITHOUT_INFO,
-            person=person_5, charges=[p5_ss_2_1_c1]
-        )
-        p5_ss_2_1_c1.court_case = p5_ss_2_1_c1_case
-        p5_ss_2_1.charges.append(p5_ss_2_1_c1)
-
-        p5_sg_2.supervision_sentences.append(p5_ss_2_1)
-
-        p5_ss_3_1 = entities.StateSupervisionSentence.new_with_defaults(
-            external_id="789C-2-1-1", state_code=_STATE_CODE_UPPER, county_code='YORK',
-            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-            supervision_type=StateSupervisionType.PAROLE, supervision_type_raw_text='PAROLE',
-            date_imposed=datetime.date(year=2014, month=5, day=12),
-            person=person_5, sentence_group=p5_sg_3,
-        )
-        p5_ss_3_1_c1 = entities.StateCharge.new_with_defaults(
-            external_id='CO888888', state_code=_STATE_CODE_UPPER,
-            status=ChargeStatus.PRESENT_WITHOUT_INFO,
-            description='RESISTANCE', person=person_5, supervision_sentences=[p5_ss_3_1],
-        )
-        p5_ss_3_1_c1_case = entities.StateCourtCase.new_with_defaults(
-            external_id="CRA110000555", state_code=_STATE_CODE_UPPER,
-            status=StateCourtCaseStatus.PRESENT_WITHOUT_INFO,
-            court_type=StateCourtType.PRESENT_WITHOUT_INFO,
-            person=person_5, charges=[p5_ss_3_1_c1]
-        )
-        p5_ss_3_1_c1.court_case = p5_ss_3_1_c1_case
-        p5_ss_3_1.charges.append(p5_ss_3_1_c1)
-
-        p5_sg_3.supervision_sentences.append(p5_ss_3_1)
-
-        populate_person_backedges(expected_people)
-
-        # Act
-        self._run_ingest_job_for_filename('supervision_sentence.csv')
-
-        # Assert
-        self.assert_expected_db_people(expected_people)
-
-        ######################################
-        # supervision_sentence
+        # supervision_period
         ######################################
 
         # Arrange
@@ -3830,7 +3558,7 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
 
         p2_placeholder_sg.supervision_sentences.append(p2_placeholder_ss)
         p2_placeholder_ss.supervision_periods.append(p2_placeholder_sp)
-        person_2.sentence_groups[2].supervision_sentences[0].supervision_periods[1]. \
+        person_2.sentence_groups[1].supervision_sentences[0].supervision_periods[1]. \
             supervision_violation_entries.append(p2_placeholder_sv)
         p2_placeholder_sv.supervision_violation_responses.append(p2_placeholder_vr)
         p2_placeholder_vr.supervision_violation_response_decisions.append(p2_placeholder_de)
@@ -3951,7 +3679,7 @@ class TestUsPaController(BaseStateDirectIngestControllerTests):
         # These two placeholder sentence groups get merged during rerun, with the periods from one being moved to the
         # other.
         person_5.sentence_groups.remove(p5_placeholder_sg)
-        p5_placeholder_sp.supervision_sentences = person_5.sentence_groups[3].supervision_sentences
-        person_5.sentence_groups[3].supervision_sentences[0].supervision_periods.append(p5_placeholder_sp)
+        p5_placeholder_sp.supervision_sentences = person_5.sentence_groups[0].supervision_sentences
+        person_5.sentence_groups[0].supervision_sentences[0].supervision_periods.append(p5_placeholder_sp)
 
         self.assert_expected_db_people(expected_people, ignore_dangling_placeholders=True)
