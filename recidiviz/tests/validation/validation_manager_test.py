@@ -93,17 +93,11 @@ class TestHandleRequest(TestCase):
         self.project_id_patcher.stop()
         self.project_number_patcher.stop()
 
-    @patch("recidiviz.big_query.view_update_manager.rematerialize_views_for_namespace")
     @patch("recidiviz.validation.validation_manager._emit_failures")
     @patch("recidiviz.validation.validation_manager._run_job")
     @patch("recidiviz.validation.validation_manager._fetch_validation_jobs_to_perform")
     def test_handle_request_happy_path_no_failures(
-            self,
-            mock_fetch_validations: MagicMock,
-            mock_run_job: MagicMock,
-            mock_emit_failures: MagicMock,
-            mock_rematerialize_views: MagicMock
-    ) -> None:
+            self, mock_fetch_validations: MagicMock, mock_run_job: MagicMock, mock_emit_failures: MagicMock) -> None:
         mock_fetch_validations.return_value = self._TEST_VALIDATIONS
         mock_run_job.return_value = DataValidationJobResult(
             validation_job=self._TEST_VALIDATIONS[0], was_successful=True, failure_description=None)
@@ -118,20 +112,13 @@ class TestHandleRequest(TestCase):
         for job in self._TEST_VALIDATIONS:
             mock_run_job.assert_any_call(job)
 
-        mock_rematerialize_views.assert_called()
         mock_emit_failures.assert_not_called()
 
-    @patch("recidiviz.big_query.view_update_manager.rematerialize_views_for_namespace")
     @patch("recidiviz.validation.validation_manager._emit_failures")
     @patch("recidiviz.validation.validation_manager._run_job")
     @patch("recidiviz.validation.validation_manager._fetch_validation_jobs_to_perform")
     def test_handle_request_with_job_failures_and_validation_failures(
-            self,
-            mock_fetch_validations: MagicMock,
-            mock_run_job: MagicMock,
-            mock_emit_failures: MagicMock,
-            mock_rematerialize_views: MagicMock
-    ) -> None:
+            self, mock_fetch_validations: MagicMock, mock_run_job: MagicMock, mock_emit_failures: MagicMock) -> None:
         mock_fetch_validations.return_value = self._TEST_VALIDATIONS
         first_failure = DataValidationJobResult(
             validation_job=self._TEST_VALIDATIONS[1], was_successful=False, failure_description='Oh no')
@@ -154,21 +141,14 @@ class TestHandleRequest(TestCase):
         for job in self._TEST_VALIDATIONS:
             mock_run_job.assert_any_call(job)
 
-        mock_rematerialize_views.assert_called()
         mock_emit_failures.assert_called_with(UnorderedCollection([self._TEST_VALIDATIONS[3]]),
                                               UnorderedCollection([first_failure, second_failure]))
 
-    @patch("recidiviz.big_query.view_update_manager.rematerialize_views_for_namespace")
     @patch("recidiviz.validation.validation_manager._emit_failures")
     @patch("recidiviz.validation.validation_manager._run_job")
     @patch("recidiviz.validation.validation_manager._fetch_validation_jobs_to_perform")
     def test_handle_request_happy_path_some_failures(
-            self,
-            mock_fetch_validations: MagicMock,
-            mock_run_job: MagicMock,
-            mock_emit_failures: MagicMock,
-            mock_rematerialize_views: MagicMock
-    ) -> None:
+            self, mock_fetch_validations: MagicMock, mock_run_job: MagicMock, mock_emit_failures: MagicMock) -> None:
         mock_fetch_validations.return_value = self._TEST_VALIDATIONS
 
         first_failure = DataValidationJobResult(
@@ -194,18 +174,15 @@ class TestHandleRequest(TestCase):
         for job in self._TEST_VALIDATIONS:
             mock_run_job.assert_any_call(job)
 
-        mock_rematerialize_views.assert_called()
         mock_emit_failures.assert_called_with([], UnorderedCollection([first_failure, second_failure]))
 
-    @patch("recidiviz.big_query.view_update_manager.rematerialize_views_for_namespace")
     @patch("recidiviz.validation.validation_manager._emit_failures")
     @patch("recidiviz.validation.validation_manager._run_job")
     @patch("recidiviz.validation.validation_manager._fetch_validation_jobs_to_perform")
     def test_handle_request_happy_path_nothing_configured(self,
                                                           mock_fetch_validations: MagicMock,
                                                           mock_run_job: MagicMock,
-                                                          mock_emit_failures: MagicMock,
-                                                          mock_rematerialize_views: MagicMock) -> None:
+                                                          mock_emit_failures: MagicMock) -> None:
         mock_fetch_validations.return_value = []
 
         headers = {'X-Appengine-Cron': 'test-cron'}
@@ -214,11 +191,10 @@ class TestHandleRequest(TestCase):
         self.assertEqual(200, response.status_code)
         self.assertEqual(_API_RESPONSE_IF_NO_FAILURES, response.get_data().decode())
 
-        mock_rematerialize_views.assert_called()
         mock_run_job.assert_not_called()
         mock_emit_failures.assert_not_called()
 
-    @patch("recidiviz.big_query.view_update_manager.rematerialize_views_for_namespace")
+    @patch("recidiviz.big_query.view_update_manager.create_dataset_and_update_views_for_view_builders")
     @patch("recidiviz.validation.validation_manager._emit_failures")
     @patch("recidiviz.validation.validation_manager._run_job")
     @patch("recidiviz.validation.validation_manager._fetch_validation_jobs_to_perform")
@@ -226,11 +202,11 @@ class TestHandleRequest(TestCase):
                                                            mock_fetch_validations: MagicMock,
                                                            mock_run_job: MagicMock,
                                                            mock_emit_failures: MagicMock,
-                                                           mock_rematerialize_views: MagicMock) -> None:
+                                                           mock_update_views: MagicMock) -> None:
         mock_fetch_validations.return_value = []
 
         headers = {'X-Appengine-Cron': 'test-cron'}
-        response = self.client.get('/validate', headers=headers)
+        response = self.client.get('/validate?should_update_views=true', headers=headers)
 
         self.assertEqual(200, response.status_code)
         self.assertEqual(_API_RESPONSE_IF_NO_FAILURES, response.get_data().decode())
@@ -240,29 +216,29 @@ class TestHandleRequest(TestCase):
 
         self.maxDiff = None
         expected_update_calls = [
-            call(bq_view_namespace=BigQueryViewNamespace.COUNTY,
-                 candidate_view_builders=county_view_config.VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE,
-                 dataset_overrides=None),
-            call(bq_view_namespace=BigQueryViewNamespace.JUSTICE_COUNTS,
-                 candidate_view_builders=justice_counts_view_config.VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE,
-                 dataset_overrides=None),
-            call(bq_view_namespace=BigQueryViewNamespace.STATE,
-                 candidate_view_builders=state_view_config.VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE,
-                 dataset_overrides=None),
-            call(bq_view_namespace=BigQueryViewNamespace.VALIDATION,
-                 candidate_view_builders=validation_view_config.VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE,
-                 dataset_overrides=None),
-            call(bq_view_namespace=BigQueryViewNamespace.CASE_TRIAGE,
-                 candidate_view_builders=case_triage_view_config.VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE,
-                 dataset_overrides=None),
-            call(bq_view_namespace=BigQueryViewNamespace.INGEST_METADATA,
-                 candidate_view_builders=ingest_metadata_view_config.VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE,
-                 dataset_overrides=None),
-            call(bq_view_namespace=BigQueryViewNamespace.DIRECT_INGEST,
-                 candidate_view_builders=direct_ingest_view_config.VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE,
-                 dataset_overrides=None),
+            call(BigQueryViewNamespace.COUNTY, county_view_config.VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE,
+                 dataset_overrides=None,
+                 materialized_views_only=False),
+            call(BigQueryViewNamespace.JUSTICE_COUNTS, justice_counts_view_config.VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE,
+                 dataset_overrides=None,
+                 materialized_views_only=False),
+            call(BigQueryViewNamespace.STATE, state_view_config.VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE,
+                 dataset_overrides=None,
+                 materialized_views_only=False),
+            call(BigQueryViewNamespace.VALIDATION, validation_view_config.VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE,
+                 dataset_overrides=None,
+                 materialized_views_only=False),
+            call(BigQueryViewNamespace.CASE_TRIAGE, case_triage_view_config.VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE,
+                 dataset_overrides=None,
+                 materialized_views_only=False),
+            call(BigQueryViewNamespace.INGEST_METADATA, ingest_metadata_view_config.VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE,
+                 dataset_overrides=None,
+                 materialized_views_only=False),
+            call(BigQueryViewNamespace.DIRECT_INGEST, direct_ingest_view_config.VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE,
+                 dataset_overrides=None,
+                 materialized_views_only=False),
         ]
-        self.assertCountEqual(mock_rematerialize_views.call_args_list, expected_update_calls)
+        self.assertCountEqual(mock_update_views.call_args_list, expected_update_calls)
 
 
 class TestFetchValidations(TestCase):

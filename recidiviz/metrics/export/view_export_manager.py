@@ -14,8 +14,17 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Export data from BigQuery metric views to configurable locations."""
+"""Export data from BigQuery metric views to configurable locations.
+
+Run this export locally with the following command:
+    python -m recidiviz.metrics.export.view_export_manager \
+        --project_id [PROJECT_ID] \
+        --export_job_filter [FILTER] \
+        --update_materialized_views [SHOULD_UPDATE]
+"""
+import argparse
 import logging
+import sys
 from http import HTTPStatus
 from typing import Dict, List, Optional, Sequence, Set, Tuple
 
@@ -44,7 +53,9 @@ from recidiviz.metrics.export.optimized_metric_big_query_view_export_validator i
 from recidiviz.metrics.export.view_export_cloud_task_manager import ViewExportCloudTaskManager
 from recidiviz.utils import metadata, monitoring
 from recidiviz.utils.auth.gae import requires_gae_auth
-from recidiviz.utils.params import get_str_param_value
+from recidiviz.utils.environment import GCP_PROJECT_STAGING, GCP_PROJECT_PRODUCTION
+from recidiviz.utils.metadata import local_project_id_override
+from recidiviz.utils.params import get_str_param_value, str_to_bool
 
 m_failed_metric_export_validation = measure.MeasureInt(
     "bigquery/metric_view_export_manager/metric_view_export_validation_failure",
@@ -129,7 +140,8 @@ def metric_view_data_export() -> Tuple[str, HTTPStatus]:
 
 
 def export_view_data_to_cloud_storage(export_job_filter: str,
-                                      override_view_exporter: Optional[BigQueryViewExporter] = None) -> None:
+                                      override_view_exporter: Optional[BigQueryViewExporter] = None,
+                                      update_materialized_views: bool = True) -> None:
     """Exports data in BigQuery metric views to cloud storage buckets.
 
     Optionally takes in a BigQueryViewExporter for performing the export operation. If none is provided, this defaults
@@ -156,14 +168,13 @@ def export_view_data_to_cloud_storage(export_job_filter: str,
 
         # TODO(#5125): Once view update is consistently trivial, always update all views in namespace
         if bq_view_namespace_to_update in export_config.NAMESPACES_REQUIRING_FULL_UPDATE:
-            view_update_manager.create_dataset_and_deploy_views_for_view_builders(bq_view_namespace_to_update,
-                                                                                  view_builders_for_views_to_update)
-
-        # The view deploy will only have rematerialized views that had been updated since the last deploy, this call
-        # will ensure that all materialized tables get refreshed.
-        view_update_manager.rematerialize_views_for_namespace(
-            bq_view_namespace=bq_view_namespace_to_update,
-            candidate_view_builders=view_builders_for_views_to_update)
+            view_update_manager.create_dataset_and_update_views_for_view_builders(bq_view_namespace_to_update,
+                                                                                  view_builders_for_views_to_update,
+                                                                                  materialized_views_only=False)
+        elif update_materialized_views:
+            view_update_manager.create_dataset_and_update_views_for_view_builders(bq_view_namespace_to_update,
+                                                                                  view_builders_for_views_to_update,
+                                                                                  materialized_views_only=True)
 
     gcsfs_client = GcsfsFactory.build()
     if override_view_exporter is None:
@@ -267,3 +278,40 @@ def export_views_with_exporters(gcsfs: GCSFileSystem,
 
     logging.info("Completed composite BigQuery view export.")
     return final_paths
+
+
+def parse_arguments(argv: List[str]) -> Tuple[argparse.Namespace, List[str]]:
+    """Parses the required arguments."""
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument('--project_id',
+                        dest='project_id',
+                        type=str,
+                        choices=[GCP_PROJECT_STAGING, GCP_PROJECT_PRODUCTION],
+                        required=True)
+
+    parser.add_argument('--export_job_filter',
+                        dest='export_job_filter',
+                        type=str,
+                        choices=([c.state_code_filter for c in
+                                  export_config.VIEW_COLLECTION_EXPORT_CONFIGS] +
+                                 [c.export_name for c in
+                                  export_config.VIEW_COLLECTION_EXPORT_CONFIGS]),
+                        required=True)
+    parser.add_argument('--update_materialized_views',
+                        default=True,
+                        type=str_to_bool,
+                        help='If True, all materialized views will be refreshed before doing the export. If the '
+                             'materialized tables are already up-to-date, setting this to False will save significant '
+                             'execution time.')
+
+    return parser.parse_known_args(argv)
+
+
+if __name__ == '__main__':
+    logging.getLogger().setLevel(logging.INFO)
+    known_args, _ = parse_arguments(sys.argv)
+
+    with local_project_id_override(known_args.project_id):
+        export_view_data_to_cloud_storage(export_job_filter=known_args.export_job_filter,
+                                          update_materialized_views=known_args.update_materialized_views)

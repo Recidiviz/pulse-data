@@ -22,7 +22,6 @@ This can be run on-demand whenever locally with the following command:
         --project_id [PROJECT_ID]
         --sandbox_dataset_prefix [SANDBOX_DATASET_PREFIX]
         --dataflow_dataset_override [DATAFLOW_DATASET_OVERRIDE]
-        --refresh_materialized_tables_only [True,False]
 """
 import argparse
 import logging
@@ -30,12 +29,11 @@ import sys
 from typing import List, Tuple, Dict, Optional
 
 from recidiviz.big_query.view_update_manager import VIEW_BUILDERS_BY_NAMESPACE, \
-    create_dataset_and_deploy_views_for_view_builders, rematerialize_views_for_namespace
+    create_dataset_and_update_views_for_view_builders
 from recidiviz.calculator.query.state.dataset_config import DATAFLOW_METRICS_DATASET, \
     DATAFLOW_METRICS_MATERIALIZED_DATASET
 from recidiviz.utils.environment import GCP_PROJECT_STAGING, GCP_PROJECT_PRODUCTION
 from recidiviz.utils.metadata import local_project_id_override
-from recidiviz.utils.params import str_to_bool
 
 
 def _dataset_overrides_for_all_view_datasets(view_dataset_override_prefix: str,
@@ -63,11 +61,7 @@ def _dataset_overrides_for_all_view_datasets(view_dataset_override_prefix: str,
     return dataset_overrides
 
 
-def load_views_to_sandbox(
-        sandbox_dataset_prefix: str,
-        dataflow_dataset_override: Optional[str] = None,
-        refresh_materialized_tables_only: bool = False,
-) -> None:
+def load_views_to_sandbox(sandbox_dataset_prefix: str, dataflow_dataset_override: Optional[str] = None) -> None:
     """Loads all views into sandbox datasets prefixed with the sandbox_dataset_prefix."""
     sandbox_dataset_overrides = \
         _dataset_overrides_for_all_view_datasets(view_dataset_override_prefix=sandbox_dataset_prefix,
@@ -81,18 +75,10 @@ def load_views_to_sandbox(
             or builder.dataset_id != DATAFLOW_METRICS_MATERIALIZED_DATASET
         ]
 
-        if refresh_materialized_tables_only:
-            rematerialize_views_for_namespace(
-                bq_view_namespace=namespace,
-                candidate_view_builders=builders_to_update,
-                dataset_overrides=sandbox_dataset_overrides,
-                # If a given view hasn't been loaded to the sandbox, skip it
-                skip_missing_views=True
-            )
-        else:
-            create_dataset_and_deploy_views_for_view_builders(bq_view_namespace=namespace,
-                                                              view_builders_to_update=builders_to_update,
-                                                              dataset_overrides=sandbox_dataset_overrides)
+        create_dataset_and_update_views_for_view_builders(namespace,
+                                                          builders_to_update,
+                                                          dataset_overrides=sandbox_dataset_overrides,
+                                                          materialized_views_only=False)
 
 
 def parse_arguments(argv: List[str]) -> Tuple[argparse.Namespace, List[str]]:
@@ -118,13 +104,6 @@ def parse_arguments(argv: List[str]) -> Tuple[argparse.Namespace, List[str]]:
                         type=str,
                         required=False)
 
-    parser.add_argument('--refresh_materialized_tables_only',
-                        dest='refresh_materialized_tables_only',
-                        help='If True, will only rematerialize views that have already been loaded to the sandbox.',
-                        type=str_to_bool,
-                        default=False,
-                        required=False)
-
     return parser.parse_known_args(argv)
 
 
@@ -135,6 +114,4 @@ if __name__ == '__main__':
     with local_project_id_override(known_args.project_id):
         logging.info("Prefixing all view datasets with [%s_].", known_args.sandbox_dataset_prefix)
 
-        load_views_to_sandbox(known_args.sandbox_dataset_prefix,
-                              known_args.dataflow_dataset_override,
-                              known_args.refresh_materialized_tables_only)
+        load_views_to_sandbox(known_args.sandbox_dataset_prefix, known_args.dataflow_dataset_override)
