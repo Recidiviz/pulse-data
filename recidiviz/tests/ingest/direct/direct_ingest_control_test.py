@@ -574,10 +574,8 @@ class TestDirectIngestControl(unittest.TestCase):
 
             self.assertEqual(200, response.status_code)
 
-            no_raw_data_import_regions = {'us_tx_brazos', 'us_ma_middlesex', 'us_nm_bernalillo'}
             expected_calls = [mock.call(region_code)
-                              for region_code in get_existing_region_dir_names()
-                              if region_code not in no_raw_data_import_regions]
+                              for region_code in get_existing_region_dir_names()]
             mock_cloud_task_manager.create_raw_data_latest_view_update_task.assert_has_calls(expected_calls)
 
     @patch("recidiviz.utils.environment.get_gae_environment")
