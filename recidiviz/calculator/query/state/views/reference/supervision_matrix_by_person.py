@@ -54,6 +54,7 @@ SUPERVISION_MATRIX_BY_PERSON_QUERY_TEMPLATE = \
             FALSE AS is_revocation
         FROM `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_population_metrics_materialized`
         WHERE {thirty_six_month_filter}
+        AND {state_specific_inclusion_filter}
     ), revocations_matrix AS (
         SELECT
             state_code, year, month,
@@ -187,6 +188,7 @@ SUPERVISION_MATRIX_BY_PERSON_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     state_specific_query_strings.state_specific_supervision_location_optimization_filter(),
     thirty_six_month_filter=bq_utils.thirty_six_month_filter(),
     state_specific_dimension_filter=state_specific_query_strings.state_specific_dimension_filter(),
+    state_specific_inclusion_filter=state_specific_query_strings.state_specific_inclusion_filter(),
 )
 
 if __name__ == '__main__':

@@ -24,6 +24,9 @@ from typing import List, Optional, Tuple, Callable, Union,  Dict, Any
 from recidiviz.calculator.pipeline.supervision.supervision_time_bucket import \
     NonRevocationReturnSupervisionTimeBucket, RevocationReturnSupervisionTimeBucket
 from recidiviz.calculator.pipeline.utils.calculator_utils import safe_list_index
+from recidiviz.calculator.pipeline.utils.state_utils.us_pa.us_pa_revocation_utils import \
+    us_pa_is_revocation_admission, us_pa_revoked_supervision_periods_if_revocation_occurred, \
+    us_pa_get_pre_revocation_supervision_type
 from recidiviz.calculator.pipeline.utils.supervision_case_compliance_manager import \
     StateSupervisionCaseComplianceManager
 from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_revocation_identification import \
@@ -189,7 +192,7 @@ def get_month_supervision_type(
                                                 incarceration_sentences,
                                                 supervision_period)
 
-    if supervision_period.state_code.upper() == 'US_ID':
+    if supervision_period.state_code.upper() in ('US_ID', 'US_PA'):
         return (supervision_period.supervision_period_supervision_type
                 if supervision_period.supervision_period_supervision_type
                 else StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN)
@@ -269,6 +272,8 @@ def get_pre_revocation_supervision_type(
     """Returns the supervision type the person was on before they had their supervision revoked."""
     if incarceration_period.state_code.upper() == 'US_ID':
         return us_id_get_pre_revocation_supervision_type(revoked_supervision_period)
+    if incarceration_period.state_code.upper() == 'US_PA':
+        return us_pa_get_pre_revocation_supervision_type(revoked_supervision_period)
 
     return get_pre_incarceration_supervision_type(
         incarceration_sentences,
@@ -302,7 +307,7 @@ def terminating_supervision_period_supervision_type(
 
         return supervision_type if supervision_type else StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN
 
-    if supervision_period.state_code.upper() == 'US_ID':
+    if supervision_period.state_code.upper() in ('US_ID', 'US_PA'):
         return (supervision_period.supervision_period_supervision_type
                 if supervision_period.supervision_period_supervision_type
                 else StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN)
@@ -338,6 +343,8 @@ def incarceration_period_is_from_revocation(
     """Determines if the sequence of incarceration periods represents a revocation."""
     if incarceration_period.state_code.upper() == 'US_ID':
         return us_id_is_revocation_admission(incarceration_period, preceding_incarceration_period)
+    if incarceration_period.state_code.upper() == 'US_PA':
+        return us_pa_is_revocation_admission(incarceration_period)
     return is_revocation_admission(incarceration_period.admission_reason)
 
 
@@ -551,15 +558,11 @@ def revoked_supervision_periods_if_revocation_occurred(
 
         if revoked_period:
             revoked_periods = [revoked_period]
-    # TODO(#4821): Remove this logic for US_PA once Lantern is ready for PVC revocations
     elif state_code == StateCode.US_PA.value:
-        admission_is_revocation = is_revocation_admission(incarceration_period.admission_reason)
-
-        if admission_is_revocation and incarceration_period.specialized_purpose_for_incarceration_raw_text == 'CCIS-26':
-            return False, revoked_periods
-
-        revoked_periods = get_relevant_supervision_periods_before_admission_date(incarceration_period.admission_date,
-                                                                                 supervision_periods)
+        admission_is_revocation, revoked_periods = \
+            us_pa_revoked_supervision_periods_if_revocation_occurred(
+                incarceration_period, supervision_periods
+            )
     else:
         admission_is_revocation = is_revocation_admission(incarceration_period.admission_reason)
         revoked_periods = get_relevant_supervision_periods_before_admission_date(incarceration_period.admission_date,

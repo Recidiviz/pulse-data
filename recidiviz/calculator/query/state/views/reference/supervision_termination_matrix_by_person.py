@@ -62,6 +62,7 @@ SUPERVISION_TERMINATION_MATRIX_BY_PERSON_VIEW_QUERY_TEMPLATE = \
         FROM `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_termination_metrics_materialized`
         WHERE termination_reason IN ('DISCHARGE', 'EXPIRATION', 'SUSPENSION', 'INTERNAL_UNKNOWN', 'EXTERNAL_UNKNOWN', 'DEATH')
             AND {thirty_six_month_filter}
+            AND {state_specific_inclusion_filter}
     ), revocations_matrix AS (
         SELECT
             state_code, year, month,
@@ -196,6 +197,7 @@ SUPERVISION_TERMINATION_MATRIX_BY_PERSON_VIEW_BUILDER = SimpleBigQueryViewBuilde
     state_specific_query_strings.state_specific_supervision_location_optimization_filter(),
     thirty_six_month_filter=bq_utils.thirty_six_month_filter(),
     state_specific_dimension_filter=state_specific_query_strings.state_specific_dimension_filter(),
+    state_specific_inclusion_filter=state_specific_query_strings.state_specific_inclusion_filter(),
 )
 
 if __name__ == '__main__':
