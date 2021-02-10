@@ -16,7 +16,9 @@
 # =============================================================================
 """Tests for state constants"""
 
+import importlib
 import unittest
+from unittest import mock
 
 import us
 
@@ -24,20 +26,59 @@ from recidiviz.common.constants import states
 
 
 class TestStates(unittest.TestCase):
-    def test_hasStates(self) -> None:
+    """Tests the functionality of the StateCode enum."""
+    def setUp(self) -> None:
+        self.in_test_patcher = mock.patch('recidiviz.utils.environment.in_test')
+        self.mock_in_test = self.in_test_patcher.start()
+
+    def tearDown(self) -> None:
+        self.in_test_patcher.stop()
+
+    def test_hasStates_not_in_test(self) -> None:
+        self.mock_in_test.return_value = False
+        importlib.reload(states)
+
         self.assertEqual(50, len(states.StateCode))
         self.assertEqual('US_AK', list(states.StateCode)[0].value)
         self.assertEqual('US_WY', list(states.StateCode)[-1].value)
 
+    def test_hasStates_in_test(self) -> None:
+        self.mock_in_test.return_value = True
+
+        importlib.reload(states)
+
+        # There are 51 states because we are in tests, so US_XX is a valid value
+        self.assertEqual(51, len(states.StateCode))
+        self.assertEqual('US_AK', list(states.StateCode)[0].value)
+        self.assertEqual('US_WY', list(states.StateCode)[-2].value)
+        self.assertEqual('US_XX', list(states.StateCode)[-1].value)
+
     def test_getState(self) -> None:
+        importlib.reload(states)
         self.assertEqual(us.states.AK, states.StateCode.US_AK.get_state())
 
-    def test_is_state_code(self) -> None:
+    def test_is_state_code_not_in_test(self) -> None:
+        self.mock_in_test.return_value = False
+
+        importlib.reload(states)
+
         valid_states = ['us_wa', 'US_MD', 'us_ma']
-        invalid_states = ['us_xx', 'US_XX', 'us_gu', 'us_dc', 'US_PR', 'UX_CA', ]
+        # US_XX is not a valid state_code outside of tests
+        invalid_states = ['us_gu', 'us_dc', 'US_PR', 'UX_CA', 'us_xx', 'US_XX']
 
         for state_code in valid_states:
             self.assertTrue(states.StateCode.is_state_code(state_code))
 
         for state_code in invalid_states:
             self.assertFalse(states.StateCode.is_state_code(state_code))
+
+    def test_is_state_code_in_test(self) -> None:
+        self.mock_in_test.return_value = True
+
+        importlib.reload(states)
+
+        # US_XX is a valid state_code when we are in tests
+        valid_states = ['us_xx', 'US_XX']
+
+        for state_code in valid_states:
+            self.assertTrue(states.StateCode.is_state_code(state_code))
