@@ -1,20 +1,46 @@
 file_tag: elite_offendersentenceaggs
+file_description: |-
+  Each row represents aggregated ("rolled up") information about the collection of sentences associated with a single
+  booking. This includes the expected eventual release date based on all of the aggregated sentence information, when
+  the person is expected to receive parole, and so on.
 primary_key_cols:
   - OFFENDER_BOOK_ID
 columns:
+  - name: OFFENDER_BOOK_ID
+    description: |-
+      External ID of a booking for a particular person, i.e. a new series of interactions with the justice system due to a new offense.
   - name: EARLIEST_SENT_START_DATE
     is_datetime: True
+    description: |-
+      When the person's serving of the first sentence associated with this booking began.
   - name: FINAL_SENT_EXP_DATE
     is_datetime: True
+    description: |-
+      When the person's serving of the final sentence associated with this booking ended.
   - name: CALC_POS_REL_DATE
     is_datetime: True
+    description: |-
+      ND-calculated final release date.
   - name: OVR_POS_REL_DATE
     is_datetime: True
+    description: |-
+      ND-calculated final release date with overrides manually input.
   - name: PAROLE_DATE
     is_datetime: True
+    description: |-
+      When the person was granted parole from across all of the sentences associated with this booking.
   - name: PAROLE_REVIEW_DATE
     is_datetime: True
+    description: |-
+      When the next parole hearing is scheduled to occur.
+  - name: MAX_TERM
+    description: |-
+      The length of the maximum possible term that could be served for this booking.
   - name: CREATE_DATETIME
     is_datetime: True
+    description: |-
+      When this record was first created in the source system.
   - name: MODIFY_DATETIME
     is_datetime: True
+    description: |-
+      When this record was most recently modified in the source system.

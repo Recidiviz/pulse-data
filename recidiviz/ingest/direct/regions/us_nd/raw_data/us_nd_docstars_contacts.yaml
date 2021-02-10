@@ -1,17 +1,99 @@
 file_tag: docstars_contacts
 file_description: |-
-  Each row represents a contact between a supervision officer and supervisee.
+  Each row represents a contact between a supervision officer and person under supervision. This includes the kind
+  contacts which occurred, whether there were any signs of substance abuse, and free text notes about the contact from
+  the officer.
 primary_key_cols:
   - RecID
 columns:
-  - name: Remarks
+  - name: RecID
     description: |-
-      The raw text the supervising officer inputs.
+      ID of this record within the source system.
+  - name: SID
+    description: |-
+      External id for a unique person from the Docstars system.
   - name: TIME_STAMP
     is_datetime: True
+    description: |-
+      When this contact occurred.
   - name: CONTACT_DATE
     is_datetime: True
+    description: |-
+      When this contact occurred.
+  - name: CONTACT_CODE
+    description: |-
+      - Supervision officers can pick up to **6** contact codes (i.e. 1 value for `CONTACT_CODE`, and `C2-C6` all populated as well)<br>- **Face to Face** contacts are *only* placed in the `CONTACT_CODE` column<br>- The rest can be in C2→ C6<br>- You can have `C2-6`, without `CONTACT_CODE`:<br>- This can happen when another officer (who doesn’t have the supervisee on their caseload) logs that something happened and the associated office is not present<br>- Only a person who has a supervisee in their caseload can add an entry with an associated `CONTACT_CODE`.<br>Values:<br>- SG - System Generated<br>- Ex: create a case (happens automatically)<br>- *Face to Face Contacts*:<br>- HV - Home Visit<br>- Going to the residence/current location<br>- OO - Out of Office Visit<br>- Supervisee’s workplace, public spot (ex: park/mall)<br>- OV - Office Visit<br>- Supervision officer’s office
+  - name: C2
+    description: |-
+      Additional sub-code for the kind of contact which occurred.
+  - name: C3
+    description: |-
+      Additional sub-code for the kind of contact which occurred.
+  - name: C4
+    description: |-
+      Additional sub-code for the kind of contact which occurred.
+  - name: C5
+    description: |-
+      Additional sub-code for the kind of contact which occurred.
+  - name: C6
+    description: |-
+      Additional sub-code for the kind of contact which occurred.
+  - name: REMARKS
+    description: |-
+      Free text notes about the contact entered by the supervising officer.
+  - name: ALCO_POS
+    description: |-
+      Whether the person being supervised is positive for alcohol usage.
+  - name: ALCO_NEG
+    description: |-
+      Whether the person being supervised is negative for alcohol usage.
+  - name: COKE_POS
+    description: |-
+      Whether the person being supervised is positive for coke usage.
+  - name: COKE_NEG
+    description: |-
+      Whether the person being supervised is negative for alcohol usage.
+  - name: THC_POS
+    description: |-
+      Whether the person being supervised is positive for THC usage.
+  - name: THC_NEG
+    description: |-
+      Whether the person being supervised is negative for THC usage.
+  - name: OPIATE_POS
+    description: |-
+      Whether the person being supervised is positive for opiate usage.
+  - name: OPIATE_NEG
+    description: |-
+      Whether the person being supervised is negative for opiate usage.
+  - name: AMP_METH_POS
+    description: |-
+      Whether the person being supervised is positive for meth usage.
+  - name: AMP_METH_NEG
+    description: |-
+      Whether the person being supervised is negative for meth usage.
+  - name: SYNTHETIC_POS
+    description: |-
+      Whether the person being supervised is positive for synthetic substance usage.
+  - name: SYNTHETIC_NEG
+    description: |-
+      Whether the person being supervised is negative for synthetic substance usage.
+  - name: OTHER_POS
+    description: |-
+      Whether the person being supervised is positive for other substance usage.
+  - name: OTHER_NEG
+    description: |-
+      Whether the person being supervised is negative for synthetic substance usage.
+  - name: ORIGINATOR
+    description: |-
+      Name of the supervising officer.
+  - name: CATEGORY
+    description: |-
+      Why the contact occurred.
   - name: RecDate
     is_datetime: True
+    description: |-
+      When this record was first created in the source system.
   - name: LASTUPDATE
     is_datetime: True
+    description: |-
+      When this record was most recently modified in the source system.

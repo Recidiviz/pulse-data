@@ -1,13 +1,32 @@
 file_tag: elite_bedassignmenthistory
+file_description: |-
+  Each row represents a particular stay of a particular person in a particular bed in a particular incarceration facility.
 primary_key_cols:
   - OFFENDER_BOOK_ID
   - BED_ASSIGN_SEQ
 columns:
+  - name: OFFENDER_BOOK_ID
+    description: |-
+      External ID of a booking for a particular person, i.e. a new series of interactions with the justice system due to a new offense.
+  - name: LIVING_UNIT_ID
+    description: |-
+      ID of the living unit/location where the person was incarcerated.
   - name: ASSIGNMENT_DATE
     is_datetime: True
+    description: |-
+      When the person began their stay at this location.
   - name: ASSIGNMENT_END_DATE
     is_datetime: True
+    description: |-
+      When the person ended their stay at this location.
+  - name: BED_ASSIGN_SEQ
+    description: |-
+      The ordered index of bed assignments among the full set of assignments within a booking.
   - name: CREATE_DATETIME
     is_datetime: True
+    description: |-
+      When this record was first created in the source system.
   - name: MODIFY_DATETIME
     is_datetime: True
+    description: |-
+      When this record was most recently modified in the source system.

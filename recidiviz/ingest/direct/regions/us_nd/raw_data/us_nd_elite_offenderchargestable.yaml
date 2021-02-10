@@ -1,11 +1,55 @@
 file_tag: elite_offenderchargestable
+file_description: |-
+  Each row represents a different offense that a person was charged with prior to being sentenced under DOCR jurisdiction.
+  This includes metadata about the charge as well as some a reference to the court order under which the charge was tried
+  and sentenced.
 primary_key_cols:
   - OFFENDER_BOOK_ID
   - CHARGE_SEQ
 columns:
+  - name: OFFENDER_BOOK_ID
+    description: |-
+      External ID of a booking for a particular person, i.e. a new series of interactions with the justice system due to a new offense.
+  - name: ORDER_ID
+    description: |-
+      ID of the court order under which the offense is being charged.
+  - name: CHARGE_SEQ
+    description: |-
+      The ordered index of this charge among the full set of charges associated with this booking.
+  - name: CHARGE_STATUS
+    description: |-
+      Current status of the charge.
+  - name: COMMENT_TEXT
+    description: |-
+      Free text notes about the offense being charged.
+  - name: DESCRIPTION
+    description: |-
+      Description of the offense being charged.
+  - name: INITIAL_COUNTS
+    description: |-
+      How many counts of the offense are being charged.
+  - name: OFFENCE_CODE
+    description: |-
+      Code of the offense/statute which the person was charged with.
+  - name: OFFENCE_DATE_RANGE
+    description: |-
+      When the offense occurred, if durational.
+  - name: OFFENCE_TYPE
+    description: |-
+      The type of offense which occurred.
   - name: OFFENSE_DATE
     is_datetime: True
+    description: |-
+      When the offense occurred.
   - name: CREATE_DATETIME
     is_datetime: True
+    description: |-
+      When this record was first created in the source system.
   - name: MODIFY_DATETIME
     is_datetime: True
+    description: |-
+      When this record was most recently modified in the source system.
+  - name: ModifyDate
+    is_datetime: True
+    description: |-
+      Row modify date.

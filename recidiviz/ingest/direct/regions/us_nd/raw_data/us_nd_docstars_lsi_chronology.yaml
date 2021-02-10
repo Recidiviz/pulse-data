@@ -1,12 +1,112 @@
 file_tag: docstars_lsi_chronology
+file_description: |-
+  Each row represents a particular LSIR assessment taken by a particular person under supervision.
 primary_key_cols:
   - RecID
 columns:
+  - name: RecID
+    description: |-
+      ID of this record within the source system.
+  - name: SID
+    description: |-
+      External id for a unique person from the Docstars system.
   - name: AssessmentDate
     is_datetime: True
+    description: |-
+      When the LSIR assessment occurred.
+  - name: CHtotal
+    description: |-
+      Total score of the Criminal History domain questions.
+  - name: Q18value
+    description: |-
+      Score of Question 18.
+  - name: Q19value
+    description: |-
+      Score of Question 19.
+  - name: Q20value
+    description: |-
+      Score of Question 20.
+  - name: EETotal
+    description: |-
+      Total score of the Education/Employment domain questions.
+  - name: Q21value
+    description: |-
+      Score of Question 21.
+  - name: FnclTotal
+    description: |-
+      Total score of the Financial domain questions.
+  - name: Q23Value
+    description: |-
+      Score of Question 23.
+  - name: Q24Value
+    description: |-
+      Score of Question 24.
+  - name: Q25Value
+    description: |-
+      Score of Question 25.
+  - name: FMTotal
+    description: |-
+      Total score of the Family/Martial domain questions.
+  - name: Q27Value
+    description: |-
+      Score of Question 27.
+  - name: AccomTotal
+    description: |-
+      Total score of the Accommodation domain questions.
+  - name: Q31Value
+    description: |-
+      Score of Question 31.
+  - name: LRTotal
+    description: |-
+      Total score of the Leisure/Recreation domain questions.
+  - name: Cptotal
+    description: |-
+      Total score of the Companions domain questions.
+  - name: Q39Value
+    description: |-
+      Score of Question 39.
+  - name: Q40Value
+    description: |-
+      Score of Question 40.
+  - name: AdTotal
+    description: |-
+      Total score of the Alcohol/Drug domain questions.
+  - name: EPTotal
+    description: |-
+      Total score of the Emotional/Personal domain questions.
+  - name: Q51value
+    description: |-
+      Score of Question 51.
+  - name: Q52Value
+    description: |-
+      Score of Question 52.
+  - name: AOTotal
+    description: |-
+      Total score of the Attitudes/Orientation domain questions.
   - name: LastUpdate
     is_datetime: True
+    description: |-
+      When this record was most recently updated.
+  - name: LSI_CHARGE
+    description: |-
+      Always the value "1".
   - name: INACTIVEDATE
     is_datetime: True
+    description: |-
+      When this assessment became inactive.
   - name: RecDate
     is_datetime: True
+    description: |-
+      When this record was first created in the source system.
+  - name: CREATED_BY
+    description: |-
+      Who this record was created by.
+  - name: VERSION_ID
+    description: |-
+      Version of the LSIR assessment that was conducted.
+  - name: COMPLETE
+    description: |-
+      Whether the assessment was officially completed.
+  - name: SUPERLEVEL
+    description: |-
+      Supervision level determined by the LSIR assessment.
