@@ -22,11 +22,11 @@ import re
 import threading
 import time
 import unittest
-from typing import Tuple
+from typing import Dict
 from unittest.mock import patch
 
 from recidiviz.big_query.big_query_view import BigQueryView
-from recidiviz.big_query.big_query_view_dag_walker import BigQueryViewDagWalker, BigQueryViewDagNode
+from recidiviz.big_query.big_query_view_dag_walker import BigQueryViewDagWalker, BigQueryViewDagNode, DagKey
 from recidiviz.big_query.view_update_manager import VIEW_BUILDERS_BY_NAMESPACE, VIEW_SOURCE_TABLE_DATASETS
 from recidiviz.ingest.direct.controllers.direct_ingest_raw_file_import_manager import DirectIngestRegionRawFileConfig
 from recidiviz.ingest.views.metadata_helpers import BigQueryTableChecker
@@ -71,7 +71,7 @@ class TestBigQueryViewDagWalker(unittest.TestCase):
     def test_dag_touches_all_views(self) -> None:
         walker = BigQueryViewDagWalker(self.all_views)
 
-        def process_simple(view: BigQueryView) -> Tuple[str, str]:
+        def process_simple(view: BigQueryView, _parent_results: Dict[BigQueryView, DagKey]) -> DagKey:
             time.sleep(MOCK_VIEW_PROCESS_TIME_SECONDS/10)
             return view.dataset_id, view.table_id
 
@@ -92,7 +92,7 @@ class TestBigQueryViewDagWalker(unittest.TestCase):
         serial_processing_time_seconds = num_views * MOCK_VIEW_PROCESS_TIME_SECONDS
         serial_processing_time = datetime.timedelta(seconds=serial_processing_time_seconds)
 
-        def process_simple(view: BigQueryView) -> Tuple[str, str]:
+        def process_simple(view: BigQueryView, _parent_results: Dict[BigQueryView, DagKey]) -> DagKey:
             time.sleep(MOCK_VIEW_PROCESS_TIME_SECONDS)
             return view.dataset_id, view.table_id
 
@@ -114,7 +114,7 @@ class TestBigQueryViewDagWalker(unittest.TestCase):
         mutex = threading.Lock()
         all_processed = set()
 
-        def process_check_parents(view: BigQueryView) -> None:
+        def process_check_parents(view: BigQueryView, parent_results: Dict[BigQueryView, None]) -> None:
             with mutex:
                 node_key = (view.dataset_id, view.view_id)
                 node = walker.nodes_by_key[node_key]
@@ -127,6 +127,8 @@ class TestBigQueryViewDagWalker(unittest.TestCase):
                             except ValueError as e:
                                 raise ValueError(f'Found parent view [{parent_key}] that was not processed before '
                                                  f'child [{node_key}] started processing.') from e
+                        else:
+                            self.assertIn(walker.nodes_by_key[parent_key].view, parent_results)
 
             time.sleep(random.uniform(MOCK_VIEW_PROCESS_TIME_SECONDS, MOCK_VIEW_PROCESS_TIME_SECONDS * 2))
             with mutex:
@@ -135,6 +137,28 @@ class TestBigQueryViewDagWalker(unittest.TestCase):
         result = walker.process_dag(process_check_parents)
         self.assertEqual(len(self.all_views), len(result))
 
+    def test_dag_returns_parent_results(self) -> None:
+        walker = BigQueryViewDagWalker(self.all_views)
+
+        def process_check_parents(_view: BigQueryView, parent_results: Dict[BigQueryView, int]) -> int:
+            if not parent_results:
+                return 1
+            return max(parent_results.values()) + 1
+
+        result = walker.process_dag(process_check_parents)
+        self.assertEqual(len(self.all_views), len(result))
+
+        max_depth = 0
+        max_depth_view = None
+        for view, depth in result.items():
+            if depth > max_depth:
+                max_depth = depth
+                max_depth_view = view
+        if not max_depth_view:
+            self.fail('Found no max_depth_view')
+        max_depth_node = walker.nodes_by_key[(max_depth_view.dataset_id, max_depth_view.view_id)]
+        self.assertEqual(set(), max_depth_node.child_keys)
+
     def test_dag_exception_handling(self) -> None:
         """Test that exceptions during processing propagate properly."""
         class TestDagWalkException(ValueError):
@@ -142,13 +166,14 @@ class TestBigQueryViewDagWalker(unittest.TestCase):
 
         walker = BigQueryViewDagWalker(self.all_views)
 
-        def process_throws(_view: BigQueryView) -> Tuple[str, str]:
+        def process_throws(_view: BigQueryView, _parent_results: Dict[BigQueryView, None]) -> None:
             raise TestDagWalkException()
 
         with self.assertRaises(TestDagWalkException):
             _ = walker.process_dag(process_throws)
 
-        def process_throws_after_root(view: BigQueryView) -> Tuple[str, str]:
+        def process_throws_after_root(view: BigQueryView,
+                                      _parent_results: Dict[BigQueryView, DagKey]) -> DagKey:
             node_key = (view.dataset_id, view.view_id)
             node = walker.nodes_by_key[node_key]
             if not node.is_root:
@@ -268,7 +293,7 @@ class TestBigQueryViewDagWalker(unittest.TestCase):
         self.fail(node.dag_key)
 
     @staticmethod
-    def assertIsValidSourceDataTable(child_view_key: Tuple[str, str], source_table_key: Tuple[str, str]) -> None:
+    def assertIsValidSourceDataTable(child_view_key: DagKey, source_table_key: DagKey) -> None:
         source_table_dataset_id, _ = source_table_key
         if source_table_dataset_id in VIEW_SOURCE_TABLE_DATASETS:
             return
@@ -279,8 +304,8 @@ class TestBigQueryViewDagWalker(unittest.TestCase):
 
     @staticmethod
     def assertIsValidRawTableViewDependency(
-            child_view_key: Tuple[str, str],
-            raw_data_view_key: Tuple[str, str]
+            child_view_key: DagKey,
+            raw_data_view_key: DagKey
     ) -> None:
         raw_data_view_dataset_id, raw_data_view_table_id = raw_data_view_key
         up_to_date_view_match = re.match(LATEST_VIEW_DATASET_REGEX, raw_data_view_dataset_id)
