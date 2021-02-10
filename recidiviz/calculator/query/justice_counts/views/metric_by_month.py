@@ -96,8 +96,11 @@ filtered_values as (
 -- Note: Right now we do spatial then time which works because we don't ever do spatial aggregation across tables.
 aggregated_values as (
   SELECT
-    instance_id, ANY_VALUE(grouped_dimensions) as dimensions,
-    ANY_VALUE(num_original_dimensions) as num_original_dimensions, SUM(value) as value
+    instance_id,
+    ANY_VALUE(grouped_dimensions) as dimensions,
+    ANY_VALUE(num_original_dimensions) as num_original_dimensions,
+    ARRAY_CONCAT_AGG(collapsed_dimension_values) as collapsed_dimension_values,
+    SUM(value) as value
   FROM (
     SELECT
       instance_id, cell_id, ARRAY_LENGTH(dimension_values) as num_original_dimensions,
@@ -106,6 +109,10 @@ aggregated_values as (
         SELECT STRUCT<dimension string, dimension_value string>(dimension, dimension_value) FROM UNNEST(dimension_values)
         WHERE dimension IN ({aggregated_dimension_identifiers})
       ) as grouped_dimensions,
+      ARRAY(
+        SELECT dimension_value FROM UNNEST(dimension_values)
+        WHERE ENDS_WITH(dimension, '/raw')
+      ) as collapsed_dimension_values,
       value
     FROM filtered_values) as grouped
   -- BigQuery doesn't allow grouping by an array, so we build a string instead. Uses '|' as a delimeter, relying on this
@@ -119,13 +126,14 @@ aggregated_values as (
 -- Get necessary columns from the table instance's parents.
 joined_data as (
   SELECT
-    report.source_id as source_id, report.type as report_type, report.publish_date as publish_date,
+    report.source_id as source_id, report.id as report_id, report.type as report_type, report.publish_date as publish_date,
     definition.id as definition_id, definition.measurement_type,
     instance.id as instance_id,
     time_window_start, time_window_end, DATE_TRUNC(DATE_SUB(time_window_end, INTERVAL 1 DAY), MONTH) as start_of_month,
     dimensions,
     ARRAY_TO_STRING(ARRAY(SELECT dimension_value FROM UNNEST(dimensions) ORDER BY dimension), '|') as dimensions_string,
     num_original_dimensions,
+    collapsed_dimension_values,
     value
   FROM `{project_id}.{base_dataset}.report_table_instance_materialized` instance
   JOIN `{project_id}.{base_dataset}.report_table_definition_materialized` definition
@@ -142,7 +150,7 @@ joined_data as (
 combined_periods_data as (
   -- TODO(#5517): ensure non-overlapping, contiguous blocks (e.g. four weeks of a month)
   SELECT
-    source_id, report_type, MAX(publish_date) as publish_date,
+    source_id, report_type, ARRAY_AGG(report_id) as report_ids, MAX(publish_date) as publish_date,
     definition_id, ANY_VALUE(measurement_type) as measurement_type,
     start_of_month, MIN(time_window_start) as time_window_start, MAX(time_window_end) as time_window_end,
     -- Since BQ won't allow us to group by dimensions, we are grouping by dimensions_string and just pick any dimensions
@@ -151,6 +159,7 @@ combined_periods_data as (
     dimensions_string,
     -- This will be the same since we grouped by defintion_id
     ANY_VALUE(num_original_dimensions) as num_original_dimensions,
+    ARRAY_CONCAT_AGG(collapsed_dimension_values) as collapsed_dimension_values,
     SUM(value) as value
   FROM (
     -- TODO(#5517): order by how much of the month it covers, then time_window_end, then publish date?
@@ -177,7 +186,9 @@ combined_periods_data as (
 -- aggregate comprehensive dimensions, and take into account the coverage of dimension values when deciding which to
 -- use (e.g. one source reports on more race categories than another).
 dropped_periods_data as (
-  SELECT start_of_month, time_window_start, time_window_end, dimensions, dimensions_string, value FROM (
+  SELECT source_id, report_type, report_ids, start_of_month, time_window_start, time_window_end,
+         dimensions, dimensions_string, collapsed_dimension_values, value
+  FROM (
     -- TODO(#5517): order by how much of the month it covers, then time_window_end, then publish date?
     SELECT *, ROW_NUMBER()
       OVER(PARTITION BY dimensions_string, start_of_month
@@ -196,10 +207,12 @@ dropped_periods_data as (
 -- COMPARISON
 -- Compare against the most recent data that is at least one year older
 compared_data as (
-  SELECT dimensions, start_of_month, time_window_end, value, compare_start_of_month, compare_value
+  SELECT source_id, report_type, report_ids, start_of_month, time_window_end,
+         dimensions, collapsed_dimension_values, value, compare_start_of_month, compare_value
   FROM (
     SELECT
-      base_data.dimensions, base_data.start_of_month, base_data.time_window_end, base_data.value,
+      base_data.source_id, base_data.report_type, base_data.report_ids, base_data.start_of_month, base_data.time_window_end,
+      base_data.dimensions, base_data.collapsed_dimension_values, base_data.value,
       compared_data1.start_of_month as compare_start_of_month, compared_data1.value as compare_value,
       ROW_NUMBER() OVER (
         PARTITION BY base_data.dimensions_string, base_data.start_of_month, base_data.time_window_end
@@ -220,6 +233,14 @@ SELECT {aggregated_dimensions_array_columns_to_single_value_columns_clause},
        EXTRACT(YEAR from start_of_month) as year,
        EXTRACT(MONTH from start_of_month) as month,
        DATE_SUB(time_window_end, INTERVAL 1 DAY) as date_reported,
+       source.name as source_name,
+       report.url as source_url,
+       report_type as report_name,
+       ARRAY(
+         SELECT DISTINCT(collapsed_dimension_value)
+         FROM UNNEST(collapsed_dimension_values) as collapsed_dimension_value
+         ORDER BY collapsed_dimension_value
+       ) as raw_source_categories,
        value as value,
        -- If there is no row at least a year back to compare to, the following columns will be NULL.
        EXTRACT(YEAR from compare_start_of_month) as compared_to_year,
@@ -233,6 +254,11 @@ FROM (
         {aggregated_dimensions_array_split_to_columns_clause}
     FROM compared_data
 ) as unnested_dimensions
+JOIN `{project_id}.{base_dataset}.source_materialized` source
+  ON source_id = source.id
+JOIN `{project_id}.{base_dataset}.report_materialized` report
+  -- Just pick any report and use its URL
+  ON report_ids[ORDINAL(1)] = report.id
 ORDER BY {aggregated_dimension_columns}, metric, year DESC, month DESC
 """
 

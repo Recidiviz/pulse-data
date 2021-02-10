@@ -16,12 +16,13 @@
 # =============================================================================
 """Utility class for testing BQ views against Postgres"""
 
+import logging
 import re
 from typing import Dict, Iterator, List, Optional, Set, Tuple, Type
 import unittest
+
 import attr
 from google.cloud import bigquery
-
 import pandas as pd
 import pytest
 import sqlalchemy
@@ -95,6 +96,20 @@ class NameGenerator(Iterator[str]):
     def all_names_generated(self) -> List[str]:
         return [self._get_name(i) for i in range(self.counter)]
 
+
+_CREATE_ARRAY_CONCAT_AGG_FUNC = """
+CREATE AGGREGATE array_concat_agg (anyarray)
+(
+    sfunc = array_cat,
+    stype = anyarray,
+    initcond = '{}'
+);
+"""
+
+_DROP_ARRAY_CONCAT_AGG_FUNC = """
+DROP AGGREGATE array_concat_agg
+"""
+
 @pytest.mark.uses_db
 class BaseViewTest(unittest.TestCase):
     """This is a utility class that allows BQ views to be tested using Postgres instead.
@@ -131,22 +146,30 @@ class BaseViewTest(unittest.TestCase):
         self.type_name_generator = NameGenerator('__type_')
         self.postgres_engine = create_engine(local_postgres_helpers.on_disk_postgres_db_url())
 
+        # Implement ARRAY_CONCAT_AGG function that behaves the same (ARRAY_AGG fails on empty arrays)
+        self._execute_statement(_CREATE_ARRAY_CONCAT_AGG_FUNC)
+
+    def _execute_statement(self, statement: str) -> None:
+        session = Session(bind=self.postgres_engine)
+        try:
+            session.execute(statement)
+            session.commit()
+        except Exception as e:
+            logging.warning("Failed to cleanup: %s", e)
+            session.rollback()
+        finally:
+            session.close()
+
     def tearDown(self) -> None:
         close_all_sessions()
 
         if self.mock_bq_tables:
-            session = Session(bind=self.postgres_engine)
-            try:
-                for dataset_id, table_id in self.mock_bq_tables:
-                    session.execute(f"DROP TABLE {self._to_postgres_table_name(dataset_id, table_id)}")
-                for type_name in self.type_name_generator.all_names_generated():
-                    session.execute(f"DROP TYPE {type_name}")
-                session.commit()
-            except Exception as e:
-                session.rollback()
-                raise e
-            finally:
-                session.close()
+            # Execute each statement one at a time for resilience.
+            for dataset_id, table_id in self.mock_bq_tables:
+                self._execute_statement(f"DROP TABLE {self._to_postgres_table_name(dataset_id, table_id)}")
+            for type_name in self.type_name_generator.all_names_generated():
+                self._execute_statement(f"DROP TYPE {type_name}")
+        self._execute_statement(_DROP_ARRAY_CONCAT_AGG_FUNC)
 
         if self.postgres_engine is not None:
             self.postgres_engine.dispose()
@@ -200,6 +223,10 @@ class BaseViewTest(unittest.TestCase):
 
         # IN UNNEST doesn't work in postgres when passing an array column, instead use = ANY
         query = _replace_iter(query, r'IN UNNEST', "= ANY")
+
+        # ENDS_WITH doesn't exist in postgres so use LIKE instead
+        query = _replace_iter(
+            query, r'ENDS_WITH\((?P<column>.+?), \'(?P<predicate>.+?)\'\)', "{column} LIKE '%%{predicate}'")
 
         # Postgres doesn't have ANY_VALUE, but since we don't care what the value is we can just use MIN
         query = _replace_iter(query, r'ANY_VALUE\((?P<column>.+?)\)', "MIN({column})")
