@@ -19,7 +19,6 @@
 
 import json
 import re
-from datetime import timedelta
 from typing import List, Dict, Optional, Callable
 
 from recidiviz.common.constants.entity_enum import EntityEnum, EntityEnumMeta
@@ -45,8 +44,7 @@ from recidiviz.common.constants.state.state_supervision_violation_response impor
     StateSupervisionViolationResponseDecision, StateSupervisionViolationResponseRevocationType, \
     StateSupervisionViolationResponseType, StateSupervisionViolationResponseDecidingBodyType
 from recidiviz.common.ingest_metadata import SystemLevel
-from recidiviz.common.str_field_utils import parse_days_from_duration_pieces, safe_parse_date_from_date_pieces, \
-    safe_parse_days_from_duration_pieces
+from recidiviz.common.str_field_utils import parse_days_from_duration_pieces
 from recidiviz.ingest.direct.controllers.csv_gcsfs_direct_ingest_controller import CsvGcsfsDirectIngestController
 from recidiviz.ingest.direct.direct_ingest_controller_utils import update_overrides_from_maps, create_if_not_exists
 from recidiviz.ingest.direct.regions.us_pa.us_pa_assessment_level_reference import set_date_specific_lsir_fields
@@ -63,7 +61,7 @@ from recidiviz.ingest.direct.state_shared_row_posthooks import copy_name_to_alia
 from recidiviz.ingest.extractor.csv_data_extractor import IngestFieldCoordinates
 from recidiviz.ingest.models.ingest_info import IngestObject, StatePerson, StatePersonExternalId, StateAssessment, \
     StateIncarcerationSentence, StateCharge, StateSentenceGroup, StateIncarcerationPeriod, StateIncarcerationIncident, \
-    StateIncarcerationIncidentOutcome, StateSupervisionSentence, StateSupervisionPeriod, StatePersonRace, \
+    StateIncarcerationIncidentOutcome, StateSupervisionPeriod, StatePersonRace, \
     StateSupervisionViolation, StateSupervisionViolationResponse
 from recidiviz.ingest.models.ingest_object_cache import IngestObjectCache
 from recidiviz.utils import environment
@@ -158,11 +156,6 @@ class UsPaController(CsvGcsfsDirectIngestController):
                 self._generate_pbpp_assessment_external_id,
                 self._enrich_pbpp_assessments,
             ],
-            'supervision_sentence': [
-                self._enrich_supervision_sentence,
-                self._set_default_supervision_sentence_type,
-                self._append_additional_charges_to_supervision_sentence,
-            ],
             'supervision_period': [
                 self._unpack_supervision_period_conditions,
                 self._set_supervising_officer,
@@ -209,9 +202,6 @@ class UsPaController(CsvGcsfsDirectIngestController):
             ],
             'dbo_Offender': [],
             'dbo_LSIR': [],
-            'supervision_sentence': [
-                gen_convert_person_ids_to_external_id_objects(self._get_id_type),
-            ],
             'supervision_period': [
                 gen_convert_person_ids_to_external_id_objects(self._get_id_type),
             ],
@@ -231,7 +221,6 @@ class UsPaController(CsvGcsfsDirectIngestController):
             #  view metadata rows
             'incarceration_period': _generate_incarceration_period_primary_key,
             'sci_incarceration_period': _generate_sci_incarceration_period_primary_key,
-            'supervision_sentence': _generate_supervision_sentence_primary_key,
             'supervision_period': _generate_supervision_period_primary_key,
             'supervision_violation': _generate_supervision_violation_primary_key,
             'supervision_violation_response': _generate_supervision_violation_response_primary_key,
@@ -244,7 +233,6 @@ class UsPaController(CsvGcsfsDirectIngestController):
             'incarceration_period': _state_incarceration_period_ancestor_chain_overrides,
             'sci_incarceration_period': _state_incarceration_period_ancestor_chain_overrides,
             'ccis_incarceration_period': _state_incarceration_period_ancestor_chain_overrides,
-            'supervision_sentence': _state_supervision_sentence_ancestor_chain_overrides,
             'supervision_violation_response': _state_supervision_violation_response_ancestor_chain_overrides,
         }
 
@@ -684,10 +672,6 @@ class UsPaController(CsvGcsfsDirectIngestController):
             'dbo_LSIR',
         ]
 
-        # TODO(#5590): Once we have ripped the tests out for this file, move this gate to be prod-only.
-        if not environment.in_gae_staging():
-            launched_file_tags.append('supervision_sentence')
-
         launched_file_tags += [
             'supervision_period',
             'supervision_violation',
@@ -784,8 +768,7 @@ class UsPaController(CsvGcsfsDirectIngestController):
         ]:
             return US_PA_CONTROL
 
-        if file_tag in ['supervision_sentence',
-                        'supervision_period',
+        if file_tag in ['supervision_period',
                         'supervision_violation',
                         'supervision_violation_response',
                         'board_action',
@@ -1141,105 +1124,6 @@ class UsPaController(CsvGcsfsDirectIngestController):
                     obj.date_effective = confinement_date
 
     @staticmethod
-    def _enrich_supervision_sentence(_file_tag: str,
-                                     row: Dict[str, str],
-                                     extracted_objects: List[IngestObject],
-                                     _cache: IngestObjectCache) -> None:
-        """Enriches supervision sentences by setting sentence length and date fields."""
-        is_life = row.get('SentMinSentenceYear', None) == 'LIFE' or row.get('SentMaxSentenceYear', None) == 'LIFE'
-
-        start_date = safe_parse_date_from_date_pieces(row['SentYear'], row['SentMonth'], row['SentDay'])
-        start_date_formatted = start_date.isoformat() if start_date else None
-
-        max_years = row.get('SentMaxSentenceYear', '0')
-        max_months = row.get('SentMaxSentenceMonth', '0')
-        max_days = row.get('SentMaxSentenceDay', '0')
-
-        min_years = row.get('SentMinSentenceYear', '0')
-        min_months = row.get('SentMinSentenceMonth', '0')
-        min_days = row.get('SentMinSentenceDay', '0')
-
-        max_time_days = safe_parse_days_from_duration_pieces(
-            years_str=max_years, months_str=max_months, days_str=max_days, start_dt_str=start_date_formatted)
-
-        min_time_days = safe_parse_days_from_duration_pieces(
-            years_str=min_years, months_str=min_months, days_str=min_days, start_dt_str=start_date_formatted)
-
-        projected_completion_date_formatted = None
-        if not is_life and max_time_days and start_date:
-            projected_completion_date = start_date + timedelta(days=max_time_days)
-            projected_completion_date_formatted = projected_completion_date.isoformat() \
-                if projected_completion_date else None
-
-        probation_indicator = row['SenProbInd'] or None
-        is_probation = probation_indicator == 'Y'
-
-        for obj in extracted_objects:
-            if isinstance(obj, StateSupervisionSentence):
-                if obj.date_imposed in MAGICAL_DATES:
-                    obj.date_imposed = None
-
-                # Probation sentences are the only sentences where we can specify a start date for the
-                # supervision sentence itself, as opposed to a supervision period.
-                if is_probation:
-                    obj.start_date = start_date_formatted
-
-                obj.projected_completion_date = projected_completion_date_formatted
-
-                if not is_life:
-                    max_time = None
-                    min_time = None
-                    if max_years or max_months or max_days:
-                        max_time = max_time_days
-
-                    if min_years or min_months or min_days:
-                        min_time = min_time_days
-
-                    # max_time and min_time refer to incarceration sentence times: the max length of supervision would
-                    # thus be the difference between these two times, because the max_time is also the point at which
-                    # the sentence expires and supervision is no longer permissible
-                    if max_time and min_time:
-                        max_supervision_time = max_time - min_time if max_time >= min_time else 0
-                        obj.max_length = str(max_supervision_time)
-
-            elif isinstance(obj, StateSentenceGroup):
-                if is_life:
-                    obj.is_life = 'True'
-
-    @staticmethod
-    def _set_default_supervision_sentence_type(_file_tag: str,
-                                               row: Dict[str, str],
-                                               extracted_objects: List[IngestObject],
-                                               _cache: IngestObjectCache) -> None:
-        """Defaults the supervision type to PAROLE if the probation indicator field did not get set."""
-        probation_indicator = row['SenProbInd'] or None
-        is_probation = probation_indicator == 'Y'
-
-        for obj in extracted_objects:
-            if isinstance(obj, StateSupervisionSentence):
-                if not is_probation:
-                    obj.supervision_type = StateSupervisionType.PAROLE.value
-
-    @staticmethod
-    def _append_additional_charges_to_supervision_sentence(_file_tag: str,
-                                                           row: Dict[str, str],
-                                                           extracted_objects: List[IngestObject],
-                                                           _cache: IngestObjectCache) -> None:
-        """Optionally appends additional charges to the supervision sentence, if they exist on the row."""
-        second_charge_statute = row.get('sentCodeSentOffense2', None)
-        second_charge_description = row.get('SentOffense2', None)
-
-        third_charge_statute = row.get('sentCodeSentOffense3', None)
-        third_charge_description = row.get('SentOffense3', None)
-
-        for obj in extracted_objects:
-            if isinstance(obj, StateSupervisionSentence):
-                if second_charge_statute or second_charge_description:
-                    obj.create_state_charge(statute=second_charge_statute, description=second_charge_description)
-                if third_charge_statute or third_charge_description:
-                    obj.create_state_charge(statute=third_charge_statute, description=third_charge_description)
-
-    @staticmethod
     def _unpack_supervision_period_conditions(_file_tag: str,
                                               row: Dict[str, str],
                                               extracted_objects: List[IngestObject],
@@ -1467,18 +1351,6 @@ def _state_incarceration_period_ancestor_chain_overrides(_file_tag: str, row: Di
     return {'state_incarceration_sentence': incarceration_sentence_id}
 
 
-def _generate_supervision_sentence_primary_key(_file_tag: str, row: Dict[str, str]) -> IngestFieldCoordinates:
-    person_id = row['ParoleNumber']
-    parole_count = row['ParoleCountID']
-    sentence_group_index = row['Sent16DGroupNumber']
-    sentence_id = row.get('SentenceID', 'none')
-    supervision_sentence_id = f"{person_id}-{parole_count}-{sentence_group_index}-{sentence_id}"
-
-    return IngestFieldCoordinates('state_supervision_sentence',
-                                  'state_supervision_sentence_id',
-                                  supervision_sentence_id)
-
-
 def _generate_supervision_period_primary_key(_file_tag: str, row: Dict[str, str]) -> IngestFieldCoordinates:
     person_id = row['parole_number']
     parole_count = row['parole_count_id']
@@ -1488,15 +1360,6 @@ def _generate_supervision_period_primary_key(_file_tag: str, row: Dict[str, str]
     return IngestFieldCoordinates('state_supervision_period',
                                   'state_supervision_period_id',
                                   supervision_period_id)
-
-
-def _state_supervision_sentence_ancestor_chain_overrides(_file_tag: str, row: Dict[str, str]) -> Dict[str, str]:
-    person_id = row['ParoleNumber']
-    parole_count = row['ParoleCountID']
-    sentence_group_index = row['Sent16DGroupNumber']
-    sentence_group_id = f"{person_id}-{parole_count}-{sentence_group_index}"
-
-    return {'state_sentence_group': sentence_group_id}
 
 
 def _generate_supervision_violation_primary_key(_file_tag: str, row: Dict[str, str]) -> IngestFieldCoordinates:
