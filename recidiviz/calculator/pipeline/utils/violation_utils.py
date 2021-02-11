@@ -16,14 +16,14 @@
 # =============================================================================
 """Utils for working with StateSupervisionViolations and their related entities."""
 from collections import OrderedDict
-from typing import List, Optional, Dict, Tuple, Callable
+from typing import List, Optional, Dict, Tuple
 
 from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_manager import \
     shorthand_for_violation_subtype, sorted_violation_subtypes_by_severity,\
     get_violation_type_subtype_strings_for_violation, violation_type_from_subtype
 from recidiviz.common.constants.state.state_supervision_violation import StateSupervisionViolationType
 from recidiviz.persistence.entity.entity_utils import get_single_state_code
-from recidiviz.persistence.entity.state.entities import StateSupervisionViolation, StateSupervisionViolationResponse
+from recidiviz.persistence.entity.state.entities import StateSupervisionViolation
 
 SUBSTANCE_ABUSE_SUBTYPE_STR: str = 'SUBSTANCE_ABUSE'
 
@@ -139,15 +139,3 @@ def get_violation_type_frequency_counter(violations: List[StateSupervisionViolat
             violation_type_frequency_counter.append(violation_types)
 
     return violation_type_frequency_counter if violation_type_frequency_counter else None
-
-
-def prepare_violation_responses_for_calculations(
-        violation_responses: List[StateSupervisionViolationResponse],
-        pre_processing_function:
-        Optional[Callable[[List[StateSupervisionViolationResponse]], List[StateSupervisionViolationResponse]]]
-) -> List[StateSupervisionViolationResponse]:
-    """Performs the provided pre-processing step on the list of StateSupervisionViolationResponses, if applicable.
-    Else, returns the original |violation_responses| list."""
-    if pre_processing_function:
-        return pre_processing_function(violation_responses)
-    return violation_responses

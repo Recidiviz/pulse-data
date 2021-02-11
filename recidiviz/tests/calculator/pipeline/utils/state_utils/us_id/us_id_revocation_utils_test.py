@@ -14,11 +14,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Tests the functions in us_id_revocation_identification.py"""
+"""Tests the functions in us_id_revocation_utils.py"""
 import unittest
 from datetime import date
 
-from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_revocation_identification import \
+from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_revocation_utils import \
     us_id_revoked_supervision_period_if_revocation_occurred, \
     us_id_filter_supervision_periods_for_revocation_identification, us_id_get_pre_revocation_supervision_type
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
