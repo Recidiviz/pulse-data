@@ -18,8 +18,19 @@
 clients from our ETL pipeline with information received from POs on actions
 taken to give us a unified view of a person on supervision."""
 import logging
+from datetime import date, timedelta
 from typing import Any, Dict, List, Optional
 
+import numpy as np
+
+# TODO(#5768): Remove some of these imports once we've figured out our preferred contact method.
+# TODO(#5769): Remove the rest of these imports when we've moved nextAssessmentDate to the calc pipeline.
+from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_supervision_compliance import (
+    NEW_SUPERVISION_ASSESSMENT_DEADLINE_DAYS,
+    NEW_SUPERVISION_CONTACT_DEADLINE_BUSINESS_DAYS,
+    REASSESSMENT_DEADLINE_DAYS,
+    SUPERVISION_CONTACT_FREQUENCY_REQUIREMENTS,
+)
 from recidiviz.case_triage.case_updates.progress_checker import check_case_update_action_progress
 from recidiviz.case_triage.case_updates.types import CaseUpdateAction, CaseUpdateActionType
 from recidiviz.persistence.database.schema.case_triage.schema import CaseUpdate, ETLClient
@@ -33,6 +44,7 @@ class CasePresenter:
         self.case_update = case_update
 
     def to_json(self) -> Dict[str, Any]:
+        """Converts QueriedClient to json representation for frontend."""
         base_dict = {
             'personExternalId': self.etl_client.person_external_id,
             'fullName': self.etl_client.full_name,
@@ -55,6 +67,18 @@ class CasePresenter:
         if in_progress_actions:
             base_dict['inProgressActions'] = [action.value for action in in_progress_actions]
 
+        # TODO(#5769): We're doing this quickly here and being intentional about the debt we're taking
+        # on. This will be moved to the calculation pipeline once we've shipped the Case Triage MVP.
+        base_dict['nextAssessmentDate'] = str(self._next_assessment_date())
+
+        # TODO(#5768): In the long-term, we plan to move away from enforcing the next contact
+        # and next assessment so explicitly. This is why we're implementing this in QueriedClient
+        # and hard-coding the relation to US_ID as a quick stop gap, as opposed to putting this in
+        # the calculation pipeline where this information _should_ reside.
+        next_face_to_face_date = self._next_face_to_face_date()
+        if next_face_to_face_date:
+            base_dict['nextFaceToFaceDate'] = str(next_face_to_face_date)
+
         return base_dict
 
     def in_progress_officer_actions(self) -> List[CaseUpdateActionType]:
@@ -75,3 +99,38 @@ class CasePresenter:
                 in_progress_actions.append(case_update_action.action_type)
 
         return in_progress_actions
+
+    def _next_assessment_date(self) -> date:
+        # TODO(#5769): Eventually move this method to our calculate pipeline.
+        if self.etl_client.most_recent_assessment_date is None:
+            return self.etl_client.supervision_start_date + timedelta(days=NEW_SUPERVISION_ASSESSMENT_DEADLINE_DAYS)
+        return self.etl_client.most_recent_assessment_date + timedelta(days=REASSESSMENT_DEADLINE_DAYS)
+
+    def _next_face_to_face_date(self) -> Optional[date]:
+        """This method returns the next face-to-face contact date. It returns None if no
+        future face-to-face contact is required."""
+        # TODO(#5768): Eventually delete or move this method to our calculate pipeline.
+        if self.etl_client.most_recent_face_to_face_date is None:
+            return np.busday_offset(
+                self.etl_client.supervision_start_date,
+                NEW_SUPERVISION_CONTACT_DEADLINE_BUSINESS_DAYS,
+                roll='forward',
+            )
+
+        case_type = self.etl_client.case_type
+        supervision_level = self.etl_client.supervision_level
+        if case_type not in SUPERVISION_CONTACT_FREQUENCY_REQUIREMENTS or \
+                supervision_level not in SUPERVISION_CONTACT_FREQUENCY_REQUIREMENTS[case_type]:
+            logging.warning(
+                'Could not find requirements for case type %s, supervision level %s',
+                self.etl_client.case_type,
+                self.etl_client.supervision_level,
+            )
+            return None
+
+        face_to_face_requirements = SUPERVISION_CONTACT_FREQUENCY_REQUIREMENTS[case_type][supervision_level]
+        if face_to_face_requirements[0] == 0:
+            return None
+        return self.etl_client.most_recent_face_to_face_date + timedelta(
+            days=(face_to_face_requirements[1] // face_to_face_requirements[0])
+        )
