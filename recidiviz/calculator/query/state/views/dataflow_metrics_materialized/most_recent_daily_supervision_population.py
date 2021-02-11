@@ -41,16 +41,20 @@ MOST_RECENT_DAILY_SUPERVISION_POPULATION_QUERY_TEMPLATE = \
       FROM
         `{project_id}.{materialized_metrics_dataset}.most_recent_daily_job_id_by_metric_and_state_code_materialized`
     )
-        
+
     SELECT
       state_code,
       person_id,
+      person_external_id,
+      case_type,
       supervision_type,
+      supervising_officer_external_id,
       prioritized_race_or_ethnicity,
       IFNULL(gender, 'EXTERNAL_UNKNOWN') as gender,
       IFNULL(age_bucket, 'EXTERNAL_UNKNOWN') as age_bucket,
       IFNULL(judicial_district_code, 'EXTERNAL_UNKNOWN') as judicial_district_code,
       IFNULL(supervising_district_external_id, 'EXTERNAL_UNKNOWN') as supervising_district_external_id,
+      IFNULL(supervision_level, 'EXTERNAL_UNKNOWN') as supervision_level,
       date_of_supervision
     FROM
       `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_population_metrics_materialized`

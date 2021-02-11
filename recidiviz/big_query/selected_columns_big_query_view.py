@@ -37,7 +37,7 @@ class SelectedColumnsBigQueryView(BigQueryView):
                  should_materialize: bool,
                  dataset_overrides: Optional[Dict[str, str]],
                  **query_format_kwargs: str):
-        query_format_kwargs['columns'] = ',\n'.join(columns)
+        query_format_kwargs['columns'] = ',\n    '.join(columns)
         super().__init__(dataset_id=dataset_id,
                          view_id=view_id,
                          view_query_template=view_query_template,
