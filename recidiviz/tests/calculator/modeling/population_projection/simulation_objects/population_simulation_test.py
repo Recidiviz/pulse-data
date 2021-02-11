@@ -20,10 +20,11 @@ from copy import deepcopy
 import pandas as pd
 from pandas.testing import assert_index_equal
 
-from recidiviz.calculator.modeling.population_projection.population_simulation import PopulationSimulation
 from recidiviz.calculator.modeling.population_projection.simulations.compartment_transitions import \
     CompartmentTransitions
 from recidiviz.calculator.modeling.population_projection.spark_policy import SparkPolicy
+from recidiviz.calculator.modeling.population_projection.simulations.super_simulation.super_simulation_initializer \
+    import SuperSimulationInitializer
 
 
 class TestPopulationSimulation(unittest.TestCase):
@@ -66,6 +67,16 @@ class TestPopulationSimulation(unittest.TestCase):
             'pretrial': 'shell', 'prison': 'full', 'supervision': 'full'
         }
 
+        self.population_simulation_builder = {
+                'population_simulation': {'initializer': 'macro'},
+                'sub_simulation': {'initializer': 'macro'}
+        }
+
+        self.population_simulation_builder_micro = {
+            'population_simulation': {'initializer': 'micro'},
+            'sub_simulation': {'initializer': 'micro'}
+        }
+
     def test_disaggregation_axes_must_be_in_data_dfs(self):
         test_outflows_data = self.test_outflows_data.drop('crime', axis=1)
 
@@ -74,7 +85,8 @@ class TestPopulationSimulation(unittest.TestCase):
         test_total_population_data = self.test_total_population_data.drop('crime', axis=1)
 
         with self.assertRaises(ValueError):
-            population_simulation = PopulationSimulation()
+            population_simulation = SuperSimulationInitializer.build_population_simulation(
+                self.population_simulation_builder)
             population_simulation.simulate_policies(test_outflows_data,
                                                     self.test_transitions_data,
                                                     test_total_population_data,
@@ -84,7 +96,8 @@ class TestPopulationSimulation(unittest.TestCase):
                                                     first_relevant_ts=-5)
 
         with self.assertRaises(ValueError):
-            population_simulation = PopulationSimulation()
+            population_simulation = SuperSimulationInitializer.build_population_simulation(
+                self.population_simulation_builder)
             population_simulation.simulate_policies(self.test_outflows_data,
                                                     self.test_transitions_data,
                                                     test_total_population_data,
@@ -95,7 +108,8 @@ class TestPopulationSimulation(unittest.TestCase):
                                                     )
 
         with self.assertRaises(ValueError):
-            population_simulation = PopulationSimulation()
+            population_simulation = SuperSimulationInitializer.build_population_simulation(
+                self.population_simulation_builder)
             population_simulation.simulate_policies(test_outflows_data,
                                                     self.test_transitions_data,
                                                     self.test_total_population_data,
@@ -105,7 +119,8 @@ class TestPopulationSimulation(unittest.TestCase):
                                                     first_relevant_ts=-5)
 
         with self.assertRaises(ValueError):
-            population_simulation = PopulationSimulation()
+            population_simulation = SuperSimulationInitializer.build_population_simulation(
+                self.population_simulation_builder)
             population_simulation.simulate_policies(self.test_outflows_data,
                                                     test_transitions_data,
                                                     self.test_total_population_data,
@@ -120,13 +135,15 @@ class TestPopulationSimulation(unittest.TestCase):
             test_user_inputs = deepcopy(self.user_inputs)
             test_user_inputs.pop(i)
             with self.assertRaises(ValueError):
-                population_simulation = PopulationSimulation()
+                population_simulation = SuperSimulationInitializer.build_population_simulation(
+                    self.population_simulation_builder)
                 population_simulation.simulate_policies(self.test_outflows_data, self.test_transitions_data,
                                                         self.test_total_population_data, self.simulation_architecture,
                                                         ['crime'], test_user_inputs, first_relevant_ts=-5)
 
     def test_microsim_requires_empty_policy_list(self):
-        population_simulation = PopulationSimulation()
+        population_simulation = SuperSimulationInitializer.build_population_simulation(
+            self.population_simulation_builder_micro)
         with self.assertRaises(ValueError):
             user_inputs = deepcopy(self.user_inputs)
             user_inputs['policy_list'] = [SparkPolicy(CompartmentTransitions.test_non_retroactive_policy,
@@ -139,13 +156,13 @@ class TestPopulationSimulation(unittest.TestCase):
                 disaggregation_axes=['crime'],
                 user_inputs=user_inputs,
                 first_relevant_ts=-5,
-                microsim=True,
                 microsim_data=self.test_outflows_data
             )
 
     def test_baseline_with_backcast_projection_on(self):
         """Assert that the simulation results has negative time steps when the back-cast is enabled"""
-        population_simulation = PopulationSimulation()
+        population_simulation = SuperSimulationInitializer.build_population_simulation(
+            self.population_simulation_builder)
         projection = population_simulation.simulate_policies(
             outflows_data=self.test_outflows_data,
             transitions_data=self.test_transitions_data,
@@ -160,7 +177,8 @@ class TestPopulationSimulation(unittest.TestCase):
 
     def test_baseline_with_backcast_projection_off(self):
         """Assert that microsim simulation results only have positive time steps"""
-        population_simulation = PopulationSimulation()
+        population_simulation = SuperSimulationInitializer.build_population_simulation(
+            self.population_simulation_builder_micro)
         projection = population_simulation.simulate_policies(
             outflows_data=self.test_outflows_data,
             transitions_data=self.test_transitions_data,
@@ -169,7 +187,6 @@ class TestPopulationSimulation(unittest.TestCase):
             disaggregation_axes=['crime'],
             user_inputs=self.user_inputs,
             first_relevant_ts=0,
-            microsim=True,
             microsim_data=self.test_transitions_data
         )
 
@@ -177,7 +194,8 @@ class TestPopulationSimulation(unittest.TestCase):
 
     def test_dropping_data_raises_warning(self):
         """Assert that PopulationSimulation throws an error when some input data goes unused"""
-        population_simulation = PopulationSimulation()
+        population_simulation = SuperSimulationInitializer.build_population_simulation(
+            self.population_simulation_builder)
         non_disaggregated_outflows_data = self.test_outflows_data.copy()
         non_disaggregated_transitions_data = self.test_transitions_data.copy()
         non_disaggregated_total_population_data = self.test_total_population_data.copy()

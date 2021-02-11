@@ -4,7 +4,7 @@ user_inputs:
     projection_years: 13.0
     constant_admissions: true
 
-model_architecture:
+compartments_architecture:
     pretrial: shell
     prison: full
     release: full

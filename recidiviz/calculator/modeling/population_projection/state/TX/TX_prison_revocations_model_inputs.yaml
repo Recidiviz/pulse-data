@@ -4,7 +4,7 @@ user_inputs:
     projection_years: 10.0
     speed_run: true
 
-model_architecture:
+compartments_architecture:
     pre-supervision: shell
     probation: full
     parole: full

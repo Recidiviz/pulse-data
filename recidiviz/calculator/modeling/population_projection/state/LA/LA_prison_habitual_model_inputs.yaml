@@ -4,8 +4,7 @@ user_inputs:
     projection_years: 12.0
     speed_run: true
 
-
-model_architecture:
+compartments_architecture:
     pretrial: shell
     prison: full
     probation: full
@@ -24,7 +23,6 @@ disaggregation_axes:
 
 data_inputs:
   big_query_simulation_tag: LA_HB_364
-
 
 per_year_costs:
   prison: 24683.0

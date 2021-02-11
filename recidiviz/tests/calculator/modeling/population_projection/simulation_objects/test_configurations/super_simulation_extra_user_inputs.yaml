@@ -5,7 +5,7 @@ user_inputs:
   projection_years: 10.0
   end_year: 2021.0
 
-model_architecture:
+compartments_architecture:
     PRETRIAL: shell
     RELEASE: full
     PRISON: full

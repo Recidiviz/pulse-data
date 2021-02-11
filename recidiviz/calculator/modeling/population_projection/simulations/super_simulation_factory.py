@@ -59,7 +59,7 @@ class SuperSimulationFactory:
 
         model_params['user_inputs_raw'] = cls._get_user_inputs(initialization_params, model_params)
 
-        model_params['simulation_compartments_architecture'], model_params['compartment_costs'] = \
+        model_params['compartments_architecture'], model_params['compartment_costs'] = \
             cls._get_valid_compartments(initialization_params)
 
         return model_params
@@ -68,7 +68,7 @@ class SuperSimulationFactory:
     def _check_valid_yaml_inputs(initialization_params: YAMLDict) -> None:
         # Make sure only one input setting is provided in the yaml file
 
-        required_inputs = {'user_inputs', 'model_architecture', 'reference_date', 'time_step', 'data_inputs',
+        required_inputs = {'user_inputs', 'compartments_architecture', 'reference_date', 'time_step', 'data_inputs',
                            'disaggregation_axes', 'per_year_costs'}
         given_inputs = set(initialization_params.keys())
 
@@ -141,13 +141,13 @@ class SuperSimulationFactory:
     def _get_valid_compartments(initialization_params: YAMLDict) -> Tuple[Dict[str, str], Dict[str, float]]:
         """Helper to retrieve model_architecture and compartment costs for get_model_params"""
 
-        model_architecture_yaml_key = 'model_architecture'
-        model_architecture_raw = initialization_params.pop_dict(model_architecture_yaml_key)
-        model_architecture_keys = model_architecture_raw.keys()
+        compartments_architecture_yaml_key = 'compartments_architecture'
+        compartments_architecture_raw = initialization_params.pop_dict(compartments_architecture_yaml_key)
+        compartments_architecture_keys = compartments_architecture_raw.keys()
 
-        model_architecture_dict: Dict[str, Any] = dict()
-        for k in model_architecture_keys:
-            model_architecture_dict[k] = model_architecture_raw.pop_optional(k, str)
+        compartments_architecture_dict: Dict[str, Any] = dict()
+        for k in compartments_architecture_keys:
+            compartments_architecture_dict[k] = compartments_architecture_raw.pop_optional(k, str)
 
         compartment_costs_key = 'per_year_costs'
         compartment_costs_raw = initialization_params.pop_dict(compartment_costs_key)
@@ -158,12 +158,14 @@ class SuperSimulationFactory:
             compartment_costs_dict[k] = compartment_costs_raw.pop(k, float)
 
         # Ensure there are compartment costs for every compartment in the model architecture
-        model_compartments = set(c for c in model_architecture_keys if model_architecture_dict[c] != 'shell')
+        model_compartments = set(
+            c for c in compartments_architecture_keys if compartments_architecture_dict[c] != 'shell')
         compartment_costs = set(compartment_costs_keys)
         if compartment_costs != model_compartments:
             raise ValueError(
-                f"Compartments do not match in the YAML '{compartment_costs_key}' and '{model_architecture_yaml_key}'\n"
+                f"Compartments do not match in the YAML '{compartment_costs_key}' "
+                f"and '{compartments_architecture_yaml_key}'\n"
                 f"Mismatched values: {compartment_costs ^ model_compartments}"
             )
 
-        return model_architecture_dict, compartment_costs_dict
+        return compartments_architecture_dict, compartment_costs_dict

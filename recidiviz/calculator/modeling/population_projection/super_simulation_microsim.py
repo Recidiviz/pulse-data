@@ -23,7 +23,10 @@ import pandas as pd
 
 from recidiviz.calculator.modeling.population_projection.super_simulation import SuperSimulation
 from recidiviz.calculator.modeling.population_projection import ignite_bq_utils
-from recidiviz.calculator.modeling.population_projection.population_simulation import PopulationSimulation
+from recidiviz.calculator.modeling.population_projection.simulations.super_simulation.super_simulation_initializer \
+    import SuperSimulationInitializer
+from recidiviz.calculator.modeling.population_projection.simulations.population_simulation.population_simulation \
+    import PopulationSimulation
 
 
 class MicroSuperSimulation(SuperSimulation):
@@ -72,6 +75,12 @@ class MicroSuperSimulation(SuperSimulation):
         # this will be populated in the PopulationSimulation
         self.user_inputs['policy_list'] = []
 
+    def _build_population_simulation(self) -> PopulationSimulation:
+        return SuperSimulationInitializer.build_population_simulation({
+            'population_simulation': {'initializer': 'micro'},
+            'sub_simulation': {'initializer': 'micro'}
+        })
+
     def _simulate_baseline(self, simulation_title: str, first_relevant_ts: int = None):
         """
         Calculates a baseline projection, returns transition error for a specific transition
@@ -90,12 +99,12 @@ class MicroSuperSimulation(SuperSimulation):
             self.data_dict['total_population_data'][
                 self.data_dict['total_population_data'].run_date == self.data_dict[
                     'total_population_data'].run_date.max()],
-            self.data_dict['simulation_compartments_architecture'],
+            self.data_dict['compartments_architecture'],
             self.data_dict['disaggregation_axes']
         )
 
         self.pop_simulations[simulation_title].simulate_policies(*simulation_data_inputs, self.user_inputs,
-                                                                 first_relevant_ts=first_relevant_ts, microsim=True,
+                                                                 first_relevant_ts=first_relevant_ts,
                                                                  microsim_data=self.data_dict['transitions_data'])
 
         self.output_data[simulation_title] = \
@@ -110,7 +119,7 @@ class MicroSuperSimulation(SuperSimulation):
 
         for start_date in start_run_dates:
             self.user_inputs['run_date'] = start_date
-            self.pop_simulations[f"start date: {start_date}"] = PopulationSimulation()
+            self.pop_simulations[f"start date: {start_date}"] = self._build_population_simulation()
             self._simulate_baseline(simulation_title=f"start date: {start_date}")
 
     def _prep_for_upload(self, projection_data: pd.DataFrame):

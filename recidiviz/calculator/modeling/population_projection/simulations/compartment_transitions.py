@@ -16,6 +16,7 @@
 # =============================================================================
 """FullCompartment-specific table containing probabilities of transition to other FullCompartments"""
 
+
 from copy import deepcopy
 from typing import Any, Dict, List, Optional
 import numpy as np

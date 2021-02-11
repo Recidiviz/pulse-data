@@ -23,8 +23,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-from recidiviz.calculator.modeling.population_projection.population_simulation import PopulationSimulation
-# pylint: disable=line-too-long
+from recidiviz.calculator.modeling.population_projection.simulations.population_simulation.population_simulation \
+    import PopulationSimulation
 
 
 class SuperSimulation(ABC):
@@ -40,8 +40,8 @@ class SuperSimulation(ABC):
 
         self._initialize_data(model_params_dict['data_inputs_raw'])
 
-        self.data_dict['simulation_compartments_architecture'] = \
-            model_params_dict['simulation_compartments_architecture']
+        self.data_dict['compartments_architecture'] = \
+            model_params_dict['compartments_architecture']
 
         self.data_dict['disaggregation_axes'] = model_params_dict['disaggregation_axes']
 
@@ -102,6 +102,10 @@ class SuperSimulation(ABC):
         self.user_inputs['constant_admissions'] = yaml_user_inputs.get('constant_admissions', False)
         self.user_inputs['speed_run'] = yaml_user_inputs.get('speed_run', False)
 
+    @abstractmethod
+    def _build_population_simulation(self):
+        """Build and initialize a population simulation."""
+
     def _reset_pop_simulations(self):
         self.pop_simulations = {}
 
@@ -116,7 +120,8 @@ class SuperSimulation(ABC):
         self._reset_pop_simulations()
 
         if first_relevant_ts is not None and first_relevant_ts < self.user_inputs['start_time_step']:
-            raise ValueError(f"first_relevant_ts ({first_relevant_ts}) must be less than start_time_step ({self.user_inputs['start_time_step']}")
+            raise ValueError(f"first_relevant_ts ({first_relevant_ts}) must be less than start_time_step "
+                             f"({self.user_inputs['start_time_step']}")
 
             # Run one simulation for the min and max confidence interval
         for projection_type in ['min', 'max']:
@@ -154,7 +159,7 @@ class SuperSimulation(ABC):
         `first_relevant_ts` is the ts at which to start initialization
         """
 
-        self.pop_simulations[simulation_title] = PopulationSimulation()
+        self.pop_simulations[simulation_title] = self._build_population_simulation()
         self.user_inputs['policy_list'] = []
 
     def calculate_baseline_transition_error(self, validation_pairs: Dict[str, str]):
