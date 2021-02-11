@@ -23,14 +23,13 @@ from typing import List, Dict, Any, Optional, Tuple
 
 from opencensus.stats import aggregation, measure, view
 
-from flask import Blueprint, request
+from flask import Blueprint
 
 from recidiviz.big_query import view_update_manager
 from recidiviz.utils import monitoring, structured_logging
 from recidiviz.utils.auth.gae import requires_gae_auth
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
-from recidiviz.utils.params import get_bool_param_value
 from recidiviz.validation.checks.check_resolver import checker_for_validation
 
 from recidiviz.validation.configured_validations import get_all_validations, \
@@ -68,18 +67,17 @@ validation_manager_blueprint = Blueprint('validation_manager', __name__)
 @requires_gae_auth
 def handle_validation_request() -> Tuple[str, HTTPStatus]:
     """API endpoint to service data validation requests."""
-    should_update_views = get_bool_param_value('should_update_views', request.args, default=False)
-    failed_validations = execute_validation(should_update_views=should_update_views)
+    failed_validations = execute_validation(rematerialize_views=True)
 
     return _readable_response(failed_validations), HTTPStatus.OK
 
 
 def execute_validation(
-        should_update_views: bool, region_code_filter: Optional[str] = None) -> List[DataValidationJobResult]:
+        rematerialize_views: bool, region_code_filter: Optional[str] = None) -> List[DataValidationJobResult]:
     """Executes all validation checks. If |region_code_filter| is supplied, limits validations to just that region."""
-    if should_update_views:
+    if rematerialize_views:
         logging.info('Received query param "should_update_views" = true, updating validation dataset and views... ')
-        view_update_manager.create_dataset_and_update_all_views()
+        view_update_manager.rematerialize_views()
 
     # Fetch collection of validation jobs to perform
     validation_jobs = _fetch_validation_jobs_to_perform(region_code_filter)
@@ -175,4 +173,4 @@ if __name__ == '__main__':
     project_id = GCP_PROJECT_STAGING
     logging.getLogger().setLevel(logging.INFO)
     with local_project_id_override(project_id):
-        execute_validation(should_update_views=True, region_code_filter=None)
+        execute_validation(rematerialize_views=True, region_code_filter=None)
