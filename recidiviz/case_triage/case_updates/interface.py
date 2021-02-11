@@ -14,21 +14,16 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Implements interface for querying client_actions_taken."""
-from enum import Enum
+"""Implements interface for querying case_updates."""
+from datetime import datetime
 from typing import Any, Dict, List, Optional
 
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
-from recidiviz.persistence.database.schema.case_triage.schema import CaseUpdate, ETLOfficer
-
-
-class CaseUpdateActionType(Enum):
-    DISCHARGE_INITIATED = 'DISCHARGE_INITIATED'
-    DOWNGRADE_INITIATED = 'DOWNGRADE_INITIATED'
-
-    NOT_ON_CASELOAD = 'NOT_ON_CASELOAD'
+from recidiviz.case_triage.case_updates.types import CaseUpdateActionType
+from recidiviz.case_triage.case_updates.serializers import serialize_case_update_action
+from recidiviz.persistence.database.schema.case_triage.schema import CaseUpdate, ETLClient, ETLOfficer
 
 
 class CaseUpdatesInterface:
@@ -37,7 +32,7 @@ class CaseUpdatesInterface:
     @staticmethod
     def update_case_for_person(session: Session,
                                officer: ETLOfficer,
-                               person_external_id: str,
+                               client: ETLClient,
                                actions: List[CaseUpdateActionType],
                                other_text: Optional[str] = None) -> None:
         """This method updates the case_updates table with the newly provided actions.
@@ -45,12 +40,12 @@ class CaseUpdatesInterface:
         Because the underlying table does not have foreign key constraints, independent
         validation must be provided before calling this method.
         """
-        update_metadata: Dict[str, Any] = {'actions': [a.value for a in actions]}
+        update_metadata: Dict[str, Any] = {'actions': CaseUpdatesInterface.serialize_actions(client, actions)}
         if other_text:
             update_metadata['otherText'] = other_text
 
         insert_statement = insert(CaseUpdate).values(
-            person_external_id=person_external_id,
+            person_external_id=client.person_external_id,
             officer_external_id=officer.external_id,
             state_code=officer.state_code,
             update_metadata=update_metadata,
@@ -62,3 +57,11 @@ class CaseUpdatesInterface:
         )
         session.execute(insert_statement)
         session.commit()
+
+    @staticmethod
+    def serialize_actions(client: ETLClient,
+                          actions: List[CaseUpdateActionType]) -> List[Dict[str, Any]]:
+        """Serializes a list of actions for a client into the necessary metadata needed to eventually
+        retrieve it."""
+        now = datetime.now()
+        return [serialize_case_update_action(action, client, now).to_json() for action in actions]
