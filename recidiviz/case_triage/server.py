@@ -24,12 +24,13 @@ from flask_sqlalchemy_session import current_session, flask_scoped_session
 from sqlalchemy.orm import sessionmaker
 
 from recidiviz.case_triage.authorization import AuthorizationStore
-from recidiviz.case_triage.case_updates import CaseUpdateActionType, CaseUpdatesInterface
+from recidiviz.case_triage.case_updates.interface import CaseUpdatesInterface
+from recidiviz.case_triage.case_updates.types import CaseUpdateActionType
 from recidiviz.case_triage.exceptions import (
     CaseTriageAuthorizationError,
     CaseTriageBadRequestException,
 )
-from recidiviz.case_triage.querier import CaseTriageQuerier, PersonDoesNotExistError
+from recidiviz.case_triage.querier.querier import CaseTriageQuerier, PersonDoesNotExistError
 from recidiviz.case_triage.util import get_local_secret
 from recidiviz.persistence.database.base_schema import CaseTriageBase
 from recidiviz.persistence.database.sqlalchemy_engine_manager import SQLAlchemyEngineManager, SchemaType
@@ -173,7 +174,11 @@ def record_client_action() -> str:
 
     state_code = g.current_user.state_code
     try:
-        _ = CaseTriageQuerier.client_with_id_and_state_code(current_session, person_external_id, state_code)
+        client = CaseTriageQuerier.etl_client_with_id_and_state_code(
+            current_session,
+            person_external_id,
+            state_code,
+        )
     except PersonDoesNotExistError as e:
         raise CaseTriageBadRequestException(
             code='invalid_arg',
@@ -183,7 +188,7 @@ def record_client_action() -> str:
     CaseUpdatesInterface.update_case_for_person(
         current_session,
         g.current_user,
-        person_external_id,
+        client,
         user_initiated_actions,
         other_text,
     )

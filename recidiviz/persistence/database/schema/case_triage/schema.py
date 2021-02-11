@@ -19,8 +19,6 @@
 for Case Triage related entities.
 
 """
-from typing import Any, Dict
-
 from sqlalchemy import Column, Boolean, Date, String, Text, UniqueConstraint
 from sqlalchemy.dialects.postgresql import JSONB
 
@@ -46,23 +44,6 @@ class ETLClient(CaseTriageBase):
     employer = Column(String(255))
     most_recent_assessment_date = Column(Date)
     most_recent_face_to_face_date = Column(Date)
-
-    def to_json(self) -> Dict[str, Any]:
-        return {
-            'person_external_id': self.person_external_id,
-            'full_name': self.full_name,
-            'supervising_officer_external_id': self.supervising_officer_external_id,
-            'current_address': self.current_address,
-            'birthdate': self.birthdate,
-            'birthdate_inferred_from_age': self.birthdate_inferred_from_age,
-            'supervision_type': self.supervision_type,
-            'case_type': self.case_type,
-            'supervision_level': self.supervision_level,
-            'state_code': self.state_code,
-            'employer': self.employer,
-            'most_recent_assessment_date': self.most_recent_assessment_date,
-            'most_recent_face_to_face_date': self.most_recent_face_to_face_date,
-        }
 
 
 class ETLOfficer(CaseTriageBase):
