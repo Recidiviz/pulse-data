@@ -15,15 +15,20 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Implements tests for the CaseUpdatesInterface."""
+from datetime import date, datetime
 from typing import Optional
 from unittest.case import TestCase
 
 import pytest
+from freezegun import freeze_time
 
-from recidiviz.case_triage.case_updates import CaseUpdatesInterface, CaseUpdateActionType
+from recidiviz.case_triage.case_updates.interface import CaseUpdatesInterface
+from recidiviz.case_triage.case_updates.progress_checker import check_case_update_action_progress
+from recidiviz.case_triage.case_updates.types import CaseUpdateAction, CaseUpdateActionType, CaseUpdateMetadataKeys
 from recidiviz.persistence.database.base_schema import CaseTriageBase
-from recidiviz.persistence.database.schema.case_triage.schema import CaseUpdate, ETLOfficer
+from recidiviz.persistence.database.schema.case_triage.schema import CaseUpdate
 from recidiviz.persistence.database.session_factory import SessionFactory
+from recidiviz.tests.case_triage.case_triage_helpers import generate_fake_client, generate_fake_officer
 from recidiviz.tools.postgres import local_postgres_helpers
 
 
@@ -41,12 +46,10 @@ class TestCaseUpdatesInterface(TestCase):
     def setUp(self) -> None:
         local_postgres_helpers.use_on_disk_postgresql_database(CaseTriageBase)
 
-        self.mock_officer = ETLOfficer(
-            external_id='officer_id_1',
-            state_code='US_ID',
-            email_address='officer1@recidiviz.org',
-            given_names='TEST',
-            surname='OFFICER',
+        self.mock_officer = generate_fake_officer('id_1')
+        self.mock_client = generate_fake_client(
+            'person_id_1',
+            last_assessment_date=date(2021, 2, 1),
         )
 
     def tearDown(self) -> None:
@@ -62,20 +65,22 @@ class TestCaseUpdatesInterface(TestCase):
         CaseUpdatesInterface.update_case_for_person(
             commit_session,
             self.mock_officer,
-            'person_id_1',
+            self.mock_client,
             [CaseUpdateActionType.DISCHARGE_INITIATED],
         )
 
         read_session = SessionFactory.for_schema_base(CaseTriageBase)
         self.assertEqual(len(read_session.query(CaseUpdate).all()), 1)
 
+    @freeze_time('2020-01-02 00:00')
     def test_update_case_for_person(self) -> None:
+        now = datetime(2020, 1, 2, 0, 0, 0)
         commit_session = SessionFactory.for_schema_base(CaseTriageBase)
 
         CaseUpdatesInterface.update_case_for_person(
             commit_session,
             self.mock_officer,
-            'person_id_1',
+            self.mock_client,
             [CaseUpdateActionType.DISCHARGE_INITIATED],
         )
 
@@ -84,7 +89,10 @@ class TestCaseUpdatesInterface(TestCase):
         self.assertEqual(len(read_session.query(CaseUpdate).all()), 1)
         self.assertEqual(
             read_session.query(CaseUpdate).one().update_metadata['actions'],
-            [CaseUpdateActionType.DISCHARGE_INITIATED.value],
+            [{
+                CaseUpdateMetadataKeys.ACTION: CaseUpdateActionType.DISCHARGE_INITIATED.value,
+                CaseUpdateMetadataKeys.ACTION_TIMESTAMP: str(now),
+            }],
         )
 
         # Perform update
@@ -93,7 +101,7 @@ class TestCaseUpdatesInterface(TestCase):
         CaseUpdatesInterface.update_case_for_person(
             commit_session,
             self.mock_officer,
-            'person_id_1',
+            self.mock_client,
             [CaseUpdateActionType.DOWNGRADE_INITIATED],
         )
 
@@ -102,5 +110,73 @@ class TestCaseUpdatesInterface(TestCase):
         self.assertEqual(len(read_session.query(CaseUpdate).all()), 1)
         self.assertEqual(
             read_session.query(CaseUpdate).one().update_metadata['actions'],
-            [CaseUpdateActionType.DOWNGRADE_INITIATED.value],
+            [{
+                CaseUpdateMetadataKeys.ACTION: CaseUpdateActionType.DOWNGRADE_INITIATED.value,
+                CaseUpdateMetadataKeys.ACTION_TIMESTAMP: str(now),
+                CaseUpdateMetadataKeys.LAST_SUPERVISION_LEVEL: self.mock_client.supervision_level,
+            }],
         )
+
+    @freeze_time('2020-01-02 00:00')
+    def test_serialize_actions(self) -> None:
+        now = datetime(2020, 1, 2, 0, 0, 0)
+        serialized_actions = CaseUpdatesInterface.serialize_actions(
+            self.mock_client,
+            list(CaseUpdateActionType),
+        )
+
+        self.assertEqual(
+            serialized_actions,
+            [
+                {
+                    'action': 'COMPLETED_ASSESSMENT',
+                    'action_ts': str(now),
+                    'last_recorded_date': str(self.mock_client.most_recent_assessment_date),
+                },
+                {
+                    'action': 'DISCHARGE_INITIATED',
+                    'action_ts': str(now),
+                },
+                {
+                    'action': 'DOWNGRADE_INITIATED',
+                    'action_ts': str(now),
+                    'last_supervision_level': self.mock_client.supervision_level,
+                },
+                {
+                    'action': 'FOUND_EMPLOYMENT',
+                    'action_ts': str(now),
+                },
+                {
+                    'action': 'SCHEDULED_FACE_TO_FACE',
+                    'action_ts': str(now),
+                },
+                {
+                    'action': 'INFORMATION_DOESNT_MATCH_OMS',
+                    'action_ts': str(now),
+                },
+                {
+                    'action': 'NOT_ON_CASELOAD',
+                    'action_ts': str(now),
+                },
+                {
+                    'action': 'FILED_REVOCATION_OR_VIOLATION',
+                    'action_ts': str(now),
+                },
+                {
+                    'action': 'OTHER_DISMISSAL',
+                    'action_ts': str(now),
+                },
+            ],
+        )
+
+    def test_progress_checking(self) -> None:
+        serialized_actions = CaseUpdatesInterface.serialize_actions(
+            self.mock_client,
+            list(CaseUpdateActionType),
+        )
+
+        for serialized_action in serialized_actions:
+            self.assertTrue(
+                check_case_update_action_progress(self.mock_client, CaseUpdateAction.from_json(serialized_action)),
+                msg=f'Action {serialized_action["action"]} does not report in-progress == True',
+            )

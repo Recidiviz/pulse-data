@@ -21,33 +21,11 @@ from unittest.case import TestCase
 import pytest
 import sqlalchemy.orm.exc
 
-from recidiviz.case_triage.querier import CaseTriageQuerier, PersonDoesNotExistError
+from recidiviz.case_triage.querier.querier import CaseTriageQuerier, PersonDoesNotExistError
 from recidiviz.persistence.database.base_schema import CaseTriageBase
-from recidiviz.persistence.database.schema.case_triage.schema import ETLClient, ETLOfficer
 from recidiviz.persistence.database.session_factory import SessionFactory
+from recidiviz.tests.case_triage.case_triage_helpers import generate_fake_client, generate_fake_officer
 from recidiviz.tools.postgres import local_postgres_helpers
-
-
-def generate_fake_officer(officer_id: str, email: str = 'nonexistent_email.com') -> ETLOfficer:
-    return ETLOfficer(
-        external_id=officer_id,
-        email_address=email,
-        state_code='US_XX',
-        given_names='Test',
-        surname='Officer',
-    )
-
-
-def generate_fake_client(client_id: str, supervising_officer_id: str = 'id_1') -> ETLClient:
-    return ETLClient(
-        person_external_id=client_id,
-        full_name='TEST NAME',
-        supervising_officer_external_id=supervising_officer_id,
-        supervision_type='TYPE',
-        case_type='TYPE',
-        supervision_level='LEVEL',
-        state_code='US_XX',
-    )
 
 
 @pytest.mark.uses_db
@@ -121,7 +99,7 @@ class TestCaseTriageQuerier(TestCase):
             0,
         )
 
-    def test_client_with_id_and_state_code(self) -> None:
+    def test_etl_client_with_id_and_state_code(self) -> None:
         client_1 = generate_fake_client('client_1')
         session = SessionFactory.for_schema_base(CaseTriageBase)
         session.add(client_1)
@@ -129,7 +107,7 @@ class TestCaseTriageQuerier(TestCase):
 
         read_session = SessionFactory.for_schema_base(CaseTriageBase)
         with self.assertRaises(PersonDoesNotExistError):
-            CaseTriageQuerier.client_with_id_and_state_code(read_session, 'nonexistent', 'US_XX')
+            CaseTriageQuerier.etl_client_with_id_and_state_code(read_session, 'nonexistent', 'US_XX')
 
         # Should not raise an error
-        CaseTriageQuerier.client_with_id_and_state_code(read_session, 'client_1', 'US_XX')
+        CaseTriageQuerier.etl_client_with_id_and_state_code(read_session, 'client_1', 'US_XX')
