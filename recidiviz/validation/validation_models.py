@@ -24,9 +24,7 @@ import attr
 
 from recidiviz.big_query.big_query_view import BigQueryView
 from recidiviz.common.attr_mixins import BuildableAttr
-from recidiviz.utils import metadata
 from recidiviz.validation.validation_config import ValidationRegionConfig
-from recidiviz.validation.views import dataset_config
 
 
 class ValidationCheckType(Enum):
@@ -57,12 +55,7 @@ class DataValidationCheck(BuildableAttr):
         """
 
     def query_str_for_region_code(self, region_code: str) -> str:
-        return "SELECT * FROM `{project_id}.{dataset}.{table}` " \
-               " WHERE region_code = '{region_code}'" \
-            .format(project_id=metadata.project_id(),
-                    dataset=dataset_config.VIEWS_DATASET,
-                    table=self.view.view_id,
-                    region_code=region_code)
+        return f"{self.view.select_query} WHERE region_code = '{region_code}';"
 
 
 DataValidationType = TypeVar('DataValidationType', bound=DataValidationCheck)

@@ -52,19 +52,25 @@ INCARCERATION_POPULATION_BY_FACILITY_EXTERNAL_COMPARISON_QUERY_TEMPLATE = \
         LEFT JOIN
           internal_incarceration_population        
         USING(state_code, date_of_stay)
+    ),
+    comparison AS (
+        SELECT
+          state_code as region_code,
+          date_of_stay,
+          facility,
+          IFNULL(population_count, 0) as external_population_count,
+          IFNULL(internal_population_count, 0) as internal_population_count
+        FROM
+          `{project_id}.{external_accuracy_dataset}.incarceration_population_by_facility`
+        FULL OUTER JOIN
+          relevant_internal_incarceration_population
+        USING (state_code, date_of_stay, facility)
     )
-     
-    SELECT
-      state_code as region_code,
-      date_of_stay,
-      facility,
-      IFNULL(population_count, 0) as external_population_count,
-      IFNULL(internal_population_count, 0) as internal_population_count
-    FROM
-      `{project_id}.{external_accuracy_dataset}.incarceration_population_by_facility`
-    FULL OUTER JOIN
-      relevant_internal_incarceration_population
-    USING (state_code, date_of_stay, facility)
+    SELECT *
+    FROM comparison
+    -- We filter out populations where the facility has fewer than 10 because an off by one error can cause a huge error
+    -- percentage.
+    WHERE external_population_count >= 10
     ORDER BY region_code, date_of_stay, facility
 """
 
