@@ -24,7 +24,7 @@ Run locally with the following command:
     python -m recidiviz.tools.create_or_update_dataflow_metrics_sandbox \
         --project_id [PROJECT_ID] \
         --sandbox_dataset_prefix [SANDBOX_DATASET_PREFIX] \
-        [--allow-overwrite]
+        [--allow_overwrite]
 """
 import argparse
 import logging
