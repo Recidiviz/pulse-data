@@ -43,6 +43,7 @@ def generate_fake_client(client_id: str,
         case_type='TYPE',
         supervision_level='LEVEL',
         state_code='US_XX',
+        supervision_start_date=date(2018, 1, 1),
         most_recent_assessment_date=last_assessment_date,
         most_recent_face_to_face_date=last_face_to_face_date,
     )
