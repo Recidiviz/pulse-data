@@ -94,6 +94,7 @@ class Region:
     agency_name: str = attr.ib()
     agency_type: str = attr.ib()
     timezone: tzinfo = attr.ib(converter=pytz.timezone)
+    region_module: ModuleType = attr.ib(default=None)
     environment: Optional[str] = attr.ib(default=None)
     base_url: Optional[str] = attr.ib(default=None)
     shared_queue: Optional[str] = attr.ib(default=None)
@@ -128,12 +129,12 @@ class Region:
         Returns:
             An instance of the region's ingest class (e.g., UsNyScraper)
         """
-        ingest_module = 'direct' if self.is_direct_ingest else 'scrape'
         ingest_type_name = 'Controller' if self.is_direct_ingest else 'Scraper'
 
         module_name = \
-            f'recidiviz.ingest.{ingest_module}.regions.{self.region_code}' \
+            f'{self.region_module.__name__}.{self.region_code}' \
             f'.{self.region_code}_{ingest_type_name.lower()}'
+
         module = importlib.import_module(module_name)
         ingest_class = getattr(
             module, get_ingestor_name(self.region_code, ingest_type_name))
@@ -266,8 +267,16 @@ class Region:
              self.ingest_view_exports_enabled_env == environment.get_gae_environment())
 
 
-def get_region(region_code: str, is_direct_ingest: bool = False) -> Region:
+def get_region(region_code: str, is_direct_ingest: bool = False,
+               region_module_override: Optional[ModuleType] = None) -> Region:
     global REGIONS
+
+    if region_module_override:
+        region_module = region_module_override
+    elif is_direct_ingest:
+        region_module = direct_ingest_regions_module
+    else:
+        region_module = scraper_regions_module
 
     ingest_type = IngestType.DIRECT_INGEST if is_direct_ingest else IngestType.SCRAPER
     if ingest_type not in REGIONS:
@@ -276,7 +285,8 @@ def get_region(region_code: str, is_direct_ingest: bool = False) -> Region:
     if region_code not in REGIONS[ingest_type]:
         REGIONS[ingest_type][region_code] = Region(region_code=region_code.lower(),
                                                    is_direct_ingest=is_direct_ingest,
-                                                   **get_region_manifest(region_code.lower(), is_direct_ingest))
+                                                   region_module=region_module,
+                                                   **get_region_manifest(region_code.lower(), region_module))
     return REGIONS[ingest_type][region_code]
 
 
@@ -284,20 +294,15 @@ MANIFEST_NAME = 'manifest.yaml'
 
 
 def get_region_manifest(region_code: str,
-                        is_direct_ingest: bool = False) -> Dict[str, Any]:
+                        region_module: ModuleType) -> Dict[str, Any]:
     """Gets manifest for a specific region
 
     Args:
         region_code: (string) Region code
-        is_direct_ingest: (bool) Flag indicating to read the region info as if
-            it's a direct ingest partner.
 
     Returns:
         Region manifest as dictionary
     """
-    region_module = \
-        direct_ingest_regions_module \
-        if is_direct_ingest else scraper_regions_module
     with open(os.path.join(os.path.dirname(region_module.__file__),
                            region_code,
                            MANIFEST_NAME)) as region_manifest:
