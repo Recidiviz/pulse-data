@@ -21,7 +21,7 @@ from datetime import datetime
 from unittest import mock
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.cloud_storage.gcs_pseudo_lock_manager import GCSPseudoLockManager, GCSPseudoLockAlreadyExists, \
-    GCSPseudoLockDoesNotExist, INGEST_RUNNING_LOCK_PREFIX
+    GCSPseudoLockDoesNotExist, GCS_TO_POSTGRES_INGEST_RUNNING_LOCK_NAME
 from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 
 
@@ -160,12 +160,12 @@ class GCSPseudoLockManagerTest(unittest.TestCase):
     def test_region_are_running(self) -> None:
         """Ensures lock manager can see regions are running"""
         lock_manager = GCSPseudoLockManager(self.PROJECT_ID)
-        lock_manager.lock(INGEST_RUNNING_LOCK_PREFIX + self.REGION.upper())
-        self.assertFalse(lock_manager.no_active_locks_with_prefix(INGEST_RUNNING_LOCK_PREFIX))
+        lock_manager.lock(GCS_TO_POSTGRES_INGEST_RUNNING_LOCK_NAME + self.REGION.upper())
+        self.assertFalse(lock_manager.no_active_locks_with_prefix(GCS_TO_POSTGRES_INGEST_RUNNING_LOCK_NAME))
 
     def test_region_are_not_running(self) -> None:
         """Ensures lock manager can see regions are not running"""
         lock_manager = GCSPseudoLockManager(self.PROJECT_ID)
-        lock_manager.lock(INGEST_RUNNING_LOCK_PREFIX + self.REGION.upper())
-        lock_manager.unlock(INGEST_RUNNING_LOCK_PREFIX + self.REGION.upper())
-        self.assertTrue(lock_manager.no_active_locks_with_prefix(INGEST_RUNNING_LOCK_PREFIX))
+        lock_manager.lock(GCS_TO_POSTGRES_INGEST_RUNNING_LOCK_NAME + self.REGION.upper())
+        lock_manager.unlock(GCS_TO_POSTGRES_INGEST_RUNNING_LOCK_NAME + self.REGION.upper())
+        self.assertTrue(lock_manager.no_active_locks_with_prefix(GCS_TO_POSTGRES_INGEST_RUNNING_LOCK_NAME))

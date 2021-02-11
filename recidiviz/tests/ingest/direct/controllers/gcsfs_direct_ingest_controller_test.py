@@ -59,6 +59,7 @@ from recidiviz.tests.ingest.direct import fixture_util
 from recidiviz.tests.utils.fake_region import TEST_STATE_REGION, \
     TEST_COUNTY_REGION, fake_region
 from recidiviz.tools.postgres import local_postgres_helpers
+from recidiviz.cloud_storage.gcs_pseudo_lock_manager import POSTGRES_TO_BQ_EXPORT_RUNNING_LOCK_NAME
 
 CsvGcsfsDirectIngestControllerT = TypeVar('CsvGcsfsDirectIngestControllerT', bound=CsvGcsfsDirectIngestController)
 
@@ -314,6 +315,68 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
         self.check_imported_path_count(controller, 3)
 
         self.check_tags(controller, controller.get_file_tag_rank_list())
+
+    @patch('recidiviz.cloud_storage.gcs_pseudo_lock_manager.GcsfsFactory.build', Mock(return_value=FakeGCSFileSystem()))
+    @patch("recidiviz.utils.regions.get_region", Mock(return_value=TEST_SQL_PRE_PROCESSING_LAUNCHED_REGION))
+    def test_state_runs_files_in_order_locking(self) -> None:
+        controller = build_gcsfs_controller_for_tests(StateTestGcsfsDirectIngestController,
+                                                      self.FIXTURE_PATH_PREFIX,
+                                                      run_async=True)
+        controller.lock_manager.lock(POSTGRES_TO_BQ_EXPORT_RUNNING_LOCK_NAME)
+        file_tags = list(
+            reversed(sorted(controller.get_file_tag_rank_list())))
+        add_paths_with_tags(controller, file_tags)
+        run_task_queues_to_empty(controller)
+
+        if not isinstance(controller,
+                          BaseTestCsvGcsfsDirectIngestController):
+            self.fail('Controller is not of type BaseTestCsvGcsfsDirectIngestController.')
+
+        self.assertFalse(controller.has_temp_paths_in_disk())
+        self.validate_file_metadata(controller, expected_ingest_metadata_tags_with_is_processed=[
+            ('tagA', False), ('tagB', False), ('tagC', False)
+        ])
+        controller.lock_manager.unlock(POSTGRES_TO_BQ_EXPORT_RUNNING_LOCK_NAME)
+        controller.kick_scheduler(just_finished_job=False)
+        run_task_queues_to_empty(controller)
+
+        check_all_paths_processed(self, controller, ['tagA', 'tagB', 'tagC'], unexpected_tags=[])
+        self.check_imported_path_count(controller, 3)
+        self.check_tags(controller, controller.get_file_tag_rank_list())
+        self.validate_file_metadata(controller, expected_ingest_metadata_tags_with_is_processed=[
+            ('tagA', True), ('tagB', True), ('tagC', True)
+        ])
+
+    @patch('recidiviz.cloud_storage.gcs_pseudo_lock_manager.GcsfsFactory.build', Mock(return_value=FakeGCSFileSystem()))
+    @patch("recidiviz.utils.regions.get_region", Mock(return_value=TEST_SQL_PRE_PROCESSING_LAUNCHED_REGION))
+    def test_state_runs_files_in_order_locking_region(self) -> None:
+        controller = build_gcsfs_controller_for_tests(StateTestGcsfsDirectIngestController,
+                                                      self.FIXTURE_PATH_PREFIX,
+                                                      run_async=True)
+        controller.lock_manager.lock(controller.ingest_process_lock_for_region())
+        file_tags = list(
+            reversed(sorted(controller.get_file_tag_rank_list())))
+        add_paths_with_tags(controller, file_tags)
+        run_task_queues_to_empty(controller)
+
+        if not isinstance(controller,
+                          BaseTestCsvGcsfsDirectIngestController):
+            self.fail('Controller is not of type BaseTestCsvGcsfsDirectIngestController.')
+
+        self.assertFalse(controller.has_temp_paths_in_disk())
+        self.validate_file_metadata(controller, expected_ingest_metadata_tags_with_is_processed=[
+            ('tagA', False), ('tagB', False), ('tagC', False)
+        ])
+        controller.lock_manager.unlock(controller.ingest_process_lock_for_region())
+        controller.kick_scheduler(just_finished_job=False)
+        run_task_queues_to_empty(controller)
+
+        check_all_paths_processed(self, controller, ['tagA', 'tagB', 'tagC'], unexpected_tags=[])
+        self.check_imported_path_count(controller, 3)
+        self.check_tags(controller, controller.get_file_tag_rank_list())
+        self.validate_file_metadata(controller, expected_ingest_metadata_tags_with_is_processed=[
+            ('tagA', True), ('tagB', True), ('tagC', True)
+        ])
 
     @patch("recidiviz.utils.regions.get_region",
            Mock(return_value=TEST_COUNTY_REGION))
