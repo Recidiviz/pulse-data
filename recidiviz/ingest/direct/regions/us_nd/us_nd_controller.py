@@ -575,8 +575,8 @@ class UsNdController(CsvGcsfsDirectIngestController):
             extracted_objects: List[IngestObject],
             _cache: IngestObjectCache) -> None:
         """Sets SupervisionPeriod.termination_date/supervision_type from the parent
-        SupervisionSentence.completion_date. This is possible because in ND, we always have a 1:1 mapping of
-        SupervisionSentence:SupervisionPeriod.
+        SupervisionSentence.completion_date/supervision_type. This is possible because in ND, we always have a
+        1:1 mapping of SupervisionSentence:SupervisionPeriod.
         """
         for extracted_object in extracted_objects:
             if isinstance(extracted_object, StateSupervisionSentence):
