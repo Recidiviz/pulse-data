@@ -17,7 +17,6 @@
 """
 This module contains various pieces related to the Case Triage authentication / authorization flow
 """
-
 import json
 from typing import List
 
@@ -40,12 +39,3 @@ class AuthorizationStore:
 
     def refresh(self) -> None:
         self.allowed_users = json.loads(get_local_file(self.allowlist_path))
-
-
-class CaseTriageAuthorizationError(Exception):
-    """ Exception for when the a user has signed into a valid account, but has not yet been allowed access."""
-
-    def __init__(self, error: dict, status_code: int) -> None:
-        self.error = error
-        self.status_code = status_code
-        super().__init__()

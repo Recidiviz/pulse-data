@@ -21,9 +21,8 @@ for Case Triage related entities.
 """
 from typing import Any, Dict
 
-from sqlalchemy import Column, Boolean, Date, DateTime, String, Text, UniqueConstraint
+from sqlalchemy import Column, Boolean, Date, String, Text, UniqueConstraint
 from sqlalchemy.dialects.postgresql import JSONB
-from sqlalchemy.sql import func
 
 from recidiviz.persistence.database.base_schema import CaseTriageBase
 
@@ -80,6 +79,15 @@ class CaseUpdate(CaseTriageBase):
     """Represents an update to a parole officer's case based on actions that an officer
     indicates they have taken on behalf of a client. We only store one active row per
     officer/client pair.
+
+    Each row represents the most recent set of actions taken by a PO to move the client
+    from an "active" to "in-progress" state. It does _not_ store or encode a historical log
+    of all actions ever taken.
+
+    We decided to structure it this way because these CaseUpdates are meant to provide a filter
+    on the accuracy of the data surrounding clients that we receive through our ETL pipeline.
+    The ETL-derived data should always be eventually accurate and this is meant to help
+    correct that information when our pipeline is behind reality.
     """
     __tablename__ = 'case_updates'
 
@@ -91,4 +99,3 @@ class CaseUpdate(CaseTriageBase):
     # some other format when we know better what we need, but for the moment we will
     # enforce schema decisions and/or migrations largely in code.
     update_metadata = Column(JSONB, nullable=False)
-    update_ts = Column(DateTime, nullable=False, server_default=func.now())
