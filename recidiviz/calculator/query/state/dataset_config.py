@@ -35,7 +35,7 @@ REFERENCE_VIEWS_DATASET: str = 'reference_views'
 STATE_BASE_DATASET: str = 'state'
 
 # Where case triage views live
-CASE_TRIAGE_DATSET: str = 'case_triage'
+CASE_TRIAGE_DATASET: str = 'case_triage'
 
 # Where the views for the COVID dashboard live
 COVID_DASHBOARD_DATASET: str = 'covid_public_data'
