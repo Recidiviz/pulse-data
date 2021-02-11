@@ -16,26 +16,41 @@
 # =============================================================================
 """Implements the Querier abstraction that is responsible for considering multiple
 data sources and coalescing answers for downstream consumers."""
-from typing import List, Tuple
+from typing import List
 
+import sqlalchemy.orm.exc
 from sqlalchemy.orm import Session
 
 from recidiviz.persistence.database.schema.case_triage.schema import ETLClient, ETLOfficer
+
+
+class PersonDoesNotExistError(ValueError):
+    pass
 
 
 class CaseTriageQuerier:
     """Implements Querier abstraction for Case Triage data sources."""
 
     @staticmethod
-    def clients_for_officer(session: Session, officer_email: str) -> List[ETLClient]:
-        officer_id, state_code = CaseTriageQuerier.officer_id_and_state_code_for_email(session, officer_email)
+    def clients_for_officer(session: Session, officer: ETLOfficer) -> List[ETLClient]:
         return session.query(ETLClient).filter_by(
-            supervising_officer_external_id=officer_id,
-            state_code=state_code,
+            supervising_officer_external_id=officer.external_id,
+            state_code=officer.state_code,
         ).all()
 
     @staticmethod
-    def officer_id_and_state_code_for_email(session: Session, officer_email: str) -> Tuple[str, str]:
+    def client_with_id_and_state_code(session: Session,
+                                      person_external_id: str,
+                                      state_code: str) -> ETLClient:
+        try:
+            return session.query(ETLClient).filter_by(
+                person_external_id=person_external_id,
+                state_code=state_code,
+            ).one()
+        except sqlalchemy.orm.exc.NoResultFound as e:
+            raise PersonDoesNotExistError(f'could not find id: {person_external_id}') from e
+
+    @staticmethod
+    def officer_for_email(session: Session, officer_email: str) -> ETLOfficer:
         email = officer_email.lower()
-        officer = session.query(ETLOfficer).filter_by(email_address=email).one()
-        return officer.external_id, officer.state_code
+        return session.query(ETLOfficer).filter_by(email_address=email).one()

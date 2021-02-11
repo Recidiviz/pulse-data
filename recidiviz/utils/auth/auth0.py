@@ -18,6 +18,7 @@
 This module contains various pieces related to the Case Triage authentication / authorization flow
 """
 import json
+from http import HTTPStatus
 from functools import wraps
 from typing import Dict, List, Optional, Callable, Any
 from urllib.request import urlopen
@@ -28,14 +29,14 @@ from cryptography.hazmat.primitives.asymmetric.rsa import RSAPublicKey
 from flask import request
 from jwt.api_jwk import PyJWKSet
 
+from recidiviz.utils.flask_exception import FlaskException
 
-class AuthorizationError(Exception):
+
+class AuthorizationError(FlaskException):
     """ Exception for when the authorization flow fails."""
 
-    def __init__(self, error: dict, status_code: int) -> None:
-        self.error = error
-        self.status_code = status_code
-        super().__init__()
+    def __init__(self, code: str, description: str) -> None:
+        super().__init__(code, description, HTTPStatus.UNAUTHORIZED)
 
 
 class Auth0Config:
@@ -89,28 +90,28 @@ def get_token_auth_header() -> str:
     """
     auth = request.headers.get("Authorization", None)
     if not auth:
-        raise AuthorizationError({
-            "code": "authorization_header_missing",
-            "description": "Authorization header is expected"
-        }, 401)
+        raise AuthorizationError(
+            code="authorization_header_missing",
+            description="Authorization header is expected",
+        )
 
     parts = auth.split()
 
     if parts[0].lower() != "bearer":
-        raise AuthorizationError({
-            "code": "invalid_header",
-            "description": "Authorization header must start with Bearer"
-        }, 401)
+        raise AuthorizationError(
+            code="invalid_header",
+            description="Authorization header must start with Bearer",
+        )
     if len(parts) == 1:
-        raise AuthorizationError({
-            "code": "invalid_header",
-            "description": "Token not found",
-        }, 401)
+        raise AuthorizationError(
+            code="invalid_header",
+            description="Token not found",
+        )
     if len(parts) > 2:
-        raise AuthorizationError({
-            "code": "invalid_header",
-            "description": "Authorization header must be Bearer token",
-        }, 401)
+        raise AuthorizationError(
+            code="invalid_header",
+            description="Authorization header must be Bearer token",
+        )
 
     token = parts[1]
     return token
@@ -123,7 +124,7 @@ def build_auth0_authorization_decorator(
     """ Decorator builder for Auth0 authorization """
 
     def decorated(route: Callable):
-        @wraps(route)
+        @ wraps(route)
         def inner(*args: List[Any], **kwargs: Dict[str, Any]) -> Any:
             """
             Determines if the access token provided in the request `Authorization` header is valid
@@ -146,32 +147,32 @@ def build_auth0_authorization_decorator(
                         audience=authorization_config.audience,
                     )
                 except jwt.ExpiredSignatureError as e:
-                    raise AuthorizationError({
-                        "code": "token_expired",
-                        "description": "token is expired"
-                    }, 401) from e
+                    raise AuthorizationError(
+                        code="token_expired",
+                        description="token is expired",
+                    ) from e
                 except (jwt.InvalidIssuerError,
                         jwt.InvalidAudienceError,
                         jwt.MissingRequiredClaimError) as e:
-                    raise AuthorizationError({
-                        "code": "invalid_claims",
-                        "description": "incorrect claims, please check the audience and issuer"
-                    }, 401) from e
+                    raise AuthorizationError(
+                        code="invalid_claims",
+                        description="incorrect claims, please check the audience and issuer",
+                    ) from e
                 except Exception as e:
                     print(e)
-                    raise AuthorizationError({
-                        "code": "invalid_header",
-                        "description": "Unable to parse authentication token.",
-                    }, 401) from e
+                    raise AuthorizationError(
+                        code="invalid_header",
+                        description="Unable to parse authentication token.",
+                    ) from e
 
                 on_successful_authorization(payload, token)
 
                 return route(*args, **kwargs)
 
-            raise AuthorizationError({
-                "code": "invalid_header",
-                "description": "Unable to find appropriate key"
-            }, 401)
+            raise AuthorizationError(
+                code="invalid_header",
+                description="Unable to find appropriate key",
+            )
 
         return inner
 

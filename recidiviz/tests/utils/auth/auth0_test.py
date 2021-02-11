@@ -28,8 +28,8 @@ from flask import Flask, Response, jsonify
 from jwt.algorithms import RSAAlgorithm
 from mock import patch
 
-from recidiviz.utils.auth.auth0 import Auth0Config, AuthorizationError, \
-    build_auth0_authorization_decorator
+from recidiviz.utils.auth.auth0 import Auth0Config, build_auth0_authorization_decorator
+from recidiviz.utils.flask_exception import FlaskException
 
 
 def generate_keypair() -> Tuple[bytes, bytes]:
@@ -85,9 +85,12 @@ class Auth0ModuleTest(unittest.TestCase):
             (lambda payload, token: None)
         )
 
-        @self.test_app.errorhandler(AuthorizationError)
-        def _handle_auth_error(ex: AuthorizationError) -> Response:
-            response = jsonify(ex.error)
+        @self.test_app.errorhandler(FlaskException)
+        def _handle_auth_error(ex: FlaskException) -> Response:
+            response = jsonify({
+                'code': ex.code,
+                'description': ex.description,
+            })
             response.status_code = ex.status_code
             return response
 

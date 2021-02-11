@@ -21,24 +21,24 @@ from unittest.case import TestCase
 import pytest
 import sqlalchemy.orm.exc
 
-from recidiviz.case_triage.querier import CaseTriageQuerier
+from recidiviz.case_triage.querier import CaseTriageQuerier, PersonDoesNotExistError
 from recidiviz.persistence.database.base_schema import CaseTriageBase
 from recidiviz.persistence.database.schema.case_triage.schema import ETLClient, ETLOfficer
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.tools.postgres import local_postgres_helpers
 
 
-def generate_fake_officer(officer_id: str, email: str) -> ETLOfficer:
+def generate_fake_officer(officer_id: str, email: str = 'nonexistent_email.com') -> ETLOfficer:
     return ETLOfficer(
         external_id=officer_id,
         email_address=email,
-        state_code='US_ID',
+        state_code='US_XX',
         given_names='Test',
         surname='Officer',
     )
 
 
-def generate_fake_client(client_id: str, supervising_officer_id: str) -> ETLClient:
+def generate_fake_client(client_id: str, supervising_officer_id: str = 'id_1') -> ETLClient:
     return ETLClient(
         person_external_id=client_id,
         full_name='TEST NAME',
@@ -46,7 +46,7 @@ def generate_fake_client(client_id: str, supervising_officer_id: str) -> ETLClie
         supervision_type='TYPE',
         case_type='TYPE',
         supervision_level='LEVEL',
-        state_code='US_ID',
+        state_code='US_XX',
     )
 
 
@@ -80,26 +80,21 @@ class TestCaseTriageQuerier(TestCase):
         session.commit()
 
         read_session = SessionFactory.for_schema_base(CaseTriageBase)
-        first_fetch = CaseTriageQuerier.officer_id_and_state_code_for_email(read_session, 'officer1@recidiviz.org')
-        self.assertEqual(first_fetch[0], 'id_1')
-        self.assertEqual(first_fetch[1], 'US_ID')
-        second_fetch = CaseTriageQuerier.officer_id_and_state_code_for_email(read_session, 'OFFICER2@RECIDIVIZ.ORG')
-        self.assertEqual(second_fetch[0], 'id_2')
-        self.assertEqual(second_fetch[1], 'US_ID')
+        first_fetch = CaseTriageQuerier.officer_for_email(read_session, 'officer1@recidiviz.org')
+        self.assertEqual(first_fetch.external_id, 'id_1')
+        second_fetch = CaseTriageQuerier.officer_for_email(read_session, 'OFFICER2@RECIDIVIZ.ORG')
+        self.assertEqual(second_fetch.external_id, 'id_2')
 
     def test_nonexistent_officer(self) -> None:
         session = SessionFactory.for_schema_base(CaseTriageBase)
 
         with self.assertRaises(sqlalchemy.orm.exc.NoResultFound):
-            CaseTriageQuerier.officer_id_and_state_code_for_email(session, 'nonexistent@email.com')
-
-        with self.assertRaises(sqlalchemy.orm.exc.NoResultFound):
-            CaseTriageQuerier.clients_for_officer(session, 'nonexistent@email.com')
+            CaseTriageQuerier.officer_for_email(session, 'nonexistent@email.com')
 
     def test_clients_for_officer(self) -> None:
-        officer_1 = generate_fake_officer('id_1', 'officer1@recidiviz.org')
-        officer_2 = generate_fake_officer('id_2', 'officer2@recidiviz.org')
-        officer_3 = generate_fake_officer('id_3', 'officer3@recidiviz.org')
+        officer_1 = generate_fake_officer('id_1')
+        officer_2 = generate_fake_officer('id_2')
+        officer_3 = generate_fake_officer('id_3')
         client_1 = generate_fake_client('client_1', 'id_1')
         client_2 = generate_fake_client('client_2', 'id_1')
         client_3 = generate_fake_client('client_3', 'id_2')
@@ -114,14 +109,27 @@ class TestCaseTriageQuerier(TestCase):
 
         read_session = SessionFactory.for_schema_base(CaseTriageBase)
         self.assertEqual(
-            len(CaseTriageQuerier.clients_for_officer(read_session, 'officer1@recidiviz.org')),
+            len(CaseTriageQuerier.clients_for_officer(read_session, officer_1)),
             2,
         )
         self.assertEqual(
-            len(CaseTriageQuerier.clients_for_officer(read_session, 'officer2@recidiviz.org')),
+            len(CaseTriageQuerier.clients_for_officer(read_session, officer_2)),
             1,
         )
         self.assertEqual(
-            len(CaseTriageQuerier.clients_for_officer(read_session, 'officer3@recidiviz.org')),
+            len(CaseTriageQuerier.clients_for_officer(read_session, officer_3)),
             0,
         )
+
+    def test_client_with_id_and_state_code(self) -> None:
+        client_1 = generate_fake_client('client_1')
+        session = SessionFactory.for_schema_base(CaseTriageBase)
+        session.add(client_1)
+        session.commit()
+
+        read_session = SessionFactory.for_schema_base(CaseTriageBase)
+        with self.assertRaises(PersonDoesNotExistError):
+            CaseTriageQuerier.client_with_id_and_state_code(read_session, 'nonexistent', 'US_XX')
+
+        # Should not raise an error
+        CaseTriageQuerier.client_with_id_and_state_code(read_session, 'client_1', 'US_XX')
