@@ -158,7 +158,7 @@ class DirectIngestBigQueryViewTypesTest(unittest.TestCase):
             CAST(SAFE_CAST(SAFE.PARSE_TIMESTAMP('%Y-%m-%d %H:%M', col2) AS DATETIME) AS STRING),
             CAST(SAFE_CAST(SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S', col2) AS DATETIME) AS STRING),
             col2
-        ) AS col2,"""
+        ) AS col2"""
 
         expected_view_query = RAW_DATA_UP_TO_DATE_VIEW_QUERY_TEMPLATE.format(
             project_id=self.PROJECT_ID,
@@ -205,7 +205,7 @@ class DirectIngestBigQueryViewTypesTest(unittest.TestCase):
             CAST(SAFE_CAST(SAFE.PARSE_TIMESTAMP('%Y-%m-%d %H:%M', col2) AS DATETIME) AS STRING),
             CAST(SAFE_CAST(SAFE.PARSE_TIMESTAMP('%m/%d/%Y %H:%M:%S', col2) AS DATETIME) AS STRING),
             col2
-        ) AS col2,"""
+        ) AS col2"""
 
         expected_view_query = RAW_DATA_UP_TO_DATE_HISTORICAL_FILE_VIEW_QUERY_TEMPLATE.format(
             project_id=self.PROJECT_ID,
