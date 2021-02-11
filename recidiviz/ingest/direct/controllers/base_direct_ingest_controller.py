@@ -23,6 +23,8 @@ import logging
 from typing import Generic, Optional
 
 from recidiviz import IngestInfo
+from recidiviz.cloud_storage.gcs_pseudo_lock_manager import GCSPseudoLockManager, \
+    POSTGRES_TO_BQ_EXPORT_RUNNING_LOCK_NAME, GCS_TO_POSTGRES_INGEST_RUNNING_LOCK_NAME
 from recidiviz.ingest.direct.controllers.direct_ingest_types import ContentsHandleType, IngestArgsType
 from recidiviz.ingest.direct.direct_ingest_cloud_task_manager import \
     DirectIngestCloudTaskManagerImpl
@@ -50,6 +52,7 @@ class BaseDirectIngestController(Ingestor, Generic[IngestArgsType, ContentsHandl
         self.region = regions.get_region(region_name, is_direct_ingest=True)
         self.system_level = system_level
         self.cloud_task_manager = DirectIngestCloudTaskManagerImpl()
+        self.lock_manager = GCSPseudoLockManager()
 
     # ============== #
     # JOB SCHEDULING #
@@ -73,6 +76,10 @@ class BaseDirectIngestController(Ingestor, Generic[IngestArgsType, ContentsHandl
             logging.info("Found pre-ingest tasks to schedule - returning.")
             return
 
+        if self.lock_manager.is_locked(self.ingest_process_lock_for_region()):
+            logging.info('Direct ingest is already locked on region [%s]', self.region)
+            return
+
         process_job_queue_info = \
             self.cloud_task_manager.get_process_job_queue_info(self.region)
         if process_job_queue_info.size() and not just_finished_job:
@@ -94,6 +101,10 @@ class BaseDirectIngestController(Ingestor, Generic[IngestArgsType, ContentsHandl
             logging.info(
                 "Already have task queued for next job [%s] - returning.",
                 self._job_tag(next_job_args))
+            return
+
+        if self.lock_manager.is_locked(POSTGRES_TO_BQ_EXPORT_RUNNING_LOCK_NAME):
+            logging.info('Postgres to BigQuery export is running, cannot run ingest - returning')
             return
 
         # TODO(#3020): Add similar logic between the raw data BQ import and ingest view export tasks
@@ -182,7 +193,13 @@ class BaseDirectIngestController(Ingestor, Generic[IngestArgsType, ContentsHandl
                                                         args: IngestArgsType) -> None:
         check_is_region_launched_in_env(self.region)
 
+        if self.lock_manager.is_locked(POSTGRES_TO_BQ_EXPORT_RUNNING_LOCK_NAME):
+            logging.info('Postgres to BigQuery export is running, can not run ingest')
+            return
+        self.lock_manager.lock(self.ingest_process_lock_for_region())
         should_schedule = self._run_ingest_job(args)
+        self.lock_manager.unlock(self.ingest_process_lock_for_region())
+
         if should_schedule:
             self.kick_scheduler(just_finished_job=True)
             logging.info("Done running task. Returning.")
@@ -282,6 +299,9 @@ class BaseDirectIngestController(Ingestor, Generic[IngestArgsType, ContentsHandl
                               args.ingest_time,
                               self.get_enum_overrides(),
                               self.system_level)
+
+    def ingest_process_lock_for_region(self) -> str:
+        return GCS_TO_POSTGRES_INGEST_RUNNING_LOCK_NAME + self.region.region_code.upper()
 
     @abc.abstractmethod
     def _job_tag(self, args: IngestArgsType) -> str:
