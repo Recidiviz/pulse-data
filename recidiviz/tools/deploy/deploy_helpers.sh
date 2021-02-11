@@ -105,7 +105,7 @@ function pre_deploy_configure_infrastructure {
         run_cmd pipenv run python -m recidiviz.calculator.dataflow_metric_table_manager --project_id ${PROJECT}
 
         echo "Updating all BigQuery views"
-        run_cmd pipenv run python -m recidiviz.big_query.view_update_manager --project_id ${PROJECT} --views_to_update all --materialized_views_only False
+        run_cmd pipenv run python -m recidiviz.tools.deploy.deploy_views --project_id ${PROJECT}
     else
         echo "Skipping BigQuery table and view updates for debug build."
     fi
