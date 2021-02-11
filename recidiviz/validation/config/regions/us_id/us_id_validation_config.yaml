@@ -22,7 +22,7 @@ num_allowed_rows_overrides:
     num_allowed_rows_override: 60
     override_reason: TODO(#4058) - Needs investigation.
   - validation_name: incarceration_release_prior_to_admission
-    num_allowed_rows_override: 4
+    num_allowed_rows_override: 10
     override_reason: TODO(#4058) - Needs investigation.
   - validation_name: supervision_termination_prior_to_start
     num_allowed_rows_override: 3
