@@ -20,6 +20,7 @@ import logging
 import os
 import string
 import time
+from types import ModuleType
 from typing import List, Dict, Any, Set, Optional, Tuple
 
 import attr
@@ -31,6 +32,7 @@ from google.cloud import bigquery
 from recidiviz.big_query.big_query_client import BigQueryClient
 from recidiviz.cloud_functions.cloud_function_utils import GCSFS_NO_CACHING
 from recidiviz.common import attr_validators
+from recidiviz.ingest.direct import regions
 from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import DirectIngestGCSFileSystem
 from recidiviz.ingest.direct.controllers.direct_ingest_raw_table_migration import UPDATE_DATETIME_AGNOSTIC_DATETIME
 from recidiviz.ingest.direct.controllers.direct_ingest_raw_table_migration_collector import \
@@ -180,14 +182,12 @@ class DirectIngestRegionRawFileConfig:
 
     # TODO(#5262): Add documentation for the structure of the raw data yaml files
     region_code: str = attr.ib()
+    region_module: ModuleType = attr.ib(default=regions)
     yaml_config_file_dir: str = attr.ib()
     raw_file_configs: Dict[str, DirectIngestRawFileConfig] = attr.ib()
 
     def _region_ingest_dir(self) -> str:
-        return os.path.join(os.path.dirname(__file__),
-                            '..',
-                            'regions',
-                            f'{self.region_code.lower()}')
+        return os.path.join(os.path.dirname(self.region_module.__file__), f'{self.region_code.lower()}')
 
     @yaml_config_file_dir.default
     def _config_file_dir(self) -> str:
@@ -276,13 +276,16 @@ class DirectIngestRawFileImportManager:
         self.temp_output_directory_path = temp_output_directory_path
         self.big_query_client = big_query_client
         self.region_raw_file_config = region_raw_file_config \
-            if region_raw_file_config else DirectIngestRegionRawFileConfig(region_code=self.region.region_code)
+            if region_raw_file_config \
+            else DirectIngestRegionRawFileConfig(region_code=self.region.region_code,
+                                                 region_module=self.region.region_module)
         self.upload_chunk_size = upload_chunk_size
         self.csv_reader = GcsfsCsvReader(gcsfs.GCSFileSystem(project=metadata.project_id(),
                                                              cache_timeout=GCSFS_NO_CACHING))
         self.raw_table_migrations = \
             DirectIngestRawTableMigrationCollector(
-                region_code=self.region.region_code
+                region_code=self.region.region_code,
+                regions_module_override=self.region.region_module
             ).collect_raw_table_migration_queries()
 
     def get_unprocessed_raw_files_to_import(self) -> List[GcsfsFilePath]:

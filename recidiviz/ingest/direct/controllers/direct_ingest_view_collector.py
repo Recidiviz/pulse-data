@@ -27,8 +27,6 @@ from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import \
     DirectIngestPreProcessedIngestViewBuilder
 from recidiviz.utils.regions import Region
 
-_RELATIVE_REGIONS_DIR = os.path.relpath(os.path.dirname(recidiviz.ingest.direct.regions.__file__),
-                                        os.path.dirname(recidiviz.__file__))
 _INGEST_VIEWS_SUBDIR_NAME = 'ingest_views'
 _INGEST_VIEW_FILE_PREFIX = 'view_'
 
@@ -45,9 +43,13 @@ class DirectIngestPreProcessedIngestViewCollector(BigQueryViewCollector[DirectIn
         self.controller_tag_rank_list = controller_tag_rank_list
 
     def collect_view_builders(self) -> List[DirectIngestPreProcessedIngestViewBuilder]:
+        relative_dir = os.path.relpath(os.path.dirname(self.region.region_module.__file__),
+                                       os.path.dirname(recidiviz.__file__))
+        relative_dir_path = os.path.join(relative_dir, self.region.region_code, _INGEST_VIEWS_SUBDIR_NAME)
+
         ingest_view_builders = self.collect_view_builders_in_dir(
             DirectIngestPreProcessedIngestViewBuilder,
-            os.path.join(_RELATIVE_REGIONS_DIR, self.region.region_code, _INGEST_VIEWS_SUBDIR_NAME),
+            relative_dir_path,
             _INGEST_VIEW_FILE_PREFIX
         )
 

@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Helpers for creating fake regions for use in tests."""
+from types import ModuleType
 from typing import Any, Dict, Optional, Union
 
 from mock import create_autospec
@@ -36,12 +37,15 @@ def fake_region(*,
                 are_raw_data_bq_imports_enabled_in_env: bool = False,
                 are_ingest_view_exports_enabled_in_env: bool = False,
                 queue: Optional[Dict[str, Any]] = None,
-                shared_queue: Optional[str] = None) -> Region:
+                shared_queue: Optional[str] = None,
+                region_module: Optional[ModuleType] = None) -> Region:
+    """Fake Region Object"""
     region = create_autospec(Region)
     region.region_code = region_code
     region.agency_type = agency_type
     region.environment = environment
     region.jurisdiction_id = jurisdiction_id
+    region.region_module = region_module
     region.get_ingestor.return_value = \
         ingestor if ingestor else create_autospec(BaseDirectIngestController)
 

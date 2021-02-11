@@ -24,6 +24,8 @@ import pytest
 import pytz
 from mock import Mock, PropertyMock, mock_open
 
+from recidiviz.ingest.direct import regions as direct_ingest_regions_module
+from recidiviz.ingest.scrape import regions as scraper_regions_module
 from recidiviz.utils import regions
 from recidiviz.utils.regions import Region, get_region_manifest
 
@@ -127,7 +129,7 @@ class TestRegions(TestCase):
         regions.REGIONS = {}
 
     def test_get_region_manifest(self):
-        manifest = with_manifest(regions.get_region_manifest, 'us_ny')
+        manifest = with_manifest(regions.get_region_manifest, 'us_ny', scraper_regions_module)
         assert manifest == {
             'agency_name': 'Department of Corrections and '
                            'Community Supervision',
@@ -150,7 +152,7 @@ class TestRegions(TestCase):
 
     def test_get_region_manifest_not_found(self):
         with pytest.raises(FileNotFoundError):
-            with_manifest(regions.get_region_manifest, 'us_az')
+            with_manifest(regions.get_region_manifest, 'us_az', direct_ingest_regions_module)
 
     @patch('pkgutil.iter_modules',
            return_value=fake_modules('us_ny', 'us_in', 'us_ca'))
@@ -273,7 +275,7 @@ class TestRegions(TestCase):
         }
 
         kwargs = {
-            **get_region_manifest(region_code, True),
+            **get_region_manifest(region_code, direct_ingest_regions_module),
             **flag_overrides
         }
 
