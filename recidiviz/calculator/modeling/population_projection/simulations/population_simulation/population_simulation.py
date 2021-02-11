@@ -16,36 +16,34 @@
 # =============================================================================
 """Simulation object that models a given policy scenario"""
 
-from typing import Dict, List, Optional
+from typing import Dict, List, Any, Tuple
 from time import time
-from warnings import warn
-from functools import partial
 import pandas as pd
 
-from recidiviz.calculator.modeling.population_projection.simulations.compartment_transitions import \
-    CompartmentTransitions
+from recidiviz.calculator.modeling.population_projection.simulations.population_simulation.\
+    population_simulation_initializer import PopulationSimulationInitializer
 from recidiviz.calculator.modeling.population_projection.spark_policy import SparkPolicy
-from recidiviz.calculator.modeling.population_projection.sub_simulation import SubSimulation
+from recidiviz.calculator.modeling.population_projection.simulations.sub_simulation.sub_simulation import SubSimulation
 
 
 class PopulationSimulation:
     """Control the many sub simulations for one scenario (baseline/control or policy)"""
-    def __init__(self):
-        self.sub_simulations = {}
-        self.sub_group_ids_dict = {}
-        self.validation_population_data = None
-        self.validation_transition_data = None
-        self.population_projections = None
+    def __init__(self, initializer: PopulationSimulationInitializer) -> None:
+        self.sub_simulations: Dict[str, SubSimulation] = {}
+        self.sub_group_ids_dict: Dict[str, Dict[str, Any]] = {}
+        self.validation_population_data = pd.DataFrame()
+        self.validation_transition_data = pd.DataFrame()
+        self.population_projections = pd.DataFrame()
+        self.initializer = initializer
 
     def simulate_policies(self, outflows_data: pd.DataFrame,
                           transitions_data: pd.DataFrame,
                           total_population_data: pd.DataFrame,
-                          simulation_compartments: Dict[str, Optional[CompartmentTransitions]],
+                          simulation_compartments: Dict[str, str],
                           disaggregation_axes: List[str],
                           user_inputs: Dict,
                           first_relevant_ts: int,
-                          microsim: bool = False,
-                          microsim_data: pd.DataFrame = None):
+                          microsim_data: pd.DataFrame = pd.DataFrame()) -> pd.DataFrame:
         """
         Run a population projection and return population counts by year, compartment, and sub-group.
         `outflows_data` should be a DataFrame with columns for each sub-group, year, compartment, outflow_to,
@@ -89,27 +87,13 @@ class PopulationSimulation:
                     raise ValueError(f"All disagregation axis must be included in the input dataframe columns\n"
                                      f"Expected: {disaggregation_axes}, Actual: {df.columns}")
 
-        # use outflows data to compute the transitions if the transitions_data df is not provided
-        if transitions_data is None:
-            transitions_data = outflows_data
+        self.initializer.initialize_simulation(outflows_data, transitions_data, total_population_data,
+                                               simulation_compartments, disaggregation_axes, user_inputs,
+                                               first_relevant_ts, self.sub_group_ids_dict, microsim_data,
+                                               self.sub_simulations)
 
-        if microsim:
-            self.initialize_simulation_micro(outflows_data=outflows_data,
-                                             transitions_data=transitions_data,
-                                             total_population_data=total_population_data,
-                                             simulation_compartments=simulation_compartments,
-                                             disaggregation_axes=disaggregation_axes,
-                                             user_inputs=user_inputs,
-                                             first_relevant_ts=first_relevant_ts,
-                                             microsim_data=microsim_data)
-        else:
-            self.initialize_simulation_macro(outflows_data=outflows_data,
-                                             transitions_data=transitions_data,
-                                             total_population_data=total_population_data,
-                                             simulation_compartments=simulation_compartments,
-                                             disaggregation_axes=disaggregation_axes,
-                                             user_inputs=user_inputs,
-                                             first_relevant_ts=first_relevant_ts)
+        # run simulation up to the start_year
+        self.step_forward(user_inputs['start_time_step'] - first_relevant_ts)
 
         time1 = time()
         print('initialization time: ', time1 - start)
@@ -129,135 +113,7 @@ class PopulationSimulation:
 
         return self.population_projections
 
-    def initialize_simulation_micro(self, outflows_data: pd.DataFrame,
-                                    transitions_data: pd.DataFrame,
-                                    total_population_data: pd.DataFrame,
-                                    simulation_compartments: Dict[str, Optional[CompartmentTransitions]],
-                                    disaggregation_axes: List[str],
-                                    user_inputs: Dict,
-                                    first_relevant_ts: int,
-                                    microsim_data: pd.DataFrame):
-        """Initialize the simulation parameters along with all of the sub simulations for microsim"""
-        if len(user_inputs['policy_list']) != 0:
-            raise ValueError("Microsim option does not support policy inputs")
-        self.population_projections = pd.DataFrame()
-
-        self._populate_sub_group_ids_dict(transitions_data, disaggregation_axes)
-
-        # populate "policy list" to switch from remaining sentences data to transitions data
-        for sub_group_id, group_attributes in self.sub_group_ids_dict.items():
-            disaggregated_microsim_data = \
-                microsim_data[(microsim_data[disaggregation_axes] == group_attributes).all(axis=1)]
-
-            # add one policy per compartment to switch transitions data from remaining sentence data to transitions data
-            for full_comp in [i for i in simulation_compartments
-                              if simulation_compartments[i] != 'shell']:
-                user_inputs['policy_list'].append(SparkPolicy(
-                    policy_fn=partial(
-                        CompartmentTransitions.use_alternate_transitions_data,
-                        alternate_historical_transitions=
-                        disaggregated_microsim_data[disaggregated_microsim_data.compartment == full_comp],
-                        retroactive=False
-                    ),
-                    spark_compartment=full_comp,
-                    sub_population=self.sub_group_ids_dict[sub_group_id],
-                    apply_retroactive=False
-                ))
-
-        self._populate_sub_simulations(outflows_data, transitions_data, total_population_data, simulation_compartments,
-                                       disaggregation_axes, user_inputs, first_relevant_ts, microsim=True)
-
-    def initialize_simulation_macro(self, outflows_data: pd.DataFrame,
-                                    transitions_data: pd.DataFrame,
-                                    total_population_data: pd.DataFrame,
-                                    simulation_compartments: Dict[str, Optional[CompartmentTransitions]],
-                                    disaggregation_axes: List[str],
-                                    user_inputs: Dict,
-                                    first_relevant_ts: int):
-        """Initialize the simulation parameters along with all of the sub simulations for macrosim"""
-
-        self.population_projections = pd.DataFrame()
-
-        self._populate_sub_group_ids_dict(transitions_data, disaggregation_axes)
-
-        self._populate_sub_simulations(outflows_data, transitions_data, total_population_data, simulation_compartments,
-                                       disaggregation_axes, user_inputs, first_relevant_ts, microsim=False)
-
-        # run simulation up to the start_year
-        self.step_forward(user_inputs['start_time_step'] - first_relevant_ts)
-
-    def _populate_sub_group_ids_dict(self, transitions_data: pd.DataFrame, disaggregation_axes: List[str]):
-        """Helper function for initialize_simulation"""
-        # populate self.sub_group_ids_dict so we can recover sub-group properties during validation
-        for simulation_group_name, _ in transitions_data.groupby(disaggregation_axes):
-            sub_group_id = str(simulation_group_name)
-
-            if len(disaggregation_axes) == 1:
-                self.sub_group_ids_dict[sub_group_id] = {disaggregation_axes[0]: simulation_group_name}
-            else:
-                self.sub_group_ids_dict[sub_group_id] = \
-                    {disaggregation_axes[i]: simulation_group_name[i] for i in range(len(disaggregation_axes))}
-
-        # Raise an error if the sub_group_ids_dict was not constructed
-        if not self.sub_group_ids_dict:
-            raise ValueError(f"Could not define sub groups across the disaggregations: {disaggregation_axes}")
-
-    def _populate_sub_simulations(self, outflows_data: pd.DataFrame,
-                                  transitions_data: pd.DataFrame,
-                                  total_population_data: pd.DataFrame,
-                                  simulation_compartments: Dict[str, Optional[CompartmentTransitions]],
-                                  disaggregation_axes: List[str],
-                                  user_inputs: Dict,
-                                  first_relevant_ts: int,
-                                  microsim: bool):
-        """Helper function for initialize_simulation"""
-
-        # reset indicies to facilitate unused data tracking
-        transitions_data = transitions_data.reset_index(drop=True)
-        outflows_data = outflows_data.reset_index(drop=True)
-        total_population_data = total_population_data.reset_index(drop=True)
-
-        # Initialize one sub simulation per sub-population
-        unused_transitions_data = transitions_data
-        unused_outflows_data = outflows_data
-        unused_total_population_data = total_population_data
-        for sub_group_id in self.sub_group_ids_dict:
-            group_attributes = pd.Series(self.sub_group_ids_dict[sub_group_id])
-            disaggregated_transitions_data = \
-                transitions_data[(transitions_data[disaggregation_axes] == group_attributes).all(axis=1)]
-            disaggregated_outflows_data = \
-                outflows_data[(outflows_data[disaggregation_axes] == group_attributes).all(axis=1)]
-            disaggregated_total_population_data = \
-                total_population_data[(total_population_data[disaggregation_axes] == group_attributes).all(axis=1)]
-
-            unused_transitions_data = unused_transitions_data.drop(disaggregated_transitions_data.index)
-            unused_outflows_data = unused_outflows_data.drop(disaggregated_outflows_data.index)
-            unused_total_population_data = unused_total_population_data.drop(disaggregated_total_population_data.index)
-
-            # Select the policies relevant to this simulation group
-            group_policies = SparkPolicy.get_sub_population_policies(user_inputs['policy_list'],
-                                                                     self.sub_group_ids_dict[sub_group_id])
-
-            self.sub_simulations[sub_group_id] = SubSimulation(
-                outflows_data=disaggregated_outflows_data,
-                transitions_data=disaggregated_transitions_data,
-                total_population_data=disaggregated_total_population_data,
-                simulation_compartments=simulation_compartments,
-                user_inputs=user_inputs,
-                policy_list=group_policies,
-                first_relevant_ts=first_relevant_ts,
-                microsim=microsim
-            )
-            self.sub_simulations[sub_group_id].initialize()
-
-        if len(unused_transitions_data) > 0:
-            warn(f"Some transitions data left unused: {unused_transitions_data}", Warning)
-        if len(unused_outflows_data) > 0:
-            warn(f"Some outflows data left unused: {unused_outflows_data}", Warning)
-        if len(unused_total_population_data) > 0:
-            warn(f"Some total population data left unused: {unused_total_population_data}", Warning)
-
-    def step_forward(self, num_ts: int):
+    def step_forward(self, num_ts: int) -> None:
         for _ in range(num_ts):
             for simulation_obj in self.sub_simulations.values():
                 simulation_obj.step_forward()
@@ -280,11 +136,11 @@ class PopulationSimulation:
                 simulation_obj.ingest_cross_simulation_cohorts(sub_group_cohorts)
 
     @staticmethod
-    def update_cohort_attributes(cross_simulation_flows):
+    def update_cohort_attributes(cross_simulation_flows: pd.DataFrame) -> pd.DataFrame:
         """Should change sub_group_id for each row to whatever simulation that cohort should move to in the next ts"""
         return cross_simulation_flows
 
-    def calculate_transition_error(self, validation_data: pd.DataFrame):
+    def calculate_transition_error(self, validation_data: pd.DataFrame) -> pd.DataFrame:
         """
         validation_data should be a DataFrame with exactly:
             one column per axis of disaggregation, 'time_step', 'count', 'compartment', 'outflow_to'
@@ -314,7 +170,7 @@ class PopulationSimulation:
                             compartment.outflows[ts][outflow]
         return aggregated_results
 
-    def gen_arima_output_df(self):
+    def gen_arima_output_df(self) -> pd.DataFrame:
         arima_output_df = pd.DataFrame()
         for simulation_group, sub_simulation in self.sub_simulations.items():
             output_df_sub = \
@@ -322,7 +178,7 @@ class PopulationSimulation:
             arima_output_df = arima_output_df.append(output_df_sub)
         return arima_output_df
 
-    def gen_scale_factors_df(self):
+    def gen_scale_factors_df(self) -> pd.DataFrame:
         scale_factors_df = pd.DataFrame()
         for subgroup_name, subgroup_obj in self.sub_simulations.items():
             subgroup_scale_factors = subgroup_obj.get_scale_factors()
@@ -330,7 +186,7 @@ class PopulationSimulation:
             scale_factors_df = pd.concat([scale_factors_df, subgroup_scale_factors])
         return scale_factors_df
 
-    def get_data_for_compartment_ts(self, compartment, ts):
+    def get_data_for_compartment_ts(self, compartment: str, ts: int) -> Tuple[pd.DataFrame, pd.DataFrame]:
         simulation_population = self.population_projections[
             (self.population_projections.compartment == compartment) &
             (self.population_projections.time_step == ts)]
@@ -340,7 +196,7 @@ class PopulationSimulation:
 
         return simulation_population, historical_population
 
-    def gen_total_population_error(self):
+    def gen_total_population_error(self) -> pd.DataFrame:
         total_population_error = pd.DataFrame(index=self.validation_population_data.time_step.unique(),
                                               columns=self.validation_population_data.compartment.unique())
 
@@ -366,7 +222,7 @@ class PopulationSimulation:
 
         return total_population_error.sort_index()
 
-    def gen_full_error(self):
+    def gen_full_error(self) -> pd.DataFrame:
         """Compile error data from sub-simulations"""
         min_projection_ts = min(self.population_projections['time_step'])
         total_population_error = pd.DataFrame(

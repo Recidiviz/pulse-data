@@ -18,7 +18,8 @@
 
 import unittest
 import pandas as pd
-from recidiviz.calculator.modeling.population_projection.sub_simulation import SubSimulation
+from recidiviz.calculator.modeling.population_projection.simulations.sub_simulation.sub_simulation_factory \
+    import SubSimulationFactory
 
 
 class TestSubSimulation(unittest.TestCase):
@@ -56,15 +57,16 @@ class TestSubSimulation(unittest.TestCase):
     def test_total_population_data_must_include_start_ts(self):
         sparse_total_population_data = \
             self.test_total_population_data[self.test_total_population_data.time_step != 0]
-        sim = SubSimulation(self.test_outflow_data,
-                            self.test_transitions_data,
-                            sparse_total_population_data,
-                            self.test_architecture,
-                            self.test_user_inputs,
-                            self.compartment_policies,
-                            0)
         with self.assertRaises(ValueError):
-            sim.initialize()
+            _ = SubSimulationFactory.build_sub_simulation(self.test_outflow_data,
+                                                          self.test_transitions_data,
+                                                          sparse_total_population_data,
+                                                          self.test_architecture,
+                                                          self.test_user_inputs,
+                                                          self.compartment_policies,
+                                                          0,
+                                                          True,
+                                                          True)
 
     def test_dropping_data_raises_warning_or_error(self):
         """Assert that SubSimulation throws an error when some input data goes unused"""
@@ -75,21 +77,23 @@ class TestSubSimulation(unittest.TestCase):
         typo_outflows.loc[typo_outflows.index == 4, 'compartment'] = 'pre-trial'
 
         with self.assertRaises(ValueError):
-            sub_sim = SubSimulation(typo_outflows,
-                                    self.test_transitions_data,
-                                    self.test_total_population_data,
-                                    self.test_architecture,
-                                    self.test_user_inputs,
-                                    self.compartment_policies,
-                                    0)
-            sub_sim.initialize()
+            _ = SubSimulationFactory.build_sub_simulation(typo_outflows,
+                                                          self.test_transitions_data,
+                                                          self.test_total_population_data,
+                                                          self.test_architecture,
+                                                          self.test_user_inputs,
+                                                          self.compartment_policies,
+                                                          0,
+                                                          True,
+                                                          True)
 
         with self.assertWarns(Warning):
-            sub_sim = SubSimulation(self.test_outflow_data,
-                                    typo_transitions,
-                                    self.test_total_population_data,
-                                    self.test_architecture,
-                                    self.test_user_inputs,
-                                    self.compartment_policies,
-                                    0)
-            sub_sim.initialize()
+            _ = SubSimulationFactory.build_sub_simulation(self.test_outflow_data,
+                                                          typo_transitions,
+                                                          self.test_total_population_data,
+                                                          self.test_architecture,
+                                                          self.test_user_inputs,
+                                                          self.compartment_policies,
+                                                          0,
+                                                          True,
+                                                          True)

@@ -23,9 +23,12 @@ import numpy as np
 import pandas as pd
 
 from recidiviz.calculator.modeling.population_projection.super_simulation import SuperSimulation
-from recidiviz.calculator.modeling.population_projection.population_simulation import PopulationSimulation
 from recidiviz.calculator.modeling.population_projection import spark_bq_utils
 from recidiviz.calculator.modeling.population_projection.spark_policy import SparkPolicy
+from recidiviz.calculator.modeling.population_projection.simulations.super_simulation.super_simulation_initializer \
+    import SuperSimulationInitializer
+from recidiviz.calculator.modeling.population_projection.simulations.population_simulation.population_simulation \
+    import PopulationSimulation
 
 
 class MacroSuperSimulation(SuperSimulation):
@@ -63,6 +66,12 @@ class MacroSuperSimulation(SuperSimulation):
             max_sentence = max(self.data_dict['transitions_data'].compartment_duration)
         return self.user_inputs['start_time_step'] - int(2 * max_sentence)
 
+    def _build_population_simulation(self) -> PopulationSimulation:
+        return SuperSimulationInitializer.build_population_simulation({
+            'population_simulation': {'initializer': 'macro'},
+            'sub_simulation': {'initializer': 'macro'}
+        })
+
     def simulate_policy(self, policy_list: List[SparkPolicy], output_compartment: str,
                         cost_multipliers: Optional[pd.DataFrame] = None):
         """
@@ -76,14 +85,14 @@ class MacroSuperSimulation(SuperSimulation):
 
         self.user_inputs['policy_list'] = policy_list
 
-        self.pop_simulations['policy'] = PopulationSimulation()
-        self.pop_simulations['control'] = PopulationSimulation()
+        self.pop_simulations['policy'] = self._build_population_simulation()
+        self.pop_simulations['control'] = self._build_population_simulation()
 
         simulation_data_inputs = (
             self.data_dict['outflows_data'],
             self.data_dict['transitions_data'],
             self.data_dict['total_population_data'],
-            self.data_dict['simulation_compartments_architecture'],
+            self.data_dict['compartments_architecture'],
             self.data_dict['disaggregation_axes']
         )
 
@@ -195,7 +204,7 @@ class MacroSuperSimulation(SuperSimulation):
             self.data_dict['outflows_data'],
             self.data_dict['transitions_data'],
             self.data_dict['total_population_data'],
-            self.data_dict['simulation_compartments_architecture'],
+            self.data_dict['compartments_architecture'],
             self.data_dict['disaggregation_axes']
         )
 
@@ -223,12 +232,12 @@ class MacroSuperSimulation(SuperSimulation):
         range_start, range_end, step_size = [int(i * max_sentence) for i in back_fill_range]
 
         for ts in np.arange(range_start, range_end, step_size):
-            self.pop_simulations[f"backfill_period_{ts}_time_steps"] = PopulationSimulation()
+            self.pop_simulations[f"backfill_period_{ts}_time_steps"] = self._build_population_simulation()
             self.pop_simulations[f"backfill_period_{ts}_time_steps"].simulate_policies(
                 self.data_dict['outflows_data'],
                 self.data_dict['transitions_data'],
                 self.data_dict['total_population_data'],
-                self.data_dict['simulation_compartments_architecture'],
+                self.data_dict['compartments_architecture'],
                 self.data_dict['disaggregation_axes'],
                 self.user_inputs,
                 self.user_inputs['start_time_step'] - ts
@@ -275,12 +284,13 @@ class MacroSuperSimulation(SuperSimulation):
 
         for ts in range(ts_to_keep[0], ts_to_keep[1]):
             new_data_start_year = max(self.data_dict['outflows_data']['time_step']) - ts
-            self.pop_simulations[f"with_{ts}_time_steps_of_historical_data"] = PopulationSimulation()
+            self.pop_simulations[f"with_{ts}_time_steps_of_historical_data"] = \
+                self._build_population_simulation()
             self.pop_simulations[f"with_{ts}_time_steps_of_historical_data"].simulate_policies(
                 self.data_dict['outflows_data'][self.data_dict['outflows_data']['time_step'] > new_data_start_year],
                 self.data_dict['transitions_data'],
                 self.data_dict['total_population_data'],
-                self.data_dict['simulation_compartments_architecture'],
+                self.data_dict['compartments_architecture'],
                 self.data_dict['disaggregation_axes'],
                 self.user_inputs,
                 self._get_first_relevant_ts()

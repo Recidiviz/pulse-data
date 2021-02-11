@@ -3,7 +3,7 @@ user_inputs:
     start_year: 2017.0
     projection_years: 10.0
 
-model_architecture:
+compartments_architecture:
     pretrial: shell
     prison: full
     parole: full

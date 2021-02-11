@@ -4,7 +4,7 @@ user_inputs:
   start_year: 2016.0
   projection_years: 15.0
 
-model_architecture:
+compartments_architecture:
     prison: full
     jail: full
     pretrial: shell

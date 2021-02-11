@@ -23,7 +23,7 @@ import numpy as np
 from recidiviz.calculator.modeling.population_projection.cohort_table import CohortTable
 from recidiviz.calculator.modeling.population_projection.spark_compartment import SparkCompartment
 from recidiviz.calculator.modeling.population_projection.simulations.compartment_transitions import \
-    CompartmentTransitions
+    CompartmentTransitions, SIG_FIGS
 
 
 class FullCompartment(SparkCompartment):
@@ -46,8 +46,8 @@ class FullCompartment(SparkCompartment):
         # Series containing compartment population at the end of each ts in the simulation
         self.end_ts_populations = pd.Series(dtype=float)
 
-    def microsim_initialize(self, total_population: int):
-        """populate cohort table with single starting cohort of microsim"""
+    def single_cohort_intitialize(self, total_population: int) -> None:
+        """Populate cohort table with single starting cohort"""
         self.cohorts.append_ts_end_count(self.cohorts.get_latest_population(), self.current_ts)
         self.ingest_incoming_cohort({self.tag: total_population})
         self.prepare_for_next_step()
@@ -70,16 +70,13 @@ class FullCompartment(SparkCompartment):
 
         latest_ts_pop_short = latest_ts_pop[latest_ts_pop.index <= len(per_ts_transitions)]
         latest_ts_pop_long = latest_ts_pop[latest_ts_pop.index > len(per_ts_transitions)]
-        if not latest_ts_pop_long.sum().sum() == 0:
+        if not np.isclose(latest_ts_pop_long, 0, SIG_FIGS).all():
             raise ValueError(f"cohorts not empty after max sentence: {latest_ts_pop_long}")
 
         # broadcast latest cohort populations onto transition table
         latest_ts_pop_short = per_ts_transitions.mul(latest_ts_pop_short, axis=0)
 
         latest_ts_pop = latest_ts_pop_long.append(latest_ts_pop_short.remaining)
-
-        if latest_ts_pop_short.iloc[-1, ].remaining > 0:
-            print('here it is')
 
         # convert index back to starting year from years in compartment
         latest_ts_pop.index = self.current_ts - latest_ts_pop.index
