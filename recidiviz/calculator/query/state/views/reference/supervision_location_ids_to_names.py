@@ -30,21 +30,6 @@ SUPERVISION_LOCATION_IDS_TO_NAMES_QUERY_TEMPLATE = \
     """
     /*{description}*/
     WITH
-    pa_location_names AS (
-        SELECT 
-            'US_PA' AS state_code,
-            Region_Code AS level_3_supervision_location_external_id,
-            Region AS level_3_supervision_location_name,
-            RelDO AS level_2_supervision_location_external_id,
-            DistrictOfficeName AS level_2_supervision_location_name,
-            Org_cd AS level_1_supervision_location_external_id,
-            Org_Name AS level_1_supervision_location_name
-        FROM 
-            `{project_id}.us_pa_raw_data_up_to_date_views.dbo_LU_PBPP_Organization_latest`
-        JOIN
-            `{project_id}.us_pa_raw_data_up_to_date_views.dbo_LU_RelDo_latest`
-        ON DistrictOfficeCode = RelDO
-    ),
     mo_location_names AS (        
         SELECT
             DISTINCT
@@ -65,10 +50,40 @@ SUPERVISION_LOCATION_IDS_TO_NAMES_QUERY_TEMPLATE = \
         LEFT OUTER JOIN
             `{project_id}.us_mo_raw_data_up_to_date_views.RECIDIVIZ_REFERENCE_supervision_district_to_region_latest`
         USING (level_1_supervision_location_external_id)
-    )
+    ),
+    nd_location_names AS (
+        SELECT
+            DISTINCT
+                'US_ND' AS state_code,
+                'NOT_APPLICABLE' AS level_3_supervision_location_external_id,
+                'NOT_APPLICABLE' AS level_3_supervision_location_name,
+                'NOT_APPLICABLE' AS level_2_supervision_location_external_id,
+                'NOT_APPLICABLE' AS level_2_supervision_location_name,
+                supervising_district_external_id as level_1_supervision_location_external_id,
+                supervising_district_name as level_1_supervision_location_name,
+        FROM
+            `{project_id}.us_nd_raw_data_up_to_date_views.RECIDIVIZ_REFERENCE_supervision_district_id_to_name_latest`
+    ),
+    pa_location_names AS (
+        SELECT 
+            'US_PA' AS state_code,
+            Region_Code AS level_3_supervision_location_external_id,
+            Region AS level_3_supervision_location_name,
+            RelDO AS level_2_supervision_location_external_id,
+            DistrictOfficeName AS level_2_supervision_location_name,
+            Org_cd AS level_1_supervision_location_external_id,
+            Org_Name AS level_1_supervision_location_name
+        FROM 
+            `{project_id}.us_pa_raw_data_up_to_date_views.dbo_LU_PBPP_Organization_latest`
+        JOIN
+            `{project_id}.us_pa_raw_data_up_to_date_views.dbo_LU_RelDo_latest`
+        ON DistrictOfficeCode = RelDO
+    ) 
     SELECT * FROM mo_location_names
     UNION ALL
-    SELECT * FROM pa_location_names;
+    SELECT * FROM nd_location_names
+    UNION ALL
+    SELECT * FROM pa_location_names;    
     """
 
 SUPERVISION_LOCATION_IDS_TO_NAMES_VIEW_BUILDER = SimpleBigQueryViewBuilder(
