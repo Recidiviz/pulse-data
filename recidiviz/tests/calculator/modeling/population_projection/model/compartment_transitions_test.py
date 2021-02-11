@@ -20,7 +20,7 @@ import unittest
 from copy import deepcopy
 from functools import partial
 import pandas as pd
-from pandas.testing import assert_frame_equal
+from pandas.testing import assert_frame_equal, assert_series_equal
 import numpy as np
 
 from recidiviz.calculator.modeling.population_projection.simulations.compartment_transitions import \
@@ -52,7 +52,6 @@ class TestInitialization(TestTransitionTable):
     def test_normalize_transitions_requires_non_normalized_before_table(self):
         """Tests that transitory transitions table rejects a pre-normalized 'before' table"""
         transitions_table = CompartmentTransitions(self.test_data)
-        transitions_table.initialize_transition_table()
         transitions_table.transition_dfs['after'] = deepcopy(transitions_table.transition_dfs['before'])
         transitions_table.normalize_transitions(state='before')
 
@@ -118,10 +117,8 @@ class TestTableHydration(TestTransitionTable):
         compartment_transitions_default = CompartmentTransitions(self.test_data)
         compartment_transitions_shuffled = CompartmentTransitions(self.test_data.sample(frac=1))
 
-        compartment_transitions_default.initialize_transition_table()
         compartment_transitions_default.initialize(compartment_policies)
 
-        compartment_transitions_shuffled.initialize_transition_table()
         compartment_transitions_shuffled.initialize(compartment_policies)
 
         self.assertEqual(compartment_transitions_default, compartment_transitions_shuffled)
@@ -135,7 +132,6 @@ class TestTableHydration(TestTransitionTable):
         ]
 
         compartment_transitions = CompartmentTransitions(self.test_data)
-        compartment_transitions.initialize_transition_table()
         with self.assertRaises(ValueError):
             compartment_transitions.initialize(compartment_policies)
 
@@ -145,7 +141,6 @@ class TestPolicyFunctions(TestTransitionTable):
 
     def test_unnormalized_table_inverse_of_normalize_table(self):
         compartment_transitions = CompartmentTransitions(self.test_data)
-        compartment_transitions.initialize_transition_table()
         original_before_table = compartment_transitions.transition_dfs['before'].copy()
         # 'normalize' table (in the classical mathematical sense) to match scale of unnormalized table
         original_before_table /= original_before_table.sum().sum()
@@ -170,11 +165,9 @@ class TestPolicyFunctions(TestTransitionTable):
         )
 
         compartment_transitions = CompartmentTransitions(self.test_data)
-        compartment_transitions.initialize_transition_table()
         compartment_transitions.initialize([policy_function])
 
         alternate_data_transitions = CompartmentTransitions(alternate_data)
-        alternate_data_transitions.initialize_transition_table()
         alternate_data_transitions.initialize([])
 
         assert_frame_equal(compartment_transitions.transition_dfs['after_non_retroactive'],
@@ -194,11 +187,9 @@ class TestPolicyFunctions(TestTransitionTable):
         ]
 
         compartment_transitions = CompartmentTransitions(self.test_data)
-        compartment_transitions.initialize_transition_table()
         compartment_transitions.initialize(compartment_policies)
 
         baseline_transitions = CompartmentTransitions(self.test_data)
-        baseline_transitions.initialize_transition_table()
         baseline_transitions.initialize([])
 
         self.assertTrue((baseline_transitions.transition_dfs['after_retroactive']['prison'] ==
@@ -224,7 +215,6 @@ class TestPolicyFunctions(TestTransitionTable):
         ]
 
         compartment_transitions = CompartmentTransitions(self.test_data)
-        compartment_transitions.initialize_transition_table()
         compartment_transitions.initialize(compartment_policies)
 
         assert_frame_equal(compartment_transitions.transition_dfs['before'],
@@ -252,7 +242,6 @@ class TestPolicyFunctions(TestTransitionTable):
         expected_result.columns.name = 'outflow_to'
         expected_result /= expected_result.sum().sum()
 
-        compartment_transitions.initialize_transition_table()
         compartment_transitions.initialize(compartment_policy)
         compartment_transitions.unnormalize_table('after_retroactive')
         assert_frame_equal(round(compartment_transitions.transition_dfs['after_retroactive'], 8),
@@ -272,7 +261,6 @@ class TestPolicyFunctions(TestTransitionTable):
         ]
 
         compartment_transitions = CompartmentTransitions(self.test_data)
-        compartment_transitions.initialize_transition_table()
         compartment_transitions.initialize(compartment_policies)
 
         self.assertTrue((compartment_transitions.transition_dfs['before'].sum(axis=1) ==
@@ -284,3 +272,33 @@ class TestPolicyFunctions(TestTransitionTable):
         compartment_transitions = CompartmentTransitions(self.test_data)
         compartment_transitions.extend_tables(15)
         self.assertTrue(set(compartment_transitions.transition_dfs['before'].index) == set(range(1, 16)))
+
+    def test_chop_technicals_chops_correctly(self):
+        """
+        Make sure CompartmentTransitions.chop_technical_revocations zeros technicals after the correct duration and
+            that table sums to the same amount (i.e. total population shifted but not removed)
+        """
+        compartment_policies = [
+            SparkPolicy(policy_fn=partial(CompartmentTransitions.chop_technical_revocations,
+                                          technical_outflow='prison',
+                                          release_outflow='jail',
+                                          retroactive=False),
+                        sub_population={'sub_group': 'test_population'},
+                        spark_compartment='test_compartment',
+                        apply_retroactive=False)
+        ]
+
+        compartment_transitions = CompartmentTransitions(self.test_data)
+        compartment_transitions.initialize(compartment_policies)
+
+        baseline_transitions = CompartmentTransitions(self.test_data)
+        baseline_transitions.initialize([])
+
+        # check total population was preserved
+        assert_series_equal(compartment_transitions.transition_dfs['after_non_retroactive'].iloc[0],
+                            baseline_transitions.transition_dfs['after_non_retroactive'].iloc[0])
+
+        # check technicals chopped
+        compartment_transitions.unnormalize_table('after_non_retroactive')
+        self.assertTrue((compartment_transitions.transition_dfs['after_non_retroactive'].loc[3:, 'prison'] == 0).all())
+        self.assertTrue(compartment_transitions.transition_dfs['after_non_retroactive'].loc[1, 'prison'] != 0)
