@@ -23,6 +23,8 @@ import pandas as pd
 
 from recidiviz.calculator.modeling.population_projection.spark_policy import SparkPolicy
 
+SIG_FIGS = 7
+
 
 class CompartmentTransitions:
     """Handle transition tables for one compartment that sends groups to multiple other compartments over time"""
@@ -44,9 +46,9 @@ class CompartmentTransitions:
 
         self.transition_dfs: Dict[str, pd.DataFrame] = {}
 
-        self.initialize_transition_table()
+        self._initialize_transition_table()
 
-    def initialize_transition_table(self) -> None:
+    def _initialize_transition_table(self) -> None:
         """Populate the 'before' transition table and initializes the max_sentence from historical data """
         if self.historical_outflows.empty:
             raise ValueError("Cannot create a transition table with an empty transitions_data dataframe")
@@ -138,7 +140,7 @@ class CompartmentTransitions:
 
         self.transition_dfs[state] = normalized_df
 
-        self.transition_dfs[state] = self.transition_dfs[state].apply(lambda x: round(x, 8))
+        self.transition_dfs[state] = self.transition_dfs[state].apply(lambda x: round(x, SIG_FIGS))
 
         self.transition_dfs[state]['remaining'] = 1 - self.transition_dfs[state].sum(axis=1)
 
@@ -440,3 +442,23 @@ class CompartmentTransitions:
                                                         'reduction_size': [mm_factor]}),
                              reduction_type='+',
                              retroactive=retroactive)
+
+    def chop_technical_revocations(self, technical_outflow: str, release_outflow: str = 'release',
+                                   retroactive: bool = False) -> None:
+        """Remove all technical revocations that happen after the latest completion duration."""
+        df_name = self.get_df_name_from_retroactive(retroactive)
+        technical_transitions = self.transition_dfs[df_name][technical_outflow]
+        release_transitions = self.transition_dfs[df_name][release_outflow]
+
+        # get max completion duration
+        max_release_duration = release_transitions[release_transitions > 0].index.max()
+        chopped_indices = technical_transitions.index > max_release_duration
+
+        # get population to reallocate
+        chopped_population = technical_transitions[chopped_indices].sum()
+
+        # chop technicals
+        self.transition_dfs[df_name].loc[chopped_indices, technical_outflow] = 0
+
+        # reallocate to release
+        self.transition_dfs[df_name].loc[max_release_duration, release_outflow] += chopped_population
