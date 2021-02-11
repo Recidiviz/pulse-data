@@ -42,7 +42,8 @@ class DirectIngestRawTableMigrationCollector(ModuleCollectorMixin):
         recidiviz/ingest/direct/regions/us_pa/raw_data/migrations/migrations_dbo_Miscon.yaml
     """
 
-    def __init__(self, region_code: str, regions_module_override: Optional[ModuleType] = None):
+    def __init__(self, region_code: str,
+                 regions_module_override: Optional[ModuleType] = None):
         regions_module = regions_module_override or regions
         self.region_code = region_code
         self.migrations_dir_module = \
