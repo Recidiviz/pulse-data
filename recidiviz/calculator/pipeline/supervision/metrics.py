@@ -200,6 +200,9 @@ class SupervisionRevocationMetric(SupervisionMetric, PersonLevelMetric, Assessme
     # metric describes
     revocation_type: Optional[StateSupervisionViolationResponseRevocationType] = attr.ib(default=None)
 
+    # A string subtype that provides further insight into the revocation_type above.
+    revocation_type_subtype: Optional[str] = attr.ib(default=None)
+
     # StateSupervisionViolationType enum for the type of violation that eventually caused the revocation of supervision
     source_violation_type: Optional[StateSupervisionViolationType] = attr.ib(default=None)
 

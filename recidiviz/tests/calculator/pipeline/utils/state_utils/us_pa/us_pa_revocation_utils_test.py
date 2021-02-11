@@ -20,9 +20,18 @@ import unittest
 from datetime import date
 
 from recidiviz.calculator.pipeline.utils.state_utils.us_pa import us_pa_revocation_utils
-from recidiviz.common.constants.state.state_incarceration_period import StateIncarcerationPeriodAdmissionReason
+from recidiviz.calculator.pipeline.utils.state_utils.us_pa.us_pa_revocation_utils import \
+    PURPOSE_FOR_INCARCERATION_PVC, SHOCK_INCARCERATION_UNDER_6_MONTHS, SHOCK_INCARCERATION_12_MONTHS, \
+    SHOCK_INCARCERATION_9_MONTHS, SHOCK_INCARCERATION_6_MONTHS, SHOCK_INCARCERATION_PVC
+from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
+from recidiviz.common.constants.state.state_incarceration_period import StateIncarcerationPeriodAdmissionReason, \
+    StateIncarcerationPeriodStatus, StateSpecializedPurposeForIncarceration, StateIncarcerationPeriodReleaseReason
 from recidiviz.common.constants.state.state_supervision_period import StateSupervisionPeriodSupervisionType
-from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod, StateSupervisionPeriod
+from recidiviz.common.constants.state.state_supervision_violation_response import \
+    StateSupervisionViolationResponseRevocationType, StateSupervisionViolationResponseDecision, \
+    StateSupervisionViolationResponseType, StateSupervisionViolationResponseDecidingBodyType
+from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod, StateSupervisionPeriod, \
+    StateSupervisionViolationResponseDecisionEntry, StateSupervisionViolationResponse
 
 STATE_CODE = 'US_PA'
 
@@ -128,3 +137,657 @@ class TestRevokedSupervisionPeriodsIfRevocationOccurred(unittest.TestCase):
 
         self.assertFalse(admission_is_revocation)
         self.assertEqual([], revoked_supervision_periods)
+
+
+
+class TestRevocationTypeAndSubtype(unittest.TestCase):
+    """Tests the us_pa_revocation_type_and_subtype function."""
+    def test_revocation_type_and_subtype_shock_incarceration_RESCR(self):
+        parole_board_decision_entry = StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+            state_code=STATE_CODE,
+            decision_raw_text=SHOCK_INCARCERATION_UNDER_6_MONTHS,
+            revocation_type=StateSupervisionViolationResponseRevocationType.SHOCK_INCARCERATION,
+            decision=StateSupervisionViolationResponseDecision.SHOCK_INCARCERATION,
+            revocation_type_raw_text=SHOCK_INCARCERATION_UNDER_6_MONTHS,
+        )
+
+        parole_board_permanent_decision = StateSupervisionViolationResponse.new_with_defaults(
+            state_code=STATE_CODE,
+            response_date=date(year=2018, month=5, day=16),
+            response_type=StateSupervisionViolationResponseType.PERMANENT_DECISION,
+            response_type_raw_text='PERMANENT_DECISION',
+            deciding_body_type=StateSupervisionViolationResponseDecidingBodyType.PAROLE_BOARD,
+            deciding_body_type_raw_text='PAROLE_BOARD',
+            supervision_violation_response_decisions=[parole_board_decision_entry]
+        )
+
+        incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=222,
+            external_id='ip2',
+            state_code=STATE_CODE,
+            incarceration_type=StateIncarcerationType.COUNTY_JAIL,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            admission_date=date(2018, 5, 19),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.SHOCK_INCARCERATION,
+            # Program 46 indicates a revocation for a 6, 9 or 12 month stay
+            specialized_purpose_for_incarceration_raw_text='CCIS-46',
+            release_date=date(2019, 3, 3),
+            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED
+        )
+
+        revocation_type, revocation_type_subtype = us_pa_revocation_utils.us_pa_revocation_type_and_subtype(
+            incarceration_period,
+            [parole_board_permanent_decision]
+        )
+
+        self.assertEqual(StateSupervisionViolationResponseRevocationType.SHOCK_INCARCERATION, revocation_type)
+        self.assertEqual(SHOCK_INCARCERATION_UNDER_6_MONTHS, revocation_type_subtype)
+
+    def test_revocation_type_and_subtype_shock_incarceration_RESCR6(self):
+        parole_board_decision_entry = StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+            state_code=STATE_CODE,
+            decision_raw_text=SHOCK_INCARCERATION_6_MONTHS,
+            revocation_type=StateSupervisionViolationResponseRevocationType.SHOCK_INCARCERATION,
+            decision=StateSupervisionViolationResponseDecision.SHOCK_INCARCERATION,
+            revocation_type_raw_text=SHOCK_INCARCERATION_6_MONTHS,
+        )
+
+        parole_board_permanent_decision = StateSupervisionViolationResponse.new_with_defaults(
+            state_code=STATE_CODE,
+            response_date=date(year=2018, month=5, day=16),
+            response_type=StateSupervisionViolationResponseType.PERMANENT_DECISION,
+            response_type_raw_text='PERMANENT_DECISION',
+            deciding_body_type=StateSupervisionViolationResponseDecidingBodyType.PAROLE_BOARD,
+            deciding_body_type_raw_text='PAROLE_BOARD',
+            supervision_violation_response_decisions=[parole_board_decision_entry]
+        )
+
+        incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=222,
+            external_id='ip2',
+            state_code=STATE_CODE,
+            incarceration_type=StateIncarcerationType.COUNTY_JAIL,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            admission_date=date(2018, 5, 19),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.SHOCK_INCARCERATION,
+            # Program 46 indicates a revocation for a 6, 9 or 12 month stay
+            specialized_purpose_for_incarceration_raw_text='CCIS-46',
+            release_date=date(2019, 3, 3),
+            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED
+        )
+
+        revocation_type, revocation_type_subtype = us_pa_revocation_utils.us_pa_revocation_type_and_subtype(
+            incarceration_period,
+            [parole_board_permanent_decision]
+        )
+
+        self.assertEqual(StateSupervisionViolationResponseRevocationType.SHOCK_INCARCERATION, revocation_type)
+        self.assertEqual(SHOCK_INCARCERATION_6_MONTHS, revocation_type_subtype)
+
+    def test_revocation_type_and_subtype_shock_incarceration_RESCR9(self):
+        parole_board_decision_entry = StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+            state_code=STATE_CODE,
+            decision_raw_text=SHOCK_INCARCERATION_9_MONTHS,
+            revocation_type=StateSupervisionViolationResponseRevocationType.SHOCK_INCARCERATION,
+            decision=StateSupervisionViolationResponseDecision.SHOCK_INCARCERATION,
+            revocation_type_raw_text=SHOCK_INCARCERATION_9_MONTHS,
+        )
+
+        parole_board_permanent_decision = StateSupervisionViolationResponse.new_with_defaults(
+            state_code=STATE_CODE,
+            response_date=date(year=2018, month=5, day=16),
+            response_type=StateSupervisionViolationResponseType.PERMANENT_DECISION,
+            response_type_raw_text='PERMANENT_DECISION',
+            deciding_body_type=StateSupervisionViolationResponseDecidingBodyType.PAROLE_BOARD,
+            deciding_body_type_raw_text='PAROLE_BOARD',
+            supervision_violation_response_decisions=[parole_board_decision_entry]
+        )
+
+        incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=222,
+            external_id='ip2',
+            state_code=STATE_CODE,
+            incarceration_type=StateIncarcerationType.COUNTY_JAIL,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            admission_date=date(2018, 5, 19),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.SHOCK_INCARCERATION,
+            # Program 46 indicates a revocation for a 6, 9 or 12 month stay
+            specialized_purpose_for_incarceration_raw_text='CCIS-46',
+            release_date=date(2019, 3, 3),
+            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED
+        )
+
+        revocation_type, revocation_type_subtype = us_pa_revocation_utils.us_pa_revocation_type_and_subtype(
+            incarceration_period,
+            [parole_board_permanent_decision]
+        )
+
+        self.assertEqual(StateSupervisionViolationResponseRevocationType.SHOCK_INCARCERATION, revocation_type)
+        self.assertEqual(SHOCK_INCARCERATION_9_MONTHS, revocation_type_subtype)
+
+    def test_revocation_type_and_subtype_shock_incarceration_RESCR12(self):
+        parole_board_decision_entry = StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+            state_code=STATE_CODE,
+            decision_raw_text=SHOCK_INCARCERATION_12_MONTHS,
+            decision=StateSupervisionViolationResponseDecision.SHOCK_INCARCERATION,
+            revocation_type=StateSupervisionViolationResponseRevocationType.SHOCK_INCARCERATION,
+            revocation_type_raw_text=SHOCK_INCARCERATION_12_MONTHS,
+        )
+
+        parole_board_permanent_decision = StateSupervisionViolationResponse.new_with_defaults(
+            state_code=STATE_CODE,
+            response_date=date(year=2018, month=5, day=16),
+            response_type=StateSupervisionViolationResponseType.PERMANENT_DECISION,
+            response_type_raw_text='PERMANENT_DECISION',
+            deciding_body_type=StateSupervisionViolationResponseDecidingBodyType.PAROLE_BOARD,
+            deciding_body_type_raw_text='PAROLE_BOARD',
+            supervision_violation_response_decisions=[parole_board_decision_entry]
+        )
+
+        incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=222,
+            external_id='ip2',
+            state_code=STATE_CODE,
+            incarceration_type=StateIncarcerationType.COUNTY_JAIL,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            admission_date=date(2018, 5, 19),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.SHOCK_INCARCERATION,
+            # Program 46 indicates a revocation for a 6, 9 or 12 month stay
+            specialized_purpose_for_incarceration_raw_text='CCIS-46',
+            release_date=date(2019, 3, 3),
+            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED
+        )
+
+        revocation_type, revocation_type_subtype = us_pa_revocation_utils.us_pa_revocation_type_and_subtype(
+            incarceration_period,
+            [parole_board_permanent_decision]
+        )
+
+        self.assertEqual(StateSupervisionViolationResponseRevocationType.SHOCK_INCARCERATION, revocation_type)
+        self.assertEqual(SHOCK_INCARCERATION_12_MONTHS, revocation_type_subtype)
+
+    def test_revocation_type_and_subtype_shock_incarceration_no_set_subtype(self):
+        incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=222,
+            external_id='ip2',
+            state_code=STATE_CODE,
+            incarceration_type=StateIncarcerationType.COUNTY_JAIL,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            admission_date=date(2018, 5, 19),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.SHOCK_INCARCERATION,
+            # Program 46 indicates a revocation for a 6, 9 or 12 month stay
+            specialized_purpose_for_incarceration_raw_text='CCIS-46',
+            release_date=date(2019, 3, 3),
+            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED
+        )
+
+        revocation_type, revocation_type_subtype = us_pa_revocation_utils.us_pa_revocation_type_and_subtype(
+            incarceration_period, []
+        )
+
+        self.assertEqual(StateSupervisionViolationResponseRevocationType.SHOCK_INCARCERATION, revocation_type)
+        # Default subtype for SHOCK_INCARCERATION is RESCR
+        self.assertEqual(SHOCK_INCARCERATION_UNDER_6_MONTHS, revocation_type_subtype)
+
+    def test_revocation_type_and_subtype_shock_incarceration_sci_no_set_subtype(self):
+        incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=222,
+            external_id='ip2',
+            state_code=STATE_CODE,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            admission_date=date(2018, 5, 19),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.SHOCK_INCARCERATION,
+            release_date=date(2019, 3, 3),
+            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED
+        )
+
+        revocation_type, revocation_type_subtype = us_pa_revocation_utils.us_pa_revocation_type_and_subtype(
+            incarceration_period, []
+        )
+
+        self.assertEqual(StateSupervisionViolationResponseRevocationType.SHOCK_INCARCERATION, revocation_type)
+        # Default subtype for SHOCK_INCARCERATION is RESCR
+        self.assertEqual(SHOCK_INCARCERATION_UNDER_6_MONTHS, revocation_type_subtype)
+
+    def test_revocation_type_and_subtype_shock_incarceration_sci_with_board_actions(self):
+        parole_board_decision_entry = StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+            state_code=STATE_CODE,
+            decision_raw_text=SHOCK_INCARCERATION_12_MONTHS,
+            decision=StateSupervisionViolationResponseDecision.SHOCK_INCARCERATION,
+            revocation_type=StateSupervisionViolationResponseRevocationType.SHOCK_INCARCERATION,
+            revocation_type_raw_text=SHOCK_INCARCERATION_12_MONTHS,
+        )
+
+        parole_board_permanent_decision = StateSupervisionViolationResponse.new_with_defaults(
+            state_code=STATE_CODE,
+            response_date=date(year=2018, month=5, day=16),
+            response_type=StateSupervisionViolationResponseType.PERMANENT_DECISION,
+            response_type_raw_text='PERMANENT_DECISION',
+            deciding_body_type=StateSupervisionViolationResponseDecidingBodyType.PAROLE_BOARD,
+            deciding_body_type_raw_text='PAROLE_BOARD',
+            supervision_violation_response_decisions=[parole_board_decision_entry]
+        )
+
+        incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=222,
+            external_id='ip2',
+            state_code=STATE_CODE,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            admission_date=date(2018, 5, 19),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.SHOCK_INCARCERATION,
+            release_date=date(2019, 3, 3),
+            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED
+        )
+
+        revocation_type, revocation_type_subtype = us_pa_revocation_utils.us_pa_revocation_type_and_subtype(
+            incarceration_period, [parole_board_permanent_decision]
+        )
+
+        self.assertEqual(StateSupervisionViolationResponseRevocationType.SHOCK_INCARCERATION, revocation_type)
+        self.assertEqual(SHOCK_INCARCERATION_12_MONTHS, revocation_type_subtype)
+
+    def test_revocation_type_and_subtype_reincarceration(self):
+        parole_board_decision_entry = StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+            state_code=STATE_CODE,
+            revocation_type_raw_text='XXX',
+        )
+
+        parole_board_permanent_decision = StateSupervisionViolationResponse.new_with_defaults(
+            state_code=STATE_CODE,
+            response_date=date(year=2018, month=5, day=16),
+            response_type=StateSupervisionViolationResponseType.PERMANENT_DECISION,
+            response_type_raw_text='PERMANENT_DECISION',
+            deciding_body_type=StateSupervisionViolationResponseDecidingBodyType.PAROLE_BOARD,
+            deciding_body_type_raw_text='PAROLE_BOARD',
+            supervision_violation_response_decisions=[parole_board_decision_entry]
+        )
+
+        incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=222,
+            external_id='ip2',
+            state_code=STATE_CODE,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            admission_date=date(2018, 5, 19),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+            release_date=date(2019, 3, 3),
+            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED
+        )
+
+        revocation_type, revocation_type_subtype = us_pa_revocation_utils.us_pa_revocation_type_and_subtype(
+            incarceration_period,
+            [parole_board_permanent_decision]
+        )
+
+        self.assertEqual(StateSupervisionViolationResponseRevocationType.REINCARCERATION, revocation_type)
+        self.assertIsNone(revocation_type_subtype)
+
+    def test_revocation_type_and_subtype_reincarceration_no_board_actions(self):
+        incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=222,
+            external_id='ip2',
+            state_code=STATE_CODE,
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            admission_date=date(2018, 5, 19),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+            release_date=date(2019, 3, 3),
+            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED
+        )
+
+        revocation_type, revocation_type_subtype = us_pa_revocation_utils.us_pa_revocation_type_and_subtype(
+            incarceration_period, []
+        )
+
+        self.assertEqual(StateSupervisionViolationResponseRevocationType.REINCARCERATION, revocation_type)
+        self.assertIsNone(revocation_type_subtype)
+
+    def test_revocation_type_and_subtype_PVC(self):
+        incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=222,
+            external_id='ip2',
+            state_code=STATE_CODE,
+            incarceration_type=StateIncarcerationType.COUNTY_JAIL,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            admission_date=date(2018, 5, 19),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL,
+            # Program 26 indicates a stay in a PVC
+            specialized_purpose_for_incarceration_raw_text=PURPOSE_FOR_INCARCERATION_PVC,
+            release_date=date(2019, 3, 3),
+            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED
+        )
+
+        revocation_type, revocation_type_subtype = us_pa_revocation_utils.us_pa_revocation_type_and_subtype(
+            incarceration_period, []
+        )
+
+        self.assertEqual(StateSupervisionViolationResponseRevocationType.SHOCK_INCARCERATION, revocation_type)
+        self.assertEqual('PVC', revocation_type_subtype)
+
+    def test_revocation_type_and_subtype_treatment(self):
+        incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=222,
+            external_id='ip2',
+            state_code=STATE_CODE,
+            incarceration_type=StateIncarcerationType.COUNTY_JAIL,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            admission_date=date(2018, 5, 19),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON,
+            release_date=date(2019, 3, 3),
+            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED
+        )
+
+        revocation_type, revocation_type_subtype = us_pa_revocation_utils.us_pa_revocation_type_and_subtype(
+            incarceration_period, []
+        )
+
+        self.assertEqual(StateSupervisionViolationResponseRevocationType.TREATMENT_IN_PRISON, revocation_type)
+        self.assertIsNone(revocation_type_subtype)
+
+    def test_revocation_type_and_subtype_treatment_51(self):
+        incarceration_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=222,
+            external_id='ip2',
+            state_code=STATE_CODE,
+            incarceration_type=StateIncarcerationType.COUNTY_JAIL,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            admission_date=date(2018, 5, 19),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON,
+            specialized_purpose_for_incarceration_raw_text='CCIS-51',
+            release_date=date(2019, 3, 3),
+            release_reason=StateIncarcerationPeriodReleaseReason.SENTENCE_SERVED
+        )
+
+        revocation_type, revocation_type_subtype = us_pa_revocation_utils.us_pa_revocation_type_and_subtype(
+            incarceration_period, []
+        )
+
+        self.assertEqual(StateSupervisionViolationResponseRevocationType.TREATMENT_IN_PRISON, revocation_type)
+        self.assertIsNone(revocation_type_subtype)
+
+
+# pylint: disable=protected-access
+class TestRevocationTypeSubtypeFromParoleDecisions(unittest.TestCase):
+    """Tests the _revocation_type_subtype function."""
+    def test_revocation_type_subtype(self):
+        parole_board_decision_entry_old = StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+            state_code=STATE_CODE,
+            decision_raw_text=SHOCK_INCARCERATION_UNDER_6_MONTHS,
+            revocation_type=StateSupervisionViolationResponseRevocationType.SHOCK_INCARCERATION,
+            decision=StateSupervisionViolationResponseDecision.SHOCK_INCARCERATION,
+            revocation_type_raw_text=SHOCK_INCARCERATION_UNDER_6_MONTHS,
+        )
+
+        parole_board_permanent_decision_outside_window = StateSupervisionViolationResponse.new_with_defaults(
+            state_code=STATE_CODE,
+            response_date=date(year=2018, month=5, day=16),
+            response_type=StateSupervisionViolationResponseType.PERMANENT_DECISION,
+            response_type_raw_text='PERMANENT_DECISION',
+            deciding_body_type=StateSupervisionViolationResponseDecidingBodyType.PAROLE_BOARD,
+            deciding_body_type_raw_text='PAROLE_BOARD',
+            supervision_violation_response_decisions=[parole_board_decision_entry_old]
+        )
+
+        parole_board_decision_entry_new = StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+            state_code=STATE_CODE,
+            decision_raw_text=SHOCK_INCARCERATION_12_MONTHS,
+            revocation_type=StateSupervisionViolationResponseRevocationType.SHOCK_INCARCERATION,
+            decision=StateSupervisionViolationResponseDecision.SHOCK_INCARCERATION,
+            revocation_type_raw_text=SHOCK_INCARCERATION_12_MONTHS,
+        )
+
+        parole_board_permanent_decision_in_window = StateSupervisionViolationResponse.new_with_defaults(
+            state_code=STATE_CODE,
+            response_date=date(year=2019, month=12, day=30),
+            response_type=StateSupervisionViolationResponseType.PERMANENT_DECISION,
+            response_type_raw_text='PERMANENT_DECISION',
+            deciding_body_type=StateSupervisionViolationResponseDecidingBodyType.PAROLE_BOARD,
+            deciding_body_type_raw_text='PAROLE_BOARD',
+            supervision_violation_response_decisions=[parole_board_decision_entry_new]
+        )
+
+        revocation_admission_date = date(2020, 1, 1)
+        specialized_purpose_for_incarceration_raw_text = 'CCIS-46'
+
+        revocation_type_subtype = us_pa_revocation_utils._revocation_type_subtype(
+            revocation_admission_date,
+            specialized_purpose_for_incarceration_raw_text,
+            [parole_board_permanent_decision_outside_window, parole_board_permanent_decision_in_window]
+        )
+
+        self.assertEqual(SHOCK_INCARCERATION_12_MONTHS, revocation_type_subtype)
+
+    def test_revocation_type_subtype_pvc(self):
+        revocation_admission_date = date(2020, 1, 1)
+        specialized_purpose_for_incarceration_raw_text = PURPOSE_FOR_INCARCERATION_PVC
+
+        revocation_type_subtype = us_pa_revocation_utils._revocation_type_subtype(
+            revocation_admission_date,
+            specialized_purpose_for_incarceration_raw_text,
+            []
+        )
+
+        self.assertEqual(SHOCK_INCARCERATION_PVC, revocation_type_subtype)
+
+    def test_revocation_type_subtype_no_parole_decisions(self):
+        violation_response = StateSupervisionViolationResponse.new_with_defaults(
+            state_code=STATE_CODE,
+            response_date=date(year=2018, month=5, day=16),
+            response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
+        )
+
+        revocation_admission_date = date(2020, 1, 1)
+
+        revocation_type_subtype = us_pa_revocation_utils._revocation_type_subtype(
+            revocation_admission_date,
+            None,
+            [violation_response]
+        )
+
+        self.assertIsNone(revocation_type_subtype)
+
+    def test_revocation_type_subtype_after_revocations(self):
+        parole_board_decision_entry = StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+            state_code=STATE_CODE,
+            decision_raw_text=SHOCK_INCARCERATION_UNDER_6_MONTHS,
+            revocation_type=StateSupervisionViolationResponseRevocationType.SHOCK_INCARCERATION,
+            decision=StateSupervisionViolationResponseDecision.SHOCK_INCARCERATION,
+            revocation_type_raw_text=SHOCK_INCARCERATION_UNDER_6_MONTHS,
+        )
+
+        parole_board_permanent_decision_outside_window = StateSupervisionViolationResponse.new_with_defaults(
+            state_code=STATE_CODE,
+            response_date=date(year=2020, month=5, day=16),
+            response_type=StateSupervisionViolationResponseType.PERMANENT_DECISION,
+            response_type_raw_text='PERMANENT_DECISION',
+            deciding_body_type=StateSupervisionViolationResponseDecidingBodyType.PAROLE_BOARD,
+            deciding_body_type_raw_text='PAROLE_BOARD',
+            supervision_violation_response_decisions=[parole_board_decision_entry]
+        )
+
+        revocation_admission_date = date(2020, 1, 1)
+
+        revocation_type_subtype = us_pa_revocation_utils._revocation_type_subtype(
+            revocation_admission_date,
+            None,
+            [parole_board_permanent_decision_outside_window]
+        )
+
+        self.assertIsNone(revocation_type_subtype)
+
+    def test_revocation_type_subtype_two_same_day(self):
+        """Tests that the longer shock incarceration length is taken from two parole board actions that happened on
+         the same day."""
+        parole_board_decision_entry_1 = StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+            state_code=STATE_CODE,
+            decision_raw_text=SHOCK_INCARCERATION_9_MONTHS,
+            revocation_type=StateSupervisionViolationResponseRevocationType.SHOCK_INCARCERATION,
+            decision=StateSupervisionViolationResponseDecision.SHOCK_INCARCERATION,
+            revocation_type_raw_text=SHOCK_INCARCERATION_9_MONTHS,
+        )
+
+        parole_board_permanent_decision_1 = StateSupervisionViolationResponse.new_with_defaults(
+            state_code=STATE_CODE,
+            response_date=date(year=2019, month=12, day=30),
+            response_type=StateSupervisionViolationResponseType.PERMANENT_DECISION,
+            response_type_raw_text='PERMANENT_DECISION',
+            deciding_body_type=StateSupervisionViolationResponseDecidingBodyType.PAROLE_BOARD,
+            deciding_body_type_raw_text='PAROLE_BOARD',
+            supervision_violation_response_decisions=[parole_board_decision_entry_1]
+        )
+
+        parole_board_decision_entry_2 = StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+            state_code=STATE_CODE,
+            decision_raw_text=SHOCK_INCARCERATION_6_MONTHS,
+            revocation_type=StateSupervisionViolationResponseRevocationType.SHOCK_INCARCERATION,
+            decision=StateSupervisionViolationResponseDecision.SHOCK_INCARCERATION,
+            revocation_type_raw_text=SHOCK_INCARCERATION_6_MONTHS,
+        )
+
+        parole_board_permanent_decision_2 = StateSupervisionViolationResponse.new_with_defaults(
+            state_code=STATE_CODE,
+            response_date=date(year=2019, month=12, day=30),
+            response_type=StateSupervisionViolationResponseType.PERMANENT_DECISION,
+            response_type_raw_text='PERMANENT_DECISION',
+            deciding_body_type=StateSupervisionViolationResponseDecidingBodyType.PAROLE_BOARD,
+            deciding_body_type_raw_text='PAROLE_BOARD',
+            supervision_violation_response_decisions=[parole_board_decision_entry_2]
+        )
+
+        revocation_admission_date = date(2020, 1, 1)
+
+        revocation_type_subtype = us_pa_revocation_utils._revocation_type_subtype(
+            revocation_admission_date,
+            None,
+            [parole_board_permanent_decision_1, parole_board_permanent_decision_2]
+        )
+
+        self.assertEqual(SHOCK_INCARCERATION_9_MONTHS, revocation_type_subtype)
+
+        revocation_type_subtype = us_pa_revocation_utils._revocation_type_subtype(
+            revocation_admission_date,
+            None,
+            [parole_board_permanent_decision_2, parole_board_permanent_decision_1]
+        )
+
+        self.assertEqual(SHOCK_INCARCERATION_9_MONTHS, revocation_type_subtype)
+
+    def test_revocation_type_subtype_no_responses(self):
+        revocation_admission_date = date(2020, 1, 1)
+
+        revocation_type_subtype = us_pa_revocation_utils._revocation_type_subtype(
+            revocation_admission_date, None, []
+        )
+
+        self.assertIsNone(revocation_type_subtype)
+
+
+# pylint: disable=protected-access
+class TestMostSevereRevocationTypeSubtype(unittest.TestCase):
+    """Tests the _most_severe_revocation_type_subtype function."""
+    def test_most_severe_revocation_type_subtype(self):
+        parole_board_decision_entry_1 = StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+            state_code=STATE_CODE,
+            decision_raw_text=SHOCK_INCARCERATION_9_MONTHS,
+            revocation_type=StateSupervisionViolationResponseRevocationType.SHOCK_INCARCERATION,
+            decision=StateSupervisionViolationResponseDecision.SHOCK_INCARCERATION,
+            revocation_type_raw_text=SHOCK_INCARCERATION_9_MONTHS,
+        )
+
+        parole_board_permanent_decision_1 = StateSupervisionViolationResponse.new_with_defaults(
+            state_code=STATE_CODE,
+            response_date=date(year=2019, month=12, day=30),
+            response_type=StateSupervisionViolationResponseType.PERMANENT_DECISION,
+            response_type_raw_text='PERMANENT_DECISION',
+            deciding_body_type=StateSupervisionViolationResponseDecidingBodyType.PAROLE_BOARD,
+            deciding_body_type_raw_text='PAROLE_BOARD',
+            supervision_violation_response_decisions=[parole_board_decision_entry_1]
+        )
+
+        parole_board_decision_entry_2 = StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+            state_code=STATE_CODE,
+            decision_raw_text=SHOCK_INCARCERATION_6_MONTHS,
+            revocation_type=StateSupervisionViolationResponseRevocationType.SHOCK_INCARCERATION,
+            decision=StateSupervisionViolationResponseDecision.SHOCK_INCARCERATION,
+            revocation_type_raw_text=SHOCK_INCARCERATION_6_MONTHS,
+        )
+
+        parole_board_permanent_decision_2 = StateSupervisionViolationResponse.new_with_defaults(
+            state_code=STATE_CODE,
+            response_date=date(year=2019, month=12, day=30),
+            response_type=StateSupervisionViolationResponseType.PERMANENT_DECISION,
+            response_type_raw_text='PERMANENT_DECISION',
+            deciding_body_type=StateSupervisionViolationResponseDecidingBodyType.PAROLE_BOARD,
+            deciding_body_type_raw_text='PAROLE_BOARD',
+            supervision_violation_response_decisions=[parole_board_decision_entry_2]
+        )
+
+        revocation_type_subtype = us_pa_revocation_utils._most_severe_revocation_type_subtype(
+            [parole_board_permanent_decision_1, parole_board_permanent_decision_2]
+        )
+
+        self.assertEqual(SHOCK_INCARCERATION_9_MONTHS, revocation_type_subtype)
+
+    def test_most_severe_revocation_type_subtype_invalid_type(self):
+        parole_board_decision_entry_1 = StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+            state_code=STATE_CODE,
+            decision_raw_text='XXX',
+            revocation_type=StateSupervisionViolationResponseRevocationType.SHOCK_INCARCERATION,
+            decision=StateSupervisionViolationResponseDecision.SHOCK_INCARCERATION,
+            revocation_type_raw_text='XXX',
+        )
+
+        parole_board_permanent_decision_1 = StateSupervisionViolationResponse.new_with_defaults(
+            state_code=STATE_CODE,
+            response_date=date(year=2019, month=12, day=30),
+            response_type=StateSupervisionViolationResponseType.PERMANENT_DECISION,
+            response_type_raw_text='PERMANENT_DECISION',
+            deciding_body_type=StateSupervisionViolationResponseDecidingBodyType.PAROLE_BOARD,
+            deciding_body_type_raw_text='PAROLE_BOARD',
+            supervision_violation_response_decisions=[parole_board_decision_entry_1]
+        )
+
+        parole_board_decision_entry_2 = StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
+            state_code=STATE_CODE,
+            decision_raw_text=SHOCK_INCARCERATION_6_MONTHS,
+            revocation_type=StateSupervisionViolationResponseRevocationType.SHOCK_INCARCERATION,
+            decision=StateSupervisionViolationResponseDecision.SHOCK_INCARCERATION,
+            revocation_type_raw_text=SHOCK_INCARCERATION_6_MONTHS,
+        )
+
+        parole_board_permanent_decision_2 = StateSupervisionViolationResponse.new_with_defaults(
+            state_code=STATE_CODE,
+            response_date=date(year=2019, month=12, day=30),
+            response_type=StateSupervisionViolationResponseType.PERMANENT_DECISION,
+            response_type_raw_text='PERMANENT_DECISION',
+            deciding_body_type=StateSupervisionViolationResponseDecidingBodyType.PAROLE_BOARD,
+            deciding_body_type_raw_text='PAROLE_BOARD',
+            supervision_violation_response_decisions=[parole_board_decision_entry_2]
+        )
+
+        revocation_type_subtype = us_pa_revocation_utils._most_severe_revocation_type_subtype(
+            [parole_board_permanent_decision_1, parole_board_permanent_decision_2]
+        )
+
+        self.assertEqual(SHOCK_INCARCERATION_6_MONTHS, revocation_type_subtype)
+
+    def test_most_severe_revocation_type_subtype_no_responses(self):
+        revocation_type_subtype = us_pa_revocation_utils._most_severe_revocation_type_subtype(
+            []
+        )
+
+        self.assertIsNone(revocation_type_subtype)

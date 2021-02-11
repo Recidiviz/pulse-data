@@ -29,7 +29,7 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_pa.us_pa_revocation_util
     us_pa_get_pre_revocation_supervision_type
 from recidiviz.calculator.pipeline.utils.supervision_case_compliance_manager import \
     StateSupervisionCaseComplianceManager
-from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_revocation_identification import \
+from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_revocation_utils import \
     us_id_filter_supervision_periods_for_revocation_identification, us_id_get_pre_revocation_supervision_type, \
     us_id_is_revocation_admission, us_id_revoked_supervision_period_if_revocation_occurred
 from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_supervision_compliance import \
@@ -42,7 +42,7 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_supervision_com
     UsNdSupervisionCaseCompliance
 from recidiviz.calculator.pipeline.utils.state_utils.us_nd.us_nd_supervision_type_identification import \
     us_nd_get_post_incarceration_supervision_type
-from recidiviz.calculator.pipeline.utils.state_utils.us_pa import us_pa_violation_utils
+from recidiviz.calculator.pipeline.utils.state_utils.us_pa import us_pa_violation_utils, us_pa_revocation_utils
 from recidiviz.calculator.pipeline.utils.supervision_period_index import SupervisionPeriodIndex
 from recidiviz.calculator.pipeline.utils.supervision_period_utils import \
     get_relevant_supervision_periods_before_admission_date
@@ -62,6 +62,8 @@ from recidiviz.common.constants.state.state_supervision_period import (
     StateSupervisionPeriodAdmissionReason,
 )
 from recidiviz.common.constants.state.state_supervision_violation import StateSupervisionViolationType
+from recidiviz.common.constants.state.state_supervision_violation_response import \
+    StateSupervisionViolationResponseRevocationType
 from recidiviz.common.constants.states import StateCode
 from recidiviz.common.date import DateRange, DateRangeDiff
 from recidiviz.persistence.entity.state.entities import StateSupervisionSentence, StateIncarcerationSentence, \
@@ -101,9 +103,9 @@ def non_prison_periods_under_state_authority(state_code: str) -> bool:
         - US_ID: True
         - US_MO: False
         - US_ND: True
-        - US_PA: False
+        - US_PA: True
     """
-    return state_code.upper() in ('US_ID', 'US_ND')
+    return state_code.upper() in ('US_ID', 'US_ND', 'US_PA')
 
 
 def investigation_periods_in_supervision_population(_state_code: str) -> bool:
@@ -569,6 +571,21 @@ def revoked_supervision_periods_if_revocation_occurred(
                                                                                  supervision_periods)
 
     return admission_is_revocation, revoked_periods
+
+
+def state_specific_revocation_type_and_subtype(
+        state_code: str,
+        incarceration_period: StateIncarcerationPeriod,
+        violation_responses: List[StateSupervisionViolationResponse],
+        default_revocation_type_and_subtype_identifier:
+        Callable[[StateIncarcerationPeriod],
+                 Tuple[Optional[StateSupervisionViolationResponseRevocationType], Optional[str]]]) -> \
+        Tuple[Optional[StateSupervisionViolationResponseRevocationType], Optional[str]]:
+    """Returns the revocation_type and, if applicable, revocation_type_subtype for the given revocation admission."""
+    if state_code.upper() == StateCode.US_PA.value:
+        return us_pa_revocation_utils.us_pa_revocation_type_and_subtype(incarceration_period, violation_responses)
+
+    return default_revocation_type_and_subtype_identifier(incarceration_period)
 
 
 def state_specific_supervision_admission_reason_override(
