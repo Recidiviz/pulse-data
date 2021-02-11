@@ -34,7 +34,7 @@ locals {
 
 
 resource "google_cloudfunctions_function" "direct-ingest-states" {
-  for_each = toset(["US_ID", "US_MO", "US_ND", "US_PA", "US_TN"])
+  for_each = toset(["US_ID", "US_MO", "US_ND", "US_PA"])
 
   name    = "direct-ingest-state-${replace(lower(each.key), "_", "-")}"
   runtime = "python37"
@@ -60,7 +60,7 @@ resource "google_cloudfunctions_function" "direct-ingest-states" {
 # Cloud Functions that trigger file name normalization and nothing else for buckets designated as automatic upload
 # test beds.
 resource "google_cloudfunctions_function" "direct-ingest-states-upload-testing" {
-  for_each = toset(["US_MO", "US_TN"])
+  for_each = toset(["US_MO"])
 
   name    = "direct-ingest-state-${replace(lower(each.key), "_", "-")}-upload-testing"
   runtime = "python37"
