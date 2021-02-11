@@ -4,7 +4,7 @@ user_inputs:
   start_year: 2018.0
   projection_years: 13.0
 
-model_architecture:
+compartments_architecture:
     prison_shell: shell
     prison: full
     prison_technicals: full
