@@ -28,10 +28,13 @@ from recidiviz.big_query.view_update_manager import BigQueryViewNamespace
 from recidiviz.tests.utils.matchers import UnorderedCollection
 from recidiviz.utils.environment import GaeEnvironment
 from recidiviz.validation.checks.existence_check import ExistenceDataValidationCheck
+from recidiviz.validation.checks.sameness_check import SamenessDataValidationCheck, SamenessDataValidationCheckType
 from recidiviz.validation.configured_validations import get_all_validations, get_validation_region_configs, \
     get_validation_global_config
+from recidiviz.validation.validation_config import ValidationRegionConfig, ValidationNumAllowedRowsOverride, \
+    ValidationMaxAllowedErrorOverride
 from recidiviz.validation.validation_manager import validation_manager_blueprint, _fetch_validation_jobs_to_perform
-from recidiviz.validation.validation_models import DataValidationJob, DataValidationJobResult
+from recidiviz.validation.validation_models import DataValidationJob, DataValidationJobResult, ValidationCheckType
 from recidiviz.calculator.query.county import view_config as county_view_config
 from recidiviz.calculator.query.justice_counts import view_config as justice_counts_view_config
 from recidiviz.calculator.query.state import view_config as state_view_config
@@ -318,6 +321,88 @@ class TestFetchValidations(TestCase):
         result = _fetch_validation_jobs_to_perform()
         self.assertEqual(expected_length, len(result))
 
+    @patch("recidiviz.validation.validation_manager.get_validation_region_configs")
+    @patch("recidiviz.validation.validation_manager.get_all_validations")
+    def test_fetch_validation_jobs_to_perform_applies_configs(
+            self,
+            mock_get_all_validations_fn: MagicMock,
+            mock_get_region_configs_fn: MagicMock
+    ) -> None:
+        existence_view = BigQueryView(project_id='my_project',
+                                      dataset_id='my_dataset',
+                                      view_id='existence_view',
+                                      view_query_template='SELECT NULL LIMIT 0')
+        sameness_view = BigQueryView(project_id='my_project',
+                                     dataset_id='my_dataset',
+                                     view_id='sameness_view',
+                                     view_query_template='SELECT NULL LIMIT 1')
+        mock_get_all_validations_fn.return_value = [
+            ExistenceDataValidationCheck(view=existence_view),
+            SamenessDataValidationCheck(view=sameness_view,
+                                        comparison_columns=['col1', 'col2']),
+        ]
+        mock_get_region_configs_fn.return_value = {
+            'US_XX': ValidationRegionConfig(
+                region_code='US_XX',
+                exclusions={},
+                num_allowed_rows_overrides={
+                    existence_view.view_id: ValidationNumAllowedRowsOverride(
+                        region_code='US_XX',
+                        validation_name=existence_view.view_id,
+                        num_allowed_rows_override=10,
+                        override_reason='This is broken'
+                    )
+                },
+                max_allowed_error_overrides={
+                    sameness_view.view_id: ValidationMaxAllowedErrorOverride(region_code='US_XX',
+                                                                             validation_name=sameness_view.view_id,
+                                                                             max_allowed_error_override=0.3,
+                                                                             override_reason='This is also broken')
+                },
+            ),
+
+            'US_YY': ValidationRegionConfig(
+                region_code='US_YY',
+                exclusions={},
+                num_allowed_rows_overrides={},
+                max_allowed_error_overrides={},
+            )
+        }
+        result = _fetch_validation_jobs_to_perform()
+
+        expected_jobs = [
+            DataValidationJob(validation=ExistenceDataValidationCheck(view=existence_view,
+                                                                      validation_name_suffix=None,
+                                                                      validation_type=ValidationCheckType.EXISTENCE,
+                                                                      num_allowed_rows=10),
+                              region_code='US_XX'),
+            DataValidationJob(validation=ExistenceDataValidationCheck(view=existence_view,
+                                                                      validation_name_suffix=None,
+                                                                      validation_type=ValidationCheckType.EXISTENCE,
+                                                                      num_allowed_rows=0),  # No override
+                              region_code='US_YY'),
+            DataValidationJob(
+                validation=SamenessDataValidationCheck(
+                    view=sameness_view,
+                    validation_name_suffix=None,
+                    comparison_columns=['col1', 'col2'],
+                    sameness_check_type=SamenessDataValidationCheckType.NUMBERS,
+                    max_allowed_error=0.3,
+                    validation_type=ValidationCheckType.SAMENESS),
+                region_code='US_XX'),
+            DataValidationJob(
+                validation=SamenessDataValidationCheck(
+                    view=sameness_view,
+                    validation_name_suffix=None,
+                    comparison_columns=['col1', 'col2'],
+                    sameness_check_type=SamenessDataValidationCheckType.NUMBERS,
+                    max_allowed_error=0.0,
+                    validation_type=ValidationCheckType.SAMENESS),
+                region_code='US_YY')
+        ]
+        self.assertEqual(expected_jobs, result)
+
+
     def test_all_validations_no_overlapping_names(self) -> None:
         all_validations = get_all_validations()
 
@@ -358,3 +443,20 @@ class TestFetchValidations(TestCase):
         validation_views_not_in_view_config = views_in_validations.difference(view_in_config)
 
         self.assertEqual(set(), validation_views_not_in_view_config)
+
+    def test_validation_check_returns_correct_query(self) -> None:
+        view_no_overrides = BigQueryView(dataset_id='my_dataset',
+                                         view_id='test_2',
+                                         view_query_template='select * from literally_anything')
+        view_with_overrides = BigQueryView(dataset_id='my_dataset',
+                                           view_id='test_2',
+                                           view_query_template='select * from literally_anything',
+                                           dataset_overrides={
+                                               'my_dataset': 'my_dataset_override'
+                                           })
+        existence_check = ExistenceDataValidationCheck(view=view_no_overrides)
+        self.assertEqual("SELECT * FROM `recidiviz-456.my_dataset.test_2` WHERE region_code = 'US_XX';",
+                         existence_check.query_str_for_region_code('US_XX'))
+        existence_check = ExistenceDataValidationCheck(view=view_with_overrides)
+        self.assertEqual("SELECT * FROM `recidiviz-456.my_dataset_override.test_2` WHERE region_code = 'US_XX';",
+                         existence_check.query_str_for_region_code('US_XX'))

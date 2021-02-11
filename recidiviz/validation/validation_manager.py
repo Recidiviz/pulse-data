@@ -128,12 +128,12 @@ def _fetch_validation_jobs_to_perform(region_code_filter: Optional[str] = None) 
         if check.validation_name in global_config.disabled:
             continue
 
-        for region_code in region_configs:
+        for region_code, region_config in region_configs.items():
             if region_code_filter and region_code != region_code_filter:
                 continue
-            if check.validation_name not in region_configs[region_code].exclusions:
-                check = check.updated_for_region(region_configs[region_code])
-                validation_jobs.append(DataValidationJob(validation=check, region_code=region_code))
+            if check.validation_name not in region_config.exclusions:
+                updated_check = check.updated_for_region(region_config)
+                validation_jobs.append(DataValidationJob(validation=updated_check, region_code=region_code))
 
     return validation_jobs
 

@@ -6,9 +6,29 @@ exclusions:
     exclusion_type: DOES_NOT_APPLY
     exclusion_reason: ND ingest constructs one supervision period per supervision sentence - we expect supervision
       periods to overlap
-max_allowed_error_overrides: []  # This region will use only the default max_allowed_error values
+max_allowed_error_overrides:
+  - validation_name: incarceration_population_by_facility_external_comparison
+    max_allowed_error_override: 0.05
+    override_reason: Given the very small size of some facilities in ND, this is actually a very strict threshold and we
+      likely will not be able to do better. We're also already checking facility accuracy over the whole population with
+      incarceration_population_person_level_external_comparison_matching_people validation.
 num_allowed_rows_overrides:
   - validation_name: overlapping_incarceration_periods
-    num_allowed_rows_override: 500
+    num_allowed_rows_override: 550
     override_reason: TODO(#3641) - These bad periods likely were created due to weirdnesses with how we merge periods
       in entity matching in ND.
+  - validation_name: incarceration_admission_after_open_period
+    num_allowed_rows_override: 250
+    override_reason: TODO(#5803) - Needs investigation.
+  - validation_name: incarceration_release_prior_to_admission
+    num_allowed_rows_override: 10
+    override_reason: TODO(#5803) - Needs investigation.
+  - validation_name: incarceration_admission_nulls
+    num_allowed_rows_override: 1500
+    override_reason: TODO(#5803) - Needs investigation.
+  - validation_name: supervision_termination_reason_no_date
+    num_allowed_rows_override: 1
+    override_reason: TODO(#5803) - Needs investigation.
+  - validation_name: supervision_termination_prior_to_start
+    num_allowed_rows_override: 300
+    override_reason: TODO(#5803) - Needs investigation.
