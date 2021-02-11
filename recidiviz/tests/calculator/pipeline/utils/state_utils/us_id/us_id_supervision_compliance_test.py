@@ -21,16 +21,14 @@ from datetime import date
 
 from dateutil.relativedelta import relativedelta
 
-from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_supervision_compliance import \
-    NEW_SUPERVISION_CONTACT_DEADLINE_BUSINESS_DAYS, \
-    MINIMUM_SUPERVISION_CONTACT_FREQUENCY_DAYS_SEX_OFFENSE_CASE, \
-    MEDIUM_SUPERVISION_CONTACT_FREQUENCY_DAYS_SEX_OFFENSE_CASE, \
-    HIGH_SUPERVISION_CONTACT_FREQUENCY_DAYS_SEX_OFFENSE_CASE, \
-    DEPRECATED_MAXIMUM_SUPERVISION_CONTACT_FREQUENCY_DAYS_GENERAL_CASE, \
-    DEPRECATED_HIGH_SUPERVISION_CONTACT_FREQUENCY_DAYS_GENERAL_CASE, \
-    DEPRECATED_MEDIUM_SUPERVISION_CONTACT_FREQUENCY_DAYS_GENERAL_CASE, \
-    MEDIUM_SUPERVISION_CONTACT_FREQUENCY_DAYS_GENERAL_CASE, \
-    HIGH_SUPERVISION_CONTACT_FREQUENCY_DAYS_GENERAL_CASE, UsIdSupervisionCaseCompliance
+from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_supervision_compliance import (
+    NEW_SUPERVISION_CONTACT_DEADLINE_BUSINESS_DAYS,
+    DEPRECATED_MAXIMUM_SUPERVISION_CONTACT_FREQUENCY_DAYS_GENERAL_CASE,
+    DEPRECATED_HIGH_SUPERVISION_CONTACT_FREQUENCY_DAYS_GENERAL_CASE,
+    DEPRECATED_MEDIUM_SUPERVISION_CONTACT_FREQUENCY_DAYS_GENERAL_CASE,
+    SUPERVISION_CONTACT_FREQUENCY_REQUIREMENTS,
+    UsIdSupervisionCaseCompliance,
+)
 from recidiviz.common.constants.state.state_assessment import StateAssessmentType
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
 from recidiviz.common.constants.state.state_supervision_contact import StateSupervisionContactType, \
@@ -39,6 +37,19 @@ from recidiviz.common.constants.state.state_supervision_period import StateSuper
     StateSupervisionPeriodSupervisionType, StateSupervisionPeriodAdmissionReason, StateSupervisionLevel
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.state.entities import StateSupervisionPeriod, StateAssessment, StateSupervisionContact
+
+
+HIGH_SUPERVISION_CONTACT_FREQUENCY_DAYS_GENERAL_CASE = \
+    SUPERVISION_CONTACT_FREQUENCY_REQUIREMENTS[StateSupervisionCaseType.GENERAL][StateSupervisionLevel.HIGH][1]
+MEDIUM_SUPERVISION_CONTACT_FREQUENCY_DAYS_GENERAL_CASE = \
+    SUPERVISION_CONTACT_FREQUENCY_REQUIREMENTS[StateSupervisionCaseType.GENERAL][StateSupervisionLevel.MEDIUM][1]
+
+HIGH_SUPERVISION_CONTACT_FREQUENCY_DAYS_SEX_OFFENSE_CASE = \
+    SUPERVISION_CONTACT_FREQUENCY_REQUIREMENTS[StateSupervisionCaseType.SEX_OFFENSE][StateSupervisionLevel.HIGH][1]
+MEDIUM_SUPERVISION_CONTACT_FREQUENCY_DAYS_SEX_OFFENSE_CASE = \
+    SUPERVISION_CONTACT_FREQUENCY_REQUIREMENTS[StateSupervisionCaseType.SEX_OFFENSE][StateSupervisionLevel.MEDIUM][1]
+MINIMUM_SUPERVISION_CONTACT_FREQUENCY_DAYS_SEX_OFFENSE_CASE = \
+    SUPERVISION_CONTACT_FREQUENCY_REQUIREMENTS[StateSupervisionCaseType.SEX_OFFENSE][StateSupervisionLevel.MINIMUM][1]
 
 
 class TestAssessmentsInComplianceMonth(unittest.TestCase):

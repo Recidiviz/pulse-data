@@ -66,7 +66,7 @@
 import logging
 import sys
 from datetime import date
-from typing import Optional, Tuple
+from typing import Dict, Optional, Tuple
 
 import numpy
 from dateutil.relativedelta import relativedelta
@@ -80,9 +80,6 @@ from recidiviz.common.constants.state.state_supervision_period import StateSuper
 SEX_OFFENSE_NEW_SUPERVISION_ASSESSMENT_DEADLINE_DAYS_PROBATION = 45
 SEX_OFFENSE_NEW_SUPERVISION_ASSESSMENT_DEADLINE_DAYS_PAROLE = 90
 SEX_OFFENSE_LSIR_MINIMUM_SCORE = 16
-MINIMUM_SUPERVISION_CONTACT_FREQUENCY_DAYS_SEX_OFFENSE_CASE = 90
-MEDIUM_SUPERVISION_CONTACT_FREQUENCY_DAYS_SEX_OFFENSE_CASE = 30
-HIGH_SUPERVISION_CONTACT_FREQUENCY_DAYS_SEX_OFFENSE_CASE = 30
 
 NEW_SUPERVISION_ASSESSMENT_DEADLINE_DAYS = 45
 REASSESSMENT_DEADLINE_DAYS = 365
@@ -92,9 +89,20 @@ DEPRECATED_HIGH_SUPERVISION_CONTACT_FREQUENCY_DAYS_GENERAL_CASE = 30
 DEPRECATED_MEDIUM_SUPERVISION_CONTACT_FREQUENCY_DAYS_GENERAL_CASE = 180
 DEPRECATED_MINIMUM_SUPERVISION_CONTACT_FREQUENCY_GENERAL_CASE = sys.maxsize
 
-MINIMUM_SUPERVISION_CONTACT_FREQUENCY_DAYS_GENERAL_CASE = 180
-MEDIUM_SUPERVISION_CONTACT_FREQUENCY_DAYS_GENERAL_CASE = 90
-HIGH_SUPERVISION_CONTACT_FREQUENCY_DAYS_GENERAL_CASE = 30
+# Dictionary from case type -> supervision level -> tuple of number of times they must be contacted per time period
+SUPERVISION_CONTACT_FREQUENCY_REQUIREMENTS: \
+    Dict[StateSupervisionCaseType, Dict[StateSupervisionLevel, Tuple[int, int]]] = {
+        StateSupervisionCaseType.GENERAL: {
+            StateSupervisionLevel.MINIMUM: (1, 180),
+            StateSupervisionLevel.MEDIUM: (2, 90),
+            StateSupervisionLevel.HIGH: (2, 30),
+        },
+        StateSupervisionCaseType.SEX_OFFENSE: {
+            StateSupervisionLevel.MINIMUM: (1, 90),
+            StateSupervisionLevel.MEDIUM: (1, 30),
+            StateSupervisionLevel.HIGH: (2, 30),
+        },
+    }
 
 NEW_SUPERVISION_CONTACT_DEADLINE_BUSINESS_DAYS = 3
 
@@ -233,34 +241,24 @@ class UsIdSupervisionCaseCompliance(StateSupervisionCaseComplianceManager):
         supervision_level: Optional[StateSupervisionLevel] = self.supervision_period.supervision_level
         is_new_level_system = UsIdSupervisionCaseCompliance._is_new_level_system(supervision_level_raw_text)
 
-        if self.case_type == StateSupervisionCaseType.GENERAL:
-            if is_new_level_system:
-                if supervision_level == StateSupervisionLevel.MINIMUM:
-                    return 1, MINIMUM_SUPERVISION_CONTACT_FREQUENCY_DAYS_GENERAL_CASE
-                if supervision_level == StateSupervisionLevel.MEDIUM:
-                    return 2, MEDIUM_SUPERVISION_CONTACT_FREQUENCY_DAYS_GENERAL_CASE
-                if supervision_level == StateSupervisionLevel.HIGH:
-                    return 2, HIGH_SUPERVISION_CONTACT_FREQUENCY_DAYS_GENERAL_CASE
-            else:
-                if supervision_level == StateSupervisionLevel.MINIMUM:
-                    return 0, DEPRECATED_MINIMUM_SUPERVISION_CONTACT_FREQUENCY_GENERAL_CASE
-                if supervision_level == StateSupervisionLevel.MEDIUM:
-                    return 1, DEPRECATED_MEDIUM_SUPERVISION_CONTACT_FREQUENCY_DAYS_GENERAL_CASE
-                if supervision_level == StateSupervisionLevel.HIGH:
-                    return 1, DEPRECATED_HIGH_SUPERVISION_CONTACT_FREQUENCY_DAYS_GENERAL_CASE
-                if supervision_level == StateSupervisionLevel.MAXIMUM:
-                    return 2, DEPRECATED_MAXIMUM_SUPERVISION_CONTACT_FREQUENCY_DAYS_GENERAL_CASE
-        elif self.case_type == StateSupervisionCaseType.SEX_OFFENSE:
+        if self.case_type not in (StateSupervisionCaseType.GENERAL, StateSupervisionCaseType.SEX_OFFENSE):
+            raise ValueError("Standard supervision compliance guidelines not applicable for cases with a supervision"
+                             f" level of {supervision_level}. Should not be calculating compliance for this"
+                             f" supervision case.")
+        if supervision_level is None:
+            raise ValueError(
+                'Supervision level not provided and so cannot calculate required face to face contact frequency.')
+        if self.case_type == StateSupervisionCaseType.GENERAL and not is_new_level_system:
             if supervision_level == StateSupervisionLevel.MINIMUM:
-                return 1, MINIMUM_SUPERVISION_CONTACT_FREQUENCY_DAYS_SEX_OFFENSE_CASE
+                return 0, DEPRECATED_MINIMUM_SUPERVISION_CONTACT_FREQUENCY_GENERAL_CASE
             if supervision_level == StateSupervisionLevel.MEDIUM:
-                return 1, MEDIUM_SUPERVISION_CONTACT_FREQUENCY_DAYS_SEX_OFFENSE_CASE
+                return 1, DEPRECATED_MEDIUM_SUPERVISION_CONTACT_FREQUENCY_DAYS_GENERAL_CASE
             if supervision_level == StateSupervisionLevel.HIGH:
-                return 2, HIGH_SUPERVISION_CONTACT_FREQUENCY_DAYS_SEX_OFFENSE_CASE
+                return 1, DEPRECATED_HIGH_SUPERVISION_CONTACT_FREQUENCY_DAYS_GENERAL_CASE
+            if supervision_level == StateSupervisionLevel.MAXIMUM:
+                return 2, DEPRECATED_MAXIMUM_SUPERVISION_CONTACT_FREQUENCY_DAYS_GENERAL_CASE
 
-        raise ValueError("Standard supervision compliance guidelines not applicable for cases with a supervision level"
-                         f"of {supervision_level}. Should not be calculating compliance for this supervision"
-                         f" case.")
+        return SUPERVISION_CONTACT_FREQUENCY_REQUIREMENTS[self.case_type][supervision_level]
 
     @staticmethod
     def _is_new_level_system(supervision_level_raw_text: Optional[str]) -> bool:
