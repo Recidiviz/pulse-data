@@ -22,13 +22,14 @@ from recidiviz.case_triage.case_updates.interface import CaseUpdatesInterface
 from recidiviz.case_triage.case_updates.types import CaseUpdateActionType
 from recidiviz.case_triage.exceptions import CaseTriageBadRequestException
 from recidiviz.case_triage.querier.querier import CaseTriageQuerier, PersonDoesNotExistError
+from recidiviz.case_triage.state_utils.requirements import policy_requirements_for_state
 
 
 api = Blueprint('api', __name__)
 
 
 @api.route('/clients')
-def clients() -> str:
+def get_clients() -> str:
     return jsonify([
         client.to_json() for client in CaseTriageQuerier.clients_for_officer(
             current_session,
@@ -37,8 +38,38 @@ def clients() -> str:
     ])
 
 
+@api.route('/policy_requirements_for_state')
+def get_policy_requirements_for_state() -> str:
+    """Returns policy requirements for a given state. Expects input in the form:
+    {
+        state: str,
+    }
+    """
+    if not request.json:
+        raise CaseTriageBadRequestException(
+            code='missing_body',
+            description='A json body must be provided for the request',
+        )
+    if 'state' not in request.json:
+        raise CaseTriageBadRequestException(
+            code='missing_arg',
+            description='`state` keyword is missing from request',
+        )
+    state = request.json['state']
+
+    # NOTE: This will have to be further abstracted and generalized once we understand
+    # the requirements for additional states.
+    if state != 'US_ID':
+        raise CaseTriageBadRequestException(
+            code='invalid_arg',
+            description=f'Invalid state ({state}) provided',
+        )
+
+    return jsonify(policy_requirements_for_state(state).to_json())
+
+
 @api.route('/record_client_action', methods=['POST'])
-def record_client_action() -> str:
+def post_record_client_action() -> str:
     """Records individual clients actions. Expects JSON body of the form:
     {
         personExternalId: str,

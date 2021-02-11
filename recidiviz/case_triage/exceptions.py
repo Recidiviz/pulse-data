@@ -32,3 +32,13 @@ class CaseTriageBadRequestException(FlaskException):
 
     def __init__(self, code: str, description: str) -> None:
         super().__init__(code, description, HTTPStatus.BAD_REQUEST)
+
+
+class CaseTriageInvalidStateException(FlaskException):
+    """Exception for when the user is attempting to perform an action on an invalid state."""
+
+    def __init__(self, state: str) -> None:
+        super().__init__(
+            'invalid_state',
+            f'Attempted to perform action on behalf of state: {state}',
+            HTTPStatus.BAD_REQUEST)
