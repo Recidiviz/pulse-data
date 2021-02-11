@@ -23,8 +23,8 @@ from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.utils import metadata
 
-EXPORT_RUNNING_LOCK_NAME = 'EXPORT_PROCESS_RUNNING'
-INGEST_RUNNING_LOCK_PREFIX = 'INGEST_PROCESS_RUNNING_'
+POSTGRES_TO_BQ_EXPORT_RUNNING_LOCK_NAME = 'EXPORT_PROCESS_RUNNING'
+GCS_TO_POSTGRES_INGEST_RUNNING_LOCK_NAME = 'INGEST_PROCESS_RUNNING_'
 
 
 class GCSPseudoLockManager:
