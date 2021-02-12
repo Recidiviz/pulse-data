@@ -1,0 +1,78 @@
+file_tag: RECIDIVIZ_REFERENCE_supervision_location_ids
+file_description: |-
+  Recidiviz-generated mapping of PA supervision organization codes to the suboffice, district, and region ids and human
+  readable names. This file is generated from other raw files we receive from PA but we don't expect it to update
+  regularly. If we find that there is a new org code not included in this table, we should generate a new version using
+  the following query:
+
+  ```
+  WITH
+  pa_location_names AS (
+     WITH district_offices AS (
+         SELECT
+             RelDO AS district_office_external_id,
+             REPLACE(DistrictOfficeName, 'D.O.', 'DO') AS district_office_name,
+         FROM `recidiviz-123.us_pa_raw_data_up_to_date_views.dbo_LU_RelDo_latest`
+     ),
+     pbpp_organization AS (
+         SELECT
+             DISTINCT
+                 Org_cd,
+                 Org_Name,
+                 DistrictOfficeCode,
+                 Region_Code,
+                 Region,
+                 CASE
+                     WHEN SO_Identifier = 'PHILADELPHIA COUNTY WIDE DIVISION' THEN 'Countywide'
+                     WHEN SO_Identifier = 'PHILADELPHIA NORTHEAST DIVISION' THEN 'Northeast'
+                     WHEN SO_Identifier = 'PHILADELPHIA WEST DIVISION' THEN 'West'
+                     WHEN SO_Identifier = 'PHILADELPHIA NORTHWEST DIVISION' THEN 'Northwest'
+                     WHEN SO_Identifier = 'PP SPECIALIZED DIVISION' THEN 'Specialized'
+                     ELSE INITCAP(REPLACE(REPLACE(SO_Identifier, 'SUB OFFICE', ''), 'PBPP', ''))
+                 END AS sub_office_name
+         FROM `recidiviz-123.us_pa_raw_data_up_to_date_views.dbo_LU_PBPP_Organization_latest`
+     ),
+     base_locations AS (
+         SELECT
+             *,
+             CONCAT(district_office_external_id, ' - ',
+                     COALESCE(sub_office_name, district_office_name)) AS sub_office_external_id
+         FROM pbpp_organization
+         JOIN district_offices
+         ON pbpp_organization.DistrictOfficeCode = district_offices.district_office_external_id
+     )
+     SELECT
+         Org_cd,
+         Org_Name,
+         sub_office_external_id AS level_1_supervision_location_external_id,
+         sub_office_external_id AS level_1_supervision_location_name,
+         district_office_external_id AS level_2_supervision_location_external_id,
+         district_office_name AS level_2_supervision_location_name,
+         Region_Code AS level_3_supervision_location_external_id,
+         Region AS level_3_supervision_location_name,
+     FROM  base_locations
+  )
+  SELECT * FROM pa_location_names
+  ORDER BY level_1_supervision_location_external_id;
+  ```
+primary_key_cols:
+  - Org_cd
+columns:
+  - name: Org_cd
+    description: |-
+      The organization code associated with a supervision unit (the smallest level of supervision location
+      grouping we currently know about in PA).
+  - name: Org_Name
+    description: The human-readable name of the supervision unit.
+  - name: level_1_supervision_location_external_id
+    description: The ID of the supervision suboffice (sometimes comprised of multiple units).
+  - name: level_1_supervision_location_name
+    description: The human-readable name of the supervision suboffice.
+  - name: level_2_supervision_location_external_id
+    description: The ID of the supervision district.
+  - name: level_2_supervision_location_name
+    description: The human-readable name of the supervision district.
+  - name: level_3_supervision_location_external_id
+    description: The ID of the supervision region.
+  - name: level_3_supervision_location_name
+    description: The human-readable name of the supervision region.
