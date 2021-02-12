@@ -17,7 +17,7 @@
 
 """A script which generates the directories and files needed for direct ingest, given a state code.
 Example usage:
-python -m recidiviz.tools.ingest.direct.ingest_files_generator --state-code US_TN
+python -m recidiviz.tools.ingest.direct.ingest_files_generator --region-code US_TN
 """
 
 import argparse
