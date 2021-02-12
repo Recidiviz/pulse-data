@@ -18,4 +18,4 @@ enforced_ancestor_types:
 keys_to_ignore:
   - start_status_code                   # Period start reason - handled manually in the controller
   - end_status_code                     # Period end reason - handled manually in the controller
-  - start_is_new_revocation             # Whether or not a revocation occurred - handled manually in the controller
+  - start_is_new_act_122_admission      # Whether or not an admission to an Act 122 program occurred - handled manually in the controller

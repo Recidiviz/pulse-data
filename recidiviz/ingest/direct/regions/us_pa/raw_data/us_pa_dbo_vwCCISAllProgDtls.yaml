@@ -1,8 +1,26 @@
 file_tag: dbo_vwCCISAllProgDtls
+file_description: |-
+  A table from the Community Corrections Information System (CCIS) which associates
+  program IDs to movements in the dbo_vwCCISAllMvmt table. These programs include
+  drug treatment, violence prevention, and residence in a halfway house,
+  among others. Certain program IDs indicate incarceration in a Parole Violator
+  Center (PVC) and short-term incarceration sanction stays mandated by the
+  parole board.
+
 primary_key_cols:
   - CCISMvmt_Id
   - Program_Id
 columns:
+  - name: CCISMvmt_Id
+    is_datetime: False
+    description: Unique identifier for a given movement entry. Foreign key to dbo_vwCCISAllMvmt.
+  - name: Program_Id
+    is_datetime: False
+    description: Unique identifier of a program.
   - name: LstMod_Dt
     is_datetime: True
+    description: The date on which the row was last modified.
+  - name: LstMod_EmpNum
+    is_datetime: False
+    description: The ID of the employee that last modified the row in the table.
 encoding: ISO-8859-1
