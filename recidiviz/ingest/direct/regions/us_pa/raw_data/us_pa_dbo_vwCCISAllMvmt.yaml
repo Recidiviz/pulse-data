@@ -1,6 +1,8 @@
 file_tag: dbo_vwCCISAllMvmt
 file_description: |-
-  Movements of individuals in contracted county facilities.
+  A table from the Community Corrections Information System (CCIS) tracking the
+  movements of individuals in Community Corrections Centers and Community Contract
+  Facilities.
 primary_key_cols:
   - CCISMvmt_ID
 columns:
