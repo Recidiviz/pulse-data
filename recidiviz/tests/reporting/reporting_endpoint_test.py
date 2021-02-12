@@ -112,6 +112,33 @@ class ReportingEndpointTests(TestCase):
 
     @patch('recidiviz.reporting.email_reporting_utils.generate_batch_id')
     @patch('recidiviz.reporting.data_retrieval.start')
+    def test_integration_start_new_batch_with_no_allowlist(self,
+                                                           mock_start: MagicMock,
+                                                           mock_generate: MagicMock) -> None:
+        with self.app.test_request_context():
+            mock_generate.return_value = "test_batch_id"
+            mock_start.return_value = [0, 1]
+
+            response = self.client.get(self.start_new_batch_url, query_string={
+                "state_code": self.state_code,
+                "report_type": "po_monthly_report"
+            })
+
+            mock_start.assert_called_with(
+                state_code=self.state_code,
+                report_type="po_monthly_report",
+                batch_id="test_batch_id",
+                test_address=None,
+                region_code=None,
+                email_allowlist=None,
+                message_body=None,
+            )
+
+            self.assertEqual(HTTPStatus.OK, response.status_code)
+            self.assertIn(f"New batch started for {self.state_code}", str(response.data))
+
+    @patch('recidiviz.reporting.email_reporting_utils.generate_batch_id')
+    @patch('recidiviz.reporting.data_retrieval.start')
     def test_integration_counts_messages(self, mock_start: MagicMock, mock_generate: MagicMock) -> None:
         with self.app.test_request_context():
             mock_generate.return_value = "test_batch_id"

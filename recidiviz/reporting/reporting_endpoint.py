@@ -23,7 +23,7 @@ import json
 import logging
 from http import HTTPStatus
 from json import JSONDecodeError
-from typing import Tuple, List
+from typing import Tuple, List, Optional
 
 from flask import Blueprint, request
 
@@ -74,9 +74,9 @@ def start_new_batch() -> Tuple[str, HTTPStatus]:
 
         validate_email_address(test_address)
 
-        if raw_email_allowlist:
-            email_allowlist: List[str] = json.loads(raw_email_allowlist)
+        email_allowlist: Optional[List[str]] = json.loads(raw_email_allowlist) if raw_email_allowlist else None
 
+        if email_allowlist is not None:
             for recipient_email in email_allowlist:
                 validate_email_address(recipient_email)
 
