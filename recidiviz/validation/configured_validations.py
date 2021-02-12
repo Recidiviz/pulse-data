@@ -82,6 +82,8 @@ from recidiviz.validation.views.state.revocation_matrix_comparison_revocation_ce
     REVOCATION_MATRIX_COMPARISON_REVOCATION_CELL_VS_CASELOAD_VIEW_BUILDER
 from recidiviz.validation.views.state.revocation_matrix_comparison_revocation_cell_vs_month import \
     REVOCATION_MATRIX_COMPARISON_REVOCATION_CELL_VS_MONTH_VIEW_BUILDER
+from recidiviz.validation.views.state.revocation_matrix_comparison_revocations_by_officer import \
+    REVOCATION_MATRIX_COMPARISON_REVOCATIONS_BY_OFFICER_VIEW_BUILDER
 from recidiviz.validation.views.state.revocation_matrix_comparison_supervision_population import \
     REVOCATION_MATRIX_COMPARISON_SUPERVISION_POPULATION_VIEW_BUILDER
 from recidiviz.validation.views.state.revocations_by_period_dashboard_comparison import \
@@ -176,19 +178,14 @@ def get_all_validations() -> List[DataValidationCheck]:
         SamenessDataValidationCheck(view=REVOCATION_MATRIX_COMPARISON_REVOCATION_CELL_VS_CASELOAD_VIEW_BUILDER.build(),
                                     comparison_columns=['cell_sum', 'caseload_sum']),
         SamenessDataValidationCheck(view=REVOCATION_MATRIX_COMPARISON_REVOCATION_CELL_VS_MONTH_VIEW_BUILDER.build(),
-                                    comparison_columns=['cell_sum', 'month_sum'],
-                                    max_allowed_error=0.03),
-        # This version of this validation excludes the race column explicitly since we have chosen to count people with
-        # multiple races in counts for each individual race, so the sum of the race breakdowns will not match the total.
-        SamenessDataValidationCheck(view=REVOCATION_MATRIX_COMPARISON_SUPERVISION_POPULATION_VIEW_BUILDER.build(),
-                                    comparison_columns=['district_sum', 'risk_level_sum', 'gender_sum', 'officer_sum', 'race_sum']),
-        # This version of the validation checks to make sure the race sum isn't far off from the other sums, even
-        # though we expect them to be different (e.g. make sure it isn't zero).
+                                    comparison_columns=['cell_sum', 'month_sum']
+                                    ),
         SamenessDataValidationCheck(
             view=REVOCATION_MATRIX_COMPARISON_SUPERVISION_POPULATION_VIEW_BUILDER.build(),
-            validation_name_suffix='with_race',
-            comparison_columns=['district_sum', 'risk_level_sum', 'gender_sum', 'race_sum', 'officer_sum'],
-            max_allowed_error=.05
+            comparison_columns=['district_sum', 'risk_level_sum', 'gender_sum', 'race_sum']),
+        SamenessDataValidationCheck(
+            view=REVOCATION_MATRIX_COMPARISON_REVOCATIONS_BY_OFFICER_VIEW_BUILDER.build(),
+            comparison_columns=['officer_sum', 'caseload_sum']
         ),
         SamenessDataValidationCheck(
             view=REVOCATIONS_BY_PERIOD_DASHBOARD_COMPARISON_VIEW_BUILDER.build(),
