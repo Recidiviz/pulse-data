@@ -37,7 +37,7 @@ resource "google_project_iam_member" "cloud_run_cloud_sql" {
 }
 
 resource "google_project_iam_member" "cloud_run_gcs_access" {
-  role   = "roles/storage.objectViewer"
+  role   = google_project_iam_custom_role.gcs-object-and-bucket-viewer.name
   member = "serviceAccount:${google_service_account.cloud_run.email}"
 }
 
