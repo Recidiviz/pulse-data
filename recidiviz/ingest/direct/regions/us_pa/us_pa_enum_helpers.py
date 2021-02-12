@@ -45,11 +45,6 @@ INCARCERATION_PERIOD_ADMISSION_REASON_TO_MOVEMENT_CODE_MAPPINGS: \
             'ADET',  # Detentioner
             'AFED',  # Federal Commitment
         ],
-        StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION: [
-            # CCIS CODES
-            # In Residence: Admitted to CCIS facility. We classify all new admissions to CCIS facilities as revocations.
-            'INRS',
-        ],
         StateIncarcerationPeriodAdmissionReason.RETURN_FROM_ESCAPE: [
             # SCI CODES
             'AE',  # Escape
@@ -72,6 +67,9 @@ INCARCERATION_PERIOD_ADMISSION_REASON_TO_MOVEMENT_CODE_MAPPINGS: \
             # Return from DPW: This is used a status change indicating the person's stay in the facility is now being
             # funded by the DOC
             'DPWF',
+            # In Residence: Admitted to CCIS facility. If this has not been classified as a revocation admission, then
+            # this is a transfer from another CCIS facility.
+            'INRS',
             # Program Change: Transfer between programs
             'PRCH',
             # Return to Residence: Returned to facility from either a temporary medical transfer or after absconding
@@ -216,11 +214,6 @@ INCARCERATION_PERIOD_RELEASE_REASON_TO_STR_MAPPINGS: Dict[StateIncarcerationPeri
     ],
     StateIncarcerationPeriodReleaseReason.TRANSFER: [
         # CCIS CODES
-        # TODO(#5708): These are admission codes that need to be removed once we successfully implement a filter of IN
-        #  edges as the release edge of a CCIS period
-        'RTRS',
-        'TRRC',
-        'INRS',
         # Transfer to DPW: This is used a status change indicating the person's stay in the facility is now being
         # funded by the DOC
         'DPWT',
@@ -302,6 +295,8 @@ def incarceration_period_admission_reason_mapper(concatenated_codes: str) -> Sta
     _, start_is_new_revocation, start_movement_code = concatenated_codes.split(' ')
 
     if start_is_new_revocation == 'TRUE':
+        # Note: These are not always legal revocations. We are currently using the PAROLE_REVOCATION admission_reason
+        # for admissions from parole for treatment and shock incarceration as well as for legal revocations
         return StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION
 
     admission_reason = MOVEMENT_CODE_TO_INCARCERATION_PERIOD_ADMISSION_REASON_MAPPINGS.get(start_movement_code, None)
@@ -397,10 +392,8 @@ def incarceration_period_purpose_mapper(concatenated_codes: str) -> StateSpecial
         # Handle incarceration period purpose codes from CCIS tables
         _, purpose_for_incarceration = concatenated_codes.split(' ')
 
-        if purpose_for_incarceration == '46':
+        if purpose_for_incarceration in ('26', '46'):
             return StateSpecializedPurposeForIncarceration.SHOCK_INCARCERATION
-        if purpose_for_incarceration == '26':
-            return StateSpecializedPurposeForIncarceration.GENERAL
         if purpose_for_incarceration == '51':
             return StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON
     else:
@@ -447,7 +440,8 @@ def _retrieve_release_reason_mapping(code: str) -> StateIncarcerationPeriodRelea
 def concatenate_ccis_incarceration_period_start_codes(row: Dict[str, str]) -> str:
     code_type = 'CCIS'
     start_movement_code = row['start_status_code'] or 'None'
-    start_is_new_revocation = row['start_is_new_revocation'] or 'None'
+    # We are classifying new Act 122 admissions as revocations, even if they are not legal revocations
+    start_is_new_revocation = row['start_is_new_act_122_admission'] or 'None'
 
     return f"{code_type}-{start_is_new_revocation}-{start_movement_code}"
 

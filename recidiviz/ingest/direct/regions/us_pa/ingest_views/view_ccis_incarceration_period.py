@@ -163,6 +163,22 @@ WITH inmate_number_with_control_numbers AS (
   SELECT * FROM transfer_movements
   UNION ALL
   SELECT * FROM release_movements
+), all_movements_without_invalid_edges AS (
+  SELECT
+    * EXCEPT(preceding_movement_type)
+  FROM
+   (SELECT
+      *,
+      LAG(movement_type) {PARTITION_CLAUSE} AS preceding_movement_type
+    FROM 
+        all_movements
+   )
+  -- Filtering out duplicate admissions and releases
+  WHERE 
+        -- Admission must follow a release or be the first movement for the inmate_number
+        (movement_type = 'ADM' AND (preceding_movement_type IS NULL OR preceding_movement_type = 'REL'))
+        -- Release must follow an admission
+        OR (movement_type = 'REL' AND preceding_movement_type = 'ADM')
 ), program_movements AS (
   SELECT
     CCISMvmt_Id AS movement_id,
@@ -193,23 +209,30 @@ WITH inmate_number_with_control_numbers AS (
     LEAD(movement_status_code) {PARTITION_CLAUSE} AS end_status_code,
     LEAD(movement_date) {PARTITION_CLAUSE} as end_date,
   FROM
-    all_movements
+    all_movements_without_invalid_edges
   LEFT JOIN
     program_base
   USING (movement_id)
 ), valid_periods AS (
   SELECT
     * EXCEPT(movement_type, movement_sequence),
-    -- For program change statuses, we need to know the previous program_id to determine if a parole revocation occurred
-    (IF(start_status_code = 'PRCH', LAG(program_id) {PARTITION_CLAUSE}, NULL)) AS previous_program_id
+    -- We need to know the previous program_id to determine if a new admission to an ACT 122 program occurred
+    LAG(program_id) {PARTITION_CLAUSE} AS previous_program_id,
+    -- We need to know the previous end_date to determine if a transfer occurred, since they don't reliably use
+    -- transfer admission codes to indicate transfers between CCIS facilities
+    LAG(end_date) {PARTITION_CLAUSE} AS previous_end_date
   FROM full_periods
   WHERE movement_type = 'ADM'
 ), periods AS (
   SELECT 
-    * EXCEPT (previous_program_id), 
-    -- Moving from a non-revocation program to a revocation program_id is a revocation
-    (start_status_code = 'PRCH'  AND program_id IN ('26', '46', '51')
-        AND previous_program_id NOT IN ('26', '46', '51')) AS start_is_new_revocation
+    * EXCEPT (previous_program_id, previous_end_date), 
+    -- This is a new admission to an ACT 122 program
+    ((previous_end_date IS NULL OR start_date != previous_end_date) OR
+      -- The end_date on the preceding period matches the start_date, so this is a transfer between CCIS facilities
+      -- They transferred from a non-ACT 122 program_id to an ACT 122 program_id, so this is a new ACT 122 admission
+      (program_id IN ('26', '46', '51')
+        AND previous_program_id NOT IN ('26', '46', '51'))
+    ) AS start_is_new_act_122_admission
   FROM valid_periods
   -- Program IDs that signify being included in the ACT 122 population -- 
   WHERE Program_Id IN (

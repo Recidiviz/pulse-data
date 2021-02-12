@@ -1,6 +1,25 @@
 file_tag: dbo_tblCCISStatus
+file_description: |-
+  A table from the Community Corrections Information System (CCIS) which maps
+  status IDs to status codes and descriptions for all statuses used in the dbo_vwCCISAllMvmt table.
 primary_key_cols:
   - Status_Id
 columns:
+  - name: Status_Id
+    is_datetime: False
+    description: Integer code for the status. Reliably globally unique within this table.
+  - name: Status_Cd
+    is_datetime: False
+    description: Three to four letter code of the status. Reliably globally unique within this table.
+  - name: Status_Desc
+    is_datetime: False
+    description: Text description of the status code.
+  - name: Status_ActvFlg
+    is_datetime: False
+    description: Whether or not the status is actively in use. Either TRUE or FALSE.
   - name: LstMod_Dt
     is_datetime: True
+    description: The date on which the row was last modified.
+  - name: LstMod_EmpNum
+    is_datetime: False
+    description: The ID of the employee that last modified the row in the table.
