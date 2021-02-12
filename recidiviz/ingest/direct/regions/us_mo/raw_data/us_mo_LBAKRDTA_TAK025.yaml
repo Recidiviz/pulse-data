@@ -6,3 +6,31 @@ primary_key_cols:
   - BV_CYC
   - BV_SSO
   - BV_SEO
+columns:
+  - name: BV_DOC
+    description: |-
+      DOC ID Number
+  - name: BV_CYC
+    description: |-
+      Cycle Number
+  - name: BV_SSO
+    description: |-
+      Status Sequence Number
+  - name: BV_SEO
+    description: |-
+      Sentence Key Sequence Number
+  - name: BV_FSO
+    description: |-
+      Field Sentence Key Sequence Number
+  - name: BV_DCR
+    description: |-
+      Row Creation Date
+  - name: BV_TCR
+    description: |-
+      Row Creation Time
+  - name: BV_DLU
+    description: |-
+      Row Modify Date
+  - name: BV_TLU
+    description: |-
+      Row Modify Time

@@ -5,3 +5,37 @@ primary_key_cols:
   - BW_DOC
   - BW_CYC
   - BW_SSO
+columns:
+  - name: BW_DOC
+    description: |-
+      DOC ID Number
+  - name: BW_CYC
+    description: |-
+      Cycle Number
+  - name: BW_SSO
+    description: |-
+      Status Sequence Number
+  - name: BW_SCD
+    description: |-
+      Status Code
+  - name: BW_SY
+    description: |-
+      Status Code Change Date
+  - name: BW_SM
+    description: |-
+      Unknown - not included in data dictionary binder
+  - name: BW_CSC
+    description: |-
+      Status Interstate Compact State Code
+  - name: BW_DCR
+    description: |-
+      Row Creation Date
+  - name: BW_TCR
+    description: |-
+      Row Creation Time
+  - name: BW_DLU
+    description: |-
+      Row Modify Date
+  - name: BW_TLU
+    description: |-
+      Row Modify Time

@@ -8,7 +8,7 @@ ancestor_keys:
   E04: state_person.state_person_id
 
 keys_to_ignore:
-  - E06     # Unused - Duplicate of E10
+  - E06     # Unused - Duplicate of E21
   - E08     # Unused - First name
   - E09     # Unused - Last name
   - E10     # Unused - Full name

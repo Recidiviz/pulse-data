@@ -3,3 +3,25 @@ file_description: |-
   DOB View.
 primary_key_cols:
   - DOC_ID_DOB
+columns:
+  - name: DOC_ID_DOB
+    description: |-
+      DOC ID Number
+  - name: DOB
+    description: |-
+      Birthdate
+  - name: DOB_VERIFIED_IND
+    description: |-
+      Birthdate Verified Indicator
+  - name: CREATE_DT
+    description: |-
+      Row Creation Date
+  - name: CREATE_TM
+    description: |-
+      Row Creation Time
+  - name: UPDATE_DT
+    description: |-
+      Row Modify Date
+  - name: UPDATE_TM
+    description: |-
+      Row Modify Time

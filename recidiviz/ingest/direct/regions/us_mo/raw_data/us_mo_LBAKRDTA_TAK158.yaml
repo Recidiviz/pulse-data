@@ -5,3 +5,61 @@ primary_key_cols:
   - F1_DOC
   - F1_CYC
   - F1_SQN
+columns:
+  - name: F1_DOC
+    description: |-
+      DOC ID Number
+  - name: F1_CYC
+    description: |-
+      Cycle Number
+  - name: F1_SQN
+    description: |-
+      Subcycle Sequence Number
+  - name: F1_SST
+    description: |-
+      Subcycle Status (Field, Institution, or Out of State)
+  - name: F1_CD
+    description: |-
+      Subcycle Start Date
+  - name: F1_ORC
+    description: |-
+      Reason For Opening
+  - name: F1_CTO
+    description: |-
+      Case Type At Open
+  - name: F1_OPT
+    description: |-
+      Open Reason Type
+  - name: F1_CTC
+    description: |-
+      Current Case Type
+  - name: F1_SY
+    description: |-
+      Status Code Change Date
+  - name: F1_CTP
+    description: |-
+      Reason For Closing
+  - name: F1_ARC
+    description: |-
+      Action Reason Code
+  - name: F1_PFI
+    description: |-
+      Purpose For Incarceration
+  - name: F1_OR0
+    description: |-
+      Ordinal Date Field (flag for most recent row)
+  - name: F1_WW
+    description: |-
+      Subcycle End Date
+  - name: F1_MSO
+    description: |-
+      Subcycle Most Serious Offense
+  - name: F1_SEO
+    description: |-
+      Sentence Key Sequence Number
+  - name: F1_DCR
+    description: |-
+      Row Creation Date
+  - name: F1_TCR
+    description: |-
+      Row Creation Time

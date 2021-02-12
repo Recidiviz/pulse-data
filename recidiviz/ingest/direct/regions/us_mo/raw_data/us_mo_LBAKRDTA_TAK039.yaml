@@ -5,3 +5,139 @@ primary_key_cols:
   - DN_DOC
   - DN_CYC
   - DN_NSN
+columns:
+  - name: DN_DOC
+    description: |-
+      DOC ID Number
+  - name: DN_CYC
+    description: |-
+      Cycle Number
+  - name: DN_NSN
+    description: |-
+      CAS Need Sequence Number
+  - name: DN_PIN
+    description: |-
+      DOC Location IS Designation
+  - name: DN_PLN
+    description: |-
+      DOC Location Acronym
+  - name: DN_PON
+    description: |-
+      Employee ID Card Number
+  - name: DN_NED
+    description: |-
+      CAS Need Total Score
+  - name: DN_RC
+    description: |-
+      Report Completion Date
+  - name: DN_NSV
+    description: |-
+      CAS Need Score Version
+  - name: DN_DA
+    description: |-
+      CAS Need Arrest Date
+  - name: DN_DP
+    description: |-
+      CAS Need Social Problem Occurrence Date
+  - name: DN_AB
+    description: |-
+      CAS Need Substance Abuse Date
+  - name: DN_UAS
+    description: |-
+      CAS Need Urinalysis Count
+  - name: DN_POS
+    description: |-
+      CAS Need Positive Urinalysis Count
+  - name: DN_SFP
+    description: |-
+      CAS Need Screen For Placement
+  - name: DN_SOR
+    description: |-
+      CAS Need Score Overrides
+  - name: DN_PST
+    description: |-
+      CAS Need Supervision Type/Level
+  - name: DN_A01
+    description: |-
+      CAS Need Substance Abused 1
+  - name: DN_A02
+    description: |-
+      CAS Need Substance Abused 2
+  - name: DN_A03
+    description: |-
+      CAS Need Substance Abused 3
+  - name: DN_A04
+    description: |-
+      CAS Need Substance Abused 4
+  - name: DN_A05
+    description: |-
+      CAS Need Substance Abused 5
+  - name: DN_A06
+    description: |-
+      CAS Need Substance Abused 6
+  - name: DN_A07
+    description: |-
+      CAS Need Substance Abused 7
+  - name: DN_A08
+    description: |-
+      CAS Need Substance Abused 8
+  - name: DN_A09
+    description: |-
+      CAS Need Substance Abused 9
+  - name: DN_A10
+    description: |-
+      CAS Need Substance Abused 10
+  - name: DN_A11
+    description: |-
+      CAS Need Substance Abused 11
+  - name: DN_A12
+    description: |-
+      CAS Need Substance Abused 12
+  - name: DN_S01
+    description: |-
+      CAS Need Social Problem 1
+  - name: DN_S02
+    description: |-
+      CAS Need Social Problem 2
+  - name: DN_S03
+    description: |-
+      CAS Need Social Problem 3
+  - name: DN_S04
+    description: |-
+      CAS Need Social Problem 4
+  - name: DN_S05
+    description: |-
+      CAS Need Social Problem 5
+  - name: DN_S06
+    description: |-
+      CAS Need Social Problem 6
+  - name: DN_S07
+    description: |-
+      CAS Need Social Problem 7
+  - name: DN_S08
+    description: |-
+      CAS Need Social Problem 8
+  - name: DN_S09
+    description: |-
+      CAS Need Social Problem 9
+  - name: DN_S10
+    description: |-
+      CAS Need Social Problem 10
+  - name: DN_S11
+    description: |-
+      CAS Need Social Problem 11
+  - name: DN_S12
+    description: |-
+      CAS Need Social Problem 12
+  - name: DN_DCR
+    description: |-
+      Row Creation Date
+  - name: DN_TCR
+    description: |-
+      Row Creation Time
+  - name: DN_DLU
+    description: |-
+      Row Modify Date
+  - name: DN_TLU
+    description: |-
+      Row Modify Time

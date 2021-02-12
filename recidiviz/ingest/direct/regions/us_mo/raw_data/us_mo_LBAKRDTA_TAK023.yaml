@@ -5,3 +5,82 @@ primary_key_cols:
   - BT_DOC
   - BT_CYC
   - BT_SEO
+columns:
+  - name: BT_DOC
+    description: |-
+      DOC ID Number
+  - name: BT_CYC
+    description: |-
+      Cycle Number
+  - name: BT_SEO
+    description: |-
+      Sentence Key Sequence Number
+  - name: BT_SD
+    description: |-
+      Sentence Date
+  - name: BT_SLY
+    description: |-
+      Sentence Length Years
+  - name: BT_SLM
+    description: |-
+      Sentence Length Months
+  - name: BT_SLD
+    description: |-
+      Sentence Length Days
+  - name: BT_CRR
+    description: |-
+      Sentence Minimum Release Type
+  - name: BT_PC
+    description: |-
+      Sentence Minimum Release Date
+  - name: BT_ABS
+    description: |-
+      Sentence Non Credit Time Institutional
+  - name: BT_ABU
+    description: |-
+      Sentence Non Credit Time Parole
+  - name: BT_ABT
+    description: |-
+      Sentence Non Credit Time Probation
+  - name: BT_PIE
+    description: |-
+      Sentence Parole Ineligible Years
+  - name: BT_SRC
+    description: |-
+      Sentence Count
+  - name: BT_SRF
+    description: |-
+      Sentence Count Type
+  - name: BT_PCR
+    description: |-
+      Sentence Percent Required
+  - name: BT_EM
+    description: |-
+      Sentence Start Date
+  - name: BT_OTD
+    description: |-
+      Sentence 120 Days Flag
+  - name: BT_OH
+    description: |-
+      Sentence 120 Days Date
+  - name: BT_SCT
+    description: |-
+      Sentence Credit Time
+  - name: BT_RE
+    description: |-
+      P&P Court Report Due Date
+  - name: BT_SDI
+    description: |-
+      Sentence Death Indicator
+  - name: BT_DCR
+    description: |-
+      Row Creation Date
+  - name: BT_TCR
+    description: |-
+      Row Creation Time
+  - name: BT_DLU
+    description: |-
+      Row Modify Date
+  - name: BT_TLU
+    description: |-
+      Row Modify Time
