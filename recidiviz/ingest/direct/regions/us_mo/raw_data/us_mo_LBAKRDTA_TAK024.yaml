@@ -6,3 +6,67 @@ primary_key_cols:
   - BU_CYC
   - BU_SEO
   - BU_FSO
+columns:
+  - name: BU_DOC
+    description: |-
+      DOC ID Number
+  - name: BU_CYC
+    description: |-
+      Cycle Number
+  - name: BU_SEO
+    description: |-
+      Sentence Key Sequence Number
+  - name: BU_FSO
+    description: |-
+      Field Sentence Key Sequence Number
+  - name: BU_SF
+    description: |-
+      Sentence probation date
+  - name: BU_SBY
+    description: |-
+      Sentence probation term years
+  - name: BU_SBM
+    description: |-
+      Sentence probation term months
+  - name: BU_SBD
+    description: |-
+      Sentence probation term days
+  - name: BU_PBT
+    description: |-
+      Sentence probation type
+  - name: BU_SLY
+    description: |-
+      Sentence Length Years
+  - name: BU_SLM
+    description: |-
+      Sentence Length Months
+  - name: BU_SLD
+    description: |-
+      Sentence Length Days
+  - name: BU_SAI
+    description: |-
+      Substance Abuse Indicator
+  - name: BU_EMP
+    description: |-
+      Sentence Employed Flag
+  - name: BU_FRC
+    description: |-
+      Sentence Physical Force Flag
+  - name: BU_WEA
+    description: |-
+      Sentence Weapon Flag
+  - name: BU_DEF
+    description: |-
+      Sentence Co-Defendants
+  - name: BU_DCR
+    description: |-
+      Row Creation Date
+  - name: BU_TCR
+    description: |-
+      Row Creation Time
+  - name: BU_DLU
+    description: |-
+      Row Modify Date
+  - name: BU_TLU
+    description: |-
+      Row Modify Time

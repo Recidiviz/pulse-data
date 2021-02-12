@@ -5,3 +5,97 @@ primary_key_cols:
   - BS_DOC
   - BS_CYC
   - BS_SEO
+columns:
+  - name: BS_DOC
+    description: |-
+      DOC ID Number
+  - name: BS_CYC
+    description: |-
+      Cycle Number
+  - name: BS_SEO
+    description: |-
+      Sentence Key Sequence Number
+  - name: BS_LEO
+    description: |-
+      Sentence Sequence Number
+  - name: BS_SCF
+    description: |-
+      Sentence Completed Flag
+  - name: BS_CRT
+    description: |-
+      Court Number
+  - name: BS_NRN
+    description: |-
+      Name Record Number
+  - name: BS_ASO
+    description: |-
+      Sentence Missouri Charge Code
+  - name: BS_NCI
+    description: |-
+      Sentence NCIC Code
+  - name: BS_OCN
+    description: |-
+      Sentence Offense Cycle Number
+  - name: BS_CLT
+    description: |-
+      Sentence Offense Type
+  - name: BS_CNT
+    description: |-
+      Sentence Offense County
+  - name: BS_CLA
+    description: |-
+      Sentence Offense Class
+  - name: BS_POF
+    description: |-
+      Sentence Special Indicator
+  - name: BS_ACL
+    description: |-
+      Sentence Amended Offense Class
+  - name: BS_CCI
+    description: |-
+      Sentence Consecutive/Concurrent Index
+  - name: BS_CRQ
+    description: |-
+      Sentence Consecutive/Concurrent XRef
+  - name: BS_CNS
+    description: |-
+      Sentence County
+  - name: BS_CRC
+    description: |-
+      Court Circuit
+  - name: BS_CRD
+    description: |-
+      Court Division
+  - name: BS_PD
+    description: |-
+      Sentence Max Release/Expiration Date
+  - name: BS_DO
+    description: |-
+      Sentence Offense Date
+  - name: BS_PLE
+    description: |-
+      Sentence Plea
+  - name: BS_COD
+    description: |-
+      Sentence Offense Description
+  - name: BS_AR
+    description: |-
+      Arrest Date
+  - name: BS_UID
+    description: |-
+      User Identification
+  - name: BS_DCR
+    description: |-
+      Row Creation Date
+  - name: BS_TCR
+    description: |-
+      Row Creation Time
+  - name: BS_UIU
+    description: |-
+      Unknown - not included in data dictionary binder
+  - name: BS_DLU
+    description: |-
+      Row Modify Date
+  - name: BS_TLU
+    description: |-
+      Row Modify Time

@@ -5,5 +5,42 @@ primary_key_cols:
   - CE_DOC
   - CE_CYC
   - CE_HF
+columns:
+  - name: CE_DOC
+    description: |-
+      DOC ID Number
+  - name: CE_CYC
+    description: |-
+      Cycle Number
+  - name: CE_HF
+    description: |-
+      Field Assignment Begin Date
+  - name: CE_OR0
+    description: |-
+      Ordinal Date Field (flag for most recent row)
+  - name: CE_EH
+    description: |-
+      Field Assignment End Date
+  - name: CE_PIN
+    description: |-
+      DOC Location IS Designation
+  - name: CE_PLN
+    description: |-
+      DOC Location Acronym
+  - name: CE_PON
+    description: |-
+      Employee ID Card Number
+  - name: CE_DCR
+    description: |-
+      Row Creation Date
+  - name: CE_TCR
+    description: |-
+      Row Creation Time
+  - name: CE_DLU
+    description: |-
+      Row Modify Date
+  - name: CE_TLU
+    description: |-
+      Row Modify Time
 # We always sort periods with null ('0') dates as the most recent row
 supplemental_order_by_clause: "CASE WHEN CE_EH = '0' then 0 ELSE 1 END, CE_EH DESC"

@@ -4,3 +4,25 @@ file_description: |-
 primary_key_cols:
   - REGION
   - DISTRICT
+columns:
+  - name: DISTRICT
+    description: |-
+      District Code
+  - name: REGION
+    description: |-
+      Region (e.g. Southwest, Eastern, North Central, etc...)
+  - name: LAST_NAME
+    description: |-
+      Employee Last Name
+  - name: FIRST_NAME
+    description: |-
+      Employee First Name
+  - name: EMAIL
+    description: |-
+      Email
+  - name: STATUS
+    description: |-
+      Status Code
+  - name: RECORD_DATE
+    description: |-
+      Row Modify Date

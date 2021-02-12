@@ -3,3 +3,55 @@ file_description: |-
   Supervision Enhancements.
 primary_key_cols:
   - SUPERVSN_ENH_REF_ID
+columns:
+  - name: DOC_ID
+    description: |-
+      DOC ID Number
+  - name: CYCLE_NO
+    description: |-
+      Cycle Number
+  - name: OFNDR_CYCLE_REF_ID
+    description: |-
+      Person Cycle Reference ID
+  - name: ACTUAL_START_DT
+    description: |-
+      Start Date
+  - name: PROJECTED_STOP_DT
+    description: |-
+      Projected Stop Date
+  - name: ACTUAL_STOP_DT
+    description: |-
+      Actual Stop Date
+  - name: SUPERVSN_ENH_TYPE_CD
+    description: |-
+      Supervision Enhancement Type Code
+  - name: SUPERVSN_ENH_TYPE_DESC
+    description: |-
+      Supervision Enhancement Type Description
+  - name: SUPERVSN_COUNTY_CD
+    description: |-
+      Supervision County Code
+  - name: COUNTY_NM
+    description: |-
+      County Name
+  - name: EXIT_TYPE_CD
+    description: |-
+      Exit Type Code
+  - name: EXIT_TYPE_DESC
+    description: |-
+      Exit Type Description
+  - name: SUPERVSN_ENH_CD
+    description: |-
+      Supervision Enhancement Code
+  - name: SUPERVSN_ENH_DESC
+    description: |-
+      Supervision Enhancement Description
+  - name: SUPERVSN_ENH_RSN_CD
+    description: |-
+      Supervision Enhancement Reason Code
+  - name: SUPERVSN_ENH_RSN_DESC
+    description: |-
+      Supervision Enhancement Reason Description
+  - name: SUPERVSN_ENH_REF_ID
+    description: |-
+      Supervision Enhancement Reference ID

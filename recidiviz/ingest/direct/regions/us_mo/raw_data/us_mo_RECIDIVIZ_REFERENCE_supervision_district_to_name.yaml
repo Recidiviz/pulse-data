@@ -3,3 +3,10 @@ file_description: |-
   Recidiviz-generated mapping of MO supervision district ids to their human-readable name.
 primary_key_cols:
   - level_1_supervision_location_external_id
+columns:
+  - name: level_1_supervision_location_external_id
+    description: |-
+      Supervision District ID Number
+  - name: level_1_supervision_location_name
+    description: |-
+      Supervision District Name
