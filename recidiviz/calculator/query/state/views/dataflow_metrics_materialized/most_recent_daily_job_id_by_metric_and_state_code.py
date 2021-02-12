@@ -50,6 +50,7 @@ MOST_RECENT_DAILY_JOB_ID_BY_METRIC_AND_STATE_CODE_QUERY_TEMPLATE = \
     ), ranked_job_ids AS (
       SELECT *, row_number() OVER (PARTITION BY state_code, metric_type ORDER BY metric_date DESC, job_id DESC) AS recency_rank
       FROM all_job_ids
+      WHERE metric_date <= CURRENT_DATE('US/Pacific')
     )
     
     SELECT * FROM ranked_job_ids WHERE recency_rank = 1
