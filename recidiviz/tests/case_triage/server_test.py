@@ -15,18 +15,20 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Implements tests for the Case Triage Flask server."""
-import unittest
 from datetime import date
 from http import HTTPStatus
 from typing import Optional
+from unittest import mock, TestCase
 
 import pytest
-from flask import Flask, Response, g, jsonify
+from flask import Flask, Response, g, jsonify, session
 
 from recidiviz.case_triage.api_routes import api
-from recidiviz.case_triage.scoped_sessions import setup_scoped_sessions
+from recidiviz.case_triage.authorization import AuthorizationStore
 from recidiviz.case_triage.case_updates.interface import CaseUpdatesInterface
 from recidiviz.case_triage.case_updates.types import CaseUpdateActionType
+from recidiviz.case_triage.impersonate_users import IMPERSONATED_EMAIL_KEY, ImpersonateUser
+from recidiviz.case_triage.scoped_sessions import setup_scoped_sessions
 from recidiviz.persistence.database.base_schema import CaseTriageBase
 from recidiviz.persistence.database.schema.case_triage.schema import CaseUpdate
 from recidiviz.persistence.database.session_factory import SessionFactory
@@ -36,7 +38,7 @@ from recidiviz.utils.flask_exception import FlaskException
 
 
 @pytest.mark.uses_db
-class TestCaseTriageRoutes(unittest.TestCase):
+class TestCaseTriageAPIRoutes(TestCase):
     """Implements tests for the Case Triage Flask server."""
 
     # Stores the location of the postgres DB for this test run
@@ -100,13 +102,13 @@ class TestCaseTriageRoutes(unittest.TestCase):
         )
         self.client_2.most_recent_assessment_date = date(2022, 2, 2)
 
-        session = SessionFactory.for_schema_base(CaseTriageBase)
-        session.add(self.officer_1)
-        session.add(self.client_1)
-        session.add(self.client_2)
-        session.add(self.case_update_1)
-        session.add(self.case_update_2)
-        session.commit()
+        sess = SessionFactory.for_schema_base(CaseTriageBase)
+        sess.add(self.officer_1)
+        sess.add(self.client_1)
+        sess.add(self.client_2)
+        sess.add(self.case_update_1)
+        sess.add(self.case_update_2)
+        sess.commit()
 
     def tearDown(self) -> None:
         local_postgres_helpers.restore_local_env_vars(self.overridden_env_vars)
@@ -217,3 +219,84 @@ class TestCaseTriageRoutes(unittest.TestCase):
                 client_json[1]['inProgressActions'],
                 [CaseUpdateActionType.OTHER_DISMISSAL.value],
             )
+
+
+class TestUserImpersonation(TestCase):
+    """Implements tests for user impersonation.
+
+    Note: The ignored types in here are due to a mismatch between Flask's docs and the
+    typeshed definitions. A task has been filed on the typeshed repo that looks into this
+    https://github.com/python/typeshed/issues/5016
+    """
+
+    def setUp(self) -> None:
+        self.metadata_patcher = mock.patch('recidiviz.utils.metadata.project_id')
+        self.metadata_patcher.start().return_value = 'recidiviz-456'
+
+        self.auth_store = AuthorizationStore()
+
+        def no_op() -> str:
+            return ''
+
+        self.test_app = Flask(__name__)
+        self.test_app.secret_key = 'NOT-A-SECRET'
+        self.test_app.add_url_rule('/', view_func=no_op)
+        self.test_app.add_url_rule('/impersonate_user', view_func=ImpersonateUser.as_view(
+            'impersonate_user',
+            redirect_url='/',
+            authorization_store=self.auth_store,
+        ))
+        self.test_client = self.test_app.test_client()
+
+        @self.test_app.errorhandler(FlaskException)
+        def _handle_auth_error(ex: FlaskException) -> Response:
+            response = jsonify({
+                'code': ex.code,
+                'description': ex.description,
+            })
+            response.status_code = ex.status_code
+            return response
+
+    def tearDown(self) -> None:
+        self.metadata_patcher.stop()
+
+    def test_non_admin(self) -> None:
+        with self.test_app.test_request_context():
+            response = self.test_client.get('/impersonate_user')
+            self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
+
+            with self.test_client.session_transaction() as sess:  # type: ignore
+                sess['user_info'] = {
+                    'email': 'non-admin@recidiviz.org',
+                }
+
+            response = self.test_client.get('/impersonate_user')
+            self.assertEqual(response.status_code, HTTPStatus.NOT_FOUND)
+
+    def test_no_query_params(self) -> None:
+        with self.test_app.test_request_context():
+            self.auth_store.admin_users = ['admin@recidiviz.org']
+            with self.test_client.session_transaction() as sess:  # type: ignore
+                sess['user_info'] = {
+                    'email': 'admin@recidiviz.org',
+                }
+
+            response = self.test_client.get('/impersonate_user')
+            self.assertEqual(response.status_code, HTTPStatus.FOUND)
+
+            with self.test_client.session_transaction() as sess:  # type: ignore
+                self.assertTrue(IMPERSONATED_EMAIL_KEY not in session)
+
+    def test_happy_path(self) -> None:
+        with self.test_app.test_request_context():
+            self.auth_store.admin_users = ['admin@recidiviz.org']
+            with self.test_client.session_transaction() as sess:  # type: ignore
+                sess['user_info'] = {
+                    'email': 'admin@recidiviz.org',
+                }
+
+            response = self.test_client.get(f'/impersonate_user?{IMPERSONATED_EMAIL_KEY}=non-admin%40recidiviz.org')
+            self.assertEqual(response.status_code, HTTPStatus.FOUND)
+
+            with self.test_client.session_transaction() as sess:  # type: ignore
+                self.assertEqual(sess[IMPERSONATED_EMAIL_KEY], 'non-admin@recidiviz.org')

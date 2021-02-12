@@ -25,6 +25,7 @@ from flask_sqlalchemy_session import current_session
 from recidiviz.case_triage.api_routes import api
 from recidiviz.case_triage.authorization import AuthorizationStore
 from recidiviz.case_triage.exceptions import CaseTriageAuthorizationError
+from recidiviz.case_triage.impersonate_users import IMPERSONATED_EMAIL_KEY, ImpersonateUser
 from recidiviz.case_triage.scoped_sessions import setup_scoped_sessions
 from recidiviz.case_triage.querier.querier import CaseTriageQuerier
 from recidiviz.case_triage.util import get_local_secret
@@ -92,12 +93,24 @@ if not in_test():
 @requires_authorization
 def fetch_user_info() -> None:
     """This method both fetches the current user and (by virtue of the decorator) enforces authorization
-    for all API routes."""
+    for all API routes.
+
+    If the user is an admin (i.e. an approved Recidiviz employee), and the `impersonated_email` param is
+    set, then they can make requests as if they were the impersonated user.
+    """
+    if IMPERSONATED_EMAIL_KEY in session and session['user_info']['email'] in authorization_store.admin_users:
+        g.current_user = CaseTriageQuerier.officer_for_email(current_session, session[IMPERSONATED_EMAIL_KEY])
+
     if not getattr(g, 'current_user', None):
         g.current_user = CaseTriageQuerier.officer_for_email(current_session, session['user_info']['email'])
 
 
 app.register_blueprint(api, url_prefix='/api')
+app.add_url_rule('/impersonate_user', view_func=ImpersonateUser.as_view(
+    'impersonate_user',
+    redirect_url='/',
+    authorization_store=authorization_store,
+))
 
 
 @app.errorhandler(FlaskException)

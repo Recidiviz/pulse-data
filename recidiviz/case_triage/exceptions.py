@@ -42,3 +42,14 @@ class CaseTriageInvalidStateException(FlaskException):
             'invalid_state',
             f'Attempted to perform action on behalf of state: {state}',
             HTTPStatus.BAD_REQUEST)
+
+
+class CaseTriageSecretForbiddenException(FlaskException):
+    """Exception for when the user trying to make a request is unauthorized, but we do not
+    want to let them know that the given route exists."""
+
+    def __init__(self) -> None:
+        super().__init__(
+            'not_found',
+            'The attempted request failed because the resource was not found.',
+            HTTPStatus.NOT_FOUND)
