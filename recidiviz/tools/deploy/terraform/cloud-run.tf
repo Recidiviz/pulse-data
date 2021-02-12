@@ -41,6 +41,11 @@ resource "google_project_iam_member" "cloud_run_gcs_access" {
   member = "serviceAccount:${google_service_account.cloud_run.email}"
 }
 
+resource "google_project_iam_member" "cloud_run_log_writer" {
+  role   = "roles/logging.logWriter"
+  member = "serviceAccount:${google_service_account.cloud_run.email}"
+}
+
 # Initializes actual service
 resource "google_cloud_run_service" "case-triage" {
   name     = "case-triage-web"
