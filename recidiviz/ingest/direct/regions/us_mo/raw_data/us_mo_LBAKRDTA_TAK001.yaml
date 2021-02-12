@@ -3,3 +3,190 @@ file_description: |-
   Offender Identification. Column prefix: EK.
 primary_key_cols:
   - EK_DOC
+columns:
+  - name: EK_DOC
+    description: |-
+      DOC ID Number
+  - name: EK_CYC
+    description: |-
+      Cycle Number
+  - name: EK_ALN
+    description: |-
+      Person Last Name
+  - name: EK_AFN
+    description: |-
+      Person First Name
+  - name: EK_AMI
+    description: |-
+      Person Middle Name
+  - name: EK_AGS
+    description: |-
+      Person Generation/Suffix
+  - name: EK_NRN
+    description: |-
+      Name Record Number
+  - name: EK_SID
+    description: |-
+      Person SID Number
+  - name: EK_FBI
+    description: |-
+      Person FBI Number
+  - name: EK_OLN
+    description: |-
+      Operator License Number
+  - name: EK_OLC
+    description: |-
+      Person Assigned Location
+  - name: EK_FOI
+    description: |-
+      DOC Location Function Flag
+  - name: EK_PLC
+    description: |-
+      Person Previous Assigned Location
+  - name: EK_FLC
+    description: |-
+      Person Future Assigned Location
+  - name: EK_OLA
+    description: |-
+      Person Assigned Place Name
+  - name: EK_PLA
+    description: |-
+      Person Previous Assigned Place Name
+  - name: EK_FLA
+    description: |-
+      Person Future Location
+  - name: EK_AV
+    description: |-
+      Institutional Transfer Approval Date
+  - name: EK_LE
+    description: |-
+      Location Effective Date
+  - name: EK_LTR
+    description: |-
+      Last Transfer Remarks
+  - name: EK_TPF
+    description: |-
+      Transfer Post Flag
+  - name: EK_NM
+    description: |-
+      Transfer Arrival Date
+  - name: EK_TAT
+    description: |-
+      Transfer Arrival Time
+  - name: EK_WRF
+    description: |-
+      Warrant Flag
+  - name: EK_DTF
+    description: |-
+      Unknown - not included in data dictionary binder
+  - name: EK_WTF
+    description: |-
+      Writ Flag
+  - name: EK_SOQ
+    description: |-
+      Registration Flag
+  - name: EK_RAC
+    description: |-
+      Race
+  - name: EK_ETH
+    description: |-
+      Ethnicity
+  - name: EK_SEX
+    description: |-
+      Person Sex
+  - name: EK_HTF
+    description: |-
+      Person Height Feet
+  - name: EK_HTI
+    description: |-
+      Person Height Inches
+  - name: EK_WGT
+    description: |-
+      Person Weight
+  - name: EK_BIL
+    description: |-
+      Person Build
+  - name: EK_HAI
+    description: |-
+      Person Hair Color
+  - name: EK_EYE
+    description: |-
+      Person Eye Color
+  - name: EK_SKI
+    description: |-
+      Person Skin Tone
+  - name: EK_MAS
+    description: |-
+      Person Marital Status
+  - name: EK_DEP
+    description: |-
+      Person Dependents
+  - name: EK_SIB
+    description: |-
+      Person Siblings
+  - name: EK_REL
+    description: |-
+      Person Religion
+  - name: EK_COF
+    description: |-
+      Person Birth City
+  - name: EK_SCO
+    description: |-
+      Person Birth State
+  - name: EK_XDM
+    description: |-
+      Person Total Absconds DOC
+  - name: EK_XDO
+    description: |-
+      Person Total Absconds Other
+  - name: EK_XEM
+    description: |-
+      Person Total Escapes DOC
+  - name: EK_XEO
+    description: |-
+      Person Total Escapes Other
+  - name: EK_XPM
+    description: |-
+      Person Total Paroles DOC
+  - name: EK_XPO
+    description: |-
+      Person Total Paroles other
+  - name: EK_XCM
+    description: |-
+      Person Total Prison DOC
+  - name: EK_XCO
+    description: |-
+      Person Total Prison Other
+  - name: EK_XBM
+    description: |-
+      Person Total Probations DOC
+  - name: EK_XBO
+    description: |-
+      Person Total Probations Other
+  - name: EK_PU
+    description: |-
+      Purge Date
+  - name: EK_PUL
+    description: |-
+      Purge Location
+  - name: EK_PRF
+    description: |-
+      Reactivation Flag
+  - name: EK_DCR
+    description: |-
+      Row Creation Date
+  - name: EK_TCR
+    description: |-
+      Row Creation Time
+  - name: EK_DLU
+    description: |-
+      Row Modify Date
+  - name: EK_TLU
+    description: |-
+      Row Modify Time
+  - name: EK_REA
+    description: |-
+      Transfer Comments
+  - name: EK_UID
+    description: |-
+      User Identification

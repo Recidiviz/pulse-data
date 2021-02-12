@@ -6,3 +6,43 @@ primary_key_cols:
   - JT_CYC
   - JT_CSQ
   - JT_TSS
+columns:
+  - name: JT_DOC
+    description: |-
+      DOC ID Number
+  - name: JT_CYC
+    description: |-
+      Cycle Number
+  - name: JT_CSQ
+    description: |-
+      Citation Sequence Number
+  - name: JT_TSS
+    description: |-
+      P&P Sort Sequence
+  - name: JT_VCV
+    description: |-
+      Violation Conditions Violated
+  - name: JT_VG
+    description: |-
+      Citation Date
+  - name: JT_CCO
+    description: |-
+      Unknown - not included in data dictionary binder
+  - name: JT_DCR
+    description: |-
+      Row Creation Date
+  - name: JT_TCR
+    description: |-
+      Row Creation Time
+  - name: JT_UID
+    description: |-
+      User Identification
+  - name: JT_DLU
+    description: |-
+      Row Modify Date
+  - name: JT_TLU
+    description: |-
+      Row Modify Time
+  - name: JT_UIU
+    description: |-
+      Unknown - not included in data dictionary binder

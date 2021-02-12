@@ -4,3 +4,103 @@ file_description: |-
 primary_key_cols:
   - DQ_DOC
   - DQ_CYC
+columns:
+  - name: DQ_DOC
+    description: |-
+      DOC ID Number
+  - name: DQ_CYC
+    description: |-
+      Cycle Number
+  - name: DQ_SSR
+    description: |-
+      Cycle Prior Number
+  - name: DQ_NRN
+    description: |-
+      Name Record Number
+  - name: DQ_PND
+    description: |-
+      Cycle Number Detail
+  - name: DQ_CD
+    description: |-
+      Cycle Start Date
+  - name: DQ_FD
+    description: |-
+      Cycle Discharge Date
+  - name: DQ_OAB
+    description: |-
+      Cycle Institution Archive Box
+  - name: DQ_OA
+    description: |-
+      Cycle Institution Archive Date
+  - name: DQ_OFB
+    description: |-
+      Cycle Field Archive Box
+  - name: DQ_OF
+    description: |-
+      Cycle Field Archive Date
+  - name: DQ_TSE
+    description: |-
+      Sentence Count
+  - name: DQ_MSO
+    description: |-
+      Sentence Most Serious Offense
+  - name: DQ_NDM
+    description: |-
+      Cycle prior absconds DOC
+  - name: DQ_NDO
+    description: |-
+      Cycle Prior Absconds Other
+  - name: DQ_NEM
+    description: |-
+      Cycle Prior Escapes DOC
+  - name: DQ_NEO
+    description: |-
+      Cycle Prior Escapes Other
+  - name: DQ_NPM
+    description: |-
+      Cycle Prior Paroles DOC
+  - name: DQ_NPO
+    description: |-
+      Cycle Prior Paroles Other
+  - name: DQ_NCM
+    description: |-
+      Cycle Prior Prison DOC
+  - name: DQ_NCO
+    description: |-
+      Cycle Prior Prison Other
+  - name: DQ_NBM
+    description: |-
+      Cycle Prior Probations DOC
+  - name: DQ_NBO
+    description: |-
+      Cycle Prior Probations Other
+  - name: DQ_OCA
+    description: |-
+      Occupation Class At First Contact
+  - name: DQ_OCL
+    description: |-
+      Occupation Class Longest
+  - name: DQ_OC1
+    description: |-
+      Occupation Class Past 1
+  - name: DQ_OC2
+    description: |-
+      Occupation Class Past 2
+  - name: DQ_OC3
+    description: |-
+      Occupation Class Past 3
+  - name: DQ_SOP
+    description: |-
+      MOSOP Indicator
+  - name: DQ_DCR
+    description: |-
+      Row Creation Date
+  - name: DQ_TCR
+    description: |-
+      Row Creation Time
+  - name: DQ_DLU
+    description: |-
+      Row Modify Date
+  - name: DQ_TLU
+    description: |-
+      Row Modify Time

@@ -6,3 +6,58 @@ primary_key_cols:
   - EMPSSN
   - STRDTE
   - DEPCLS
+columns:
+  - name: BDGNO
+    description: |-
+      Employee ID number
+  - name: EMPSSN
+    description: |-
+      Employee SSN
+  - name: LNAME
+    description: |-
+      Employee Last Name
+  - name: FNAME
+    description: |-
+      Employee First Name
+  - name: MINTL
+    description: |-
+      Employee Middle Initial
+  - name: WRKLOC
+    description: |-
+      Job Location
+  - name: DEPCOD
+    description: |-
+      Unknown - not included in data dictionary binder
+  - name: DIVCOD
+    description: |-
+      Unknown - not included in data dictionary binder
+  - name: SECCOD
+    description: |-
+      Unknown - not included in data dictionary binder
+  - name: DEPCLS
+    description: |-
+      Job Code
+  - name: CLSTTL
+    description: |-
+      Job Role
+  - name: STRDTE
+    description: |-
+      Start Date
+  - name: DTEORD
+    description: |-
+      Flag For Employee's Current Role
+  - name: ENDDTE
+    description: |-
+      End Date
+  - name: CRTDTE
+    description: |-
+      Row Creation Date
+  - name: CRTTME
+    description: |-
+      Row Creation Time
+  - name: UPDDTE
+    description: |-
+      Row Modify Date
+  - name: UPDTME
+    description: |-
+      Row Modify Time

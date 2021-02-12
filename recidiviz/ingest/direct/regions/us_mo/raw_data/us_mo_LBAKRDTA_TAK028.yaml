@@ -5,3 +5,94 @@ primary_key_cols:
   - BY_DOC
   - BY_CYC
   - BY_VSN
+columns:
+  - name: BY_DOC
+    description: |-
+      DOC ID Number
+  - name: BY_CYC
+    description: |-
+      Cycle Number
+  - name: BY_VSN
+    description: |-
+      Violation sequence number
+  - name: BY_VE
+    description: |-
+      Violation report date
+  - name: BY_VWI
+    description: |-
+      Violation warrant flag
+  - name: BY_VRT
+    description: |-
+      Violation report type code
+  - name: BY_VSI
+    description: |-
+      Violation statement flag
+  - name: BY_VPH
+    description: |-
+      Violation preliminary hearing
+  - name: BY_VBG
+    description: |-
+      Violation booklet flag
+  - name: BY_VA
+    description: |-
+      Violation absconder warrant date
+  - name: BY_VIC
+    description: |-
+      Violation custody flag
+  - name: BY_DAX
+    description: |-
+      Detainer name/address XRef rec number
+  - name: BY_VC
+    description: |-
+      Violation custody date
+  - name: BY_VD
+    description: |-
+      Violation interview date
+  - name: BY_VIH
+    description: |-
+      Violation interview hour
+  - name: BY_VIM
+    description: |-
+      Violation interview minute
+  - name: BY_VIL
+    description: |-
+      Violation interview location
+  - name: BY_VOR
+    description: |-
+      Violation officer's recommendation
+  - name: BY_PIN
+    description: |-
+      DOC Location IS Designation
+  - name: BY_PLN
+    description: |-
+      DOC Location Acronym
+  - name: BY_PON
+    description: |-
+      Employee ID Card Number
+  - name: BY_RCA
+    description: |-
+      Violation requested court action
+  - name: BY_VTY
+    description: |-
+      Violation type
+  - name: BY_DV
+    description: |-
+      Date discovered
+  - name: BY_DCR
+    description: |-
+      Row Creation Date
+  - name: BY_TCR
+    description: |-
+      Row Creation Time
+  - name: BY_UID
+    description: |-
+      User Identification
+  - name: BY_DLU
+    description: |-
+      Row Modify Date
+  - name: BY_TLU
+    description: |-
+      Row Modify Time
+  - name: BY_UIU
+    description: |-
+      Unknown - not included in data dictionary binder

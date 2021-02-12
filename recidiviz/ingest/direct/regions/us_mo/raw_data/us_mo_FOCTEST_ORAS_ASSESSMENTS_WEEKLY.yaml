@@ -4,3 +4,64 @@ file_description: |-
 primary_key_cols:
   - E04
   - FOCLIST
+columns:
+  - name: E04
+    description: |-
+      DOC ID Number
+  - name: E05
+    description: |-
+      Assessment Type
+  - name: E06
+    description: |-
+      Duplicate of E21
+  - name: FOCLIST
+    description: |-
+      Assessment Sequence Number
+  - name: E01
+    description: |-
+      Duplicate of E03
+  - name: E03
+    description: |-
+      Unknown - not included in data dictionary binder
+  - name: E08
+    description: |-
+      Person First Name
+  - name: E09
+    description: |-
+      Person Last Name
+  - name: E10
+    description: |-
+      Person Full Name
+  - name: E11
+    description: |-
+      Agency Name
+  - name: E12
+    description: |-
+      Person Birthdate
+  - name: E13
+    description: |-
+      Person Gender
+  - name: E14
+    description: |-
+      Assessment Level
+  - name: E15
+    description: |-
+      Override Risk Level (not uniform in data)
+  - name: E16
+    description: |-
+      Override Risk Reason
+  - name: E17
+    description: |-
+      Case type information about the offender (Domestic violence, Mentally Ill, Sex offender, etc).
+  - name: E18
+    description: |-
+      Assessment Status (all Complete)
+  - name: E19
+    description: |-
+      Assessment Score
+  - name: E20
+    description: |-
+      Person who administered the assessment
+  - name: E21
+    description: |-
+      Assessment Date (Date entered into UCCI system).

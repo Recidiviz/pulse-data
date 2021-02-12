@@ -6,3 +6,34 @@ primary_key_cols:
   - CF_CYC
   - CF_VSN
   - CF_VCV
+columns:
+  - name: CF_DOC
+    description: |-
+      DOC ID Number
+  - name: CF_CYC
+    description: |-
+      Cycle Number
+  - name: CF_VSN
+    description: |-
+      Violation Sequence Number
+  - name: CF_TSS
+    description: |-
+      P&P Sort Sequence
+  - name: CF_VCV
+    description: |-
+      Violation Conditions Violated
+  - name: CF_NBR
+    description: |-
+      Unknown - not included in data dictionary binder
+  - name: CF_DCR
+    description: |-
+      Row Creation Date
+  - name: CF_TCR
+    description: |-
+      Row Creation Time
+  - name: CF_DLU
+    description: |-
+      Row Modify Date
+  - name: CF_TLU
+    description: |-
+      Row Modify Time

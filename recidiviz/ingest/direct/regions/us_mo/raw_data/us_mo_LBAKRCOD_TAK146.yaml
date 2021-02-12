@@ -3,3 +3,73 @@ file_description: |-
   Status Descriptions. Column prefix: FH.
 primary_key_cols:
   - FH_SCD
+columns:
+  - name: FH_SCD
+    description: |-
+      Status Code
+  - name: FH_SDE
+    description: |-
+      Status Code Description
+  - name: FH_FOI
+    description: |-
+      DOC Location Function Flag
+  - name: FH_WB
+    description: |-
+      Status Code Begin Date
+  - name: FH_WW
+    description: |-
+      Status Code End Date
+  - name: FH_WSF
+    description: |-
+      Status Code Retired Flag
+  - name: FH_VTR
+    description: |-
+      Status Code VINE Trigger
+  - name: FH_ISC
+    description: |-
+      Status Interstate Compact State Flag
+  - name: FH_SST
+    description: |-
+      Subcycle Status
+  - name: FH_ORC
+    description: |-
+      Reason For Opening
+  - name: FH_CTO
+    description: |-
+      Case Type At Open
+  - name: FH_OPT
+    description: |-
+      Open Reason Type
+  - name: FH_CTC
+    description: |-
+      Current Case Type
+  - name: FH_CTP
+    description: |-
+      Reason For Closing
+  - name: FH_ARC
+    description: |-
+      Action Reason Code
+  - name: FH_PFI
+    description: |-
+      Purpose For Incarceration
+  - name: FH_NCR
+    description: |-
+      NCRP Status Type
+  - name: FH_CUS
+    description: |-
+      NCRP Agency
+  - name: FH_DCR
+    description: |-
+      Row Creation Date
+  - name: FH_TCR
+    description: |-
+      Row Creation Time
+  - name: FH_DLU
+    description: |-
+      Row Modify Date
+  - name: FH_TLU
+    description: |-
+      Row Modify Time
+  - name: FH_UID
+    description: |-
+      User Identification
