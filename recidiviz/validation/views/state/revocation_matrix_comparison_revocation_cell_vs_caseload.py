@@ -39,6 +39,10 @@ REVOCATION_MATRIX_COMPARISON_REVOCATION_CELL_VS_CASELOAD_QUERY_TEMPLATE = \
         state_code as region_code, metric_period_months, district, charge_category, supervision_type,
         SUM(total_revocations) as total_revocations
       FROM `{project_id}.{view_dataset}.revocations_matrix_cells`
+      WHERE district != 'ALL'
+        -- State-specific filtering used in the caseload view--
+        AND (state_code = 'US_PA' OR (supervision_type != 'ALL' AND charge_category != 'ALL'))
+        AND (state_code = 'US_MO' or (supervision_level != 'ALL'))
       GROUP BY state_code, metric_period_months, district, charge_category, supervision_type
     ),
     caseload_counts AS (
@@ -46,6 +50,8 @@ REVOCATION_MATRIX_COMPARISON_REVOCATION_CELL_VS_CASELOAD_QUERY_TEMPLATE = \
         state_code as region_code, metric_period_months, district, charge_category, supervision_type,
         COUNT(DISTINCT state_id) as total_revocations
       FROM `{project_id}.{view_dataset}.revocations_matrix_filtered_caseload`
+      -- The matrix doesn't have any of these rows --
+      WHERE violation_type != 'NO_VIOLATION_TYPE' AND reported_violations != '0'
       GROUP BY state_code, metric_period_months, district, charge_category, supervision_type
     )
     SELECT 
