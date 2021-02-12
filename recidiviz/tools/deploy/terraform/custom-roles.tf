@@ -21,3 +21,15 @@ resource "google_project_iam_custom_role" "state-admin-role" {
   description = "Role that gives external state agencies permissions to upload files with state data to GCS."
   permissions = ["storage.objects.create", "storage.objects.get", "storage.objects.list"]
 }
+
+resource "google_project_iam_custom_role" "gcs-object-and-bucket-viewer" {
+  role_id     = "gcsObjectAndBucketViewer"
+  title       = "GCS Object and Bucket Viewer"
+  description = "Role that lets service accounts view GCS buckets as well as the objects within them. This is a superset of the storage.objectViewer role."
+  permissions = [
+    "storage.buckets.get",
+    "storage.buckets.list",
+    "storage.objects.get",
+    "storage.objects.list",
+  ]
+}
