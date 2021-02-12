@@ -22,7 +22,7 @@ from typing import List
 
 from recidiviz.case_triage.util import get_local_file
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
-from recidiviz.utils.environment import in_gae
+from recidiviz.utils.environment import in_gcp
 from recidiviz.utils.metadata import project_id
 
 
@@ -33,7 +33,7 @@ class AuthorizationStore:
     """
 
     def __init__(self) -> None:
-        prefix = "" if not in_gae() else f"{project_id()}-"
+        prefix = "" if not in_gcp() else f"{project_id()}-"
         self.allowlist_path = GcsfsFilePath.from_absolute_path(f'{prefix}case-triage-data/allowlist_v2.json')
         self.allowed_users: List[str] = []
         self.admin_users: List[str] = []

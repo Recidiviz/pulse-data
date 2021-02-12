@@ -33,12 +33,13 @@ _metadata_cache: Dict[str, str] = {}
 # Only used for this files tests
 allow_local_metadata_call = False
 
+
 def _get_metadata(url: str):
     if url in _metadata_cache:
         return _metadata_cache[url]
 
     if not allow_local_metadata_call:
-        if environment.in_test() or not environment.in_gae():
+        if environment.in_test() or not environment.in_gcp():
             raise RuntimeError("May not be called from test, should this have a local override?")
 
     try:
@@ -81,6 +82,7 @@ class local_project_id_override:
         recidiviz-staging
         None
     """
+
     def __init__(self, project_id_override: str):
         self.project_id_override = project_id_override
         self.original_project_id = None
@@ -115,9 +117,11 @@ def project_id():
         _get_metadata(_PROJECT_ID_URL) or os.getenv('GOOGLE_CLOUD_PROJECT')
     )
 
+
 def instance_id():
     """Returns the GCP instnance ID of the current instance."""
     return _get_metadata('instance/id')
+
 
 def zone():
     """Returns the GCP zone of the current instance."""
@@ -127,6 +131,7 @@ def zone():
         zone_string = zone_string.split('/')[-1]
 
     return zone_string
+
 
 def region():
     """Returns the GCP region of the current instance."""

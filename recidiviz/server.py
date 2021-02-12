@@ -76,11 +76,11 @@ app.register_blueprint(reporting_endpoint_blueprint, url_prefix='/reporting')
 app.register_blueprint(export_blueprint, url_prefix='/export')
 app.register_blueprint(justice_counts_control, url_prefix='/justice_counts')
 
-if environment.in_gae():
+if environment.in_gcp():
     SQLAlchemyEngineManager.init_engines_for_server_postgres_instances()
 
-# Export traces and metrics to stackdriver if running on GAE
-if environment.in_gae():
+# Export traces and metrics to stackdriver if running in GCP
+if environment.in_gcp():
     monitoring.register_stackdriver_exporter()
     trace_exporter = stackdriver_trace.StackdriverExporter(
         project_id=metadata.project_id(), transport=AsyncTransport)

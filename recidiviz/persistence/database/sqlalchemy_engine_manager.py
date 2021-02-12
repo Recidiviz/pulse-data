@@ -131,9 +131,9 @@ class SQLAlchemyEngineManager:
 
     @classmethod
     def init_engines_for_server_postgres_instances(cls) -> None:
-        if not environment.in_gae():
+        if not environment.in_gcp():
             logging.info(
-                "Environment is not GAE, not connecting to postgres instances.")
+                "Environment is not GCP, not connecting to postgres instances.")
             return
 
         cls.init_engine(SchemaType.JAILS)

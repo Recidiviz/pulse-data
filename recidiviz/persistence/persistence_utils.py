@@ -56,5 +56,5 @@ def should_persist() -> bool:
     """
     Determines whether objects should be writed to the database in this context.
     """
-    return environment.in_gae() or \
+    return environment.in_gcp() or \
         strtobool((os.environ.get('PERSIST_LOCALLY', 'false')))

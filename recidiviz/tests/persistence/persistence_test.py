@@ -136,7 +136,7 @@ STATE_CODE_TO_ENTITY_MATCHING_THRESHOLD_OVERRIDE_FAKE_PROJECT: Dict[str, Dict[st
 
 
 @patch('recidiviz.utils.metadata.project_id', Mock(return_value=FAKE_PROJECT_ID))
-@patch('recidiviz.environment.in_gae', Mock(return_value=True))
+@patch('recidiviz.environment.in_gcp', Mock(return_value=True))
 @patch.dict('os.environ', {'PERSIST_LOCALLY': 'false'})
 @patch('recidiviz.persistence.persistence.STATE_CODE_TO_ENTITY_MATCHING_THRESHOLD_OVERRIDE',
        STATE_CODE_TO_ENTITY_MATCHING_THRESHOLD_OVERRIDE_FAKE_PROJECT)
@@ -150,7 +150,7 @@ class TestPersistence(TestCase):
         fakes.teardown_in_memory_sqlite_databases()
 
     def test_localRun(self):
-        with patch('recidiviz.environment.in_gae', Mock(return_value=False)):
+        with patch('recidiviz.environment.in_gcp', Mock(return_value=False)):
             # Arrange
             ingest_info = IngestInfoProto()
             ingest_info.people.add(full_name=FULL_NAME_1)
@@ -165,7 +165,7 @@ class TestPersistence(TestCase):
 
     def test_persistLocally(self):
         # Arrange
-        with patch('recidiviz.environment.in_gae', Mock(return_value=False)) \
+        with patch('recidiviz.environment.in_gcp', Mock(return_value=False)) \
                 and patch.dict('os.environ', {'PERSIST_LOCALLY': 'true'}):
             ingest_info = IngestInfoProto()
             ingest_info.people.add(full_name=FULL_NAME_1)

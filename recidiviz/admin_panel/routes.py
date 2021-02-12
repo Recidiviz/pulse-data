@@ -32,8 +32,8 @@ from recidiviz.utils.auth.gae import requires_gae_auth
 from recidiviz.utils.environment import (
     GCP_PROJECT_STAGING,
     in_development,
-    in_gae_staging,
-    in_gae_production,
+    in_gcp_staging,
+    in_gcp_production,
     in_test,
 )
 from recidiviz.utils.timer import RepeatedTimer
@@ -133,13 +133,13 @@ def run_gcs_import() -> Tuple[str, HTTPStatus]:
 def runtime_env_vars() -> Tuple[str, HTTPStatus]:
     if in_development():
         env_string = 'development'
-    elif in_gae_staging():
+    elif in_gcp_staging():
         env_string = 'staging'
-    elif in_gae_production():
+    elif in_gcp_production():
         env_string = 'production'
     else:
         env_string = 'unknown'
-    return f'window.RUNTIME_GAE_ENVIRONMENT="{env_string}";', HTTPStatus.OK
+    return f'window.RUNTIME_GCP_ENVIRONMENT="{env_string}";', HTTPStatus.OK
 
 
 @admin_panel.route('/')

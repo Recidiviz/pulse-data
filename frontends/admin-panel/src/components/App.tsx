@@ -31,7 +31,7 @@ import "../style/App.css";
 
 const App = (): JSX.Element => {
   const location = useLocation();
-  const title = window.RUNTIME_GAE_ENVIRONMENT || "unknown env";
+  const title = window.RUNTIME_GCP_ENVIRONMENT || "unknown env";
 
   return (
     <Layout style={{ height: "100%" }}>

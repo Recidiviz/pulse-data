@@ -298,8 +298,8 @@ class Scraper(Ingestor, metaclass=abc.ABCMeta):
             else:
                 raise ValueError(
                     "Both params ({}) for a GET request and either post_data "
-                    "({}) or json_data ({}) for a POST request were set." \
-                        .format(params, post_data, json_data))
+                    "({}) or json_data ({}) for a POST request were set."
+                    .format(params, post_data, json_data))
             page.raise_for_status()
         except requests.exceptions.RequestException as ce:
             raise FetchPageError(ce.request, ce.response) from ce

@@ -226,7 +226,7 @@ class MoveFilesFromStorageController:
         self.move_progress.finish()
 
     def queue_console_url(self, queue_name: str) -> str:
-        """Returns the url to the GAE console page for a queue with a given name."""
+        """Returns the url to the GCP console page for a queue with a given name."""
         return f'https://console.cloud.google.com/cloudtasks/queue/{queue_name}?project={self.project_id}'
 
     def do_post_request(self, url: str) -> None:
