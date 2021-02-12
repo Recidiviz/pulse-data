@@ -30,13 +30,13 @@ class SQLAlchemyEngineManagerTest(TestCase):
         SQLAlchemyEngineManager.teardown_engines()
 
     @patch('sqlalchemy.create_engine')
-    @patch('recidiviz.environment.in_gae_production')
-    @patch('recidiviz.environment.in_gae')
+    @patch('recidiviz.environment.in_gcp_production')
+    @patch('recidiviz.environment.in_gcp')
     @patch('recidiviz.utils.secrets.get_secret')
     def testInitEngines_usesCorrectIsolationLevels(
-            self, mock_get_secret, mock_in_gae, mock_in_production, mock_create_engine):
+            self, mock_get_secret, mock_in_gcp, mock_in_production, mock_create_engine):
         # Arrange
-        mock_in_gae.return_value = True
+        mock_in_gcp.return_value = True
         mock_in_production.return_value = True
         # Pretend all secret values are just the key suffixed with '_value'
         mock_get_secret.side_effect = lambda key: f'{key}_value'
@@ -61,13 +61,13 @@ class SQLAlchemyEngineManagerTest(TestCase):
         ]
 
     @patch('sqlalchemy.create_engine')
-    @patch('recidiviz.environment.in_gae_staging')
-    @patch('recidiviz.environment.in_gae')
+    @patch('recidiviz.environment.in_gcp_staging')
+    @patch('recidiviz.environment.in_gcp')
     @patch('recidiviz.utils.secrets.get_secret')
     def testInitEngines_usesCorrectIsolationLevelsInStaging(
-            self, mock_get_secret, mock_in_gae, mock_in_staging, mock_create_engine):
+            self, mock_get_secret, mock_in_gcp, mock_in_staging, mock_create_engine):
         # Arrange
-        mock_in_gae.return_value = True
+        mock_in_gcp.return_value = True
         mock_in_staging.return_value = True
         # Pretend all secret values are just the key suffixed with '_value'
         mock_get_secret.side_effect = lambda key: f'{key}_value'

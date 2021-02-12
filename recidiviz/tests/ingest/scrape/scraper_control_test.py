@@ -61,7 +61,7 @@ class TestScraperStart(unittest.TestCase):
     def setUp(self) -> None:
         self.client = create_test_client()
 
-    @patch("recidiviz.utils.environment.get_gae_environment")
+    @patch("recidiviz.utils.environment.get_gcp_environment")
     @patch("recidiviz.utils.regions.get_supported_scrape_region_codes")
     @patch("recidiviz.utils.regions.get_region")
     @patch("recidiviz.ingest.scrape.sessions.update_phase")
@@ -106,7 +106,7 @@ class TestScraperStart(unittest.TestCase):
         mock_scraper.start_scrape.assert_called()
         mock_supported.assert_called_with(stripes=[], timezone=None)
 
-    @patch("recidiviz.utils.environment.get_gae_environment")
+    @patch("recidiviz.utils.environment.get_gcp_environment")
     @patch("recidiviz.utils.regions.get_supported_scrape_region_codes")
     @patch("recidiviz.utils.regions.get_region")
     @patch("recidiviz.ingest.scrape.sessions.update_phase")
@@ -153,7 +153,7 @@ class TestScraperStart(unittest.TestCase):
         mock_supported.assert_called_with(stripes=[],
                                           timezone=pytz.timezone('America/Los_Angeles'))
 
-    @patch("recidiviz.utils.environment.get_gae_environment")
+    @patch("recidiviz.utils.environment.get_gcp_environment")
     @patch("recidiviz.utils.regions.get_supported_scrape_region_codes")
     @patch("recidiviz.utils.regions.get_region")
     @patch("recidiviz.ingest.scrape.sessions.create_session")
@@ -189,7 +189,7 @@ class TestScraperStart(unittest.TestCase):
         mock_scraper.start_scrape.assert_not_called()
         mock_supported.assert_called_with(stripes=[], timezone=None)
 
-    @patch("recidiviz.utils.environment.get_gae_environment")
+    @patch("recidiviz.utils.environment.get_gcp_environment")
     @patch("recidiviz.utils.regions.get_supported_scrape_region_codes")
     @patch("recidiviz.utils.regions.get_region")
     @patch("recidiviz.ingest.scrape.sessions.create_session")
@@ -229,7 +229,7 @@ class TestScraperStart(unittest.TestCase):
         mock_supported.assert_called_with(stripes=[], timezone=None)
         mock_scraper.start_scrape.assert_not_called()
 
-    @patch("recidiviz.utils.environment.get_gae_environment")
+    @patch("recidiviz.utils.environment.get_gcp_environment")
     @patch("recidiviz.utils.regions.get_supported_scrape_region_codes")
     @patch("recidiviz.utils.regions.get_region")
     @patch("recidiviz.ingest.scrape.sessions.update_phase")

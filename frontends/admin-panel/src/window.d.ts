@@ -23,6 +23,6 @@ export {};
 // values that we add from `runtime_env_vars.js`
 declare global {
   interface Window {
-    RUNTIME_GAE_ENVIRONMENT?: string;
+    RUNTIME_GCP_ENVIRONMENT?: string;
   }
 }

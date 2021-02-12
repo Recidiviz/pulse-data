@@ -84,9 +84,9 @@ class GcsfsCsvReader:
         # From the GCSFileSystem docs (https://gcsfs.readthedocs.io/en/latest/api.html#gcsfs.core.GCSFileSystem),
         # 'google_default' means we should look for local credentials set up via `gcloud login`. The project this is
         # reading from may have to match the project default you have set locally (check via `gcloud info` and set via
-        # `gcloud config set project [PROJECT_ID]`. If we are running in the GAE environment, we should be able to query
+        # `gcloud config set project [PROJECT_ID]`. If we are running in the GCP environment, we should be able to query
         # the internal metadata for credentials.
-        token = 'google_default' if not environment.in_gae() else 'cloud'
+        token = 'google_default' if not environment.in_gcp() else 'cloud'
         return self.gcs_file_system.open(path.uri(), encoding=encoding, token=token)
 
     def streaming_read(self,

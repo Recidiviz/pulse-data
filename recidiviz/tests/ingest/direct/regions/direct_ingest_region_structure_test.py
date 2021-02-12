@@ -38,7 +38,7 @@ from recidiviz.ingest.direct.controllers.direct_ingest_view_collector import Dir
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_controller import GcsfsDirectIngestController
 from recidiviz.ingest.direct.direct_ingest_region_utils import get_existing_region_dir_names, \
     get_existing_region_dir_paths
-from recidiviz.utils.environment import GaeEnvironment
+from recidiviz.utils.environment import GCPEnvironment
 from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.utils.regions import get_region
 
@@ -164,12 +164,12 @@ class DirectIngestRegionDirStructureBase:
                     config_file_tags.add(config.file_tag)
 
     @parameterized.expand([
-        ('build_prod', 'recidiviz-123', GaeEnvironment.PRODUCTION.value),
-        ('build_staging', 'recidiviz-staging', GaeEnvironment.STAGING.value),
+        ('build_prod', 'recidiviz-123', GCPEnvironment.PRODUCTION.value),
+        ('build_staging', 'recidiviz-staging', GCPEnvironment.STAGING.value),
     ])
     def test_collect_and_build_ingest_view_builders(
-            self, _name: str, project_id: str, environment: GaeEnvironment) -> None:
-        with patch("recidiviz.utils.environment.get_gae_environment", return_value=environment):
+            self, _name: str, project_id: str, environment: GCPEnvironment) -> None:
+        with patch("recidiviz.utils.environment.get_gcp_environment", return_value=environment):
             with patch('recidiviz.utils.metadata.project_id', return_value=project_id):
                 for region_code in self.region_dir_names:
                     region = get_region(region_code, is_direct_ingest=True,

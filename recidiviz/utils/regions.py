@@ -38,7 +38,7 @@ from recidiviz.common.constants.enum_overrides import EnumOverrides
 from recidiviz.utils import environment
 from recidiviz.ingest.scrape import regions as scraper_regions_module
 from recidiviz.ingest.direct import regions as direct_ingest_regions_module
-from recidiviz.utils.environment import GaeEnvironment
+from recidiviz.utils.environment import GCPEnvironment
 
 
 class RemovedFromWebsite(Enum):
@@ -54,8 +54,10 @@ class IngestType(Enum):
 # Cache of the `Region` objects.
 REGIONS: Dict[IngestType, Dict[str, 'Region']] = {}
 
+
 def _to_lower(s: str) -> str:
     return s.lower()
+
 
 @attr.s(frozen=True)
 class Region:
@@ -118,7 +120,7 @@ class Region:
         if self.queue and self.shared_queue:
             raise ValueError(
                 'Only one of `queue` and `shared_queue` can be set.')
-        if self.environment not in {*environment.GAE_ENVIRONMENTS, None}:
+        if self.environment not in {*environment.GCP_ENVIRONMENTS, None}:
             raise ValueError('Invalid environment: {}'.format(self.environment))
         if self.facility_id and len(self.facility_id) != 16:
             raise ValueError(f'Improperly formatted FID [{self.facility_id}], should be length 16')
@@ -171,12 +173,12 @@ class Region:
         this region can be run in prod. All regions can be triggered to run in
         staging.
         """
-        return not environment.in_gae_production() \
-            or self.environment == environment.get_gae_environment()
+        return not environment.in_gcp_production() \
+            or self.environment == environment.get_gcp_environment()
 
     def is_ingest_launched_in_production(self) -> bool:
         """Returns true if ingest can be launched for this region in production. """
-        return self.environment is not None and self.environment.lower() == GaeEnvironment.PRODUCTION.value.lower()
+        return self.environment is not None and self.environment.lower() == GCPEnvironment.PRODUCTION.value.lower()
 
     def is_raw_vs_ingest_file_name_detection_enabled(self) -> bool:
         """Returns True if this is ready for ingest to differentiate between files with the 'raw' and 'ingest_view'
@@ -206,8 +208,8 @@ class Region:
         'prod', this will also be enabled in staging.
         """
         return self.raw_vs_ingest_file_name_differentiation_enabled_env is not None and \
-            (not environment.in_gae_production() or
-             self.raw_vs_ingest_file_name_differentiation_enabled_env == environment.get_gae_environment())
+            (not environment.in_gcp_production() or
+             self.raw_vs_ingest_file_name_differentiation_enabled_env == environment.get_gcp_environment())
 
     def are_raw_data_bq_imports_enabled_in_env(self) -> bool:
         """Returns true if this regions supports raw data import to BQ.
@@ -239,8 +241,8 @@ class Region:
         """
         return self.is_raw_vs_ingest_file_name_detection_enabled() and \
             self.raw_data_bq_imports_enabled_env is not None and \
-            (not environment.in_gae_production() or
-             self.raw_data_bq_imports_enabled_env == environment.get_gae_environment())
+            (not environment.in_gcp_production() or
+             self.raw_data_bq_imports_enabled_env == environment.get_gcp_environment())
 
     def are_ingest_view_exports_enabled_in_env(self) -> bool:
         """Returns true if this regions supports export of ingest views to the ingest bucket.
@@ -263,8 +265,8 @@ class Region:
         return self.is_raw_vs_ingest_file_name_detection_enabled() and \
             self.are_raw_data_bq_imports_enabled_in_env() and \
             self.ingest_view_exports_enabled_env is not None and \
-            (not environment.in_gae_production() or
-             self.ingest_view_exports_enabled_env == environment.get_gae_environment())
+            (not environment.in_gcp_production() or
+             self.ingest_view_exports_enabled_env == environment.get_gcp_environment())
 
 
 def get_region(region_code: str, is_direct_ingest: bool = False,

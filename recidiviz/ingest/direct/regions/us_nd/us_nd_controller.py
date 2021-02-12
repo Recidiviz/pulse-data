@@ -194,12 +194,12 @@ class UsNdController(CsvGcsfsDirectIngestController):
             'elite_externalmovements',
         ]
 
-        if not environment.in_gae_production():
+        if not environment.in_gcp_production():
             # TODO(#5049): Remove once contacts have successfully run in staging.
             tags.append('docstars_contacts')
             # TODO(#2399): Once we are capable of handling historical and nightly ingest of
             #  'elite_offense_in_custody_and_pos_report_data', remove this check.
-            if not environment.in_gae_staging():
+            if not environment.in_gcp_staging():
                 tags.append('elite_offense_in_custody_and_pos_report_data')
 
         tags += [
@@ -304,7 +304,6 @@ class UsNdController(CsvGcsfsDirectIngestController):
                 for extracted_object in extracted_objects:
                     if isinstance(extracted_object, StateSupervisionContact):
                         extracted_object.location = contact_location.value
-
 
     @staticmethod
     def _add_supervising_officer(_file_tag: str,

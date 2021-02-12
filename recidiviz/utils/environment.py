@@ -36,7 +36,7 @@ from google.cloud import datastore, environment_vars
 import recidiviz
 
 
-class GaeEnvironment(Enum):
+class GCPEnvironment(Enum):
     STAGING = 'staging'
     PRODUCTION = 'production'
 
@@ -45,30 +45,30 @@ GCP_PROJECT_STAGING = 'recidiviz-staging'
 GCP_PROJECT_PRODUCTION = 'recidiviz-123'
 
 
-GAE_ENVIRONMENTS = {env.value for env in GaeEnvironment}
+GCP_ENVIRONMENTS = {env.value for env in GCPEnvironment}
 GCP_PROJECTS = [GCP_PROJECT_STAGING, GCP_PROJECT_PRODUCTION]
 
 
-def in_gae() -> bool:
+def in_gcp() -> bool:
     """ Check whether we're currently running on local dev machine or in prod
 
-    Checks whether the current instance is running hosted on GAE (if not, likely
+    Checks whether the current instance is running hosted on GCP (if not, likely
     running on local devserver).
 
     Args:
         N/A
 
     Returns:
-        True if on hosted GAE instance
+        True if on hosted GCP instance
         False if not
     """
-    return get_gae_environment() in GAE_ENVIRONMENTS
+    return get_gcp_environment() in GCP_ENVIRONMENTS
 
 
-def get_gae_environment() -> Optional[str]:
+def get_gcp_environment() -> Optional[str]:
     """Get the environment we are running in
 
-    GAE environment must always refer to the actual environment. RECIDIVIZ_ENV variable should never be
+    GCP environment must always refer to the actual environment. RECIDIVIZ_ENV variable should never be
     set locally, and if you need to specify an environment to run in locally, use the project_id (i.e. GCP_PROJECTS).
 
     Args:
@@ -80,12 +80,12 @@ def get_gae_environment() -> Optional[str]:
     return os.getenv('RECIDIVIZ_ENV')
 
 
-def in_gae_production() -> bool:
-    return in_gae() and get_gae_environment() == GaeEnvironment.PRODUCTION.value
+def in_gcp_production() -> bool:
+    return in_gcp() and get_gcp_environment() == GCPEnvironment.PRODUCTION.value
 
 
-def in_gae_staging() -> bool:
-    return in_gae() and get_gae_environment() == GaeEnvironment.STAGING.value
+def in_gcp_staging() -> bool:
+    return in_gcp() and get_gcp_environment() == GCPEnvironment.STAGING.value
 
 
 def get_datastore_client() -> datastore.Client:
@@ -101,7 +101,7 @@ def get_datastore_client() -> datastore.Client:
 def local_only(func: Callable) -> Callable:
     """Decorator function to verify request only runs locally
 
-    Decorator function to check run environment. If prod / served on GAE,
+    Decorator function to check run environment. If prod / served on GCP,
     exits before any work can be done.
 
     Args:
@@ -127,7 +127,7 @@ def local_only(func: Callable) -> Callable:
             HTTP 500 and error logs, if running in prod
         """
 
-        deployed = in_gae()
+        deployed = in_gcp()
 
         if deployed:
             # Production environment - fail
@@ -169,4 +169,4 @@ def test_only(func: Callable) -> Callable:
 
 
 def in_development() -> bool:
-    return not in_gae() and not in_test()
+    return not in_gcp() and not in_test()

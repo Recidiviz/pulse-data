@@ -27,6 +27,7 @@ from recidiviz.ingest.models.ingest_info import IngestInfo
 
 class TestOne(unittest.TestCase):
     """Tests for the |one| method in the module."""
+
     def test_onePerson_passes(self):
         ii = IngestInfo()
         p = ii.create_person()
@@ -62,9 +63,9 @@ class TestGetProxies(unittest.TestCase):
 
     @patch('recidiviz.utils.secrets.get_secret')
     @patch('random.random')
-    @patch('recidiviz.utils.environment.in_gae')
-    def test_get_proxies_prod(self, mock_in_gae, mock_rand, mock_secret):
-        mock_in_gae.return_value = True
+    @patch('recidiviz.utils.environment.in_gcp')
+    def test_get_proxies_prod(self, mock_in_gcp, mock_rand, mock_secret):
+        mock_in_gcp.return_value = True
         mock_rand.return_value = 10
         test_secrets = {
             'proxy_url': 'proxy.net/',
@@ -80,9 +81,9 @@ class TestGetProxies(unittest.TestCase):
         }
 
     @patch('recidiviz.utils.secrets.get_secret')
-    @patch('recidiviz.utils.environment.in_gae')
-    def test_get_proxies_local_no_user(self, mock_in_gae, mock_secret):
-        mock_in_gae.return_value = True
+    @patch('recidiviz.utils.environment.in_gcp')
+    def test_get_proxies_local_no_user(self, mock_in_gcp, mock_secret):
+        mock_in_gcp.return_value = True
         test_secrets = {
             'proxy_url': 'proxy.net/',
             'proxy_password': 'real_password',
@@ -94,9 +95,9 @@ class TestGetProxies(unittest.TestCase):
         assert str(exception.value) == 'No proxy user/pass'
 
     @patch('recidiviz.utils.secrets.get_secret')
-    @patch('recidiviz.utils.environment.in_gae')
-    def test_get_proxies_local(self, mock_in_gae, mock_secret):
-        mock_in_gae.return_value = False
+    @patch('recidiviz.utils.environment.in_gcp')
+    def test_get_proxies_local(self, mock_in_gcp, mock_secret):
+        mock_in_gcp.return_value = False
         test_secrets = {
             'proxy_url': 'proxy.biz/',
             'test_proxy_user': 'user',
@@ -107,14 +108,15 @@ class TestGetProxies(unittest.TestCase):
         proxies = scraper_utils.get_proxies()
         assert proxies is None
 
+
 class TestGetHeaders:
     """Tests for the get_headers method in the module."""
 
     @patch('recidiviz.utils.secrets.get_secret')
-    @patch('recidiviz.utils.environment.in_gae')
-    def test_get_headers(self, mock_in_gae, mock_secret):
+    @patch('recidiviz.utils.environment.in_gcp')
+    def test_get_headers(self, mock_in_gcp, mock_secret):
         # This is prod behaviour
-        mock_in_gae.return_value = True
+        mock_in_gcp.return_value = True
         user_agent = 'test_user_agent'
 
         test_secrets = {'user_agent': user_agent}
@@ -124,18 +126,18 @@ class TestGetHeaders:
         assert headers == {'User-Agent': user_agent}
 
     @patch('recidiviz.utils.secrets.get_secret')
-    @patch('recidiviz.utils.environment.in_gae')
-    def test_get_headers_missing_user_agent_in_prod(self, mock_in_gae,
+    @patch('recidiviz.utils.environment.in_gcp')
+    def test_get_headers_missing_user_agent_in_prod(self, mock_in_gcp,
                                                     mock_secret):
-        mock_in_gae.return_value = True
+        mock_in_gcp.return_value = True
         mock_secret.return_value = None
         with pytest.raises(Exception) as exception:
             scraper_utils.get_headers()
         assert str(exception.value) == 'No user agent string'
 
-    @patch('recidiviz.utils.environment.in_gae')
-    def test_get_headers_local(self, mock_in_gae):
-        mock_in_gae.return_value = False
+    @patch('recidiviz.utils.environment.in_gcp')
+    def test_get_headers_local(self, mock_in_gcp):
+        mock_in_gcp.return_value = False
         headers = scraper_utils.get_headers()
         assert headers == {
             'User-Agent': ('For any issues, concerns, or rate constraints,'
