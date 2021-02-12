@@ -90,7 +90,7 @@ def retry_grpc(
                 raise
             if 'GOAWAY' in str(e) or 'Deadline Exceeded' in str(e):
                 logging.exception('Received exception: ')
-                if environment.in_gae():
+                if environment.in_gcp():
                     logging.warning('Sleeping %.2f seconds and retrying',
                                     time_to_sleep)
                     time.sleep(time_to_sleep)

@@ -77,7 +77,7 @@ class TestIngestUtils:
 
     @patch('pkgutil.iter_modules',
            return_value=fake_modules('us_ny', 'us_pa', 'us_vt', 'us_pa_greene'))
-    @patch("recidiviz.utils.environment.get_gae_environment")
+    @patch("recidiviz.utils.environment.get_gcp_environment")
     @patch("recidiviz.utils.regions.get_region")
     def test_validate_regions_multiple_all(
             self, mock_region, mock_env, _mock_modules):
@@ -95,7 +95,7 @@ class TestIngestUtils:
 
     @patch('pkgutil.iter_modules',
            return_value=fake_modules('us_a', 'us_b', 'us_c', 'us_d'))
-    @patch("recidiviz.utils.environment.get_gae_environment")
+    @patch("recidiviz.utils.environment.get_gcp_environment")
     @patch("recidiviz.utils.regions.get_region")
     def test_validate_regions_environments(
             self, mock_region, mock_env, _mock_modules):
@@ -124,7 +124,7 @@ class TestIngestUtils:
     def test_validate_scrape_types_one_ok(self):
         assert ingest_utils.validate_scrape_types(
             [constants.ScrapeType.SNAPSHOT.value]) == \
-               [constants.ScrapeType.SNAPSHOT]
+            [constants.ScrapeType.SNAPSHOT]
 
     def test_validate_scrape_types_one_all(self):
         assert ingest_utils.validate_scrape_types(['all']) == [
@@ -137,7 +137,7 @@ class TestIngestUtils:
         assert ingest_utils.validate_scrape_types(
             [constants.ScrapeType.BACKGROUND.value,
              constants.ScrapeType.SNAPSHOT.value]) == \
-               [constants.ScrapeType.BACKGROUND, constants.ScrapeType.SNAPSHOT]
+            [constants.ScrapeType.BACKGROUND, constants.ScrapeType.SNAPSHOT]
 
     def test_validate_scrape_types_multiple_invalid(self):
         assert not ingest_utils.validate_scrape_types(
@@ -146,7 +146,7 @@ class TestIngestUtils:
     def test_validate_scrape_types_multiple_all(self):
         assert ingest_utils.validate_scrape_types(
             [constants.ScrapeType.BACKGROUND.value, 'all']) == \
-               [constants.ScrapeType.BACKGROUND, constants.ScrapeType.SNAPSHOT]
+            [constants.ScrapeType.BACKGROUND, constants.ScrapeType.SNAPSHOT]
 
     def test_validate_scrape_types_multiple_all_invalid(self):
         assert not ingest_utils.validate_scrape_types(['all', 'invalid'])

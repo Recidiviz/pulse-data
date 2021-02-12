@@ -645,7 +645,7 @@ class UsPaController(CsvGcsfsDirectIngestController):
         ]
 
         # Data source: DOC
-        if environment.in_gae_production():
+        if environment.in_gcp_production():
             launched_file_tags.append('doc_person_info')
         else:
             # TODO(#4187): Launch this to staging and then prod with any new reruns
@@ -656,7 +656,7 @@ class UsPaController(CsvGcsfsDirectIngestController):
             'dbo_Senrec',
         ]
 
-        if environment.in_gae_production():
+        if environment.in_gcp_production():
             launched_file_tags.append('incarceration_period')
             launched_file_tags.append('dbo_Miscon')
         else:
@@ -677,7 +677,7 @@ class UsPaController(CsvGcsfsDirectIngestController):
             'supervision_violation_response',
         ]
 
-        if not environment.in_gae_production():
+        if not environment.in_gcp_production():
             # TODO(#4187): Launch this to prod after staging rerun is validated
             launched_file_tags.append('board_action')
 
@@ -686,7 +686,7 @@ class UsPaController(CsvGcsfsDirectIngestController):
         ]
 
         file_tags = launched_file_tags
-        if not environment.in_gae():
+        if not environment.in_gcp():
             file_tags += unlaunched_file_tags
 
         # TODO(#4187): Remove these checks once the doc_person_info_v2 and sci_incarceration_period tags are fully
@@ -1026,7 +1026,6 @@ class UsPaController(CsvGcsfsDirectIngestController):
                     obj.specialized_purpose_for_incarceration = concatenate_sci_incarceration_period_purpose_codes(row)
                 elif file_tag == 'ccis_incarceration_period':
                     obj.specialized_purpose_for_incarceration = concatenate_ccis_incarceration_period_purpose_codes(row)
-
 
     @staticmethod
     def _add_incarceration_type(

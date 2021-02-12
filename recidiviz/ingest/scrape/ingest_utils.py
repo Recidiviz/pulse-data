@@ -39,11 +39,11 @@ def _regions_matching_environment(region_codes: Set[str]) -> Set[str]:
 
     If we are running locally, include all supported regions.
     """
-    if not environment.in_gae():
+    if not environment.in_gcp():
         return region_codes
-    gae_env = environment.get_gae_environment()
+    gcp_env = environment.get_gcp_environment()
     return {region_code for region_code in region_codes
-            if regions.get_region(region_code).environment == gae_env}
+            if regions.get_region(region_code).environment == gcp_env}
 
 
 def validate_regions(region_codes: List[str],
@@ -203,7 +203,7 @@ def convert_ingest_info_to_proto(ingest_info_py: ingest_info.IngestInfo) \
         obj_id = getattr(ingest_info_source, id_name)
         if not obj_id:
             obj_id = id_to_generated.get(id(ingest_info_source)) or \
-                     common_utils.create_generated_id()
+                common_utils.create_generated_id()
             id_to_generated[id(ingest_info_source)] = obj_id
 
         # If we've already seen this id, we don't need to create it, we can
@@ -703,10 +703,10 @@ def convert_proto_to_ingest_info(
              for assessment in proto.state_assessments)
     state_program_assignment_map: Dict[
         str, ingest_info.StateProgramAssignment] = \
-            dict(_proto_to_py(program_assignment,
-                              ingest_info.StateProgramAssignment,
-                              'state_program_assignment_id')
-                 for program_assignment in proto.state_program_assignments)
+        dict(_proto_to_py(program_assignment,
+                          ingest_info.StateProgramAssignment,
+                          'state_program_assignment_id')
+             for program_assignment in proto.state_program_assignments)
     state_sentence_group_map: Dict[str, ingest_info.StateSentenceGroup] = \
         dict(_proto_to_py(sentence_group, ingest_info.StateSentenceGroup,
                           'state_sentence_group_id')
@@ -816,7 +816,7 @@ def convert_proto_to_ingest_info(
             decision_type,
             ingest_info.StateSupervisionViolationResponseDecisionEntry,
             'state_supervision_violation_response_decision_entry_id')
-             for decision_type in proto.state_supervision_violation_response_decision_entries)
+            for decision_type in proto.state_supervision_violation_response_decision_entries)
 
     state_agent_map: Dict[str, ingest_info.StateAgent] = \
         dict(_proto_to_py(agent, ingest_info.StateAgent, 'state_agent_id')
@@ -1141,7 +1141,7 @@ def _is_program_id(source, field):
     """
     return isinstance(source, (ingest_info.StateProgramAssignment,
                                ingest_info_pb2.StateProgramAssignment)) \
-           and field in ('program_id', 'program_location_id')
+        and field in ('program_id', 'program_location_id')
 
 
 def _is_state_person_external_id(source, field):
@@ -1149,7 +1149,7 @@ def _is_state_person_external_id(source, field):
     should be copied between types unlike other fields ending in 'id'."""
     return isinstance(source, (ingest_info.StatePersonExternalId,
                                ingest_info_pb2.StatePersonExternalId)) \
-           and field == 'external_id'
+        and field == 'external_id'
 
 
 def ingest_info_to_serializable(ii: ingest_info.IngestInfo) -> Dict[Any, Any]:

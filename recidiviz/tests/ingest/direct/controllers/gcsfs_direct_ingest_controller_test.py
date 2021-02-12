@@ -1613,7 +1613,7 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
 
         self.validate_file_metadata(controller)
 
-    @patch("recidiviz.utils.environment.get_gae_environment", Mock(return_value='production'))
+    @patch("recidiviz.utils.environment.get_gcp_environment", Mock(return_value='production'))
     @patch("recidiviz.utils.regions.get_region", Mock(return_value=TEST_STATE_REGION))
     def test_can_start_ingest_is_false_does_not_start_ingest(self) -> None:
         controller = build_gcsfs_controller_for_tests(StateTestGcsfsDirectIngestController,
@@ -1644,7 +1644,7 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
                                     expected_raw_metadata_tags_with_is_processed=[],
                                     expected_ingest_metadata_tags_with_is_processed=[])
 
-    @patch("recidiviz.utils.environment.get_gae_environment", Mock(return_value='production'))
+    @patch("recidiviz.utils.environment.get_gcp_environment", Mock(return_value='production'))
     @patch("recidiviz.utils.regions.get_region", Mock(return_value=TEST_SQL_PRE_PROCESSING_LAUNCHED_REGION))
     def test_can_start_ingest_is_false_does_not_start_ingest_sql_preprocessing_enabled(self) -> None:
         controller = build_gcsfs_controller_for_tests(StateTestGcsfsDirectIngestController,
@@ -1675,7 +1675,7 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
                                     expected_raw_metadata_tags_with_is_processed=[],
                                     expected_ingest_metadata_tags_with_is_processed=[])
 
-    @patch("recidiviz.utils.environment.get_gae_environment", Mock(return_value='production'))
+    @patch("recidiviz.utils.environment.get_gcp_environment", Mock(return_value='production'))
     @patch("recidiviz.utils.regions.get_region", Mock(return_value=TEST_SQL_PRE_PROCESSING_LAUNCHED_REGION))
     def test_unlaunched_region_raises_if_can_start_ingest_true(self) -> None:
         controller = build_gcsfs_controller_for_tests(StateTestGcsfsDirectIngestController,

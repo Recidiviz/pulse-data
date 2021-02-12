@@ -26,7 +26,7 @@ from mock import patch, call, MagicMock
 from recidiviz.big_query.big_query_view import BigQueryView
 from recidiviz.big_query.view_update_manager import BigQueryViewNamespace
 from recidiviz.tests.utils.matchers import UnorderedCollection
-from recidiviz.utils.environment import GaeEnvironment
+from recidiviz.utils.environment import GCPEnvironment
 from recidiviz.validation.checks.existence_check import ExistenceDataValidationCheck
 from recidiviz.validation.checks.sameness_check import SamenessDataValidationCheck, SamenessDataValidationCheckType
 from recidiviz.validation.configured_validations import get_all_validations, get_validation_region_configs, \
@@ -279,7 +279,7 @@ class TestFetchValidations(TestCase):
     def tearDown(self) -> None:
         self.metadata_patcher.stop()
 
-    @patch("recidiviz.utils.environment.get_gae_environment", return_value=GaeEnvironment.STAGING.value)
+    @patch("recidiviz.utils.environment.get_gcp_environment", return_value=GCPEnvironment.STAGING.value)
     def test_cross_product_states_and_checks_staging(self, _mock_get_environment: MagicMock) -> None:
         all_validations = get_all_validations()
         all_region_configs = get_validation_region_configs()
@@ -295,7 +295,7 @@ class TestFetchValidations(TestCase):
         result = _fetch_validation_jobs_to_perform()
         self.assertEqual(expected_length, len(result))
 
-    @patch("recidiviz.utils.environment.get_gae_environment", return_value=GaeEnvironment.PRODUCTION.value)
+    @patch("recidiviz.utils.environment.get_gcp_environment", return_value=GCPEnvironment.PRODUCTION.value)
     def test_cross_product_states_and_checks_production(self, _mock_get_environment: MagicMock) -> None:
         all_validations = get_all_validations()
         region_configs_to_validate = get_validation_region_configs()
@@ -401,7 +401,6 @@ class TestFetchValidations(TestCase):
                 region_code='US_YY')
         ]
         self.assertEqual(expected_jobs, result)
-
 
     def test_all_validations_no_overlapping_names(self) -> None:
         all_validations = get_all_validations()

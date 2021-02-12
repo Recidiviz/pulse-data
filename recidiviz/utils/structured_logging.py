@@ -106,7 +106,7 @@ def setup():
 
     # Send logs directly via the logging client if possible. This ensures trace
     # ids are propogated and allows us to send structured messages.
-    if environment.in_gae():
+    if environment.in_gcp():
         client = Client()
         handler = StructuredAppEngineHandler(client)
         handlers.setup_logging(handler, log_level=logging.INFO)

@@ -100,10 +100,10 @@ def create_if_not_exists(obj: IngestObject,
 
 
 def check_is_region_launched_in_env(region: Region) -> None:
-    """Checks if direct ingest has been launched for the provided |region| in the current GAE env and throws if it has
+    """Checks if direct ingest has been launched for the provided |region| in the current GCP env and throws if it has
     not."""
     if not region.is_ingest_launched_in_env():
-        gae_env = environment.get_gae_environment()
-        error_msg = f'Bad environment [{gae_env}] for region [{region.region_code}].'
+        gcp_env = environment.get_gcp_environment()
+        error_msg = f'Bad environment [{gcp_env}] for region [{region.region_code}].'
         logging.error(error_msg)
         raise DirectIngestError(msg=error_msg, error_type=DirectIngestErrorType.ENVIRONMENT_ERROR)
