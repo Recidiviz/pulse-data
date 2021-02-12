@@ -45,6 +45,8 @@ REVOCATION_MATRIX_COMPARISON_REVOCATION_CELL_VS_MONTH_QUERY_TEMPLATE = \
       FROM `{project_id}.{view_dataset}.revocations_matrix_by_month`
       WHERE DATE(year, month, 1) >= DATE_SUB(DATE_TRUNC(CURRENT_DATE('US/Pacific'), MONTH),
                                                       INTERVAL 36 - 1 MONTH)
+      -- The matrix doesn't have any of these rows --
+      AND violation_type NOT IN ('ALL', 'NO_VIOLATION_TYPE') AND reported_violations NOT IN ('ALL', '0')
       GROUP BY state_code
     )
     SELECT c.region_code, c.total_revocations as cell_sum, m.total_revocations as month_sum

@@ -1,4 +1,1 @@
-disabled:
-  - validation_name: revocation_matrix_comparison_revocation_cell_vs_caseload
-    disable_reason: This fails with 100% error for all regions right now. TODO(#3952) - Determine if we expect this to
-      ever pass and either fix or delete if not.
+disabled: []
