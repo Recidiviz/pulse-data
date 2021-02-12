@@ -33,6 +33,8 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_supervision_com
 )
 from recidiviz.case_triage.case_updates.progress_checker import check_case_update_action_progress
 from recidiviz.case_triage.case_updates.types import CaseUpdateAction, CaseUpdateActionType
+from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
+from recidiviz.common.constants.state.state_supervision_period import StateSupervisionLevel
 from recidiviz.persistence.database.schema.case_triage.schema import CaseUpdate, ETLClient
 
 
@@ -117,8 +119,8 @@ class CasePresenter:
                 roll='forward',
             )
 
-        case_type = self.etl_client.case_type
-        supervision_level = self.etl_client.supervision_level
+        case_type = StateSupervisionCaseType(self.etl_client.case_type)
+        supervision_level = StateSupervisionLevel(self.etl_client.supervision_level)
         if case_type not in SUPERVISION_CONTACT_FREQUENCY_REQUIREMENTS or \
                 supervision_level not in SUPERVISION_CONTACT_FREQUENCY_REQUIREMENTS[case_type]:
             logging.warning(
