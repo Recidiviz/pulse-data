@@ -56,6 +56,7 @@ class TestCasePresenter(TestCase):
             'mostRecentAssessmentDate': self.mock_client.most_recent_assessment_date,
             'mostRecentFaceToFaceDate': self.mock_client.most_recent_face_to_face_date,
             'nextAssessmentDate': str(date(2022, 2, 1)),
+            'nextFaceToFaceDate': str(date(2021, 3, 1)),
         })
 
     def test_dismiss_actions(self) -> None:
@@ -101,6 +102,7 @@ class TestCasePresenter(TestCase):
             'mostRecentFaceToFaceDate': self.mock_client.most_recent_face_to_face_date,
             'inProgressActions': [action.value for action in dismiss_actions],
             'nextAssessmentDate': str(date(2022, 2, 1)),
+            'nextFaceToFaceDate': str(date(2021, 3, 1)),
         })
 
     def test_completed_assessment_action_unresolved(self) -> None:
