@@ -375,6 +375,7 @@ class SupervisionStartMetric(SupervisionMetric, PersonLevelMetric):
     # Optional characteristics
 
     # The reason the supervision was started
+    is_official_supervision_admission: bool = attr.ib(default=False)
     admission_reason: Optional[StateSupervisionPeriodAdmissionReason] = attr.ib(default=None)
 
     # The date the supervision was started

@@ -22,6 +22,7 @@ import attr
 
 from recidiviz.calculator.pipeline.supervision.supervision_case_compliance import SupervisionCaseCompliance
 from recidiviz.calculator.pipeline.utils.event_utils import AssessmentEventMixin, IdentifierEventWithSingularDate
+from recidiviz.calculator.pipeline.utils.supervision_period_index import _is_official_supervision_admission
 from recidiviz.common.attr_mixins import BuildableAttr
 from recidiviz.common.constants.state.state_assessment import \
     StateAssessmentType, StateAssessmentLevel
@@ -267,6 +268,10 @@ class SupervisionStartBucket(SupervisionTimeBucket):
     @property
     def start_date(self) -> date:
         return self.event_date
+
+    @property
+    def is_official_supervision_admission(self) -> bool:
+        return _is_official_supervision_admission(self.admission_reason)
 
 
 @attr.s(frozen=True)
