@@ -30,19 +30,31 @@ SUPERVISION_POPULATION_BY_DISTRICT_BY_DEMOGRAPHICS_VIEW_DESCRIPTION = \
 SUPERVISION_POPULATION_BY_DISTRICT_BY_DEMOGRAPHICS_VIEW_QUERY_TEMPLATE = \
     """
     /*{description}*/
+    WITH supervision_pop_with_state_specific_race AS (
+        SELECT
+          person_id,
+          state_code,
+          supervision_type,
+          {state_specific_race_or_ethnicity_groupings},
+          gender,
+          age_bucket,
+          district,
+        FROM `{project_id}.{materialized_metrics_dataset}.most_recent_daily_supervision_population_materialized`,
+          {district_dimension}
+    )
+
     SELECT
       state_code,
       supervision_type,
       district,
-      {state_specific_race_or_ethnicity_groupings},
+      race_or_ethnicity,
       gender,
       age_bucket,
       COUNT(DISTINCT person_id) AS total_supervision_count
-    FROM `{project_id}.{materialized_metrics_dataset}.most_recent_daily_supervision_population_materialized`,
+    FROM supervision_pop_with_state_specific_race,
       {unnested_race_or_ethnicity_dimension},
       {gender_dimension},
       {age_dimension},
-      {district_dimension},
       {supervision_type_dimension}
     WHERE supervision_type IN ('ALL', 'PROBATION', 'PAROLE')
       -- Omit district breakdowns for supervision_type = 'ALL' --
@@ -63,14 +75,15 @@ SUPERVISION_POPULATION_BY_DISTRICT_BY_DEMOGRAPHICS_VIEW_BUILDER = MetricBigQuery
     dimensions=['state_code', 'supervision_type', 'district', 'race_or_ethnicity', 'gender', 'age_bucket'],
     description=SUPERVISION_POPULATION_BY_DISTRICT_BY_DEMOGRAPHICS_VIEW_DESCRIPTION,
     materialized_metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
-    unnested_race_or_ethnicity_dimension=bq_utils.unnest_column('prioritized_race_or_ethnicity', 'race_or_ethnicity'),
+    unnested_race_or_ethnicity_dimension=bq_utils.unnest_column('race_or_ethnicity', 'race_or_ethnicity'),
     gender_dimension=bq_utils.unnest_column('gender', 'gender'),
     age_dimension=bq_utils.unnest_column('age_bucket', 'age_bucket'),
     district_dimension=bq_utils.unnest_district(
         state_specific_query_strings.state_supervision_specific_district_groupings(
             'supervising_district_external_id', 'judicial_district_code')),
     supervision_type_dimension=bq_utils.unnest_supervision_type(),
-    state_specific_race_or_ethnicity_groupings=state_specific_query_strings.state_specific_race_or_ethnicity_groupings()
+    state_specific_race_or_ethnicity_groupings=
+    state_specific_query_strings.state_specific_race_or_ethnicity_groupings('prioritized_race_or_ethnicity')
 )
 
 if __name__ == '__main__':

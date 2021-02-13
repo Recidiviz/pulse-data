@@ -40,7 +40,7 @@ INCARCERATION_RELEASES_BY_TYPE_BY_PERIOD_VIEW_QUERY_TEMPLATE = \
           release_date,
           release_reason,
           supervision_type_at_release,
-          prioritized_race_or_ethnicity AS race_or_ethnicity,
+          {state_specific_race_or_ethnicity_groupings},
           IFNULL(gender, 'EXTERNAL_UNKNOWN') as gender,
           IFNULL(age_bucket, 'EXTERNAL_UNKNOWN') as age_bucket
         FROM
@@ -60,7 +60,7 @@ INCARCERATION_RELEASES_BY_TYPE_BY_PERIOD_VIEW_QUERY_TEMPLATE = \
     SELECT
       state_code,
       metric_period_months,
-      {state_specific_race_or_ethnicity_groupings},
+      race_or_ethnicity,
       gender,
       age_bucket,
       COUNT(DISTINCT IF(release_reason = 'TRANSFERRED_OUT_OF_STATE', person_id, NULL)) as external_transfer_count,
@@ -95,7 +95,8 @@ INCARCERATION_RELEASES_BY_TYPE_BY_PERIOD_VIEW_BUILDER = MetricBigQueryViewBuilde
     unnested_race_or_ethnicity_dimension=bq_utils.unnest_column('race_or_ethnicity', 'race_or_ethnicity'),
     gender_dimension=bq_utils.unnest_column('gender', 'gender'),
     age_dimension=bq_utils.unnest_column('age_bucket', 'age_bucket'),
-    state_specific_race_or_ethnicity_groupings=state_specific_query_strings.state_specific_race_or_ethnicity_groupings(),
+    state_specific_race_or_ethnicity_groupings=
+    state_specific_query_strings.state_specific_race_or_ethnicity_groupings('prioritized_race_or_ethnicity'),
 )
 
 if __name__ == '__main__':

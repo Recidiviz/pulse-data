@@ -39,7 +39,7 @@ SUPERVISION_SUCCESS_BY_PERIOD_BY_DEMOGRAPHICS_VIEW_QUERY_TEMPLATE = \
         person_id,
         IFNULL(district, 'EXTERNAL_UNKNOWN') as district,
         IFNULL(gender, 'EXTERNAL_UNKNOWN') as gender,
-        prioritized_race_or_ethnicity as race_or_ethnicity,
+        {state_specific_race_or_ethnicity_groupings},
         IFNULL(age_bucket, 'EXTERNAL_UNKNOWN') as age_bucket,
         supervision_type,
         metric_period_months
@@ -57,7 +57,7 @@ SUPERVISION_SUCCESS_BY_PERIOD_BY_DEMOGRAPHICS_VIEW_QUERY_TEMPLATE = \
           metric_period_months,
           district,
           supervision_type,
-          {state_specific_race_or_ethnicity_groupings},
+          race_or_ethnicity,
           gender,
           age_bucket,
           COUNT(DISTINCT IF(successful_termination, person_id, NULL)) as successful_termination_count,
@@ -96,7 +96,8 @@ SUPERVISION_SUCCESS_BY_PERIOD_BY_DEMOGRAPHICS_VIEW_BUILDER = MetricBigQueryViewB
     unnested_race_or_ethnicity_dimension=bq_utils.unnest_column('race_or_ethnicity', 'race_or_ethnicity'),
     gender_dimension=bq_utils.unnest_column('gender', 'gender'),
     age_dimension=bq_utils.unnest_column('age_bucket', 'age_bucket'),
-    state_specific_race_or_ethnicity_groupings=state_specific_query_strings.state_specific_race_or_ethnicity_groupings(),
+    state_specific_race_or_ethnicity_groupings=
+    state_specific_query_strings.state_specific_race_or_ethnicity_groupings('prioritized_race_or_ethnicity'),
 )
 
 if __name__ == '__main__':

@@ -30,11 +30,23 @@ INCARCERATION_POPULATION_BY_ADMISSION_REASON_VIEW_DESCRIPTION = \
 INCARCERATION_POPULATION_BY_ADMISSION_REASON_VIEW_QUERY_TEMPLATE = \
     """
     /*{description}*/
+    WITH state_specific_groupings AS (
+      SELECT 
+        person_id,
+        state_code,
+        date_of_stay,
+        gender,
+        age_bucket,
+        admission_reason,
+        {state_specific_race_or_ethnicity_groupings}
+      FROM
+        `{project_id}.{materialized_metrics_dataset}.most_recent_daily_incarceration_population_materialized`
+    )
     
     SELECT
       state_code,
       date_of_stay,
-      {state_specific_race_or_ethnicity_groupings},
+      race_or_ethnicity,
       gender,
       age_bucket,
       COUNT(DISTINCT IF(admission_reason = 'NEW_ADMISSION', person_id, NULL)) as new_admission_count,
@@ -43,7 +55,7 @@ INCARCERATION_POPULATION_BY_ADMISSION_REASON_VIEW_QUERY_TEMPLATE = \
       COUNT(DISTINCT IF(admission_reason NOT IN ('NEW_ADMISSION', 'PAROLE_REVOCATION', 'PROBATION_REVOCATION'), person_id, NULL)) as other_count,
       COUNT(DISTINCT(person_id)) as total_population
     FROM
-      `{project_id}.{materialized_metrics_dataset}.most_recent_daily_incarceration_population_materialized`,
+      state_specific_groupings,
       {unnested_race_or_ethnicity_dimension},
       {gender_dimension},
       {age_dimension}
@@ -62,10 +74,11 @@ INCARCERATION_POPULATION_BY_ADMISSION_REASON_VIEW_BUILDER = MetricBigQueryViewBu
     dimensions=['state_code', 'date_of_stay', 'race_or_ethnicity', 'gender', 'age_bucket'],
     description=INCARCERATION_POPULATION_BY_ADMISSION_REASON_VIEW_DESCRIPTION,
     materialized_metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
-    unnested_race_or_ethnicity_dimension=bq_utils.unnest_column('prioritized_race_or_ethnicity', 'race_or_ethnicity'),
+    unnested_race_or_ethnicity_dimension=bq_utils.unnest_column('race_or_ethnicity', 'race_or_ethnicity'),
     gender_dimension=bq_utils.unnest_column('gender', 'gender'),
     age_dimension=bq_utils.unnest_column('age_bucket', 'age_bucket'),
-    state_specific_race_or_ethnicity_groupings=state_specific_query_strings.state_specific_race_or_ethnicity_groupings()
+    state_specific_race_or_ethnicity_groupings=
+    state_specific_query_strings.state_specific_race_or_ethnicity_groupings('prioritized_race_or_ethnicity')
 )
 
 if __name__ == '__main__':
