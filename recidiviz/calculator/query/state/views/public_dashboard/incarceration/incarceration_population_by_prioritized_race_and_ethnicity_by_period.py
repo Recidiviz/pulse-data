@@ -37,7 +37,7 @@ INCARCERATION_POPULATION_BY_PRIORITIZED_RACE_AND_ETHNICITY_BY_PERIOD_VIEW_QUERY_
         DISTINCT state_code,
         metric_period_months,
         person_id,
-        prioritized_race_or_ethnicity as race_or_ethnicity,
+        {state_specific_race_or_ethnicity_groupings},
       FROM `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_population_metrics_materialized`,
             -- We only want a 36-month period for this view --
       UNNEST ([36]) AS metric_period_months
@@ -48,7 +48,7 @@ INCARCERATION_POPULATION_BY_PRIORITIZED_RACE_AND_ETHNICITY_BY_PERIOD_VIEW_QUERY_
     SELECT
       state_code,
       metric_period_months,
-      {state_specific_race_or_ethnicity_groupings},
+      race_or_ethnicity,
       COUNT(DISTINCT(person_id)) as population_count
     FROM
       population_with_race_or_ethnicities,
@@ -66,7 +66,8 @@ INCARCERATION_POPULATION_BY_PRIORITIZED_RACE_AND_ETHNICITY_BY_PERIOD_VIEW_BUILDE
     materialized_metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
     metric_period_condition=bq_utils.metric_period_condition(),
     unnested_race_or_ethnicity_dimension=bq_utils.unnest_column('race_or_ethnicity', 'race_or_ethnicity'),
-    state_specific_race_or_ethnicity_groupings=state_specific_query_strings.state_specific_race_or_ethnicity_groupings(),
+    state_specific_race_or_ethnicity_groupings=
+    state_specific_query_strings.state_specific_race_or_ethnicity_groupings('prioritized_race_or_ethnicity'),
     state_specific_facility_exclusion=state_specific_query_strings.state_specific_facility_exclusion(),
 )
 

@@ -40,7 +40,7 @@ SENTENCE_TYPE_BY_DISTRICT_BY_DEMOGRAPHICS_VIEW_QUERY_TEMPLATE = \
         person_id,
         -- TODO(#3720): Improve the sentence type classification and make it less ND specific --
         IF(admission_reason = 'PROBATION_REVOCATION', 'PROBATION', 'INCARCERATION') as sentence_type,
-        prioritized_race_or_ethnicity,
+        {state_specific_race_or_ethnicity_groupings},
         gender,
         age_bucket,
         date_of_stay as population_date,
@@ -53,7 +53,7 @@ SENTENCE_TYPE_BY_DISTRICT_BY_DEMOGRAPHICS_VIEW_QUERY_TEMPLATE = \
         person_id,
         -- TODO(#3720): Improve the sentence type classification and make it less ND specific --
         IF(supervision_type = 'PROBATION', 'PROBATION', 'INCARCERATION') as sentence_type,
-        prioritized_race_or_ethnicity,
+        {state_specific_race_or_ethnicity_groupings},
         gender,
         age_bucket,
         date_of_supervision as population_date,
@@ -87,7 +87,7 @@ SENTENCE_TYPE_BY_DISTRICT_BY_DEMOGRAPHICS_VIEW_QUERY_TEMPLATE = \
     SELECT
       state_code,
       district,
-      {state_specific_race_or_ethnicity_groupings},
+      race_or_ethnicity,
       gender,
       age_bucket,
       COUNT(DISTINCT IF(probation_count > 0 AND incarceration_count = 0, person_id, NULL)) as probation_count,
@@ -110,8 +110,9 @@ SENTENCE_TYPE_BY_DISTRICT_BY_DEMOGRAPHICS_VIEW_BUILDER = MetricBigQueryViewBuild
     dimensions=['state_code', 'district', 'race_or_ethnicity', 'gender', 'age_bucket'],
     description=SENTENCE_TYPE_BY_DISTRICT_BY_DEMOGRAPHICS_VIEW_DESCRIPTION,
     materialized_metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
-    state_specific_race_or_ethnicity_groupings=state_specific_query_strings.state_specific_race_or_ethnicity_groupings(),
-    unnested_race_or_ethnicity_dimension=bq_utils.unnest_column('prioritized_race_or_ethnicity', 'race_or_ethnicity'),
+    state_specific_race_or_ethnicity_groupings=
+    state_specific_query_strings.state_specific_race_or_ethnicity_groupings('prioritized_race_or_ethnicity'),
+    unnested_race_or_ethnicity_dimension=bq_utils.unnest_column('race_or_ethnicity', 'race_or_ethnicity'),
     gender_dimension=bq_utils.unnest_column('gender', 'gender'),
     age_dimension=bq_utils.unnest_column('age_bucket', 'age_bucket'),
     district_dimension=

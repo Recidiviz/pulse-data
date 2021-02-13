@@ -44,7 +44,7 @@ ACTIVE_PROGRAM_PARTICIPATION_BY_REGION_VIEW_QUERY_TEMPLATE = \
         supervision_type,
         region_id,
         person_id,
-        prioritized_race_or_ethnicity as race_or_ethnicity,
+        {state_specific_race_or_ethnicity_groupings},
       FROM
         `{project_id}.{materialized_metrics_dataset}.most_recent_program_participation_metrics_materialized`
       INNER JOIN
@@ -61,7 +61,7 @@ ACTIVE_PROGRAM_PARTICIPATION_BY_REGION_VIEW_QUERY_TEMPLATE = \
       state_code,
       supervision_type,
       region_id,
-      {state_specific_race_or_ethnicity_groupings},
+      race_or_ethnicity,
       COUNT(DISTINCT(person_id)) as participation_count
     FROM
       participants_with_race_or_ethnicity,
@@ -81,7 +81,7 @@ ACTIVE_PROGRAM_PARTICIPATION_BY_REGION_VIEW_BUILDER = MetricBigQueryViewBuilder(
     static_reference_dataset=dataset_config.STATIC_REFERENCE_TABLES_DATASET,
     materialized_metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
     state_specific_race_or_ethnicity_groupings=
-    state_specific_query_strings.state_specific_race_or_ethnicity_groupings(),
+    state_specific_query_strings.state_specific_race_or_ethnicity_groupings('prioritized_race_or_ethnicity'),
     unnested_race_or_ethnicity_dimension=bq_utils.unnest_column('race_or_ethnicity', 'race_or_ethnicity'),
     region_dimension=bq_utils.unnest_column('region_id', 'region_id'),
     supervision_type_dimension=bq_utils.unnest_supervision_type(),
