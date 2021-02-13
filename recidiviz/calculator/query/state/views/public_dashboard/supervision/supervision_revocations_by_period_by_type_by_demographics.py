@@ -39,7 +39,7 @@ SUPERVISION_REVOCATIONS_BY_PERIOD_BY_TYPE_BY_DEMOGRAPHICS_VIEW_VIEW_QUERY_TEMPLA
       SELECT
         state_code,
         metric_period_months,
-        race_or_ethnicity,
+        {state_specific_race_or_ethnicity_groupings},
         person_id,
         supervision_type,
         IFNULL(source_violation_type, 'EXTERNAL_UNKNOWN') as source_violation_type,
@@ -60,7 +60,7 @@ SUPERVISION_REVOCATIONS_BY_PERIOD_BY_TYPE_BY_DEMOGRAPHICS_VIEW_VIEW_QUERY_TEMPLA
       COUNT(DISTINCT IF(source_violation_type = 'TECHNICAL', person_id, NULL)) AS technical_count,
       COUNT(DISTINCT IF(source_violation_type IN ('ESCAPED', 'ABSCONDED'), person_id, NULL)) AS absconsion_count,
       COUNT(DISTINCT IF(source_violation_type = 'EXTERNAL_UNKNOWN', person_id, NULL)) as unknown_count,
-      {state_specific_race_or_ethnicity_groupings},
+      race_or_ethnicity,
       gender,
       age_bucket,
       COUNT(DISTINCT person_id) AS revocation_count
