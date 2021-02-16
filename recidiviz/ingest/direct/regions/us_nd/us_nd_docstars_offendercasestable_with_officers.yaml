@@ -11,6 +11,7 @@ child_key_mappings:
   JUDGE: state_agent.full_name
   REV_DATE: state_supervision_violation_response.response_date
   RevoDispo: state_supervision_violation_response.revocation_type
+  current_supervision_level: state_supervision_period.supervision_level
 
 ancestor_keys:
   SID: state_person.state_person_id
