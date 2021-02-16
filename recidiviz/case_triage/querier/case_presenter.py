@@ -62,6 +62,7 @@ class CasePresenter:
             'stateCode': self.etl_client.state_code,
             'employer': self.etl_client.employer,
             'mostRecentAssessmentDate': self.etl_client.most_recent_assessment_date,
+            'assessmentScore': self.etl_client.assessment_score,
             'mostRecentFaceToFaceDate': self.etl_client.most_recent_face_to_face_date,
         }
 

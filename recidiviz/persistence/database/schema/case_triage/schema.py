@@ -19,7 +19,7 @@
 for Case Triage related entities.
 
 """
-from sqlalchemy import Column, Boolean, Date, String, Text, UniqueConstraint
+from sqlalchemy import Column, Boolean, Date, Integer, String, Text, UniqueConstraint
 from sqlalchemy.dialects.postgresql import JSONB
 
 from recidiviz.persistence.database.base_schema import CaseTriageBase
@@ -46,6 +46,7 @@ class ETLClient(CaseTriageBase):
     supervision_level = Column(String(255), nullable=False)
     employer = Column(String(255))
     most_recent_assessment_date = Column(Date)
+    assessment_score = Column(Integer)
     most_recent_face_to_face_date = Column(Date)
 
 
