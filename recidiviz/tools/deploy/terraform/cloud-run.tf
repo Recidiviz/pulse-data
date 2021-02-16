@@ -65,6 +65,7 @@ resource "google_cloud_run_service" "case-triage" {
 
         resources {
           limits = {
+            cpu    = "1000m"
             memory = "1024Mi"
           }
         }
@@ -78,6 +79,7 @@ resource "google_cloud_run_service" "case-triage" {
         "autoscaling.knative.dev/minScale"      = 1
         "autoscaling.knative.dev/maxScale"      = var.max_case_triage_instances
         "run.googleapis.com/cloudsql-instances" = local.joined_connection_string
+        "run.googleapis.com/sandbox"            = "gvisor"
       }
 
       name = "case-triage-web-${replace(var.docker_image_tag, ".", "-")}"
@@ -86,7 +88,9 @@ resource "google_cloud_run_service" "case-triage" {
 
   metadata {
     annotations = {
-      "run.googleapis.com/launch-stage" = "BETA"
+      "run.googleapis.com/ingress"        = "all"
+      "run.googleapis.com/ingress-status" = "all"
+      "run.googleapis.com/launch-stage"   = "BETA"
     }
   }
 
