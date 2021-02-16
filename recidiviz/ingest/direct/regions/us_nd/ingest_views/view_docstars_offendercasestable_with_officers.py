@@ -38,6 +38,13 @@ offendercases_with_terminating_and_recent_pos AS (
         {docstars_officers}.LNAME AS recent_officer_lname, 
         {docstars_officers}.FNAME AS recent_officer_fname, 
         {docstars_officers}.SITEID AS recent_officer_siteid,
+        CASE
+            -- If the period has terminated, we don't pull in a supervision level, since this level may correspond 
+            -- to a later period of supervision
+            WHEN TERM_DATE IS NULL THEN NULL
+            -- Pick the supervision level override if there is one
+            ELSE COALESCE(SUPER_OVERRIDE, SUP_LVL)
+        END AS current_supervision_level
   FROM cases_with_terminating_officers
   LEFT JOIN {docstars_offenders}
   ON (cases_with_terminating_officers.SID = {docstars_offenders}.SID)

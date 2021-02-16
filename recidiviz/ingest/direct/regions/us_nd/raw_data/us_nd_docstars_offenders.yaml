@@ -3,7 +3,9 @@ file_description: |-
   Each row represents a single person who has been or is currently under supervision. This contains basic demographic
   information about the person, as well as a variety of "roll-up" fields that Docstars rolls up from other tables into
   this one to capture the latest state of the field. These include metadata about a person's latest documented needs,
-  latest assessment results, whether they are being revoked, whether they are absconding, and more.
+  latest assessment results, whether they are being revoked, whether they are absconding, supervision level, and more.
+
+  Note: this table does not include historical record of this aforementioned data.
 primary_key_cols:
   - SID
 columns:
@@ -43,10 +45,10 @@ columns:
       Current supervising officer for the person.
   - name: SUP_LVL
     description: |-
-      Current supervision level for the person.<br>Values:<br>- 1 - Minimum<br>- General *only* (Sex offense has a minimum of 2)<br>- 2 - Medium<br>- 3 - Maximum<br>- ~~4~~ (NO LONGER USE THIS)<br>- 5 - NC<br>- Not Classified (ex: haven’t done an LSI yet, they are still in jail and haven’t gone on supervision yet, they are about to go in to jail)<br>- 6 - Drug Court<br>- Supervised the same as maximum (if not more)<br>- Drug Court officers work with these people<br>- 7 - Diversion<br>- Monthly report and seen once a year (as close to unsupervised probation)<br>- ~~8~~ - (DOESN’T SEEM TO BE USED)<br>- 9 - IC Out<br>- Interstate Compact Out: the person is going elsewhere
+      Current supervision level for the person.<br>Values:<br>- 0 - No calculated level<br>- 1 - Minimum<br>- General *only* (Sex offense has a minimum of 2)<br>- 2 - Medium<br>- 3 - Maximum<br>- ~~4~~ (NO LONGER USE THIS)<br>- 5 - NC<br>- Not Classified (ex: haven’t done an LSI yet, they are still in jail and haven’t gone on supervision yet, they are about to go in to jail)<br>- 6 - Drug Court<br>- Supervised the same as maximum (if not more)<br>- Drug Court officers work with these people<br>- 7 - Diversion<br>- Monthly report and seen once a year (as close to unsupervised probation)<br>- ~~8~~ - (DOESN’T SEEM TO BE USED)<br>- 9 - IC Out<br>- Interstate Compact Out: the person is going elsewhere
   - name: SUPER_OVERRIDE
     description: |-
-      Overridden (by an officer) supervision level for the person.<br>Values:<br>- 1 - Minimum<br>- General *only* (Sex offense has a minimum of 2)<br>- 2 - Medium<br>- 3 - Maximum<br>- ~~4~~ (NO LONGER USE THIS)<br>- 5 - NC<br>- Not Classified (ex: haven’t done an LSI yet, they are still in jail and haven’t gone on supervision yet, they are about to go in to jail)<br>- 6 - Drug Court<br>- Supervised the same as maximum (if not more)<br>- Drug Court officers work with these people<br>- 7 - Diversion<br>- Monthly report and seen once a year (as close to unsupervised probation)<br>- ~~8~~ - (DOESN’T SEEM TO BE USED)<br>- only used twice (once in 2001 and 2004)<br>- 9 - IC Out<br>- Interstate Compact Out: the person is going elsewhere
+      Overridden (by an officer) supervision level for the person.<br>Values:<br>- 0 - No calculated level<br>- 1 - Minimum<br>- General *only* (Sex offense has a minimum of 2)<br>- 2 - Medium<br>- 3 - Maximum<br>- ~~4~~ (NO LONGER USE THIS)<br>- 5 - NC<br>- Not Classified (ex: haven’t done an LSI yet, they are still in jail and haven’t gone on supervision yet, they are about to go in to jail)<br>- 6 - Drug Court<br>- Supervised the same as maximum (if not more)<br>- Drug Court officers work with these people<br>- 7 - Diversion<br>- Monthly report and seen once a year (as close to unsupervised probation)<br>- ~~8~~ - (DOESN’T SEEM TO BE USED)<br>- only used twice (once in 2001 and 2004)<br>- 9 - IC Out<br>- Interstate Compact Out: the person is going elsewhere
   - name: PREVIOUS_AGENT
     description: |-
       The most recent supervising officer for the person.

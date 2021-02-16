@@ -892,14 +892,16 @@ class UsNdController(CsvGcsfsDirectIngestController):
             StateIncarcerationIncidentOutcomeType.GOOD_TIME_LOSS: ['LG', 'STP'],
             StateIncarcerationIncidentOutcomeType.WARNING: ['WAR', 'NS'],
 
+            # 0 means no calculated level
+            StateSupervisionLevel.PRESENT_WITHOUT_INFO: ['0'],
             StateSupervisionLevel.MINIMUM: ['1'],
             StateSupervisionLevel.MEDIUM: ['2'],
             # 6 is Drug Court which is max with specific rules
             StateSupervisionLevel.MAXIMUM: ['3', '6'],
             StateSupervisionLevel.DIVERSION: ['7'],
             StateSupervisionLevel.INTERSTATE_COMPACT: ['9'],
-            # 0 means no calculated level, 5 means not classified yet
-            StateSupervisionLevel.EXTERNAL_UNKNOWN: ['0', '5'],
+            # 5 means not classified yet
+            StateSupervisionLevel.EXTERNAL_UNKNOWN: ['5'],
 
             StateSupervisionPeriodTerminationReason.ABSCONSION: [
                 '13'  # Terminated - Absconded (Active Petition To Revoke)
