@@ -39,17 +39,16 @@ WITH supervision_start_dates AS (
     state_code,
     supervision_type
 ),
-latest_interaction_dates AS (
+latest_face_to_face AS (
   SELECT
-    person_external_id,
+    person_id,
     state_code,
-    MAX(most_recent_assessment_date) AS most_recent_assessment_date,
     MAX(most_recent_face_to_face_date) AS most_recent_face_to_face_date
   FROM
     `{project_id}.{dataflow_metrics_materialized_dataset}.most_recent_supervision_case_compliance_metrics_materialized`
   WHERE
     person_external_id IS NOT NULL
-  GROUP BY person_external_id, state_code
+  GROUP BY person_id, state_code
 )
 SELECT
     {columns}
@@ -63,13 +62,17 @@ LEFT JOIN
   `{project_id}.{case_triage_dataset}.employment_periods`
 USING (person_external_id, state_code)
 LEFT JOIN
-  latest_interaction_dates
-USING (person_external_id, state_code)
+  `{project_id}.{case_triage_dataset}.latest_assessments`
+USING (person_id, state_code)
+LEFT JOIN
+  latest_face_to_face
+USING (person_id, state_code)
 LEFT JOIN
   supervision_start_dates
 USING (person_id, state_code, supervision_type)
 WHERE
   supervision_level IS NOT NULL
+  AND supervising_officer_external_id IS NOT NULL
 """
 
 CLIENT_LIST_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
@@ -93,6 +96,7 @@ CLIENT_LIST_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
         'supervision_level',
         'employer',
         'most_recent_assessment_date',
+        'assessment_score',
         'most_recent_face_to_face_date',
     ],
 )
