@@ -18,6 +18,8 @@
 from datetime import date, datetime
 from unittest.case import TestCase
 
+from freezegun import freeze_time
+
 from recidiviz.case_triage.querier.case_presenter import CasePresenter
 from recidiviz.case_triage.case_updates.interface import CaseUpdatesInterface
 from recidiviz.case_triage.case_updates.types import CaseUpdateMetadataKeys, CaseUpdateActionType
@@ -35,6 +37,7 @@ class TestCasePresenter(TestCase):
             last_face_to_face_date=date(2021, 1, 15),
         )
 
+    @freeze_time('2020-01-01 00:00')
     def test_no_case_update(self) -> None:
         case_presenter = CasePresenter(self.mock_client, None)
 
@@ -58,8 +61,14 @@ class TestCasePresenter(TestCase):
             'mostRecentFaceToFaceDate': self.mock_client.most_recent_face_to_face_date,
             'nextAssessmentDate': str(date(2022, 2, 1)),
             'nextFaceToFaceDate': str(date(2021, 3, 1)),
+            'needsMet': {
+                'employment': False,
+                'faceToFaceContact': True,
+                'assessment': True,
+            },
         })
 
+    @freeze_time('2020-01-01 00:00')
     def test_dismiss_actions(self) -> None:
         """This tests dismissed actions. No changes to the ETL data that we see will
         affect the values we ultimately get from this."""
@@ -105,6 +114,11 @@ class TestCasePresenter(TestCase):
             'inProgressActions': [action.value for action in dismiss_actions],
             'nextAssessmentDate': str(date(2022, 2, 1)),
             'nextFaceToFaceDate': str(date(2021, 3, 1)),
+            'needsMet': {
+                'employment': False,
+                'faceToFaceContact': True,
+                'assessment': True,
+            },
         })
 
     def test_completed_assessment_action_unresolved(self) -> None:

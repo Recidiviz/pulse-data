@@ -72,7 +72,8 @@ class CasePresenter:
 
         # TODO(#5769): We're doing this quickly here and being intentional about the debt we're taking
         # on. This will be moved to the calculation pipeline once we've shipped the Case Triage MVP.
-        base_dict['nextAssessmentDate'] = str(self._next_assessment_date())
+        next_assessment_date = self._next_assessment_date()
+        base_dict['nextAssessmentDate'] = str(next_assessment_date)
 
         # TODO(#5768): In the long-term, we plan to move away from enforcing the next contact
         # and next assessment so explicitly. This is why we're implementing this in QueriedClient
@@ -81,6 +82,17 @@ class CasePresenter:
         next_face_to_face_date = self._next_face_to_face_date()
         if next_face_to_face_date:
             base_dict['nextFaceToFaceDate'] = str(next_face_to_face_date)
+
+        today = date.today()
+        base_dict['needsMet'] = {
+            # Sometimes the employer field is filled with "UNEMPLOYED", so this attempts to capture that.
+            'employment': self.etl_client.employer is not None and self.etl_client.employer.upper() != 'UNEMPLOYED',
+            # If the F2F contact is missing, that means there may be no need for it. Otherwise, if the
+            # next due face to face contact is after today, the need is met.
+            'faceToFaceContact': next_face_to_face_date is None or bool(next_face_to_face_date > today),
+            # If the next assessment is due after today, the need is met.
+            'assessment': bool(next_assessment_date > today),
+        }
 
         return base_dict
 
