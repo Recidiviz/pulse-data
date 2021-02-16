@@ -47,12 +47,14 @@ locals {
 resource "google_storage_bucket" "direct-ingest-bucket" {
   name     = "${var.project_id}-${format(local.direct_ingest_formatted_str, replace(lower(var.state_code), "_", "-"))}"
   location = var.region
+  uniform_bucket_level_access = true
 }
 
 resource "google_storage_bucket" "prod-only-testing-direct-ingest-bucket" {
   count    = var.is_production ? 1 : 0
   name     = "recidiviz-123-${format(local.direct_ingest_formatted_str, replace(lower(var.state_code), "_", "-"))}-upload-testing"
   location = var.region
+  uniform_bucket_level_access = true
 }
 
 resource "google_service_account" "service-account" {
