@@ -44,7 +44,7 @@ from recidiviz.common.constants.state.state_supervision import StateSupervisionT
 from recidiviz.common.constants.state.state_supervision_contact import StateSupervisionContactType, \
     StateSupervisionContactReason, StateSupervisionContactLocation
 from recidiviz.common.constants.state.state_supervision_period import StateSupervisionPeriodStatus, \
-    StateSupervisionPeriodTerminationReason
+    StateSupervisionPeriodTerminationReason, StateSupervisionLevel
 from recidiviz.common.constants.state.state_supervision_violation import StateSupervisionViolationType
 from recidiviz.common.constants.state.state_supervision_violation_response import \
     StateSupervisionViolationResponseType, StateSupervisionViolationResponseRevocationType, \
@@ -1064,7 +1064,8 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
             supervision_type='Parole',
             county_code='US_ND_CASS',
             supervising_officer=agent_154,
-            supervision_site='4'
+            supervision_site='4',
+            supervision_level='5'
         )
         supervision_period_117111 = StateSupervisionPeriod(
             state_supervision_period_id=
@@ -2807,6 +2808,8 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
             start_date=datetime.date(year=2014, month=7, day=17),
             supervision_type=StateSupervisionType.PAROLE,
             supervision_type_raw_text='PAROLE',
+            supervision_level=StateSupervisionLevel.EXTERNAL_UNKNOWN,
+            supervision_level_raw_text='5',
             status=StateSupervisionPeriodStatus.UNDER_SUPERVISION,
             state_code=_STATE_CODE,
             county_code='US_ND_CASS',
