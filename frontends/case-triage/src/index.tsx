@@ -1,5 +1,5 @@
 // Recidiviz - a data platform for criminal justice reform
-// Copyright (C) 2020 Recidiviz, Inc.
+// Copyright (C) 2021 Recidiviz, Inc.
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -15,20 +15,25 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 import "./window.d";
-import React, { useEffect, useState } from "react";
+import React from "react";
 import ReactDOM from "react-dom";
 import * as Sentry from "@sentry/react";
 import { Integrations } from "@sentry/tracing";
 import styled from "styled-components/macro";
-import { BrowserRouter } from "react-router-dom";
-import { Auth0Provider, useAuth0 } from "@auth0/auth0-react";
+import { Link, Router } from "@reach/router";
+
 import {
   Assets,
   Button,
-  ButtonPalette,
   GlobalStyle,
   Header,
 } from "@recidiviz/case-triage-components";
+
+import Home from "./routes/Home";
+
+import StoreProvider from "./stores";
+import AuthWall from "./components/AuthWall";
+import UserSection from "./components/UserSection";
 
 if (process.env.NODE_ENV !== "development") {
   Sentry.init({
@@ -41,103 +46,29 @@ if (process.env.NODE_ENV !== "development") {
   });
 }
 
-const ClientList: React.FC = () => {
-  const {
-    getAccessTokenSilently,
-    isAuthenticated,
-    isLoading,
-    user,
-  } = useAuth0();
-  const [data, setData] = useState({});
-
-  useEffect(() => {
-    const callSecureApi = async (url: string) => {
-      try {
-        const token = await getAccessTokenSilently({
-          audience: "https://case-triage.recidiviz.org/api",
-          scope: "email",
-        });
-
-        const response = await fetch(url, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
-        const responseData = await response.json();
-        setData(responseData);
-      } catch (error) {
-        setData(error);
-      }
-    };
-
-    if (!isLoading) {
-      callSecureApi("/api/clients");
-    }
-  }, [isLoading, isAuthenticated, getAccessTokenSilently]);
-
-  return (
-    <div>
-      <h1>User</h1>
-      <h3>
-        {isLoading ? "Loading..." : (user && user.name) || "Unauthenticated"}
-      </h3>
-      <h1>Protected API</h1>
-      <pre>{data ? JSON.stringify(data, null, 4) : "Loading..."}</pre>
-    </div>
-  );
-};
-
-const LoginButton: React.FC = () => {
-  const { loginWithRedirect, logout, isAuthenticated } = useAuth0();
-
-  if (isAuthenticated) {
-    return (
-      <Button
-        label="Log Out"
-        onClick={() => logout()}
-        primary
-        palette={ButtonPalette.primary}
-      />
-    );
-  }
-
-  return (
-    <Button
-      label="Log In"
-      onClick={() => loginWithRedirect()}
-      primary
-      palette={ButtonPalette.primary}
-    />
-  );
-};
-
-export default LoginButton;
-
 const Container = styled.div`
   margin: 0 auto;
-  max-width: 800px;
+  max-width: 1288px;
 `;
 
 ReactDOM.render(
-  <Auth0Provider
-    domain={window.AUTH0_CONFIG.domain}
-    clientId={window.AUTH0_CONFIG.clientId}
-    redirectUri={window.location.origin}
-    audience={window.AUTH0_CONFIG.audience}
-  >
-    <BrowserRouter>
-      <GlobalStyle />
-      <Header
-        left={<img src={Assets.LOGO} alt="Recidiviz - Case Triage" />}
-        right={<img src={Assets.HAMBURGER} alt="Menu" />}
-      />
-      <Container>
-        <LoginButton />
-
-        <ClientList />
-      </Container>
-    </BrowserRouter>
-  </Auth0Provider>,
+  <StoreProvider>
+    <GlobalStyle />
+    <Header
+      left={
+        <Link to="/">
+          <img src={Assets.LOGO} alt="Recidiviz - Case Triage" />
+        </Link>
+      }
+      right={<UserSection />}
+    />
+    <Container>
+      <AuthWall>
+        <Router>
+          <Home path="/" />
+        </Router>
+      </AuthWall>
+    </Container>
+  </StoreProvider>,
   document.getElementById("root")
 );

@@ -17,6 +17,7 @@
 """Implements a CasePresenter abstraction which reconciles knowledge about
 clients from our ETL pipeline with information received from POs on actions
 taken to give us a unified view of a person on supervision."""
+import json
 import logging
 from datetime import date, timedelta
 from typing import Any, Dict, List, Optional
@@ -47,9 +48,15 @@ class CasePresenter:
 
     def to_json(self) -> Dict[str, Any]:
         """Converts QueriedClient to json representation for frontend."""
+
+        try:
+            parsed_name = json.loads(self.etl_client.full_name)
+        except json.JSONDecodeError:
+            parsed_name = None
+
         base_dict = {
             'personExternalId': self.etl_client.person_external_id,
-            'fullName': self.etl_client.full_name,
+            'fullName': parsed_name,
             'gender': self.etl_client.gender,
             'supervisingOfficerExternalId': self.etl_client.supervising_officer_external_id,
             'currentAddress': self.etl_client.current_address,

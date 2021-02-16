@@ -15,6 +15,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Implements tests for the CasePresenter class."""
+import json
+
 from datetime import date, datetime
 from unittest.case import TestCase
 
@@ -44,7 +46,7 @@ class TestCasePresenter(TestCase):
         self.assertEqual(case_presenter.in_progress_officer_actions(), [])
         self.assertEqual(case_presenter.to_json(), {
             'personExternalId': self.mock_client.person_external_id,
-            'fullName': self.mock_client.full_name,
+            'fullName': json.loads(self.mock_client.full_name),
             'gender': self.mock_client.gender,
             'supervisingOfficerExternalId': self.mock_client.supervising_officer_external_id,
             'currentAddress': self.mock_client.current_address,
@@ -96,7 +98,7 @@ class TestCasePresenter(TestCase):
         self.assertEqual(case_presenter.in_progress_officer_actions(), dismiss_actions)
         self.assertEqual(case_presenter.to_json(), {
             'personExternalId': self.mock_client.person_external_id,
-            'fullName': self.mock_client.full_name,
+            'fullName': json.loads(self.mock_client.full_name),
             'gender': self.mock_client.gender,
             'supervisingOfficerExternalId': self.mock_client.supervising_officer_external_id,
             'currentAddress': self.mock_client.current_address,

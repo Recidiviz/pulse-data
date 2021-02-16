@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Implements helper functions for use in Case Triage tests."""
+import json
 from datetime import date
 from typing import Optional
 
@@ -37,7 +38,7 @@ def generate_fake_client(client_id: str,
                          last_face_to_face_date: Optional[date] = None) -> ETLClient:
     return ETLClient(
         person_external_id=client_id,
-        full_name='TEST NAME',
+        full_name=json.dumps({ 'given_name': 'TEST NAME' }),
         supervising_officer_external_id=supervising_officer_id,
         supervision_type='PAROLE',
         case_type='GENERAL',
