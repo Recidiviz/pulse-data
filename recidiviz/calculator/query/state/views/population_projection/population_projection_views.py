@@ -36,6 +36,8 @@ from recidiviz.calculator.query.state.views.population_projection.remaining_sent
 from recidiviz.calculator.query.state.views.population_projection.simulation_run_dates import \
     SIMULATION_RUN_DATES_VIEW_BUILDER
 from recidiviz.calculator.query.state.views.population_projection.total_population import TOTAL_POPULATION_VIEW_BUILDER
+from recidiviz.calculator.query.state.views.population_projection.us_id.us_id_monthly_paid_incarceration_population \
+    import US_ID_MONTHLY_PAID_INCARCERATION_POPULATION_VIEW_BUILDER
 from recidiviz.calculator.query.state.views.population_projection.us_id.\
     us_id_non_bias_full_population_transitions import US_ID_PAROLE_BOARD_HOLD_FULL_TRANSITIONS_VIEW_BUILDER
 from recidiviz.calculator.query.state.views.population_projection.us_id.\
@@ -52,6 +54,7 @@ from recidiviz.calculator.query.state.views.population_projection.us_id.\
 POPULATION_PROJECTION_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     SIMULATION_RUN_DATES_VIEW_BUILDER,  # all input views depend on this view so it must be first in the list
     POPULATION_PROJECTION_SESSIONS_VIEW_BUILDER,
+    US_ID_MONTHLY_PAID_INCARCERATION_POPULATION_VIEW_BUILDER,
     POPULATION_OUTFLOWS_VIEW_BUILDER,
     US_ID_PAROLE_BOARD_HOLD_POPULATION_TRANSITIONS_VIEW_BUILDER,
     US_ID_RIDER_POPULATION_TRANSITIONS_VIEW_BUILDER,
