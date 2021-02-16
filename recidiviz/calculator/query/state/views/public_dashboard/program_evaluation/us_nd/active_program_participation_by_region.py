@@ -42,7 +42,7 @@ ACTIVE_PROGRAM_PARTICIPATION_BY_REGION_VIEW_QUERY_TEMPLATE = \
       SELECT
         state_code,
         supervision_type,
-        region_id,
+        IFNULL(region_id, 'UNKNOWN') as region_id,
         person_id,
         {state_specific_race_or_ethnicity_groupings},
       FROM
