@@ -66,19 +66,15 @@ SUPERVISION_LOCATION_IDS_TO_NAMES_QUERY_TEMPLATE = \
     ),
     pa_location_names AS (
         SELECT 
-            'US_PA' AS state_code,
-            Region_Code AS level_3_supervision_location_external_id,
-            Region AS level_3_supervision_location_name,
-            RelDO AS level_2_supervision_location_external_id,
-            DistrictOfficeName AS level_2_supervision_location_name,
-            Org_cd AS level_1_supervision_location_external_id,
-            Org_Name AS level_1_supervision_location_name
-        FROM 
-            `{project_id}.us_pa_raw_data_up_to_date_views.dbo_LU_PBPP_Organization_latest`
-        JOIN
-            `{project_id}.us_pa_raw_data_up_to_date_views.dbo_LU_RelDo_latest`
-        ON DistrictOfficeCode = RelDO
-    ) 
+            DISTINCT 'US_PA' AS state_code,
+            level_3_supervision_location_external_id,
+            level_3_supervision_location_name,
+            level_2_supervision_location_external_id,
+            level_2_supervision_location_name,
+            UPPER(level_1_supervision_location_external_id) AS level_1_supervision_location_external_id,
+            level_1_supervision_location_name,
+        FROM `{project_id}.us_pa_raw_data_up_to_date_views.RECIDIVIZ_REFERENCE_supervision_location_ids_latest`
+    )
     SELECT * FROM mo_location_names
     UNION ALL
     SELECT * FROM nd_location_names
