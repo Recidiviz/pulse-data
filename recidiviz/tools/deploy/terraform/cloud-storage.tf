@@ -17,7 +17,7 @@
 
 
 locals {
-  state_alpha_codes = ["US_TN"]
+  state_alpha_codes = ["US_TN", "US_MI"]
 }
 
 module "state_direct_ingest_buckets_and_accounts" {
