@@ -38,7 +38,7 @@ def get_clients() -> str:
     ])
 
 
-@api.route('/policy_requirements_for_state')
+@api.route('/policy_requirements_for_state', methods=['POST'])
 def get_policy_requirements_for_state() -> str:
     """Returns policy requirements for a given state. Expects input in the form:
     {

@@ -16,8 +16,9 @@
 // =============================================================================
 import * as React from "react";
 import styled from "styled-components/macro";
+import { rem } from "polished";
 import { observer } from "mobx-react-lite";
-import { Button, ButtonPalette } from "@recidiviz/case-triage-components";
+import { Button, ButtonKind } from "@recidiviz/case-triage-components";
 import { User } from "@auth0/auth0-spa-js";
 import { useRootStore } from "../../stores";
 
@@ -33,6 +34,7 @@ const UserName = styled.span`
   display: flex;
   align-items: center;
   text-align: right;
+  font-size: ${rem("15px")};
   letter-spacing: -0.01em;
   font-feature-settings: "ss04" on;
 `;
@@ -42,7 +44,7 @@ const UserAvatar = styled.span`
   border-radius: 50%;
   color: white;
   display: inline-block;
-  font-size: 11px;
+  font-size: ${rem("11px")};
   line-height: 32px;
   height: 32px;
   text-align: center;
@@ -55,23 +57,16 @@ const LoginButton: React.FC = () => {
   const { isAuthorized } = userStore;
 
   if (isAuthorized) {
-    return (
-      <Button
-        label="Log Out"
-        onClick={() => userStore.logout && userStore.logout()}
-        primary
-        palette={ButtonPalette.primary}
-      />
-    );
+    return null;
   }
 
   return (
     <Button
-      label="Log In"
       onClick={() => userStore.login && userStore.login()}
-      primary
-      palette={ButtonPalette.primary}
-    />
+      kind={ButtonKind.primary}
+    >
+      Log In
+    </Button>
   );
 };
 
@@ -97,7 +92,7 @@ const UserSection = () => {
   }
 
   return (
-    <UserFlex>
+    <UserFlex className="fs-exclude">
       <LoginButton />
       {isAuthorized && user ? renderUser({ user }) : null}
     </UserFlex>

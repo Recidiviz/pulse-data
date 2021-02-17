@@ -14,4 +14,5 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
-export { default, HEADING_HEIGHT_MAGIC_NUMBER } from "./ClientList";
+export { DueDate as default } from "./DueDate";
+export type { DueDateProps } from "./DueDate";

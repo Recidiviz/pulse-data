@@ -72,7 +72,29 @@ class ClientsStore {
       const clients = await response.json();
       runInAction(() => {
         this.isLoading = false;
-        this.clients = clients.map((client: Client) => decorateClient(client));
+        this.clients = clients
+          .map((client: Client) => decorateClient(client))
+          .sort((self: DecoratedClient, other: DecoratedClient) => {
+            // No upcoming contact recommended. Shift myself to the right
+            if (!self.nextFaceToFaceDate) {
+              return 1;
+            }
+            // I have upcoming contact recommended, but they do not. Shift myself left
+            if (!other.nextFaceToFaceDate) {
+              return -1;
+            }
+            // My next face to face is before theirs. Shift myself left
+            if (self.nextFaceToFaceDate < other.nextFaceToFaceDate) {
+              return -1;
+            }
+            // Their face to face date is before mine. Shift them left
+            if (self.nextFaceToFaceDate > other.nextFaceToFaceDate) {
+              return 1;
+            }
+
+            // We both have scheduled contacts on the same day
+            return 0;
+          });
       });
     } catch (error) {
       runInAction(() => {
