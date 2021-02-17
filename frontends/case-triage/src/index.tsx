@@ -22,12 +22,7 @@ import { Integrations } from "@sentry/tracing";
 import styled from "styled-components/macro";
 import { Link, Router } from "@reach/router";
 
-import {
-  Assets,
-  Button,
-  GlobalStyle,
-  Header,
-} from "@recidiviz/case-triage-components";
+import { Assets, GlobalStyle, Header } from "@recidiviz/case-triage-components";
 
 import Home from "./routes/Home";
 

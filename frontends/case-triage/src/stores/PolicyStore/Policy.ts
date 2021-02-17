@@ -14,4 +14,34 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
-export { default, HEADING_HEIGHT_MAGIC_NUMBER } from "./ClientList";
+import { CaseType, Gender, SupervisionLevel } from "../ClientsStore/Client";
+
+export type ScoreMinMax = [number, number | null];
+
+export type ScoreMinMaxBySupervisionLevel = Record<
+  SupervisionLevel,
+  ScoreMinMax
+>;
+
+export type AssessmentScoreCutoffs = Record<
+  Gender,
+  ScoreMinMaxBySupervisionLevel
+>;
+
+// X contacts every Y days
+export type SupervisionContactFrequency = [number, number];
+
+export type ContactFrequencyByRisk = Record<
+  SupervisionLevel,
+  SupervisionContactFrequency
+>;
+
+export type SupervisionContactFrequencies = Record<
+  CaseType,
+  ContactFrequencyByRisk
+>;
+
+export interface Policy {
+  assessmentScoreCutoffs: AssessmentScoreCutoffs;
+  supervisionContactFrequencies: SupervisionContactFrequencies;
+}

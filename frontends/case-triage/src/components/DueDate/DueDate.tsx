@@ -14,4 +14,32 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
-export { default, HEADING_HEIGHT_MAGIC_NUMBER } from "./ClientList";
+
+import moment from "moment";
+import * as React from "react";
+import { BaseDueDate, PastDueDate, TodayDueDate } from "./DueDate.styles";
+
+export interface DueDateProps {
+  date: moment.Moment | null;
+}
+
+export const DueDate: React.FC<DueDateProps> = ({ date }: DueDateProps) => {
+  if (!date) {
+    return <BaseDueDate>Not required</BaseDueDate>;
+  }
+
+  const timeAgo = date.fromNow(true).split("");
+  timeAgo[0] = timeAgo[0].toUpperCase();
+
+  const formatted = timeAgo.join("");
+
+  if (date.isSame(moment(), "day")) {
+    return <TodayDueDate>Today</TodayDueDate>;
+  }
+
+  if (date.isAfter(moment(), "day")) {
+    return <BaseDueDate>In {formatted}</BaseDueDate>;
+  }
+
+  return <PastDueDate>{formatted} ago</PastDueDate>;
+};

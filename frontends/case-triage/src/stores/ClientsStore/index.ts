@@ -15,3 +15,5 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 export { default } from "./ClientsStore";
+export { SupervisionLevels } from "./Client";
+export type { SupervisionLevel, DecoratedClient } from "./Client";

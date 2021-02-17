@@ -14,16 +14,20 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
-import ClientsStore from "./ClientsStore/ClientsStore";
+import ClientsStore from "./ClientsStore";
+import PolicyStore from "./PolicyStore";
 import UserStore from "./UserStore";
 
 export default class RootStore {
   clientsStore: ClientsStore;
+
+  policyStore: PolicyStore;
 
   userStore: UserStore;
 
   constructor() {
     this.userStore = UserStore.build();
     this.clientsStore = new ClientsStore({ userStore: this.userStore });
+    this.policyStore = new PolicyStore({ userStore: this.userStore });
   }
 }

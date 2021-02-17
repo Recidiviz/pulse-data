@@ -19,7 +19,7 @@
 export const titleCase = (str: string): string => {
   // Step 1. Lowercase the string
   // Step 2. Split the string into an array of strings
-  const split: string[] = str.toLowerCase().split(" ");
+  const split: string[] = str.toLowerCase().replace(/_/g, " ").split(" ");
   // str = "i'm a little tea pot".split(' ');
 
   // Step 3. Create the FOR loop
