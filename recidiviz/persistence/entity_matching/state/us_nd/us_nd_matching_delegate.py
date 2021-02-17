@@ -21,7 +21,6 @@ from typing import List, Optional, Type, Callable
 
 from recidiviz.persistence.database.database_entity import DatabaseEntity
 from recidiviz.persistence.database.schema.state import schema
-from recidiviz.persistence.database.session import Session
 from recidiviz.persistence.entity_matching import entity_matching_utils
 from recidiviz.persistence.entity_matching.entity_matching_types import \
     EntityTree
@@ -30,7 +29,7 @@ from recidiviz.persistence.entity_matching.state. \
 from recidiviz.persistence.entity_matching.state.state_incarceration_incident_matching_utils import \
     move_incidents_onto_periods
 from recidiviz.persistence.entity_matching.state.state_matching_utils import \
-    nonnull_fields_entity_match, read_persons_by_root_entity_cls
+    nonnull_fields_entity_match
 from recidiviz.persistence.entity_matching.state.us_nd.us_nd_matching_utils import associate_revocation_svrs_with_ips, \
     update_temporary_holds, merge_incarceration_periods, merge_incomplete_periods, is_incarceration_period_match
 
@@ -39,22 +38,7 @@ class UsNdMatchingDelegate(BaseStateMatchingDelegate):
     """Class that contains matching logic specific to US_ND."""
 
     def __init__(self):
-        super().__init__('us_nd')
-
-    def read_potential_match_db_persons(
-            self,
-            session: Session,
-            ingested_persons: List[schema.StatePerson]
-    ) -> List[schema.StatePerson]:
-        """Reads and returns all persons from the DB that are needed for
-        entity matching in this state, given the |ingested_persons|.
-        """
-        allowed_root_entity_classes: List[Type[DatabaseEntity]] = [
-            schema.StatePerson, schema.StateSentenceGroup]
-        db_persons = read_persons_by_root_entity_cls(
-            session, self.region_code, ingested_persons,
-            allowed_root_entity_classes)
-        return db_persons
+        super().__init__('us_nd', [schema.StatePerson, schema.StateSentenceGroup])
 
     def perform_match_postprocessing(self,
                                      matched_persons: List[schema.StatePerson]):

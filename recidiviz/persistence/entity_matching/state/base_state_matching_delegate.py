@@ -15,23 +15,27 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Contains the base class to handle state specific matching."""
-import abc
 from typing import List, Optional, Type, Callable
 
 from recidiviz.persistence.database.database_entity import DatabaseEntity
 from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.database.session import Session
 from recidiviz.persistence.entity_matching.entity_matching_types import EntityTree
-from recidiviz.persistence.entity_matching.state.state_matching_utils import default_merge_flat_fields
+from recidiviz.persistence.entity_matching.state.state_matching_utils import default_merge_flat_fields, \
+    read_persons_by_root_entity_cls
 from recidiviz.utils.regions import get_region, Region
 
 
 class BaseStateMatchingDelegate:
     """Base class to handle state specific matching logic."""
 
-    def __init__(self, region_code: str) -> None:
+    def __init__(self, region_code: str,
+                 allowed_root_entity_classes_override: Optional[List[Type[DatabaseEntity]]] = None) -> None:
         self.region_code = region_code.upper()
         self.region = get_region(region_code=self.region_code, is_direct_ingest=True)
+        self.allowed_root_entity_classes: List[Type[DatabaseEntity]] = \
+            [schema.StatePerson] if not allowed_root_entity_classes_override \
+            else allowed_root_entity_classes_override
 
     def get_region_code(self) -> str:
         """Returns the region code for this object."""
@@ -41,12 +45,14 @@ class BaseStateMatchingDelegate:
         """Returns the region for this object."""
         return self.region
 
-    @abc.abstractmethod
     def read_potential_match_db_persons(
             self, session: Session, ingested_persons: List[schema.StatePerson]) -> List[schema.StatePerson]:
         """Reads and returns all persons from the DB that are needed for entity matching in this state, given the
         |ingested_persons|.
         """
+        db_persons = read_persons_by_root_entity_cls(
+            session, self.region_code, ingested_persons, self.allowed_root_entity_classes)
+        return db_persons
 
     def merge_flat_fields(self, from_entity: DatabaseEntity, to_entity: DatabaseEntity) -> DatabaseEntity:
         """Merges appropriate non-relationship fields on the |new_entity| onto the |old_entity|. Returns the newly
