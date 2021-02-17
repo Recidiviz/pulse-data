@@ -449,12 +449,24 @@ def get_supervising_officer_and_location_info_from_supervision_period(
     if not supervision_period.supervision_period_id:
         raise ValueError('Unexpected null supervision_period_id')
 
-    if supervision_period.state_code in ('US_ID', 'US_PA'):
-        # In some states we have squashed the notion of district and site into one field, so all filled in supervision
-        # sites are in the format "{supervision district}|{location/office within district}". This separates out the
-        # district info.
+    # In some states we have squashed multiple pieces of supervision location into the supervision site field. We have
+    # state-specific logic to split the supervision_site info into its appropriate fields.
+    if supervision_period.state_code == 'US_ID':
         if supervision_period.supervision_site:
+            # In ID, supervision_site follows format "{supervision district}|{location/office within district}"
             level_2_supervision_location, level_1_supervision_location = supervision_period.supervision_site.split('|')
+    elif supervision_period.state_code == 'US_PA':
+        if supervision_period.supervision_site:
+            if supervision_period.supervision_site.count('|') == 1:
+                # TODO(#5575): Remove this logic once all supervision sites in PA have been migrated to new format with
+                #   three parts.
+                level_2_supervision_location, level_1_supervision_location = \
+                    supervision_period.supervision_site.split('|')
+            else:
+                # In PA, supervision_site follows format
+                # "{supervision district}|{supervision suboffice}|{supervision unit org code}"
+                level_2_supervision_location, level_1_supervision_location, _org_code = \
+                    supervision_period.supervision_site.split('|')
     else:
         level_1_supervision_location = supervision_period.supervision_site
 

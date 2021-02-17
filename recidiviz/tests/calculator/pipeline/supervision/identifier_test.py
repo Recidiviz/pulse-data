@@ -4298,7 +4298,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 )
             ],
             state_code='US_PA',
-            supervision_site='DISTRICT_1|OFFICE_2',
+            supervision_site='DISTRICT_1|OFFICE_2|1345',
             start_date=date(2018, 3, 5),
             termination_date=date(2018, 5, 19),
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
@@ -4385,7 +4385,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 )
             ],
             state_code=state_code,
-            supervision_site='DISTRICT_1|OFFICE_2',
+            supervision_site='DISTRICT_1|OFFICE_2|456',
             start_date=date(2018, 3, 5),
             termination_date=date(2018, 5, 19),
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
@@ -4540,7 +4540,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 )
             ],
             state_code=state_code,
-            supervision_site='DISTRICT_1|OFFICE_2',
+            supervision_site='DISTRICT_1|OFFICE_2|123',
             start_date=date(2017, 12, 5),
             termination_date=date(2018, 5, 19),
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
