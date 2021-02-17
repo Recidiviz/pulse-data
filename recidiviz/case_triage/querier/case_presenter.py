@@ -30,10 +30,12 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_supervision_com
     NEW_SUPERVISION_ASSESSMENT_DEADLINE_DAYS,
     NEW_SUPERVISION_CONTACT_DEADLINE_BUSINESS_DAYS,
     REASSESSMENT_DEADLINE_DAYS,
+    SEX_OFFENSE_LSIR_MINIMUM_SCORE,
     SUPERVISION_CONTACT_FREQUENCY_REQUIREMENTS,
 )
 from recidiviz.case_triage.case_updates.progress_checker import check_case_update_action_progress
 from recidiviz.case_triage.case_updates.types import CaseUpdateAction, CaseUpdateActionType
+from recidiviz.common.constants.person_characteristics import Gender
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
 from recidiviz.common.constants.state.state_supervision_period import StateSupervisionLevel
 from recidiviz.persistence.database.schema.case_triage.schema import CaseUpdate, ETLClient
@@ -98,7 +100,7 @@ class CasePresenter:
             # next due face to face contact is after today, the need is met.
             'faceToFaceContact': next_face_to_face_date is None or bool(next_face_to_face_date > today),
             # If the next assessment is due after today, the need is met.
-            'assessment': bool(next_assessment_date > today),
+            'assessment': next_assessment_date is None or bool(next_assessment_date > today),
         }
 
         return base_dict
@@ -122,10 +124,14 @@ class CasePresenter:
 
         return in_progress_actions
 
-    def _next_assessment_date(self) -> date:
+    def _next_assessment_date(self) -> Optional[date]:
         # TODO(#5769): Eventually move this method to our calculate pipeline.
-        if self.etl_client.most_recent_assessment_date is None:
+        if self.etl_client.most_recent_assessment_date is None or self.etl_client.assessment_score is None:
             return self.etl_client.supervision_start_date + timedelta(days=NEW_SUPERVISION_ASSESSMENT_DEADLINE_DAYS)
+        if self.etl_client.case_type == StateSupervisionCaseType.SEX_OFFENSE.value:
+            if self.etl_client.assessment_score < SEX_OFFENSE_LSIR_MINIMUM_SCORE.get(
+                    Gender(self.etl_client.gender), 0):
+                return None
         return self.etl_client.most_recent_assessment_date + timedelta(days=REASSESSMENT_DEADLINE_DAYS)
 
     def _next_face_to_face_date(self) -> Optional[date]:
