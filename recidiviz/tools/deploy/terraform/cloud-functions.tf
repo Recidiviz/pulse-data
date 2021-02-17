@@ -34,7 +34,7 @@ locals {
 
 
 resource "google_cloudfunctions_function" "direct-ingest-states" {
-  for_each = toset(["US_ID", "US_MO", "US_ND", "US_PA", "US_TN"])
+  for_each = toset(["US_ID", "US_MO", "US_ND", "US_PA", "US_TN", "US_MI"])
 
   name    = "direct-ingest-state-${replace(lower(each.key), "_", "-")}"
   runtime = "python37"
@@ -61,7 +61,7 @@ resource "google_cloudfunctions_function" "direct-ingest-states" {
 # test beds.
 resource "google_cloudfunctions_function" "direct-ingest-states-upload-testing" {
   # Buckets ending in `upload-testing` are only present in prod.
-  for_each = local.is_production ? toset(["US_MO", "US_TN"]) : toset([])
+  for_each = local.is_production ? toset(["US_MO", "US_TN", "US_MI"]) : toset([])
 
   name    = "direct-ingest-state-${replace(lower(each.key), "_", "-")}-upload-testing"
   runtime = "python37"
