@@ -345,8 +345,3 @@ def gen_set_agent_type(agent_type: StateAgentType) -> RowPosthookCallable:
                 extracted_object.agent_type = agent_type.value
 
     return _set_judge_agent_type
-
-
-def create_supervision_site(supervising_district_id: str, supervision_specific_location: str) -> str:
-    """Returns a string which combines district and specific supervision office/location information."""
-    return supervising_district_id + '|' + supervision_specific_location

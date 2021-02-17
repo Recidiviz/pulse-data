@@ -330,19 +330,19 @@ class TestGetSupervisingOfficerAndLocationInfoFromSupervisionPeriod(unittest.Tes
     def test_get_supervising_officer_and_location_info_from_supervision_period_US_PA(self) -> None:
         supervision_period = attr.evolve(
             self.DEFAULT_SUPERVISION_PERIOD_NO_SUPERVISION_SITE,
-            state_code='US_ID', supervision_site='CO|9110')
+            state_code='US_PA', supervision_site='CO|CO - CENTRAL OFFICE|9110')
 
         supervising_officer_external_id, level_1_supervision_location, level_2_supervision_location = \
             get_supervising_officer_and_location_info_from_supervision_period(
                 supervision_period, self.DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS)
 
         self.assertEqual('agent_external_id_1', supervising_officer_external_id)
-        self.assertEqual('9110', level_1_supervision_location)
+        self.assertEqual('CO - CENTRAL OFFICE', level_1_supervision_location)
         self.assertEqual('CO', level_2_supervision_location)
 
         supervision_period = attr.evolve(
             self.DEFAULT_SUPERVISION_PERIOD_NO_SUPERVISION_SITE,
-            state_code='US_ID', supervision_site=None)
+            state_code='US_PA', supervision_site=None)
 
         supervising_officer_external_id, level_1_supervision_location, level_2_supervision_location = \
             get_supervising_officer_and_location_info_from_supervision_period(
@@ -351,6 +351,20 @@ class TestGetSupervisingOfficerAndLocationInfoFromSupervisionPeriod(unittest.Tes
         self.assertEqual('agent_external_id_1', supervising_officer_external_id)
         self.assertEqual(None, level_1_supervision_location)
         self.assertEqual(None, level_2_supervision_location)
+
+    # TODO(#5575): Delete this test once support for legacy, two-part supervision sites has been removed
+    def test_get_supervising_officer_and_location_info_from_supervision_period_US_PA_legacy(self) -> None:
+        supervision_period = attr.evolve(
+            self.DEFAULT_SUPERVISION_PERIOD_NO_SUPERVISION_SITE,
+            state_code='US_PA', supervision_site='CO|9110')
+
+        supervising_officer_external_id, level_1_supervision_location, level_2_supervision_location = \
+            get_supervising_officer_and_location_info_from_supervision_period(
+                supervision_period, self.DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS)
+
+        self.assertEqual('agent_external_id_1', supervising_officer_external_id)
+        self.assertEqual('9110', level_1_supervision_location)
+        self.assertEqual('CO', level_2_supervision_location)
 
     def test_get_supervising_officer_and_location_info_from_supervision_period_US_ND(self) -> None:
         nd_supervision_period_agent_associations = {

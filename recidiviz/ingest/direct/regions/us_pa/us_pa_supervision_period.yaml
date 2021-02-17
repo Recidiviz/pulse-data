@@ -25,5 +25,6 @@ keys_to_ignore:
   #   as whether they transferred out of state / were deported  - might be useful in the future.
   - status_code                     # Current / last supervision "status" associated with the parole_count_id "status" but not status in our own sense - Unused
   - district_office                 # Code for district this person is being supervised in - handled manually in the controller
-  - district_sub_office_id          # Specific unit office this person is being supervised by - handled manually in the controller
+  - district_sub_office_id          # Specific sub office this person is being supervised by - handled manually in the controller
+  - supervision_location_org_code   # Organization code of the person's specific supervision unit - handled manually in the controller
   - case_types_list                 # Case types associated with this person - handled manually in the controller

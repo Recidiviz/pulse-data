@@ -56,8 +56,7 @@ from recidiviz.ingest.direct.regions.us_pa.us_pa_enum_helpers import incarcerati
     concatenate_ccis_incarceration_period_end_codes
 from recidiviz.ingest.direct.regions.us_pa.us_pa_violation_type_reference import violated_condition
 from recidiviz.ingest.direct.state_shared_row_posthooks import copy_name_to_alias, gen_label_single_external_id_hook, \
-    gen_rationalize_race_and_ethnicity, gen_convert_person_ids_to_external_id_objects, \
-    create_supervision_site
+    gen_rationalize_race_and_ethnicity, gen_convert_person_ids_to_external_id_objects
 from recidiviz.ingest.extractor.csv_data_extractor import IngestFieldCoordinates
 from recidiviz.ingest.models.ingest_info import IngestObject, StatePerson, StatePersonExternalId, StateAssessment, \
     StateIncarcerationSentence, StateCharge, StateSentenceGroup, StateIncarcerationPeriod, StateIncarcerationIncident, \
@@ -1169,13 +1168,11 @@ class UsPaController(CsvGcsfsDirectIngestController):
         """Sets the supervision_site on the supervision period."""
         district_office = row['district_office']
         district_sub_office_id = row['district_sub_office_id']
+        supervision_location_org_code = row['supervision_location_org_code']
         for obj in extracted_objects:
             if isinstance(obj, StateSupervisionPeriod):
-                if district_office and district_sub_office_id:
-                    obj.supervision_site = create_supervision_site(supervising_district_id=district_office,
-                                                                   supervision_specific_location=district_sub_office_id)
-                elif district_office:
-                    obj.supervision_site = district_office
+                if district_office and district_sub_office_id and supervision_location_org_code:
+                    obj.supervision_site = f'{district_office}|{district_sub_office_id}|{supervision_location_org_code}'
 
     @staticmethod
     def _set_supervision_period_custodial_authority(_file_tag: str,
