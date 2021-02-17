@@ -16,19 +16,95 @@
 // =============================================================================
 import { observer } from "mobx-react-lite";
 import * as React from "react";
-import { H3 } from "@recidiviz/case-triage-components";
+import { IconSVG } from "@recidiviz/case-triage-components";
 import { useRootStore } from "../../stores";
+import { DecoratedClient } from "../../stores/ClientsStore/Client";
+import { titleCase } from "../../utils";
+import {
+  CardHeader,
+  ClientCard,
+  ClientListHeading,
+  ClientListTableHeading,
+  ClientNeed,
+  FlexCardSection,
+  MainText,
+  SecondaryText,
+} from "./ClientList.styles";
+import DueDate from "../DueDate";
+
+// Update this if the <ClientListHeading/> height changes
+export const HEADING_HEIGHT_MAGIC_NUMBER = 118;
+
+interface ClientProps {
+  client: DecoratedClient;
+}
+
+const ClientComponent: React.FC<ClientProps> = ({ client }: ClientProps) => {
+  const { clientsStore } = useRootStore();
+
+  const cardRef = React.useRef<HTMLDivElement>(null);
+
+  return (
+    <ClientCard
+      ref={cardRef}
+      onClick={() => {
+        clientsStore.view(
+          client,
+          cardRef !== null && cardRef.current !== null
+            ? cardRef.current.offsetTop
+            : 0
+        );
+      }}
+    >
+      <CardHeader className="fs-exclude">
+        <MainText>{client.formalName}</MainText>
+        <SecondaryText>
+          {titleCase(client.supervisionType)},{" "}
+          {titleCase(client.supervisionLevel)}
+        </SecondaryText>
+      </CardHeader>
+      <FlexCardSection>
+        <ClientNeed
+          kind={IconSVG.NeedsEmployment}
+          met={client.needsMet.employment}
+        />
+        <ClientNeed
+          kind={IconSVG.NeedsRiskAssessment}
+          met={client.needsMet.assessment}
+        />
+        <ClientNeed
+          kind={IconSVG.NeedsContact}
+          met={client.needsMet.faceToFaceContact}
+        />
+      </FlexCardSection>
+      <FlexCardSection>
+        <DueDate date={client.nextFaceToFaceDate} />
+      </FlexCardSection>
+    </ClientCard>
+  );
+};
 
 const ClientList = () => {
-  const { clientsStore, userStore } = useRootStore();
+  const { clientsStore, policyStore } = useRootStore();
+
+  let clients;
+  if (clientsStore.clients) {
+    clients = clientsStore.clients.map((client) => (
+      <ClientComponent client={client} key={client.personExternalId} />
+    ));
+  }
+
   return (
     <div>
-      <H3>Protected API</H3>
-      <pre>
-        {clientsStore.isLoading
-          ? "Loading..."
-          : JSON.stringify(clientsStore.clients, null, 2)}
-      </pre>
+      <ClientListHeading>Up Next</ClientListHeading>
+      <ClientListTableHeading>
+        <span>Client</span>
+        <span>Needs</span>
+        <span>Recommended Contact</span>
+      </ClientListTableHeading>
+      {clientsStore.isLoading || policyStore.isLoading || !clientsStore.clients
+        ? `Loading... ${clientsStore.error || ""}`
+        : clients}
     </div>
   );
 };

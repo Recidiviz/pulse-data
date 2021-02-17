@@ -24,28 +24,50 @@ interface ClientFullName {
 }
 /* eslint-enable camelcase */
 
+export type Gender = "FEMALE" | "MALE" | "TRANS_FEMALE" | "TRANS_MALE";
+
+export type CaseType = "GENERAL" | "SEX_OFFENDER";
+
+export const SupervisionLevels = <const>["HIGH", "MEDIUM", "MINIMUM"];
+export type SupervisionLevel = typeof SupervisionLevels[number];
+
 export interface Client {
+  assessmentScore: number | null;
+  caseType: CaseType;
   currentAddress: string;
   fullName: ClientFullName;
   employer?: string;
+  gender: Gender;
   supervisionType: string;
-  supervisionLevel: string;
+  supervisionLevel: SupervisionLevel;
   personExternalId: string;
-  mostRecentFaceToFaceDate: string | moment.Moment;
-  mostRecentAssessmentDate: string | moment.Moment;
+  mostRecentFaceToFaceDate: string | moment.Moment | null;
+  mostRecentAssessmentDate: string | moment.Moment | null;
   needsMet: {
     assessment: boolean;
     employment: boolean;
     faceToFaceContact: boolean;
   };
+  nextAssessmentDate: string | moment.Moment | null;
+  nextFaceToFaceDate: string | moment.Moment | null;
 }
 
 export interface DecoratedClient extends Client {
   name: string;
   formalName: string;
-  mostRecentFaceToFaceDate: moment.Moment;
-  mostRecentAssessmentDate: moment.Moment;
+  mostRecentFaceToFaceDate: moment.Moment | null;
+  mostRecentAssessmentDate: moment.Moment | null;
+  nextAssessmentDate: moment.Moment | null;
+  nextFaceToFaceDate: moment.Moment | null;
 }
+
+const parseDate = (date: string | moment.Moment | null) => {
+  if (!date) {
+    return null;
+  }
+
+  return moment(date);
+};
 
 const decorateClient = (client: Client): DecoratedClient => {
   const { given_names: given, surname } = client.fullName;
@@ -61,8 +83,10 @@ const decorateClient = (client: Client): DecoratedClient => {
     ...client,
     name,
     formalName,
-    mostRecentFaceToFaceDate: moment(client.mostRecentFaceToFaceDate),
-    mostRecentAssessmentDate: moment(client.mostRecentAssessmentDate),
+    mostRecentFaceToFaceDate: parseDate(client.mostRecentFaceToFaceDate),
+    mostRecentAssessmentDate: parseDate(client.mostRecentAssessmentDate),
+    nextFaceToFaceDate: parseDate(client.nextFaceToFaceDate),
+    nextAssessmentDate: parseDate(client.nextAssessmentDate),
   };
 };
 

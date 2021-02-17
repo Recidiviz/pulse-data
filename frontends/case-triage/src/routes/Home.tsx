@@ -16,10 +16,40 @@
 // =============================================================================
 import { RouteComponentProps } from "@reach/router";
 import React, { ReactElement } from "react";
+import styled from "styled-components/macro";
+import { observer } from "mobx-react-lite";
+import CaseCard from "../components/CaseCard";
 import ClientList from "../components/ClientList";
+import { useRootStore } from "../stores";
+
+const Container = styled.div`
+  display: flex;
+  justify-content: space-between;
+`;
+
+const Left = styled.div`
+  width: 700px;
+`;
+
+const Right = styled.div`
+  width: 555px;
+`;
 
 const Home = (props: RouteComponentProps): ReactElement => {
-  return <ClientList />;
+  const { clientsStore } = useRootStore();
+
+  const ClientCard = clientsStore.activeClient ? (
+    <CaseCard client={clientsStore.activeClient} />
+  ) : null;
+
+  return (
+    <Container>
+      <Left>
+        <ClientList />
+      </Left>
+      <Right>{ClientCard}</Right>
+    </Container>
+  );
 };
 
-export default Home;
+export default observer(Home);

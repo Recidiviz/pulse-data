@@ -14,4 +14,19 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
-export { default, HEADING_HEIGHT_MAGIC_NUMBER } from "./ClientList";
+
+import styled from "styled-components/macro";
+import { rem } from "polished";
+import { palette } from "@recidiviz/case-triage-components";
+
+export const BaseDueDate = styled.span`
+  font-size: ${rem("17px")};
+  color: ${palette.text.links};
+`;
+
+export const PastDueDate = styled(BaseDueDate)`
+  color: ${palette.logo.red};
+`;
+export const TodayDueDate = styled(BaseDueDate)`
+  color: ${palette.logo.blue};
+`;
