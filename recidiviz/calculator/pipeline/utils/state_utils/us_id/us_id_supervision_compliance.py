@@ -73,13 +73,23 @@ from dateutil.relativedelta import relativedelta
 
 from recidiviz.calculator.pipeline.utils.supervision_case_compliance_manager import \
     StateSupervisionCaseComplianceManager
+from recidiviz.common.constants.person_characteristics import Gender
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
 from recidiviz.common.constants.state.state_supervision_period import StateSupervisionPeriodSupervisionType, \
     StateSupervisionLevel
 
 SEX_OFFENSE_NEW_SUPERVISION_ASSESSMENT_DEADLINE_DAYS_PROBATION = 45
 SEX_OFFENSE_NEW_SUPERVISION_ASSESSMENT_DEADLINE_DAYS_PAROLE = 90
-SEX_OFFENSE_LSIR_MINIMUM_SCORE = 16
+
+# Minimum score for people with sex offenses to require an annual LSI-R re-assessment.
+# Current as of 2/17/2021, sourced from:
+# http://forms.idoc.idaho.gov/WebLink/0/edoc/283396/Sex%20Offenders%20Supervision%20and%20Classification.pdf
+SEX_OFFENSE_LSIR_MINIMUM_SCORE: Dict[Gender, int] = {
+    Gender.FEMALE: 23,
+    Gender.TRANS_FEMALE: 23,
+    Gender.MALE: 21,
+    Gender.TRANS_MALE: 21,
+}
 
 NEW_SUPERVISION_ASSESSMENT_DEADLINE_DAYS = 45
 REASSESSMENT_DEADLINE_DAYS = 365
@@ -168,7 +178,13 @@ class UsIdSupervisionCaseCompliance(StateSupervisionCaseComplianceManager):
             return self._num_days_compliance_evaluation_date_past_reassessment_deadline(
                 compliance_evaluation_date, most_recent_assessment_date)
         if self.case_type == StateSupervisionCaseType.SEX_OFFENSE:
-            if most_recent_assessment_score > SEX_OFFENSE_LSIR_MINIMUM_SCORE:
+            # TODO(#5769): Related to #5809, an extension of the work to bring assessment scores into
+            # the calc pipeline is to bring gender information here as well because many cutoff decisions
+            # branch based on gender. Right now because the cutoffs are most permissive to people with
+            # gender FEMALE, we're going to check the cutoff against that gender type.
+            #
+            # Better to err on the side of less assessments encouraged than more.
+            if most_recent_assessment_score >= SEX_OFFENSE_LSIR_MINIMUM_SCORE[Gender.FEMALE]:
                 return self._num_days_compliance_evaluation_date_past_reassessment_deadline(
                     compliance_evaluation_date,
                     most_recent_assessment_date)

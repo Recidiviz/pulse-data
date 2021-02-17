@@ -38,7 +38,7 @@ def generate_fake_client(client_id: str,
                          last_face_to_face_date: Optional[date] = None) -> ETLClient:
     return ETLClient(
         person_external_id=client_id,
-        full_name=json.dumps({ 'given_name': 'TEST NAME' }),
+        full_name=json.dumps({'given_name': 'TEST NAME'}),
         supervising_officer_external_id=supervising_officer_id,
         supervision_type='PAROLE',
         case_type='GENERAL',
@@ -46,5 +46,6 @@ def generate_fake_client(client_id: str,
         state_code='US_XX',
         supervision_start_date=date(2018, 1, 1),
         most_recent_assessment_date=last_assessment_date,
+        assessment_score=1,
         most_recent_face_to_face_date=last_face_to_face_date,
     )
