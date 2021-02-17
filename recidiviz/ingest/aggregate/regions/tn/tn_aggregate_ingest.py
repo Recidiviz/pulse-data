@@ -112,7 +112,8 @@ def _parse_table(_: str, filename: str, is_female: bool,
     pages = ([1, 2] if 2000 <= report_date.year <= 2005
              else [3, 4, 5] if report_date.year in (2006, 2009)
              else [2, 3, 4])
-    table = tabula.read_pdf(filename, pages=pages, multiple_tables=True)
+    table = tabula.read_pdf(filename, pages=pages, multiple_tables=True,
+                            stream=bool(report_date.year == 2020 and report_date.month == 12))
 
     if is_female and report_date.year == 2020 and report_date.month in (4, 5, 6):
         table = [table[0],
