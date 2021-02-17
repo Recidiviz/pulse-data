@@ -95,7 +95,7 @@ agent_update_dates AS (
     supervising_officer_name, 
     EXTRACT(DATE FROM po_modified_time) AS po_modified_date, 
     SupervisorName,
-    SAFE_CAST(supervisor_info[SAFE_OFFSET(ARRAY_LENGTH(supervisor_info)-2)] AS INT64) AS district_sub_office_id,
+    SAFE_CAST(supervisor_info[SAFE_OFFSET(ARRAY_LENGTH(supervisor_info)-2)] AS INT64) AS supervision_location_org_code,
     ROW_NUMBER() OVER (PARTITION BY ParoleNumber, ParoleCountId ORDER BY po_modified_time) AS update_rank
   FROM (
     SELECT 
@@ -106,11 +106,14 @@ agent_update_dates AS (
   )
 ),
 agent_update_dates_with_district AS (
-    SELECT agent_update_dates.*, DistrictOfficeCode AS district_office
+    SELECT 
+        agent_update_dates.*,
+        level_2_supervision_location_external_id AS district_office,
+        level_1_supervision_location_external_id AS district_sub_office_id
     FROM agent_update_dates
     LEFT OUTER JOIN
-    {dbo_LU_PBPP_Organization}
-    ON SAFE_CAST(Org_cd AS INT64) = district_sub_office_id
+    {RECIDIVIZ_REFERENCE_supervision_location_ids}
+    ON SAFE_CAST(Org_cd AS INT64) = supervision_location_org_code
 ),
 all_update_dates AS (
   -- Collects one row per critical date for building supervision periods for this person. This includes the start and
@@ -126,6 +129,7 @@ all_update_dates AS (
     supervising_officer_name,
     district_office,
     district_sub_office_id,
+    supervision_location_org_code,
     0 AS is_termination_edge
   FROM agent_update_dates_with_district
  
@@ -144,6 +148,7 @@ all_update_dates AS (
     -- We leave the office blank rather than taking a guess in this case.
     NULL AS district_office,
     NULL AS district_sub_office_id,
+    NULL AS supervision_location_org_code,
     0 AS is_termination_edge
   FROM parole_count_id_level_info
 
@@ -159,6 +164,7 @@ all_update_dates AS (
     NULL AS supervising_officer_name,
     NULL AS district_office,
     NULL AS district_sub_office_id,
+    NULL AS supervision_location_org_code,
     1 AS is_termination_edge
   FROM parole_count_id_level_info
 ),
@@ -188,6 +194,7 @@ supervision_periods_base AS (
     start_edge.supervising_officer_name,
     start_edge.district_office,
     start_edge.district_sub_office_id,
+    start_edge.supervision_location_org_code,
     start_edge.po_modified_date AS start_date, 
     end_edge.po_modified_date AS termination_date
   FROM 
@@ -234,6 +241,7 @@ supervision_periods AS (
     county_of_residence,
     district_office,
     district_sub_office_id,
+    supervision_location_org_code,
     supervision_level,
     supervising_officer_name,
     condition_codes,

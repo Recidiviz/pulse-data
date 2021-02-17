@@ -57,7 +57,7 @@ from recidiviz.ingest.direct.regions.us_id.us_id_enum_helpers import incarcerati
     is_jail_facility, purpose_for_incarceration_mapper, supervision_period_supervision_type_mapper, \
     custodial_authority_mapper
 from recidiviz.ingest.direct.state_shared_row_posthooks import copy_name_to_alias, gen_label_single_external_id_hook, \
-    gen_rationalize_race_and_ethnicity, create_supervision_site
+    gen_rationalize_race_and_ethnicity
 from recidiviz.ingest.models.ingest_info import IngestObject, StateAssessment, StateIncarcerationSentence, \
     StateCharge, StateAgent, StateCourtCase, StateSentenceGroup, StateSupervisionSentence, StateIncarcerationPeriod, \
     StateSupervisionPeriod, StateSupervisionViolation, StateSupervisionViolationResponse, \
@@ -1095,3 +1095,8 @@ def _get_bool_from_row(arg: str, row: Dict[str, str]) -> bool:
     if not val:
         return False
     return str_to_bool(val)
+
+
+def create_supervision_site(supervising_district_id: str, supervision_specific_location: str) -> str:
+    """Returns a string which combines district and specific supervision office/location information."""
+    return supervising_district_id + '|' + supervision_specific_location
