@@ -67,6 +67,7 @@ class CasePresenter:
             'supervisionType': self.etl_client.supervision_type,
             'caseType': self.etl_client.case_type,
             'supervisionStartDate': self.etl_client.supervision_start_date,
+            'projectedEndDate': self.etl_client.projected_end_date,
             'supervisionLevel': self.etl_client.supervision_level,
             'stateCode': self.etl_client.state_code,
             'employer': self.etl_client.employer,

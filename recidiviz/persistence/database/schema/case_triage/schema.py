@@ -41,6 +41,7 @@ class ETLClient(CaseTriageBase):
     birthdate = Column(Date)
     birthdate_inferred_from_age = Column(Boolean)
     supervision_start_date = Column(Date)
+    projected_end_date = Column(Date)
     supervision_type = Column(String(255), nullable=False)
     case_type = Column(String(255), nullable=False)
     supervision_level = Column(String(255), nullable=False)
