@@ -51,11 +51,9 @@ class UsIdGetPreIncarcerationSupervisionTypeTest(unittest.TestCase):
         preceding_supervision_period = StateSupervisionPeriod.new_with_defaults(
             state_code='US_ID',
             supervision_period_id=1,
-            start_date=
-            incarceration_period.admission_date -
+            start_date=incarceration_period.admission_date -
             relativedelta(days=SUPERVISION_TYPE_LOOKBACK_DAYS_LIMIT + 100),
-            termination_date=
-            incarceration_period.admission_date -
+            termination_date=incarceration_period.admission_date -
             relativedelta(days=SUPERVISION_TYPE_LOOKBACK_DAYS_LIMIT - 1),
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE
         )
@@ -110,11 +108,9 @@ class UsIdGetPreIncarcerationSupervisionTypeTest(unittest.TestCase):
         preceding_supervision_period = StateSupervisionPeriod.new_with_defaults(
             state_code='US_ID',
             supervision_period_id=1,
-            start_date=
-            incarceration_period.admission_date -
+            start_date=incarceration_period.admission_date -
             relativedelta(days=SUPERVISION_TYPE_LOOKBACK_DAYS_LIMIT + 100),
-            termination_date=
-            incarceration_period.admission_date -
+            termination_date=incarceration_period.admission_date -
             relativedelta(days=SUPERVISION_TYPE_LOOKBACK_DAYS_LIMIT + 10),
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE
         )
@@ -178,8 +174,7 @@ class UsIdGetPostIncarcerationSupervisionTypeTest(unittest.TestCase):
         succeeding_supervision_period = StateSupervisionPeriod.new_with_defaults(
             state_code='US_ID',
             supervision_period_id=1,
-            start_date=
-            incarceration_period.release_date +
+            start_date=incarceration_period.release_date +
             relativedelta(days=(SUPERVISION_TYPE_LOOKBACK_DAYS_LIMIT + 100)),
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE
         )
@@ -209,11 +204,9 @@ class UsIdGetPostIncarcerationSupervisionTypeTest(unittest.TestCase):
         succeeding_supervision_period = StateSupervisionPeriod.new_with_defaults(
             state_code='US_ID',
             supervision_period_id=1,
-            start_date=
-            incarceration_period.admission_date -
+            start_date=incarceration_period.admission_date -
             relativedelta(days=SUPERVISION_TYPE_LOOKBACK_DAYS_LIMIT + 100),
-            termination_date=
-            incarceration_period.admission_date -
+            termination_date=incarceration_period.admission_date -
             relativedelta(days=SUPERVISION_TYPE_LOOKBACK_DAYS_LIMIT + 10),
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE
         )
@@ -407,6 +400,7 @@ class UsIdGetMostRecentSupervisionPeriodSupervisionTypeBeforeUpperBoundDayTest(u
 
         self.assertEqual(supervision_period_supervision_type, None)
 
+
 class UsIdGetSupervisionPeriodAdmissionOverrideTest(unittest.TestCase):
     """Unittests for the us_id_get_supervision_period_admission_override."""
 
@@ -561,5 +555,5 @@ class TestSupervisionPeriodIsOutOfState(unittest.TestCase):
             is_on_supervision_last_day_of_month=False,
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervising_district_external_id=supervising_district_external_id,
-            is_past_projected_end_date=False
+            projected_end_date=None,
         )

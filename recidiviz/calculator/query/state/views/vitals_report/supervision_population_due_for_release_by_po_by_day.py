@@ -36,9 +36,10 @@ SUPERVISION_POPULATION_DUE_FOR_RELEASE_BY_PO_BY_DAY_QUERY_TEMPLATE = \
         date_of_supervision,
         supervising_officer_external_id as supervising_officer,
         supervising_district_external_id as district,
-        COUNT (DISTINCT(IF(is_past_projected_end_date, person_id, NULL))) as due_for_release_count
+        COUNT (DISTINCT(IF(projected_end_date < date_of_supervision, person_id, NULL))) as due_for_release_count
     FROM `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_population_metrics_materialized`
     WHERE date_of_supervision > DATE_SUB(CURRENT_DATE('US/Pacific'), INTERVAL 90 DAY)
+        AND projected_end_date IS NOT NULL
     GROUP BY state_code, date_of_supervision, supervising_officer, district
     ORDER BY date_of_supervision DESC, supervising_officer DESC, due_for_release_count DESC
     """
