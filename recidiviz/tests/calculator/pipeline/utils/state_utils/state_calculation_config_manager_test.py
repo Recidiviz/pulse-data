@@ -40,6 +40,7 @@ from recidiviz.persistence.entity.state.entities import StateSupervisionPeriod, 
 
 class TestRevokedSupervisionPeriodsIfRevocationOccurred(unittest.TestCase):
     """Tests the state-specific revoked_supervision_periods_if_revocation_occurred function."""
+
     def test_revoked_supervision_periods_if_revocation_occurred(self) -> None:
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=222,
@@ -176,8 +177,8 @@ class TestRevokedSupervisionPeriodsIfRevocationOccurred(unittest.TestCase):
             state_code='US_ID',
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
-            admission_date=
-            supervision_termination_date + relativedelta(months=SUPERVISION_PERIOD_PROXIMITY_MONTH_LIMIT + 1),
+            admission_date=supervision_termination_date +
+            relativedelta(months=SUPERVISION_PERIOD_PROXIMITY_MONTH_LIMIT + 1),
             admission_reason=StateIncarcerationPeriodAdmissionReason.RETURN_FROM_SUPERVISION,
             specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.GENERAL
         )
@@ -228,14 +229,14 @@ class TestGetSupervisingOfficerAndLocationInfoFromSupervisionPeriod(unittest.Tes
     """Tests the state-specific get_supervising_officer_and_location_info_from_supervision_period function."""
 
     DEFAULT_SUPERVISION_PERIOD_NO_SUPERVISION_SITE: StateSupervisionPeriod = StateSupervisionPeriod.new_with_defaults(
-            supervision_period_id=111,
-            external_id='sp1',
-            status=StateSupervisionPeriodStatus.TERMINATED,
-            state_code='US_XX',
-            start_date=date(2017, 3, 5),
-            termination_date=date(2017, 5, 9),
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION
-        )
+        supervision_period_id=111,
+        external_id='sp1',
+        status=StateSupervisionPeriodStatus.TERMINATED,
+        state_code='US_XX',
+        start_date=date(2017, 3, 5),
+        termination_date=date(2017, 5, 9),
+        supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION
+    )
 
     DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS = {
         111: {
@@ -434,5 +435,5 @@ class TestSupervisionPeriodIsOutOfState(unittest.TestCase):
             is_on_supervision_last_day_of_month=False,
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervising_district_external_id=supervising_district_external_id,
-            is_past_projected_end_date=False
+            projected_end_date=None,
         )
