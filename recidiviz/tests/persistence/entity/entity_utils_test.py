@@ -19,6 +19,7 @@ from unittest import TestCase
 
 import attr
 
+from recidiviz.common.constants.state.state_fine import StateFineStatus
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.persistence.database import schema_utils
 from recidiviz.persistence.database.schema.state import schema
@@ -50,7 +51,7 @@ class TestEntityUtils(TestCase):
         entity = StateSentenceGroup.new_with_defaults(
             state_code='US_XX',
             status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
-            fines=[StateFine.new_with_defaults(state_code='US_XX')],
+            fines=[StateFine.new_with_defaults(state_code='US_XX', status=StateFineStatus.PRESENT_WITHOUT_INFO)],
             person=[StatePerson.new_with_defaults(state_code='US_XX')],
             sentence_group_id=_ID)
         self.assertEqual(

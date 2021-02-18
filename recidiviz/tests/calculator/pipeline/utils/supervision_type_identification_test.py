@@ -72,7 +72,8 @@ class TestGetMonthSupervisionType(unittest.TestCase):
             external_id='is1',
             start_date=date(2018, 3, 1),
             completion_date=date(2018, 5, 30),
-            supervision_periods=[supervision_period]
+            supervision_periods=[supervision_period],
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO
         )
 
         supervision_sentences = [supervision_sentence]
@@ -140,7 +141,8 @@ class TestGetMonthSupervisionType(unittest.TestCase):
             external_id='is1',
             start_date=date(2018, 3, 1),
             completion_date=date(2018, 5, 30),
-            supervision_periods=[supervision_period]
+            supervision_periods=[supervision_period],
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO
         )
 
         supervision_sentences = []
@@ -184,7 +186,8 @@ class TestGetMonthSupervisionType(unittest.TestCase):
             external_id='is1',
             start_date=date(2018, 3, 1),
             completion_date=date(2018, 5, 30),
-            supervision_periods=[supervision_period]
+            supervision_periods=[supervision_period],
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO
         )
 
         supervision_sentences = [supervision_sentence]
@@ -714,19 +717,22 @@ class TestGetPreIncarcerationSupervisionType(unittest.TestCase):
             incarceration_sentence_id=1,
             external_id='is1',
             start_date=date(2018, 7, 1),
-            completion_date=date(2018, 7, 30))
+            completion_date=date(2018, 7, 30),
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO)
         valid_incarceration_sentence_2 = StateIncarcerationSentence.new_with_defaults(
             state_code='US_XX',
             incarceration_sentence_id=1,
             external_id='is1',
             start_date=date(2018, 7, 1),
-            completion_date=date(2018, 7, 20))
+            completion_date=date(2018, 7, 20),
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO)
         invalid_incarceration_sentence_2 = StateIncarcerationSentence.new_with_defaults(
             state_code='US_XX',
             incarceration_sentence_id=1,
             external_id='is1',
             start_date=date(2018, 7, 21),
-            completion_date=date(2018, 8, 20))
+            completion_date=date(2018, 8, 20),
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO)
 
         self.assertEqual([valid_incarceration_sentence, valid_incarceration_sentence_2],
                          _get_sentences_overlapping_with_date(target_date, [valid_incarceration_sentence,
@@ -740,18 +746,21 @@ class TestGetPreIncarcerationSupervisionType(unittest.TestCase):
             incarceration_sentence_id=1,
             external_id='is1',
             start_date=date(2018, 7, 1),
-            supervision_periods=[supervision_period])
+            supervision_periods=[supervision_period],
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO)
 
         invalid_incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
             state_code='US_XX',
             incarceration_sentence_id=1,
             external_id='is1',
-            supervision_periods=[supervision_period])
+            supervision_periods=[supervision_period],
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO)
         invalid_incarceration_sentence_2 = StateIncarcerationSentence.new_with_defaults(
             state_code='US_XX',
             incarceration_sentence_id=1,
             start_date=date(2018, 7, 1),
-            external_id='is1')
+            external_id='is1',
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO)
         sentences = [valid_incarceration_sentence, invalid_incarceration_sentence, invalid_incarceration_sentence_2]
 
         self.assertEqual([valid_incarceration_sentence],
@@ -766,19 +775,22 @@ class TestGetPreIncarcerationSupervisionType(unittest.TestCase):
             incarceration_sentence_id=1,
             external_id='is1',
             start_date=date(2018, 7, 1),
-            completion_date=date(2018, 7, 30))
+            completion_date=date(2018, 7, 30),
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO)
         valid_incarceration_sentence_2 = StateIncarcerationSentence.new_with_defaults(
             state_code='US_XX',
             incarceration_sentence_id=1,
             external_id='is1',
             start_date=date(2018, 7, 1),
-            completion_date=date(2018, 7, 20))
+            completion_date=date(2018, 7, 20),
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO)
         invalid_incarceration_sentence_2 = StateIncarcerationSentence.new_with_defaults(
             state_code='US_XX',
             incarceration_sentence_id=1,
             external_id='is1',
             start_date=date(2018, 8, 21),
-            completion_date=date(2018, 8, 20))
+            completion_date=date(2018, 8, 20),
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO)
 
         self.assertEqual([valid_incarceration_sentence, valid_incarceration_sentence_2],
                          _get_sentences_overlapping_with_dates(start_date, end_date,
@@ -817,7 +829,8 @@ class TestGetSupervisionPeriodSupervisionTypeFromSentence(unittest.TestCase):
     def test_get_supervision_period_supervision_type_from_sentence_incarceration_sentence(self):
         incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
             state_code='US_XX',
-            incarceration_sentence_id=111
+            incarceration_sentence_id=111,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO
         )
 
         supervision_type = _get_sentence_supervision_type_from_sentence(incarceration_sentence)
