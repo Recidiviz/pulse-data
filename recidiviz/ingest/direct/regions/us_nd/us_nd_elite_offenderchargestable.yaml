@@ -1,7 +1,8 @@
 key_mappings:
   OFFENSE_DATE: state_charge.offense_date
   OFFENCE_CODE: state_charge.statute
-  DESCRIPTION: state_charge.description
+  SEVERITY_RANKING: state_charge.offense_type
+  CODE_DESCRIPTION: state_charge.description
   INITIAL_COUNTS: state_charge.counts
   COMMENT_TEXT: state_charge.charge_notes
 
@@ -21,3 +22,4 @@ keys_to_ignore:
   - ModifyDate            # No apparent use for these at the moment
   - CHARGE_SEQ            # Handled manually within us_nd_scraper
   - CHARGE_STATUS         # No apparent use for these at the moment
+  - DESCRIPTION           # A sparsely populated, fully redundant version of CODE_DESCRIPTION

@@ -1110,6 +1110,8 @@ class _StateChargeSharedColumns(_ReferencesStatePersonSharedColumns):
     classification_type = Column(state_charge_classification_type)
     classification_type_raw_text = Column(String(255))
     classification_subtype = Column(String(255))
+    offense_type = Column(String(255))
+    is_violent = Column(Boolean)
     counts = Column(Integer)
     charge_notes = Column(Text)
     charging_entity = Column(String(255))

@@ -20,6 +20,7 @@ import datetime
 import logging
 import re
 
+from recidiviz.common import ncic
 from recidiviz.common.constants.entity_enum import EntityEnumMeta, EntityEnum
 from recidiviz.common.constants.enum_overrides import EnumOverrides, EnumMapper, EnumIgnorePredicate
 from recidiviz.common.constants.state.external_id_types import US_MO_DOC
@@ -648,6 +649,24 @@ class UsMoController(CsvGcsfsDirectIngestController):
 
             if charges:
                 charges[0].state_charge_id = sentence_id
+
+    @classmethod
+    def _set_charge_is_violent_from_ncic(cls,
+                                         _file_tag: str,
+                                         row: Dict[str, str],
+                                         extracted_objects: List[IngestObject],
+                                         _cache: IngestObjectCache) -> None:
+        ncic_code = row.get('BS_NCI', None)
+        if not ncic_code:
+            return
+
+        is_violent = ncic.get_is_violent(ncic_code)
+        if is_violent is None:
+            return
+
+        for extracted_object in extracted_objects:
+            if isinstance(extracted_object, StateCharge):
+                extracted_object.is_violent = str(is_violent)
 
     @classmethod
     def _gen_violation_response_type_posthook(
@@ -1448,7 +1467,8 @@ class UsMoController(CsvGcsfsDirectIngestController):
             self._clear_zero_date_string,
             self.tak022_tak023_set_parole_eligibility_date,
             self.set_charge_id_from_sentence_id,
-            ]
+            self._set_charge_is_violent_from_ncic,
+        ]
 
     def get_tak022_tak023_tak025_tak026_offender_sentence_supervision_row_processors(
             self) -> List[RowPosthookCallable]:
@@ -1479,4 +1499,5 @@ class UsMoController(CsvGcsfsDirectIngestController):
             self._set_completion_date_if_necessary,
             self._clear_zero_date_string,
             self.set_charge_id_from_sentence_id,
+            self._set_charge_is_violent_from_ncic,
         ]

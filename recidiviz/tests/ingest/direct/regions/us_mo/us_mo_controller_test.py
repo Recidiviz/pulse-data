@@ -320,6 +320,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                                                 ncic_code='0904',
                                                 statute='10021040',
                                                 description='TC: MURDER 1ST - FIST',
+                                                is_violent='True',
                                                 classification_type='F',
                                                 classification_subtype='O')
                                         ])
@@ -348,6 +349,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                                                 ncic_code='5299',
                                                 statute='31020990',
                                                 description='UNLAWFUL USE OF WEAPON',
+                                                is_violent='False',
                                                 classification_type='F',
                                                 classification_subtype='D')
                                         ])
@@ -384,6 +386,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                                                 statute='91335990',
                                                 description='POSSESSION OF CONTROLLED '
                                                 'SUBSTANCE',
+                                                is_violent='False',
                                                 classification_type='L')
                                         ])
                                 ])
@@ -419,6 +422,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                                                 ncic_code='3599',
                                                 statute='32450990',
                                                 description='POSSESSION OF C/S',
+                                                is_violent='False',
                                                 classification_type='F',
                                                 classification_subtype='C')
                                         ]),
@@ -441,6 +445,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                                             ncic_code='3599',
                                             statute='32500990',
                                             description='TRAFFICKING 2ND DEGREE',
+                                            is_violent='False',
                                             classification_type='F',
                                             classification_subtype='B')]),
                                     StateIncarcerationSentence(
@@ -462,6 +467,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                                             ncic_code='4899',
                                             statute='27020990',
                                             description='RESISTING ARREST',
+                                            is_violent='False',
                                             classification_type='F',
                                             classification_subtype='D')]),
                                 ])
@@ -496,6 +502,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                                                 ncic_code='3572',
                                                 statute='32040720',
                                                 description='POSSESSION OF METHAMPHETAMINE',
+                                                is_violent='False',
                                                 classification_type='F',
                                                 classification_subtype='N')
                                         ])
@@ -533,6 +540,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                                                 statute='47410040',
                                                 description='DRIVING WHILE INTOXICATED - '
                                                 'THIRD OFFENSE',
+                                                is_violent='True',
                                                 classification_type='F',
                                                 classification_subtype='D')]
                                     ),
@@ -550,6 +558,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                                                 state_charge_id='910324-19890825-2',
                                                 ncic_code='5404',
                                                 description='DWI',
+                                                is_violent='True',
                                                 classification_type='F')]
                                     )
                                 ])
@@ -576,7 +585,9 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                                             StateCharge(
                                                 state_charge_id='310261-19890821-1',
                                                 ncic_code='5707',
-                                                description='BRK & END')]
+                                                description='BRK & END',
+                                                is_violent='False',
+                                            )]
                                     )
                                 ]
                             )
@@ -605,6 +616,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                                                 state_charge_id='110035-20040712-1',
                                                 ncic_code='2399',
                                                 description='BURG&STEAL',
+                                                is_violent='False',
                                                 classification_type='F')]
                                     ),
                                     StateSupervisionSentence(
@@ -644,7 +656,9 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
                                                 ncic_code='3532',
                                                 offense_date='20070701',
                                                 county_code='OUT_OF_STATE',
-                                                description='POSSESSION OF COCAINE  (SHAWNEE CO 00CR1806)')]
+                                                description='POSSESSION OF COCAINE  (SHAWNEE CO 00CR1806)',
+                                                is_violent='False',
+                                            )]
                                     )
                                 ]
                             )
@@ -2002,6 +2016,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
             ncic_code='0904',
             statute='10021040',
             description='TC: MURDER 1ST - FIST',
+            is_violent=True,
             classification_type=StateChargeClassificationType.FELONY,
             classification_type_raw_text='F',
             classification_subtype='O',
@@ -2040,6 +2055,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
             ncic_code='5299',
             statute='31020990',
             description='UNLAWFUL USE OF WEAPON',
+            is_violent=False,
             classification_type=StateChargeClassificationType.FELONY,
             classification_type_raw_text='F',
             classification_subtype='D',
@@ -2079,6 +2095,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
             ncic_code='3599',
             statute='91335990',
             description='POSSESSION OF CONTROLLED SUBSTANCE',
+            is_violent=False,
             classification_type=StateChargeClassificationType.INFRACTION,
             classification_type_raw_text='L',
             incarceration_sentences=[sis_310261_19890821_3],
@@ -2114,6 +2131,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
             ncic_code='3599',
             statute='32450990',
             description='POSSESSION OF C/S',
+            is_violent=False,
             classification_type=StateChargeClassificationType.FELONY,
             classification_type_raw_text='F',
             classification_subtype='C',
@@ -2149,6 +2167,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
             ncic_code='3599',
             statute='32500990',
             description='TRAFFICKING 2ND DEGREE',
+            is_violent=False,
             classification_type=StateChargeClassificationType.FELONY,
             classification_type_raw_text='F',
             classification_subtype='B',
@@ -2184,6 +2203,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
             ncic_code='4899',
             statute='27020990',
             description='RESISTING ARREST',
+            is_violent=False,
             classification_type=StateChargeClassificationType.FELONY,
             classification_type_raw_text='F',
             classification_subtype='D',
@@ -2226,6 +2246,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
             ncic_code='3572',
             statute='32040720',
             description='POSSESSION OF METHAMPHETAMINE',
+            is_violent=False,
             classification_type=StateChargeClassificationType.FELONY,
             classification_type_raw_text='F',
             classification_subtype='N',
@@ -2267,6 +2288,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
         charge_910324.ncic_code = '5404'
         charge_910324.statute = '47410040'
         charge_910324.description = 'DRIVING WHILE INTOXICATED - THIRD OFFENSE'
+        charge_910324.is_violent = True
         charge_910324.classification_type = StateChargeClassificationType.FELONY
         charge_910324.classification_type_raw_text = 'F'
         charge_910324.classification_subtype = 'D'
@@ -2296,6 +2318,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
             external_id='910324-19890825-2',
             ncic_code='5404',
             description='DWI',
+            is_violent=True,
             classification_type=StateChargeClassificationType.FELONY,
             classification_type_raw_text='F',
             supervision_sentences=[sss_910324_19890825_2],
@@ -2325,6 +2348,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
             external_id='310261-19890821-1',
             ncic_code='5707',
             description='BRK & END',
+            is_violent=False,
             supervision_sentences=[sss_310261_19890821_1],
             person=person_310261,
         )
@@ -2361,6 +2385,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
             external_id='110035-20040712-1',
             ncic_code='2399',
             description='BURG&STEAL',
+            is_violent=False,
             classification_type=StateChargeClassificationType.FELONY,
             classification_type_raw_text='F',
             supervision_sentences=[sss_110035_20040712_1],
@@ -2431,6 +2456,7 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
             ncic_code='3532',
             county_code='OUT_OF_STATE',
             description='POSSESSION OF COCAINE (SHAWNEE CO 00CR1806)',
+            is_violent=False,
             offense_date=datetime.date(year=2007, month=7, day=1),
             supervision_sentences=[sss_110035_20081010_1],
             person=person_110035,
