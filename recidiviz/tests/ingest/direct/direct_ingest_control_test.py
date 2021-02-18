@@ -39,6 +39,7 @@ from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import GcsfsR
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.ingest.direct.direct_ingest_cloud_task_manager import \
     DirectIngestCloudTaskManager
+from recidiviz.ingest.direct.direct_ingest_control import kick_all_schedulers
 from recidiviz.ingest.direct.direct_ingest_region_utils import get_existing_region_dir_names
 from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.tests.utils.fake_region import fake_region
@@ -659,3 +660,47 @@ class TestDirectIngestControl(unittest.TestCase):
                                     data=body_encoded)
         self.assertEqual(200, response.status_code)
         mock_controller.do_ingest_view_export.assert_called_with(export_args)
+
+    @patch(f"{CONTROL_PACKAGE_NAME}.get_supported_direct_ingest_region_codes")
+    @patch("recidiviz.utils.environment.get_gae_environment")
+    @patch("recidiviz.utils.regions.get_region")
+    def test_kick_all_schedulers(
+            self,
+            mock_get_region: mock.MagicMock,
+            mock_environment: mock.MagicMock,
+            mock_supported_region_codes: mock.MagicMock) -> None:
+
+        fake_supported_regions = {
+            'us_mo':
+                fake_region(region_code='us_mo',
+                            environment='staging',
+                            ingestor=Mock()),
+            'us_nd':
+                fake_region(region_code='us_nd',
+                            environment='production',
+                            ingestor=Mock()),
+        }
+
+        mock_cloud_task_manager = create_autospec(DirectIngestCloudTaskManager)
+        for region in fake_supported_regions.values():
+            region.get_ingestor().__class__ = GcsfsDirectIngestController
+            region.get_ingestor().cloud_task_manager.return_value = \
+                mock_cloud_task_manager
+
+        def fake_get_region(region_code: str, is_direct_ingest: bool) -> Region:
+            if not is_direct_ingest:
+                self.fail("is_direct_ingest is False")
+
+            return fake_supported_regions[region_code]
+
+        mock_get_region.side_effect = fake_get_region
+
+        mock_supported_region_codes.return_value = fake_supported_regions.keys()
+
+        mock_environment.return_value = 'staging'
+
+        kick_all_schedulers()
+
+        mock_supported_region_codes.assert_called()
+        for region in fake_supported_regions.values():
+            region.get_ingestor().kick_scheduler.assert_called_once()
