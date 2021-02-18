@@ -77,6 +77,8 @@ def copy_fields_to_builder(
             StateChargeClassificationType.find_in_string(new.description)
     new.classification_subtype = \
         fn(normalize, 'classification_subtype', proto)
+    new.offense_type = fn(normalize, 'offense_type', proto)
+    new.is_violent = fn(parse_bool, 'is_violent', proto)
     new.counts = fn(parse_int, 'counts', proto)
     new.charge_notes = fn(normalize, 'charge_notes', proto)
     new.is_controlling = fn(parse_bool, 'is_controlling', proto)

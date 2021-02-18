@@ -342,7 +342,8 @@ class StateCharge(ExternalIdEntity, BuildableAttr, DefaultableAttr):
 
     #   - What
     ncic_code: Optional[str] = attr.ib(default=None, validator=attr_validators.is_opt_str)
-    # A code corresponding to actual sentencing terms that
+
+    # A code corresponding to actual sentencing terms within a jurisdiction
     statute: Optional[str] = attr.ib(default=None, validator=attr_validators.is_opt_str)
     description: Optional[str] = attr.ib(default=None, validator=attr_validators.is_opt_str)
     attempted: Optional[bool] = attr.ib(default=None, validator=attr_validators.is_opt_bool)
@@ -351,6 +352,9 @@ class StateCharge(ExternalIdEntity, BuildableAttr, DefaultableAttr):
     classification_type_raw_text: Optional[str] = attr.ib(default=None, validator=attr_validators.is_opt_str)
     # E.g. 'A' for Class A, '1' for Level 1, etc
     classification_subtype: Optional[str] = attr.ib(default=None, validator=attr_validators.is_opt_str)
+    offense_type: Optional[str] = attr.ib(default=None, validator=attr_validators.is_opt_str)
+    is_violent: Optional[bool] = attr.ib(default=None, validator=attr_validators.is_opt_bool)
+
     counts: Optional[int] = attr.ib(default=None, validator=attr_validators.is_opt_int)
     charge_notes: Optional[str] = attr.ib(default=None, validator=attr_validators.is_opt_str)
     is_controlling: Optional[bool] = attr.ib(default=None, validator=attr_validators.is_opt_bool)

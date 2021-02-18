@@ -328,6 +328,8 @@ message StateCharge {
     optional string attempted = 10;
     optional string classification_type = 11;
     optional string classification_subtype = 12;
+    optional string offense_type = 19;
+    optional string is_violent = 20;
     optional string counts = 13;
     optional string charge_notes = 14;
     optional string is_controlling = 15;
