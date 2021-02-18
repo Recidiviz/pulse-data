@@ -219,7 +219,8 @@ class UsMoGetSupervisionPeriodSupervisionTypeOnDateTest(unittest.TestCase):
         base_sentence = StateIncarcerationSentence.new_with_defaults(
             external_id=f'164735-20120627-{self.sentence_id_counter}',
             state_code='US_MO',
-            start_date=start_date
+            start_date=start_date,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO
         )
         mo_sentence = FakeUsMoIncarcerationSentence.fake_sentence_from_sentence(
             base_sentence,
@@ -572,7 +573,8 @@ class UsMoGetMonthSupervisionTypeTest(unittest.TestCase):
             StateIncarcerationSentence.new_with_defaults(
                 external_id='ss1',
                 state_code='US_MO',
-                start_date=supervision_period.start_date
+                start_date=supervision_period.start_date,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO
             ),
             supervision_type_spans=[
                 SupervisionTypeSpan(start_date=supervision_period.start_date,
@@ -621,7 +623,8 @@ class UsMoGetMonthSupervisionTypeTest(unittest.TestCase):
             StateIncarcerationSentence.new_with_defaults(
                 external_id='ss1',
                 state_code='US_MO',
-                start_date=supervision_period.start_date
+                start_date=supervision_period.start_date,
+                status=StateSentenceStatus.PRESENT_WITHOUT_INFO
             ),
             supervision_type_spans=[
                 SupervisionTypeSpan(start_date=supervision_period.start_date,
@@ -672,7 +675,8 @@ class UsMoGetMonthSupervisionTypeTest(unittest.TestCase):
             StateIncarcerationSentence.new_with_defaults(
                 external_id='ss1',
                 state_code='US_MO',
-                start_date=supervision_period.start_date
+                start_date=supervision_period.start_date,
+                status=StateSentenceStatus.PRESENT_WITHOUT_INFO
             ),
             supervision_type_spans=[
                 SupervisionTypeSpan(start_date=supervision_period.start_date,
@@ -727,7 +731,8 @@ class UsMoGetMonthSupervisionTypeTest(unittest.TestCase):
             StateIncarcerationSentence.new_with_defaults(
                 external_id='ss1',
                 state_code='US_MO',
-                start_date=supervision_period.start_date
+                start_date=supervision_period.start_date,
+                status=StateSentenceStatus.PRESENT_WITHOUT_INFO
             ),
             supervision_type_spans=[
                 SupervisionTypeSpan(start_date=supervision_period.start_date,
@@ -809,7 +814,8 @@ class UsMoGetMostRecentSupervisionPeriodSupervisionTypeBeforeUpperBoundDayTest(u
             StateIncarcerationSentence.new_with_defaults(
                 external_id='ss1',
                 state_code='US_MO',
-                start_date=start_date
+                start_date=start_date,
+                status=StateSentenceStatus.PRESENT_WITHOUT_INFO
             ),
             supervision_type_spans=[
                 SupervisionTypeSpan(start_date=start_date,

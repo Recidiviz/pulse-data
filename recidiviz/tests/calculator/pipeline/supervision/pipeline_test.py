@@ -236,6 +236,7 @@ class TestSupervisionPipeline(unittest.TestCase):
             incarceration_sentence_id=123,
             state_code='US_XX',
             person_id=fake_person_id,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
             incarceration_periods=[initial_incarceration,
                                    subsequent_reincarceration, first_reincarceration]
         )
@@ -524,7 +525,8 @@ class TestSupervisionPipeline(unittest.TestCase):
             external_id='is-123',
             state_code='US_XX',
             start_date=date(2008, 11, 20),
-            person_id=fake_person_id
+            person_id=fake_person_id,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO
         )
 
         supervision_sentence_supervision_period_association = [
@@ -877,7 +879,8 @@ class TestSupervisionPipeline(unittest.TestCase):
             state_code='US_XX',
             person_id=fake_person_id,
             incarceration_periods=[
-                initial_incarceration, revocation_reincarceration]
+                initial_incarceration, revocation_reincarceration],
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO
         )
 
         incarceration_periods_data = [
@@ -1055,7 +1058,8 @@ class TestSupervisionPipeline(unittest.TestCase):
             external_id='is-123',
             state_code='US_XX',
             start_date=date(2008, 11, 20),
-            person_id=fake_person_id
+            person_id=fake_person_id,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO
         )
 
         supervision_sentence_supervision_period_association = [
@@ -1301,7 +1305,8 @@ class TestSupervisionPipeline(unittest.TestCase):
             incarceration_periods=[
                 initial_incarceration_1
             ],
-            person_id=fake_person_id_1
+            person_id=fake_person_id_1,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO
         )
 
         supervision_sentence_supervision_period_association = [
@@ -1554,7 +1559,8 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
             state_code='US_XX',
             incarceration_sentence_id=123,
-            incarceration_periods=[incarceration_period]
+            incarceration_periods=[incarceration_period],
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO
         )
 
         assessment = StateAssessment.new_with_defaults(

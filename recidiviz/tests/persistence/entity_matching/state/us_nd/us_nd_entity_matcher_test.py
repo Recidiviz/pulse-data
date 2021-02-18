@@ -330,7 +330,8 @@ class TestNdEntityMatching(BaseStateEntityMatcherTest):
             external_id=_EXTERNAL_ID,
             incarceration_periods=[incarceration_period,
                                    incarceration_period_2,
-                                   incarceration_period_3])
+                                   incarceration_period_3],
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO)
         sentence_group = StateSentenceGroup.new_with_defaults(
             external_id=_EXTERNAL_ID,
             state_code=_US_ND,
@@ -440,7 +441,8 @@ class TestNdEntityMatching(BaseStateEntityMatcherTest):
         incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
             state_code=_US_ND,
             external_id=_EXTERNAL_ID,
-            incarceration_periods=[incomplete_incarceration_period])
+            incarceration_periods=[incomplete_incarceration_period],
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO)
         sentence_group = StateSentenceGroup.new_with_defaults(
             state_code=_US_ND,
             status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
@@ -540,7 +542,8 @@ class TestNdEntityMatching(BaseStateEntityMatcherTest):
         incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
             state_code=_US_ND,
             external_id=_EXTERNAL_ID,
-            incarceration_periods=[complete_incarceration_period])
+            incarceration_periods=[complete_incarceration_period],
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO)
         sentence_group = StateSentenceGroup.new_with_defaults(
             state_code=_US_ND,
             external_id=_EXTERNAL_ID,
@@ -631,7 +634,8 @@ class TestNdEntityMatching(BaseStateEntityMatcherTest):
         incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
             external_id=_EXTERNAL_ID,
             state_code=_US_ND,
-            incarceration_periods=[updated_incarceration_period])
+            incarceration_periods=[updated_incarceration_period],
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO)
         sentence_group = StateSentenceGroup.new_with_defaults(
             state_code=_US_ND,
             status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
@@ -739,7 +743,8 @@ class TestNdEntityMatching(BaseStateEntityMatcherTest):
         incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
             external_id=_EXTERNAL_ID,
             state_code=_US_ND,
-            incarceration_periods=[incarceration_period])
+            incarceration_periods=[incarceration_period],
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO)
         sentence_group = StateSentenceGroup.new_with_defaults(
             state_code=_US_ND,
             status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
@@ -840,7 +845,8 @@ class TestNdEntityMatching(BaseStateEntityMatcherTest):
         incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
             external_id=_EXTERNAL_ID,
             state_code=_US_ND,
-            incarceration_periods=[incarceration_period_different_state])
+            incarceration_periods=[incarceration_period_different_state],
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO)
         sentence_group = StateSentenceGroup.new_with_defaults(
             state_code=_US_ND,
             status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
@@ -947,7 +953,8 @@ class TestNdEntityMatching(BaseStateEntityMatcherTest):
             external_id=_EXTERNAL_ID,
             state_code=_US_ND,
             incarceration_periods=[new_temporary_custody_period,
-                                   new_incarceration_period])
+                                   new_incarceration_period],
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO)
         sentence_group = StateSentenceGroup.new_with_defaults(
             state_code=_US_ND,
             status=StateSentenceStatus.PRESENT_WITHOUT_INFO,

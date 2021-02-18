@@ -20,6 +20,7 @@ import unittest
 
 from recidiviz.calculator.pipeline.utils.state_utils.us_mo.us_mo_sentence_classification import UsMoSentenceStatus, \
     UsMoIncarcerationSentence, UsMoSupervisionSentence
+from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.state.state_supervision import StateSupervisionType
 from recidiviz.persistence.entity.state.entities import StateIncarcerationSentence, StateSupervisionSentence
 
@@ -190,7 +191,8 @@ class UsMoSentenceTest(unittest.TestCase):
         base_sentence = StateIncarcerationSentence.new_with_defaults(
             state_code='US_MO',
             external_id='13252-20160627-1',
-            start_date=datetime.date(year=2016, month=6, day=27)
+            start_date=datetime.date(year=2016, month=6, day=27),
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO
         )
         us_mo_sentence = UsMoIncarcerationSentence.from_incarceration_sentence(base_sentence, raw_statuses)
 
@@ -230,7 +232,7 @@ class UsMoSentenceTest(unittest.TestCase):
         ]
 
         sentence = StateIncarcerationSentence.new_with_defaults(
-            state_code='US_MO',external_id='1167633-20171012-1')
+            state_code='US_MO', external_id='1167633-20171012-1', status=StateSentenceStatus.PRESENT_WITHOUT_INFO)
 
         # Act
         us_mo_sentence = UsMoIncarcerationSentence.from_incarceration_sentence(sentence,
@@ -282,7 +284,8 @@ class UsMoGetSupervisionTypeOnDay(unittest.TestCase):
         base_sentence = StateIncarcerationSentence.new_with_defaults(
             state_code='US_MO',
             external_id='1167633-20171012-2',
-            start_date=datetime.date(year=2017, month=10, day=12)
+            start_date=datetime.date(year=2017, month=10, day=12),
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO
         )
         us_mo_sentence = UsMoIncarcerationSentence.from_incarceration_sentence(base_sentence, raw_statuses)
 
@@ -299,7 +302,8 @@ class UsMoGetSupervisionTypeOnDay(unittest.TestCase):
         base_sentence = StateIncarcerationSentence.new_with_defaults(
             state_code='US_MO',
             external_id='1344959-20190718-1',
-            start_date=datetime.date(year=2017, month=10, day=12)
+            start_date=datetime.date(year=2017, month=10, day=12),
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO
         )
         us_mo_sentence = UsMoIncarcerationSentence.from_incarceration_sentence(base_sentence, raw_statuses)
 
@@ -320,7 +324,8 @@ class UsMoGetSupervisionTypeOnDay(unittest.TestCase):
         base_sentence = StateIncarcerationSentence.new_with_defaults(
             state_code='US_MO',
             external_id='505542-20120927-1',
-            start_date=datetime.date(year=2015, month=8, day=8)
+            start_date=datetime.date(year=2015, month=8, day=8),
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO
         )
         us_mo_sentence = UsMoIncarcerationSentence.from_incarceration_sentence(base_sentence, raw_statuses)
 
@@ -344,7 +349,8 @@ class UsMoGetSupervisionTypeOnDay(unittest.TestCase):
         base_sentence = StateIncarcerationSentence.new_with_defaults(
             state_code='US_MO',
             external_id='1333144-20180912-1',
-            start_date=datetime.date(year=2018, month=9, day=12)
+            start_date=datetime.date(year=2018, month=9, day=12),
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO
         )
         us_mo_sentence = UsMoIncarcerationSentence.from_incarceration_sentence(base_sentence, raw_statuses)
 
@@ -365,7 +371,8 @@ class UsMoGetSupervisionTypeOnDay(unittest.TestCase):
         base_sentence = StateIncarcerationSentence.new_with_defaults(
             state_code='US_MO',
             external_id='13252-20160627-1',
-            start_date=datetime.date(year=2016, month=6, day=27)
+            start_date=datetime.date(year=2016, month=6, day=27),
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO
         )
         us_mo_sentence = UsMoIncarcerationSentence.from_incarceration_sentence(base_sentence, raw_statuses)
 
@@ -386,7 +393,8 @@ class UsMoGetSupervisionTypeOnDay(unittest.TestCase):
         base_sentence = StateIncarcerationSentence.new_with_defaults(
             state_code='US_MO',
             external_id='13252-20160627-1',
-            start_date=datetime.date(year=2016, month=6, day=27)
+            start_date=datetime.date(year=2016, month=6, day=27),
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO
         )
         us_mo_sentence = UsMoIncarcerationSentence.from_incarceration_sentence(base_sentence, raw_statuses)
 
@@ -404,7 +412,8 @@ class UsMoGetSupervisionTypeOnDay(unittest.TestCase):
         base_sentence = StateIncarcerationSentence.new_with_defaults(
             state_code='US_MO',
             external_id='1096616-20060515-3',
-            start_date=datetime.date(year=2009, month=6, day=11)
+            start_date=datetime.date(year=2009, month=6, day=11),
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO
         )
         us_mo_sentence = UsMoIncarcerationSentence.from_incarceration_sentence(base_sentence, raw_statuses)
 
@@ -609,7 +618,8 @@ class UsMoGetSupervisionTypeOnDay(unittest.TestCase):
         base_sentence = StateIncarcerationSentence.new_with_defaults(
             state_code='US_MO',
             external_id='13252-20160627-1',
-            start_date=datetime.date(year=2016, month=6, day=27)
+            start_date=datetime.date(year=2016, month=6, day=27),
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO
         )
         us_mo_sentence = UsMoIncarcerationSentence.from_incarceration_sentence(base_sentence, raw_statuses)
 
@@ -632,7 +642,8 @@ class UsMoGetSupervisionTypeOnDay(unittest.TestCase):
         base_sentence = StateIncarcerationSentence.new_with_defaults(
             state_code='US_MO',
             external_id='1001298-20160310-1',
-            start_date=datetime.date(year=2016, month=3, day=10)
+            start_date=datetime.date(year=2016, month=3, day=10),
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO
         )
         us_mo_sentence = UsMoIncarcerationSentence.from_incarceration_sentence(base_sentence, raw_statuses)
 
@@ -851,7 +862,8 @@ class UsMoGetMostRecentSupervisionTypeBeforeDay(unittest.TestCase):
         base_sentence = StateIncarcerationSentence.new_with_defaults(
             state_code='US_MO',
             external_id='1000044-20100920-1',
-            start_date=datetime.date(year=2012, month=1, day=25)
+            start_date=datetime.date(year=2012, month=1, day=25),
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO
         )
         us_mo_sentence = UsMoIncarcerationSentence.from_incarceration_sentence(base_sentence, raw_statuses)
 
@@ -870,7 +882,8 @@ class UsMoGetMostRecentSupervisionTypeBeforeDay(unittest.TestCase):
         base_sentence = StateIncarcerationSentence.new_with_defaults(
             state_code='US_MO',
             external_id='1000044-20100920-1',
-            start_date=datetime.date(year=2012, month=1, day=25)
+            start_date=datetime.date(year=2012, month=1, day=25),
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO
         )
         us_mo_sentence = UsMoIncarcerationSentence.from_incarceration_sentence(base_sentence, raw_statuses)
 
@@ -901,7 +914,8 @@ class UsMoGetMostRecentSupervisionTypeBeforeDay(unittest.TestCase):
         base_sentence = StateIncarcerationSentence.new_with_defaults(
             state_code='US_MO',
             external_id='1000044-20100920-1',
-            start_date=datetime.date(year=2012, month=1, day=25)
+            start_date=datetime.date(year=2012, month=1, day=25),
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO
         )
         us_mo_sentence = UsMoIncarcerationSentence.from_incarceration_sentence(base_sentence, raw_statuses)
 

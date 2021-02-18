@@ -211,6 +211,7 @@ class TestIncarcerationPipeline(unittest.TestCase):
         incarceration_sentence = schema.StateIncarcerationSentence(
             incarceration_sentence_id=1111,
             state_code=state_code,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
             sentence_group_id=sentence_group.sentence_group_id,
             incarceration_periods=[
                 initial_incarceration,
@@ -438,7 +439,8 @@ class TestIncarcerationPipeline(unittest.TestCase):
             state_code='US_XX',
             sentence_group_id=sentence_group.sentence_group_id,
             incarceration_periods=[incarceration_period],
-            person_id=fake_person_id
+            person_id=fake_person_id,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
         )
 
         supervision_sentence = schema.StateSupervisionSentence(
@@ -557,6 +559,7 @@ class TestClassifyIncarcerationEvents(unittest.TestCase):
         incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
             state_code='US_XX',
             incarceration_sentence_id=123,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
             incarceration_periods=[incarceration_period],
             start_date=date(2009, 2, 9),
             charges=[
