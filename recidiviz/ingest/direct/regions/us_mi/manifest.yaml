@@ -1,0 +1,10 @@
+agency_name: Michigan Department of Corrections
+agency_type: prison
+base_url: unknown
+timezone: America/New_York
+environment: staging
+shared_queue: direct-ingest-state-process-job-queue-v2
+jurisdiction_id: unknown
+raw_vs_ingest_file_name_differentiation_enabled_env: staging
+raw_data_bq_imports_enabled_env: staging
+ingest_view_exports_enabled_env: staging
