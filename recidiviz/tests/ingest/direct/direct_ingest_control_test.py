@@ -662,7 +662,7 @@ class TestDirectIngestControl(unittest.TestCase):
         mock_controller.do_ingest_view_export.assert_called_with(export_args)
 
     @patch(f"{CONTROL_PACKAGE_NAME}.get_supported_direct_ingest_region_codes")
-    @patch("recidiviz.utils.environment.get_gae_environment")
+    @patch("recidiviz.utils.environment.get_gcp_environment")
     @patch("recidiviz.utils.regions.get_region")
     def test_kick_all_schedulers(
             self,
