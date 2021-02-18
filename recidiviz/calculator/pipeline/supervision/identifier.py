@@ -366,11 +366,9 @@ def find_time_buckets_for_supervision_period(
                     _get_supervision_downgrade_details_if_downgrade_occurred(supervision_period_index,
                                                                              supervision_period)
 
-            is_past_projected_end_date = \
-                _get_is_past_projected_end_date(event_date=event_date,
-                                                incarceration_sentences=incarceration_sentences,
-                                                supervision_sentences=supervision_sentences,
-                                                period=supervision_period)
+            projected_end_date = _get_projected_end_date(incarceration_sentences=incarceration_sentences,
+                                                         supervision_sentences=supervision_sentences,
+                                                         period=supervision_period)
 
             supervision_day_buckets.append(
                 NonRevocationReturnSupervisionTimeBucket(
@@ -397,7 +395,7 @@ def find_time_buckets_for_supervision_period(
                     judicial_district_code=judicial_district_code,
                     supervision_level_downgrade_occurred=supervision_level_downgrade_occurred,
                     previous_supervision_level=previous_supervision_level,
-                    is_past_projected_end_date=is_past_projected_end_date,
+                    projected_end_date=projected_end_date,
                 )
             )
 
@@ -679,15 +677,14 @@ def get_violation_and_response_history(
     return violation_history_result
 
 
-def _get_is_past_projected_end_date(event_date: date,
-                                    supervision_sentences: List[StateSupervisionSentence],
-                                    incarceration_sentences: List[StateIncarcerationSentence],
-                                    period: PeriodType) -> \
-        Optional[bool]:
-    """Returns whether the `event_date` is after its associated projected completion date. Because supervision and
-    incarceration periods have different relationships with incarceration and supervision sentences, we consider
-    the projected completion date to be the latest projected_completion_date/projected_max_release_date of all sentences
-     that overlap with the given period."""
+def _get_projected_end_date(supervision_sentences: List[StateSupervisionSentence],
+                            incarceration_sentences: List[StateIncarcerationSentence],
+                            period: PeriodType) -> \
+        Optional[date]:
+    """Returns the projected completion date. Because supervision and incarceration periods have different
+    relationships with incarceration and supervision sentences, we consider the projected completion date to be the
+    latest projected_completion_date/projected_max_release_date of all sentences that overlap with the given period.
+    """
     if not supervision_sentences and not incarceration_sentences:
         return None
 
@@ -717,7 +714,7 @@ def _get_is_past_projected_end_date(event_date: date,
     if max_projected_end_date == date.min:
         return None
 
-    return event_date > max_projected_end_date
+    return max_projected_end_date
 
 
 def _period_is_within_sentence_bounds(period_start_date: Optional[date],
@@ -897,11 +894,10 @@ def find_revocation_return_buckets(supervision_sentences: List[StateSupervisionS
                 judicial_district_code = _get_judicial_district_code(
                     supervision_period, supervision_period_to_judicial_district_associations)
 
-                is_past_projected_end_date = \
-                    _get_is_past_projected_end_date(event_date=admission_date,
-                                                    period=supervision_period,
-                                                    supervision_sentences=supervision_sentences,
-                                                    incarceration_sentences=incarceration_sentences)
+                projected_end_date = \
+                    _get_projected_end_date(period=supervision_period,
+                                            supervision_sentences=supervision_sentences,
+                                            incarceration_sentences=incarceration_sentences)
                 if pre_revocation_supervision_type is not None:
                     deprecated_supervising_district_external_id = \
                         revocation_details.level_2_supervision_location_external_id or \
@@ -927,10 +923,12 @@ def find_revocation_return_buckets(supervision_sentences: List[StateSupervisionS
                         violation_type_frequency_counter=violation_history.violation_type_frequency_counter,
                         supervising_officer_external_id=revocation_details.supervising_officer_external_id,
                         supervising_district_external_id=deprecated_supervising_district_external_id,
-                        level_1_supervision_location_external_id=
-                        revocation_details.level_1_supervision_location_external_id,
-                        level_2_supervision_location_external_id=
-                        revocation_details.level_2_supervision_location_external_id,
+                        level_1_supervision_location_external_id=(
+                            revocation_details.level_1_supervision_location_external_id
+                        ),
+                        level_2_supervision_location_external_id=(
+                            revocation_details.level_2_supervision_location_external_id
+                        ),
                         supervision_level=supervision_level,
                         supervision_level_raw_text=supervision_level_raw_text,
                         # Note: This is incorrect in the case where you are revoked, then released by the end of the
@@ -938,7 +936,7 @@ def find_revocation_return_buckets(supervision_sentences: List[StateSupervisionS
                         #  non-existent since we don't count temporary / board hold periods as revocations.
                         is_on_supervision_last_day_of_month=False,
                         judicial_district_code=judicial_district_code,
-                        is_past_projected_end_date=is_past_projected_end_date,
+                        projected_end_date=projected_end_date,
                     )
 
                     revocation_return_buckets.append(revocation_month_bucket)
@@ -952,11 +950,9 @@ def find_revocation_return_buckets(supervision_sentences: List[StateSupervisionS
 
             case_type = StateSupervisionCaseType.GENERAL
 
-            is_past_projected_end_date = \
-                _get_is_past_projected_end_date(event_date=admission_date,
-                                                period=incarceration_period,
-                                                supervision_sentences=supervision_sentences,
-                                                incarceration_sentences=incarceration_sentences)
+            projected_end_date = _get_projected_end_date(period=incarceration_period,
+                                                         supervision_sentences=supervision_sentences,
+                                                         incarceration_sentences=incarceration_sentences)
 
             if pre_revocation_supervision_type is not None:
                 deprecated_supervising_district_external_id = \
@@ -985,16 +981,18 @@ def find_revocation_return_buckets(supervision_sentences: List[StateSupervisionS
                     violation_type_frequency_counter=violation_history.violation_type_frequency_counter,
                     supervising_officer_external_id=revocation_details.supervising_officer_external_id,
                     supervising_district_external_id=deprecated_supervising_district_external_id,
-                    level_1_supervision_location_external_id=
-                    revocation_details.level_1_supervision_location_external_id,
-                    level_2_supervision_location_external_id=
-                    revocation_details.level_2_supervision_location_external_id,
+                    level_1_supervision_location_external_id=(
+                        revocation_details.level_1_supervision_location_external_id
+                    ),
+                    level_2_supervision_location_external_id=(
+                        revocation_details.level_2_supervision_location_external_id
+                    ),
                     # Note: This is incorrect in the case where you are revoked, then released by the end of the
                     #  month to a new supervision period that overlaps with EOM. We expect this case to be rare or
                     #  non-existent since we don't count temporary / board hold periods as revocations.
                     is_on_supervision_last_day_of_month=False,
                     judicial_district_code=None,
-                    is_past_projected_end_date=is_past_projected_end_date,
+                    projected_end_date=projected_end_date,
                 )
 
                 revocation_return_buckets.append(revocation_month_bucket)

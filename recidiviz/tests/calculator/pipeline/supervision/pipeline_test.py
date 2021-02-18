@@ -449,7 +449,6 @@ class TestSupervisionPipeline(unittest.TestCase):
                 metric_types_filter=metric_types_filter
             )
 
-
     @freeze_time('2017-01-31')
     def testSupervisionPipeline_withRevocations(self):
         fake_person_id = 12345
@@ -1615,7 +1614,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 judicial_district_code=judicial_district_code,
                 sentence_days_served=(
                     supervision_sentence.completion_date - supervision_sentence.start_date).days,
-                )
+            )
         ]
 
         # We have to add these expected buckets in this order because there is no unsorted-list equality check in the
@@ -1961,7 +1960,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 supervising_district_external_id='10',
             ))
         expected_buckets.extend(identifier_test.expected_non_revocation_return_time_buckets(
-            attr.evolve(supervision_period, start_date = supervision_period.start_date + relativedelta(days=1)),
+            attr.evolve(supervision_period, start_date=supervision_period.start_date + relativedelta(days=1)),
             supervision_period_supervision_type,
             end_date=violation_report.response_date,
             assessment_score=assessment.assessment_score,
@@ -2331,7 +2330,7 @@ class TestCalculateSupervisionMetricCombinations(unittest.TestCase):
                     date_of_evaluation=date(2015, 3, 31),
                     num_days_assessment_overdue=0
                 ),
-                is_past_projected_end_date=False,
+                projected_end_date=None,
             ),
         ]
 
