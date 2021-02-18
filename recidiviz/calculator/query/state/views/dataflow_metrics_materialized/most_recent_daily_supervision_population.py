@@ -50,6 +50,7 @@ MOST_RECENT_DAILY_SUPERVISION_POPULATION_QUERY_TEMPLATE = \
       supervision_type,
       supervising_officer_external_id,
       prioritized_race_or_ethnicity,
+      projected_end_date,
       IFNULL(gender, 'EXTERNAL_UNKNOWN') as gender,
       IFNULL(age_bucket, 'EXTERNAL_UNKNOWN') as age_bucket,
       IFNULL(judicial_district_code, 'EXTERNAL_UNKNOWN') as judicial_district_code,

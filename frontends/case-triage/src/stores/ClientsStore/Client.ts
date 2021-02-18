@@ -38,6 +38,8 @@ export interface Client {
   fullName: ClientFullName;
   employer?: string;
   gender: Gender;
+  supervisionStartDate: string | moment.Moment | null;
+  projectedEndDate: string | moment.Moment | null;
   supervisionType: string;
   supervisionLevel: SupervisionLevel;
   personExternalId: string;
@@ -55,6 +57,8 @@ export interface Client {
 export interface DecoratedClient extends Client {
   name: string;
   formalName: string;
+  supervisionStartDate: moment.Moment | null;
+  projectedEndDate: moment.Moment | null;
   mostRecentFaceToFaceDate: moment.Moment | null;
   mostRecentAssessmentDate: moment.Moment | null;
   nextAssessmentDate: moment.Moment | null;
@@ -83,6 +87,8 @@ const decorateClient = (client: Client): DecoratedClient => {
     ...client,
     name,
     formalName,
+    supervisionStartDate: parseDate(client.supervisionStartDate),
+    projectedEndDate: parseDate(client.projectedEndDate),
     mostRecentFaceToFaceDate: parseDate(client.mostRecentFaceToFaceDate),
     mostRecentAssessmentDate: parseDate(client.mostRecentAssessmentDate),
     nextFaceToFaceDate: parseDate(client.nextFaceToFaceDate),
