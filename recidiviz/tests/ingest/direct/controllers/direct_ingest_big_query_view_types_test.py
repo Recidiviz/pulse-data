@@ -56,6 +56,7 @@ class DirectIngestBigQueryViewTypesTest(unittest.TestCase):
             region_code='us_xx',
             raw_file_config=DirectIngestRawFileConfig(
                 file_tag='table_name',
+                file_path='path/to/file.yaml',
                 file_description='file description',
                 primary_key_cols=['col1', 'col2'],
                 columns=[RawTableColumnInfo(name='col1', is_datetime=False, description='col1 description'),
@@ -94,6 +95,7 @@ class DirectIngestBigQueryViewTypesTest(unittest.TestCase):
             region_code='us_xx',
             raw_file_config=DirectIngestRawFileConfig(
                 file_tag='table_name',
+                file_path='path/to/file.yaml',
                 file_description='file description',
                 primary_key_cols=['col1', 'col2'],
                 columns=[RawTableColumnInfo(name='col1', is_datetime=False, description='col1 description'),
@@ -132,6 +134,7 @@ class DirectIngestBigQueryViewTypesTest(unittest.TestCase):
             region_code='us_xx',
             raw_file_config=DirectIngestRawFileConfig(
                 file_tag='table_name',
+                file_path='path/to/file.yaml',
                 file_description='file description',
                 primary_key_cols=['col1'],
                 columns=[RawTableColumnInfo(name='col1', is_datetime=False, description='col1 description'),
@@ -180,6 +183,7 @@ class DirectIngestBigQueryViewTypesTest(unittest.TestCase):
             region_code='us_xx',
             raw_file_config=DirectIngestRawFileConfig(
                 file_tag='table_name',
+                file_path='path/to/file.yaml',
                 file_description='file description',
                 primary_key_cols=['col1'],
                 columns=[RawTableColumnInfo(name='col1', is_datetime=False, description='col1 description'),

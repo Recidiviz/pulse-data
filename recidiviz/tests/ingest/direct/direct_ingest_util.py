@@ -91,6 +91,7 @@ class FakeDirectIngestRegionRawFileConfig(DirectIngestRegionRawFileConfig):
         return {
             'tagA': DirectIngestRawFileConfig(
                 file_tag='tagA',
+                file_path='path/to/tagA.yaml',
                 file_description='file description',
                 primary_key_cols=['mockKey'],
                 columns=[RawTableColumnInfo(name='mockKey', description='mockKey description', is_datetime=False)],
@@ -102,6 +103,7 @@ class FakeDirectIngestRegionRawFileConfig(DirectIngestRegionRawFileConfig):
             ),
             'tagB': DirectIngestRawFileConfig(
                 file_tag='tagB',
+                file_path='path/to/tagB.yaml',
                 file_description='file description',
                 primary_key_cols=['mockKey'],
                 columns=[RawTableColumnInfo(name='mockKey', description='mockKey description', is_datetime=False)],
@@ -113,6 +115,7 @@ class FakeDirectIngestRegionRawFileConfig(DirectIngestRegionRawFileConfig):
             ),
             'tagC': DirectIngestRawFileConfig(
                 file_tag='tagC',
+                file_path='path/to/tagC.yaml',
                 file_description='file description',
                 primary_key_cols=['mockKey'],
                 columns=[RawTableColumnInfo(name='mockKey', description='mockKey description', is_datetime=False)],
@@ -124,6 +127,7 @@ class FakeDirectIngestRegionRawFileConfig(DirectIngestRegionRawFileConfig):
             ),
             'tagWeDoNotIngest': DirectIngestRawFileConfig(
                 file_tag='tagWeDoNotIngest',
+                file_path='path/to/tagWeDoNotIngest.yaml',
                 file_description='file description',
                 primary_key_cols=[],
                 columns=[],

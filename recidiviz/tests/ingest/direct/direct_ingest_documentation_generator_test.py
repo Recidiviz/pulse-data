@@ -31,7 +31,14 @@ class DirectIngestDocumentationGeneratorTest(unittest.TestCase):
     """Tests for DirectIngestDocumentationGenerator."""
 
     @patch('recidiviz.ingest.direct.direct_ingest_documentation_generator.DirectIngestRegionRawFileConfig')
-    def test_generate_raw_file_docs_for_region(self, mock_raw_config: MagicMock) -> None:
+    @patch('recidiviz.ingest.direct.direct_ingest_documentation_generator.DirectIngestDocumentationGenerator'
+           '._get_updated_by')
+    @patch('recidiviz.ingest.direct.direct_ingest_documentation_generator.DirectIngestDocumentationGenerator'
+           '._get_last_updated')
+    def test_generate_raw_file_docs_for_region(self,
+                                               mock_last_updated: MagicMock,
+                                               mock_updated_by: MagicMock,
+                                               mock_raw_config: MagicMock) -> None:
         importlib.reload(states)
         region_code = states.StateCode.US_XX.value.lower()
 
@@ -40,6 +47,8 @@ class DirectIngestDocumentationGeneratorTest(unittest.TestCase):
             yaml_config_file_dir=fixtures.as_filepath(region_code),
         )
         mock_raw_config.return_value = region_config
+        mock_updated_by.return_value = 'Julia Dressel'
+        mock_last_updated.return_value = '2021-02-10'
 
         documentation_generator = DirectIngestDocumentationGenerator()
         documentation = documentation_generator.generate_raw_file_docs_for_region(region_code)
@@ -61,9 +70,9 @@ The statuses below are defined as:
 
 |                       **Table**                       | **Status** | **Last Updated** | **Updated By** |
 |-------------------------------------------------------|------------|------------------|----------------|
-| [multiLineDescription](#multiLineDescription)         |            |                  |                |
-| [tagColumnsMissing](#tagColumnsMissing)               |            |                  |                |
-| [tagPrimaryKeyColsMissing](#tagPrimaryKeyColsMissing) |            |                  |                |
+| [multiLineDescription](#multiLineDescription)         |            | 2021-02-10       | Julia Dressel  |
+| [tagColumnsMissing](#tagColumnsMissing)               |            | 2021-02-10       | Julia Dressel  |
+| [tagPrimaryKeyColsMissing](#tagPrimaryKeyColsMissing) |            | 2021-02-10       | Julia Dressel  |
 
 ## multiLineDescription
 
