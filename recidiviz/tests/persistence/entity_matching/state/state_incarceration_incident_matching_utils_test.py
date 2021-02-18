@@ -16,7 +16,6 @@
 # =============================================================================
 """Tests for state_incarceration_incident_matching_utils.py"""
 import datetime
-from copy import deepcopy
 
 import attr
 
@@ -25,7 +24,8 @@ from recidiviz.common.constants.state.state_incarceration_period import \
     StateIncarcerationPeriodReleaseReason
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.persistence.database.schema.state import schema
-from recidiviz.persistence.database.schema_entity_converter.schema_entity_converter import convert_entity_to_schema_object
+from recidiviz.persistence.database.schema_entity_converter.schema_entity_converter import \
+    convert_entity_to_schema_object
 from recidiviz.persistence.entity.state.entities import StatePerson, StateSentenceGroup, StateIncarcerationPeriod, \
     StateIncarcerationIncident, StateIncarcerationSentence
 from recidiviz.persistence.entity_matching.state.state_incarceration_incident_matching_utils import \
@@ -102,6 +102,7 @@ class TestIncidentMatchingUtils(BaseStateMatchingUtilsTest):
         incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
             state_code=_STATE_CODE,
             external_id=_EXTERNAL_ID,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
             incarceration_periods=[
                 merged_incarceration_period_1,
                 merged_incarceration_period_2,
@@ -110,7 +111,8 @@ class TestIncidentMatchingUtils(BaseStateMatchingUtilsTest):
             StateIncarcerationSentence.new_with_defaults(
                 state_code=_STATE_CODE,
                 external_id=_EXTERNAL_ID_2,
-                incarceration_periods=[placeholder_incarceration_period])
+                incarceration_periods=[placeholder_incarceration_period],
+                status=StateSentenceStatus.PRESENT_WITHOUT_INFO)
         sentence_group = StateSentenceGroup.new_with_defaults(
             state_code=_STATE_CODE,
             status=StateSentenceStatus.PRESENT_WITHOUT_INFO,

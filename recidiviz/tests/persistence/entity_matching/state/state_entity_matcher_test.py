@@ -2419,7 +2419,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
                 incarceration_incidents=[incarceration_incident])
         placeholder_incarceration_sentence = \
             StateIncarcerationSentence.new_with_defaults(
-                status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO,
+                status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
                 state_code=_STATE_CODE,
                 incarceration_periods=[placeholder_incarceration_period])
         sentence_group = attr.evolve(
@@ -2748,6 +2748,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
                         StateIncarcerationSentence.new_with_defaults(
                             state_code=_STATE_CODE,
                             external_id=_EXTERNAL_ID,
+                            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
                             charges=[
                                 StateCharge.new_with_defaults(
                                     state_code=_STATE_CODE,
@@ -2833,6 +2834,7 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
                     incarceration_sentences=[
                         StateIncarcerationSentence.new_with_defaults(
                             state_code=_STATE_CODE,
+                            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
                             charges=[
                                 StateCharge.new_with_defaults(
                                     state_code=_STATE_CODE,

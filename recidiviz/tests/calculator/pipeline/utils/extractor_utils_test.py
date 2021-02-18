@@ -1721,7 +1721,8 @@ class TestRepackageUnifyingIdParentIdStructure(unittest.TestCase):
         incarceration_sentence = \
             entities.StateIncarcerationSentence.new_with_defaults(
                 state_code='US_XX',
-                incarceration_sentence_id=444
+                incarceration_sentence_id=444,
+                status=StateSentenceStatus.PRESENT_WITHOUT_INFO
             )
 
         element = [(1234, {'child_entity_with_unifying_id':
@@ -1747,7 +1748,8 @@ class TestRepackageUnifyingIdParentIdStructure(unittest.TestCase):
         incarceration_sentence = \
             entities.StateIncarcerationSentence.new_with_defaults(
                 state_code='US_XX',
-                incarceration_sentence_id=444
+                incarceration_sentence_id=444,
+                status=StateSentenceStatus.PRESENT_WITHOUT_INFO
             )
 
         element = [(999, {'child_entity_with_unifying_id':

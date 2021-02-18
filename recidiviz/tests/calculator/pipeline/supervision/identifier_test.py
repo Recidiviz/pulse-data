@@ -75,7 +75,7 @@ from recidiviz.persistence.entity.state.entities import \
     StateSupervisionViolationResponse, StateSupervisionViolation, \
     StateSupervisionViolationTypeEntry, \
     StateSupervisionViolationResponseDecisionEntry, StateSupervisionSentence, \
-    StateAssessment, StateSupervisionCaseTypeEntry, StateSupervisionViolatedConditionEntry,\
+    StateAssessment, StateSupervisionCaseTypeEntry, StateSupervisionViolatedConditionEntry, \
     StateIncarcerationSentence, StateSupervisionContact
 from recidiviz.tests.calculator.pipeline.utils.us_mo_fakes import FakeUsMoSupervisionSentence, \
     FakeUsMoIncarcerationSentence
@@ -90,7 +90,6 @@ DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS = {
         'supervision_period_id': 999
     }
 }
-
 
 DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST = list(DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATIONS.values())
 
@@ -196,7 +195,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 event_date=last_day_of_month(supervision_sentence.projected_completion_date),
                 supervision_type=supervision_period_supervision_type,
                 sentence_days_served=(
-                    supervision_sentence.completion_date - supervision_sentence.start_date).days,
+                        supervision_sentence.completion_date - supervision_sentence.start_date).days,
                 case_type=StateSupervisionCaseType.DOMESTIC_VIOLENCE,
                 supervision_level=supervision_period.supervision_level,
                 supervision_level_raw_text=supervision_period.supervision_level_raw_text,
@@ -2652,7 +2651,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         expected_buckets.extend(expected_non_revocation_return_time_buckets(
             second_supervision_period,
             second_supervision_period_supervision_type,
-            case_compliances = {
+            case_compliances={
                 date(2018, 5, 31): SupervisionCaseCompliance(
                     date_of_evaluation=date(2018, 5, 31),
                     assessment_count=0,
@@ -4193,7 +4192,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         )
 
         supervision_sentence = StateSupervisionSentence.new_with_defaults(
-                state_code='US_XX',
+            state_code='US_XX',
             supervision_sentence_id=111,
             start_date=date(2017, 1, 1),
             external_id='ss1',
@@ -4202,11 +4201,12 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         )
 
         incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
-                state_code='US_XX',
+            state_code='US_XX',
             incarceration_sentence_id=123,
             external_id='is1',
             start_date=date(2017, 1, 1),
-            supervision_periods=[supervision_period]
+            supervision_periods=[supervision_period],
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO
         )
 
         assessment = StateAssessment.new_with_defaults(
@@ -4731,7 +4731,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 successful_completion=True,
                 incarcerated_during_sentence=False,
                 sentence_days_served=(
-                    supervision_sentence.completion_date - supervision_sentence.start_date).days
+                        supervision_sentence.completion_date - supervision_sentence.start_date).days
             ),
             SupervisionTerminationBucket(
                 state_code=supervision_period.state_code,
@@ -4754,22 +4754,22 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             assessment_level=assessment.assessment_level,
             assessment_type=assessment.assessment_type,
             case_compliances={
-            date(2018, 3, 31): SupervisionCaseCompliance(
-                date_of_evaluation=date(2018, 3, 31),
-                assessment_count=0,
-                most_recent_assessment_date=date(2018, 2, 10),
-                num_days_assessment_overdue=0,
-                face_to_face_count=0,
-                face_to_face_frequency_sufficient=None
-            ),
-            date(2018, 4, 30): SupervisionCaseCompliance(
-                date_of_evaluation=date(2018, 4, 30),
-                assessment_count=0,
-                most_recent_assessment_date=date(2018, 2, 10),
-                num_days_assessment_overdue=0,
-                face_to_face_count=0,
-                face_to_face_frequency_sufficient=None
-            )
+                date(2018, 3, 31): SupervisionCaseCompliance(
+                    date_of_evaluation=date(2018, 3, 31),
+                    assessment_count=0,
+                    most_recent_assessment_date=date(2018, 2, 10),
+                    num_days_assessment_overdue=0,
+                    face_to_face_count=0,
+                    face_to_face_frequency_sufficient=None
+                ),
+                date(2018, 4, 30): SupervisionCaseCompliance(
+                    date_of_evaluation=date(2018, 4, 30),
+                    assessment_count=0,
+                    most_recent_assessment_date=date(2018, 2, 10),
+                    num_days_assessment_overdue=0,
+                    face_to_face_count=0,
+                    face_to_face_frequency_sufficient=None
+                )
             },
             projected_supervision_completion_date=supervision_sentence.projected_completion_date
         ))
@@ -4810,11 +4810,12 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             )
 
         incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
-                state_code='US_XX',
+            state_code='US_XX',
             incarceration_sentence_id=123,
             external_id='is1',
             start_date=date(2017, 1, 1),
-            supervision_periods=[supervision_period]
+            supervision_periods=[supervision_period],
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO
         )
 
         assessment = StateAssessment.new_with_defaults(
@@ -4944,7 +4945,8 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                     external_id='is1',
                     start_date=date(2017, 1, 1),
                     completion_date=date(2018, 5, 19),
-                    supervision_periods=[supervision_period]
+                    supervision_periods=[supervision_period],
+                    status=StateSentenceStatus.PRESENT_WITHOUT_INFO
                 ),
                 supervision_type_spans=[
                     SupervisionTypeSpan(
@@ -5137,11 +5139,12 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             )
 
         incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
-                state_code='US_XX',
+            state_code='US_XX',
             incarceration_sentence_id=123,
             external_id='is1',
             start_date=date(2017, 1, 1),
-            supervision_periods=[supervision_period]
+            supervision_periods=[supervision_period],
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO
         )
 
         assessment = StateAssessment.new_with_defaults(
@@ -5338,8 +5341,6 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             DEFAULT_SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_LIST
         )
 
-
-
         self.assertCountEqual(supervision_time_buckets, [])
 
     @freeze_time('2019-09-04')
@@ -5477,13 +5478,14 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             )
 
         incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
-                state_code='US_XX',
+            state_code='US_XX',
             incarceration_sentence_id=123,
             external_id='is1',
             start_date=date(2018, 1, 1),
             incarceration_periods=[
                 first_incarceration_period, second_incarceration_period],
-            supervision_periods=[supervision_period]
+            supervision_periods=[supervision_period],
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO
         )
 
         assessments = []
@@ -5565,7 +5567,8 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         self.assertCountEqual(supervision_time_buckets, expected_buckets)
 
     # # pylint: disable=line-too-long
-    @mock.patch('recidiviz.calculator.pipeline.supervision.identifier.assessment_utils._assessment_types_of_class_for_state')
+    @mock.patch(
+        'recidiviz.calculator.pipeline.supervision.identifier.assessment_utils._assessment_types_of_class_for_state')
     def test_supervision_time_buckets_revocation_details_us_mo(self, mock_assessment_types):
         """Tests the supervision_time_buckets function when there is an incarceration period with
         a revocation admission in the same month as the supervision period's termination_date. Ensures that the
@@ -5694,7 +5697,8 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                     incarceration_sentence_id=123,
                     external_id='is1',
                     start_date=date(2018, 5, 25),
-                    incarceration_periods=[incarceration_period]
+                    incarceration_periods=[incarceration_period],
+                    status=StateSentenceStatus.PRESENT_WITHOUT_INFO
                 ),
                 supervision_type_spans=[
                     SupervisionTypeSpan(
@@ -5797,7 +5801,8 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         self.assertCountEqual(supervision_time_buckets, expected_buckets)
 
     # # pylint: disable=line-too-long
-    @mock.patch('recidiviz.calculator.pipeline.supervision.identifier.assessment_utils._assessment_types_of_class_for_state')
+    @mock.patch(
+        'recidiviz.calculator.pipeline.supervision.identifier.assessment_utils._assessment_types_of_class_for_state')
     def test_supervision_time_buckets_revocation_details_us_mo_shock_spfi(self, mock_assessment_types):
         mock_assessment_types.return_value = [
             StateAssessmentType.ORAS_COMMUNITY_SUPERVISION,
@@ -5923,11 +5928,12 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         incarceration_sentence = \
             FakeUsMoIncarcerationSentence.fake_sentence_from_sentence(
                 StateIncarcerationSentence.new_with_defaults(
-                state_code='US_XX',
+                    state_code='US_XX',
                     incarceration_sentence_id=123,
                     external_id='is1',
                     start_date=date(2018, 5, 25),
-                    incarceration_periods=[incarceration_period]
+                    incarceration_periods=[incarceration_period],
+                    status=StateSentenceStatus.PRESENT_WITHOUT_INFO
                 ),
                 supervision_type_spans=[
                     SupervisionTypeSpan(
@@ -6174,7 +6180,8 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                     incarceration_sentence_id=123,
                     external_id='is1',
                     start_date=date(2018, 5, 25),
-                    incarceration_periods=[incarceration_period]
+                    incarceration_periods=[incarceration_period],
+                    status=StateSentenceStatus.PRESENT_WITHOUT_INFO
                 ),
                 supervision_type_spans=[
                     SupervisionTypeSpan(
@@ -6311,13 +6318,13 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                         state_code='US_MO',
                         decision=StateSupervisionViolationResponseDecision.REVOCATION,
                         revocation_type=StateSupervisionViolationResponseRevocationType.
-                        REINCARCERATION
+                            REINCARCERATION
                     ),
                     StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
                         state_code='US_MO',
                         decision=StateSupervisionViolationResponseDecision.CONTINUANCE,
                         revocation_type=StateSupervisionViolationResponseRevocationType.
-                        SHOCK_INCARCERATION,
+                            SHOCK_INCARCERATION,
                     )
                 ],
                 supervision_violation=supervision_violation
@@ -6341,7 +6348,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 admission_date=date(2018, 5, 25),
                 admission_reason=StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
                 source_supervision_violation_response=source_supervision_violation_response,
-            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.SHOCK_INCARCERATION
+                specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.SHOCK_INCARCERATION
             )
 
         assessment = StateAssessment.new_with_defaults(
@@ -6384,7 +6391,8 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                     incarceration_sentence_id=123,
                     external_id='is1',
                     start_date=date(2018, 5, 25),
-                    incarceration_periods=[incarceration_period]
+                    incarceration_periods=[incarceration_period],
+                    status=StateSentenceStatus.PRESENT_WITHOUT_INFO
                 ),
                 supervision_type_spans=[
                     SupervisionTypeSpan(
@@ -6574,7 +6582,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 admission_date=date(2018, 5, 25),
                 admission_reason=StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
                 source_supervision_violation_response=source_supervision_violation_response,
-            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.SHOCK_INCARCERATION
+                specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.SHOCK_INCARCERATION
             )
 
         assessment = StateAssessment.new_with_defaults(
@@ -6617,7 +6625,8 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                     incarceration_sentence_id=123,
                     external_id='is1',
                     start_date=date(2018, 5, 25),
-                    incarceration_periods=[incarceration_period]
+                    incarceration_periods=[incarceration_period],
+                    status=StateSentenceStatus.PRESENT_WITHOUT_INFO
                 ),
                 supervision_type_spans=[
                     SupervisionTypeSpan(
@@ -7225,24 +7234,24 @@ class TestFindRevocationReturnBuckets(unittest.TestCase):
         supervision_period_supervision_type = StateSupervisionPeriodSupervisionType.PROBATION
 
         expected_revocation_bucket = RevocationReturnSupervisionTimeBucket(
-                state_code=supervision_period.state_code,
-                year=2009, month=12,
-                event_date=incarceration_period.admission_date,
-                supervision_type=supervision_period_supervision_type,
-                case_type=StateSupervisionCaseType.GENERAL,
-                revocation_type=StateSupervisionViolationResponseRevocationType.REINCARCERATION,
-                source_violation_type=None,
-                most_severe_violation_type=StateSupervisionViolationType.FELONY,
-                most_severe_violation_type_subtype=StateSupervisionViolationType.FELONY.value,
-                most_severe_response_decision=StateSupervisionViolationResponseDecision.REVOCATION,
-                response_count=2,
-                violation_history_description='1felony;1technical',
-                violation_type_frequency_counter=[['FELONY'], ['TECHNICAL']],
-                supervising_officer_external_id='XXX',
-                supervising_district_external_id='OFFICE_1',
-                judicial_district_code='XXX',
-                level_1_supervision_location_external_id='OFFICE_1',
-                is_on_supervision_last_day_of_month=False)
+            state_code=supervision_period.state_code,
+            year=2009, month=12,
+            event_date=incarceration_period.admission_date,
+            supervision_type=supervision_period_supervision_type,
+            case_type=StateSupervisionCaseType.GENERAL,
+            revocation_type=StateSupervisionViolationResponseRevocationType.REINCARCERATION,
+            source_violation_type=None,
+            most_severe_violation_type=StateSupervisionViolationType.FELONY,
+            most_severe_violation_type_subtype=StateSupervisionViolationType.FELONY.value,
+            most_severe_response_decision=StateSupervisionViolationResponseDecision.REVOCATION,
+            response_count=2,
+            violation_history_description='1felony;1technical',
+            violation_type_frequency_counter=[['FELONY'], ['TECHNICAL']],
+            supervising_officer_external_id='XXX',
+            supervising_district_external_id='OFFICE_1',
+            judicial_district_code='XXX',
+            level_1_supervision_location_external_id='OFFICE_1',
+            is_on_supervision_last_day_of_month=False)
 
         self.assertEqual([expected_revocation_bucket], revocation_buckets)
 
@@ -7345,24 +7354,24 @@ class TestFindRevocationReturnBuckets(unittest.TestCase):
         supervision_period_supervision_type = StateSupervisionPeriodSupervisionType.PROBATION
 
         expected_revocation_bucket = RevocationReturnSupervisionTimeBucket(
-                state_code=supervision_period.state_code,
-                year=2009, month=12,
-                event_date=incarceration_period.admission_date,
-                supervision_type=supervision_period_supervision_type,
-                case_type=StateSupervisionCaseType.GENERAL,
-                revocation_type=StateSupervisionViolationResponseRevocationType.REINCARCERATION,
-                source_violation_type=None,
-                most_severe_violation_type=StateSupervisionViolationType.TECHNICAL,
-                most_severe_violation_type_subtype=StateSupervisionViolationType.TECHNICAL.value,
-                most_severe_response_decision=StateSupervisionViolationResponseDecision.REVOCATION,
-                response_count=1,
-                violation_history_description='1technical',
-                violation_type_frequency_counter=[['TECHNICAL']],
-                supervising_officer_external_id='XXX',
-                supervising_district_external_id='OFFICE_1',
-                judicial_district_code='XXX',
-                level_1_supervision_location_external_id='OFFICE_1',
-                is_on_supervision_last_day_of_month=False)
+            state_code=supervision_period.state_code,
+            year=2009, month=12,
+            event_date=incarceration_period.admission_date,
+            supervision_type=supervision_period_supervision_type,
+            case_type=StateSupervisionCaseType.GENERAL,
+            revocation_type=StateSupervisionViolationResponseRevocationType.REINCARCERATION,
+            source_violation_type=None,
+            most_severe_violation_type=StateSupervisionViolationType.TECHNICAL,
+            most_severe_violation_type_subtype=StateSupervisionViolationType.TECHNICAL.value,
+            most_severe_response_decision=StateSupervisionViolationResponseDecision.REVOCATION,
+            response_count=1,
+            violation_history_description='1technical',
+            violation_type_frequency_counter=[['TECHNICAL']],
+            supervising_officer_external_id='XXX',
+            supervising_district_external_id='OFFICE_1',
+            judicial_district_code='XXX',
+            level_1_supervision_location_external_id='OFFICE_1',
+            is_on_supervision_last_day_of_month=False)
 
         self.assertEqual([expected_revocation_bucket], revocation_buckets)
 
@@ -7485,7 +7494,8 @@ class TestFindRevocationReturnBuckets(unittest.TestCase):
                     incarceration_sentence_id=123,
                     external_id='is1',
                     start_date=date(2018, 5, 25),
-                    incarceration_periods=[incarceration_period]
+                    incarceration_periods=[incarceration_period],
+                    status=StateSentenceStatus.PRESENT_WITHOUT_INFO
                 ),
                 supervision_type_spans=[
                     SupervisionTypeSpan(
@@ -7510,24 +7520,24 @@ class TestFindRevocationReturnBuckets(unittest.TestCase):
         supervision_period_supervision_type = StateSupervisionPeriodSupervisionType.PROBATION
 
         expected_revocation_bucket = RevocationReturnSupervisionTimeBucket(
-                state_code=supervision_period.state_code,
-                year=2012, month=12,
-                event_date=incarceration_period.admission_date,
-                supervision_type=supervision_period_supervision_type,
-                case_type=StateSupervisionCaseType.GENERAL,
-                revocation_type=StateSupervisionViolationResponseRevocationType.REINCARCERATION,
-                source_violation_type=None,
-                most_severe_violation_type=StateSupervisionViolationType.FELONY,
-                most_severe_violation_type_subtype=StateSupervisionViolationType.FELONY.value,
-                most_severe_response_decision=StateSupervisionViolationResponseDecision.SHOCK_INCARCERATION,
-                response_count=1,
-                violation_history_description='1fel',
-                violation_type_frequency_counter=[['FELONY']],
-                supervising_officer_external_id='XXX',
-                supervising_district_external_id='OFFICE_1',
-                judicial_district_code='XXX',
-                level_1_supervision_location_external_id='OFFICE_1',
-                is_on_supervision_last_day_of_month=False)
+            state_code=supervision_period.state_code,
+            year=2012, month=12,
+            event_date=incarceration_period.admission_date,
+            supervision_type=supervision_period_supervision_type,
+            case_type=StateSupervisionCaseType.GENERAL,
+            revocation_type=StateSupervisionViolationResponseRevocationType.REINCARCERATION,
+            source_violation_type=None,
+            most_severe_violation_type=StateSupervisionViolationType.FELONY,
+            most_severe_violation_type_subtype=StateSupervisionViolationType.FELONY.value,
+            most_severe_response_decision=StateSupervisionViolationResponseDecision.SHOCK_INCARCERATION,
+            response_count=1,
+            violation_history_description='1fel',
+            violation_type_frequency_counter=[['FELONY']],
+            supervising_officer_external_id='XXX',
+            supervising_district_external_id='OFFICE_1',
+            judicial_district_code='XXX',
+            level_1_supervision_location_external_id='OFFICE_1',
+            is_on_supervision_last_day_of_month=False)
 
         self.assertEqual([expected_revocation_bucket], revocation_buckets)
 
@@ -8082,7 +8092,7 @@ class TestFindTimeBucketsForSupervisionPeriod(unittest.TestCase):
         expected_buckets = expected_non_revocation_return_time_buckets(
             supervision_period,
             supervision_period_supervision_type,
-            case_compliances= {
+            case_compliances={
                 date(2001, 1, 31): SupervisionCaseCompliance(
                     date_of_evaluation=date(2001, 1, 31),
                     assessment_count=0,
@@ -8137,11 +8147,11 @@ class TestFindTimeBucketsForSupervisionPeriod(unittest.TestCase):
                              case_type=StateSupervisionCaseType.GENERAL,
                              is_on_supervision_last_day_of_month=True,
                              case_compliance=SupervisionCaseCompliance(
-                                date_of_evaluation=date(2001, 6, 30),
-                                assessment_count=0,
-                                num_days_assessment_overdue=0,
-                                face_to_face_count=0,
-                                face_to_face_frequency_sufficient=None,
+                                 date_of_evaluation=date(2001, 6, 30),
+                                 assessment_count=0,
+                                 num_days_assessment_overdue=0,
+                                 face_to_face_count=0,
+                                 face_to_face_frequency_sufficient=None,
                              )
                          ))
 
@@ -8202,7 +8212,7 @@ class TestFindTimeBucketsForSupervisionPeriod(unittest.TestCase):
         expected_buckets = expected_non_revocation_return_time_buckets(
             supervision_period,
             supervision_period_supervision_type,
-            case_compliances= {
+            case_compliances={
                 date(2001, 1, 31): SupervisionCaseCompliance(
                     date_of_evaluation=date(2001, 1, 31),
                     assessment_count=0,
@@ -8461,7 +8471,7 @@ class TestFindTimeBucketsForSupervisionPeriod(unittest.TestCase):
             assessment_score=assessment.assessment_score,
             assessment_level=assessment.assessment_level,
             assessment_type=assessment.assessment_type,
-            case_compliances= {
+            case_compliances={
                 date(2018, 1, 31): SupervisionCaseCompliance(
                     date_of_evaluation=date(2018, 1, 31),
                     assessment_count=0,
@@ -8697,7 +8707,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
                 incarcerated_during_sentence=False,
                 case_type=StateSupervisionCaseType.GENERAL,
                 sentence_days_served=(
-                    supervision_sentence.completion_date - supervision_sentence.start_date).days
+                        supervision_sentence.completion_date - supervision_sentence.start_date).days
             )
         ], projected_completion_buckets)
 
@@ -8761,7 +8771,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
                 incarcerated_during_sentence=True,
                 case_type=StateSupervisionCaseType.GENERAL,
                 sentence_days_served=(
-                    supervision_sentence.completion_date - supervision_sentence.start_date).days
+                        supervision_sentence.completion_date - supervision_sentence.start_date).days
             )
         ], projected_completion_buckets)
 
@@ -8829,7 +8839,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
                 successful_completion=False,
                 incarcerated_during_sentence=False,
                 sentence_days_served=(
-                    supervision_sentence.completion_date - supervision_sentence.start_date).days
+                        supervision_sentence.completion_date - supervision_sentence.start_date).days
             )
         ], projected_completion_buckets)
 
@@ -9161,7 +9171,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
                 successful_completion=True,
                 incarcerated_during_sentence=False,
                 sentence_days_served=(
-                    supervision_sentence.completion_date - supervision_sentence.start_date).days,
+                        supervision_sentence.completion_date - supervision_sentence.start_date).days,
                 supervising_officer_external_id=None,
                 supervising_district_external_id=None,
                 judicial_district_code=None
@@ -9219,7 +9229,7 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
                 incarcerated_during_sentence=False,
                 case_type=StateSupervisionCaseType.GENERAL,
                 sentence_days_served=(
-                    supervision_sentence.completion_date - supervision_sentence.start_date).days
+                        supervision_sentence.completion_date - supervision_sentence.start_date).days
             )
         ], projected_completion_buckets)
 
@@ -9469,7 +9479,7 @@ class TestFindSupervisionTerminationBucket(unittest.TestCase):
         )
 
         assessment_score_change = last_assessment.assessment_score - \
-            first_reassessment.assessment_score
+                                  first_reassessment.assessment_score
 
         supervision_period_supervision_type = StateSupervisionPeriodSupervisionType.PROBATION
 
@@ -10243,13 +10253,13 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
                     state_code='US_XX',
                     decision=StateSupervisionViolationResponseDecision.REVOCATION,
                     revocation_type=StateSupervisionViolationResponseRevocationType.
-                    REINCARCERATION
+                        REINCARCERATION
                 ),
                 StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
                     state_code='US_XX',
                     decision=StateSupervisionViolationResponseDecision.CONTINUANCE,
                     revocation_type=StateSupervisionViolationResponseRevocationType.
-                    SHOCK_INCARCERATION,
+                        SHOCK_INCARCERATION,
                 )
             ],
         )
@@ -10420,13 +10430,13 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
                         state_code='US_XX',
                         decision=StateSupervisionViolationResponseDecision.REVOCATION,
                         revocation_type=StateSupervisionViolationResponseRevocationType.
-                        REINCARCERATION
+                            REINCARCERATION
                     ),
                     StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
                         state_code='US_XX',
                         decision=StateSupervisionViolationResponseDecision.CONTINUANCE,
                         revocation_type=StateSupervisionViolationResponseRevocationType.
-                        SHOCK_INCARCERATION,
+                            SHOCK_INCARCERATION,
                     )
                 ],
                 supervision_violation=supervision_violation
@@ -10476,13 +10486,13 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
                         state_code='US_MO',
                         decision=StateSupervisionViolationResponseDecision.REVOCATION,
                         revocation_type=StateSupervisionViolationResponseRevocationType.
-                        REINCARCERATION
+                            REINCARCERATION
                     ),
                     StateSupervisionViolationResponseDecisionEntry.new_with_defaults(
                         state_code='US_MO',
                         decision=StateSupervisionViolationResponseDecision.CONTINUANCE,
                         revocation_type=StateSupervisionViolationResponseRevocationType.
-                        SHOCK_INCARCERATION,
+                            SHOCK_INCARCERATION,
                     )
                 ],
                 supervision_violation=supervision_violation
@@ -10693,10 +10703,10 @@ class TestSortedViolationResponsesInWindow(unittest.TestCase):
             include_follow_up_responses=False)
 
         self.assertEqual([StateSupervisionViolationResponse.new_with_defaults(
-                state_code='US_XX',
-                response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
-                response_date=date(2010, 1, 1)
-            )], responses_in_window)
+            state_code='US_XX',
+            response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
+            response_date=date(2010, 1, 1)
+        )], responses_in_window)
 
     def test_sorted_responses_in_window_no_lower_bound(self):
         violation_responses = [
@@ -10726,14 +10736,14 @@ class TestSortedViolationResponsesInWindow(unittest.TestCase):
             include_follow_up_responses=False)
 
         self.assertEqual([StateSupervisionViolationResponse.new_with_defaults(
-                state_code='US_XX',
-                response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
-                response_date=date(1990, 2, 1)
-            ),StateSupervisionViolationResponse.new_with_defaults(
-                state_code='US_XX',
-                response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
-                response_date=date(2010, 1, 1)
-            )], responses_in_window)
+            state_code='US_XX',
+            response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
+            response_date=date(1990, 2, 1)
+        ), StateSupervisionViolationResponse.new_with_defaults(
+            state_code='US_XX',
+            response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
+            response_date=date(2010, 1, 1)
+        )], responses_in_window)
 
     def test_sorted_responses_in_window_all_outside_of_window(self):
         violation_responses = [
@@ -11212,6 +11222,7 @@ class TestConvertBucketsToDual(unittest.TestCase):
 
 class TestIncludeTerminationInSuccessMetric(unittest.TestCase):
     """Tests for _include_termination_in_success_metric function."""
+
     def test_include_termination_in_success_metric(self):
         for termination_reason in StateSupervisionPeriodTerminationReason:
             _ = identifier._include_termination_in_success_metric(
@@ -11269,7 +11280,7 @@ def expected_non_revocation_return_time_buckets(
 
             downgrade_occurred = supervision_downgrade_occurred if \
                 (supervision_downgrade_occurred is not None and supervision_downgrade_date \
-                    and supervision_downgrade_date == day_on_supervision) else False
+                 and supervision_downgrade_date == day_on_supervision) else False
             previous_level = previous_supervision_level if downgrade_occurred else None
 
             is_past_projected_end_date = day_on_supervision > projected_supervision_completion_date if \
@@ -11290,7 +11301,7 @@ def expected_non_revocation_return_time_buckets(
                 response_count=response_count,
                 supervising_officer_external_id=supervising_officer_external_id,
                 supervising_district_external_id=(
-                    level_2_supervision_location_external_id or level_1_supervision_location_external_id),
+                        level_2_supervision_location_external_id or level_1_supervision_location_external_id),
                 level_1_supervision_location_external_id=level_1_supervision_location_external_id,
                 level_2_supervision_location_external_id=level_2_supervision_location_external_id,
                 supervision_level=supervision_period.supervision_level,
@@ -11354,9 +11365,9 @@ class TestFindAssessmentScoreChange(unittest.TestCase):
         termination_date = date(2016, 3, 12)
 
         assessment_score_change, \
-            end_assessment_score, \
-            end_assessment_level, \
-            end_assessment_type = \
+        end_assessment_score, \
+        end_assessment_level, \
+        end_assessment_type = \
             identifier.find_assessment_score_change(
                 assessment_1.state_code,
                 start_date,
@@ -11391,9 +11402,9 @@ class TestFindAssessmentScoreChange(unittest.TestCase):
         termination_date = date(2016, 3, 12)
 
         assessment_score_change, \
-            end_assessment_score, \
-            end_assessment_level, \
-            end_assessment_type = \
+        end_assessment_score, \
+        end_assessment_level, \
+        end_assessment_type = \
             identifier.find_assessment_score_change(
                 assessment_1.state_code,
                 start_date,
@@ -11407,7 +11418,8 @@ class TestFindAssessmentScoreChange(unittest.TestCase):
         self.assertIsNone(end_assessment_type)
 
     # # pylint: disable=line-too-long
-    @mock.patch('recidiviz.calculator.pipeline.supervision.identifier.second_assessment_on_supervision_is_more_reliable')
+    @mock.patch(
+        'recidiviz.calculator.pipeline.supervision.identifier.second_assessment_on_supervision_is_more_reliable')
     def test_find_assessment_score_change_first_reliable_assessment_is_first_assessment(self, mock_reliable_assessment):
         mock_reliable_assessment.return_value = False
 
@@ -11431,9 +11443,9 @@ class TestFindAssessmentScoreChange(unittest.TestCase):
         termination_date = date(2016, 3, 12)
 
         assessment_score_change, \
-            end_assessment_score, \
-            end_assessment_level, \
-            end_assessment_type = \
+        end_assessment_score, \
+        end_assessment_level, \
+        end_assessment_type = \
             identifier.find_assessment_score_change(
                 assessment_1.state_code,
                 start_date,
@@ -11476,9 +11488,9 @@ class TestFindAssessmentScoreChange(unittest.TestCase):
         termination_date = date(2016, 3, 12)
 
         assessment_score_change, \
-            end_assessment_score, \
-            end_assessment_level, \
-            end_assessment_type = \
+        end_assessment_score, \
+        end_assessment_level, \
+        end_assessment_type = \
             identifier.find_assessment_score_change(
                 assessment_1.state_code,
                 start_date,
@@ -11521,9 +11533,9 @@ class TestFindAssessmentScoreChange(unittest.TestCase):
         termination_date = date(2016, 3, 12)
 
         assessment_score_change, \
-            end_assessment_score, \
-            end_assessment_level, \
-            end_assessment_type = \
+        end_assessment_score, \
+        end_assessment_level, \
+        end_assessment_type = \
             identifier.find_assessment_score_change(
                 assessment_1.state_code,
                 start_date,
@@ -11543,9 +11555,9 @@ class TestFindAssessmentScoreChange(unittest.TestCase):
         termination_date = date(2016, 3, 12)
 
         assessment_score_change, \
-            end_assessment_score, \
-            end_assessment_level, \
-            end_assessment_type = \
+        end_assessment_score, \
+        end_assessment_level, \
+        end_assessment_type = \
             identifier.find_assessment_score_change(
                 'US_XX',
                 start_date,
@@ -11588,9 +11600,9 @@ class TestFindAssessmentScoreChange(unittest.TestCase):
         termination_date = date(2016, 3, 12)
 
         assessment_score_change, \
-            end_assessment_score, \
-            end_assessment_level, \
-            end_assessment_type = \
+        end_assessment_score, \
+        end_assessment_level, \
+        end_assessment_type = \
             identifier.find_assessment_score_change(
                 assessment_1.state_code,
                 start_date,
@@ -11761,7 +11773,8 @@ class TestIsPastProjectedCompletionDate(unittest.TestCase):
             external_id='is1',
             start_date=date(2018, 5, 1),
             supervision_periods=[supervision_period],
-            projected_max_release_date=date(2018, 5, 10)
+            projected_max_release_date=date(2018, 5, 10),
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO
         )
 
         self.assertFalse(_get_is_past_projected_end_date(
@@ -11824,7 +11837,8 @@ class TestIsPastProjectedCompletionDate(unittest.TestCase):
             external_id='is1',
             start_date=date(2018, 5, 1),
             supervision_periods=[supervision_period],
-            projected_max_release_date=date(2018, 5, 20)
+            projected_max_release_date=date(2018, 5, 20),
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO
         )
 
         self.assertFalse(_get_is_past_projected_end_date(

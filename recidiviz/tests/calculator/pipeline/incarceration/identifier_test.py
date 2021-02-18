@@ -84,6 +84,7 @@ class TestFindIncarcerationEvents(unittest.TestCase):
         incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
             state_code='US_XX',
             start_date=date(2008, 10, 11),
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
             incarceration_periods=[incarceration_period],
             charges=[
                 StateCharge.new_with_defaults(
@@ -170,6 +171,7 @@ class TestFindIncarcerationEvents(unittest.TestCase):
         incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
             state_code='US_XX',
             start_date=date(2008, 1, 11),
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
             incarceration_periods=[incarceration_period_1, incarceration_period_2],
             charges=[
                 StateCharge.new_with_defaults(
@@ -252,7 +254,8 @@ class TestFindIncarcerationEvents(unittest.TestCase):
         incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
             state_code='US_XX',
             start_date=date(2008, 10, 11),
-            incarceration_periods=[incarceration_period]
+            incarceration_periods=[incarceration_period],
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO
         )
 
         supervision_sentence = StateSupervisionSentence.new_with_defaults(
@@ -316,7 +319,8 @@ class TestFindIncarcerationEvents(unittest.TestCase):
         incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
             state_code='US_ID',
             start_date=date(2018, 11, 20),
-            incarceration_periods=[incarceration_period]
+            incarceration_periods=[incarceration_period],
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO
         )
 
         supervision_period = StateSupervisionPeriod.new_with_defaults(
@@ -388,7 +392,8 @@ class TestFindIncarcerationEvents(unittest.TestCase):
             state_code='US_XX',
             start_date=date(2008, 10, 11),
             incarceration_periods=[incarceration_period],
-            supervision_periods=[supervision_period]
+            supervision_periods=[supervision_period],
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO
         )
 
         supervision_sentence = StateSupervisionSentence.new_with_defaults(
@@ -448,6 +453,7 @@ class TestFindIncarcerationEvents(unittest.TestCase):
         incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
             state_code='US_ND',
             start_date=date(2008, 12, 11),
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
             incarceration_periods=[temp_custody_period, revocation_period],
             charges=[
                 StateCharge.new_with_defaults(
@@ -546,6 +552,7 @@ class TestFindIncarcerationEvents(unittest.TestCase):
                 StateIncarcerationSentence.new_with_defaults(
                     state_code='US_MO',
                     incarceration_sentence_id=123,
+                    status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
                     incarceration_periods=[temp_custody_period, revocation_period],
                     supervision_periods=[supervision_period],
                     start_date=date(2008, 1, 1),
@@ -583,6 +590,7 @@ class TestFindIncarcerationEvents(unittest.TestCase):
                 StateSupervisionSentence.new_with_defaults(
                     state_code='US_MO',
                     supervision_sentence_id=123,
+                    status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
                     incarceration_periods=[temp_custody_period, revocation_period],
                     supervision_periods=[supervision_period],
                     start_date=date(2008, 1, 1)),
@@ -780,7 +788,8 @@ class TestFindEndOfMonthStatePrisonStays(unittest.TestCase):
         incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
             state_code='US_XX',
             incarceration_sentence_id=9797,
-            incarceration_periods=[incarceration_period]
+            incarceration_periods=[incarceration_period],
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO
         )
         incarceration_period.supervision_sentences = [incarceration_sentence]
 
@@ -813,7 +822,8 @@ class TestFindEndOfMonthStatePrisonStays(unittest.TestCase):
         incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
             state_code='US_XX',
             incarceration_sentence_id=9797,
-            incarceration_periods=[incarceration_period]
+            incarceration_periods=[incarceration_period],
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO
         )
         incarceration_period.supervision_sentences = [incarceration_sentence]
 
@@ -860,7 +870,8 @@ class TestFindEndOfMonthStatePrisonStays(unittest.TestCase):
         incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
             state_code='US_XX',
             incarceration_sentence_id=9797,
-            incarceration_periods=[incarceration_period]
+            incarceration_periods=[incarceration_period],
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO
         )
         incarceration_period.supervision_sentences = [incarceration_sentence]
 
@@ -893,7 +904,8 @@ class TestFindEndOfMonthStatePrisonStays(unittest.TestCase):
         incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
             state_code='US_XX',
             incarceration_sentence_id=9797,
-            incarceration_periods=[incarceration_period]
+            incarceration_periods=[incarceration_period],
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO
         )
         incarceration_period.supervision_sentences = [incarceration_sentence]
 
@@ -923,7 +935,8 @@ class TestFindEndOfMonthStatePrisonStays(unittest.TestCase):
         incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
             state_code='US_XX',
             incarceration_sentence_id=9797,
-            incarceration_periods=[incarceration_period]
+            incarceration_periods=[incarceration_period],
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO
         )
         incarceration_period.supervision_sentences = [incarceration_sentence]
 
@@ -954,7 +967,8 @@ class TestFindEndOfMonthStatePrisonStays(unittest.TestCase):
         incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
             state_code='US_XX',
             incarceration_sentence_id=9797,
-            incarceration_periods=[incarceration_period]
+            incarceration_periods=[incarceration_period],
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO
         )
         incarceration_period.supervision_sentences = [incarceration_sentence]
 
@@ -999,7 +1013,8 @@ class TestFindEndOfMonthStatePrisonStays(unittest.TestCase):
         incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
             state_code='US_XX',
             incarceration_sentence_id=9797,
-            incarceration_periods=[incarceration_period, incarceration_period_2]
+            incarceration_periods=[incarceration_period, incarceration_period_2],
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO
         )
         incarceration_period.supervision_sentences = [incarceration_sentence]
         incarceration_period_2.supervision_sentences = [incarceration_sentence]
@@ -1043,7 +1058,8 @@ class TestFindEndOfMonthStatePrisonStays(unittest.TestCase):
         incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
             state_code='US_XX',
             incarceration_sentence_id=9797,
-            incarceration_periods=[incarceration_period]
+            incarceration_periods=[incarceration_period],
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO
         )
         incarceration_period.supervision_sentences = [incarceration_sentence]
 
@@ -1077,7 +1093,8 @@ class TestFindEndOfMonthStatePrisonStays(unittest.TestCase):
         incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
             state_code='US_XX',
             incarceration_sentence_id=9797,
-            incarceration_periods=[incarceration_period]
+            incarceration_periods=[incarceration_period],
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO
         )
         incarceration_period.supervision_sentences = [incarceration_sentence]
 
@@ -1115,7 +1132,8 @@ class TestFindEndOfMonthStatePrisonStays(unittest.TestCase):
         incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
             state_code='US_XX',
             incarceration_sentence_id=9797,
-            incarceration_periods=[incarceration_period]
+            incarceration_periods=[incarceration_period],
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO
         )
         incarceration_period.incarceration_sentences = [incarceration_sentence]
 
@@ -1161,7 +1179,8 @@ class TestFindEndOfMonthStatePrisonStays(unittest.TestCase):
         incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
             state_code='US_XX',
             incarceration_sentence_id=9797,
-            incarceration_periods=incarceration_periods
+            incarceration_periods=incarceration_periods,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO
         )
 
         incarceration_period_2.incarceration_sentences = [incarceration_sentence]
@@ -1226,7 +1245,8 @@ class TestFindEndOfMonthStatePrisonStays(unittest.TestCase):
         incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
             state_code='US_XX',
             incarceration_sentence_id=9797,
-            incarceration_periods=incarceration_periods
+            incarceration_periods=incarceration_periods,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO
         )
 
         incarceration_period_2.incarceration_sentences = [incarceration_sentence]
@@ -1894,6 +1914,7 @@ class TestGetUniquePeriodsFromSentenceGroupAndAddBackedges(unittest.TestCase):
                 incarceration_sentences=[
                     StateIncarcerationSentence.new_with_defaults(
                         state_code='US_XX',
+                        status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
                         incarceration_periods=[incarceration_period_1, incarceration_period_2]
                     )
                 ],
@@ -1911,7 +1932,8 @@ class TestGetUniquePeriodsFromSentenceGroupAndAddBackedges(unittest.TestCase):
                     StateIncarcerationSentence.new_with_defaults(
                         state_code='US_XX',
                         supervision_periods=[supervision_period],
-                        incarceration_periods=[incarceration_period_3]
+                        incarceration_periods=[incarceration_period_3],
+                        status=StateSentenceStatus.PRESENT_WITHOUT_INFO
                     )
                 ]
             )
@@ -1977,6 +1999,7 @@ class TestFindMostSeriousOffenseStatuteInSentenceGroup(unittest.TestCase):
             state_code='US_XX',
             start_date=date(2007, 12, 10),
             incarceration_periods=[incarceration_period],
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
             charges=[
                 StateCharge.new_with_defaults(
                     state_code='US_XX',
@@ -2031,6 +2054,7 @@ class TestFindMostSeriousOffenseStatuteInSentenceGroup(unittest.TestCase):
         incarceration_sentence_1 = StateIncarcerationSentence.new_with_defaults(
             state_code='US_XX',
             start_date=date(2007, 12, 10),
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
             incarceration_periods=[incarceration_period_1],
             charges=[
                 StateCharge.new_with_defaults(
@@ -2072,6 +2096,7 @@ class TestFindMostSeriousOffenseStatuteInSentenceGroup(unittest.TestCase):
         incarceration_sentence_2 = StateIncarcerationSentence.new_with_defaults(
             state_code='US_XX',
             start_date=date(2007, 12, 10),
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
             incarceration_periods=[incarceration_period_2],
             charges=[
                 StateCharge.new_with_defaults(
@@ -2131,6 +2156,7 @@ class TestFindMostSeriousOffenseStatuteInSentenceGroup(unittest.TestCase):
         incarceration_sentence_1 = StateIncarcerationSentence.new_with_defaults(
             state_code='US_XX',
             start_date=date(2007, 12, 10),
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
             incarceration_periods=[incarceration_period],
             charges=[
                 StateCharge.new_with_defaults(
@@ -2153,6 +2179,7 @@ class TestFindMostSeriousOffenseStatuteInSentenceGroup(unittest.TestCase):
         incarceration_sentence_2 = StateIncarcerationSentence.new_with_defaults(
             state_code='US_XX',
             start_date=date(2010, 12, 10),
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
             incarceration_periods=[incarceration_period],
             charges=[
                 StateCharge.new_with_defaults(
@@ -2195,6 +2222,7 @@ class TestFindMostSeriousOffenseStatuteInSentenceGroup(unittest.TestCase):
 
         incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
             state_code='US_XX',
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
             incarceration_periods=[incarceration_period],
             charges=[
                 StateCharge.new_with_defaults(
@@ -2248,6 +2276,7 @@ class TestFindMostSeriousOffenseStatuteInSentenceGroup(unittest.TestCase):
         incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
             state_code='US_XX',
             start_date=date(2007, 12, 10),
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
             incarceration_periods=[incarceration_period],
             charges=[
                 StateCharge.new_with_defaults(
@@ -2304,6 +2333,7 @@ class TestFindMostSeriousOffenseStatuteInSentenceGroup(unittest.TestCase):
         incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
             state_code='US_XX',
             start_date=date(2007, 12, 10),
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
             incarceration_periods=[incarceration_period],
             charges=[
                 StateCharge.new_with_defaults(
@@ -2358,6 +2388,7 @@ class TestFindMostSeriousOffenseStatuteInSentenceGroup(unittest.TestCase):
         incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
             state_code='US_XX',
             start_date=date(2009, 12, 10),
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
             incarceration_periods=[incarceration_period],
             charges=[
                 StateCharge.new_with_defaults(
@@ -2415,6 +2446,7 @@ class TestFindMostSeriousOffenseStatuteInSentenceGroup(unittest.TestCase):
         incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
             state_code='US_XX',
             start_date=date(2007, 12, 10),
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
             incarceration_periods=[incarceration_period],
             charges=[
                 StateCharge.new_with_defaults(

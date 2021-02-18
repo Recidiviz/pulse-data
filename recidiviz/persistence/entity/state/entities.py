@@ -383,27 +383,30 @@ class StateAssessment(ExternalIdEntity, BuildableAttr, DefaultableAttr):
     # N/A - Always "COMPLETED", for now
 
     # Type
-    assessment_class: Optional[StateAssessmentClass] = attr.ib()
-    assessment_class_raw_text: Optional[str] = attr.ib()
-    assessment_type: Optional[StateAssessmentType] = attr.ib()
-    assessment_type_raw_text: Optional[str] = attr.ib()
+    assessment_class: Optional[StateAssessmentClass] = attr.ib(
+        default=None, validator=attr_validators.is_opt(StateAssessmentClass))
+    assessment_class_raw_text: Optional[str] = attr.ib(default=None, validator=attr_validators.is_opt_str)
+    assessment_type: Optional[StateAssessmentType] = attr.ib(default=None,
+                                                             validator=attr_validators.is_opt(StateAssessmentType))
+    assessment_type_raw_text: Optional[str] = attr.ib(default=None, validator=attr_validators.is_opt_str)
 
     # Attributes
     #   - When
-    assessment_date: Optional[datetime.date] = attr.ib()
+    assessment_date: Optional[datetime.date] = attr.ib(default=None, validator=attr_validators.is_opt_date)
 
     #   - What
-    assessment_score: Optional[int] = attr.ib()
-    assessment_level: Optional[StateAssessmentLevel] = attr.ib()
-    assessment_level_raw_text: Optional[str] = attr.ib()
-    assessment_metadata: Optional[str] = attr.ib()
+    assessment_score: Optional[int] = attr.ib(default=None, validator=attr_validators.is_opt_int)
+    assessment_level: Optional[StateAssessmentLevel] = attr.ib(default=None,
+                                                               validator=attr_validators.is_opt(StateAssessmentLevel))
+    assessment_level_raw_text: Optional[str] = attr.ib(default=None, validator=attr_validators.is_opt_str)
+    assessment_metadata: Optional[str] = attr.ib(default=None, validator=attr_validators.is_opt_str)
 
     #   - Who
     # See |conducting_agent| below
 
     # Primary key - Only optional when hydrated in the data converter, before we have written this entity to the
     # persistence layer
-    assessment_id: Optional[int] = attr.ib(default=None)
+    assessment_id: Optional[int] = attr.ib(default=None, validator=attr_validators.is_opt_int)
 
     # Cross-entity relationships
 
@@ -531,60 +534,61 @@ class StateIncarcerationSentence(ExternalIdEntity, BuildableAttr, DefaultableAtt
     state_code: str = attr.ib(validator=attr_validators.is_str)
 
     # Status
-    status: StateSentenceStatus = attr.ib()  # non-nullable
-    status_raw_text: Optional[str] = attr.ib()
+    status: StateSentenceStatus = attr.ib(validator=attr.validators.instance_of(StateSentenceStatus))  # non-nullable
+    status_raw_text: Optional[str] = attr.ib(default=None, validator=attr_validators.is_opt_str)
 
     # Type
-    incarceration_type: Optional[StateIncarcerationType] = attr.ib()
-    incarceration_type_raw_text: Optional[str] = attr.ib()
+    incarceration_type: Optional[StateIncarcerationType] = attr.ib(
+        default=None, validator=attr_validators.is_opt(StateIncarcerationType))
+    incarceration_type_raw_text: Optional[str] = attr.ib(default=None, validator=attr_validators.is_opt_str)
 
     # Attributes
     #   - When
 
     # The date the person was sentenced
-    date_imposed: Optional[datetime.date] = attr.ib()
+    date_imposed: Optional[datetime.date] = attr.ib(default=None, validator=attr_validators.is_opt_date)
 
     # The date the person actually started serving this sentence
-    start_date: Optional[datetime.date] = attr.ib()
-    projected_min_release_date: Optional[datetime.date] = attr.ib()
-    projected_max_release_date: Optional[datetime.date] = attr.ib()
-    parole_eligibility_date: Optional[datetime.date] = attr.ib()
+    start_date: Optional[datetime.date] = attr.ib(default=None, validator=attr_validators.is_opt_date)
+    projected_min_release_date: Optional[datetime.date] = attr.ib(default=None, validator=attr_validators.is_opt_date)
+    projected_max_release_date: Optional[datetime.date] = attr.ib(default=None, validator=attr_validators.is_opt_date)
+    parole_eligibility_date: Optional[datetime.date] = attr.ib(default=None, validator=attr_validators.is_opt_date)
 
     # The date the person finished serving this sentence
-    completion_date: Optional[datetime.date] = attr.ib()
+    completion_date: Optional[datetime.date] = attr.ib(default=None, validator=attr_validators.is_opt_date)
 
     #   - Where
     # The county where this sentence was issued
-    county_code: Optional[str] = attr.ib()
+    county_code: Optional[str] = attr.ib(default=None, validator=attr_validators.is_opt_str)
 
     #   - What
     # These will be None if is_life is true
-    min_length_days: Optional[int] = attr.ib()
-    max_length_days: Optional[int] = attr.ib()
+    min_length_days: Optional[int] = attr.ib(default=None, validator=attr_validators.is_opt_int)
+    max_length_days: Optional[int] = attr.ib(default=None, validator=attr_validators.is_opt_int)
 
-    is_life: Optional[bool] = attr.ib()
-    is_capital_punishment: Optional[bool] = attr.ib()
+    is_life: Optional[bool] = attr.ib(default=None, validator=attr_validators.is_opt_bool)
+    is_capital_punishment: Optional[bool] = attr.ib(default=None, validator=attr_validators.is_opt_bool)
 
-    parole_possible: Optional[bool] = attr.ib()
-    initial_time_served_days: Optional[int] = attr.ib()
-    good_time_days: Optional[int] = attr.ib()
-    earned_time_days: Optional[int] = attr.ib()
+    parole_possible: Optional[bool] = attr.ib(default=None, validator=attr_validators.is_opt_bool)
+    initial_time_served_days: Optional[int] = attr.ib(default=None, validator=attr_validators.is_opt_int)
+    good_time_days: Optional[int] = attr.ib(default=None, validator=attr_validators.is_opt_int)
+    earned_time_days: Optional[int] = attr.ib(default=None, validator=attr_validators.is_opt_int)
 
     #   - Who
     # See |person| in entity relationships below.
 
     # Primary key - Only optional when hydrated in the data converter, before we have written this entity to the
     # persistence layer
-    incarceration_sentence_id: Optional[int] = attr.ib(default=None)
+    incarceration_sentence_id: Optional[int] = attr.ib(default=None, validator=attr_validators.is_opt_int)
 
     # Cross-entity relationships
     person: Optional['StatePerson'] = attr.ib(default=None)
     sentence_group: Optional['StateSentenceGroup'] = attr.ib(default=None)
-    charges: List['StateCharge'] = attr.ib(factory=list)
+    charges: List['StateCharge'] = attr.ib(factory=list, validator=attr_validators.is_list)
 
-    incarceration_periods: List['StateIncarcerationPeriod'] = attr.ib(factory=list)
-    supervision_periods: List['StateSupervisionPeriod'] = attr.ib(factory=list)
-    early_discharges: List['StateEarlyDischarge'] = attr.ib(factory=list)
+    incarceration_periods: List['StateIncarcerationPeriod'] = attr.ib(factory=list, validator=attr_validators.is_list)
+    supervision_periods: List['StateSupervisionPeriod'] = attr.ib(factory=list, validator=attr_validators.is_list)
+    early_discharges: List['StateEarlyDischarge'] = attr.ib(factory=list, validator=attr_validators.is_list)
 
 
 @attr.s(eq=False)
@@ -594,34 +598,34 @@ class StateFine(ExternalIdEntity, BuildableAttr, DefaultableAttr):
     state_code: str = attr.ib(validator=attr_validators.is_str)
 
     # Status
-    status: StateFineStatus = attr.ib()  # non-nullable
-    status_raw_text: Optional[str] = attr.ib()
+    status: StateFineStatus = attr.ib(validator=attr.validators.instance_of(StateFineStatus))  # non-nullable
+    status_raw_text: Optional[str] = attr.ib(default=None, validator=attr_validators.is_opt_str)
 
     # Type
     # N/A
 
     # Attributes
     #   - When
-    date_paid: Optional[datetime.date] = attr.ib()
+    date_paid: Optional[datetime.date] = attr.ib(default=None, validator=attr_validators.is_opt_date)
 
     #   - Where
     # The county where this fine was issued
-    county_code: Optional[str] = attr.ib()
+    county_code: Optional[str] = attr.ib(default=None, validator=attr_validators.is_opt_str)
 
     #   - What
-    fine_dollars: Optional[int] = attr.ib()
+    fine_dollars: Optional[int] = attr.ib(default=None, validator=attr_validators.is_opt_int)
 
     #   - Who
     # See |person| in entity relationships below.
 
     # Primary key - Only optional when hydrated in the data converter, before we have written this entity to the
     # persistence layer
-    fine_id: Optional[int] = attr.ib(default=None)
+    fine_id: Optional[int] = attr.ib(default=None, validator=attr_validators.is_opt_int)
 
     # Cross-entity relationships
     person: Optional['StatePerson'] = attr.ib(default=None)
     sentence_group: Optional['StateSentenceGroup'] = attr.ib(default=None)
-    charges: List['StateCharge'] = attr.ib(factory=list)
+    charges: List['StateCharge'] = attr.ib(factory=list, validator=attr_validators.is_list)
 
 
 @attr.s(eq=False)

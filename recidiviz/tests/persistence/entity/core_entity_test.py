@@ -20,6 +20,7 @@ import unittest
 
 import pytest
 
+from recidiviz.common.constants.state.state_fine import StateFineStatus
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.persistence.database.schema.state import schema
 from recidiviz.persistence.entity.county.entities import Person, Booking, \
@@ -34,6 +35,7 @@ _STATE_CODE = 'US_ND'
 
 class TestCoreEntity(unittest.TestCase):
     """Tests for CoreEntity functionality."""
+
     def test_get_entity_name_state_entity_sample(self) -> None:
         self.assertEqual(
             'state_person',
@@ -47,7 +49,7 @@ class TestCoreEntity(unittest.TestCase):
         self.assertEqual(
             'state_supervision_violation_response',
             entities.StateSupervisionViolationResponse.new_with_defaults(state_code='US_XX').
-            get_entity_name())
+                get_entity_name())
 
     def test_get_entity_name_county_entity_sample(self) -> None:
         self.assertEqual('person',
@@ -64,15 +66,15 @@ class TestCoreEntity(unittest.TestCase):
         self.assertEqual(
             456,
             entities.StatePersonRace.new_with_defaults(person_race_id=456, state_code='US_XX')
-            .get_id())
+                .get_id())
         self.assertEqual(
             789,
             entities.StateCourtCase.new_with_defaults(court_case_id=789, state_code='US_XX')
-            .get_id())
+                .get_id())
         self.assertEqual(
             901,
             entities.StateSupervisionViolationResponse.
-            new_with_defaults(supervision_violation_response_id=901, state_code='US_XX').get_id())
+                new_with_defaults(supervision_violation_response_id=901, state_code='US_XX').get_id())
         self.assertIsNone(entities.StatePerson.new_with_defaults(state_code='US_XX').get_id())
 
     def test_get_id_county_entity_sample(self) -> None:
@@ -118,10 +120,12 @@ class TestCoreEntity(unittest.TestCase):
             db_entity.get_field('country_code')
 
     def test_getFieldAsList(self) -> None:
-        fine = entities.StateFine.new_with_defaults(state_code='us_nc', external_id='ex1')
-        fine_2 = entities.StateFine.new_with_defaults(state_code='us_nc', external_id='ex2')
+        fine = entities.StateFine.new_with_defaults(state_code='us_nc', external_id='ex1',
+                                                    status=StateFineStatus.PRESENT_WITHOUT_INFO)
+        fine_2 = entities.StateFine.new_with_defaults(state_code='us_nc', external_id='ex2',
+                                                      status=StateFineStatus.PRESENT_WITHOUT_INFO)
         entity = entities.StateSentenceGroup.new_with_defaults(
-            state_code='us_nc',  status=StateSentenceStatus.PRESENT_WITHOUT_INFO, fines=[fine, fine_2])
+            state_code='us_nc', status=StateSentenceStatus.PRESENT_WITHOUT_INFO, fines=[fine, fine_2])
         db_entity = converter.convert_entity_to_schema_object(entity)
 
         self.assertCountEqual(['us_nc'],
@@ -141,8 +145,10 @@ class TestCoreEntity(unittest.TestCase):
             'supervision_sentences'))
 
     def test_clearField(self) -> None:
-        fine = entities.StateFine.new_with_defaults(state_code='us_nc', external_id='ex1')
-        fine_2 = entities.StateFine.new_with_defaults(state_code='us_nc', external_id='ex2')
+        fine = entities.StateFine.new_with_defaults(state_code='us_nc', external_id='ex1',
+                                                    status=StateFineStatus.PRESENT_WITHOUT_INFO)
+        fine_2 = entities.StateFine.new_with_defaults(state_code='us_nc', external_id='ex2',
+                                                      status=StateFineStatus.PRESENT_WITHOUT_INFO)
         entity = entities.StateSentenceGroup.new_with_defaults(
             state_code='us_nc', status=StateSentenceStatus.PRESENT_WITHOUT_INFO, fines=[fine, fine_2])
         db_entity = converter.convert_entity_to_schema_object(entity)
@@ -181,8 +187,10 @@ class TestCoreEntity(unittest.TestCase):
     def test_setFieldFromList(self) -> None:
         entity = entities.StateSentenceGroup.new_with_defaults(state_code='US_XX',
                                                                status=StateSentenceStatus.PRESENT_WITHOUT_INFO)
-        fine = entities.StateFine.new_with_defaults(state_code='US_XX', external_id='ex1')
-        fine_2 = entities.StateFine.new_with_defaults(state_code='US_XX', external_id='ex2')
+        fine = entities.StateFine.new_with_defaults(state_code='US_XX', external_id='ex1',
+                                                    status=StateFineStatus.PRESENT_WITHOUT_INFO)
+        fine_2 = entities.StateFine.new_with_defaults(state_code='US_XX', external_id='ex2',
+                                                      status=StateFineStatus.PRESENT_WITHOUT_INFO)
 
         db_entity = converter.convert_entity_to_schema_object(entity)
         if not isinstance(db_entity, schema.StateSentenceGroup):
@@ -234,7 +242,8 @@ class TestCoreEntity(unittest.TestCase):
 
     def test_hasDefaultEnum(self) -> None:
         entity = entities.StateIncarcerationSentence.new_with_defaults(
-            state_code='US_XX', incarceration_type=entities.StateIncarcerationType.STATE_PRISON)
+            state_code='US_XX', incarceration_type=entities.StateIncarcerationType.STATE_PRISON,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO)
         db_entity = converter.convert_entity_to_schema_object(entity)
         if not isinstance(db_entity, schema.StateIncarcerationSentence):
             self.fail(f'Unexpected type for db_entity: {[db_entity]}.')

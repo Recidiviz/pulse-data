@@ -92,6 +92,7 @@ class TestCovertSentenceToStateSpecificType(unittest.TestCase):
             state_code='US_XX',
             external_id='123-external-id',
             start_date=date(2000, 1, 1),
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO
         )
 
         self.run_test_pipeline(self.TEST_PERSON_ID,
@@ -108,6 +109,7 @@ class TestCovertSentenceToStateSpecificType(unittest.TestCase):
             state_code='US_MO',
             external_id='123-external-id',
             start_date=date(2000, 1, 1),
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO
         )
 
         expected_sentence = UsMoIncarcerationSentence.new_with_defaults(
@@ -116,7 +118,8 @@ class TestCovertSentenceToStateSpecificType(unittest.TestCase):
             external_id='123-external-id',
             start_date=date(2000, 1, 1),
             base_sentence=incarceration_sentence,
-            sentence_statuses=[self.TEST_CONVERTED_MO_STATUS]
+            sentence_statuses=[self.TEST_CONVERTED_MO_STATUS],
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO
         )
 
         self.run_test_pipeline(self.TEST_PERSON_ID,
@@ -413,6 +416,7 @@ class TestSetSentencesOnSentenceGroup(unittest.TestCase):
             state_code='US_XX',
             incarceration_sentence_id=incarceration_sentence_id,
             start_date=date(2000, 1, 1),
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
             charges=[StateCharge.new_with_defaults(
                 state_code='US_XX',
                 status=ChargeStatus.PRESENT_WITHOUT_INFO,
@@ -449,7 +453,8 @@ class TestSetSentencesOnSentenceGroup(unittest.TestCase):
             incarceration_sentences=[
                 StateIncarcerationSentence.new_with_defaults(
                     state_code='US_XX',
-                    incarceration_sentence_id=incarceration_sentence_id
+                    incarceration_sentence_id=incarceration_sentence_id,
+                    status=StateSentenceStatus.PRESENT_WITHOUT_INFO
                 )
             ],
             supervision_sentences=[
@@ -471,6 +476,7 @@ class TestSetSentencesOnSentenceGroup(unittest.TestCase):
             state_code='US_XX',
             incarceration_sentence_id=incarceration_sentence_id,
             start_date=date(2000, 1, 1),
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
             charges=[StateCharge.new_with_defaults(
                 state_code='US_XX',
                 status=ChargeStatus.PRESENT_WITHOUT_INFO,
