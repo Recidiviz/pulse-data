@@ -1,0 +1,21 @@
+file_tag: RECIDIVIZ_REFERENCE_offense_codes
+file_description: |-
+  A static list of offense codes specific to North Dakota's Elite system. These represent basic metadata about the
+  different kinds of offenses that one can be charged and sentenced with in the DOCR correctional system. These codes
+  tend to apply only to charges that come from the Elite system and not the supervision-focused Docstars system, which
+  is standardized around NCIC codes.
+primary_key_cols:
+  - OFFENCE_CODE
+columns:
+  - name: OFFENCE_CODE
+    description: The offense code that identifies the conceptual, unique offense
+  - name: STATUTE_CODE
+    description: A code indicating which jurisdiction's statute this offense falls under. Always "ND"
+  - name: DESCRIPTION
+    description: A terse but human-readable description of the offense
+  - name: SEVERITY_RANKING
+    description: A categorization of the general type of offense, e.g. "VIOLENT" or "PROPERTY"
+  - name: ACTIVE_FLAG
+    description: Whether this offense is still actively in use within DOCR. "N" or "Y"
+  - name: EXPIRY_DATE
+    description: If this offense is inactive, then this represents the date the offense became inactive
