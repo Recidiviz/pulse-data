@@ -159,7 +159,7 @@ class LiftToPCollectionElement(beam.DoFn):
     way.
 
     Note: This is used when reading from BigQuery to avoid errors that we have encountered when passing output from
-    a BigQuerySource as a SideInput without yet processing it as an element in a PCollection.
+    BigQuery as a SideInput without yet processing it as an element in a PCollection.
     """
 
     # pylint: disable=arguments-differ
@@ -181,7 +181,7 @@ class ReadFromBigQuery(beam.PTransform):
     def expand(self, pipeline: Pipeline):
         return (pipeline
                 | "Read from BigQuery" >>
-                beam.io.Read(beam.io.BigQuerySource
+                beam.io.Read(beam.io.ReadFromBigQuery
                              (query=self._query,
                               use_standard_sql=True,
                               validate=True))
