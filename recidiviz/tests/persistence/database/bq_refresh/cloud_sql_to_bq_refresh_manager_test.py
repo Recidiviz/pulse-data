@@ -176,7 +176,7 @@ class CloudSqlToBQExportManagerTest(unittest.TestCase):
         mock_pubsub_helper.publish_message_to_topic.assert_not_called()
 
     @mock.patch(f"{CONTROL_PACKAGE_NAME}.get_supported_direct_ingest_region_codes")
-    @mock.patch("recidiviz.utils.environment.get_gae_environment", Mock(return_value='staging'))
+    @mock.patch("recidiviz.utils.environment.get_gcp_environment", Mock(return_value='staging'))
     @mock.patch("recidiviz.utils.regions.get_region", Mock(return_value='us_mo'))
     @mock.patch('recidiviz.cloud_storage.gcs_pseudo_lock_manager.GcsfsFactory.build',
                 Mock(return_value=FakeGCSFileSystem()))
