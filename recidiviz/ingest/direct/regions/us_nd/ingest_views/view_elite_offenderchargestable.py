@@ -22,8 +22,10 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 VIEW_QUERY_TEMPLATE = """
-SELECT * 
-FROM {elite_offenderchargestable}
+SELECT charges.*, codes.description as CODE_DESCRIPTION, codes.severity_ranking as SEVERITY_RANKING 
+FROM {elite_offenderchargestable} charges
+LEFT JOIN {RECIDIVIZ_REFERENCE_offense_codes} codes
+USING (OFFENCE_CODE)
 """
 
 VIEW_BUILDER = DirectIngestPreProcessedIngestViewBuilder(
