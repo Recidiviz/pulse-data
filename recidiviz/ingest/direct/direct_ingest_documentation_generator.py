@@ -16,10 +16,9 @@
 # =============================================================================
 
 """Functionality for generating documentation about our direct ingest integrations."""
-from typing import List
-
+from typing import List, Dict
+import subprocess
 from pytablewriter import MarkdownTableWriter
-
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.controllers.direct_ingest_raw_file_import_manager import DirectIngestRegionRawFileConfig, \
     DirectIngestRawFileConfig
@@ -64,9 +63,13 @@ class DirectIngestDocumentationGenerator:
 
         raw_file_configs = [region_config.raw_file_configs[file_tag] for file_tag in sorted_file_tags]
 
+        config_paths_by_file_tag = {
+            file_tag: file_config.file_path for file_tag, file_config in region_config.raw_file_configs.items()}
+
         file_tags_with_raw_file_configs = [raw_file_config.file_tag for raw_file_config in raw_file_configs]
 
-        raw_file_table = self._generate_raw_file_table(sorted_file_tags, file_tags_with_raw_file_configs)
+        raw_file_table = self._generate_raw_file_table(config_paths_by_file_tag,
+                                                       file_tags_with_raw_file_configs)
 
         docs_per_file = [self._generate_docs_for_raw_config(config) for config in raw_file_configs]
 
@@ -93,13 +96,15 @@ class DirectIngestDocumentationGenerator:
 
         return documentation
 
-    @staticmethod
-    def _generate_raw_file_table(sorted_file_tags: List[str], file_tags_with_raw_file_configs: List[str]) -> str:
+    def _generate_raw_file_table(self,
+                                 config_paths_by_file_tag: Dict[str, str],
+                                 file_tags_with_raw_file_configs: List[str]) -> str:
         table_matrix = [[
             (f"[{file_tag}](#{file_tag})" if file_tag in file_tags_with_raw_file_configs else f"{file_tag}"),
-            None, None, None
-        ] for file_tag in sorted_file_tags
-        ]
+            None,
+            self._get_last_updated(config_paths_by_file_tag[file_tag]),
+            self._get_updated_by(config_paths_by_file_tag[file_tag])
+        ] for file_tag in sorted(config_paths_by_file_tag)]
         writer = MarkdownTableWriter(
             headers=["**Table**", "**Status**", "**Last Updated**", "**Updated By**"],
             value_matrix=table_matrix,
@@ -107,3 +112,19 @@ class DirectIngestDocumentationGenerator:
         )
 
         return writer.dumps()
+
+    @staticmethod
+    def _get_updated_by(path: str) -> str:
+        """Returns the name of the person who last edited the file at the provided path"""
+        res = subprocess.Popen(f'git log -1 --pretty=format:"%an" -- {path}', shell=True, stdout=subprocess.PIPE)
+        stdout, _stderr = res.communicate()
+        return stdout.decode()
+
+    @staticmethod
+    def _get_last_updated(path: str) -> str:
+        """Returns the date the file at the given path was last updated."""
+        res = subprocess.Popen(f'git log -1 --date=short --pretty=format:"%ad" -- {path}',
+                               shell=True,
+                               stdout=subprocess.PIPE)
+        stdout, _stderr = res.communicate()
+        return stdout.decode()

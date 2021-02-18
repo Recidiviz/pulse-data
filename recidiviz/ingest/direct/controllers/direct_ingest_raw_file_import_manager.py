@@ -67,6 +67,9 @@ class DirectIngestRawFileConfig:
     # The file tag / table name that this file will get written to
     file_tag: str = attr.ib(validator=attr_validators.is_non_empty_str)
 
+    # The path to the config file
+    file_path: str = attr.ib(validator=attr_validators.is_non_empty_str)
+
     # Description of the raw data file contents
     file_description: str = attr.ib(validator=attr_validators.is_non_empty_str)
 
@@ -114,6 +117,7 @@ class DirectIngestRawFileConfig:
         """Returns an ordered list of encodings we should try for this file."""
         return [self.encoding] + [encoding for encoding in COMMON_RAW_FILE_ENCODINGS
                                   if encoding.upper() != self.encoding.upper()]
+
     @property
     def datetime_cols(self) -> List[str]:
         return [column.name for column in self.columns if column.is_datetime]
@@ -122,6 +126,7 @@ class DirectIngestRawFileConfig:
     def from_yaml_dict(cls,
                        region_code: str,
                        file_tag: str,
+                       file_path: str,
                        default_encoding: str,
                        default_separator: str,
                        file_config_dict: YAMLDict,
@@ -162,6 +167,7 @@ class DirectIngestRawFileConfig:
 
         return DirectIngestRawFileConfig(
             file_tag=file_tag,
+            file_path=file_path,
             file_description=file_description,
             primary_key_cols=primary_key_cols,
             columns=[
@@ -231,6 +237,7 @@ class DirectIngestRegionRawFileConfig:
 
                 raw_data_configs[file_tag] = DirectIngestRawFileConfig.from_yaml_dict(self.region_code,
                                                                                       file_tag,
+                                                                                      yaml_file_path,
                                                                                       default_encoding,
                                                                                       default_separator,
                                                                                       yaml_contents,
