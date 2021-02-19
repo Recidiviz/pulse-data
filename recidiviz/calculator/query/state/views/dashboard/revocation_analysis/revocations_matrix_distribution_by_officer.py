@@ -81,6 +81,32 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_OFFICER_QUERY_TEMPLATE = \
     FROM `{project_id}.{reference_views_dataset}.revocations_matrix_by_person_materialized`
     GROUP BY state_code, violation_type, reported_violations, officer, supervision_type, supervision_level, charge_category,
       level_1_supervision_location, level_2_supervision_location, metric_period_months
+  ), officers_to_locations AS (
+    -- Determine all supervision locations an officer was associated with in each time period --
+    SELECT DISTINCT
+      state_code,
+      metric_period_months,
+      officer,
+      IFNULL(CASE WHEN state_code = 'US_MO' THEN level_1_supervision_location
+                  WHEN state_code = 'US_PA' THEN level_2_supervision_location
+                  END,
+             'UNKNOWN') AS district
+    FROM `{project_id}.{reference_views_dataset}.supervision_matrix_by_person_materialized`
+    WHERE officer IS NOT NULL
+      AND ((state_code = 'US_PA' AND level_2_supervision_location != 'ALL')
+      OR (state_code = 'US_MO' AND level_1_supervision_location != 'ALL'))
+  ), officer_labels AS (
+    SELECT
+        state_code, 
+        officer,
+        metric_period_months,
+        -- List all locations an officer has supervised in during the time period, with the officer name
+        -- E.g. If officer "555: JAMES SMITH" has supervised in locations 07 and 09 in the time period, then this
+        -- would produce a label in the format "07, 09 - JAMES SMITH" --
+        CONCAT(STRING_AGG(DISTINCT district, ', ' ORDER BY district), ' - ',
+               IFNULL(SPLIT(officer, ':')[SAFE_OFFSET(1)], officer)) AS officer_label    
+      FROM officers_to_locations
+      GROUP BY state_code, officer, metric_period_months 
   )
 
     SELECT
@@ -106,7 +132,8 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_OFFICER_QUERY_TEMPLATE = \
       END AS district,
       level_1_supervision_location,
       level_2_supervision_location,
-      metric_period_months
+      metric_period_months,
+      officer_label
     FROM
       supervision_counts
     LEFT JOIN
@@ -117,6 +144,9 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_OFFICER_QUERY_TEMPLATE = \
       termination_counts
     USING (state_code, violation_type, reported_violations, officer, supervision_type, supervision_level, charge_category,
       level_1_supervision_location, level_2_supervision_location, metric_period_months)
+    LEFT JOIN
+      officer_labels
+    USING (state_code, metric_period_months, officer) 
     WHERE revocation_count > 0
         AND officer != 'EXTERNAL_UNKNOWN'
     """
