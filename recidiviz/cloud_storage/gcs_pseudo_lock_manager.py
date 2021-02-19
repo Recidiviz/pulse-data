@@ -23,7 +23,6 @@ from recidiviz.cloud_storage.gcsfs_factory import GcsfsFactory
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.utils import metadata
 
-
 POSTGRES_TO_BQ_EXPORT_RUNNING_LOCK_NAME = 'EXPORT_PROCESS_RUNNING'
 GCS_TO_POSTGRES_INGEST_RUNNING_LOCK_NAME = 'INGEST_PROCESS_RUNNING_'
 
@@ -46,16 +45,15 @@ class GCSPseudoLockManager:
         return len(self.fs.ls_with_blob_prefix(blob_prefix=prefix, bucket_name=self.bucket_name)) == 0
 
     def lock(self, name: str, contents: Optional[str] = None) -> None:
-        """"Locks @param name by generating new file. If has @param contents, body of new file is contents.
-        Otherwise sets body of file to json formatted time and uuid.
-        """
-        if self.is_locked(name):
+        """"Locks @param name by generating new file"""
+        if not self.is_locked(name):
+            path = GcsfsFilePath(bucket_name=self.bucket_name, blob_name=name)
+            if contents is None:
+                contents = datetime.now().strftime(self._TIME_FORMAT)
+            self.fs.upload_from_string(path, contents, 'text/plain')
+        else:
             raise GCSPseudoLockAlreadyExists(f"Lock with the name {name} already exists in the bucket "
                                              f"{self.bucket_name}")
-        if contents is None:
-            contents = datetime.now().strftime(self._TIME_FORMAT)
-        path = GcsfsFilePath(bucket_name=self.bucket_name, blob_name=name)
-        self.fs.upload_from_string(path, contents, 'text/plain')
 
     def unlock(self, name: str) -> None:
         """Unlocks @param name by deleting file with name"""
@@ -70,15 +68,6 @@ class GCSPseudoLockManager:
         """Checks if @param name is locked by checking if file exists. Returns true if locked, false if unlocked"""
         path = GcsfsFilePath(bucket_name=self.bucket_name, blob_name=name)
         return self.fs.exists(path)
-
-    def get_lock_contents(self, name: str) -> str:
-        """Returns contents of specified lock as string"""
-        path = GcsfsFilePath(bucket_name=self.bucket_name, blob_name=name)
-        if not self.fs.exists(path):
-            raise GCSPseudoLockDoesNotExist(f"Lock with the name {name} does not yet exist in the bucket "
-                                            f"{self.bucket_name}")
-        contents = self.fs.download_as_string(path)
-        return contents
 
 
 class GCSPseudoLockAlreadyExists(ValueError):

@@ -24,16 +24,11 @@ from unittest import mock
 import flask
 from mock import ANY, Mock
 
-from recidiviz.cloud_storage.gcs_pseudo_lock_manager import GCSPseudoLockManager, \
-    POSTGRES_TO_BQ_EXPORT_RUNNING_LOCK_NAME, GCS_TO_POSTGRES_INGEST_RUNNING_LOCK_NAME, GCSPseudoLockAlreadyExists
 from recidiviz.common.google_cloud.cloud_task_queue_manager import CloudTaskQueueInfo
-from recidiviz.ingest.direct import direct_ingest_control
 from recidiviz.persistence.database.bq_refresh import cloud_sql_to_bq_refresh_manager
 from recidiviz.persistence.database.sqlalchemy_engine_manager import SchemaType
-from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 
 CLOUD_SQL_BQ_EXPORT_MANAGER_PACKAGE_NAME = cloud_sql_to_bq_refresh_manager.__name__
-CONTROL_PACKAGE_NAME = direct_ingest_control.__name__
 
 
 class CloudSqlToBQExportManagerTest(unittest.TestCase):
@@ -116,7 +111,7 @@ class CloudSqlToBQExportManagerTest(unittest.TestCase):
             data=json.dumps(data),
             content_type='application/json',
             headers={'X-Appengine-Inbound-Appid': 'test-project'})
-        self.assertEqual(response.status_code, HTTPStatus.OK)
+        assert response.status_code == HTTPStatus.OK
         mock_export.assert_called_with(self.mock_client,
                                        table,
                                        self.mock_bq_refresh_config)
@@ -138,7 +133,7 @@ class CloudSqlToBQExportManagerTest(unittest.TestCase):
             data=json.dumps(data),
             content_type='application/json',
             headers={'X-Appengine-Inbound-Appid': 'test-project'})
-        self.assertEqual(response.status_code, HTTPStatus.BAD_REQUEST)
+        assert response.status_code == HTTPStatus.BAD_REQUEST
         mock_export.assert_not_called()
 
     @mock.patch('recidiviz.utils.metadata.project_id', Mock(return_value='test-project'))
@@ -170,38 +165,27 @@ class CloudSqlToBQExportManagerTest(unittest.TestCase):
             data=json.dumps(data),
             content_type='application/json',
             headers={'X-Appengine-Inbound-Appid': 'test-project'})
-        self.assertEqual(response.status_code, HTTPStatus.OK)
+        assert response.status_code == HTTPStatus.OK
         mock_task_manager.return_value.\
             create_bq_refresh_monitor_task.assert_called_with(topic, message)
         mock_pubsub_helper.publish_message_to_topic.assert_not_called()
 
-    @mock.patch(f"{CONTROL_PACKAGE_NAME}.get_supported_direct_ingest_region_codes")
-    @mock.patch("recidiviz.utils.environment.get_gcp_environment", Mock(return_value='staging'))
-    @mock.patch("recidiviz.utils.regions.get_region", Mock(return_value='us_mo'))
-    @mock.patch('recidiviz.cloud_storage.gcs_pseudo_lock_manager.GcsfsFactory.build',
-                Mock(return_value=FakeGCSFileSystem()))
     @mock.patch('recidiviz.utils.metadata.project_id', Mock(return_value='test-project'))
     @mock.patch('recidiviz.utils.metadata.project_number', Mock(return_value='123456789'))
     @mock.patch(f'{CLOUD_SQL_BQ_EXPORT_MANAGER_PACKAGE_NAME}.pubsub_helper')
     @mock.patch(f'{CLOUD_SQL_BQ_EXPORT_MANAGER_PACKAGE_NAME}.BQRefreshCloudTaskManager')
     def test_monitor_refresh_bq_tasks_publish(self,
                                             mock_task_manager: mock.MagicMock,
-                                            mock_pubsub_helper: mock.MagicMock,
-                                            mock_supported_region_codes: mock.MagicMock) -> None:
-        """Tests that a message is published to the Pub/Sub topic when there are no tasks on the bq queue.
-        Also indirectly tests that the kick_all_schedulers did kicked schedulers
-        by asserting that the mock.patch to get_supported_direct_ingest_region_codes was called."""
+                                            mock_pubsub_helper: mock.MagicMock) -> None:
+        """Tests that a message is published to the Pub/Sub topic when there
+        are no tasks on the bq queue."""
         mock_task_manager.return_value.get_bq_queue_info.return_value = \
             CloudTaskQueueInfo(queue_name='queue_name', task_names=[])
-        mock_supported_region_codes.return_value = []
 
         topic = 'fake_topic'
         message = 'fake_message'
         route = '/monitor_refresh_bq_tasks'
         data = {"topic": topic, "message": message}
-
-        lock_manager = GCSPseudoLockManager()
-        lock_manager.lock(POSTGRES_TO_BQ_EXPORT_RUNNING_LOCK_NAME)
 
         response = self.mock_flask_client.post(
             route,
@@ -209,16 +193,12 @@ class CloudSqlToBQExportManagerTest(unittest.TestCase):
             content_type='application/json',
             headers={
                 'X-Appengine-Inbound-Appid': 'test-project'})
-        self.assertFalse(lock_manager.is_locked(POSTGRES_TO_BQ_EXPORT_RUNNING_LOCK_NAME))
-        self.assertEqual(response.status_code, HTTPStatus.OK)
+        assert response.status_code == HTTPStatus.OK
         mock_task_manager.return_value.create_bq_refresh_monitor_task.\
             assert_not_called()
         mock_pubsub_helper.publish_message_to_topic.assert_called_with(
             message=message, topic=topic)
-        mock_supported_region_codes.assert_called()
 
-    @mock.patch('recidiviz.cloud_storage.gcs_pseudo_lock_manager.GcsfsFactory.build',
-                Mock(return_value=FakeGCSFileSystem()))
     @mock.patch('recidiviz.utils.metadata.project_id', Mock(return_value='test-project'))
     @mock.patch('recidiviz.utils.metadata.project_number', Mock(return_value='123456789'))
     @mock.patch(f'{CLOUD_SQL_BQ_EXPORT_MANAGER_PACKAGE_NAME}.BQRefreshCloudTaskManager')
@@ -227,7 +207,6 @@ class CloudSqlToBQExportManagerTest(unittest.TestCase):
         mock_table = Mock()
         mock_table.name = 'test_table'
         self.mock_bq_refresh_config.for_schema_type.return_value.get_tables_to_export.return_value = [mock_table]
-        lock_manager = GCSPseudoLockManager()
 
         # Act
         response = self.mock_flask_client.get(
@@ -235,66 +214,13 @@ class CloudSqlToBQExportManagerTest(unittest.TestCase):
             headers={'X-Appengine-Inbound-Appid': 'test-project'})
 
         # Assert
-        self.assertTrue(lock_manager.is_locked(POSTGRES_TO_BQ_EXPORT_RUNNING_LOCK_NAME))
-        self.assertEqual(response.status_code, HTTPStatus.OK)
+        assert response.status_code == HTTPStatus.OK
         self.mock_bq_refresh_config.for_schema_type.assert_called_with(SchemaType.STATE)
         mock_task_manager.return_value.create_refresh_bq_table_task.assert_called_with(
             'test_table', SchemaType.STATE)
         mock_task_manager.return_value.create_bq_refresh_monitor_task.assert_called_with(
             'v1.calculator.trigger_daily_pipelines', ANY)
 
-    @mock.patch('recidiviz.cloud_storage.gcs_pseudo_lock_manager.GcsfsFactory.build',
-                Mock(return_value=FakeGCSFileSystem()))
-    @mock.patch('recidiviz.utils.metadata.project_id',
-                Mock(return_value='recidiviz-123'))
-    @mock.patch('recidiviz.utils.metadata.project_number', Mock(return_value='123456789'))
-    @mock.patch(f'{CLOUD_SQL_BQ_EXPORT_MANAGER_PACKAGE_NAME}.BQRefreshCloudTaskManager')
-    def test_create_wait_to_refresh_bq_tasks_state_ingest_locked(self,  mock_task_manager):
-        # Arrange
-        mock_table = Mock()
-        mock_table.name = 'test_table'
-        self.mock_bq_refresh_config.for_schema_type.return_value.get_tables_to_export.return_value = [mock_table]
-        lock_manager = GCSPseudoLockManager()
-        lock_manager.lock(GCS_TO_POSTGRES_INGEST_RUNNING_LOCK_NAME)
-
-        # Act
-        response = self.mock_flask_client.get(
-            '/create_refresh_bq_tasks/state',
-            headers={'X-Appengine-Inbound-Appid': 'recidiviz-123'})
-
-        # Assert
-        self.assertEqual(response.status_code, HTTPStatus.OK)
-        self.assertTrue(lock_manager.is_locked(POSTGRES_TO_BQ_EXPORT_RUNNING_LOCK_NAME))
-        self.assertTrue(mock_task_manager.return_value.job_monitor_cloud_task_queue_manager.create_task.called)
-        mock_task_manager.return_value.create_refresh_bq_table_task.assert_not_called()
-        mock_task_manager.return_value.create_bq_refresh_monitor_task.assert_not_called()
-
-
-    @mock.patch('recidiviz.cloud_storage.gcs_pseudo_lock_manager.GcsfsFactory.build',
-                Mock(return_value=FakeGCSFileSystem()))
-    @mock.patch('recidiviz.utils.metadata.project_id',
-                Mock(return_value='recidiviz-123'))
-    @mock.patch('recidiviz.utils.metadata.project_number', Mock(return_value='123456789'))
-    @mock.patch(f'{CLOUD_SQL_BQ_EXPORT_MANAGER_PACKAGE_NAME}.BQRefreshCloudTaskManager')
-    def test_create_wait_to_refresh_bq_tasks_state_export_locked(self, mock_task_manager):
-        # Arrange
-        mock_table = Mock()
-        mock_table.name = 'test_table'
-        self.mock_bq_refresh_config.for_schema_type.return_value.get_tables_to_export.return_value = [mock_table]
-        lock_manager = GCSPseudoLockManager()
-        lock_manager.lock(POSTGRES_TO_BQ_EXPORT_RUNNING_LOCK_NAME)
-
-        # Act
-        with self.assertRaises(GCSPseudoLockAlreadyExists):
-            self.mock_flask_client.get(
-                '/create_refresh_bq_tasks/state',
-                headers={'X-Appengine-Inbound-Appid': 'recidiviz-123'})
-
-        mock_task_manager.return_value.create_refresh_bq_table_task.assert_not_called()
-        mock_task_manager.return_value.create_bq_refresh_monitor_task.assert_not_called()
-
-    @mock.patch('recidiviz.cloud_storage.gcs_pseudo_lock_manager.GcsfsFactory.build',
-                Mock(return_value=FakeGCSFileSystem()))
     @mock.patch('recidiviz.utils.metadata.project_id', Mock(return_value='test-project'))
     @mock.patch('recidiviz.utils.metadata.project_number', Mock(return_value='123456789'))
     @mock.patch(f'{CLOUD_SQL_BQ_EXPORT_MANAGER_PACKAGE_NAME}.BQRefreshCloudTaskManager')
@@ -310,7 +236,7 @@ class CloudSqlToBQExportManagerTest(unittest.TestCase):
             headers={'X-Appengine-Inbound-Appid': 'test-project'})
 
         # Assert
-        self.assertEqual(response.status_code, HTTPStatus.OK)
+        assert response.status_code == HTTPStatus.OK
         self.mock_bq_refresh_config.for_schema_type.assert_called_with(SchemaType.JUSTICE_COUNTS)
         mock_task_manager.return_value.create_refresh_bq_table_task.assert_called_with(
             'test_table', SchemaType.JUSTICE_COUNTS)
