@@ -192,8 +192,8 @@ class TestPolicyFunctions(TestTransitionTable):
         baseline_transitions = CompartmentTransitions(self.test_data)
         baseline_transitions.initialize([])
 
-        self.assertTrue((baseline_transitions.transition_dfs['after_retroactive']['prison'] ==
-                         compartment_transitions.transition_dfs['after_retroactive']['prison']).all())
+        assert_series_equal(baseline_transitions.transition_dfs['after_retroactive']['prison'],
+                            compartment_transitions.transition_dfs['after_retroactive']['prison'])
 
     def test_apply_reduction_with_trivial_reductions_doesnt_change_transition_table(self):
 
@@ -263,15 +263,15 @@ class TestPolicyFunctions(TestTransitionTable):
         compartment_transitions = CompartmentTransitions(self.test_data)
         compartment_transitions.initialize(compartment_policies)
 
-        self.assertTrue((compartment_transitions.transition_dfs['before'].sum(axis=1) ==
-                         compartment_transitions.transition_dfs['after_retroactive'].sum(axis=1)).all())
+        assert_series_equal(compartment_transitions.transition_dfs['before'].sum(axis=1),
+                            compartment_transitions.transition_dfs['after_retroactive'].sum(axis=1))
 
     def test_extend_table_extends_table(self):
         """make sure CompartmentTransitions.extend_table is actually adding empty rows"""
 
         compartment_transitions = CompartmentTransitions(self.test_data)
         compartment_transitions.extend_tables(15)
-        self.assertTrue(set(compartment_transitions.transition_dfs['before'].index) == set(range(1, 16)))
+        self.assertEqual(set(compartment_transitions.transition_dfs['before'].index), set(range(1, 16)))
 
     def test_chop_technicals_chops_correctly(self):
         """

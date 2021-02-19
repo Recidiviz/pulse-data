@@ -19,7 +19,7 @@
 from typing import Dict, List, Optional
 import pandas as pd
 
-from recidiviz.calculator.modeling.population_projection.predicted_admissions import PredictedAdmissions
+from recidiviz.calculator.modeling.population_projection.simulations.predicted_admissions import PredictedAdmissions
 from recidiviz.calculator.modeling.population_projection.spark_compartment import SparkCompartment
 
 

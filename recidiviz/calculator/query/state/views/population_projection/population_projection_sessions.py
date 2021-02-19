@@ -57,6 +57,8 @@ POPULATION_PROJECTION_SESSIONS_QUERY_TEMPLATE = \
         ELSE CONCAT(compartment_level_1, ' - ', COALESCE(compartment_level_2, ''))
       END AS compartment,
       start_date,
+      start_reason,
+      start_sub_reason,
       end_date,
       end_reason,
       gender,

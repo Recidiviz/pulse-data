@@ -34,12 +34,12 @@ MICROSIM_PROJECTION_QUERY_TEMPLATE = \
       FROM UNNEST(GENERATE_DATE_ARRAY('2016-01-01', DATE_TRUNC(DATE_SUB(CURRENT_DATE, INTERVAL 1 MONTH), MONTH),
         INTERVAL 1 MONTH)) AS date
     ),
-    historical_population_output AS (
+    historical_supervision_population_output AS (
       SELECT
           state_code,
           date,
           compartment_level_1 AS compartment,
-          IF(compartment_level_1 = 'SUPERVISION' AND compartment_level_2 = 'DUAL', 'PAROLE', compartment_level_2) AS legal_status,
+          IF(compartment_level_2 = 'DUAL', 'PAROLE', compartment_level_2) AS legal_status,
           gender,
           COUNT(DISTINCT person_id) AS total_population
       FROM `{project_id}.{analyst_dataset}.compartment_sub_sessions_materialized`  sessions
@@ -47,21 +47,25 @@ MICROSIM_PROJECTION_QUERY_TEMPLATE = \
         ON historical_dates.date BETWEEN sessions.start_date AND COALESCE(sessions.end_date, '9999-01-01')
       WHERE state_code = 'US_ID'
         AND gender IN ('FEMALE', 'MALE')
+        AND compartment_level_1 = 'SUPERVISION'
         AND compartment_level_2 != 'OTHER'
-        AND (
-          compartment_level_1 != 'INCARCERATION'
-          OR (
-            compartment_location IN ('EAGLE PASS CORRECTIONAL FACILITY, TEXAS',
-              'BONNEVILLE COUNTY SHERIFF DEPARTMENT',
-              'JEFFERSON COUNTY SHERIFF DEPARTMENT',
-              'KARNES COUNTY CORRECTIONAL CENTER, TEXAS')
-            OR compartment_location NOT LIKE '%COUNTY%'
-          )
-        )
-        AND (
-          compartment_level_1 != 'SUPERVISION'
-          OR metric_source = 'SUPERVISION_POPULATION'
-        )
+        AND metric_source = 'SUPERVISION_POPULATION'
+      GROUP BY state_code, date, compartment, legal_status, gender
+    ),
+    historical_incarceration_population_output AS (
+      SELECT
+        state_code,
+        report_month AS date,
+        compartment_level_1 AS compartment,
+        compartment_level_2 AS legal_status,
+        gender,
+        COUNT(DISTINCT person_id) AS total_population
+      FROM `{project_id}.{population_projection_dataset}.us_id_monthly_paid_incarceration_population` inc_pop
+      INNER JOIN historical_dates
+        ON historical_dates.date = inc_pop.report_month
+      WHERE state_code = 'US_ID'
+        AND gender IN ('FEMALE', 'MALE')
+        AND compartment_level_2 != 'OTHER'
       GROUP BY state_code, date, compartment, legal_status, gender
     ),
     most_recent_results AS (
@@ -103,7 +107,23 @@ MICROSIM_PROJECTION_QUERY_TEMPLATE = \
         total_population,
         total_population AS total_population_min,
         total_population AS total_population_max
-    FROM historical_population_output
+    FROM historical_supervision_population_output
+
+    UNION ALL
+
+    SELECT
+        state_code AS simulation_tag,
+        NULL AS date_created,
+        date AS simulation_date,
+        EXTRACT(YEAR FROM date) AS year,
+        EXTRACT(MONTH FROM date) AS month,
+        compartment,
+        legal_status,
+        gender AS simulation_group,
+        total_population,
+        total_population AS total_population_min,
+        total_population AS total_population_max
+    FROM historical_incarceration_population_output
 
     ORDER BY compartment, legal_status, simulation_group, simulation_date
     """
@@ -114,6 +134,7 @@ MICROSIM_PROJECTION_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_query_template=MICROSIM_PROJECTION_QUERY_TEMPLATE,
     description=MICROSIM_PROJECTION_VIEW_DESCRIPTION,
     analyst_dataset=dataset_config.ANALYST_VIEWS_DATASET,
+    population_projection_dataset=dataset_config.POPULATION_PROJECTION_DATASET,
     population_projection_output_dataset=dataset_config.POPULATION_PROJECTION_OUTPUT_DATASET,
     should_materialize=False
 )

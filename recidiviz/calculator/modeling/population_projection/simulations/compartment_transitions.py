@@ -143,13 +143,15 @@ class CompartmentTransitions:
 
         self.transition_dfs[state] = self.transition_dfs[state].apply(lambda x: round(x, SIG_FIGS))
 
-        self.transition_dfs[state]['remaining'] = 1 - self.transition_dfs[state].sum(axis=1)
+        # Assign the residual probability as the proportion that remains in the current compartment per month
+        self.transition_dfs[state]['remaining'] = 1 - round(self.transition_dfs[state].sum(axis=1), SIG_FIGS - 1)
 
         # Make sure all transition probabilities are between 0-1
-        for compartment in self.transition_dfs[state]:
-            if any((self.transition_dfs[state][compartment] < 0) | (self.transition_dfs[state][compartment] > 1)):
+        for compartment, transition_df in self.transition_dfs[state].items():
+            if any((transition_df < 0) | (transition_df > 1)):
+                erroneous_values = transition_df[(transition_df < 0) | (transition_df > 1)]
                 raise ValueError(f"'{compartment}' transition has probabilities out of bounds for state '{state}':\n"
-                                 f"{self.transition_dfs[state][compartment]}")
+                                 f"{erroneous_values}")
 
     def initialize(self, compartment_policies: List[SparkPolicy]) -> None:
         """Initialize all transition tables given a list of SparkPolicy."""
