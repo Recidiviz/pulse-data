@@ -113,13 +113,12 @@ class DirectIngestIngestViewExportManager:
         ingest_view_to_export_state = {}
         for ingest_view_tag, ingest_view in self.ingest_views_by_tag.items():
             export_state = self._get_export_state_for_ingest_view(ingest_view)
-            self._validate_ascending_raw_file_update_dates(export_state)
             ingest_view_to_export_state[ingest_view_tag] = export_state
         logging.info('Done gathering export state for each ingest tag')
 
         # At this point we know that we have no new raw data backfills that should invalidate either pending or past
-        # completed ingest view exports (checked in _validate_ascending_raw_file_update_dates()). We can now generate
-        # any new jobs.
+        # completed ingest view exports (checked in _get_export_state_for_ingest_view()). We can now generate any new
+        # jobs.
 
         jobs_to_schedule = []
         metadata_pending_export = self.file_metadata_manager.get_ingest_view_metadata_pending_export()
@@ -463,8 +462,14 @@ class DirectIngestIngestViewExportManager:
 
         return GcsfsFilePath.from_directory_and_file_name(self.ingest_directory_path, output_file_name)
 
-    def _get_export_state_for_ingest_view(self,
-                                          ingest_view: DirectIngestPreProcessedIngestView) -> _IngestViewExportState:
+    def _get_export_state_for_ingest_view(
+        self, ingest_view: DirectIngestPreProcessedIngestView
+    ) -> _IngestViewExportState:
+        """Gets list of all the raw files that are newer than the last export job.
+
+        Additionally, validates that there are no files with dates prior to the last ingest view export. We can only
+        process new files.
+        """
         last_export_metadata = \
             self.file_metadata_manager.get_ingest_view_metadata_for_most_recent_valid_job(ingest_view.file_tag)
         last_job_time = last_export_metadata.job_creation_time if last_export_metadata else None
@@ -475,30 +480,33 @@ class DirectIngestIngestViewExportManager:
             raw_file_metadata_list = \
                 self.file_metadata_manager.get_metadata_for_raw_files_discovered_after_datetime(raw_file_tag,
                                                                                                 last_job_time)
-            raw_table_dependency_updated_metadatas.extend(raw_file_metadata_list)
+            for raw_file_metadata in raw_file_metadata_list:
+                # Check to see if the file comes BEFORE the last ingest view export for this view. If it does, and it is
+                # not a code table, then this indicates that some sort of backfill is trying to process without
+                # properly invalidating legacy ingest view metadata rows.
+                if (
+                    last_export_metadata and
+                    raw_file_metadata.datetimes_contained_upper_bound_inclusive <
+                        last_export_metadata.datetimes_contained_upper_bound_inclusive
+                ):
+                    # If it is not a code table, raise an error as we need to run a backfill. If it is a code table the
+                    # the data should have already been migrated so we can ignore it.
+                    if not raw_file_metadata.is_code_table:
+                        raise ValueError(
+                            f'Found a newly discovered raw file [tag: {raw_file_metadata.file_tag}] with an upper '
+                            f'bound date [{raw_file_metadata.datetimes_contained_upper_bound_inclusive}] before the '
+                            f'last valid export upper bound date '
+                            f'[{last_export_metadata.datetimes_contained_upper_bound_inclusive}]. Ingest view rows not '
+                            f'properly invalidated before data backfill.')
+                # Otherwise, add to the list
+                else:
+                    raw_table_dependency_updated_metadatas.append(raw_file_metadata)
 
         return _IngestViewExportState(
             ingest_view_file_tag=ingest_view.file_tag,
             last_export_metadata=last_export_metadata,
             raw_table_dependency_updated_metadatas=raw_table_dependency_updated_metadatas
         )
-
-    @staticmethod
-    def _validate_ascending_raw_file_update_dates(export_state: _IngestViewExportState) -> None:
-        """Checks that there are no new raw files with update dates that come BEFORE the last ingest view export for
-        this view (indicating that some sort of backfill is trying to process with out properly invalidating legacy
-        ingest view metadata rows.
-        """
-
-        for raw_file_metadata in export_state.raw_table_dependency_updated_metadatas:
-            if export_state.last_export_metadata and \
-                    raw_file_metadata.datetimes_contained_upper_bound_inclusive < \
-                    export_state.last_export_metadata.datetimes_contained_upper_bound_inclusive:
-                raise ValueError(
-                    f'Found a newly discovered raw file with an upper bound date '
-                    f'[{raw_file_metadata.datetimes_contained_upper_bound_inclusive}] before the last valid export '
-                    f'upper bound date [{export_state.last_export_metadata.datetimes_contained_upper_bound_inclusive}].'
-                    f' Ingest view rows not properly invalidated before data backfill.')
 
     @staticmethod
     def _export_args_from_metadata(

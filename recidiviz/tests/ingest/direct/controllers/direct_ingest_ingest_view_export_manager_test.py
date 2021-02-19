@@ -24,7 +24,7 @@ import mock
 import pytest
 from freezegun import freeze_time
 from google.cloud.bigquery import ScalarQueryParameter
-from mock import patch
+from mock import Mock, patch
 from more_itertools import one
 
 from recidiviz.big_query.big_query_view import BigQueryViewBuilder
@@ -44,6 +44,7 @@ from recidiviz.persistence.database.schema_entity_converter import (
     schema_entity_converter as converter)
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.entity.base_entity import Entity
+from recidiviz.persistence.entity.operations.entities import DirectIngestIngestFileMetadata, DirectIngestRawFileMetadata
 from recidiviz.tests.ingest import fixtures
 from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.tests.utils import fakes
@@ -281,12 +282,15 @@ class DirectIngestIngestViewExportManagerTest(unittest.TestCase):
                            are_raw_data_bq_imports_enabled_in_env=True,
                            are_ingest_view_exports_enabled_in_env=ingest_view_exports_enabled)
 
-    def create_export_manager(self,
-                              region: Region,
-                              is_detect_row_deletion_view: bool = False,
-                              materialize_raw_data_table_views: bool = False) -> DirectIngestIngestViewExportManager:
+    def create_export_manager(
+        self,
+        region: Region,
+        is_detect_row_deletion_view: bool = False,
+        materialize_raw_data_table_views: bool = False,
+        controller_file_tags: Optional[List[str]] = None
+    ) -> DirectIngestIngestViewExportManager:
         metadata_manager = PostgresDirectIngestFileMetadataManager(region.region_code)
-        controller_file_tags = ['ingest_view']
+        controller_file_tags = ['ingest_view'] if controller_file_tags is None else controller_file_tags
         return DirectIngestIngestViewExportManager(
             region=region,
             fs=FakeGCSFileSystem(),
@@ -313,6 +317,123 @@ class DirectIngestIngestViewExportManagerTest(unittest.TestCase):
         normalized_exported_query = export_config.query.replace('\n', '')
         normalized_expected_query = expected_query.replace('\n', '')
         self.assertEqual(normalized_expected_query, normalized_exported_query)
+
+    def test_getIngestViewExportTaskArgs_happy(self) -> None:
+        # Arrange
+        region = self.create_fake_region(ingest_view_exports_enabled=True)
+        export_manager = self.create_export_manager(region)
+        export_manager.file_metadata_manager.get_ingest_view_metadata_for_most_recent_valid_job = Mock( # type: ignore
+            return_value=DirectIngestIngestFileMetadata(
+                file_id=_ID,
+                region_code=region.region_code,
+                file_tag='ingest_view',
+                normalized_file_name='normalized_file_name',
+                processed_time=_DATE_1,
+                is_invalidated=False,
+                is_file_split=False,
+                job_creation_time=_DATE_1,
+                export_time=_DATE_1,
+                datetimes_contained_lower_bound_exclusive=_DATE_1,
+                datetimes_contained_upper_bound_inclusive=_DATE_1,
+                discovery_time=_DATE_1,
+            ))
+        export_manager.file_metadata_manager.get_metadata_for_raw_files_discovered_after_datetime = Mock( # type: ignore
+            return_value=[DirectIngestRawFileMetadata(
+                file_id=2,
+                region_code=region.region_code,
+                file_tag='ingest_view',
+                discovery_time=_DATE_2,
+                normalized_file_name='unprocessed_2015-01-02T03:03:03:000003_raw_file_tag.csv',
+                processed_time=None,
+                datetimes_contained_upper_bound_inclusive=_DATE_2
+            )]
+        )
+
+        # Act
+        args = export_manager.get_ingest_view_export_task_args()
+
+        # Assert
+        self.assertListEqual(args, [
+            GcsfsIngestViewExportArgs(
+                ingest_view_name='ingest_view',
+                upper_bound_datetime_prev=_DATE_1,
+                upper_bound_datetime_to_export=_DATE_2,
+            )
+        ])
+
+    def test_getIngestViewExportTaskArgs_rawFileOlderThanLastExport(self) -> None:
+        # Arrange
+        region = self.create_fake_region(ingest_view_exports_enabled=True)
+        export_manager = self.create_export_manager(region)
+        export_manager.file_metadata_manager.get_ingest_view_metadata_for_most_recent_valid_job = Mock( # type: ignore
+            return_value=DirectIngestIngestFileMetadata(
+                file_id=_ID,
+                region_code=region.region_code,
+                file_tag='ingest_view',
+                normalized_file_name='normalized_file_name',
+                processed_time=_DATE_2,
+                is_invalidated=False,
+                is_file_split=False,
+                job_creation_time=_DATE_2,
+                export_time=_DATE_2,
+                datetimes_contained_lower_bound_exclusive=_DATE_2,
+                datetimes_contained_upper_bound_inclusive=_DATE_2,
+                discovery_time=_DATE_2,
+            ))
+        export_manager.file_metadata_manager.get_metadata_for_raw_files_discovered_after_datetime = Mock( # type: ignore
+            return_value=[DirectIngestRawFileMetadata(
+                file_id=2,
+                region_code=region.region_code,
+                file_tag='ingest_view',
+                discovery_time=_DATE_1,
+                normalized_file_name='unprocessed_2015-01-02T03:03:03:000003_raw_file_tag.csv',
+                processed_time=None,
+                datetimes_contained_upper_bound_inclusive=_DATE_1
+            )]
+        )
+
+        # Act
+        with pytest.raises(ValueError, match=r'upper bound date.*before the last valid export'):
+            export_manager.get_ingest_view_export_task_args()
+
+    def test_getIngestViewExportTaskArgs_rawCodeTableOlderThanLastExport(self) -> None:
+        # Arrange
+        CODE_TABLE_TAG = 'RECIDIVIZ_REFERENCE_ingest_view'
+        region = self.create_fake_region(ingest_view_exports_enabled=True)
+        export_manager = self.create_export_manager(region, controller_file_tags=[CODE_TABLE_TAG])
+        export_manager.file_metadata_manager.get_ingest_view_metadata_for_most_recent_valid_job = Mock( # type: ignore
+            return_value=DirectIngestIngestFileMetadata(
+                file_id=_ID,
+                region_code=region.region_code,
+                file_tag=CODE_TABLE_TAG,
+                normalized_file_name='normalized_file_name',
+                processed_time=_DATE_2,
+                is_invalidated=False,
+                is_file_split=False,
+                job_creation_time=_DATE_2,
+                export_time=_DATE_2,
+                datetimes_contained_lower_bound_exclusive=_DATE_2 - datetime.timedelta(days=7),
+                datetimes_contained_upper_bound_inclusive=_DATE_2,
+                discovery_time=_DATE_2,
+            ))
+        export_manager.file_metadata_manager.get_metadata_for_raw_files_discovered_after_datetime = Mock( # type: ignore
+            return_value=[DirectIngestRawFileMetadata(
+                file_id=2,
+                region_code=region.region_code,
+                file_tag=CODE_TABLE_TAG,
+                discovery_time=_DATE_1,
+                normalized_file_name='unprocessed_2015-01-02T03:03:03:000003_raw_file_tag.csv',
+                processed_time=None,
+                datetimes_contained_upper_bound_inclusive=_DATE_1
+            )]
+        )
+
+        # Act
+        args = export_manager.get_ingest_view_export_task_args()
+
+        # Assert
+        # New code tables are backdated but don't need to be re-ingested, so ignore them.
+        self.assertListEqual(args, [])
 
     def test_exportViewForArgs_ingestViewExportsDisabled(self) -> None:
         # Arrange
