@@ -17,15 +17,17 @@
 """Unit and integration tests for US_TN direct ingest."""
 from typing import Type
 
+from sqlalchemy.ext.declarative import DeclarativeMeta
+
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_controller import GcsfsDirectIngestController
 from recidiviz.ingest.direct.regions.us_tn.us_tn_controller import UsTnController
-from recidiviz.tests.ingest.direct.regions.base_state_direct_ingest_controller_tests import \
-    BaseStateDirectIngestControllerTests
+from recidiviz.persistence.database.base_schema import StateBase
+from recidiviz.tests.ingest.direct.regions.base_direct_ingest_controller_tests import BaseDirectIngestControllerTests
 
 _STATE_CODE_UPPER = 'US_TN'
 
 
-class TestUsTnController(BaseStateDirectIngestControllerTests):
+class TestUsTnController(BaseDirectIngestControllerTests):
     """Unit tests for each US_TN file to be ingested."""
 
     @classmethod
@@ -35,3 +37,7 @@ class TestUsTnController(BaseStateDirectIngestControllerTests):
     @classmethod
     def controller_cls(cls) -> Type[GcsfsDirectIngestController]:
         return UsTnController
+
+    @classmethod
+    def schema_base(cls) -> DeclarativeMeta:
+        return StateBase

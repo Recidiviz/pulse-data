@@ -19,6 +19,7 @@ import datetime
 from typing import Type
 
 import attr
+from sqlalchemy.ext.declarative import DeclarativeMeta
 
 from recidiviz import IngestInfo
 from recidiviz.common.constants.charge import ChargeStatus
@@ -53,15 +54,15 @@ from recidiviz.ingest.models.ingest_info import StatePerson, StatePersonExternal
     StateSupervisionViolation, StateSupervisionViolationTypeEntry, StateSupervisionViolationResponse, \
     StateSupervisionViolationResponseDecisionEntry, StateEarlyDischarge, StateSupervisionCaseTypeEntry, \
     StateSupervisionContact
+from recidiviz.persistence.database.base_schema import StateBase
 from recidiviz.persistence.entity.state import entities
-from recidiviz.tests.ingest.direct.regions.base_state_direct_ingest_controller_tests import \
-    BaseStateDirectIngestControllerTests
+from recidiviz.tests.ingest.direct.regions.base_direct_ingest_controller_tests import BaseDirectIngestControllerTests
 from recidiviz.tests.ingest.direct.regions.utils import populate_person_backedges
 
 _STATE_CODE_UPPER = 'US_ID'
 
 
-class TestUsIdController(BaseStateDirectIngestControllerTests):
+class TestUsIdController(BaseDirectIngestControllerTests):
     """Unit tests for each Idaho file to be ingested by the UsNdController."""
 
     @classmethod
@@ -71,6 +72,10 @@ class TestUsIdController(BaseStateDirectIngestControllerTests):
     @classmethod
     def controller_cls(cls) -> Type[GcsfsDirectIngestController]:
         return UsIdController
+
+    @classmethod
+    def schema_base(cls) -> DeclarativeMeta:
+        return StateBase
 
     def test_populate_data_offender_ofndr_dob_address(self) -> None:
         expected = IngestInfo(

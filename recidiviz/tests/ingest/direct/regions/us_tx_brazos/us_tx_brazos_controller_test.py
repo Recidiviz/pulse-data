@@ -14,29 +14,29 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Unit and integration tests for US_MI direct ingest."""
+"""Unit and integration tests for US_TX_BRAZOS direct ingest."""
 from typing import Type
 
 from sqlalchemy.ext.declarative import DeclarativeMeta
 
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_controller import GcsfsDirectIngestController
-from recidiviz.ingest.direct.regions.us_mi.us_mi_controller import UsMiController
+from recidiviz.ingest.direct.regions.us_tx_brazos.us_tx_brazos_controller import UsTxBrazosController
 from recidiviz.persistence.database.base_schema import StateBase
 from recidiviz.tests.ingest.direct.regions.base_direct_ingest_controller_tests import BaseDirectIngestControllerTests
 
-_STATE_CODE_UPPER = 'US_MI'
+_REGION_CODE_UPPER = 'US_TX_BRAZOS'
 
 
-class TestUsMiController(BaseDirectIngestControllerTests):
-    """Unit tests for each US_MI file to be ingested."""
+class TestUsTxBrazosController(BaseDirectIngestControllerTests):
+    """Unit tests for each US_TX_BRAZOS file to be ingested."""
 
     @classmethod
     def region_code(cls) -> str:
-        return _STATE_CODE_UPPER.lower()
+        return _REGION_CODE_UPPER.lower()
 
     @classmethod
     def controller_cls(cls) -> Type[GcsfsDirectIngestController]:
-        return UsMiController
+        return UsTxBrazosController
 
     @classmethod
     def schema_base(cls) -> DeclarativeMeta:

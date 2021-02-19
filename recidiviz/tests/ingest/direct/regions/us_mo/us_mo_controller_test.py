@@ -15,9 +15,11 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Tests for the UsMoController."""
+
 import datetime
 from typing import Type, cast, List
 
+from sqlalchemy.ext.declarative import DeclarativeMeta
 from recidiviz import IngestInfo
 from recidiviz.common.constants.charge import ChargeStatus
 from recidiviz.common.constants.person_characteristics import Gender, Race, Ethnicity
@@ -50,14 +52,13 @@ from recidiviz.persistence.database.base_schema import StateBase
 from recidiviz.persistence.database.schema.state import dao
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.persistence.entity.state import entities
-from recidiviz.tests.ingest.direct.regions.base_state_direct_ingest_controller_tests import \
-    BaseStateDirectIngestControllerTests
+from recidiviz.tests.ingest.direct.regions.base_direct_ingest_controller_tests import BaseDirectIngestControllerTests
 from recidiviz.tests.ingest.direct.regions.utils import populate_person_backedges
 
 _STATE_CODE_UPPER = 'US_MO'
 
 
-class TestUsMoController(BaseStateDirectIngestControllerTests):
+class TestUsMoController(BaseDirectIngestControllerTests):
     """Tests for the UsMoController."""
 
     @classmethod
@@ -67,6 +68,10 @@ class TestUsMoController(BaseStateDirectIngestControllerTests):
     @classmethod
     def controller_cls(cls) -> Type[GcsfsDirectIngestController]:
         return UsMoController
+
+    @classmethod
+    def schema_base(cls) -> DeclarativeMeta:
+        return StateBase
 
     def test_parse_mo_julian_date(self) -> None:
         self.assertEqual(UsMoController.mo_julian_date_to_iso(''), None)

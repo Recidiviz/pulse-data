@@ -22,6 +22,7 @@ import json
 from typing import Type
 
 import attr
+from sqlalchemy.ext.declarative import DeclarativeMeta
 
 from recidiviz.common.constants.charge import ChargeStatus
 from recidiviz.common.constants.person_characteristics import Gender, Race, ResidencyStatus, Ethnicity
@@ -58,9 +59,9 @@ from recidiviz.ingest.models.ingest_info import IngestInfo, StateSentenceGroup, 
     StateSupervisionPeriod, StateSupervisionViolation, StateSupervisionViolationResponse, StateAgent, \
     StateIncarcerationIncident, StateIncarcerationIncidentOutcome, StateProgramAssignment, \
     StateSupervisionViolationTypeEntry, StateSupervisionCaseTypeEntry, StateSupervisionContact
+from recidiviz.persistence.database.base_schema import StateBase
 from recidiviz.persistence.entity.state import entities
-from recidiviz.tests.ingest.direct.regions.base_state_direct_ingest_controller_tests import \
-    BaseStateDirectIngestControllerTests
+from recidiviz.tests.ingest.direct.regions.base_direct_ingest_controller_tests import BaseDirectIngestControllerTests
 
 _INCIDENT_DETAILS_1 = '230\nInmate Jon Hopkins would not follow directives to stop and be pat searched when coming ' \
                       'from the IDR past traffic.'
@@ -77,7 +78,7 @@ _INCIDENT_DETAILS_6 = '227\nStaff saw Martha Stewart with a cigarette to her mou
 _STATE_CODE = 'US_ND'
 
 
-class TestUsNdController(BaseStateDirectIngestControllerTests):
+class TestUsNdController(BaseDirectIngestControllerTests):
     """Unit tests for each North Dakota file to be ingested by the UsNdController."""
 
     @classmethod
@@ -87,6 +88,10 @@ class TestUsNdController(BaseStateDirectIngestControllerTests):
     @classmethod
     def controller_cls(cls) -> Type[GcsfsDirectIngestController]:
         return UsNdController
+
+    @classmethod
+    def schema_base(cls) -> DeclarativeMeta:
+        return StateBase
 
     def test_populate_data_elite_offenderidentifier(self) -> None:
         expected = IngestInfo(
