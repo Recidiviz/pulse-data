@@ -30,30 +30,10 @@ REVOCATIONS_MATRIX_FILTERED_CASELOAD_DESCRIPTION = """
 REVOCATIONS_MATRIX_FILTERED_CASELOAD_QUERY_TEMPLATE = \
     """
     /*{description}*/
-    WITH supervision_type_ranks_by_person AS (
-      SELECT
-        state_code,
-        metric_period_months,
-        person_external_id,
-        supervision_type,
-        -- We only want to include a supervision_type=ALL row if that person has no other set supervision types
-        ROW_NUMBER() OVER (PARTITION BY state_code, metric_period_months, person_external_id
-                            ORDER BY supervision_type != 'ALL' DESC) as inclusion_order
-      FROM `{project_id}.{reference_views_dataset}.revocations_matrix_by_person_materialized` 
-    ), people_without_supervision_types_to_include AS (
-      SELECT 
-        state_code,
-        metric_period_months,
-        person_external_id,
-        supervision_type
-      FROM supervision_type_ranks_by_person
-      WHERE inclusion_order = 1
-    )
-    
-    
+  WITH inclusion_ranks_by_person AS (
     SELECT
       state_code,
-      IFNULL(person_external_id, 'UNKNOWN') AS state_id,
+      person_external_id,
       officer,
       officer_recommendation,
       violation_record,
@@ -64,35 +44,78 @@ REVOCATIONS_MATRIX_FILTERED_CASELOAD_QUERY_TEMPLATE = \
       END AS district,
       level_1_supervision_location,
       level_2_supervision_location,
-      sup_type.supervision_type,
+      supervision_type,
       supervision_level,
       charge_category,
       risk_level,
       violation_type,
       reported_violations,
-      metric_period_months
-    FROM `{project_id}.{reference_views_dataset}.revocations_matrix_by_person_materialized` 
-    LEFT JOIN
-        people_without_supervision_types_to_include sup_type
-    USING (state_code, metric_period_months, person_external_id)
-    WHERE CASE
-        -- TODO(#4524): Once the front end supports the file size increase of multi-district breakdowns and we stop 
-        -- filtering out hydrated level_1_supervision_location breakdown rows, we can remove this PA special case.
-        WHEN state_code = 'US_PA' THEN true
-        ELSE level_1_supervision_location != 'ALL'
-    END
-    AND CASE
+      metric_period_months,
+      ROW_NUMBER() OVER (PARTITION BY state_code, metric_period_months, person_external_id
+                           -- We only want to include an ALL value if that person has no other set values
+                           -- for the dimension
+                            ORDER BY supervision_type != 'ALL' DESC,
+                                     supervision_level != 'ALL' DESC,
+                                     charge_category != 'ALL' DESC,
+                                     level_1_supervision_location != 'ALL' DESC,
+                                     level_2_supervision_location != 'ALL' DESC) AS inclusion_order
+      FROM `{project_id}.{reference_views_dataset}.revocations_matrix_by_person_materialized`
+      WHERE violation_type != 'ALL'
+      AND reported_violations != 'ALL'
+    ), caseload_by_person AS (
+      SELECT
+        state_code,
+        -- We use UNKNOWN instead of EXTERNAL_UNKNOWN here because this value is seen on the FE --
+        IFNULL(person_external_id, 'UNKNOWN') AS state_id,
+        officer,
+        officer_recommendation,
+        violation_record,
+        IF(district = 'ALL', 'EXTERNAL_UNKNOWN', district) AS district,
+        -- TODO(#4524): Once the front end supports the multi-district breakdowns and we stop 
+        -- filtering out hydrated level_1_supervision_location breakdown rows, we can remove this PA special case and
+        -- replace with:
+        -- IF(level_1_supervision_location = 'ALL', 'EXTERNAL_UNKNOWN', level_1_supervision_location) AS level_1_supervision_location,
+        CASE WHEN state_code = 'US_PA' THEN 'ALL'
+             WHEN level_1_supervision_location = 'ALL' THEN 'EXTERNAL_UNKNOWN'
+             ELSE level_1_supervision_location
+             END AS level_1_supervision_location,
         -- TODO(#3829): MO does not have level 2 values ingested, so level_2_supervision_location values are only
-        -- 'ALL'. Once we do start ingesting MO region information, this query size will temporarily increase until
-        -- we update this query to remove the MO special case.
-        WHEN state_code = 'US_MO' THEN true
-        ELSE level_2_supervision_location != 'ALL'
-    END 
-    -- State-specific filtering to allow ALL values for states where the dimension is disabled on the FE --
-    AND (state_code = 'US_PA' OR charge_category != 'ALL')
-    AND (state_code = 'US_MO' or (supervision_level != 'ALL'))
-    AND violation_type != 'ALL'
-    AND reported_violations != 'ALL'
+        -- 'ALL'. Once we do start ingesting MO region information and the front end supports the multi-district
+        -- breakdown for US_MO we can remove this MO special case and replace with:
+        -- IF(level_2_supervision_location = 'ALL', 'EXTERNAL_UNKNOWN', level_2_supervision_location) AS level_2_supervision_location,
+        CASE WHEN state_code = 'US_MO' THEN 'ALL'
+             WHEN level_2_supervision_location = 'ALL' THEN 'EXTERNAL_UNKNOWN'
+             ELSE level_2_supervision_location
+             END AS level_2_supervision_location,
+        -- supervision_type is always ALL in US_PA -- 
+        CASE WHEN state_code = 'US_PA' THEN 'ALL'
+             WHEN supervision_type = 'ALL' THEN 'EXTERNAL_UNKNOWN'
+             ELSE supervision_type
+             END AS supervision_type,   
+        -- supervision_level is always ALL in US_MO --
+        CASE WHEN state_code = 'US_MO' THEN 'ALL'
+             WHEN supervision_level = 'ALL' THEN 'EXTERNAL_UNKNOWN'
+             ELSE supervision_level
+             END AS supervision_level,
+        -- charge_category is always ALL in US_PA --
+        CASE WHEN state_code = 'US_PA' THEN 'ALL'
+             WHEN charge_category = 'ALL' THEN 'EXTERNAL_UNKNOWN'
+             ELSE charge_category
+             END AS charge_category,
+        risk_level,
+        violation_type,
+        reported_violations,
+        metric_period_months
+      FROM inclusion_ranks_by_person
+      WHERE inclusion_order = 1
+    )
+    
+    
+    SELECT
+      *
+    FROM
+      caseload_by_person
+    ORDER BY state_code, state_id, metric_period_months
     """
 
 REVOCATIONS_MATRIX_FILTERED_CASELOAD_VIEW_BUILDER = MetricBigQueryViewBuilder(
