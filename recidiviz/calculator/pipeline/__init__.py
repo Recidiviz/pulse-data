@@ -15,3 +15,34 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Pipeline-based calculations."""
+import logging
+
+from apache_beam.io.gcp.bigquery_tools import BigQueryWrapper
+from apache_beam.io.gcp.internal.clients import bigquery
+
+def _start_job(self: BigQueryWrapper, request: bigquery.BigqueryJobsInsertRequest) -> bigquery.Job:
+    """Inserts a BigQuery job.
+
+    Raises an error if the insert fails, even if the job already exists.
+    """
+    logging.info("Using patched _start_job")
+    try:
+        response: bigquery.Job = self.client.jobs.Insert(request)
+        logging.info(
+            "Started BigQuery job: %s\n "
+            "bq show -j --format=prettyjson --project_id=%s %s",
+            response.jobReference,
+            response.jobReference.projectId,
+            response.jobReference.jobId)
+        return response
+    except Exception as exn:
+        logging.error(
+            "Failed to insert job %s: %s", request.job.jobReference, exn)
+        raise
+
+# Replaces the default implementation of _start_job with one that raises all errors.
+# The default implementation suppresses 409s which can cause our dataflow pipelines to silently omit data. See
+# #5152, as well as the default implementation:
+# https://github.com/apache/beam/blob/master/sdks/python/apache_beam/io/gcp/bigquery_tools.py#L440
+logging.info('Patching BigQueryWrapper._start_job')
+setattr(BigQueryWrapper, "_start_job", _start_job)
