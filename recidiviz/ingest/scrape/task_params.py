@@ -29,7 +29,7 @@ from recidiviz.ingest.scrape import constants
 from recidiviz.ingest.scrape.errors import ScraperError
 
 
-def validate_scraped_data(cls: 'ScrapedData', _, __):
+def validate_scraped_data(cls: 'ScrapedData', _attribute: attr.Attribute, _value: Any) -> None:
     if cls.persist and not (cls.ingest_info or cls.single_counts):
         raise ScraperError(
             "If persisting, at least one of ingest_info or single_counts "
@@ -84,11 +84,11 @@ class Task:
     content: Optional[str] = attr.ib(default=None)
 
     @staticmethod
-    def evolve(next_task, **kwds):
+    def evolve(next_task: 'Task', **kwds: Any) -> 'Task':
         """Convenience so that other modules don't need to import attr."""
         return attr.evolve(next_task, **kwds)
 
-    def to_serializable(self):
+    def to_serializable(self) -> Any:
         return cattr.unstructure(self)
 
 @attr.s(frozen=True)
@@ -112,9 +112,9 @@ class QueueRequest:
     # this is used to pass it along to the next page.
     ingest_info: Optional[IngestInfo] = attr.ib(default=None)
 
-    def to_serializable(self):
+    def to_serializable(self) -> Any:
         return cattr.unstructure(self)
 
     @classmethod
-    def from_serializable(cls, serializable):
+    def from_serializable(cls, serializable: Any) -> 'QueueRequest':
         return cattr.structure(serializable, cls)

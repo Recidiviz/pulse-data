@@ -103,8 +103,7 @@ psycogreen = "*"
 # marshmallow~=2, but flask-appbuilder does not yet support marshmallow~=3, so we pin marshmallow-sqlalchemy back
 # instead.
 marshmallow-sqlalchemy = "<0.24.0"
-# TODO(#5628): Un-pin cattrs
-cattrs = "<1.2.0"
+cattrs = "*"
 # If the dill version changes be sure to update the pinned version in setup.py
 dill = "*"
 matplotlib = "*"

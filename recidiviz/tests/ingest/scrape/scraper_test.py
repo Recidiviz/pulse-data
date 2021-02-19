@@ -92,7 +92,7 @@ class TestStartScrape(unittest.TestCase):
             ScrapeKey(region, scrape_type), BATCH_PUBSUB_TYPE)
 
         queue_params = QueueRequest(
-            scrape_type=scrape_type.value,
+            scrape_type=scrape_type,
             scraper_start_time=_DATETIME,
             next_task=FAKE_TASK,
             # content=docket_item,
@@ -266,7 +266,7 @@ class TestResumeScrape(unittest.TestCase):
         mock_sessions.assert_called_with(ScrapeKey(region, scrape_type))
 
         queue_params = QueueRequest(
-            scrape_type=scrape_type.value,
+            scrape_type=scrape_type,
             scraper_start_time=_DATETIME,
             next_task=FAKE_TASK,
             # content=['Bangalter', 'Thomas'],
@@ -351,7 +351,7 @@ class TestResumeScrape(unittest.TestCase):
         mock_get_region.assert_called_with(region)
 
         queue_params = QueueRequest(
-            scrape_type=scrape_type.value,
+            scrape_type=scrape_type,
             scraper_start_time=_DATETIME,
             next_task=FAKE_TASK,
             # content=(83240, ['dagt', 'punk']),
