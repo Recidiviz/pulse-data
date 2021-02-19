@@ -21,6 +21,7 @@ from typing import Dict
 
 from flask import Flask, Response, g, jsonify, send_from_directory, session
 from flask_sqlalchemy_session import current_session
+from sqlalchemy.orm.exc import NoResultFound
 
 from recidiviz.case_triage.api_routes import api
 from recidiviz.case_triage.authorization import AuthorizationStore
@@ -98,11 +99,17 @@ def fetch_user_info() -> None:
     If the user is an admin (i.e. an approved Recidiviz employee), and the `impersonated_email` param is
     set, then they can make requests as if they were the impersonated user.
     """
-    if IMPERSONATED_EMAIL_KEY in session and session['user_info']['email'] in authorization_store.admin_users:
-        g.current_user = CaseTriageQuerier.officer_for_email(current_session, session[IMPERSONATED_EMAIL_KEY])
+    try:
+        if IMPERSONATED_EMAIL_KEY in session and session['user_info']['email'] in authorization_store.admin_users:
+            g.current_user = CaseTriageQuerier.officer_for_email(current_session, session[IMPERSONATED_EMAIL_KEY])
 
-    if not getattr(g, 'current_user', None):
-        g.current_user = CaseTriageQuerier.officer_for_email(current_session, session['user_info']['email'])
+        if not getattr(g, 'current_user', None):
+            g.current_user = CaseTriageQuerier.officer_for_email(current_session, session['user_info']['email'])
+    except NoResultFound as e:
+        raise CaseTriageAuthorizationError(
+            code="unauthorized",
+            description="You are not authorized to access this application",
+        ) from e
 
 
 app.register_blueprint(api, url_prefix='/api')
