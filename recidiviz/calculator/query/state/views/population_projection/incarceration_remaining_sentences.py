@@ -47,6 +47,7 @@ REMAINING_SENTENCES_QUERY_TEMPLATE = \
           FROM `{project_id}.{population_projection_dataset}.population_transitions_materialized`
           -- Union the rider transitions at the end
           WHERE (compartment LIKE 'INCARCERATION%') and (compartment NOT IN ('INCARCERATION - TREATMENT_IN_PRISON', 'INCARCERATION - PAROLE_BOARD_HOLD'))
+            AND outflow_to NOT LIKE '%OTHER%'
           GROUP BY 1,2,3,4
           )
     ),

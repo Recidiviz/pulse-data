@@ -38,30 +38,32 @@ POPULATION_OUTFLOWS_QUERY_TEMPLATE = \
                 WHEN inflow_from = 'RELEASE - RELEASE' THEN 'RELEASE'
                 ELSE inflow_from
             END AS compartment,
-            session_id,
-            CASE 
+            CASE
                 WHEN compartment = 'INCARCERATION - GENERAL' AND previously_incarcerated THEN 'INCARCERATION - RE-INCARCERATION'
-                ELSE compartment 
+                ELSE compartment
             END AS outflow_to,
             gender,
             COUNT(1) as total_population,
         FROM `{project_id}.{population_projection_dataset}.population_projection_sessions_materialized`
         JOIN `{project_id}.{population_projection_dataset}.simulation_run_dates` run_date_array
             ON start_date < run_date
-            -- Do not count start dates from the edge of the historical look back since those are not true admissions
-            AND start_date >= '2000-12-01'
+            -- Cap the historical outflows (admissions) data at 10 years before the run date
+            AND DATE_DIFF(run_date, start_date, YEAR) < 10
         WHERE state_code = 'US_ID'
-        GROUP BY 1,2,3,4,5,6,7
+            AND gender IN ('FEMALE', 'MALE')
+            -- Restrict the values to verified admissions
+            AND start_reason IN ('NEW_ADMISSION', 'COURT_SENTENCE')
+        GROUP BY 1,2,3,4,5,6
     )
     SELECT
     *
     FROM cte
-    WHERE gender IN ('FEMALE', 'MALE')
-        AND CASE
+    WHERE CASE
           WHEN compartment = 'PRETRIAL'
             THEN outflow_to IN ('INCARCERATION - GENERAL', 'SUPERVISION - PROBATION', 'INCARCERATION - TREATMENT_IN_PRISON')
           WHEN compartment = 'RELEASE'
-            THEN outflow_to IN ('SUPERVISION - PROBATION', 'SUPERVISION - PAROLE', 'INCARCERATION - TREATMENT_IN_PRISON', 'INCARCERATION - RE-INCARCERATION')
+            THEN outflow_to IN ('SUPERVISION - PROBATION', 'INCARCERATION - TREATMENT_IN_PRISON',
+              'INCARCERATION - GENERAL', 'INCARCERATION - RE-INCARCERATION')
         END
     """
 

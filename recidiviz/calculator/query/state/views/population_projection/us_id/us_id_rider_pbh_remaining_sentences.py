@@ -21,17 +21,18 @@ from recidiviz.calculator.query.state import dataset_config
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-US_ID_RIDER_REMAINING_SENTENCES_VIEW_NAME = 'us_id_rider_pbh_remaining_sentences'
+US_ID_RIDER_PBH_REMAINING_SENTENCES_VIEW_NAME = 'us_id_rider_pbh_remaining_sentences'
 
-US_ID_RIDER_REMAINING_SENTENCES_VIEW_DESCRIPTION = \
-    """"US_ID Rider remaining sentences by outflow compartment, and compartment duration (months) projected using the
-    historical transition probabilities and the time served so far to make up the remaining compartment duration."""
+US_ID_RIDER_PBH_REMAINING_SENTENCES_VIEW_DESCRIPTION = \
+    """"US_ID Rider & Parole Board Hold remaining sentences by outflow compartment, and compartment duration (months)
+    projected using the historical transition probabilities and the time served so far to make up the remaining
+    compartment duration."""
 
-US_ID_RIDER_REMAINING_SENTENCES_QUERY_TEMPLATE = \
+US_ID_RIDER_PBH_REMAINING_SENTENCES_QUERY_TEMPLATE = \
     """
     /*{description}*/
-    
-    /* 
+
+    /*
     High level idea: treat the rider population transitions like a survival curve and select a subset of that
     distribution for each open rider session based on the time served before the run date. Shift this distribution
     down to month 1 and normalize it to equal 1 across all future durations for each session/person.
@@ -48,7 +49,7 @@ US_ID_RIDER_REMAINING_SENTENCES_QUERY_TEMPLATE = \
       FROM `{project_id}.{population_projection_dataset}.us_id_parole_board_hold_population_transitions`
     ),
     cohorts_per_run_date AS (
-      -- Grab all the open rider sessions per run date
+      -- Grab all the open treatment/parole_board_hold sessions per run date
       SELECT
         state_code,
         run_dates.run_date,
@@ -56,6 +57,7 @@ US_ID_RIDER_REMAINING_SENTENCES_QUERY_TEMPLATE = \
         person_id,
         gender,
         GREATEST(DATE_DIFF(run_dates.run_date, start_date, MONTH), 1) AS months_served,
+        # TODO(#4987): replace with better date diff function
         transitions.compartment_duration - GREATEST(DATE_DIFF(run_dates.run_date, start_date, MONTH), 1) AS remaining_compartment_duration,
         transitions.outflow_to,
         transitions.total_population
@@ -68,7 +70,7 @@ US_ID_RIDER_REMAINING_SENTENCES_QUERY_TEMPLATE = \
       WHERE state_code = 'US_ID'
         AND compartment IN ('INCARCERATION - TREATMENT_IN_PRISON', 'INCARCERATION - PAROLE_BOARD_HOLD')
         AND gender IN ('MALE', 'FEMALE')
-        -- Select only the "tail" of the duration distribution
+        -- Select the tail of the duration distribution starting from the time served in the compartment on the run date
         AND GREATEST(DATE_DIFF(run_dates.run_date, start_date, MONTH), 1) < transitions.compartment_duration
         -- TODO(#4868): filter unwanted transitions
     ),
@@ -97,11 +99,11 @@ US_ID_RIDER_REMAINING_SENTENCES_QUERY_TEMPLATE = \
       USING (state_code, run_date, person_id, compartment)
     """
 
-US_ID_RIDER_REMAINING_SENTENCES_VIEW_BUILDER = SimpleBigQueryViewBuilder(
+US_ID_RIDER_PBH_REMAINING_SENTENCES_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=dataset_config.POPULATION_PROJECTION_DATASET,
-    view_id=US_ID_RIDER_REMAINING_SENTENCES_VIEW_NAME,
-    view_query_template=US_ID_RIDER_REMAINING_SENTENCES_QUERY_TEMPLATE,
-    description=US_ID_RIDER_REMAINING_SENTENCES_VIEW_DESCRIPTION,
+    view_id=US_ID_RIDER_PBH_REMAINING_SENTENCES_VIEW_NAME,
+    view_query_template=US_ID_RIDER_PBH_REMAINING_SENTENCES_QUERY_TEMPLATE,
+    description=US_ID_RIDER_PBH_REMAINING_SENTENCES_VIEW_DESCRIPTION,
     analyst_dataset=dataset_config.ANALYST_VIEWS_DATASET,
     population_projection_dataset=dataset_config.POPULATION_PROJECTION_DATASET,
     should_materialize=False
@@ -109,4 +111,4 @@ US_ID_RIDER_REMAINING_SENTENCES_VIEW_BUILDER = SimpleBigQueryViewBuilder(
 
 if __name__ == '__main__':
     with local_project_id_override(GCP_PROJECT_STAGING):
-        US_ID_RIDER_REMAINING_SENTENCES_VIEW_BUILDER.build_and_print()
+        US_ID_RIDER_PBH_REMAINING_SENTENCES_VIEW_BUILDER.build_and_print()

@@ -53,6 +53,7 @@ POPULATION_TRANSITIONS_QUERY_TEMPLATE = \
           AND DATE_DIFF(run_dates.run_date, sessions.start_date, year) <= 15
           -- Union the rider transitions at the end
           AND compartment NOT IN ('INCARCERATION - TREATMENT_IN_PRISON', 'INCARCERATION - PAROLE_BOARD_HOLD')
+          AND outflow_to NOT LIKE '%OTHER%'
     ),
     cohort_sizes_cte AS (
       -- Collect total cohort size for the outflow fraction denominator
