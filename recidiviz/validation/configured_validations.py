@@ -176,7 +176,7 @@ def get_all_validations() -> List[DataValidationCheck]:
         SamenessDataValidationCheck(view=PO_REPORT_MISSING_FIELDS_VIEW_BUILDER.build(),
                                     comparison_columns=PO_REPORT_COMPARISON_COLUMNS),
         SamenessDataValidationCheck(view=REVOCATION_MATRIX_COMPARISON_REVOCATION_CELL_VS_CASELOAD_VIEW_BUILDER.build(),
-                                    comparison_columns=['cell_sum', 'caseload_sum']),
+                                    comparison_columns=['cell_sum', 'caseload_sum', 'caseload_num_rows']),
         SamenessDataValidationCheck(view=REVOCATION_MATRIX_COMPARISON_REVOCATION_CELL_VS_MONTH_VIEW_BUILDER.build(),
                                     comparison_columns=['cell_sum', 'month_sum']
                                     ),

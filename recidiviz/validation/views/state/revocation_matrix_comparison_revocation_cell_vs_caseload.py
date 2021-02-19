@@ -36,32 +36,102 @@ REVOCATION_MATRIX_COMPARISON_REVOCATION_CELL_VS_CASELOAD_QUERY_TEMPLATE = \
     /*{description}*/
     WITH cell_counts AS (
       SELECT 
-        state_code as region_code, metric_period_months, district, charge_category, supervision_type,
-        SUM(total_revocations) as total_revocations
+        state_code AS region_code, metric_period_months, level_1_supervision_location, level_2_supervision_location,
+        charge_category, supervision_type, supervision_level,
+        SUM(total_revocations) AS total_revocations
       FROM `{project_id}.{view_dataset}.revocations_matrix_cells`
-      WHERE district != 'ALL'
-        -- State-specific filtering used in the caseload view--
-        AND (state_code = 'US_PA' OR (supervision_type != 'ALL' AND charge_category != 'ALL'))
-        AND (state_code = 'US_MO' or (supervision_level != 'ALL'))
-      GROUP BY state_code, metric_period_months, district, charge_category, supervision_type
+      -- Only including dimensional combinations that can be compared between the matrix and the caseload --
+      WHERE 
+          (CASE
+              -- TODO(#4524): Once the front end supports the file size increase of multi-district breakdowns & we stop 
+              -- filtering out hydrated level_1_supervision_location breakdown rows, we can remove this PA special case.
+              WHEN state_code = 'US_PA' THEN true
+              ELSE level_1_supervision_location != 'ALL'
+            END
+            AND CASE
+                -- TODO(#3829): MO does not have level 2 values ingested, so level_2_supervision_location values are all
+                -- 'ALL'. Once we do start ingesting MO region information, this query size will temporarily increase
+                -- until we update this query to remove the MO special case.
+                WHEN state_code = 'US_MO' THEN true
+                ELSE level_2_supervision_location != 'ALL'
+            END 
+          AND (state_code = 'US_PA' OR (supervision_type NOT IN ('ALL', 'EXTERNAL_UNKNOWN')
+                                        AND charge_category NOT IN ('ALL', 'EXTERNAL_UNKNOWN')))
+          AND (state_code = 'US_MO' or (supervision_level NOT IN ('ALL', 'EXTERNAL_UNKNOWN')))
+          )
+        OR 
+          (level_1_supervision_location = 'ALL'
+          AND level_2_supervision_location = 'ALL'
+          AND charge_category = 'ALL'
+          AND supervision_type = 'ALL'
+          AND supervision_level = 'ALL')
+      GROUP BY state_code, metric_period_months, level_1_supervision_location, level_2_supervision_location,
+               charge_category, supervision_type, supervision_level
     ),
     caseload_counts AS (
       SELECT 
-        state_code as region_code, metric_period_months, district, charge_category, supervision_type,
-        COUNT(DISTINCT state_id) as total_revocations
+        state_code AS region_code, metric_period_months, level_1_supervision_location, level_2_supervision_location,
+        charge_category, supervision_type, supervision_level,
+        COUNT(DISTINCT state_id) AS total_revocations,
+        -- This should always be equal to the total_revocations since a single state_id should never be included
+        -- more than once in a given dimensional breakdown
+        COUNT(*) AS total_rows
       FROM `{project_id}.{view_dataset}.revocations_matrix_filtered_caseload`
-      -- The matrix doesn't have any of these rows --
-      WHERE violation_type != 'NO_VIOLATION_TYPE' AND reported_violations != '0'
-      GROUP BY state_code, metric_period_months, district, charge_category, supervision_type
+      -- Only including dimensional combinations that can be compared between the matrix and the caseload --
+      WHERE reported_violations != 'ALL' AND violation_type NOT IN ('ALL', 'NO_VIOLATION_TYPE')
+          AND 
+          (CASE
+              -- TODO(#4524): Once the front end supports the file size increase of multi-district breakdowns & we stop 
+              -- filtering out hydrated level_1_supervision_location breakdown rows, we can remove this PA special case.
+              WHEN state_code = 'US_PA' THEN true
+              ELSE level_1_supervision_location NOT IN ('ALL', 'EXTERNAL_UNKNOWN')
+            END
+            AND CASE
+                -- TODO(#3829): MO does not have level 2 values ingested, so level_2_supervision_location values are all
+                -- 'ALL'. Once we do start ingesting MO region information, this query size will temporarily increase
+                -- until we update this query to remove the MO special case.
+                WHEN state_code = 'US_MO' THEN true
+                ELSE level_2_supervision_location NOT IN ('ALL', 'EXTERNAL_UNKNOWN')
+            END
+          AND (state_code = 'US_PA' OR (supervision_type NOT IN ('ALL', 'EXTERNAL_UNKNOWN')
+                                        AND charge_category NOT IN ('ALL', 'EXTERNAL_UNKNOWN')))
+          AND (state_code = 'US_MO' or (supervision_level NOT IN ('ALL', 'EXTERNAL_UNKNOWN'))))
+      GROUP BY state_code, metric_period_months, level_1_supervision_location, level_2_supervision_location,
+               charge_category, supervision_type, supervision_level
+      
+      UNION ALL
+      
+      -- The caseload has only 1 row per region_code, metric_period_months, and state_id. We want to make sure
+      -- the sum over all dimensions is the same as the sum where all fields are ALL in the matrix --
+      SELECT
+        state_code AS region_code,
+        metric_period_months,
+        'ALL' AS level_1_supervision_location,
+        'ALL' AS level_2_supervision_location,
+        'ALL' AS charge_category,
+        'ALL' AS supervision_type,
+        'ALL' AS supervision_level,
+      COUNT(DISTINCT state_id) AS total_revocations,
+        -- This should always be equal to the total_revocations since a single state_id should never be included
+        -- more than once in a given dimensional breakdown
+        COUNT(*) AS total_rows
+      FROM `{project_id}.{view_dataset}.revocations_matrix_filtered_caseload`
+      WHERE reported_violations != 'ALL' AND violation_type NOT IN ('ALL', 'NO_VIOLATION_TYPE')
+      GROUP BY state_code, metric_period_months, level_1_supervision_location, level_2_supervision_location,
+               charge_category, supervision_type, supervision_level
     )
     SELECT 
-      region_code, metric_period_months, district, charge_category, supervision_type, 
-      IFNULL(c.total_revocations, 0) as cell_sum,
-      IFNULL(cl.total_revocations, 0) as caseload_sum
+      region_code, metric_period_months, level_1_supervision_location, level_2_supervision_location, charge_category,
+      supervision_type, supervision_level,
+      IFNULL(c.total_revocations, 0) AS cell_sum,
+      IFNULL(cl.total_revocations, 0) AS caseload_sum,
+      IFNULL(cl.total_rows, 0) AS caseload_num_rows
     FROM cell_counts c 
     FULL OUTER JOIN caseload_counts cl
-    USING (region_code, metric_period_months, district, charge_category, supervision_type)
-    ORDER BY region_code, metric_period_months, district, charge_category, supervision_type
+    USING (region_code, metric_period_months, level_1_supervision_location, level_2_supervision_location,
+           charge_category, supervision_type, supervision_level)
+    ORDER BY region_code, metric_period_months, level_1_supervision_location, level_2_supervision_location,
+             charge_category, supervision_type, supervision_level      
 """
 
 REVOCATION_MATRIX_COMPARISON_REVOCATION_CELL_VS_CASELOAD_VIEW_BUILDER = SimpleBigQueryViewBuilder(
