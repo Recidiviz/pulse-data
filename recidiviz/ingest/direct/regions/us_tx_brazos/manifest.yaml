@@ -1,0 +1,10 @@
+agency_name: unknown  # Template - purposefully unspecified
+agency_type: unknown  # Template - purposefully unspecified
+base_url: unknown  # Template - purposefully unspecified
+timezone: America/New_York
+environment: staging
+shared_queue: direct-ingest-state-process-job-queue-v2
+jurisdiction_id: unknown  # Template - purposefully unspecified
+raw_vs_ingest_file_name_differentiation_enabled_env: staging
+raw_data_bq_imports_enabled_env: staging
+ingest_view_exports_enabled_env: staging

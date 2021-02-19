@@ -104,7 +104,10 @@ class DirectIngestFilesGenerator:
                 if re.search('us_xx', line):
                     line = re.sub('us_xx', self.region_code, line)
                 if re.search('UsXx', line):
-                    line = re.sub('UsXx', "Us" + self.region_code[-2:].capitalize(), line)
+                    line = re.sub('UsXx',
+                                  # Capitalize the first letter of the region and any clause following an underscore
+                                  re.sub(r'^[a-z]|[_][a-z]', lambda m: m.group().upper(), self.region_code.lower()),
+                                  line).replace('_', '')
                 if re.search('unknown', line):
                     line = line.rstrip() + f"  # {_PLACEHOLDER}\n"
                 if re.search(r'Copyright \(C\) 2021 Recidiviz', line):
