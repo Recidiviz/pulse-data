@@ -71,8 +71,7 @@ data_dict = {
     'test_transitions': transitions_data,
     'test_total_population': total_population_data,
     'test_remaining_sentences': remaining_sentence_data,
-    'test_total_jail_population': pd.DataFrame(columns=['state_code']),
-    'test_total_out_of_state_supervision_population': pd.DataFrame(columns=['state_code'])
+    'test_excluded_population': pd.DataFrame(columns=['state_code'])
 }
 
 
@@ -117,7 +116,7 @@ class TestMicroSuperSimulation(unittest.TestCase):
             self.microsim.data_dict['transitions_data'].compartment == 'PRISON'].compartment_duration.max()
 
         # get projected prison population from simulation substituting transitions data for remaining sentences
-        substitute_outputs = microsim.output_data['baseline']
+        substitute_outputs = microsim.output_data['baseline_middle']
         substitute_prison_population = substitute_outputs[
             (substitute_outputs.compartment == 'PRISON')
             & (substitute_outputs.time_step > microsim.user_inputs['start_time_step'])
@@ -125,7 +124,7 @@ class TestMicroSuperSimulation(unittest.TestCase):
         ].groupby('time_step').sum().total_population
 
         # get projected prison population from regular simulation
-        regular_outputs = self.microsim.output_data['baseline']
+        regular_outputs = self.microsim.output_data['baseline_middle']
         regular_prison_population = regular_outputs[
             (regular_outputs.compartment == 'PRISON')
             & (regular_outputs.time_step > self.microsim.user_inputs['start_time_step'])

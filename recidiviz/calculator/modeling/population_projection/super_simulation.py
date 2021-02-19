@@ -25,6 +25,7 @@ import pandas as pd
 
 from recidiviz.calculator.modeling.population_projection.simulations.population_simulation.population_simulation \
     import PopulationSimulation
+from recidiviz.calculator.modeling.population_projection.simulations.predicted_admissions import ProjectionType
 
 
 class SuperSimulation(ABC):
@@ -123,15 +124,11 @@ class SuperSimulation(ABC):
             raise ValueError(f"first_relevant_ts ({first_relevant_ts}) must be less than start_time_step "
                              f"({self.user_inputs['start_time_step']}")
 
-            # Run one simulation for the min and max confidence interval
-        for projection_type in ['min', 'max']:
+        # Run one simulation for the min, middle, and max confidence intervals
+        for projection_type in [ProjectionType.LOW.value, ProjectionType.MIDDLE.value, ProjectionType.HIGH.value]:
             self.user_inputs['projection_type'] = projection_type
             self._simulate_baseline(simulation_title=f'baseline_{projection_type}',
                                     first_relevant_ts=first_relevant_ts)
-
-        # Run one simulation for the middle interval
-        self.user_inputs['projection_type'] = 'middle'
-        self._simulate_baseline(simulation_title='baseline', first_relevant_ts=first_relevant_ts)
 
         simulation_results = self._format_simulation_results(collapse_compartments=True)
 
@@ -140,9 +137,9 @@ class SuperSimulation(ABC):
             if comp not in simulation_results.compartment.unique():
                 warn(f"Display compartment not in simulation architecture: {comp}", Warning)
             else:
-                display_results[comp] = \
-                    simulation_results[(simulation_results.compartment == comp) & (
-                            simulation_results.year >= self.user_inputs['start_time_step'])].baseline_total_population
+                relevant_results = simulation_results[(simulation_results.compartment == comp) & (
+                            self.user_inputs['start_time_step'] <= simulation_results.year)]
+                display_results[comp] = relevant_results['baseline_middle_total_population']
 
         display_results.plot(title="Baseline Population Projection", ylabel="Estimated Total Population")
         plt.legend(loc='lower left')
@@ -166,8 +163,8 @@ class SuperSimulation(ABC):
         self.output_data['baseline_transition_error'] = \
             pd.DataFrame(columns=['compartment', 'outflow', 'subgroup', 'year', 'error'])
         for compartment, outflow_to in validation_pairs.items():
-            for sub_group in self.pop_simulations['baseline'].sub_simulations:
-                error = pd.DataFrame(self.pop_simulations['baseline'].sub_simulations[
+            for sub_group in self.pop_simulations['baseline_middle'].sub_simulations:
+                error = pd.DataFrame(self.pop_simulations['baseline_middle'].sub_simulations[
                                          sub_group].get_error(compartment)[outflow_to]).reset_index()
                 error = error.rename({'time_step': 'year', outflow_to: 'error'}, axis=1)
                 error['outflow'] = outflow_to
@@ -180,13 +177,14 @@ class SuperSimulation(ABC):
         self.output_data['baseline_transition_error'].year = \
             self._convert_to_absolute_year(self.output_data['baseline_transition_error'].year)
 
-        self.output_data['baseline_population_error'] = self.pop_simulations['baseline'].gen_scale_factors_df()
+        self.output_data['baseline_population_error'] = self.pop_simulations['baseline_middle'].gen_scale_factors_df()
 
     def calculate_outflows_error(self, simulation_title: str):
         # TODO(#5444): re-factor using self.gen_arima_output_df
+        raw_outflows = self.gen_arima_output_df(simulation_title).groupby(['compartment', 'outflow_to', 'time_step'])
+
         outflows = pd.DataFrame()
-        outflows['model'] = self.gen_arima_output_df(simulation_title).groupby(['compartment', 'outflow_to',
-                                                                                'time_step']).pred_middle.sum()
+        outflows['model'] = raw_outflows[ProjectionType.MIDDLE.value].sum()
         if 'run_date' in self.data_dict['outflows_data']:
             outflows_data = self.data_dict['outflows_data'][self.data_dict['outflows_data'].run_date ==
                                                             self.data_dict['outflows_data'].run_date.max()]
@@ -219,13 +217,14 @@ class SuperSimulation(ABC):
         for i, df_to_plot in dfs_to_plot:
             _, ax = plt.subplots(figsize=fig_size)
             sub_plot = df_to_plot.reset_index()
-            sub_plot.index = self._convert_to_absolute_year(pd.Series(sub_plot.index))
+            sub_plot.index = self._convert_to_absolute_year(pd.Series(sub_plot['time_step']))
             sub_plot['actuals'].plot(ax=ax, color='tab:cyan', marker='o', label='Actuals')
-            sub_plot['pred_middle'].plot(ax=ax, color='tab:red', marker='o', label='Predictions')
+            sub_plot[ProjectionType.MIDDLE.value].plot(ax=ax, color='tab:red', marker='o', label='Predictions')
 
-            ax.fill_between(sub_plot.index, sub_plot['pred_min'], sub_plot['pred_max'], alpha=0.4, color='orange')
+            ax.fill_between(sub_plot.index, sub_plot[ProjectionType.LOW.value], sub_plot[ProjectionType.HIGH.value],
+                            alpha=0.4, color='orange')
 
-            plt.ylim(bottom=0, top=max([sub_plot.pred_middle.max(), sub_plot.actuals.max()]) * 1.1)
+            plt.ylim(bottom=0, top=max([sub_plot[ProjectionType.HIGH.value].max(), sub_plot.actuals.max()]) * 1.1)
             plt.legend(loc='lower left')
             plt.title('\n'.join([': '.join(z) for z in zip(levels_to_plot, i)]))
             axes.append(ax)
