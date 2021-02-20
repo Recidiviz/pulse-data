@@ -749,7 +749,7 @@ class BigQueryClientImpl(BigQueryClient):
     def delete_table(self, dataset_id: str, table_id: str) -> None:
         dataset_ref = self.dataset_ref_for_id(dataset_id)
         table_ref = dataset_ref.table(table_id)
-        logging.info('Deleting temporary table [%s] from dataset [%s].', table_id, dataset_id)
+        logging.info('Deleting table/view [%s] from dataset [%s].', table_id, dataset_id)
         self.client.delete_table(table_ref)
 
     def run_query_async(self, query_str: str, query_parameters: List[bigquery.ScalarQueryParameter] = None) \
