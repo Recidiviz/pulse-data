@@ -36,7 +36,7 @@ class ConvertSentencesToStateSpecificType(beam.DoFn):
     """
 
     # pylint: disable=arguments-differ
-    def process(self, element, *args, **kwargs):
+    def process(self, element, *_args, **_kwargs):
         """For the sentences of the given person, convert to a state-specific subclass, if necessary.
 
         Args:
@@ -102,7 +102,7 @@ class SetViolationResponseOnIncarcerationPeriod(beam.DoFn):
     """Sets a hydrated StateSupervisionviolationResponse onto the corresponding
     StateIncarcerationPeriod."""
 
-    def process(self, element, *args, **kwargs):
+    def process(self, element, *_args, **_kwargs):
         """For the incarceration periods and supervision violation responses of
         a given person, finds the matching hydrated supervision violation
         response for a resulting incarceration period, and sets the hydrated
@@ -161,7 +161,7 @@ class SetViolationOnViolationsResponse(beam.DoFn):
     """Sets a hydrated StateSupervisionviolation onto the corresponding
     StateSupervisionviolationResponse."""
 
-    def process(self, element, *args, **kwargs):
+    def process(self, element, *_args, **_kwargs):
         """For the supervision violations and supervision violation responses of
         a given person, finds the matching hydrated supervision violation
         for a resulting supervision violation response, and sets the hydrated
@@ -218,7 +218,7 @@ class SetSentencesOnSentenceGroup(beam.DoFn):
     """Sets a hydrated StateIncarcerationSentences and StateSupervisionSentences onto the corresponding
     StateSentenceGroups."""
 
-    def process(self, element, *args, **kwargs):
+    def process(self, element, *_args, **_kwargs):
         """For the incarceration sentences, supervision sentences, and sentence groups of
         a given person, sets the hydrated sentences onto the corresponding sentence groups.
 
