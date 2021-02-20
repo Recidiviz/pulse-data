@@ -17,6 +17,9 @@
 """All views needed for analyst data"""
 from typing import List
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
+from recidiviz.calculator.query.state.views.analyst_data.person_demographics import PERSON_DEMOGRAPHICS_VIEW_BUILDER
+from recidiviz.calculator.query.state.views.analyst_data.assessment_score_sessions \
+    import ASSESSMENT_SCORE_SESSIONS_VIEW_BUILDER
 from recidiviz.calculator.query.state.views.analyst_data.admission_start_reason_dedup_priority \
     import ADMISSION_START_REASON_DEDUP_PRIORITY_VIEW_BUILDER
 from recidiviz.calculator.query.state.views.analyst_data.release_termination_reason_dedup_priority \
@@ -47,6 +50,8 @@ from recidiviz.calculator.query.state.views.analyst_data.supervision_population_
     import SUPERVISION_POPULATION_ATTRIBUTES_BY_DISTRICT_BY_MONTH_VIEW_BUILDER
 
 ANALYST_DATA_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
+    PERSON_DEMOGRAPHICS_VIEW_BUILDER,
+    ASSESSMENT_SCORE_SESSIONS_VIEW_BUILDER,
     ADMISSION_START_REASON_DEDUP_PRIORITY_VIEW_BUILDER,
     RELEASE_TERMINATION_REASON_DEDUP_PRIORITY_VIEW_BUILDER,
     COMPARTMENT_SESSION_START_REASONS_VIEW_BUILDER,

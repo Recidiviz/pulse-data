@@ -62,7 +62,7 @@ POPULATION_PROJECTION_SESSIONS_QUERY_TEMPLATE = \
       end_date,
       end_reason,
       gender,
-      age_bucket,
+      age_bucket_start AS age_bucket,
       prioritized_race_or_ethnicity,
       -- Count DUAL supervision as PAROLE
       CASE WHEN inflow_from_level_1 = 'SUPERVISION' AND inflow_from_level_2 = 'DUAL' THEN 'SUPERVISION - PAROLE'
