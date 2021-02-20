@@ -49,7 +49,9 @@ latest_face_to_face AS (
   WHERE
     person_external_id IS NOT NULL
   GROUP BY person_id, state_code
-)
+),
+-- TODO(#5943): Make ideal_query the main query body.
+ideal_query AS (
 SELECT
     {columns}
 FROM
@@ -73,6 +75,36 @@ USING (person_id, state_code, supervision_type)
 WHERE
   supervision_level IS NOT NULL
   AND supervising_officer_external_id IS NOT NULL
+)
+-- HACK ALERT HACK ALERT HACK ALERT HACK ALERT HACK ALERT HACK ALERT HACK ALERT HACK ALERT
+--
+-- HACK ALERT HACK ALERT HACK ALERT HACK ALERT
+--
+-- HACK ALERT HACK ALERT HACK ALERT HACK ALERT HACK ALERT HACK ALERT HACK ALERT HACK ALERT
+--
+-- TODO(#5943): We unfortunately have to pull straight from raw data from Idaho due to internal
+-- inconsistencies in Idaho's data. Our ingest pipeline assumed that the historical record
+-- was accurate, but unforunately that no longer seems to be the case. The long-term solution
+-- involves fetching an updates one-off historical dump of the casemgr table, re-running ingest,
+-- and adding validation to ensure this doesn't happen, but the timescale of this is much
+-- slower than we want to move for Case Triage.
+--
+-- Hence, the decision to add this very verbose warning to encourage future readers to decide
+-- whether they should start trying to pay down this technical debt.
+--
+-- HACK ALERT HACK ALERT HACK ALERT HACK ALERT HACK ALERT HACK ALERT HACK ALERT HACK ALERT
+--
+-- HACK ALERT HACK ALERT HACK ALERT HACK ALERT
+--
+-- HACK ALERT HACK ALERT HACK ALERT HACK ALERT HACK ALERT HACK ALERT HACK ALERT HACK ALERT
+SELECT
+  ideal_query.* EXCEPT (supervising_officer_external_id),
+  IF(state_code != 'US_ID', ideal_query.supervising_officer_external_id, UPPER(ofndr_agnt.agnt_id)) AS supervising_officer_external_id
+FROM
+  ideal_query
+LEFT OUTER JOIN
+  `{project_id}.us_id_raw_data_up_to_date_views.ofndr_agnt_latest` ofndr_agnt
+ON ideal_query.person_external_id = ofndr_agnt.ofndr_num
 """
 
 CLIENT_LIST_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
@@ -83,7 +115,6 @@ CLIENT_LIST_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
     dataflow_metrics_materialized_dataset=DATAFLOW_METRICS_MATERIALIZED_DATASET,
     columns=[
         'state_code',
-        'supervising_officer_external_id',
         'person_external_id',
         'full_name',
         'gender',
@@ -99,6 +130,10 @@ CLIENT_LIST_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
         'most_recent_assessment_date',
         'assessment_score',
         'most_recent_face_to_face_date',
+        # TODO(#5943): supervising_officer_external_id must be at the end of
+        # this list because of the way that we have to derive this result from
+        # the ofndr_agnt table for Idaho.
+        'supervising_officer_external_id',
     ],
 )
 
