@@ -63,27 +63,57 @@ COMPARTMENT_SESSIONS_QUERY_TEMPLATE = \
         sessions.state_code,
         sessions.compartment_level_1,
         sessions.compartment_level_2,
-        first_sub_session.start_reason,
-        first_sub_session.start_sub_reason,
-        last_sub_session.end_reason,
-        last_sub_session.release_date,
-        first_sub_session.gender,
-        first_sub_session.age_bucket,
-        first_sub_session.prioritized_race_or_ethnicity,
-        first_sub_session.assessment_score_bucket,
-        first_sub_session.inflow_from_level_1,
-        first_sub_session.inflow_from_level_2,
-        last_sub_session.outflow_to_level_1,
-        last_sub_session.outflow_to_level_2,
+        first.start_reason,
+        first.start_sub_reason,
+        last.end_reason,
+        last.release_date,
+        first.compartment_location AS compartment_location_start,
+        last.compartment_location AS compartment_location_end,
+        first.inflow_from_level_1,
+        first.inflow_from_level_2,
+        last.outflow_to_level_1,
+        last.outflow_to_level_2,
         DATE_DIFF(COALESCE(sessions.end_date, sessions.last_day_of_data), sessions.start_date, DAY) AS session_length_days,
-        sessions.last_day_of_data
+        sessions.last_day_of_data,
+        first.gender,
+        first.prioritized_race_or_ethnicity,
+        first.age_start,
+        last.age_end,
+        first.assessment_score_start,
+        last.assessment_score_end,
+        CASE WHEN first.age_start <=24 THEN '<25'
+            WHEN first.age_start <=29 THEN '25-29'
+            WHEN first.age_start <=34 THEN '30-34'
+            WHEN first.age_start <=39 THEN '35-39'
+            WHEN first.age_start >=40 THEN '40+' END as age_bucket_start,
+        CASE WHEN last.age_end <=24 THEN '<25'
+            WHEN last.age_end <=29 THEN '25-29'
+            WHEN last.age_end <=34 THEN '30-34'
+            WHEN last.age_end <=39 THEN '35-39'
+            WHEN last.age_end >=40 THEN '40+' END as age_bucket_end,
+        CASE WHEN first.assessment_score_start<=23 THEN '0-23'
+            WHEN first.assessment_score_start<=29 THEN '24-29'
+            WHEN first.assessment_score_start<=38 THEN '30-38'
+            WHEN first.assessment_score_start>=39 THEN '39+' END as assessment_score_bucket_start,
+        CASE WHEN last.assessment_score_end<=23 THEN '0-23'
+            WHEN last.assessment_score_end<=29 THEN '24-29'
+            WHEN last.assessment_score_end<=38 THEN '30-38'
+            WHEN last.assessment_score_end>=39 THEN '39+' END as assessment_score_bucket_end,
+        first.correctional_level_start,
+        last.correctional_level_end,
+        first.supervising_officer_external_id_start,
+        last.supervising_officer_external_id_end,
+        first.case_type_start,
+        last.case_type_end
     FROM sessions
-    LEFT JOIN `{project_id}.{analyst_dataset}.compartment_sub_sessions_materialized` first_sub_session
-        ON first_sub_session.person_id = sessions.person_id
-        AND first_sub_session.start_date = sessions.start_date
-    LEFT JOIN `{project_id}.{analyst_dataset}.compartment_sub_sessions_materialized` last_sub_session
-        ON last_sub_session.person_id = sessions.person_id
-        AND last_sub_session.end_date = sessions.end_date
+    LEFT JOIN `{project_id}.{analyst_dataset}.compartment_sub_sessions_materialized` first
+        ON first.person_id = sessions.person_id
+        AND first.session_id = sessions.session_id
+        AND first.first_sub_session_in_session = 1
+    LEFT JOIN `{project_id}.{analyst_dataset}.compartment_sub_sessions_materialized` last
+        ON last.person_id = sessions.person_id
+        AND last.session_id = sessions.session_id
+        AND last.last_sub_session_in_session = 1
     ORDER BY 1,2
     """
 
