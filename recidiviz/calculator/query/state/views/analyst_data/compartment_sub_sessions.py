@@ -54,15 +54,14 @@ COMPARTMENT_SUB_SESSIONS_QUERY_TEMPLATE = \
         metric_type AS metric_source,
         created_on,
         state_code,
-        age_bucket,
-        gender,
-        prioritized_race_or_ethnicity,
         'INCARCERATION' as compartment_level_1,
         CASE WHEN state_code = 'US_ID' AND specialized_purpose_for_incarceration IN ('GENERAL','PAROLE_BOARD_HOLD','TREATMENT_IN_PRISON')
           THEN specialized_purpose_for_incarceration 
           ELSE 'GENERAL' END AS compartment_level_2,
         facility AS compartment_location,
-        CAST(NULL AS STRING) AS assessment_score_bucket
+        CAST(NULL AS STRING) AS correctional_level,
+        CAST(NULL AS STRING) AS supervising_officer_external_id,
+        CAST(NULL AS STRING) AS case_type
     FROM
         `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_population_metrics_materialized`
     WHERE state_code in ('US_ND','US_ID')
@@ -74,13 +73,12 @@ COMPARTMENT_SUB_SESSIONS_QUERY_TEMPLATE = \
         metric_type AS metric_source,
         created_on,       
         state_code,
-        age_bucket,
-        gender,
-        prioritized_race_or_ethnicity,
         'SUPERVISION' as compartment_level_1,
         CASE WHEN supervision_type in ('PAROLE', 'PROBATION','DUAL') THEN supervision_type END AS compartment_level_2,
-        CONCAT(COALESCE(level_1_supervision_location_external_id,'EXTERNAL_UNKNOWN'),'|', COALESCE(level_2_supervision_location_external_id,'EXTERNAL_UNKNOWN')),
-        assessment_score_bucket
+        CONCAT(COALESCE(level_1_supervision_location_external_id,'EXTERNAL_UNKNOWN'),'|', COALESCE(level_2_supervision_location_external_id,'EXTERNAL_UNKNOWN')) AS compartment_location,
+        supervision_level AS correctional_level,
+        supervising_officer_external_id,
+        case_type
     FROM
         `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_population_metrics_materialized`
     WHERE state_code in ('US_ND','US_ID')
@@ -92,13 +90,12 @@ COMPARTMENT_SUB_SESSIONS_QUERY_TEMPLATE = \
         metric_type AS metric_source,
         created_on,       
         state_code,
-        age_bucket,
-        gender,
-        prioritized_race_or_ethnicity,
         'SUPERVISION' as compartment_level_1,
         CASE WHEN supervision_type in ('PAROLE', 'PROBATION','DUAL') THEN supervision_type END AS compartment_level_2,
-        CONCAT(COALESCE(level_1_supervision_location_external_id,'EXTERNAL_UNKNOWN'),'|', COALESCE(level_2_supervision_location_external_id,'EXTERNAL_UNKNOWN')),
-        assessment_score_bucket
+        CONCAT(COALESCE(level_1_supervision_location_external_id,'EXTERNAL_UNKNOWN'),'|', COALESCE(level_2_supervision_location_external_id,'EXTERNAL_UNKNOWN')) AS compartment_location,
+        supervision_level AS correctional_level,
+        supervising_officer_external_id,
+        case_type
     FROM `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_out_of_state_population_metrics_materialized`
     WHERE state_code in ('US_ND','US_ID')  
     )
@@ -126,14 +123,13 @@ COMPARTMENT_SUB_SESSIONS_QUERY_TEMPLATE = \
         a.person_id,
         a.date,
         a.state_code,
-        a.age_bucket,
-        a.gender,
-        a.prioritized_race_or_ethnicity,
         a.metric_source,
         a.compartment_level_1,
         COALESCE(a.compartment_level_2, b.compartment_level_2) compartment_level_2,
         a.compartment_location,
-        a.assessment_score_bucket
+        a.correctional_level,
+        a.supervising_officer_external_id,
+        a.case_type 
     FROM population_cte a 
         LEFT JOIN  population_cte b 
     ON a.person_id = b.person_id
@@ -153,14 +149,13 @@ COMPARTMENT_SUB_SESSIONS_QUERY_TEMPLATE = \
         person_id,
         date,
         state_code,
-        age_bucket,
-        gender,
-        prioritized_race_or_ethnicity,
         metric_source,
         compartment_level_1,
         CASE WHEN cnt > 1 AND compartment_level_1 = 'SUPERVISION' THEN 'DUAL' ELSE compartment_level_2 END AS compartment_level_2,
         compartment_location,
-        assessment_score_bucket
+        correctional_level,
+        supervising_officer_external_id,
+        case_type  
     FROM
         (
         SELECT 
@@ -182,14 +177,13 @@ COMPARTMENT_SUB_SESSIONS_QUERY_TEMPLATE = \
         person_id,
         date,
         state_code,
-        age_bucket,
-        gender,
-        prioritized_race_or_ethnicity,
         metric_source,
         compartment_level_1,
         compartment_level_2,
         compartment_location,
-        assessment_score_bucket
+        correctional_level,
+        supervising_officer_external_id,
+        case_type
     FROM 
         (
         SELECT 
@@ -459,8 +453,8 @@ COMPARTMENT_SUB_SESSIONS_QUERY_TEMPLATE = \
     )
     /*
     Now that compartment_level_1 and compartment_level_2 values are updated, recalculate the inflow and outflow values. 
-    This cte also does the join with the original population data to pull in demographic info as of the start of the 
-    session. Ultimately this will be moved out of the sub-sessions view entirely. 
+    This also does the join with the original population data to pull in supervision officer and supervision level 
+    fields associated with the start and end of the session.
     */   
     ,
     sessions_recalculate_inflows_outflows AS
@@ -471,14 +465,19 @@ COMPARTMENT_SUB_SESSIONS_QUERY_TEMPLATE = \
         LAG(s.compartment_level_2) OVER(PARTITION BY s.person_id ORDER BY s.start_date ASC) AS inflow_from_level_2,
         LEAD(s.compartment_level_1) OVER(PARTITION BY s.person_id ORDER BY s.start_date ASC) AS outflow_to_level_1,
         LEAD(s.compartment_level_2) OVER(PARTITION BY s.person_id ORDER BY s.start_date ASC) AS outflow_to_level_2,
-        start_of_session.gender,
-        start_of_session.age_bucket,
-        start_of_session.prioritized_race_or_ethnicity,
-        start_of_session.assessment_score_bucket,
+        start_of_session.correctional_level AS correctional_level_start,
+        start_of_session.supervising_officer_external_id AS supervising_officer_external_id_start, 
+        start_of_session.case_type AS case_type_start, 
+        end_of_session.correctional_level AS correctional_level_end,
+        end_of_session.supervising_officer_external_id AS supervising_officer_external_id_end,  
+        end_of_session.case_type AS case_type_end, 
     FROM session_gaps_with_compartment s
     LEFT JOIN dedup_step_3_cte AS start_of_session
         ON s.person_id = start_of_session.person_id
         AND s.start_date = start_of_session.date
+    LEFT JOIN dedup_step_3_cte AS end_of_session
+        ON s.person_id = end_of_session.person_id
+        AND COALESCE(s.end_date, s.last_day_of_data) = end_of_session.date
     )
     /*
     This is the final output with three additional fields calculated from the previous cte. Firstly, the session_id is 
@@ -487,32 +486,40 @@ COMPARTMENT_SUB_SESSIONS_QUERY_TEMPLATE = \
     validation.
     */
     SELECT
-        person_id,
-        sub_session_id,
-        session_id,
-        state_code,
-        start_date,
-        end_date,
-        metric_source,
-        compartment_level_1,
-        compartment_level_2,
-        compartment_location,
-        start_reason,
-        start_sub_reason,
-        end_reason,
-        release_date,
-        gender,
-        age_bucket,
-        prioritized_race_or_ethnicity,
-        assessment_score_bucket,
-        inflow_from_level_1,
-        inflow_from_level_2,
-        outflow_to_level_1,
-        outflow_to_level_2,
-        session_length_days,
-        last_day_of_data,
-        CASE WHEN sub_session_id = MIN(sub_session_id) OVER(PARTITION BY person_id, session_id) THEN 1 ELSE 0 END AS first_sub_session_in_session,
-        CASE WHEN sub_session_id = MAX(sub_session_id) OVER(PARTITION BY person_id, session_id) THEN 1 ELSE 0 END AS last_sub_session_in_session,
+        s.person_id,
+        s.sub_session_id,
+        s.session_id,
+        s.state_code,
+        s.start_date,
+        s.end_date,
+        s.metric_source,
+        s.compartment_level_1,
+        s.compartment_level_2,
+        s.compartment_location,
+        s.start_reason,
+        s.start_sub_reason,
+        s.end_reason,
+        s.release_date,
+        s.inflow_from_level_1,
+        s.inflow_from_level_2,
+        s.outflow_to_level_1,
+        s.outflow_to_level_2,
+        s.session_length_days,
+        s.last_day_of_data,
+        CASE WHEN s.sub_session_id = MIN(s.sub_session_id) OVER(PARTITION BY s.person_id, s.session_id) THEN 1 ELSE 0 END AS first_sub_session_in_session,
+        CASE WHEN s.sub_session_id = MAX(s.sub_session_id) OVER(PARTITION BY s.person_id, s.session_id) THEN 1 ELSE 0 END AS last_sub_session_in_session,
+        demographics.gender,
+        demographics.prioritized_race_or_ethnicity,
+        CAST(FLOOR(DATE_DIFF(s.start_date, demographics.birthdate, DAY) / 365.25) AS INT64) AS age_start,
+        CAST(FLOOR(DATE_DIFF(COALESCE(s.end_date, last_day_of_data), demographics.birthdate, DAY) / 365.25) AS INT64) AS age_end,
+        assessment_start.assessment_score AS assessment_score_start,
+        assessment_end.assessment_score as assessment_score_end,
+        correctional_level_start,
+        correctional_level_end,
+        supervising_officer_external_id_start,
+        supervising_officer_external_id_end,
+        case_type_start,
+        case_type_end
     FROM 
         (
         SELECT 
@@ -520,8 +527,16 @@ COMPARTMENT_SUB_SESSIONS_QUERY_TEMPLATE = \
             SUM(CASE WHEN CONCAT(compartment_level_1, compartment_level_2)!=COALESCE(CONCAT(inflow_from_level_1, inflow_from_level_2),'') THEN 1 ELSE 0 END) 
             OVER(PARTITION BY person_id ORDER BY sub_session_id) AS session_id
         FROM sessions_recalculate_inflows_outflows
-        )
-    ORDER BY person_id ASC, sub_session_id ASC
+        ) AS s
+    LEFT JOIN `{project_id}.{analyst_dataset}.person_demographics_materialized` demographics
+        USING(person_id, state_code)
+    LEFT JOIN `{project_id}.{analyst_dataset}.assessment_score_sessions_materialized` assessment_start
+        ON s.start_date BETWEEN assessment_start.assessment_date AND COALESCE(assessment_start.score_end_date, '9999-01-01')
+        AND s.person_id = assessment_start.person_id
+    LEFT JOIN `{project_id}.{analyst_dataset}.assessment_score_sessions_materialized` assessment_end
+        ON COALESCE(s.end_date, '9999-01-01') BETWEEN assessment_end.assessment_date AND COALESCE(assessment_end.score_end_date, '9999-01-01')
+        AND s.person_id = assessment_end.person_id
+    ORDER BY s.person_id ASC, s.sub_session_id ASC
     """
 
 COMPARTMENT_SUB_SESSIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
