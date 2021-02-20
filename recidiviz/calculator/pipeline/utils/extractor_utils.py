@@ -99,6 +99,7 @@ class BuildRootEntity(beam.PTransform):
     #  detailed config about which paths down the entity tree we want to explore, with specification on each node about
     #  whether we want to hydrate fields or just relationship to child objects.
     def expand(self, input_or_inputs):
+        """Does the work of fetching the root and related entities and grouping them"""
 
         # Get root entities
         root_entities = (input_or_inputs
@@ -352,6 +353,7 @@ class _ExtractRelationshipPropertyEntities(beam.PTransform):
             if hasattr(property_object.argument, 'class_') else property_object.argument()
 
     def expand(self, input_or_inputs):
+        """Extracts all related entities"""
         names_to_properties = self._parent_schema_class. \
             get_relationship_property_names_and_properties()
         properties_dict = {}
@@ -524,7 +526,7 @@ class _ExtractEntityWithAssociationTable(_ExtractEntityBase):
 class _HydrateRootEntity(beam.DoFn):
     """Hydrates a BuildableAttr Entity."""
 
-    def process(self, element, *args, **kwargs):
+    def process(self, element, *_args, **kwargs):
         """Builds an entity from key-value pairs.
 
         Args:
@@ -653,7 +655,7 @@ class _HydrateEntity(beam.DoFn):
 class _HydrateRootEntitiesWithRelationshipPropertyEntities(beam.DoFn):
     """Hydrates the cross-entity relationship properties on root entities."""
 
-    def process(self, element, *args, **kwargs):
+    def process(self, element, *_args, **kwargs):
         """Connects related entities to the relevant root entities.
 
         Args:
@@ -751,7 +753,7 @@ class _RepackageUnifyingIParentIdStructure(beam.DoFn):
     entity is related to.
     """
 
-    def process(self, element, *args, **kwargs):
+    def process(self, element, *_args, **_kwargs):
         _, structure_dict = element
 
         child_entity_with_unifying_id = \
@@ -781,7 +783,7 @@ class _FormAssociationIDTuples(beam.DoFn):
     an entity, so this only yields a tuple if both ids exist.
     """
 
-    def process(self, element, *args, **kwargs):
+    def process(self, element, *_args, **kwargs):
         parent_id_field = kwargs.get('association_table_parent_id_field')
         entity_id_field = kwargs.get('association_table_entity_id_field')
 

@@ -194,7 +194,8 @@ class CalculateSupervisionMetricCombinations(beam.DoFn):
 class ProduceSupervisionMetrics(beam.DoFn):
     """Produces SupervisionMetrics ready for persistence."""
 
-    def process(self, element, *args, **kwargs):
+    def process(self, element, *_args, **kwargs):
+        """Produces the metric from the given element"""
         pipeline_options = kwargs
 
         pipeline_job_id = job_id(pipeline_options)

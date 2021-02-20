@@ -216,7 +216,7 @@ class CalculateRecidivismMetricCombinations(beam.DoFn):
 class ProduceReincarcerationRecidivismMetric(beam.DoFn):
     """Produces ReincarcerationRecidivismMetrics."""
 
-    def process(self, element, *args, **kwargs):
+    def process(self, element, *_args, **kwargs):
         """Converts a recidivism metric key into a ReincarcerationRecidivismMetric.
 
         The pipeline options are sent in as the **kwargs so that the

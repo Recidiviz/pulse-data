@@ -103,7 +103,7 @@ class ConvertDictToKVTuple(beam.DoFn):
 class RecidivizMetricWritableDict(beam.DoFn):
     """Builds a dictionary in the format necessary to write the output to BigQuery."""
 
-    def process(self, element, *args, **kwargs):
+    def process(self, element, *_args, **_kwargs):
         """The beam.io.WriteToBigQuery transform requires elements to be in dictionary form, where the values are in
         formats as required by BigQuery I/O connector.
 

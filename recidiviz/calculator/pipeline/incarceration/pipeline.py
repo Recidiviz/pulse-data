@@ -195,7 +195,7 @@ class CalculateIncarcerationMetricCombinations(beam.DoFn):
 class ProduceIncarcerationMetric(beam.DoFn):
     """Produces IncarcerationMetrics."""
 
-    def process(self, element, *args, **kwargs):
+    def process(self, element, *_args, **kwargs):
         """Converts an incarceration metric key into a IncarcerationMetric.
 
         The pipeline options are sent in as the **kwargs so that the job_id(pipeline_options) function can be called to

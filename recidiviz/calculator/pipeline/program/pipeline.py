@@ -185,7 +185,7 @@ class CalculateProgramMetricCombinations(beam.DoFn):
 class ProduceProgramMetrics(beam.DoFn):
     """Produces ProgramMetrics."""
 
-    def process(self, element, *args, **kwargs):
+    def process(self, element, *_args, **kwargs):
         """Converts a program metric key into a ProgramMetric.
 
         The pipeline options are sent in as the **kwargs so that the job_id(pipeline_options) function can be called to
