@@ -273,6 +273,9 @@ def _create_or_update_view_and_materialize_if_necessary(bq_client: BigQueryClien
         view_changed = True
         old_schema = None
 
+    # TODO(https://issuetracker.google.com/issues/180636362): Currently we have to delete and recreate the view for
+    # changes from underlying tables to be reflected in its schema.
+    bq_client.delete_table(dataset_ref, view.view_id)
     updated_view = bq_client.create_or_update_view(dataset_ref, view)
 
     if updated_view.schema != old_schema:
