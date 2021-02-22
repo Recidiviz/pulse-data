@@ -18,10 +18,10 @@
 to test updates to views.
 
 This can be run on-demand whenever locally with the following command:
-    python -m recidiviz.tools.load_views_to_sandbox
-        --project_id [PROJECT_ID]
-        --sandbox_dataset_prefix [SANDBOX_DATASET_PREFIX]
-        --dataflow_dataset_override [DATAFLOW_DATASET_OVERRIDE]
+    python -m recidiviz.tools.load_views_to_sandbox \
+        --project_id [PROJECT_ID] \
+        --sandbox_dataset_prefix [SANDBOX_DATASET_PREFIX] \
+        --dataflow_dataset_override [DATAFLOW_DATASET_OVERRIDE] \
         --refresh_materialized_tables_only [True,False]
 """
 import argparse
