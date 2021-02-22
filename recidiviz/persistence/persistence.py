@@ -118,7 +118,7 @@ STATE_CODE_TO_ENTITY_MATCHING_THRESHOLD_OVERRIDE: Dict[str, Dict[str, float]] = 
         "US_ND": 0.20,
         # TODO(#4829): Remove override once entity matching issues have been fully resolved in staging and we're
         #  starting a new rerun in production.
-        "US_PA": 0.50,
+        "US_PA": 0.01,
     },
 }
 
