@@ -45,7 +45,7 @@ FTR_REFERRALS_BY_LSIR_BY_PERIOD_QUERY_TEMPLATE = \
         supervision_type,
         district,
         metric_period_months,
-        assessment_score_bucket,
+        IFNULL(assessment_score_bucket, 'NOT_ASSESSED') as assessment_score_bucket,
         -- Use the assessment bucket from the most recent date_of_supervision
         ROW_NUMBER() OVER (PARTITION BY state_code, supervision_type, district, metric_period_months, person_id
                            ORDER BY date_of_supervision DESC) AS supervision_rank
@@ -60,7 +60,7 @@ FTR_REFERRALS_BY_LSIR_BY_PERIOD_QUERY_TEMPLATE = \
         supervision_type,
         district,
         metric_period_months,
-        assessment_score_bucket,
+        IFNULL(assessment_score_bucket, 'NOT_ASSESSED') as assessment_score_bucket,
         -- Use the assessment bucket from the most recent referral
         ROW_NUMBER() OVER (PARTITION BY state_code, supervision_type, district, metric_period_months, person_id
                            ORDER BY date_of_referral DESC) AS referral_rank
@@ -72,7 +72,7 @@ FTR_REFERRALS_BY_LSIR_BY_PERIOD_QUERY_TEMPLATE = \
       state_code,
       assessment_score_bucket,
       IFNULL(ref.count, 0) as count,
-      total_supervision_count,
+      IFNULL(total_supervision_count, 0) as total_supervision_count,
       supervision_type,
       district,
       metric_period_months
@@ -88,7 +88,7 @@ FTR_REFERRALS_BY_LSIR_BY_PERIOD_QUERY_TEMPLATE = \
       WHERE supervision_rank = 1
       GROUP BY state_code, supervision_type, district, metric_period_months, assessment_score_bucket
     ) pop
-    LEFT JOIN (
+    FULL OUTER JOIN (
       SELECT
         state_code,
         COUNT(DISTINCT person_id) AS count,
@@ -104,8 +104,6 @@ FTR_REFERRALS_BY_LSIR_BY_PERIOD_QUERY_TEMPLATE = \
     WHERE supervision_type in ('ALL', 'PAROLE', 'PROBATION')
       AND district IS NOT NULL
       AND state_code = 'US_ND'
-      AND assessment_score_bucket IS NOT NULL
-      AND assessment_score_bucket != 'NOT_ASSESSED'
     ORDER BY state_code, assessment_score_bucket, district, supervision_type, metric_period_months
     """
 
