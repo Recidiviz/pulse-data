@@ -17,14 +17,14 @@
 
 
 locals {
-  state_alpha_codes = ["US_TN", "US_MI"]
+  state_alpha_codes = ["US_ID", "US_MO", "US_ND", "US_PA", "US_TN", "US_MI"]
 }
 
 module "state_direct_ingest_buckets_and_accounts" {
   for_each         = toset(local.state_alpha_codes)
   source           = "./modules/state-direct-ingest-bucket"
   state_code       = each.key
-  region           = var.region
+  region           = contains(["US_ID", "US_MO", "US_ND", "US_PA"], each.key) ? "us-east1" : var.region
   is_production    = local.is_production
   project_id       = var.project_id
   state_admin_role = google_project_iam_custom_role.state-admin-role.name
