@@ -2,3 +2,14 @@ file_tag: dbo_Senrec
 primary_key_cols:
   - curr_inmate_num
   - type_number
+columns:
+  - name: curr_inmate_num
+    description: The inmate number of the person associated with this sentence.
+  - name: offense_track_num
+    description: The ID of the charge associated with this sentence.
+  - name: sent_date
+    description: The date this sentence was imposed.
+  - name: sent_start_date
+    description: The date the person started serving the sentence.
+  - name: sent_stop_date
+    description: The date the sentence was completed / terminated.
