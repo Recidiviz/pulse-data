@@ -33,7 +33,8 @@ from recidiviz.ingest.direct.controllers import direct_ingest_raw_table_migratio
 from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import \
     BaseDirectIngestController
 from recidiviz.ingest.direct.controllers.csv_gcsfs_direct_ingest_controller import CsvGcsfsDirectIngestController
-from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import DirectIngestPreProcessedIngestView
+from recidiviz.ingest.direct.views.direct_ingest_big_query_view_types import DirectIngestPreProcessedIngestView, \
+    DirectIngestPreProcessedIngestViewBuilder
 from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import \
     DirectIngestGCSFileSystem, to_normalized_unprocessed_file_path
 from recidiviz.ingest.direct.controllers.direct_ingest_raw_file_import_manager import \
@@ -195,25 +196,24 @@ class FakeDirectIngestPreProcessedIngestViewBuilder(BigQueryViewBuilder[DirectIn
         return self.tag
 
 
-class FakeDirectIngestPreProcessedIngestViewCollector(
-    BigQueryViewCollector[FakeDirectIngestPreProcessedIngestViewBuilder]
-    ):
-    def __init__(self,
-                 region: Region,
-                 controller_file_tags: List[str]):
-        self.region = region
-        self.controller_file_tags = controller_file_tags
+class FakeDirectIngestPreProcessedIngestViewCollector(DirectIngestPreProcessedIngestViewCollector):
+    def __init__(self, region: Region, controller_tag_rank_list: List[str]):
+        super().__init__(region, controller_tag_rank_list)
 
-    def collect_view_builders(self) -> List[FakeDirectIngestPreProcessedIngestViewBuilder]:
+    def collect_view_builders(self) -> List[DirectIngestPreProcessedIngestViewBuilder]:
         builders = [
-            FakeDirectIngestPreProcessedIngestViewBuilder(tag=tag, region=self.region)
-            for tag in self.controller_file_tags
+            DirectIngestPreProcessedIngestViewBuilder(region=self.region.region_code,
+                                                      ingest_view_name=tag,
+                                                      view_query_template=f'SELECT * FROM {{{tag}}}',
+                                                      order_by_cols='')
+            for tag in self.controller_tag_rank_list
         ]
 
-        builders.append(FakeDirectIngestPreProcessedIngestViewBuilder(
-            tag='gatedTagNotInTagsList',
-            region=self.region,
-            view_query_template='SELECT * FROM {tagA} LEFT OUTER JOIN {tagB} USING (col);'
+        builders.append(DirectIngestPreProcessedIngestViewBuilder(
+            ingest_view_name='gatedTagNotInTagsList',
+            region=self.region.region_code,
+            view_query_template='SELECT * FROM {tagA} LEFT OUTER JOIN {tagB} USING (col);',
+            order_by_cols=''
         ))
 
         return builders
