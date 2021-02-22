@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Supervisees with overdue LSIR by PO by day."""
+# pylint: disable=line-too-long
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config
@@ -31,14 +32,18 @@ OVERDUE_LSIR_BY_PO_BY_DAY_QUERY_TEMPLATE = \
     """
     /*{description}*/
     SELECT
-        state_code,
+        compliance.state_code,
         date_of_supervision,
         supervising_officer_external_id,
-        supervising_district_external_id,
+        IFNULL(compliance.level_1_supervision_location_external_id, 'UNKNOWN') as district_id,
+        locations.level_1_supervision_location_name as district_name,
         COUNT (DISTINCT(IF(num_days_assessment_overdue > 0, person_id, NULL))) as total_overdue,
         supervision_type,
         case_type
-    FROM `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_case_compliance_metrics_materialized`
+    FROM `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_case_compliance_metrics_materialized` compliance
+    LEFT JOIN `{project_id}.{reference_views_dataset}.supervision_location_ids_to_names` locations
+    ON compliance.state_code = locations.state_code
+        AND compliance.level_1_supervision_location_external_id = locations.level_1_supervision_location_external_id
     # Note: because compliance metrics are calculated EOM for each month, this will currently only produce output for
     # each of the last days of the past 3 months.
     WHERE date_of_supervision > DATE_SUB(CURRENT_DATE('US/Pacific'), INTERVAL 90 DAY)
@@ -48,7 +53,8 @@ OVERDUE_LSIR_BY_PO_BY_DAY_QUERY_TEMPLATE = \
         supervision_type,
         case_type,
         supervising_officer_external_id,
-        supervising_district_external_id
+        district_id,
+        district_name
     ORDER BY date_of_supervision DESC, total_overdue DESC
     """
 
@@ -58,6 +64,7 @@ OVERDUE_LSIR_BY_PO_BY_DAY_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_query_template=OVERDUE_LSIR_BY_PO_BY_DAY_QUERY_TEMPLATE,
     description=OVERDUE_LSIR_BY_PO_BY_DAY_DESCRIPTION,
     materialized_metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
+    reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
 )
 
 if __name__ == '__main__':

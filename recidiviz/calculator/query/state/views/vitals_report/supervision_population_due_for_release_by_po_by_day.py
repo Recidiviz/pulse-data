@@ -32,15 +32,19 @@ SUPERVISION_POPULATION_DUE_FOR_RELEASE_BY_PO_BY_DAY_QUERY_TEMPLATE = \
     """
     /*{description}*/
     SELECT
-        state_code,
+        population.state_code,
         date_of_supervision,
         supervising_officer_external_id as supervising_officer,
-        supervising_district_external_id as district,
+        IFNULL(population.level_1_supervision_location_external_id, 'UNKNOWN') as district_id,
+        locations.level_1_supervision_location_name as district_name,
         COUNT (DISTINCT(IF(projected_end_date < date_of_supervision, person_id, NULL))) as due_for_release_count
-    FROM `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_population_metrics_materialized`
+    FROM `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_population_metrics_materialized` population
+    LEFT JOIN `{project_id}.{reference_views_dataset}.supervision_location_ids_to_names` locations
+    ON population.state_code = locations.state_code
+        AND population.level_1_supervision_location_external_id = locations.level_1_supervision_location_external_id
     WHERE date_of_supervision > DATE_SUB(CURRENT_DATE('US/Pacific'), INTERVAL 90 DAY)
         AND projected_end_date IS NOT NULL
-    GROUP BY state_code, date_of_supervision, supervising_officer, district
+    GROUP BY state_code, date_of_supervision, supervising_officer, district_id, district_name
     ORDER BY date_of_supervision DESC, supervising_officer DESC, due_for_release_count DESC
     """
 
@@ -50,6 +54,7 @@ SUPERVISION_POPULATION_DUE_FOR_RELEASE_BY_PO_BY_DAY_VIEW_BUILDER = SimpleBigQuer
     view_query_template=SUPERVISION_POPULATION_DUE_FOR_RELEASE_BY_PO_BY_DAY_QUERY_TEMPLATE,
     description=SUPERVISION_POPULATION_DUE_FOR_RELEASE_BY_PO_BY_DAY_DESCRIPTION,
     materialized_metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
+    reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
 )
 
 if __name__ == '__main__':
