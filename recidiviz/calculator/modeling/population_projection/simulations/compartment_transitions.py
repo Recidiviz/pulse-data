@@ -170,9 +170,9 @@ class CompartmentTransitions:
                 policy.policy_fn(self)
 
         # make sure policy affects correct transition table
-        if any([list(before_after_retroactive[i]) !=
+        if any(list(before_after_retroactive[i]) !=
                 list(self.transition_dfs['after_retroactive'][i])[:len(before_after_retroactive[i])]
-                for i in self.transition_dfs['after_retroactive']]):
+                for i in self.transition_dfs['after_retroactive']):
             raise ValueError("Policy function was applied to the wrong transition state")
 
         # generate the transitory table for retroactive policies
@@ -430,7 +430,8 @@ class CompartmentTransitions:
         if len(mm_sentenced_group) == 0:
             return
 
-        affected_ratio = mm_sentenced_group['total_population'].sum()/self.historical_outflows['total_population'].sum()
+        affected_ratio = mm_sentenced_group['total_population'].sum() / \
+                         self.historical_outflows['total_population'].sum()
 
         # calculate standard deviation
         average_duration = np.average(self.historical_outflows.compartment_duration,
