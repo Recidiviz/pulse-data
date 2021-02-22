@@ -42,12 +42,7 @@ REVOCATION_MATRIX_COMPARISON_REVOCATION_CELL_VS_CASELOAD_QUERY_TEMPLATE = \
       FROM `{project_id}.{view_dataset}.revocations_matrix_cells`
       -- Only including dimensional combinations that can be compared between the matrix and the caseload --
       WHERE 
-          (CASE
-              -- TODO(#4524): Once the front end supports the file size increase of multi-district breakdowns & we stop 
-              -- filtering out hydrated level_1_supervision_location breakdown rows, we can remove this PA special case.
-              WHEN state_code = 'US_PA' THEN true
-              ELSE level_1_supervision_location != 'ALL'
-            END
+          (level_1_supervision_location != 'ALL'
             AND CASE
                 -- TODO(#3829): MO does not have level 2 values ingested, so level_2_supervision_location values are all
                 -- 'ALL'. Once we do start ingesting MO region information, this query size will temporarily increase
@@ -80,12 +75,7 @@ REVOCATION_MATRIX_COMPARISON_REVOCATION_CELL_VS_CASELOAD_QUERY_TEMPLATE = \
       -- Only including dimensional combinations that can be compared between the matrix and the caseload --
       WHERE reported_violations != 'ALL' AND violation_type NOT IN ('ALL', 'NO_VIOLATION_TYPE')
           AND 
-          (CASE
-              -- TODO(#4524): Once the front end supports the file size increase of multi-district breakdowns & we stop 
-              -- filtering out hydrated level_1_supervision_location breakdown rows, we can remove this PA special case.
-              WHEN state_code = 'US_PA' THEN true
-              ELSE level_1_supervision_location NOT IN ('ALL', 'EXTERNAL_UNKNOWN')
-            END
+          (level_1_supervision_location NOT IN ('ALL', 'EXTERNAL_UNKNOWN')
             AND CASE
                 -- TODO(#3829): MO does not have level 2 values ingested, so level_2_supervision_location values are all
                 -- 'ALL'. Once we do start ingesting MO region information, this query size will temporarily increase

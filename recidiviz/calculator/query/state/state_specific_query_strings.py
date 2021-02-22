@@ -131,10 +131,7 @@ def state_specific_supervision_location_optimization_filter() -> str:
             -- 'EXTERNAL_UNKNOWN'. For scale reasons, we filter for only rows that are aggregated on
             -- level_2_supervision_location to filter out the "duplicate" rows with 'EXTERNAL_UNKNOWN'.
             WHEN state_code = 'US_MO' THEN level_2_supervision_location = 'ALL'
-    
-            -- TODO(#4524): Un-comment the `OR` clause once we can support the file size increase and have multi-level
-            -- supervision location support on the front end.
-            ELSE level_1_supervision_location = 'ALL' -- OR level_2_supervision_location != 'ALL'
+            ELSE level_1_supervision_location = 'ALL' OR level_2_supervision_location != 'ALL'
         END"""
 
 
