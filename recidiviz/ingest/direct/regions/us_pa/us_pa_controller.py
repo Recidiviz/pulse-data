@@ -53,7 +53,7 @@ from recidiviz.ingest.direct.regions.us_pa.us_pa_enum_helpers import incarcerati
     concatenate_sci_incarceration_period_purpose_codes, incarceration_period_admission_reason_mapper, \
     concatenate_sci_incarceration_period_start_codes, revocation_type_mapper, assessment_level_mapper, \
     concatenate_ccis_incarceration_period_start_codes, concatenate_ccis_incarceration_period_purpose_codes, \
-    concatenate_ccis_incarceration_period_end_codes
+    concatenate_ccis_incarceration_period_end_codes, supervision_period_supervision_type_mapper
 from recidiviz.ingest.direct.regions.us_pa.us_pa_violation_type_reference import violated_condition
 from recidiviz.ingest.direct.state_shared_row_posthooks import copy_name_to_alias, gen_label_single_external_id_hook, \
     gen_rationalize_race_and_ethnicity, gen_convert_person_ids_to_external_id_objects
@@ -114,6 +114,13 @@ class UsPaController(CsvGcsfsDirectIngestController):
             self._specify_incident_details,
             self._specify_incident_outcome,
         ]
+        supervision_period_postprocessors: List[Callable] = [
+            self._unpack_supervision_period_conditions,
+            self._set_supervising_officer,
+            self._set_supervision_site,
+            self._set_supervision_period_custodial_authority,
+        ]
+
         self.row_post_processors_by_file: Dict[str, List[Callable]] = {
             'person_external_ids': [
                 self._hydrate_person_external_ids
@@ -154,12 +161,10 @@ class UsPaController(CsvGcsfsDirectIngestController):
                 self._generate_pbpp_assessment_external_id,
                 self._enrich_pbpp_assessments,
             ],
-            'supervision_period': [
-                self._unpack_supervision_period_conditions,
-                self._set_supervising_officer,
-                self._set_supervision_site,
-                self._set_supervision_period_custodial_authority,
-            ],
+            # TODO(#4187): Once v2 views have shipped in production, remove this tag and deprecate all associated ingest
+            #  view metadata rows
+            'supervision_period': supervision_period_postprocessors,
+            'supervision_period_v2': supervision_period_postprocessors,
             'supervision_violation': [
                 self._append_supervision_violation_entries,
             ],
@@ -200,7 +205,12 @@ class UsPaController(CsvGcsfsDirectIngestController):
             ],
             'dbo_Offender': [],
             'dbo_LSIR': [],
+            # TODO(#4187): Once v2 views have shipped in production, remove this tag and deprecate all associated ingest
+            #  view metadata rows
             'supervision_period': [
+                gen_convert_person_ids_to_external_id_objects(self._get_id_type),
+            ],
+            'supervision_period_v2': [
                 gen_convert_person_ids_to_external_id_objects(self._get_id_type),
             ],
             'supervision_violation': [
@@ -219,7 +229,11 @@ class UsPaController(CsvGcsfsDirectIngestController):
             #  view metadata rows
             'incarceration_period': _generate_incarceration_period_primary_key,
             'sci_incarceration_period': _generate_sci_incarceration_period_primary_key,
-            'supervision_period': _generate_supervision_period_primary_key,
+            'supervision_period': _generate_supervision_period_primary_key_legacy,
+
+            # TODO(#4187): Once v2 views have shipped in production, remove this tag and deprecate all associated ingest
+            #  view metadata rows
+            'supervision_period_v2': _generate_supervision_period_primary_key,
             'supervision_violation': _generate_supervision_violation_primary_key,
             'supervision_violation_response': _generate_supervision_violation_response_primary_key,
             'board_action': _generate_board_action_supervision_violation_response_primary_key,
@@ -339,30 +353,6 @@ class UsPaController(CsvGcsfsDirectIngestController):
             'Y',  # Yes means Probation; anything else means Parole
         ],
 
-        StateSupervisionPeriodSupervisionType.DUAL: [
-            '4C',  # COOP case - Offender on both PBPP and County Supervision
-        ],
-        StateSupervisionPeriodSupervisionType.PAROLE: [
-            '02',  # Paroled from SCI to PBPP Supervision
-            'B2',  # Released according to Boot Camp Law
-            'R2',  # RSAT Parole
-            'C2',  # CCC Parole
-            '03',  # Reparoled from SCI to PBPP Supervision
-            'R3',  # RSAT Reparole
-            'C3',  # CCC Reparole
-            '05',  # Special Parole sentenced by County and Supervised by PBPP
-            '06',  # Paroled/Reparoled by other state and transferred to PA
-        ],
-        StateSupervisionPeriodSupervisionType.PROBATION: [
-            '04',  # Sentenced to Probation by County Judge and Supervised by PBPP
-            '4A',  # ARD (Accelerated Rehabilitative Disposition) case - Sentenced by County Judge, Supervised by PBPP
-            '4B',  # PWV (Probation Without Verdict) case - Sentenced by County Judge and Supervised by PBPP
-            '07',  # Sentenced to Probation by other state and transferred to PA
-        ],
-        StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN: [
-            '08',  # Other States’ Deferred Sentence
-            '09',  # Emergency Release - used for COVID releases
-        ],
         StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE: [
             '02',  # Paroled from SCI to PBPP Supervision
             'B2',  # Released according to Boot Camp Law
@@ -625,6 +615,7 @@ class UsPaController(CsvGcsfsDirectIngestController):
         StateIncarcerationPeriodReleaseReason: incarceration_period_release_reason_mapper,
         StateSpecializedPurposeForIncarceration: incarceration_period_purpose_mapper,
         StateSupervisionViolationResponseRevocationType: revocation_type_mapper,
+        StateSupervisionPeriodSupervisionType: supervision_period_supervision_type_mapper,
     }
 
     ENUM_IGNORES: Dict[EntityEnumMeta, List[str]] = {
@@ -670,8 +661,13 @@ class UsPaController(CsvGcsfsDirectIngestController):
             'dbo_LSIR',
         ]
 
+        if environment.in_gcp_production():
+            launched_file_tags.append('supervision_period')
+        else:
+            # TODO(#4187): Launch these to prod after staging rerun is validated
+            launched_file_tags.append('supervision_period_v2')
+
         launched_file_tags += [
-            'supervision_period',
             'supervision_violation',
             'supervision_violation_response',
         ]
@@ -767,6 +763,9 @@ class UsPaController(CsvGcsfsDirectIngestController):
             return US_PA_CONTROL
 
         if file_tag in ['supervision_period',
+                        # TODO(#4187): Once v2 views have shipped in production, remove this tag and deprecate all
+                        #  associated ingest view metadata rows
+                        'supervision_period_v2',
                         'supervision_violation',
                         'supervision_violation_response',
                         'board_action',
@@ -1175,14 +1174,24 @@ class UsPaController(CsvGcsfsDirectIngestController):
                     obj.supervision_site = f'{district_office}|{district_sub_office_id}|{supervision_location_org_code}'
 
     @staticmethod
-    def _set_supervision_period_custodial_authority(_file_tag: str,
+    def _set_supervision_period_custodial_authority(file_tag: str,
                                                     row: Dict[str, str],
                                                     extracted_objects: List[IngestObject],
                                                     _cache: IngestObjectCache) -> None:
         """Sets the custodial_authority on the supervision period."""
         # TODO(#1882): This row post hook should not be necessary once you can map a column value to multiple fields on
         #  the ingested object.
-        custodial_authority = row['supervision_type']
+        if file_tag == 'supervision_period':
+            # TODO(#4187): Once v2 views have shipped in production, remove this logic
+            custodial_authority = row['supervision_type']
+        elif file_tag == 'supervision_period_v2':
+            supervision_types = row['supervision_types']
+
+            # For dual supervision types, the custodial authority will always be the supervision authority, so we
+            # just arbitrarily pick raw text to map to an enum.
+            custodial_authority = supervision_types.split(',')[0] if supervision_types else supervision_types
+        else:
+            raise ValueError(f'Unexpected file tag [{file_tag}]')
 
         for obj in extracted_objects:
             if isinstance(obj, StateSupervisionPeriod):
@@ -1346,11 +1355,21 @@ def _state_incarceration_period_ancestor_chain_overrides(_file_tag: str, row: Di
     return {'state_incarceration_sentence': incarceration_sentence_id}
 
 
-def _generate_supervision_period_primary_key(_file_tag: str, row: Dict[str, str]) -> IngestFieldCoordinates:
+def _generate_supervision_period_primary_key_legacy(_file_tag: str, row: Dict[str, str]) -> IngestFieldCoordinates:
     person_id = row['parole_number']
     parole_count = row['parole_count_id']
     period_sequence_number = row['period_sequence_number']
     supervision_period_id = f"{person_id}-{parole_count}-{period_sequence_number}"
+
+    return IngestFieldCoordinates('state_supervision_period',
+                                  'state_supervision_period_id',
+                                  supervision_period_id)
+
+
+def _generate_supervision_period_primary_key(_file_tag: str, row: Dict[str, str]) -> IngestFieldCoordinates:
+    person_id = row['parole_number']
+    period_sequence_number = row['period_sequence_number']
+    supervision_period_id = f"{person_id}-{period_sequence_number}"
 
     return IngestFieldCoordinates('state_supervision_period',
                                   'state_supervision_period_id',

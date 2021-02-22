@@ -25,11 +25,10 @@ from dateutil.relativedelta import relativedelta
 from recidiviz.calculator.pipeline.supervision.supervision_time_bucket import \
     NonRevocationReturnSupervisionTimeBucket, RevocationReturnSupervisionTimeBucket
 from recidiviz.calculator.pipeline.utils.supervision_period_index import SupervisionPeriodIndex
-from recidiviz.calculator.pipeline.utils.supervision_type_identification import _get_most_relevant_supervision_type
 from recidiviz.common.common_utils import date_spans_overlap_exclusive
 from recidiviz.common.constants.state.state_incarceration_period import StateIncarcerationPeriodReleaseReason
 from recidiviz.common.constants.state.state_supervision_period import StateSupervisionPeriodSupervisionType, \
-    StateSupervisionPeriodAdmissionReason
+    StateSupervisionPeriodAdmissionReason, get_most_relevant_supervision_type
 from recidiviz.persistence.entity.state.entities import StateIncarcerationSentence, StateSupervisionSentence, \
     StateIncarcerationPeriod, StateSupervisionPeriod
 
@@ -135,7 +134,7 @@ def us_id_get_most_recent_supervision_period_supervision_type_before_upper_bound
 
     max_end_date = max(supervision_types_by_end_date.keys())
 
-    return _get_most_relevant_supervision_type(supervision_types_by_end_date[max_end_date])
+    return get_most_relevant_supervision_type(supervision_types_by_end_date[max_end_date])
 
 
 def _get_supervision_periods_from_sentences(incarceration_sentences: List[StateIncarcerationSentence],

@@ -1035,7 +1035,7 @@ class TestUsPaController(BaseDirectIngestControllerTests):
                                         StateSupervisionSentence(
                                             state_supervision_periods=[
                                                 StateSupervisionPeriod(
-                                                    state_supervision_period_id='456B-1-1',
+                                                    state_supervision_period_id='456B-1',
                                                     supervision_period_supervision_type='C2',
                                                     admission_reason='C2', start_date='2012-03-16',
                                                     termination_reason='TRANSFER_WITHIN_STATE',
@@ -1050,21 +1050,23 @@ class TestUsPaController(BaseDirectIngestControllerTests):
                                                     )
                                                 ),
                                                 StateSupervisionPeriod(
-                                                    state_supervision_period_id='456B-1-2',
-                                                    supervision_period_supervision_type='C2',
+                                                    state_supervision_period_id='456B-2',
+                                                    supervision_period_supervision_type='04,C2',
                                                     admission_reason='TRANSFER_WITHIN_STATE', start_date='2013-04-01',
-                                                    termination_reason='43', termination_date='2014-08-10',
+                                                    termination_reason='TRANSFER_WITHIN_STATE',
+                                                    termination_date='2014-08-10',
                                                     county_code='ALLEGH', supervision_site='02|02 - North Shore|7113',
-                                                    supervision_level='MAX', custodial_authority='C2',
+                                                    supervision_level='MAX', custodial_authority='04',
                                                     conditions=['MEST', 'ACT35', 'GPAR', 'MVICT', 'REMC', 'END']
                                                 ),
                                                 StateSupervisionPeriod(
-                                                    state_supervision_period_id='456B-2-1',
-                                                    supervision_period_supervision_type='C2',
-                                                    admission_reason='C2', start_date='2014-08-10',
+                                                    state_supervision_period_id='456B-3',
+                                                    supervision_period_supervision_type='04',
+                                                    admission_reason='TRANSFER_WITHIN_STATE',
+                                                    start_date='2014-08-10',
                                                     termination_reason='43', termination_date='2018-01-01',
                                                     county_code='ALLEGH', supervision_site='02|02 - North Shore|7115',
-                                                    supervision_level='MED', custodial_authority='C2',
+                                                    supervision_level='MED', custodial_authority='04',
                                                     conditions=['PN', 'EST', 'BL', 'END', 'SUBD', 'AANA'],
                                                     supervising_officer=StateAgent(
                                                         state_agent_id='444123',
@@ -1087,7 +1089,7 @@ class TestUsPaController(BaseDirectIngestControllerTests):
                                         StateSupervisionSentence(
                                             state_supervision_periods=[
                                                 StateSupervisionPeriod(
-                                                    state_supervision_period_id='789C-1-1',
+                                                    state_supervision_period_id='789C-1',
                                                     supervision_period_supervision_type='05',
                                                     admission_reason='05', start_date='2003-10-10',
                                                     termination_reason='42', termination_date='2004-08-10',
@@ -1103,7 +1105,7 @@ class TestUsPaController(BaseDirectIngestControllerTests):
                                                     )
                                                 ),
                                                 StateSupervisionPeriod(
-                                                    state_supervision_period_id='789C-2-1',
+                                                    state_supervision_period_id='789C-2',
                                                     supervision_period_supervision_type='05',
                                                     admission_reason='05', start_date='2004-08-10',
                                                     termination_reason='44', termination_date='2005-12-31',
@@ -1116,7 +1118,7 @@ class TestUsPaController(BaseDirectIngestControllerTests):
                                                     )
                                                 ),
                                                 StateSupervisionPeriod(
-                                                    state_supervision_period_id='789C-3-1',
+                                                    state_supervision_period_id='789C-3',
                                                     supervision_period_supervision_type='04',
                                                     admission_reason='04', start_date='2005-12-31',
                                                     termination_reason='43', termination_date='2006-10-10',
@@ -1141,7 +1143,7 @@ class TestUsPaController(BaseDirectIngestControllerTests):
                                         StateSupervisionSentence(
                                             state_supervision_periods=[
                                                 StateSupervisionPeriod(
-                                                    state_supervision_period_id='345E-1-1',
+                                                    state_supervision_period_id='345E-1',
                                                     supervision_period_supervision_type='03',
                                                     admission_reason='03', start_date='2016-01-14',
                                                     county_code='PHILAD', supervision_site='01|01 - Northwest|5112',
@@ -1161,7 +1163,7 @@ class TestUsPaController(BaseDirectIngestControllerTests):
                             ]),
             ])
 
-        self.run_parse_file_test(expected, 'supervision_period')
+        self.run_parse_file_test(expected, 'supervision_period_v2')
 
     def test_populate_data_supervision_violation(self) -> None:
         violation_456B_1_1 = StateSupervisionViolation(
@@ -2872,7 +2874,7 @@ class TestUsPaController(BaseDirectIngestControllerTests):
         p2_sg_ph.supervision_sentences.append(p2_ss_ph)
 
         p2_sp_1_1 = entities.StateSupervisionPeriod.new_with_defaults(
-            external_id='456B-1-1', state_code=_STATE_CODE_UPPER,
+            external_id='456B-1', state_code=_STATE_CODE_UPPER,
             status=StateSupervisionPeriodStatus.TERMINATED,
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
             supervision_period_supervision_type_raw_text='C2',
@@ -2896,38 +2898,38 @@ class TestUsPaController(BaseDirectIngestControllerTests):
         )
 
         p2_sp_1_2 = entities.StateSupervisionPeriod.new_with_defaults(
-            external_id='456B-1-2', state_code=_STATE_CODE_UPPER,
+            external_id='456B-2', state_code=_STATE_CODE_UPPER,
             status=StateSupervisionPeriodStatus.TERMINATED,
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
-            supervision_period_supervision_type_raw_text='C2',
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.DUAL,
+            supervision_period_supervision_type_raw_text='04,C2',
             admission_reason=StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE,
             admission_reason_raw_text='TRANSFER_WITHIN_STATE',
             start_date=datetime.date(year=2013, month=4, day=1),
-            termination_reason=StateSupervisionPeriodTerminationReason.EXPIRATION,
-            termination_reason_raw_text='43',
+            termination_reason=StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE,
+            termination_reason_raw_text='TRANSFER_WITHIN_STATE',
             termination_date=datetime.date(year=2014, month=8, day=10),
             county_code='ALLEGH', supervision_site='02|02 - NORTH SHORE|7113',
             custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
-            custodial_authority_raw_text='C2',
+            custodial_authority_raw_text='04',
             supervision_level=StateSupervisionLevel.MAXIMUM, supervision_level_raw_text='MAX',
             conditions='MEST, ACT35, GPAR, MVICT, REMC, END',
             supervision_sentences=[p2_ss_ph],
         )
 
         p2_sp_2_1 = entities.StateSupervisionPeriod.new_with_defaults(
-            external_id='456B-2-1', state_code=_STATE_CODE_UPPER,
+            external_id='456B-3', state_code=_STATE_CODE_UPPER,
             status=StateSupervisionPeriodStatus.TERMINATED,
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
-            supervision_period_supervision_type_raw_text='C2',
-            admission_reason=StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE,
-            admission_reason_raw_text='C2',
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_period_supervision_type_raw_text='04',
+            admission_reason=StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE,
+            admission_reason_raw_text='TRANSFER_WITHIN_STATE',
             start_date=datetime.date(year=2014, month=8, day=10),
             termination_reason=StateSupervisionPeriodTerminationReason.EXPIRATION,
             termination_reason_raw_text='43',
             termination_date=datetime.date(year=2018, month=1, day=1),
             county_code='ALLEGH', supervision_site='02|02 - NORTH SHORE|7115',
             custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
-            custodial_authority_raw_text='C2',
+            custodial_authority_raw_text='04',
             supervision_level=StateSupervisionLevel.MEDIUM, supervision_level_raw_text='MED',
             conditions='PN, EST, BL, END, SUBD, AANA',
             supervising_officer=entities.StateAgent.new_with_defaults(
@@ -2953,7 +2955,7 @@ class TestUsPaController(BaseDirectIngestControllerTests):
         p5_sg_ph.supervision_sentences.append(p5_ss_ph)
 
         p5_sp_1_1 = entities.StateSupervisionPeriod.new_with_defaults(
-            external_id='789C-1-1', state_code=_STATE_CODE_UPPER,
+            external_id='789C-1', state_code=_STATE_CODE_UPPER,
             status=StateSupervisionPeriodStatus.TERMINATED,
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
             supervision_period_supervision_type_raw_text='05',
@@ -2976,7 +2978,7 @@ class TestUsPaController(BaseDirectIngestControllerTests):
             supervision_sentences=[p5_ss_ph],
         )
         p5_sp_2_1 = entities.StateSupervisionPeriod.new_with_defaults(
-            external_id='789C-2-1', state_code=_STATE_CODE_UPPER,
+            external_id='789C-2', state_code=_STATE_CODE_UPPER,
             status=StateSupervisionPeriodStatus.TERMINATED,
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
             supervision_period_supervision_type_raw_text='05',
@@ -2998,7 +3000,7 @@ class TestUsPaController(BaseDirectIngestControllerTests):
             supervision_sentences=[p5_ss_ph],
         )
         p5_sp_3_1 = entities.StateSupervisionPeriod.new_with_defaults(
-            external_id='789C-3-1', state_code=_STATE_CODE_UPPER,
+            external_id='789C-3', state_code=_STATE_CODE_UPPER,
             status=StateSupervisionPeriodStatus.TERMINATED,
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_period_supervision_type_raw_text='04',
@@ -3033,7 +3035,7 @@ class TestUsPaController(BaseDirectIngestControllerTests):
         p4_sg_ph.supervision_sentences.append(p4_ss_ph)
 
         p4_sp_1_1 = entities.StateSupervisionPeriod.new_with_defaults(
-            external_id='345E-1-1', state_code=_STATE_CODE_UPPER,
+            external_id='345E-1', state_code=_STATE_CODE_UPPER,
             status=StateSupervisionPeriodStatus.UNDER_SUPERVISION,
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
             supervision_period_supervision_type_raw_text='03',
@@ -3058,7 +3060,7 @@ class TestUsPaController(BaseDirectIngestControllerTests):
         populate_person_backedges(expected_people)
 
         # Act
-        self._run_ingest_job_for_filename('supervision_period.csv')
+        self._run_ingest_job_for_filename('supervision_period_v2.csv')
 
         # Assert
         self.assert_expected_db_people(expected_people)

@@ -23,7 +23,6 @@ from datetime import date
 
 
 from recidiviz.calculator.pipeline.utils.supervision_type_identification import \
-    _get_most_relevant_supervision_type, \
     _get_sentences_overlapping_with_date, _get_sentences_overlapping_with_dates, _get_valid_attached_sentences, \
     _get_sentence_supervision_type_from_sentence, get_pre_incarceration_supervision_type_from_incarceration_period
 from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_manager import get_month_supervision_type
@@ -797,20 +796,6 @@ class TestGetPreIncarcerationSupervisionType(unittest.TestCase):
                                                                [valid_incarceration_sentence,
                                                                 valid_incarceration_sentence_2,
                                                                 invalid_incarceration_sentence_2]))
-
-    def test_getMostRelevantSupervisionType_allEnums(self):
-        for supervision_type in StateSupervisionPeriodSupervisionType:
-            types = {supervision_type}
-            self.assertEqual(supervision_type, _get_most_relevant_supervision_type(types))
-
-    def test_getMostRelevantSupervisionType_chooseDualIfExists(self):
-        for supervision_type in StateSupervisionPeriodSupervisionType:
-            types = {StateSupervisionPeriodSupervisionType.DUAL, supervision_type}
-            self.assertEqual(StateSupervisionPeriodSupervisionType.DUAL, _get_most_relevant_supervision_type(types))
-
-    def test_getMostRelevantSupervisionType_dualIfProbationAndParole(self):
-        types = {StateSupervisionPeriodSupervisionType.PROBATION, StateSupervisionPeriodSupervisionType.PAROLE}
-        self.assertEqual(StateSupervisionPeriodSupervisionType.DUAL, _get_most_relevant_supervision_type(types))
 
 
 class TestGetSupervisionPeriodSupervisionTypeFromSentence(unittest.TestCase):
