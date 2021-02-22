@@ -36,44 +36,45 @@ FTR_REFERRALS_BY_RACE_AND_ETHNICITY_BY_PERIOD_DESCRIPTION = """
 FTR_REFERRALS_BY_RACE_AND_ETHNICITY_BY_PERIOD_QUERY_TEMPLATE = \
     """
     /*{description}*/
-    SELECT
-      state_code,
-      race_or_ethnicity,
-      IFNULL(ref.count, 0) AS count,
-      total_supervision_count,
-      supervision_type,
-      district,
-      metric_period_months
-    FROM (
+    WITH supervision AS (
       SELECT
         state_code,
         COUNT(DISTINCT person_id) AS total_supervision_count,
         supervision_type,
         district,
         metric_period_months,
-        race_or_ethnicity
+        IFNULL(race_or_ethnicity, 'EXTERNAL_UNKNOWN') as race_or_ethnicity
       FROM `{project_id}.{reference_views_dataset}.event_based_supervision_populations`,
       {metric_period_dimension}
       WHERE {metric_period_condition}
       GROUP BY state_code, supervision_type, district, metric_period_months, race_or_ethnicity
-    ) pop
-    LEFT JOIN (
+    ),
+    referrals AS (
       SELECT
         state_code,
         COUNT(DISTINCT person_id) AS count,
         supervision_type,
         district,
         metric_period_months,
-        race_or_ethnicity
+        IFNULL(race_or_ethnicity, 'EXTERNAL_UNKNOWN') as race_or_ethnicity
       FROM `{project_id}.{reference_views_dataset}.event_based_program_referrals`,
       {metric_period_dimension}
       WHERE {metric_period_condition}
       GROUP BY state_code, supervision_type, district, metric_period_months, race_or_ethnicity
-    ) ref
+    )
+    SELECT
+      state_code,
+      race_or_ethnicity,
+      IFNULL(referrals.count, 0) AS count,
+      IFNULL(total_supervision_count, 0) AS total_supervision_count,
+      supervision_type,
+      district,
+      metric_period_months
+    FROM supervision
+    FULL OUTER JOIN referrals
     USING (state_code, supervision_type, district, metric_period_months, race_or_ethnicity)
     WHERE supervision_type in ('ALL', 'PAROLE', 'PROBATION')
       AND district IS NOT NULL
-      AND race_or_ethnicity != 'EXTERNAL_UNKNOWN'
       AND state_code = 'US_ND'
     ORDER BY state_code, race_or_ethnicity, district, supervision_type, metric_period_months
     """

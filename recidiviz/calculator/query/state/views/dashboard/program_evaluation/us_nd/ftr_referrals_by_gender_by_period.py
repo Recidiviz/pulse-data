@@ -37,44 +37,45 @@ FTR_REFERRALS_BY_GENDER_BY_PERIOD_DESCRIPTION = """
 FTR_REFERRALS_BY_GENDER_BY_PERIOD_QUERY_TEMPLATE = \
     """
     /*{description}*/
-    SELECT
-      state_code,
-      gender,
-      IFNULL(ref.count, 0) as count,
-      total_supervision_count,
-      supervision_type,
-      district,
-      metric_period_months
-    FROM (
+    WITH supervision AS (
       SELECT
         state_code,
         COUNT(DISTINCT person_id) AS total_supervision_count,
         supervision_type,
         district,
         metric_period_months,
-        gender
+        IFNULL(gender, 'EXTERNAL_UNKNOWN') as gender
       FROM `{project_id}.{reference_views_dataset}.event_based_supervision_populations`,
       {metric_period_dimension}
       WHERE {metric_period_condition}
       GROUP BY state_code, supervision_type, district, metric_period_months, gender
-    ) pop
-    LEFT JOIN (
+    ), 
+    referrals AS (
       SELECT
         state_code,
         COUNT(DISTINCT person_id) AS count,
         supervision_type,
         district,
         metric_period_months,
-        gender
+        IFNULL(gender, 'EXTERNAL_UNKNOWN') as gender
       FROM `{project_id}.{reference_views_dataset}.event_based_program_referrals`,
       {metric_period_dimension}
       WHERE {metric_period_condition}
       GROUP BY state_code, supervision_type, district, metric_period_months, gender
-    ) ref
+    )
+    SELECT
+      state_code,
+      gender,
+      IFNULL(referrals.count, 0) as count,
+      IFNULL(total_supervision_count, 0) as total_supervision_count,
+      supervision_type,
+      district,
+      metric_period_months
+    FROM supervision
+    FULL OUTER JOIN referrals
     USING (state_code, supervision_type, district, metric_period_months, gender)
     WHERE supervision_type in ('ALL', 'PAROLE', 'PROBATION')
       AND district IS NOT NULL
-      AND gender IS NOT NULL
       AND state_code = 'US_ND'
     ORDER BY state_code, gender, district, supervision_type, metric_period_months
     """
