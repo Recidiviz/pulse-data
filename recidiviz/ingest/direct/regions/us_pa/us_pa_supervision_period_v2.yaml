@@ -1,6 +1,5 @@
-# TODO(#4187): Once v2 views have shipped in production, remove this file and associated fixture file
 key_mappings:
-  supervision_type: state_supervision_period.supervision_period_supervision_type
+  supervision_types: state_supervision_period.supervision_period_supervision_type
   admission_reason: state_supervision_period.admission_reason
   start_date: state_supervision_period.start_date
   termination_reason: state_supervision_period.termination_reason
@@ -15,17 +14,13 @@ ancestor_keys:
 enforced_ancestor_types:
   state_sentence: state_supervision_sentence
 
-# Primary key override for Supervision Period id defined in controller in format of [parole_number]-[parole_count_id]-[period_sequence_number]
+# Primary key override for Supervision Period id defined in controller in format of [parole_number]-[period_sequence_number]
 
 keys_to_ignore:
-  - parole_count_id                 # Parole "count" (index) for this person - handled manually in the controller
   - period_sequence_number          # Recidiviz-generated sequence number for a given period within periods with the same parole_count_id - handled manually in the controller
   - condition_codes                 # A comma-separate list of conditions codes - handled manually in the controller
   - supervising_officer_name        # Full name of supervision officer - handled manually in the controller
-  # Note: The status_code contains info about whether the person is currently a parole violator or absconding, as well
-  #   as whether they transferred out of state / were deported  - might be useful in the future.
-  - status_code                     # Current / last supervision "status" associated with the parole_count_id "status" but not status in our own sense - Unused
   - district_office                 # Code for district this person is being supervised in - handled manually in the controller
   - district_sub_office_id          # Specific sub office this person is being supervised by - handled manually in the controller
   - supervision_location_org_code   # Organization code of the person's specific supervision unit - handled manually in the controller
-  - case_types_list                 # Case types associated with this person - handled manually in the controller
+  - supervision_types               # Admission codes used to derive supervision types for all ongoing types of supervision at this time - handled manually in the controller

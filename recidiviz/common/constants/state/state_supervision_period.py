@@ -17,7 +17,7 @@
 
 """Constants related to a StateSupervisionPeriod."""
 from enum import unique
-from typing import Dict
+from typing import Dict, Set, Optional
 
 import recidiviz.common.constants.enum_canonical_strings as enum_strings
 import recidiviz.common.constants.state.enum_canonical_strings as state_enum_strings
@@ -220,3 +220,30 @@ _STATE_SUPERVISION_PERIOD_TERMINATION_REASON_MAP = {
     'SUSPENDED': StateSupervisionPeriodTerminationReason.SUSPENSION,
     'SUSPENSION': StateSupervisionPeriodTerminationReason.SUSPENSION,
 }
+
+
+def get_most_relevant_supervision_type(supervision_types: Set[StateSupervisionPeriodSupervisionType]) \
+        -> Optional[StateSupervisionPeriodSupervisionType]:
+    if not supervision_types:
+        return None
+
+    if StateSupervisionPeriodSupervisionType.DUAL in supervision_types:
+        return StateSupervisionPeriodSupervisionType.DUAL
+    if StateSupervisionPeriodSupervisionType.PROBATION in supervision_types \
+            and StateSupervisionPeriodSupervisionType.PAROLE in supervision_types:
+        return StateSupervisionPeriodSupervisionType.DUAL
+
+    if StateSupervisionPeriodSupervisionType.PAROLE in supervision_types:
+        return StateSupervisionPeriodSupervisionType.PAROLE
+    if StateSupervisionPeriodSupervisionType.PROBATION in supervision_types:
+        return StateSupervisionPeriodSupervisionType.PROBATION
+    if StateSupervisionPeriodSupervisionType.INVESTIGATION in supervision_types:
+        return StateSupervisionPeriodSupervisionType.INVESTIGATION
+    if StateSupervisionPeriodSupervisionType.INFORMAL_PROBATION in supervision_types:
+        return StateSupervisionPeriodSupervisionType.INFORMAL_PROBATION
+    if StateSupervisionPeriodSupervisionType.EXTERNAL_UNKNOWN in supervision_types:
+        return StateSupervisionPeriodSupervisionType.EXTERNAL_UNKNOWN
+    if StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN in supervision_types:
+        return StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN
+
+    raise ValueError(f'Unexpected Supervision type in provided supervision_types set: [{supervision_types}]')

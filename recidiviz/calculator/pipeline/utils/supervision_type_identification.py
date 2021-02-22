@@ -37,33 +37,6 @@ SUPERVISION_TYPE_PRECEDENCE_ORDER = [
 ]
 
 
-def _get_most_relevant_supervision_type(supervision_types: Set[StateSupervisionPeriodSupervisionType]) \
-        -> Optional[StateSupervisionPeriodSupervisionType]:
-    if not supervision_types:
-        return None
-
-    if StateSupervisionPeriodSupervisionType.DUAL in supervision_types:
-        return StateSupervisionPeriodSupervisionType.DUAL
-    if StateSupervisionPeriodSupervisionType.PROBATION in supervision_types \
-            and StateSupervisionPeriodSupervisionType.PAROLE in supervision_types:
-        return StateSupervisionPeriodSupervisionType.DUAL
-
-    if StateSupervisionPeriodSupervisionType.PAROLE in supervision_types:
-        return StateSupervisionPeriodSupervisionType.PAROLE
-    if StateSupervisionPeriodSupervisionType.PROBATION in supervision_types:
-        return StateSupervisionPeriodSupervisionType.PROBATION
-    if StateSupervisionPeriodSupervisionType.INVESTIGATION in supervision_types:
-        return StateSupervisionPeriodSupervisionType.INVESTIGATION
-    if StateSupervisionPeriodSupervisionType.INFORMAL_PROBATION in supervision_types:
-        return StateSupervisionPeriodSupervisionType.INFORMAL_PROBATION
-    if StateSupervisionPeriodSupervisionType.EXTERNAL_UNKNOWN in supervision_types:
-        return StateSupervisionPeriodSupervisionType.EXTERNAL_UNKNOWN
-    if StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN in supervision_types:
-        return StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN
-
-    raise ValueError(f'Unexpected Supervision type in provided supervision_types set: [{supervision_types}]')
-
-
 def get_pre_incarceration_supervision_type_from_incarceration_period(
         incarceration_period: StateIncarcerationPeriod
 ) -> Optional[StateSupervisionPeriodSupervisionType]:
