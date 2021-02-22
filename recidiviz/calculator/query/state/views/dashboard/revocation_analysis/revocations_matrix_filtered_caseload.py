@@ -71,14 +71,7 @@ REVOCATIONS_MATRIX_FILTERED_CASELOAD_QUERY_TEMPLATE = \
         officer_recommendation,
         violation_record,
         IF(district = 'ALL', 'EXTERNAL_UNKNOWN', district) AS district,
-        -- TODO(#4524): Once the front end supports the multi-district breakdowns and we stop 
-        -- filtering out hydrated level_1_supervision_location breakdown rows, we can remove this PA special case and
-        -- replace with:
-        -- IF(level_1_supervision_location = 'ALL', 'EXTERNAL_UNKNOWN', level_1_supervision_location) AS level_1_supervision_location,
-        CASE WHEN state_code = 'US_PA' THEN 'ALL'
-             WHEN level_1_supervision_location = 'ALL' THEN 'EXTERNAL_UNKNOWN'
-             ELSE level_1_supervision_location
-             END AS level_1_supervision_location,
+        IF(level_1_supervision_location = 'ALL', 'EXTERNAL_UNKNOWN', level_1_supervision_location) AS level_1_supervision_location,
         -- TODO(#3829): MO does not have level 2 values ingested, so level_2_supervision_location values are only
         -- 'ALL'. Once we do start ingesting MO region information and the front end supports the multi-district
         -- breakdown for US_MO we can remove this MO special case and replace with:
