@@ -50,7 +50,8 @@ from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.tests.ingest.direct.direct_ingest_util import \
     build_gcsfs_controller_for_tests, add_paths_with_tags_and_process, \
     path_for_fixture_file, \
-    run_task_queues_to_empty, check_all_paths_processed, FakeDirectIngestRawFileImportManager, add_paths_with_tags
+    run_task_queues_to_empty, check_all_paths_processed, FakeDirectIngestRawFileImportManager, add_paths_with_tags, \
+    FakeDirectIngestRegionRawFileConfig
 from recidiviz.tests.ingest.direct.fake_direct_ingest_big_query_client import FakeDirectIngestBigQueryClient
 from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 from recidiviz.tests.ingest.direct.fake_synchronous_direct_ingest_cloud_task_manager import \
@@ -153,6 +154,8 @@ class CountyTestGcsfsDirectIngestController(
 @pytest.mark.uses_db
 @patch('recidiviz.utils.metadata.project_id',
        Mock(return_value='recidiviz-staging'))
+@patch("recidiviz.ingest.direct.views.direct_ingest_big_query_view_types"
+       ".get_region_raw_file_config", Mock(return_value=FakeDirectIngestRegionRawFileConfig('US_XX')))
 class TestGcsfsDirectIngestController(unittest.TestCase):
     """Tests for GcsfsDirectIngestController."""
 
