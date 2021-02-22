@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Supervisees with pending FTR by PO by day."""
+# pylint: disable=line-too-long
 
 from recidiviz.big_query.big_query_view import SimpleBigQueryViewBuilder
 from recidiviz.calculator.query.state import dataset_config
@@ -63,17 +64,21 @@ PENDING_FTR_BY_PO_BY_DAY_QUERY_TEMPLATE = \
     )
     # Get the number of supervisees with pending FTR status by district and PO, for each of the seven days.
     SELECT
-        state_code,
+        referral_metrics.state_code,
         most_recent_week_of_program_referrals.created_on,
         IFNULL(supervising_officer_external_id, 'UNKNOWN') as supervising_officer,
-        IFNULL(supervising_district_external_id, 'UNKNOWN') as district,
+        IFNULL(referral_metrics.level_1_supervision_location_external_id, 'UNKNOWN') as district_id,
+        locations.level_1_supervision_location_name as district_name,
         COUNTIF(referral_metrics.participation_status = "PENDING") as pending_ftr_count
     FROM
       `{project_id}.{metrics_dataset}.program_referral_metrics` referral_metrics
     INNER JOIN
       most_recent_week_of_program_referrals
     USING (state_code, job_id, metric_type)
-    GROUP BY state_code, created_on, supervising_officer, district
+    LEFT JOIN `{project_id}.{reference_views_dataset}.supervision_location_ids_to_names` locations
+    ON referral_metrics.state_code = locations.state_code
+        AND referral_metrics.level_1_supervision_location_external_id = locations.level_1_supervision_location_external_id
+    GROUP BY state_code, created_on, supervising_officer, district_id, district_name
     ORDER BY created_on DESC, pending_ftr_count DESC
     """
 
@@ -83,6 +88,7 @@ PENDING_FTR_BY_PO_BY_DAY_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_query_template=PENDING_FTR_BY_PO_BY_DAY_QUERY_TEMPLATE,
     description=PENDING_FTR_BY_PO_BY_DAY_DESCRIPTION,
     metrics_dataset=dataset_config.DATAFLOW_METRICS_DATASET,
+    reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
 )
 
 if __name__ == '__main__':

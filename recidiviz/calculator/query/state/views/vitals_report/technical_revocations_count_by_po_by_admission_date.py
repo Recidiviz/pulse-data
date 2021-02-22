@@ -32,15 +32,19 @@ TECHNICAL_REVOCATIONS_COUNT_BY_PO_BY_DAY_QUERY_TEMPLATE = \
     """
     /*{description}*/
     SELECT
-        state_code,
+        revocations.state_code,
         revocation_admission_date,
         IFNULL(supervising_officer_external_id, 'UNKNOWN') as supervising_officer,
-        IFNULL(supervising_district_external_id, 'UNKNOWN') as district,
+        IFNULL(revocations.level_1_supervision_location_external_id, 'UNKNOWN') as district_id,
+        locations.level_1_supervision_location_name as district_name,
         COUNT(DISTINCT(person_id)) as num_revocations,
         case_type,
         supervision_type,
         source_violation_type
-    FROM `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_revocation_metrics_materialized`
+    FROM `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_revocation_metrics_materialized` revocations
+    LEFT JOIN `{project_id}.{reference_views_dataset}.supervision_location_ids_to_names` locations
+    ON revocations.state_code = locations.state_code
+        AND revocations.level_1_supervision_location_external_id = locations.level_1_supervision_location_external_id
     WHERE source_violation_type = "TECHNICAL"
     AND revocation_admission_date > DATE_SUB(CURRENT_DATE('US/Pacific'), INTERVAL 90 DAY)
     GROUP BY
@@ -50,7 +54,8 @@ TECHNICAL_REVOCATIONS_COUNT_BY_PO_BY_DAY_QUERY_TEMPLATE = \
         supervision_type,
         source_violation_type,
         supervising_officer,
-        district
+        district_id,
+        district_name
     ORDER BY revocation_admission_date DESC, num_revocations DESC
     """
 
@@ -60,6 +65,7 @@ TECHNICAL_REVOCATIONS_COUNT_BY_PO_BY_DAY_VIEW_BUILDER = SimpleBigQueryViewBuilde
     view_query_template=TECHNICAL_REVOCATIONS_COUNT_BY_PO_BY_DAY_QUERY_TEMPLATE,
     description=TECHNICAL_REVOCATIONS_COUNT_BY_PO_BY_DAY_DESCRIPTION,
     materialized_metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
+    reference_views_dataset=dataset_config.REFERENCE_VIEWS_DATASET,
 )
 
 if __name__ == '__main__':
