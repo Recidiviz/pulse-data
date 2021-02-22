@@ -1037,8 +1037,8 @@ class UsIdController(CsvGcsfsDirectIngestController):
         if not all(ct in ALL_NEW_CRIME_TYPES for ct in new_crime_types):
             raise ValueError(f'Unexpected new crime type: {new_crime_types}')
 
-        violent = any([ct in VIOLENT_CRIME_TYPES for ct in new_crime_types])
-        sex_offense = any([ct in SEX_CRIME_TYPES for ct in new_crime_types])
+        violent = any(ct in VIOLENT_CRIME_TYPES for ct in new_crime_types)
+        sex_offense = any(ct in SEX_CRIME_TYPES for ct in new_crime_types)
 
         for obj in extracted_objects:
             if isinstance(obj, StateSupervisionViolation):

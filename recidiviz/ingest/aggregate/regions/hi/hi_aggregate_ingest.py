@@ -162,7 +162,7 @@ def _df_matching_substring(dfs: List[pd.DataFrame], strings: Iterable[str]) \
     """Get the one df containing all the matching substrings."""
     matches: List[pd.DataFrame] = []
     for df in dfs:
-        if all([_df_contains_substring(df, string) for string in strings]):
+        if all(_df_contains_substring(df, string) for string in strings):
             matches.append(df)
 
     return more_itertools.one(matches)
