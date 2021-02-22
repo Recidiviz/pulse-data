@@ -16,12 +16,18 @@
 # =============================================================================
 
 """Functionality for generating documentation about our direct ingest integrations."""
+from collections import defaultdict
 from typing import List, Dict
 import subprocess
 from pytablewriter import MarkdownTableWriter
 from recidiviz.common.constants.states import StateCode
 from recidiviz.ingest.direct.controllers.direct_ingest_raw_file_import_manager import DirectIngestRegionRawFileConfig, \
     DirectIngestRawFileConfig
+from recidiviz.ingest.direct.controllers.direct_ingest_view_collector import DirectIngestPreProcessedIngestViewCollector
+from recidiviz.utils import regions
+from recidiviz.utils.environment import GCP_PROJECT_STAGING
+from recidiviz.utils.metadata import local_project_id_override
+
 
 STATE_RAW_DATA_FILE_HEADER_TEMPLATE = """
 # {state_name} Raw Data Description
@@ -31,12 +37,6 @@ table that show the latest state of this table (i.e. select the most recently re
 found in `{state_code_lower}_raw_data_up_to_date_views`.
 
 ## Table of Contents
-
-The statuses below are defined as:
-- RECEIVED: the file has been sent to Recidiviz at least once but is not kept up-to-date in any way as of yet
-- IMPORTED TO BQ: the file is kept up-to-date in its raw form in our data warehouse without any formal ingest processing
-- ON DECK: the Recidiviz team is actively planning to ingest the file in the near future but has not done so yet
-- INGESTED: the file is being actively ingested with regular data transfers from the source system
 """
 
 
@@ -68,8 +68,14 @@ class DirectIngestDocumentationGenerator:
 
         file_tags_with_raw_file_configs = [raw_file_config.file_tag for raw_file_config in raw_file_configs]
 
+        region = regions.get_region(region_code=region_code, is_direct_ingest=True)
+
+        view_collector = DirectIngestPreProcessedIngestViewCollector(region, [])
+        views_by_raw_file = self._get_referencing_views(view_collector)
+
         raw_file_table = self._generate_raw_file_table(config_paths_by_file_tag,
-                                                       file_tags_with_raw_file_configs)
+                                                       file_tags_with_raw_file_configs,
+                                                       views_by_raw_file)
 
         docs_per_file = [self._generate_docs_for_raw_config(config) for config in raw_file_configs]
 
@@ -98,15 +104,16 @@ class DirectIngestDocumentationGenerator:
 
     def _generate_raw_file_table(self,
                                  config_paths_by_file_tag: Dict[str, str],
-                                 file_tags_with_raw_file_configs: List[str]) -> str:
+                                 file_tags_with_raw_file_configs: List[str],
+                                 views_by_raw_file: Dict[str, List[str]]) -> str:
         table_matrix = [[
             (f"[{file_tag}](#{file_tag})" if file_tag in file_tags_with_raw_file_configs else f"{file_tag}"),
-            None,
+            ',<br />'.join(views_by_raw_file[file_tag]),
             self._get_last_updated(config_paths_by_file_tag[file_tag]),
             self._get_updated_by(config_paths_by_file_tag[file_tag])
         ] for file_tag in sorted(config_paths_by_file_tag)]
         writer = MarkdownTableWriter(
-            headers=["**Table**", "**Status**", "**Last Updated**", "**Updated By**"],
+            headers=["**Table**", "**Referencing Views**", "**Last Updated**", "**Updated By**"],
             value_matrix=table_matrix,
             margin=1,
         )
@@ -128,3 +135,18 @@ class DirectIngestDocumentationGenerator:
                                stdout=subprocess.PIPE)
         stdout, _stderr = res.communicate()
         return stdout.decode()
+
+    @staticmethod
+    def _get_referencing_views(view_collector: DirectIngestPreProcessedIngestViewCollector) -> Dict[str, List[str]]:
+        """Generates a dictionary mapping raw files to ingest views that reference them"""
+        views_by_raw_file = defaultdict(list)
+
+        for builder in view_collector.collect_view_builders():
+            # Arbitrary project ID - we just need to build views in order to obtain raw table dependencies
+            with local_project_id_override(GCP_PROJECT_STAGING):
+                ingest_view = builder.build()
+            dependency_configs = ingest_view.raw_table_dependency_configs
+            for config in dependency_configs:
+                views_by_raw_file[config.file_tag].append(ingest_view.file_tag)
+
+        return views_by_raw_file
