@@ -41,7 +41,7 @@ def state_specific_race_or_ethnicity_groupings(race_or_ethnicity_column: str = '
 
 def state_specific_assessment_bucket(output_column_name: str = 'assessment_score_bucket') -> str:
     return f"""-- TODO(#3135): remove this aggregation once the dashboard supports LOW_MEDIUM
-        CASE WHEN state_code = 'US_MO' AND assessment_score_bucket = 'LOW_MEDIUM' THEN 'LOW'
+        CASE WHEN state_code = 'US_MO' AND assessment_score_bucket = 'LOW_MEDIUM' THEN 'MEDIUM'
         ELSE assessment_score_bucket END AS {output_column_name}"""
 
 
