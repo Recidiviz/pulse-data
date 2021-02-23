@@ -256,4 +256,4 @@ class TestReassessmentRequirementAreMet(unittest.TestCase):
             assessment.assessment_score,
         )
 
-        self.assertEqual(days_past_reassessment, 2714)
+        self.assertEqual(days_past_reassessment, 2682)
