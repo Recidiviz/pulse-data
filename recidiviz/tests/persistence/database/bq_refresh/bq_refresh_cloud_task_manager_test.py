@@ -110,6 +110,7 @@ class TestBQRefreshCloudTaskManager(unittest.TestCase):
         uuid = 'random-uuid'
         mock_uuid.uuid4.return_value = uuid
 
+        schema = 'schema'
         topic = 'fake.topic'
         message = 'A fake message'
         queue_path = f'queue_path/{self.mock_project_id}/{QUEUES_REGION}'
@@ -117,6 +118,7 @@ class TestBQRefreshCloudTaskManager(unittest.TestCase):
         task_path = f'{queue_path}/{task_id}'
 
         body = {
+            'schema': schema,
             'topic': topic,
             'message': message,
         }
@@ -136,7 +138,7 @@ class TestBQRefreshCloudTaskManager(unittest.TestCase):
         mock_client.return_value.queue_path.return_value = queue_path
 
         # Act
-        BQRefreshCloudTaskManager(). create_bq_refresh_monitor_task(topic=topic, message=message)
+        BQRefreshCloudTaskManager().create_bq_refresh_monitor_task(schema='schema', topic=topic, message=message)
 
         # Assert
         mock_client.return_value.queue_path.assert_called_with(

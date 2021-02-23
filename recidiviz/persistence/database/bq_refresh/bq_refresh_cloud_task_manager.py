@@ -63,17 +63,17 @@ class BQRefreshCloudTaskManager:
             body=body,
         )
 
-    def create_bq_refresh_monitor_task(self, topic: str, message: str) -> None:
+    def create_bq_refresh_monitor_task(self, schema: str, topic: str, message: str) -> None:
         """Create a task to monitor the progress of an export to BQ.
 
         Args:
             topic: Pub/Sub topic where a message will be published when the BQ
                 export tasks are complete.
             message: The message that will be sent to the topic.
+            schema: Which schema the export is for
         """
-
-        body = {'topic': topic, 'message': message}
         task_topic = topic.replace('.', '-')
+        body = {'schema': schema, 'topic': topic, 'message': message}
         task_id = '{}-{}-{}'.format(
             task_topic, str(datetime.datetime.utcnow().date()), uuid.uuid4())
 
