@@ -16,6 +16,8 @@
 # =============================================================================
 """Functions for deploying calculation pipelines to templates.
 
+Invoking this script deploys calculation pipelines in parallel.
+
 Run the following command to execute from the command-line:
 
     python -m recidiviz.tools.deploy.deploy_pipeline_templates
@@ -26,12 +28,15 @@ import argparse
 import logging
 import os
 import sys
-from typing import List, Tuple
+from concurrent import futures
+from typing import List, Tuple, Any
 
 import yaml
+from progress.bar import Bar
 
 from recidiviz.calculator import pipeline
 from recidiviz.tools.run_calculation_pipelines import run_pipeline, get_pipeline_module
+from recidiviz.utils import structured_logging
 
 STAGING_ONLY_TEMPLATES_PATH = os.path.join(os.path.dirname(pipeline.__file__),
                                            'staging_only_calculation_pipeline_templates.yaml')
@@ -49,6 +54,8 @@ TEMPLATE_PATHS = {
 def deploy_pipeline_templates(template_yaml_path: str, project_id: str) -> None:
     """Deploys all pipelines listed in the file at the template_yaml_path to templates in the given project."""
     logging.info("Deploying pipeline templates at %s to %s", template_yaml_path, project_id)
+
+    templates_and_args: List[Tuple[Any, List[str]]] = []
 
     with open(template_yaml_path, 'r') as yaml_file:
         pipeline_config_yaml = yaml.full_load(yaml_file)
@@ -75,9 +82,43 @@ def deploy_pipeline_templates(template_yaml_path: str, project_id: str) -> None:
                         argv.extend([f'--{key}', f'{value}'])
 
                 pipeline_module = get_pipeline_module(pipeline_type)
-                run_pipeline(pipeline_module, argv)
+                templates_and_args.append((pipeline_module, argv))
         else:
             logging.info("Empty pipeline yaml dict at: %s", yaml_file)
+
+    if not templates_and_args:
+        logging.info("No pipeline templates to deploy")
+        return
+
+    _do_parallel_deploy(templates_and_args)
+
+
+def _do_parallel_deploy(templates_and_args: List[Tuple[Any, List[str]]]) -> None:
+    """Deploys the given pipeline templates and their execution args in parallel."""
+    progress_bar = Bar("Deploying calculation pipeline templates...", max=len(templates_and_args))
+
+    with futures.ThreadPoolExecutor() as executor:
+        future_to_templates = {
+            executor.submit(structured_logging.with_context(_deploy_template),
+                            template_with_args): template_with_args
+            for template_with_args in templates_and_args
+        }
+
+        for future in futures.as_completed(future_to_templates):
+            template_with_args = future_to_templates[future]
+            logging.info('Deployed calculation pipeline template [%s]', template_with_args)
+
+            # Absolutely bizarre that pylint calls this not callable, but it definitely is and definitely works
+            # pylint:disable=not-callable
+            progress_bar.next()
+
+    progress_bar.finish()
+
+
+def _deploy_template(template_and_args: Tuple[Any, List[str]]) -> None:
+    """Deploys a single pipeline template and its execution args."""
+    pipeline_module, argv = template_and_args
+    run_pipeline(pipeline_module, argv)
 
 
 def parse_arguments(argv: List[str]) -> Tuple[argparse.Namespace, List[str]]:
