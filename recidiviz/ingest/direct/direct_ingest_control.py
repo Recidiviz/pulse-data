@@ -370,6 +370,26 @@ def scheduler() -> Tuple[str, HTTPStatus]:
     return '', HTTPStatus.OK
 
 
+def kick_all_schedulers() -> None:
+    """Kicks all ingest schedulers to restart ingest"""
+    supported_regions = get_supported_direct_ingest_region_codes()
+    for region_code in supported_regions:
+        with monitoring.push_region_tag(region_code):
+            try:
+                controller = controller_for_region_code(region_code, allow_unlaunched=False)
+            except DirectIngestError as e:
+                raise e
+            if not isinstance(controller, BaseDirectIngestController):
+                raise DirectIngestError(
+                    msg=f"Unexpected controller type [{type(controller)}].",
+                    error_type=DirectIngestErrorType.INPUT_ERROR)
+
+            if not isinstance(controller, GcsfsDirectIngestController):
+                continue
+
+            controller.kick_scheduler(just_finished_job=False)
+
+
 def controller_for_region_code(
         region_code: str,
         allow_unlaunched: bool = False) -> BaseDirectIngestController:
