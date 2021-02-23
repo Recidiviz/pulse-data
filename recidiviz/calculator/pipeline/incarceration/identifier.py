@@ -425,7 +425,6 @@ def release_event_for_period(
     """Returns an IncarcerationReleaseEvent if this incarceration period represents an release from incarceration."""
     release_date = incarceration_period.release_date
     release_reason = incarceration_period.release_reason
-    admission_reason = incarceration_period.admission_reason
     purpose_for_incarceration = incarceration_period.specialized_purpose_for_incarceration
 
     supervision_type_at_admission = get_pre_incarceration_supervision_type(

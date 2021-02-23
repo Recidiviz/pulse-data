@@ -221,8 +221,19 @@ class DateRangeDiff:
             )
         return parts
 
+
 class DurationMixin(metaclass=ABCMeta):
     """Mixin to use if the given object has a duration"""
+
+    @property
+    @abstractmethod
+    def start_date_inclusive(self) -> Optional[datetime.date]:
+        """The object's duration start date, if set."""
+
+    @property
+    @abstractmethod
+    def end_date_exclusive(self) -> Optional[datetime.date]:
+        """The object's duration end date, if set."""
 
     @property
     @abstractmethod

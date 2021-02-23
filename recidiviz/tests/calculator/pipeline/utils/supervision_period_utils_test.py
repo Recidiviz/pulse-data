@@ -21,12 +21,14 @@ import unittest
 from datetime import date
 
 from dateutil.relativedelta import relativedelta
+from freezegun import freeze_time
 
 from recidiviz.common.constants.state.shared_enums import StateCustodialAuthority
 from recidiviz.calculator.pipeline.utils.supervision_period_utils import \
     find_last_supervision_period_terminated_before_date, SUPERVISION_PERIOD_PROXIMITY_MONTH_LIMIT, \
     prepare_supervision_periods_for_calculations
-from recidiviz.common.constants.state.state_supervision_period import StateSupervisionPeriodSupervisionType
+from recidiviz.common.constants.state.state_supervision_period import StateSupervisionPeriodSupervisionType, \
+    StateSupervisionPeriodTerminationReason, StateSupervisionPeriodStatus, StateSupervisionPeriodAdmissionReason
 from recidiviz.persistence.entity.state.entities import StateSupervisionPeriod
 
 
@@ -219,6 +221,43 @@ class TestPrepareSupervisionPeriodsForCalculations(unittest.TestCase):
             [supervision_period], drop_federal_and_other_country_supervision_periods=False)
 
         self.assertEqual([supervision_period], updated_periods)
+
+    @freeze_time('2000-01-01')
+    def test_prepare_supervision_periods_for_calculations_drop_future_dates(self):
+        supervision_period = StateSupervisionPeriod.new_with_defaults(
+            state_code='US_ND',
+            start_date=date(2006, 1, 1),
+            termination_date=date(2007, 12, 31)
+        )
+
+        updated_periods = prepare_supervision_periods_for_calculations(
+            [supervision_period], drop_federal_and_other_country_supervision_periods=False)
+
+        self.assertEqual([], updated_periods)
+
+    @freeze_time('2000-01-01')
+    def test_prepare_supervision_periods_for_calculations_unset_future_release_dates(self):
+        supervision_period = StateSupervisionPeriod.new_with_defaults(
+            status=StateSupervisionPeriodStatus.UNDER_SUPERVISION,
+            state_code='US_ND',
+            start_date=date(1990, 1, 1),
+            termination_date=date(2007, 12, 31),
+            termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE
+        )
+
+        updated_periods = prepare_supervision_periods_for_calculations(
+            [supervision_period], drop_federal_and_other_country_supervision_periods=False)
+
+        updated_period = StateSupervisionPeriod.new_with_defaults(
+            status=StateSupervisionPeriodStatus.UNDER_SUPERVISION,
+            state_code='US_ND',
+            start_date=date(1990, 1, 1),
+            admission_reason=StateSupervisionPeriodAdmissionReason.INTERNAL_UNKNOWN,
+            termination_date=None,
+            termination_reason=None
+        )
+
+        self.assertEqual([updated_period], updated_periods)
 
     def test_prepare_supervision_periods_for_calculations_placeholder(self):
         supervision_period = StateSupervisionPeriod.new_with_defaults(
