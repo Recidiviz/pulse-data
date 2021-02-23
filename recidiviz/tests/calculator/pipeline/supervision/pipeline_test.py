@@ -62,7 +62,8 @@ from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.state.state_supervision import \
     StateSupervisionType
 from recidiviz.common.constants.state.state_supervision_period import \
-    StateSupervisionPeriodTerminationReason, StateSupervisionPeriodSupervisionType, StateSupervisionLevel
+    StateSupervisionPeriodTerminationReason, StateSupervisionPeriodSupervisionType, StateSupervisionLevel, \
+    StateSupervisionPeriodStatus, StateSupervisionPeriodAdmissionReason
 from recidiviz.common.constants.state.state_supervision_violation import \
     StateSupervisionViolationType as ViolationType, \
     StateSupervisionViolationType
@@ -212,9 +213,10 @@ class TestSupervisionPipeline(unittest.TestCase):
             supervision_period_id=fake_supervision_period_id,
             state_code='US_XX',
             county_code='124',
+            admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             start_date=date(2015, 3, 14),
-            termination_date=date(2016, 12, 29),
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
+            termination_date=date(2016, 12, 29),
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.MINIMUM,
             person_id=fake_person_id
@@ -501,6 +503,7 @@ class TestSupervisionPipeline(unittest.TestCase):
             supervision_period_id=1111,
             state_code='US_XX',
             county_code='124',
+            admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             start_date=date(2015, 3, 14),
             termination_date=date(2017, 1, 4),
             termination_reason=StateSupervisionPeriodTerminationReason.REVOCATION,
@@ -717,6 +720,7 @@ class TestSupervisionPipeline(unittest.TestCase):
             supervision_period_id=5876524,
             state_code='US_XX',
             county_code='US_XX_RAMSEY',
+            admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             start_date=date(2014, 10, 31),
             termination_date=date(2015, 4, 21),
             termination_reason=StateSupervisionPeriodTerminationReason.REVOCATION,
@@ -780,6 +784,7 @@ class TestSupervisionPipeline(unittest.TestCase):
             supervision_period_id=5887825,
             state_code='US_XX',
             county_code='US_XX_COUNTY',
+            admission_reason=StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE,
             start_date=date(2016, 11, 22),
             termination_date=date(2017, 2, 6),
             termination_reason=StateSupervisionPeriodTerminationReason.REVOCATION,
@@ -1034,6 +1039,7 @@ class TestSupervisionPipeline(unittest.TestCase):
             supervision_period_id=1111,
             state_code='US_XX',
             county_code='124',
+            admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             start_date=date(2015, 3, 14),
             termination_date=date(2017, 1, 4),
             termination_reason=StateSupervisionPeriodTerminationReason.REVOCATION,
@@ -1278,6 +1284,7 @@ class TestSupervisionPipeline(unittest.TestCase):
             state_code='US_XX',
             external_id='sp1',
             county_code='124',
+            admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             start_date=date(2016, 3, 14),
             termination_date=date(2016, 12, 29),
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
@@ -1531,8 +1538,10 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
 
         supervision_period = entities.StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=1111,
+            status=StateSupervisionPeriodStatus.TERMINATED,
             state_code='US_XX',
             county_code='124',
+            admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             start_date=date(2015, 3, 14),
             termination_date=date(2015, 5, 29),
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
@@ -1679,9 +1688,12 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
 
         supervision_period = entities.StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=1111,
+            status=StateSupervisionPeriodStatus.TERMINATED,
             state_code='US_XX',
             county_code='124',
+            admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             start_date=date(2015, 3, 14),
+            termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             termination_date=date(2015, 5, 29),
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.HIGH,
@@ -1855,7 +1867,9 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             supervision_period_id=1111,
             state_code='US_MO',
             county_code='124',
+            admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             start_date=date(2015, 3, 14),
+            termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             termination_date=date(2015, 5, 29),
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.HIGH,
@@ -2052,9 +2066,12 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
 
         supervision_period = entities.StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=1111,
+            status=StateSupervisionPeriodStatus.TERMINATED,
             state_code='US_XX',
             county_code='124',
+            admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             start_date=date(2015, 3, 14),
+            termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             termination_date=date(2015, 5, 29),
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.INTERNAL_UNKNOWN,
@@ -2157,9 +2174,12 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
 
         supervision_period = entities.StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=1111,
+            status=StateSupervisionPeriodStatus.TERMINATED,
             state_code='US_XX',
             county_code='124',
+            admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             start_date=date(2015, 3, 14),
+            termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             termination_date=date(2015, 5, 29),
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.INTERNAL_UNKNOWN,

@@ -719,6 +719,14 @@ class StateIncarcerationPeriod(ExternalIdEntity, BuildableAttr, DefaultableAttr,
 
         return DateRange.from_maybe_open_range(start_date=self.admission_date, end_date=self.release_date)
 
+    @property
+    def start_date_inclusive(self) -> Optional[datetime.date]:
+        return self.admission_date
+
+    @property
+    def end_date_exclusive(self) -> Optional[datetime.date]:
+        return self.release_date
+
 
 @attr.s(eq=False)
 class StateSupervisionPeriod(ExternalIdEntity, BuildableAttr, DefaultableAttr, DurationMixin):
@@ -795,6 +803,14 @@ class StateSupervisionPeriod(ExternalIdEntity, BuildableAttr, DefaultableAttr, D
             raise ValueError(f'Expected start date for period {self.supervision_period_id}, found None')
 
         return DateRange.from_maybe_open_range(start_date=self.start_date, end_date=self.termination_date)
+
+    @property
+    def start_date_inclusive(self) -> Optional[datetime.date]:
+        return self.start_date
+
+    @property
+    def end_date_exclusive(self) -> Optional[datetime.date]:
+        return self.termination_date
 
 
 @attr.s(eq=False)

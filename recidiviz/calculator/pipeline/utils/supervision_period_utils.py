@@ -21,7 +21,11 @@ from typing import List, Optional
 
 from dateutil.relativedelta import relativedelta
 
+from recidiviz.calculator.pipeline.utils.period_utils import sort_periods_by_set_dates_and_statuses
 from recidiviz.common.constants.state.shared_enums import StateCustodialAuthority
+from recidiviz.common.constants.state.state_supervision_period import StateSupervisionPeriodStatus, \
+    StateSupervisionPeriodAdmissionReason as AdmissionReason, \
+    StateSupervisionPeriodTerminationReason as TerminationReason
 from recidiviz.persistence.entity.entity_utils import is_placeholder
 from recidiviz.persistence.entity.state.entities import StateSupervisionPeriod
 
@@ -38,6 +42,8 @@ def prepare_supervision_periods_for_calculations(supervision_periods: List[State
     if drop_federal_and_other_country_supervision_periods:
         supervision_periods = _drop_other_country_and_federal_supervision_periods(supervision_periods)
 
+    supervision_periods = _infer_missing_dates_and_statuses(supervision_periods)
+
     return supervision_periods
 
 
@@ -50,18 +56,64 @@ def _drop_placeholder_periods(supervision_periods: List[StateSupervisionPeriod])
     ]
 
 
-def _set_unset_start_dates(supervision_periods: List[StateSupervisionPeriod]) -> \
-        List[StateSupervisionPeriod]:
-    """Sets start_dates on periods where start_date is unset."""
+def _is_active_period(period: StateSupervisionPeriod) -> bool:
+    return period.status == StateSupervisionPeriodStatus.UNDER_SUPERVISION
+
+
+def _infer_missing_dates_and_statuses(
+        supervision_periods: List[StateSupervisionPeriod]) -> List[StateSupervisionPeriod]:
+    """First, sorts the supervision_periods in chronological order of the start and termination dates. Then, for any
+    periods missing dates and statuses, infers this information given the other supervision periods.
+    """
+    sort_periods_by_set_dates_and_statuses(supervision_periods, _is_active_period)
+
     updated_periods: List[StateSupervisionPeriod] = []
 
-    for supervision_period in supervision_periods:
-        if not supervision_period.start_date:
-            if not supervision_period.termination_date:
-                # Drop periods without start or termination dates
+    for sp in supervision_periods:
+        if sp.termination_date is None:
+            if sp.status != StateSupervisionPeriodStatus.UNDER_SUPERVISION:
+                # If the person is not under supervision on this period, set the termination date to the start date.
+                sp.termination_date = sp.start_date
+                sp.termination_reason = TerminationReason.INTERNAL_UNKNOWN
+            elif sp.termination_reason or sp.termination_reason_raw_text:
+                # There is no termination date on this period, but the set termination_reason indicates that the person
+                # is no longer in custody. Set the termination date to the start date.
+                sp.termination_date = sp.start_date
+                sp.status = StateSupervisionPeriodStatus.TERMINATED
+
+                logging.warning("No termination_date for supervision period (%d) with nonnull termination_reason (%s) "
+                                "or termination_reason_raw_text (%s)",
+                                sp.supervision_period_id,
+                                sp.termination_reason,
+                                sp.termination_reason_raw_text)
+
+        elif sp.termination_date > date.today():
+            # This is an erroneous termination_date in the future. For the purpose of calculations, clear the
+            # termination_date and the termination_reason.
+            sp.termination_date = None
+            sp.termination_reason = None
+            sp.status = StateSupervisionPeriodStatus.UNDER_SUPERVISION
+
+        if sp.start_date is None:
+            logging.info("Dropping supervision period without start_date: [%s]", sp)
+            continue
+        if sp.start_date > date.today():
+            logging.info("Dropping supervision period with start_date in the future: [%s]", sp)
+            continue
+
+        if sp.admission_reason is None:
+            # We have no idea what this admission reason was. Set as INTERNAL_UNKNOWN.
+            sp.admission_reason = AdmissionReason.INTERNAL_UNKNOWN
+        if sp.termination_date is not None and sp.termination_reason is None:
+            # We have no idea what this termination reason was. Set as INTERNAL_UNKNOWN.
+            sp.termination_reason = TerminationReason.INTERNAL_UNKNOWN
+
+        if sp.start_date and sp.termination_date:
+            if sp.termination_date < sp.start_date:
+                logging.info("Dropping supervision period with termination before admission: [%s]", sp)
                 continue
-            supervision_period.start_date = supervision_period.termination_date
-        updated_periods.append(supervision_period)
+
+        updated_periods.append(sp)
 
     return updated_periods
 
