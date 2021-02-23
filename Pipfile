@@ -12,7 +12,8 @@ pylint = "*"
 pytest-cov = "*"
 mypy = "*"
 coveralls = "*"
-apache-beam = {extras = ["gcp", "test"],version = "*"}
+# This should always be pinned to the latest version officially supported by Dataflow: https://cloud.google.com/dataflow/docs/support/sdk-version-support-status#python
+apache-beam = {extras = ["gcp", "test"],version = "<=2.27.0"}
 freezegun = "*"
 ipdb = "*"
 nose = "*"
