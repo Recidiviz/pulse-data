@@ -24,16 +24,18 @@ from dateutil.relativedelta import relativedelta
 from recidiviz.calculator.pipeline.utils.supervision_case_compliance_manager import \
     StateSupervisionCaseComplianceManager
 
-NUMBER_OF_DAYS_LSIR_INITIAL_NUMBER_OF_DAYS_COMPLIANCE: int = 180
+# Please refer to http://go/nd-risk-assessment-policy for context on these values.
+# These values were last verified on 02/23/2021.
+LSIR_INITIAL_NUMBER_OF_DAYS_COMPLIANCE: int = 30
+REASSESSMENT_DEADLINE_DAYS: int = 212
 
 
 class UsNdSupervisionCaseCompliance(StateSupervisionCaseComplianceManager):
     """US_ND specific calculations for supervision case compliance."""
 
     def _get_initial_assessment_number_of_days(self) -> int:
-        """Returns the number of days that an initial assessment should take place, given a `case_type` and
-        `supervision_type`."""
-        return NUMBER_OF_DAYS_LSIR_INITIAL_NUMBER_OF_DAYS_COMPLIANCE
+        """Returns the number of days that an initial assessment should take place."""
+        return LSIR_INITIAL_NUMBER_OF_DAYS_COMPLIANCE
 
     def _guidelines_applicable_for_case(self) -> bool:
         """Returns whether the standard state guidelines are applicable for the given supervision case."""
@@ -61,9 +63,9 @@ class UsNdSupervisionCaseCompliance(StateSupervisionCaseComplianceManager):
         Returns 0 if it is not overdue"""
 
         # Their assessment is up to date if the compliance_evaluation_date is within
-        # NUMBER_OF_DAYS_LSIR_INITIAL_NUMBER_OF_DAYS_COMPLIANCE number of days since the last assessment date.
+        # REASSESSMENT_DEADLINE_DAYS number of days since the last assessment date.
         reassessment_deadline = \
-            most_recent_assessment_date + relativedelta(days=NUMBER_OF_DAYS_LSIR_INITIAL_NUMBER_OF_DAYS_COMPLIANCE)
+            most_recent_assessment_date + relativedelta(days=REASSESSMENT_DEADLINE_DAYS)
         logging.debug(
             "Last assessment was taken on %s. Re-assessment due by %s, and the compliance evaluation date is %s",
             most_recent_assessment_date, reassessment_deadline, compliance_evaluation_date)
