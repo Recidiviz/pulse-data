@@ -23,15 +23,23 @@ Run this export locally with the following command:
         --schema_type [STATE, JAILS, OPERATIONS]
 
 """
-from http import HTTPStatus
+
+import uuid
 import json
 import logging
+
+from datetime import datetime
+from http import HTTPStatus
+
 from typing import Tuple
 
 import flask
 from flask import request
 
 from recidiviz.big_query.big_query_client import BigQueryClientImpl, BigQueryClient
+from recidiviz.cloud_storage.gcs_pseudo_lock_manager import GCSPseudoLockManager, \
+    GCS_TO_POSTGRES_INGEST_RUNNING_LOCK_NAME, POSTGRES_TO_BQ_EXPORT_RUNNING_LOCK_NAME, GCSPseudoLockAlreadyExists
+from recidiviz.ingest.direct.direct_ingest_control import kick_all_schedulers
 from recidiviz.persistence.database.bq_refresh import bq_refresh, cloud_sql_to_gcs_export
 from recidiviz.persistence.database.bq_refresh.cloud_sql_to_bq_refresh_config import CloudSqlToBQConfig
 
@@ -114,29 +122,96 @@ def monitor_refresh_bq_tasks() -> Tuple[str, int]:
     """
     json_data = request.get_data(as_text=True)
     data = json.loads(json_data)
+    schema = data['schema']
     topic = data['topic']
     message = data['message']
 
     task_manager = BQRefreshCloudTaskManager()
 
-    bq_tasks_in_queue = task_manager.get_bq_queue_info().size() > 0
+    # If any of the tasks in the queue have task_name containing schema, consider BQ tasks in queue
+    bq_tasks_in_queue = False
+    bq_task_list = task_manager.get_bq_queue_info().task_names
+    for task_name in bq_task_list:
+        task_id = task_name[task_name.find('/tasks/'):]
+        if schema in task_id:
+            bq_tasks_in_queue = True
 
     # If there are BQ tasks in the queue, then re-queue this task in a minute
     if bq_tasks_in_queue:
         logging.info("Tasks still in bigquery queue. Re-queuing bq monitor"
                      " task.")
-        task_manager.create_bq_refresh_monitor_task(topic, message)
-        return ('', HTTPStatus.OK)
+        task_manager.create_bq_refresh_monitor_task(schema, topic, message)
+        return '', HTTPStatus.OK
 
-    # Publish a message to the Pub/Sub topic once all BQ exports are complete
-    pubsub_helper.publish_message_to_topic(message=message, topic=topic)
+    # Publish a message to the Pub/Sub topic once state BQ export is complete
+    if topic:
+        pubsub_helper.publish_message_to_topic(message=message, topic=topic)
+
+    # Unlock export lock when all BQ exports complete
+    lock_manager = GCSPseudoLockManager()
+    lock_manager.unlock(postgres_to_bq_lock_name_for_schema(schema))
+    logging.info('Done running export for %s, unlocking Postgres to BigQuery export', schema)
+
+    # Kick scheduler to restart ingest
+    kick_all_schedulers()
 
     return ('', HTTPStatus.OK)
 
 
 @cloud_sql_to_bq_blueprint.route('/create_refresh_bq_tasks/<schema_arg>')
 @requires_gae_auth
-def create_all_bq_refresh_tasks_for_schema(schema_arg: str) -> Tuple[str, HTTPStatus]:
+def wait_for_ingest_to_create_tasks(schema_arg: str) -> Tuple[str, HTTPStatus]:
+    """Worker function to wait until ingest is not running to create_all_bq_refresh_tasks_for_schema.
+    When ingest is not running/locked, creates task to create_all_bq_refresh_tasks_for_schema.
+    When ingest is running/locked, re-enqueues this task to run again in 60 seconds.
+    """
+    task_manager = BQRefreshCloudTaskManager()
+    lock_manager = GCSPseudoLockManager()
+    json_data_text = request.get_data(as_text=True)
+    try:
+        json_data = json.loads(json_data_text)
+    except (TypeError, json.decoder.JSONDecodeError):
+        json_data = {}
+    if 'lock_id' not in json_data:
+        lock_id = str(uuid.uuid4())
+    else:
+        lock_id = json_data['lock_id']
+
+    if not lock_manager.is_locked(postgres_to_bq_lock_name_for_schema(schema_arg)):
+        time = datetime.now().strftime("%m/%d/%Y, %H:%M:%S")
+        contents_as_json = {"time": time, "lock_id": lock_id}
+        contents = json.dumps(contents_as_json)
+        lock_manager.lock(postgres_to_bq_lock_name_for_schema(schema_arg), contents)
+    else:
+        contents = lock_manager.get_lock_contents(postgres_to_bq_lock_name_for_schema(schema_arg))
+        try:
+            contents_json = json.loads(contents)
+        except (TypeError, json.decoder.JSONDecodeError):
+            contents_json = {}
+        if 'lock_id' not in contents_json or lock_id is not contents_json['lock_id']:
+            raise GCSPseudoLockAlreadyExists(f"Pseudo export lock already exists with UUID {lock_id}")
+
+    no_regions_running = lock_manager.no_active_locks_with_prefix(GCS_TO_POSTGRES_INGEST_RUNNING_LOCK_NAME)
+    if not no_regions_running:
+        logging.info('Regions running, renqueuing this task.')
+        task_id = '{}-{}-{}'.format(
+            'renqueue_wait_task',
+            str(datetime.utcnow().date()),
+            uuid.uuid4())
+        body = {'schema_type': schema_arg, 'lock_id': lock_id}
+        task_manager.job_monitor_cloud_task_queue_manager.create_task(
+            task_id=task_id,
+            body=body,
+            relative_uri=f'/cloud_sql_to_bq/create_refresh_bq_tasks/{schema_arg}',
+            schedule_delay_seconds=60
+        )
+        return '', HTTPStatus.OK
+    logging.info('No regions running, calling create_refresh_bq_tasks')
+    create_all_bq_refresh_tasks_for_schema(schema_arg)
+    return '', HTTPStatus.OK
+
+
+def create_all_bq_refresh_tasks_for_schema(schema_arg: str) -> None:
     """Creates an export task for each table to be exported.
 
     A task is created for each table defined in the schema.
@@ -146,7 +221,7 @@ def create_all_bq_refresh_tasks_for_schema(schema_arg: str) -> Tuple[str, HTTPSt
     try:
         schema_type = SchemaType(schema_arg.upper())
     except ValueError:
-        return f"Unknown schema type [{schema_arg}]", HTTPStatus.BAD_REQUEST
+        return
 
     logging.info("Beginning BQ export for %s schema tables.", schema_type.value)
 
@@ -155,7 +230,7 @@ def create_all_bq_refresh_tasks_for_schema(schema_arg: str) -> Tuple[str, HTTPSt
     cloud_sql_to_bq_config = CloudSqlToBQConfig.for_schema_type(schema_type)
     if cloud_sql_to_bq_config is None:
         logging.info("Cloud SQL to BQ is disabled for: %s", schema_type)
-        return ('', HTTPStatus.OK)
+        return
 
     for table in cloud_sql_to_bq_config.get_tables_to_export():
         task_manager.create_refresh_bq_table_task(table.name, schema_type)
@@ -163,6 +238,12 @@ def create_all_bq_refresh_tasks_for_schema(schema_arg: str) -> Tuple[str, HTTPSt
     if schema_type is SchemaType.STATE:
         pub_sub_topic = 'v1.calculator.trigger_daily_pipelines'
         pub_sub_message = 'State export to BQ complete'
-        task_manager.create_bq_refresh_monitor_task(pub_sub_topic, pub_sub_message)
+    else:
+        pub_sub_topic = ''
+        pub_sub_message = ''
 
-    return '', HTTPStatus.OK
+    task_manager.create_bq_refresh_monitor_task(schema_type.value, pub_sub_topic, pub_sub_message)
+
+
+def postgres_to_bq_lock_name_for_schema(schema: str) -> str:
+    return POSTGRES_TO_BQ_EXPORT_RUNNING_LOCK_NAME + schema.upper()
