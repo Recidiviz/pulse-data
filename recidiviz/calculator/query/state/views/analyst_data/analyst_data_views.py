@@ -31,6 +31,8 @@ from recidiviz.calculator.query.state.views.analyst_data.compartment_session_end
 from recidiviz.calculator.query.state.views.analyst_data.compartment_sub_sessions \
     import COMPARTMENT_SUB_SESSIONS_VIEW_BUILDER
 from recidiviz.calculator.query.state.views.analyst_data.compartment_sessions import COMPARTMENT_SESSIONS_VIEW_BUILDER
+from recidiviz.calculator.query.state.views.analyst_data.compartment_sub_sessions_unnested \
+    import COMPARTMENT_SUB_SESSIONS_UNNESTED_VIEW_BUILDER
 from recidiviz.calculator.query.state.views.analyst_data.compartment_sentences import COMPARTMENT_SENTENCES_VIEW_BUILDER
 from recidiviz.calculator.query.state.views.analyst_data.us_id.us_id_ppo_metrics_early_discharges \
     import US_ID_PPO_METRICS_EARLY_DISCHARGES_VIEW_BUILDER
@@ -58,6 +60,7 @@ ANALYST_DATA_VIEW_BUILDERS: List[SimpleBigQueryViewBuilder] = [
     COMPARTMENT_SESSION_END_REASONS_VIEW_BUILDER,
     COMPARTMENT_SUB_SESSIONS_VIEW_BUILDER,
     COMPARTMENT_SESSIONS_VIEW_BUILDER,
+    COMPARTMENT_SUB_SESSIONS_UNNESTED_VIEW_BUILDER,
     COMPARTMENT_SENTENCES_VIEW_BUILDER,
     US_ID_PPO_METRICS_EARLY_DISCHARGES_VIEW_BUILDER,
     US_ID_PPO_METRICS_SUCCESSFUL_SUPERVISION_TERMINATIONS_VIEW_BUILDER,
