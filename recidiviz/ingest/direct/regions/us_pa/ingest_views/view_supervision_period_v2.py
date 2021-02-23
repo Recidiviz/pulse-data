@@ -392,7 +392,7 @@ VIEW_BUILDER = DirectIngestPreProcessedIngestViewBuilder(
     region='us_pa',
     ingest_view_name='supervision_period_v2',
     view_query_template=VIEW_QUERY_TEMPLATE,
-    order_by_cols='parole_number ASC, sequence_number ASC'
+    order_by_cols='parole_number ASC, period_sequence_number ASC'
 )
 
 if __name__ == '__main__':
