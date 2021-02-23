@@ -24,6 +24,7 @@ from itertools import permutations
 
 import attr
 import pytest
+from freezegun import freeze_time
 
 from recidiviz.calculator.pipeline.utils.incarceration_period_utils import \
     drop_placeholder_periods, \
@@ -2060,6 +2061,57 @@ class TestInferMissingDatesAndStatuses(unittest.TestCase):
 
         self.assertEqual([], updated_incarceration_periods)
 
+    @freeze_time('2000-01-01')
+    def test_infer_missing_dates_and_statuses_invalid_admission_date_in_future(self):
+        # We drop any periods with an admission_date in the future
+        invalid_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=1110,
+            status=StateIncarcerationPeriodStatus.IN_CUSTODY,
+            external_id='5',
+            state_code='US_ND',
+            admission_date=date(2015, 11, 20),
+            admission_reason=AdmissionReason.NEW_ADMISSION,
+            release_date=date(2015, 1, 1),
+            release_reason=ReleaseReason.TRANSFER
+        )
+
+        incarceration_periods = [invalid_period]
+
+        updated_incarceration_periods = _infer_missing_dates_and_statuses(incarceration_periods)
+
+        self.assertEqual([], updated_incarceration_periods)
+
+    @freeze_time('2000-01-01')
+    def test_infer_missing_dates_and_statuses_invalid_release_date_in_future(self):
+        # We clear the release information for release_dates in the future
+        invalid_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=1110,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            external_id='5',
+            state_code='US_ND',
+            admission_date=date(1990, 11, 20),
+            admission_reason=AdmissionReason.NEW_ADMISSION,
+            release_date=date(2015, 1, 1),
+            release_reason=ReleaseReason.TRANSFER
+        )
+
+        incarceration_periods = [invalid_period]
+
+        updated_incarceration_periods = _infer_missing_dates_and_statuses(incarceration_periods)
+
+        updated_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=1110,
+            status=StateIncarcerationPeriodStatus.IN_CUSTODY,
+            external_id='5',
+            state_code='US_ND',
+            admission_date=date(1990, 11, 20),
+            admission_reason=AdmissionReason.NEW_ADMISSION,
+            release_date=None,
+            release_reason=None
+        )
+
+        self.assertEqual([updated_period], updated_incarceration_periods)
+
     def test_infer_missing_dates_and_statuses_open_with_release_reason(self):
         valid_open_period = StateIncarcerationPeriod.new_with_defaults(
             incarceration_period_id=1110,
@@ -2659,7 +2711,8 @@ class TestInferMissingDatesAndStatuses(unittest.TestCase):
             status=StateIncarcerationPeriodStatus.IN_CUSTODY,
             state_code='US_ND',
             admission_date=date(2004, 1, 3),
-            admission_reason=AdmissionReason.NEW_ADMISSION)
+            admission_reason=AdmissionReason.NEW_ADMISSION
+        )
 
         second_incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             external_id='2',

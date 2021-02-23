@@ -63,7 +63,8 @@ from recidiviz.common.constants.state.state_case_type import \
 from recidiviz.calculator.pipeline.utils.incarceration_period_utils import \
     prepare_incarceration_periods_for_calculations
 from recidiviz.common.constants.state.state_supervision_period import \
-    StateSupervisionPeriodTerminationReason, StateSupervisionPeriodSupervisionType, StateSupervisionLevel
+    StateSupervisionPeriodTerminationReason, StateSupervisionPeriodSupervisionType, StateSupervisionLevel, \
+    StateSupervisionPeriodStatus
 from recidiviz.common.constants.state.state_supervision_violation import \
     StateSupervisionViolationType
 from recidiviz.common.constants.state.state_supervision_violation_response \
@@ -286,7 +287,14 @@ def find_time_buckets_for_supervision_period(
     termination_date = supervision_period.termination_date
 
     if start_date is None:
-        return supervision_day_buckets
+        raise ValueError("Unexpected missing start_date. Inconsistent periods should have been fixed or dropped at "
+                         "this point.")
+
+    if termination_date is None:
+        if supervision_period.status != StateSupervisionPeriodStatus.UNDER_SUPERVISION:
+            # This should not happen after validation.
+            raise ValueError("Unexpected missing termination_date. Inconsistent periods should have been fixed or "
+                             "dropped at this point.")
 
     event_date = start_date
 

@@ -422,6 +422,7 @@ class TestClassifyProgramAssignments(unittest.TestCase):
                 status=StateSupervisionPeriodStatus.TERMINATED,
                 state_code='US_XX',
                 start_date=date(2008, 3, 5),
+                termination_date=date(2010, 2, 19),
                 supervision_type=StateSupervisionType.PAROLE,
                 supervision_site='10'
             )
@@ -510,6 +511,7 @@ class TestClassifyProgramAssignments(unittest.TestCase):
                 status=StateSupervisionPeriodStatus.TERMINATED,
                 state_code='US_ND',
                 start_date=date(2008, 3, 5),
+                termination_date=date(2010, 3, 1),
                 supervision_type=StateSupervisionType.PAROLE,
                 supervision_site='10'
             )

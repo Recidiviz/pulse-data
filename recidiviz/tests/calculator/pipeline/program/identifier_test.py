@@ -85,6 +85,7 @@ class TestFindProgramEvents(unittest.TestCase):
             status=StateSupervisionPeriodStatus.TERMINATED,
             state_code='US_XX',
             start_date=date(2019, 3, 5),
+            termination_date=date(2020, 10, 1),
             supervision_type=StateSupervisionType.PAROLE,
             supervision_site='OFFICE_1'
         )

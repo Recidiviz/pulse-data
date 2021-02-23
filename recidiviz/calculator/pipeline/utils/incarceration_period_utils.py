@@ -21,9 +21,9 @@ import logging
 from copy import deepcopy
 from datetime import date
 
-from functools import cmp_to_key
 from typing import List
 
+from recidiviz.calculator.pipeline.utils.period_utils import sort_periods_by_set_dates_and_statuses
 from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_manager import \
     temporary_custody_periods_under_state_authority, non_prison_periods_under_state_authority
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
@@ -263,110 +263,8 @@ def _filter_and_update_incarceration_periods_for_calculations(
     return filtered_incarceration_periods
 
 
-def _sort_ips_by_set_dates_and_statuses(incarceration_periods: List[StateIncarcerationPeriod]) -> None:
-    """Sorts incarceration periods chronologically by the admission and release dates according to this logic:
-        - Sorts by admission_date, if set, else by release_date
-        - For periods with the same admission_date:
-            - If neither have a release_date, sorts by custody status
-            - Else, sorts by release_date, with unset release_dates before set release_dates
-    """
-    def _sort_by_external_id(ip_a: StateIncarcerationPeriod, ip_b: StateIncarcerationPeriod) -> int:
-        if ip_a.external_id is None or ip_b.external_id is None:
-            raise ValueError("Expect no placeholder periods in this function.")
-
-        # Alphabetic sort by external_id
-        return -1 if ip_a.external_id < ip_b.external_id else 1
-
-    def _sort_by_nonnull_release_dates(ip_a: StateIncarcerationPeriod, ip_b: StateIncarcerationPeriod) -> int:
-        if not ip_a.release_date or not ip_b.release_date:
-            raise ValueError('Expected nonnull release dates')
-        if ip_a.release_date != ip_b.release_date:
-            return (ip_a.release_date - ip_b.release_date).days
-        # They have the same admission and release dates. Sort by external_id.
-        return _sort_by_external_id(ip_a, ip_b)
-
-    def _sort_by_custody_status(ip_a: StateIncarcerationPeriod, ip_b: StateIncarcerationPeriod) -> int:
-        normalized_status_a = (StateIncarcerationPeriodStatus.IN_CUSTODY
-                               if ip_a.status == StateIncarcerationPeriodStatus.IN_CUSTODY
-                               else StateIncarcerationPeriodStatus.NOT_IN_CUSTODY)
-        normalized_status_b = (StateIncarcerationPeriodStatus.IN_CUSTODY
-                               if ip_b.status == StateIncarcerationPeriodStatus.IN_CUSTODY
-                               else StateIncarcerationPeriodStatus.NOT_IN_CUSTODY)
-        if normalized_status_a == normalized_status_b:
-            return _sort_by_external_id(ip_a, ip_b)
-        # Sort by custody status. Order IN_CUSTODY after all other statuses.
-        if normalized_status_a == StateIncarcerationPeriodStatus.IN_CUSTODY:
-            return 1
-        if normalized_status_b == StateIncarcerationPeriodStatus.IN_CUSTODY:
-            return -1
-        raise ValueError('One status should have IN_CUSTODY at this point')
-
-    def _sort_equal_admission_date(ip_a: StateIncarcerationPeriod, ip_b: StateIncarcerationPeriod) -> int:
-        if ip_a.admission_date != ip_b.admission_date:
-            raise ValueError('Expected equal admission dates')
-        if ip_a.release_date and ip_b.release_date:
-            return _sort_by_nonnull_release_dates(ip_a, ip_b)
-        if ip_a.admission_date is None or ip_b.admission_date is None:
-            raise ValueError(
-                'Admission reasons expected to be equal and nonnull at this point otherwise we would have a'
-                'period that has a null release and null admission reason.')
-        if ip_a.release_date is None and ip_b.release_date is None:
-            return _sort_by_custody_status(ip_a, ip_b)
-        # Sort by release dates, with unset release dates coming first if the following period is greater than 0 days
-        # long (we assume in this case that we forgot to close this open period).
-        if ip_a.release_date:
-            return 1 if (ip_a.release_date - ip_a.admission_date).days else -1
-        if ip_b.release_date:
-            return -1 if (ip_b.release_date - ip_b.admission_date).days else 1
-        raise ValueError("At least one of the periods is expected to have a release_date at this point.")
-
-    def _sort_share_date_not_admission(ip_a: StateIncarcerationPeriod, ip_b: StateIncarcerationPeriod) -> int:
-        both_a_set = (ip_a.admission_date is not None and ip_a.release_date is not None)
-        both_b_set = (ip_b.admission_date is not None and ip_b.release_date is not None)
-
-        if not both_a_set and not both_b_set:
-            # One has an admission date and the other has a release date on the same day. Order the admission before
-            # the release.
-            return -1 if ip_a.admission_date else 1
-
-        # One period has both an admission_date and release_date, and the other has only a release_date.
-        if not ip_a.admission_date:
-            if ip_a.release_date == ip_b.admission_date:
-                # ip_a is missing an admission_date, and its release_date matches ip_b's admission_date. We want to
-                # order the release before the admission that has a later release.
-                return -1
-            # These share a release_date, and ip_a does not have an admission_date. Order the period with the set,
-            # earlier admission first.
-            return 1
-        if not ip_b.admission_date:
-            if ip_b.release_date == ip_a.admission_date:
-                # ip_b is missing an admission_date, and its release_date matches ip_a's admission_date. We want to
-                # order the release before the admission that has a later release.
-                return 1
-            # These share a release_date, and ip_b does not have an admission_date. Order the period with the set,
-            # earlier admission first.
-            return -1
-        raise ValueError("It should not be possible to reach this point. If either, but not both, ip_a or ip_b only"
-                         "have one date set, and they don't have equal None admission_dates, then we expect either"
-                         "ip_a or ip_b to have a missing admission_date here.")
-
-    def _sort_function(ip_a: StateIncarcerationPeriod, ip_b: StateIncarcerationPeriod) -> int:
-        if ip_a.admission_date == ip_b.admission_date:
-            return _sort_equal_admission_date(ip_a, ip_b)
-
-        # Sort by admission_date, if set, or release_date if not set
-        date_a = ip_a.admission_date if ip_a.admission_date else ip_a.release_date
-        date_b = ip_b.admission_date if ip_b.admission_date else ip_b.release_date
-        if not date_a:
-            raise ValueError(f'Found period with no admission or release date {ip_a}')
-        if not date_b:
-            raise ValueError(f'Found period with no admission or release date {ip_b}')
-        if date_a == date_b:
-            return _sort_share_date_not_admission(ip_a, ip_b)
-
-        return (date_a - date_b).days
-
-    incarceration_periods.sort(key=cmp_to_key(_sort_function))
+def _is_active_period(period: StateIncarcerationPeriod) -> bool:
+    return period.status == StateIncarcerationPeriodStatus.IN_CUSTODY
 
 
 def _infer_missing_dates_and_statuses(
@@ -374,7 +272,7 @@ def _infer_missing_dates_and_statuses(
     """First, sorts the incarceration_periods in chronological order of the admission and release dates. Then, for any
     periods missing dates and statuses, infers this information given the other incarceration periods.
     """
-    _sort_ips_by_set_dates_and_statuses(incarceration_periods)
+    sort_periods_by_set_dates_and_statuses(incarceration_periods, _is_active_period)
 
     updated_periods: List[StateIncarcerationPeriod] = []
 
@@ -411,6 +309,12 @@ def _infer_missing_dates_and_statuses(
                                     ip.incarceration_period_id,
                                     ip.release_reason,
                                     ip.release_reason_raw_text)
+        elif ip.release_date > date.today():
+            # This is an erroneous release_date in the future. For the purpose of calculations, clear the release_date
+            # and the release_reason.
+            ip.release_date = None
+            ip.release_reason = None
+            ip.status = StateIncarcerationPeriodStatus.IN_CUSTODY
 
         if ip.admission_date is None:
             if previous_ip:
@@ -427,6 +331,9 @@ def _infer_missing_dates_and_statuses(
                 # admission_date to be the same as the release_date
                 ip.admission_date = ip.release_date
                 ip.admission_reason = AdmissionReason.INTERNAL_UNKNOWN
+        elif ip.admission_date > date.today():
+            logging.info("Dropping incarceration period with admission_date in the future: [%s]", ip)
+            continue
 
         if ip.admission_reason is None:
             # We have no idea what this admission reason was. Set as INTERNAL_UNKNOWN.
