@@ -15,12 +15,15 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 import "./window.d";
+import "react-app-polyfill/ie11";
+import "core-js";
 import React from "react";
 import ReactDOM from "react-dom";
 import * as Sentry from "@sentry/react";
 import { Integrations } from "@sentry/tracing";
 import styled from "styled-components/macro";
 import { Link, Router } from "@reach/router";
+import ReactModal from "react-modal";
 
 import { Assets, GlobalStyle, Header } from "@recidiviz/case-triage-components";
 
@@ -64,5 +67,8 @@ ReactDOM.render(
       </Router>
     </Container>
   </StoreProvider>,
-  document.getElementById("root")
+  document.getElementById("root"),
+  () => {
+    ReactModal.setAppElement("#root");
+  }
 );

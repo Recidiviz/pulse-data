@@ -28,6 +28,7 @@ import {
 } from "./ClientList.styles";
 import { titleCase } from "../../utils";
 import DueDate from "../DueDate";
+import Tooltip from "../Tooltip";
 
 interface ClientProps {
   client: DecoratedClient;
@@ -35,9 +36,14 @@ interface ClientProps {
 }
 
 const getNeedsMetState = (
+  isInProgress: boolean,
   needsMet: DecoratedClient["needsMet"],
   need: keyof DecoratedClient["needsMet"]
 ): NeedState => {
+  if (isInProgress) {
+    return needsMet[need] ? NeedState.DISABLED_MET : NeedState.DISABLED;
+  }
+
   return needsMet[need] ? NeedState.MET : NeedState.NOT_MET;
 };
 
@@ -48,7 +54,7 @@ const ClientComponent: React.FC<ClientProps> = ({
   const { clientsStore } = useRootStore();
   const cardRef = React.useRef<HTMLDivElement>(null);
 
-  const onClientCardClickHandler = () => {
+  const viewClient = () => {
     clientsStore.view(
       client,
       cardRef !== null && cardRef.current !== null
@@ -57,11 +63,24 @@ const ClientComponent: React.FC<ClientProps> = ({
     );
   };
 
+  React.useEffect(() => {
+    // When undoing a Case Update, we need to re-open the client card
+    // Check if this card's client is pending a `view`, if so, re-open the Case Card
+    if (
+      cardRef &&
+      clientsStore.clientPendingView &&
+      clientsStore.clientPendingView.personExternalId ===
+        client.personExternalId
+    ) {
+      viewClient();
+    }
+  }, [cardRef, clientsStore, client.personExternalId, viewClient]);
+
   return (
     <ClientCard
       className={isInProgress ? "client-card--in-progress" : ""}
       ref={cardRef}
-      onClick={onClientCardClickHandler}
+      onClick={viewClient}
     >
       <CardHeader className="fs-exclude">
         <MainText>{client.formalName}</MainText>
@@ -71,30 +90,36 @@ const ClientComponent: React.FC<ClientProps> = ({
         </SecondaryText>
       </CardHeader>
       <FlexCardSection>
-        <ClientNeed
-          kind={IconSVG.NeedsEmployment}
-          state={
-            isInProgress
-              ? NeedState.DISABLED
-              : getNeedsMetState(client.needsMet, "employment")
-          }
-        />
-        <ClientNeed
-          kind={IconSVG.NeedsRiskAssessment}
-          state={
-            isInProgress
-              ? NeedState.DISABLED
-              : getNeedsMetState(client.needsMet, "assessment")
-          }
-        />
-        <ClientNeed
-          kind={IconSVG.NeedsContact}
-          state={
-            isInProgress
-              ? NeedState.DISABLED
-              : getNeedsMetState(client.needsMet, "faceToFaceContact")
-          }
-        />
+        <Tooltip title="Employment">
+          <ClientNeed
+            kind={IconSVG.NeedsEmployment}
+            state={getNeedsMetState(
+              isInProgress,
+              client.needsMet,
+              "employment"
+            )}
+          />
+        </Tooltip>
+        <Tooltip title="Risk Assessment">
+          <ClientNeed
+            kind={IconSVG.NeedsRiskAssessment}
+            state={getNeedsMetState(
+              isInProgress,
+              client.needsMet,
+              "assessment"
+            )}
+          />
+        </Tooltip>
+        <Tooltip title="Face to Face Contact">
+          <ClientNeed
+            kind={IconSVG.NeedsContact}
+            state={getNeedsMetState(
+              isInProgress,
+              client.needsMet,
+              "faceToFaceContact"
+            )}
+          />
+        </Tooltip>
       </FlexCardSection>
       <FlexCardSection>
         {isInProgress ? (

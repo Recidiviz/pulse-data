@@ -14,47 +14,32 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
-import styled from "styled-components/macro";
 import { rem } from "polished";
-import { Button, palette } from "@recidiviz/case-triage-components";
+import styled, { keyframes } from "styled-components/macro";
+import { palette, spacing } from "@recidiviz/case-triage-components";
 
-export const InProgressOverlay = styled.div`
-  display: flex;
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: 0;
-  bottom: 0;
-  background: ${palette.pine.main};
-  align-items: center;
-  padding: 0 32px;
-  color: white;
-  @keyframes fadeIn {
-    0% {
-      opacity: 0;
-    }
-    100% {
-      opacity: 1;
-    }
-  }
-  animation: fadeIn 0.3s;
-`;
+const StateStyles = {
+  entering: `opacity: 1;`,
+  exiting: `opacity: 0;`,
+};
 
-export const InProgressConfirmation = styled.div`
-  margin-right: auto;
-  font-size: ${rem("13px")};
-`;
+export type TooltipState = "entering" | "exiting" | null;
 
-export const InProgressConfirmationHeading = styled.div`
-  font-size: ${rem("16px")};
-  font-weight: 500;
-`;
-
-export const Undo = styled(Button).attrs({ kind: "link" })`
+const TooltipElement = styled.div<{
+  state: TooltipState;
+}>`
+  display: block;
+  position: fixed;
+  font-size: ${rem("14px")};
+  padding: ${spacing.sm};
+  border-radius: 4px;
   color: ${palette.white.main};
-  font-weight: bold;
+  background-color: #003331;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s ease-in-out;
 
-  &:active {
-    color: ${palette.white.main};
-  }
+  ${(props) => props.state && StateStyles[props.state]}
 `;
+
+export default TooltipElement;

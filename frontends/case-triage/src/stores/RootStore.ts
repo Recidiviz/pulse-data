@@ -14,10 +14,15 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
+import { configure } from "mobx";
 import ClientsStore from "./ClientsStore";
 import PolicyStore from "./PolicyStore";
 import UserStore from "./UserStore";
 import CaseUpdatesStore from "./CaseUpdatesStore";
+
+configure({
+  useProxies: "never",
+});
 
 export default class RootStore {
   caseUpdatesStore: CaseUpdatesStore;

@@ -14,31 +14,4 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
-
-import moment from "moment";
-import * as React from "react";
-import { BaseDueDate, PastDueDate, TodayDueDate } from "./DueDate.styles";
-
-export interface DueDateProps {
-  date: moment.Moment | null;
-}
-
-export const DueDate: React.FC<DueDateProps> = ({ date }: DueDateProps) => {
-  if (!date) {
-    return <BaseDueDate>Not required</BaseDueDate>;
-  }
-
-  const timeAgo = date.fromNow(true).split("");
-
-  if (date.isSame(moment(), "day")) {
-    return <TodayDueDate>Today</TodayDueDate>;
-  }
-
-  if (date.isAfter(moment(), "day")) {
-    return <BaseDueDate>In {timeAgo.join("")}</BaseDueDate>;
-  }
-
-  timeAgo[0] = timeAgo[0].toUpperCase();
-
-  return <PastDueDate>{timeAgo.join("")} ago</PastDueDate>;
-};
+export { default } from "./Tooltip";
