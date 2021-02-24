@@ -55,6 +55,10 @@ if in_development():
     db_url = local_postgres_helpers.postgres_db_url_from_env_vars()
 else:
     db_url = SQLAlchemyEngineManager.get_server_postgres_instance_url(schema_type=SchemaType.CASE_TRIAGE)
+    app.config['SESSION_COOKIE_HTTPONLY'] = True
+    app.config['SESSION_COOKIE_SECURE'] = True
+    app.config['SESSION_COOKIE_SAMESITE'] = 'Strict'
+
 setup_scoped_sessions(app, db_url)
 
 
