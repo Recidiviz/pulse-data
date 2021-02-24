@@ -93,6 +93,16 @@ if not in_test():
     store_refresh.start()
 
 
+# Security headers
+@app.after_request
+def set_headers(response: Response) -> Response:
+    if not in_development():
+        response.headers['Strict-Transport-Security'] = 'max-age=63072000'  # max age of 2 years
+    response.headers['Content-Security-Policy'] = "frame-ancestors 'none'"
+    response.headers['X-Frame-Options'] = 'DENY'
+    return response
+
+
 # Routes & Blueprints
 @api.before_request
 @requires_authorization
