@@ -14,21 +14,30 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
-import { IconSVG, Need } from "@recidiviz/case-triage-components";
+import { IconSVG, Need, NeedState } from "@recidiviz/case-triage-components";
 import * as React from "react";
-import { Caption, CaseCardBody, CaseCardInfo } from "./CaseCard.styles";
+import {
+  Caption,
+  CaseCardBody,
+  CaseCardInfo,
+  CheckboxButtonContainer,
+} from "./CaseCard.styles";
+import { NeedsCheckboxButton } from "./NeedsCheckboxButton";
 import { DecoratedClient } from "../../stores/ClientsStore/Client";
 import { useRootStore } from "../../stores";
 import { SupervisionLevel } from "../../stores/ClientsStore";
 import {
-  ScoreMinMaxBySupervisionLevel,
   ScoreMinMax,
+  ScoreMinMaxBySupervisionLevel,
 } from "../../stores/PolicyStore";
 import { titleCase } from "../../utils";
+import { CaseUpdateActionType } from "../../stores/CaseUpdatesStore";
 
 interface NeedsRiskAssessmentProps {
   className: string;
   client: DecoratedClient;
+
+  onStatusChanged: (helped: boolean) => void;
 }
 
 const getSupervisionLevelText = (
@@ -64,7 +73,13 @@ const getCutoffsText = ([min, max]: ScoreMinMax) => {
 const NeedsRiskAssessment: React.FC<NeedsRiskAssessmentProps> = ({
   className,
   client,
+  onStatusChanged,
 }: NeedsRiskAssessmentProps) => {
+  const [needChecked, setNeedChecked] = React.useState(false);
+  React.useEffect(() => {
+    setNeedChecked(false);
+  }, [client]);
+
   const { policyStore } = useRootStore();
   const supervisionLevelCutoffs = policyStore.getSupervisionLevelCutoffsForClient(
     client
@@ -99,16 +114,34 @@ const NeedsRiskAssessment: React.FC<NeedsRiskAssessmentProps> = ({
     caption = `A risk assessment has never been completed`;
   }
 
+  const onToggleCheck = (checked: boolean) => {
+    setNeedChecked(checked);
+    onStatusChanged(checked);
+  };
+
   return (
     <CaseCardBody className={className}>
       <Need
         kind={IconSVG.NeedsRiskAssessment}
-        met={client.needsMet.assessment}
+        state={client.needsMet.assessment ? NeedState.MET : NeedState.NOT_MET}
       />
       <CaseCardInfo>
         <strong>{title}</strong>
         <br />
         <Caption>{caption}</Caption>
+        {!client.needsMet.assessment ? (
+          <CheckboxButtonContainer>
+            <NeedsCheckboxButton
+              checked={needChecked}
+              inProgress={client.inProgressActions?.includes(
+                CaseUpdateActionType.COMPLETED_ASSESSMENT
+              )}
+              onToggleCheck={onToggleCheck}
+            >
+              I completed their risk assessment
+            </NeedsCheckboxButton>
+          </CheckboxButtonContainer>
+        ) : null}
       </CaseCardInfo>
     </CaseCardBody>
   );

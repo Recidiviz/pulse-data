@@ -14,20 +14,35 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
-import { IconSVG, Need } from "@recidiviz/case-triage-components";
+import { IconSVG, Need, NeedState } from "@recidiviz/case-triage-components";
 import * as React from "react";
-import { CaseCardBody, CaseCardInfo, Caption } from "./CaseCard.styles";
+import {
+  Caption,
+  CaseCardBody,
+  CaseCardInfo,
+  CheckboxButtonContainer,
+} from "./CaseCard.styles";
+import { NeedsCheckboxButton } from "./NeedsCheckboxButton";
 import { DecoratedClient } from "../../stores/ClientsStore/Client";
+import { CaseUpdateActionType } from "../../stores/CaseUpdatesStore";
 
 interface NeedsEmploymentProps {
   className: string;
   client: DecoratedClient;
+
+  onStatusChanged: (helped: boolean) => void;
 }
 
 const NeedsEmployment: React.FC<NeedsEmploymentProps> = ({
   className,
   client,
+  onStatusChanged,
 }: NeedsEmploymentProps) => {
+  const [needChecked, setNeedChecked] = React.useState(false);
+  React.useEffect(() => {
+    setNeedChecked(false);
+  }, [client]);
+
   const {
     needsMet: { employment: met },
   } = client;
@@ -39,13 +54,34 @@ const NeedsEmployment: React.FC<NeedsEmploymentProps> = ({
     caption = <Caption>Assumed unemployed from CIS {suffix}</Caption>;
   }
 
+  const onToggleCheck = (checked: boolean) => {
+    setNeedChecked(checked);
+    onStatusChanged(checked);
+  };
+
   return (
     <CaseCardBody className={className}>
-      <Need kind={IconSVG.NeedsEmployment} met={client.needsMet.employment} />
+      <Need
+        kind={IconSVG.NeedsEmployment}
+        state={client.needsMet.employment ? NeedState.MET : NeedState.NOT_MET}
+      />
       <CaseCardInfo>
         <strong>{title}</strong>
         <br />
         {caption}
+        {!client.needsMet.employment ? (
+          <CheckboxButtonContainer>
+            <NeedsCheckboxButton
+              checked={needChecked}
+              inProgress={client.inProgressActions?.includes(
+                CaseUpdateActionType.FOUND_EMPLOYMENT
+              )}
+              onToggleCheck={onToggleCheck}
+            >
+              I helped them find employment
+            </NeedsCheckboxButton>
+          </CheckboxButtonContainer>
+        ) : null}
       </CaseCardInfo>
     </CaseCardBody>
   );

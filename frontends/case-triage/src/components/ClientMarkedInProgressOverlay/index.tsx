@@ -14,27 +14,4 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
-import ClientsStore from "./ClientsStore";
-import PolicyStore from "./PolicyStore";
-import UserStore from "./UserStore";
-import CaseUpdatesStore from "./CaseUpdatesStore";
-
-export default class RootStore {
-  caseUpdatesStore: CaseUpdatesStore;
-
-  clientsStore: ClientsStore;
-
-  policyStore: PolicyStore;
-
-  userStore: UserStore;
-
-  constructor() {
-    this.userStore = UserStore.build();
-    this.clientsStore = new ClientsStore({ userStore: this.userStore });
-    this.caseUpdatesStore = new CaseUpdatesStore({
-      clientsStore: this.clientsStore,
-      userStore: this.userStore,
-    });
-    this.policyStore = new PolicyStore({ userStore: this.userStore });
-  }
-}
+export { default } from "./ClientMarkedInProgressOverlay";

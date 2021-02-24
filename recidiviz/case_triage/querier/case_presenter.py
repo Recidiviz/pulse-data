@@ -34,7 +34,7 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_supervision_com
     SUPERVISION_CONTACT_FREQUENCY_REQUIREMENTS,
 )
 from recidiviz.case_triage.case_updates.progress_checker import check_case_update_action_progress
-from recidiviz.case_triage.case_updates.types import CaseUpdateAction, CaseUpdateActionType
+from recidiviz.case_triage.case_updates.types import CaseUpdateAction
 from recidiviz.common.constants.person_characteristics import Gender
 from recidiviz.common.constants.state.state_case_type import StateSupervisionCaseType
 from recidiviz.common.constants.state.state_supervision_period import StateSupervisionLevel
@@ -78,7 +78,8 @@ class CasePresenter:
 
         in_progress_actions = self.in_progress_officer_actions()
         if in_progress_actions:
-            base_dict['inProgressActions'] = [action.value for action in in_progress_actions]
+            base_dict['inProgressActions'] = [action.action_type.value for action in in_progress_actions]
+            base_dict['inProgressSubmissionDate'] = str(max(action.action_ts for action in in_progress_actions))
 
         # TODO(#5769): We're doing this quickly here and being intentional about the debt we're taking
         # on. This will be moved to the calculation pipeline once we've shipped the Case Triage MVP.
@@ -96,7 +97,7 @@ class CasePresenter:
         today = date.today()
         base_dict['needsMet'] = {
             # Sometimes the employer field is filled with "UNEMPLOYED", so this attempts to capture that.
-            'employment': self.etl_client.employer is not None and self.etl_client.employer.upper() != 'UNEMPLOYED',
+            'employment': bool(self.etl_client.employer) and self.etl_client.employer.upper() != 'UNEMPLOYED',
             # If the F2F contact is missing, that means there may be no need for it. Otherwise, if the
             # next due face to face contact is after today, the need is met.
             'faceToFaceContact': next_face_to_face_date is None or bool(next_face_to_face_date > today),
@@ -106,13 +107,13 @@ class CasePresenter:
 
         return base_dict
 
-    def in_progress_officer_actions(self) -> List[CaseUpdateActionType]:
+    def in_progress_officer_actions(self) -> List[CaseUpdateAction]:
         """Calculates the list of CaseUpdateActionTypes that are still applicable for the client."""
         if not self.case_update:
             return []
 
         action_info: List[Dict[str, Any]] = self.case_update.update_metadata['actions']
-        in_progress_actions: List[CaseUpdateActionType] = []
+        in_progress_actions: List[CaseUpdateAction] = []
         for action_metadata in action_info:
             try:
                 case_update_action = CaseUpdateAction.from_json(action_metadata)
@@ -121,7 +122,7 @@ class CasePresenter:
                 continue
 
             if check_case_update_action_progress(self.etl_client, case_update_action):
-                in_progress_actions.append(case_update_action.action_type)
+                in_progress_actions.append(case_update_action)
 
         return in_progress_actions
 

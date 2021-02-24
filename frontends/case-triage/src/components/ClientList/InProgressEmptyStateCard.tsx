@@ -14,27 +14,15 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
-import ClientsStore from "./ClientsStore";
-import PolicyStore from "./PolicyStore";
-import UserStore from "./UserStore";
-import CaseUpdatesStore from "./CaseUpdatesStore";
+import * as React from "react";
+import { ClientCard, FlexCardSection, MainText } from "./ClientList.styles";
 
-export default class RootStore {
-  caseUpdatesStore: CaseUpdatesStore;
+const InProgressEmptyState = () => (
+  <ClientCard className="client-card--in-progress">
+    <FlexCardSection>
+      <MainText>Items that are in progress will appear here</MainText>
+    </FlexCardSection>
+  </ClientCard>
+);
 
-  clientsStore: ClientsStore;
-
-  policyStore: PolicyStore;
-
-  userStore: UserStore;
-
-  constructor() {
-    this.userStore = UserStore.build();
-    this.clientsStore = new ClientsStore({ userStore: this.userStore });
-    this.caseUpdatesStore = new CaseUpdatesStore({
-      clientsStore: this.clientsStore,
-      userStore: this.userStore,
-    });
-    this.policyStore = new PolicyStore({ userStore: this.userStore });
-  }
-}
+export default InProgressEmptyState;

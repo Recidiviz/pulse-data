@@ -14,27 +14,25 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
-import ClientsStore from "./ClientsStore";
-import PolicyStore from "./PolicyStore";
-import UserStore from "./UserStore";
-import CaseUpdatesStore from "./CaseUpdatesStore";
+export enum CaseUpdateActionType {
+  COMPLETED_ASSESSMENT = "COMPLETED_ASSESSMENT",
+  DISCHARGE_INITIATED = "DISCHARGE_INITIATED",
+  DOWNGRADE_INITIATED = "DOWNGRADE_INITIATED",
+  FOUND_EMPLOYMENT = "FOUND_EMPLOYMENT",
+  SCHEDULED_FACE_TO_FACE = "SCHEDULED_FACE_TO_FACE",
 
-export default class RootStore {
-  caseUpdatesStore: CaseUpdatesStore;
-
-  clientsStore: ClientsStore;
-
-  policyStore: PolicyStore;
-
-  userStore: UserStore;
-
-  constructor() {
-    this.userStore = UserStore.build();
-    this.clientsStore = new ClientsStore({ userStore: this.userStore });
-    this.caseUpdatesStore = new CaseUpdatesStore({
-      clientsStore: this.clientsStore,
-      userStore: this.userStore,
-    });
-    this.policyStore = new PolicyStore({ userStore: this.userStore });
-  }
+  INFORMATION_DOESNT_MATCH_OMS = "INFORMATION_DOESNT_MATCH_OMS",
+  NOT_ON_CASELOAD = "NOT_ON_CASELOAD",
+  FILED_REVOCATION_OR_VIOLATION = "FILED_REVOCATION_OR_VIOLATION",
+  OTHER_DISMISSAL = "OTHER_DISMISSAL",
 }
+
+export const POSITIVE_CASE_UPDATE_ACTIONS = [
+  CaseUpdateActionType.COMPLETED_ASSESSMENT,
+  CaseUpdateActionType.DISCHARGE_INITIATED,
+  CaseUpdateActionType.DOWNGRADE_INITIATED,
+  CaseUpdateActionType.FOUND_EMPLOYMENT,
+  CaseUpdateActionType.SCHEDULED_FACE_TO_FACE,
+];
+
+export default CaseUpdateActionType;

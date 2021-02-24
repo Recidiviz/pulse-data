@@ -15,12 +15,8 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 import * as React from "react";
-import {
-  Button,
-  ButtonKind,
-  Card,
-  H3,
-} from "@recidiviz/case-triage-components";
+import { useState } from "react";
+import { Button, Card, H3, Modal } from "@recidiviz/case-triage-components";
 import {
   Caption,
   CaseCardFeedback,
@@ -31,7 +27,9 @@ import { HEADING_HEIGHT_MAGIC_NUMBER } from "../ClientList";
 import NeedsEmployment from "./NeedsEmployment";
 import NeedsFaceToFaceContact from "./NeedsFaceToFaceContact";
 import NeedsRiskAssessment from "./NeedsRiskAssessment";
-import { DecoratedClient } from "../../stores/ClientsStore/Client";
+import FeedbackForm from "../FeedbackForm";
+import { CaseUpdateActionType } from "../../stores/CaseUpdatesStore/CaseUpdates";
+import { DecoratedClient } from "../../stores/ClientsStore";
 import { titleCase } from "../../utils";
 import { useRootStore } from "../../stores";
 
@@ -39,16 +37,37 @@ export interface CaseCardProps {
   client: DecoratedClient;
 }
 
-const onFeedback = () => {
-  return false;
-};
-
-const onSubmit = () => {
-  return false;
-};
-
 const CaseCard: React.FC<CaseCardProps> = ({ client }: CaseCardProps) => {
-  const { clientsStore } = useRootStore();
+  const { caseUpdatesStore, clientsStore } = useRootStore();
+
+  const [helpedWithEmployment, setHelpedWithEmployment] = useState(false);
+  const [completedAssessment, setCompletedAssessment] = useState(false);
+  const [scheduledFaceToFace, setScheduledFaceToFace] = useState(false);
+
+  React.useEffect(() => {
+    setHelpedWithEmployment(false);
+    setCompletedAssessment(false);
+    setScheduledFaceToFace(false);
+  }, [client]);
+
+  const [feedbackModalIsOpen, setFeedbackModalIsOpen] = useState(false);
+
+  const actionsTaken = () => {
+    const actions =
+      client.inProgressActions !== undefined
+        ? [...client.inProgressActions]
+        : [];
+    if (helpedWithEmployment) {
+      actions.push(CaseUpdateActionType.FOUND_EMPLOYMENT);
+    }
+    if (completedAssessment) {
+      actions.push(CaseUpdateActionType.COMPLETED_ASSESSMENT);
+    }
+    if (scheduledFaceToFace) {
+      actions.push(CaseUpdateActionType.SCHEDULED_FACE_TO_FACE);
+    }
+    return actions;
+  };
 
   return (
     <Card
@@ -67,19 +86,55 @@ const CaseCard: React.FC<CaseCardProps> = ({ client }: CaseCardProps) => {
           {titleCase(client.personExternalId)}
         </Caption>
       </CaseCardSection>
-      <NeedsEmployment client={client} className="fs-exclude" />
-      <NeedsRiskAssessment client={client} className="fs-exclude" />
-      <NeedsFaceToFaceContact client={client} className="fs-exclude" />
+      <NeedsEmployment
+        client={client}
+        onStatusChanged={(helped: boolean) => setHelpedWithEmployment(helped)}
+        className="fs-exclude"
+      />
+      <NeedsRiskAssessment
+        client={client}
+        onStatusChanged={(completed: boolean) =>
+          setCompletedAssessment(completed)
+        }
+        className="fs-exclude"
+      />
+      <NeedsFaceToFaceContact
+        client={client}
+        onStatusChanged={(scheduled: boolean) =>
+          setScheduledFaceToFace(scheduled)
+        }
+        className="fs-exclude"
+      />
       <CaseCardFooter>
         <CaseCardFeedback>
           See something wrong?
           <br />
-          <Button kind={ButtonKind.link} onClick={onFeedback}>
+          <Button kind="link" onClick={() => setFeedbackModalIsOpen(true)}>
             Give us feedback.
           </Button>
+          <Modal
+            isOpen={feedbackModalIsOpen}
+            onRequestClose={() => setFeedbackModalIsOpen(false)}
+          >
+            <FeedbackForm
+              caseUpdatesStore={caseUpdatesStore}
+              client={client}
+              onCancel={() => setFeedbackModalIsOpen(false)}
+            />
+          </Modal>
         </CaseCardFeedback>
         <div>
-          <Button kind={ButtonKind.primary} onClick={onSubmit}>
+          <Button
+            kind="primary"
+            disabled={
+              !helpedWithEmployment &&
+              !completedAssessment &&
+              !scheduledFaceToFace
+            }
+            onClick={async (e) => {
+              await caseUpdatesStore.submit(client, actionsTaken(), "");
+            }}
+          >
             Submit
           </Button>
         </div>
