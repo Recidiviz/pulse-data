@@ -49,6 +49,7 @@ COMPARTMENT_SENTENCES_QUERY_TEMPLATE = \
         projected_completion_date AS projected_completion_date_max,
         completion_date,
         DATE(NULL) AS parole_eligibility_date,
+        is_violent,
         classification_type,
         description,
         ncic_code,
@@ -56,9 +57,9 @@ COMPARTMENT_SENTENCES_QUERY_TEMPLATE = \
         'SUPERVISION' AS data_source,
     FROM `{project_id}.{base_dataset}.state_supervision_sentence` AS sss
     LEFT JOIN `{project_id}.{base_dataset}.state_charge_supervision_sentence_association`
-        USING (supervision_sentence_id)
+        USING (state_code, supervision_sentence_id)
     LEFT JOIN `{project_id}.{base_dataset}.state_charge`
-        USING (charge_id)
+        USING (state_code, person_id, charge_id)
     )
     ,
     incarceration_sentences_cte AS 
@@ -73,6 +74,7 @@ COMPARTMENT_SENTENCES_QUERY_TEMPLATE = \
       projected_max_release_date AS projected_completion_date_max,
       completion_date,
       parole_eligibility_date,
+      is_violent,
       classification_type,
       description,
       ncic_code,
@@ -80,15 +82,31 @@ COMPARTMENT_SENTENCES_QUERY_TEMPLATE = \
       'INCARCERATION' AS data_source
     FROM `{project_id}.{base_dataset}.state_incarceration_sentence` AS sis
     LEFT JOIN `{project_id}.{base_dataset}.state_charge_incarceration_sentence_association`
-        USING (incarceration_sentence_id)
+        USING (state_code, incarceration_sentence_id)
     LEFT JOIN `{project_id}.{base_dataset}.state_charge`
-        USING (charge_id)
+        USING (state_code, person_id, charge_id)
     )
     ,
     unioned_sentences_cte AS (
-    SELECT * FROM supervision_sentences_cte
-    UNION ALL
-    SELECT * FROM incarceration_sentences_cte
+    /*
+    For each supervision or incarceration sentence, pulls the most severe non-null is_violent flag and classification 
+    type from associated charges.
+    */
+    SELECT *,
+        FIRST_VALUE(is_violent IGNORE NULLS) OVER (
+            PARTITION BY state_code, person_id, sentence_id 
+            ORDER BY IF(is_violent, 1, 2)
+        ) as most_severe_is_violent,
+        FIRST_VALUE(classification_type IGNORE NULLS) OVER (
+            PARTITION BY state_code, person_id, sentence_id 
+            ORDER BY CASE classification_type WHEN 'FELONY' THEN 1 WHEN 'MISDEMEANOR' THEN 2 ELSE 3 END
+        ) as most_severe_classification_type,
+    FROM 
+        (
+        SELECT * FROM supervision_sentences_cte
+        UNION ALL
+        SELECT * FROM incarceration_sentences_cte
+        )
     )
     ,
     deduped_sentence_id_cte AS 
@@ -118,6 +136,8 @@ COMPARTMENT_SENTENCES_QUERY_TEMPLATE = \
         parole_eligibility_date,
         data_source,
         COUNT(1) as offense_count,
+        ANY_VALUE(most_severe_is_violent) most_severe_is_violent,
+        ANY_VALUE(most_severe_classification_type) most_severe_classification_type,
         ARRAY_AGG(COALESCE(classification_type, 'MISSING')) classification_type,
         ARRAY_AGG(COALESCE(description, 'MISSING')) description,
         ARRAY_AGG(COALESCE(ncic_code, 'MISSING')) ncic_code,
@@ -198,6 +218,8 @@ COMPARTMENT_SENTENCES_QUERY_TEMPLATE = \
         parole_eligibility_date,
         life_sentence,
         offense_count,
+        most_severe_is_violent,
+        most_severe_classification_type,
         classification_type,
         description,
         ncic_code,
