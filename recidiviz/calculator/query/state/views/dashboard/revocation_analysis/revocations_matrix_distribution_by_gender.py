@@ -40,6 +40,7 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_GENDER_QUERY_TEMPLATE = \
       violation_type,
       reported_violations,
       COUNT(DISTINCT person_id) AS supervision_population_count,
+      COUNT(DISTINCT IF(recommended_for_revocation, person_id, NULL)) AS recommended_for_revocation_count,
       gender,
       supervision_type,
       supervision_level,
@@ -93,7 +94,9 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_GENDER_QUERY_TEMPLATE = \
       IFNULL(gender_rev.revocation_count, 0) AS revocation_count, -- Gender-specific revocation count
       IFNULL(gender_term.termination_count, 0) AS exit_count, -- Gender-specific termination count
       IFNULL(gender_sup.supervision_population_count, 0) AS supervision_population_count, -- Gender-specific supervision pop count
+      IFNULL(gender_sup.recommended_for_revocation_count, 0) as recommended_for_revocation_count, -- Gender-specific recommended for revocation count
       IFNULL(revocation_count_all, 0) AS revocation_count_all, -- Total revocation count, all genders
+      IFNULL(recommended_for_revocation_count_all, 0) AS recommended_for_revocation_count_all, -- Total recommended for revocation, all genders
       supervision_count_all, -- Total supervision count, all genders
       gender,
       supervision_type,
@@ -104,7 +107,9 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_GENDER_QUERY_TEMPLATE = \
       metric_period_months
     FROM
       (SELECT * FROM    
-        (SELECT * EXCEPT(gender, supervision_population_count), SUM(supervision_population_count) AS supervision_count_all
+      (SELECT * EXCEPT(gender, supervision_population_count, recommended_for_revocation_count),
+       SUM(supervision_population_count) AS supervision_count_all,
+       SUM(recommended_for_revocation_count) AS recommended_for_revocation_count_all
          FROM supervision_counts
          WHERE gender = 'ALL'
          GROUP BY state_code, violation_type, reported_violations, supervision_type, supervision_level, charge_category,

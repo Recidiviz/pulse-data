@@ -50,7 +50,8 @@ EVENT_BASED_REVOCATIONS_FOR_MATRIX_QUERY_TEMPLATE = \
         IFNULL(level_1_supervision_location_external_id, 'EXTERNAL_UNKNOWN') AS level_1_supervision_location,
         IFNULL(level_2_supervision_location_external_id, 'EXTERNAL_UNKNOWN') AS level_2_supervision_location,
         IFNULL(supervising_officer_external_id, 'EXTERNAL_UNKNOWN') AS officer,
-        {state_specific_officer_recommendation},
+        {state_specific_most_recent_officer_recommendation},
+        {state_specific_recommended_for_revocation},
         violation_history_description AS violation_record,
         violation_type_frequency_counter
     FROM `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_revocation_analysis_metrics_materialized`
@@ -64,7 +65,10 @@ EVENT_BASED_REVOCATIONS_FOR_MATRIX_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     view_query_template=EVENT_BASED_REVOCATIONS_FOR_MATRIX_QUERY_TEMPLATE,
     description=EVENT_BASED_REVOCATIONS_FOR_MATRIX_DESCRIPTION,
     materialized_metrics_dataset=dataset_config.DATAFLOW_METRICS_MATERIALIZED_DATASET,
-    state_specific_officer_recommendation=state_specific_query_strings.state_specific_officer_recommendation()
+    state_specific_most_recent_officer_recommendation=
+    state_specific_query_strings.state_specific_officer_recommendation(input_col='most_recent_response_decision'),
+    state_specific_recommended_for_revocation=
+    state_specific_query_strings.state_specific_recommended_for_revocation(),
 )
 
 if __name__ == '__main__':

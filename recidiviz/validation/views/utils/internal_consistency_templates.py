@@ -21,6 +21,9 @@ from typing import List, Optional
 
 
 # TODO(#3839): Simplify this via metric_big_query_view.dimensions
+from recidiviz.metrics.metric_big_query_view import MetricBigQueryViewBuilder
+
+
 def _metric_totals_table_query(partition_columns: List[str],
                                mutually_exclusive_breakdown_columns: List[str],
                                calculated_columns_to_validate: List[str]) -> str:
@@ -169,3 +172,64 @@ def internal_consistency_query(partition_columns: List[str],
         breakdown_table_join_clauses_str=breakdown_table_join_clauses_str,
         order_by_cols=partition_columns_str
     )
+
+
+def sums_and_totals_consistency_query(view_builder: MetricBigQueryViewBuilder,
+                                      breakdown_dimensions: List[str],
+                                      columns_with_totals: List[str],
+                                      columns_with_breakdown_counts: List[str]) -> str:
+    """
+    Builds and returns a query to validate internal sum consistency in views that have columns that contain sums broken
+    down by the dimensions in |dimensions_in_sum|
+    counts by dimensions as well as columns that contain sums across those dimensions.
+
+    This builds a validation query for confirming that the sums across dimensions equal the stated total sum for
+    that value.
+
+    Args:
+        view_builder: The view builder of the view to be validated, used to determine the dimensions columns in the
+            comparison.
+        breakdown_dimensions: These are the dimensions over which the totals are aggregated.
+        columns_with_totals: The columns containing the total sums across the |dimensions_in_sum|.
+        columns_with_breakdown_counts: The columns containing the sums that are broken down by the
+            |breakdown_dimensions|.
+    """
+    dimensions = view_builder.dimensions
+    # Remove the breakdown_dimensions from the dimension columns, because we want to sum across these dimensions
+    for col in breakdown_dimensions:
+        dimensions.remove(col)
+
+    dimension_columns = ', \n\t\t'.join(dimensions)
+    totals_columns = ' ,\n'.join(columns_with_totals)
+
+    sum_rows = ', \n'.join([f"SUM({col}) AS {col}_sum"
+                            for col in columns_with_breakdown_counts])
+
+    sum_columns = ', \n'.join([f"{col}_sum"
+                               for col in columns_with_breakdown_counts])
+
+    return f"""
+    WITH total_counts AS (
+      SELECT
+      DISTINCT
+      {dimension_columns},
+      {totals_columns}
+      FROM `{{project_id}}.{{view_dataset}}.{{view}}` 
+    ), breakdown_sums AS (
+      SELECT
+      {dimension_columns},
+      {sum_rows}
+      FROM `{{project_id}}.{{view_dataset}}.{{view}}` 
+      GROUP BY {dimension_columns}
+    )
+    
+    SELECT
+      {dimension_columns},
+      {totals_columns},
+      {sum_columns}
+    FROM
+      total_counts
+    FULL OUTER JOIN
+      breakdown_sums
+    USING ({dimension_columns})
+    """

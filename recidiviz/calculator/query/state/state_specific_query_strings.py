@@ -59,17 +59,22 @@ def state_specific_most_severe_violation_type_subtype_grouping() -> str:
             END AS violation_type"""
 
 
-def state_specific_officer_recommendation() -> str:
-    return """CASE WHEN state_code = 'US_MO' THEN
-                CASE WHEN most_severe_response_decision = 'SHOCK_INCARCERATION' THEN 'CODS'
-                WHEN most_severe_response_decision = 'WARRANT_ISSUED' THEN 'CAPIAS'
-                ELSE most_severe_response_decision END
+def state_specific_recommended_for_revocation() -> str:
+    return f"""(({state_specific_officer_recommendation('most_severe_response_decision', False)}) = 'REVOCATION')
+            AS recommended_for_revocation"""
+
+
+def state_specific_officer_recommendation(input_col: str, include_col_declaration: bool = True) -> str:
+    return f"""CASE WHEN state_code = 'US_MO' THEN
+                CASE WHEN {input_col} = 'SHOCK_INCARCERATION' THEN 'CODS'
+                WHEN {input_col} = 'WARRANT_ISSUED' THEN 'CAPIAS'
+                ELSE {input_col} END
            WHEN state_code = 'US_PA' THEN
                 -- TODO(#3596): Remove this once we differentiate returns from true revocations 
-                CASE WHEN most_severe_response_decision = 'REVOCATION' THEN 'PLACEMENT_IN_DOC_FACILITY'
-                ELSE most_severe_response_decision END
-           ELSE most_severe_response_decision
-      END AS officer_recommendation"""
+                CASE WHEN {input_col} = 'REVOCATION' THEN 'PLACEMENT_IN_DOC_FACILITY'
+                ELSE {input_col} END
+           ELSE {input_col}
+      END {"AS officer_recommendation" if include_col_declaration else ""}"""
 
 
 def state_specific_violation_type_entry() -> str:

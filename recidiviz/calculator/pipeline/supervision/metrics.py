@@ -111,7 +111,7 @@ class SupervisionMetric(RecidivizMetric, SupervisionLocationMetric):
 
 
 @attr.s
-class ViolationTypeSeverityMetric(BuildableAttr):
+class ViolationHistoryMetric(BuildableAttr):
     """Base class for including the most severe violation type and subtype features on a metric."""
     # The most severe violation type leading up to the date of the event the metric describes
     most_severe_violation_type: Optional[StateSupervisionViolationType] = attr.ib(default=None)
@@ -122,9 +122,12 @@ class ViolationTypeSeverityMetric(BuildableAttr):
     # The number of responses that were included in determining the most severe type/subtype
     response_count: Optional[int] = attr.ib(default=None)
 
+    # The most severe decision on the responses that were included in determining the most severe type/subtype
+    most_severe_response_decision: Optional[StateSupervisionViolationResponseDecision] = attr.ib(default=None)
+
 
 @attr.s
-class SupervisionPopulationMetric(SupervisionMetric, PersonLevelMetric, ViolationTypeSeverityMetric, AssessmentMetric):
+class SupervisionPopulationMetric(SupervisionMetric, PersonLevelMetric, ViolationHistoryMetric, AssessmentMetric):
     """Subclass of SupervisionMetric that contains supervision population information."""
     # Required characteristics
 
@@ -226,7 +229,7 @@ class SupervisionRevocationMetric(SupervisionMetric, PersonLevelMetric, Assessme
 
 
 @attr.s
-class SupervisionRevocationAnalysisMetric(SupervisionRevocationMetric, PersonLevelMetric, ViolationTypeSeverityMetric):
+class SupervisionRevocationAnalysisMetric(SupervisionRevocationMetric, PersonLevelMetric, ViolationHistoryMetric):
     """Subclass of SupervisionRevocationMetric that contains information for supervision revocation analysis."""
     # Required characteristics
 
@@ -235,9 +238,6 @@ class SupervisionRevocationAnalysisMetric(SupervisionRevocationMetric, PersonLev
                                                  default=SupervisionMetricType.SUPERVISION_REVOCATION_ANALYSIS)
 
     # Optional characteristics
-
-    # The most severe decision on a response leading up to the revocation
-    most_severe_response_decision: Optional[StateSupervisionViolationResponseDecision] = attr.ib(default=None)
 
     # A string representation of the violations recorded in the period leading up to the revocation, which is the
     # number of each of the represented types separated by a semicolon
@@ -249,6 +249,9 @@ class SupervisionRevocationAnalysisMetric(SupervisionRevocationMetric, PersonLev
     # were listed on the given violation. For example, 3 violations may be represented as:
     # [['FELONY', 'TECHNICAL'], ['MISDEMEANOR'], ['ABSCONDED', 'MUNICIPAL']]
     violation_type_frequency_counter: Optional[List[List[str]]] = attr.ib(default=None)
+
+    # The most severe decision on the most recent response leading up to the revocation
+    most_recent_response_decision: Optional[StateSupervisionViolationResponseDecision] = attr.ib(default=None)
 
     @staticmethod
     def build_from_metric_key_group(metric_key: Dict[str, Any], job_id: str) -> \
@@ -325,7 +328,7 @@ class SuccessfulSupervisionSentenceDaysServedMetric(SupervisionMetric, PersonLev
 
 
 @attr.s
-class SupervisionTerminationMetric(SupervisionMetric, PersonLevelMetric, ViolationTypeSeverityMetric, AssessmentMetric):
+class SupervisionTerminationMetric(SupervisionMetric, PersonLevelMetric, ViolationHistoryMetric, AssessmentMetric):
     """Subclass of SupervisionMetric that contains information about a supervision that has been terminated, the reason
     for the termination, and the change in assessment score between the last assessment and the first reassessment."""
     # Required characteristics

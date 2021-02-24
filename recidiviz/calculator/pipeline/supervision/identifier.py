@@ -391,6 +391,7 @@ def find_time_buckets_for_supervision_period(
                     assessment_type=assessment_type,
                     most_severe_violation_type=violation_history.most_severe_violation_type,
                     most_severe_violation_type_subtype=violation_history.most_severe_violation_type_subtype,
+                    most_severe_response_decision=violation_history.most_severe_response_decision,
                     response_count=violation_history.response_count,
                     supervising_officer_external_id=supervising_officer_external_id,
                     supervising_district_external_id=deprecated_supervising_district_external_id,
@@ -609,6 +610,7 @@ def find_supervision_termination_bucket(
             level_2_supervision_location_external_id=level_2_supervision_location_external_id,
             judicial_district_code=judicial_district_code,
             response_count=violation_history.response_count,
+            most_severe_response_decision=violation_history.most_severe_response_decision,
             most_severe_violation_type=violation_history.most_severe_violation_type,
             most_severe_violation_type_subtype=violation_history.most_severe_violation_type_subtype
         )
@@ -619,6 +621,7 @@ def find_supervision_termination_bucket(
 ViolationHistory = NamedTuple('ViolationHistory', [
     ('most_severe_violation_type', Optional[StateSupervisionViolationType]),
     ('most_severe_violation_type_subtype', Optional[str]),
+    ('most_severe_response_decision', Optional[StateSupervisionViolationResponseDecision]),
     ('response_count', Optional[int]),
     ('violation_history_description', Optional[str]),
     ('violation_type_frequency_counter', Optional[List[List[str]]])])
@@ -635,6 +638,7 @@ def get_violation_and_response_history(
         return ViolationHistory(
             most_severe_violation_type=None,
             most_severe_violation_type_subtype=None,
+            most_severe_response_decision=None,
             response_count=0,
             violation_history_description=None,
             violation_type_frequency_counter=None)
@@ -675,9 +679,12 @@ def get_violation_and_response_history(
     # Count the number of responses in the window
     response_count = len(responses_in_window)
 
+    most_severe_response_decision = _get_most_severe_response_decision(responses_in_window)
+
     violation_history_result = ViolationHistory(
         most_severe_violation_type,
         most_severe_violation_type_subtype,
+        most_severe_response_decision,
         response_count,
         violation_history_description,
         violation_type_frequency_counter)
@@ -782,24 +789,21 @@ def _sorted_violation_responses_in_window(violation_responses: List[StateSupervi
 
 def _get_most_severe_response_decision(violation_responses: List[StateSupervisionViolationResponse]) -> \
         Optional[StateSupervisionViolationResponseDecision]:
-    """Returns the most severe response decision on the most recent violation response (determined by response_date) of
-    the given |violation_responses|. If multiple responses share the most recent response_date, returns the most severe
-    response decision out of all responses submitted on that date."""
+    """Returns the most severe response decision on the given |violation_responses|."""
     if not violation_responses:
         return None
 
     response_decisions: List[StateSupervisionViolationResponseDecision] = []
-    most_recent_responses = responses_on_most_recent_response_date(violation_responses)
-    for recent_response in most_recent_responses:
+    for response in violation_responses:
 
-        if recent_response.supervision_violation_response_decisions:
-            decision_entries = recent_response.supervision_violation_response_decisions
+        if response.supervision_violation_response_decisions:
+            decision_entries = response.supervision_violation_response_decisions
 
             for decision_entry in decision_entries:
                 if decision_entry.decision:
                     response_decisions.append(decision_entry.decision)
 
-    # Find the most severe decision on the most recent response
+    # Find the most severe decision responses
     return identify_most_severe_response_decision(response_decisions)
 
 
@@ -881,7 +885,9 @@ def find_revocation_return_buckets(supervision_sentences: List[StateSupervisionS
                 lower_bound_inclusive=None,
                 include_follow_up_responses=True)
 
-        most_severe_response_decision = _get_most_severe_response_decision(responses_in_window_for_decision_evaluation)
+        # Find the most severe decision on the most recent response decisions
+        most_recent_responses = responses_on_most_recent_response_date(responses_in_window_for_decision_evaluation)
+        most_recent_response_decision = _get_most_severe_response_decision(most_recent_responses)
 
         if revoked_supervision_periods:
             # Add a RevocationReturnSupervisionTimeBucket for each supervision period that was revoked
@@ -925,7 +931,8 @@ def find_revocation_return_buckets(supervision_sentences: List[StateSupervisionS
                         source_violation_type=revocation_details.source_violation_type,
                         most_severe_violation_type=violation_history.most_severe_violation_type,
                         most_severe_violation_type_subtype=violation_history.most_severe_violation_type_subtype,
-                        most_severe_response_decision=most_severe_response_decision,
+                        most_severe_response_decision=violation_history.most_severe_response_decision,
+                        most_recent_response_decision=most_recent_response_decision,
                         response_count=violation_history.response_count,
                         violation_history_description=violation_history.violation_history_description,
                         violation_type_frequency_counter=violation_history.violation_type_frequency_counter,
@@ -983,7 +990,8 @@ def find_revocation_return_buckets(supervision_sentences: List[StateSupervisionS
                     source_violation_type=revocation_details.source_violation_type,
                     most_severe_violation_type=violation_history.most_severe_violation_type,
                     most_severe_violation_type_subtype=violation_history.most_severe_violation_type_subtype,
-                    most_severe_response_decision=most_severe_response_decision,
+                    most_severe_response_decision=violation_history.most_severe_response_decision,
+                    most_recent_response_decision=most_recent_response_decision,
                     response_count=violation_history.response_count,
                     violation_history_description=violation_history.violation_history_description,
                     violation_type_frequency_counter=violation_history.violation_type_frequency_counter,

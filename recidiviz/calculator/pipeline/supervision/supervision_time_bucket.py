@@ -104,7 +104,7 @@ class SupervisionTimeBucket(IdentifierEventWithSingularDate, AssessmentEventMixi
 
 
 @attr.s(frozen=True)
-class ViolationTypeSeverityBucket(BuildableAttr):
+class ViolationHistoryBucket(BuildableAttr):
     """Base class for including the most severe violation type and subtype features on a SupervisionTimeBucket."""
     # The most severe violation type leading up to the date of the event the bucket describes
     most_severe_violation_type: Optional[StateSupervisionViolationType] = attr.ib(default=None)
@@ -114,6 +114,9 @@ class ViolationTypeSeverityBucket(BuildableAttr):
 
     # The number of responses that were included in determining the most severe type/subtype
     response_count: Optional[int] = attr.ib(default=0)
+
+    # The most severe decision on the responses that were included in determining the most severe type/subtype
+    most_severe_response_decision: Optional[StateSupervisionViolationResponseDecision] = attr.ib(default=None)
 
 
 @attr.s(frozen=True)
@@ -133,7 +136,7 @@ class SupervisionDowngradeBucket(BuildableAttr):
 
 
 @attr.s(frozen=True)
-class RevocationReturnSupervisionTimeBucket(SupervisionTimeBucket, ViolationTypeSeverityBucket):
+class RevocationReturnSupervisionTimeBucket(SupervisionTimeBucket, ViolationHistoryBucket):
     """Models a SupervisionTimeBucket where the person was incarcerated for a revocation."""
 
     # The type of revocation of supervision
@@ -145,9 +148,6 @@ class RevocationReturnSupervisionTimeBucket(SupervisionTimeBucket, ViolationType
     # StateSupervisionViolationType enum for the type of violation that eventually caused the revocation of supervision
     source_violation_type: Optional[StateSupervisionViolationType] = attr.ib(default=None)
 
-    # The most severe decision on a response leading up to the revocation
-    most_severe_response_decision: Optional[StateSupervisionViolationResponseDecision] = attr.ib(default=None)
-
     # A string representation of the violations recorded in the period leading up to the revocation
     violation_history_description: Optional[str] = attr.ib(default=None)
 
@@ -156,6 +156,9 @@ class RevocationReturnSupervisionTimeBucket(SupervisionTimeBucket, ViolationType
     # period leading up to the revocation. Each inner list represents all of the violation types and conditions that
     # were listed on the given violation.
     violation_type_frequency_counter: Optional[List[List[str]]] = attr.ib(default=None)
+
+    # The most severe decision on the most recent response leading up to the revocation
+    most_recent_response_decision: Optional[StateSupervisionViolationResponseDecision] = attr.ib(default=None)
 
     # TODO(#3600): This field should be removed because the daily output makes this unnecessary
     # True if the stint of time on supervision this month included the last day of the month
@@ -178,7 +181,7 @@ class RevocationReturnSupervisionTimeBucket(SupervisionTimeBucket, ViolationType
 
 
 @attr.s(frozen=True)
-class NonRevocationReturnSupervisionTimeBucket(SupervisionTimeBucket, ViolationTypeSeverityBucket,
+class NonRevocationReturnSupervisionTimeBucket(SupervisionTimeBucket, ViolationHistoryBucket,
                                                SupervisionDowngradeBucket):
     """Models a SupervisionTimeBucket where the person was not incarcerated for a revocation."""
 
@@ -275,7 +278,7 @@ class SupervisionStartBucket(SupervisionTimeBucket):
 
 
 @attr.s(frozen=True)
-class SupervisionTerminationBucket(SupervisionTimeBucket, ViolationTypeSeverityBucket):
+class SupervisionTerminationBucket(SupervisionTimeBucket, ViolationHistoryBucket):
     """Models a month in which supervision was terminated.
 
     Describes the reason for termination, and the change in assessment score between first reassessment and termination
