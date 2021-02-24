@@ -34,7 +34,9 @@ import os
 import re
 import subprocess
 import sys
-from typing import FrozenSet, List, Set, Tuple, Dict
+from typing import Dict, FrozenSet, List, Set, Tuple
+
+import attr
 
 from recidiviz.ingest.models import ingest_info, ingest_info_pb2
 from recidiviz.persistence.database.schema.aggregate import schema as aggregate_schema
@@ -45,6 +47,19 @@ from recidiviz.persistence.database.schema.operations import schema as operation
 from recidiviz.persistence.database.migrations.state import versions as state_versions
 from recidiviz.persistence.database.schema.state import schema as state_schema
 from recidiviz.utils.regions import get_supported_direct_ingest_region_codes
+
+
+@attr.s(auto_attribs=True)
+class RequiredModificationSets:
+    if_modified_files: FrozenSet[str]
+    then_modified_files: FrozenSet[str]
+
+    @staticmethod
+    def for_symmetric_check(files: FrozenSet[str]) -> 'RequiredModificationSets':
+        return RequiredModificationSets(
+            if_modified_files=files,
+            then_modified_files=files,
+        )
 
 
 # Sets of prefixes to check. For each set, if the changes modify a file matching
@@ -63,83 +78,75 @@ STATE_KEY = "state"
 INGEST_DOCS_KEY = "ingest_docs"
 CASE_TRIAGE_FIXTURES_KEY = 'case_triage_fixtures'
 
-MODIFIED_FILE_ASSERTIONS: Dict[str, List[FrozenSet[str]]] = {
+MODIFIED_FILE_ASSERTIONS: Dict[str, List[RequiredModificationSets]] = {
     # ingest info files
-    INGEST_KEY:
-        [
-            frozenset((
-                os.path.relpath(ingest_info.__file__),  # python object
-                os.path.relpath(ingest_info.__file__)[:-2] + 'proto',  # proto
-                os.path.relpath(ingest_info_pb2.__file__),  # generated proto source
-                os.path.relpath(ingest_info_pb2.__file__) + 'i',  # proto type hints
-            ))
-        ],
+    INGEST_KEY: [RequiredModificationSets(
+        if_modified_files=frozenset({
+            os.path.relpath(ingest_info.__file__),  # python object
+            os.path.relpath(ingest_info.__file__)[:-2] + 'proto',  # proto
+        }),
+        then_modified_files=frozenset({
+            os.path.relpath(ingest_info.__file__),  # python object
+            os.path.relpath(ingest_info.__file__)[:-2] + 'proto',  # proto
+            os.path.relpath(ingest_info_pb2.__file__),  # generated proto source
+            os.path.relpath(ingest_info_pb2.__file__) + 'i',  # proto type hints
+        }),
+    )],
     # pipfile
-    PIPFILE_KEY:
-        [
-            frozenset(('Pipfile', 'Pipfile.lock'))
-        ],
+    PIPFILE_KEY: [RequiredModificationSets(
+        if_modified_files=frozenset({'Pipfile'}),
+        then_modified_files=frozenset({'Pipfile.lock'}),
+    )],
     # aggregate schema
-    AGGREGATE_KEY:
-        [
-            frozenset((
-                os.path.relpath(aggregate_schema.__file__),  # aggregate schema
-                os.path.relpath(
-                    jails_versions.__file__[:-len('__init__.py')])  # versions
-            ))
-        ],
+    AGGREGATE_KEY: [RequiredModificationSets.for_symmetric_check(frozenset({
+        os.path.relpath(aggregate_schema.__file__),  # aggregate schema
+        os.path.relpath(jails_versions.__file__[:-len('__init__.py')])  # versions
+    }))],
     # county schema
-    COUNTY_KEY:
-        [
-            frozenset((
-                os.path.relpath(county_schema.__file__),  # county schema
-                os.path.relpath(
-                    jails_versions.__file__[:-len('__init__.py')])  # versions
-            ))
-        ],
+    COUNTY_KEY: [RequiredModificationSets.for_symmetric_check(frozenset({
+        os.path.relpath(county_schema.__file__),  # county schema
+        os.path.relpath(jails_versions.__file__[:-len('__init__.py')])  # versions
+    }))],
     # operations schema
-    OPERATIONS_KEY:
-        [
-            frozenset((
-                os.path.relpath(operations_schema.__file__),  # operations schema
-                os.path.relpath(
-                    operations_versions.__file__[:-len('__init__.py')])  # versions
-            ))
-        ],
+    OPERATIONS_KEY: [RequiredModificationSets.for_symmetric_check(frozenset({
+        os.path.relpath(operations_schema.__file__),  # operations schema
+        os.path.relpath(operations_versions.__file__[:-len('__init__.py')])  # versions
+    }))],
     # state schema
-    STATE_KEY:
-        [
-            frozenset((
-                os.path.relpath(state_schema.__file__),  # state schema
-                os.path.relpath(
-                    state_versions.__file__[:-len('__init__.py')])  # versions
-            ))
-        ],
+    STATE_KEY: [RequiredModificationSets.for_symmetric_check(frozenset({
+        os.path.relpath(state_schema.__file__),  # state schema
+        os.path.relpath(state_versions.__file__[:-len('__init__.py')])  # versions
+    }))],
     # ingest docs
-    INGEST_DOCS_KEY: [
-        frozenset((f"recidiviz/ingest/direct/regions/{region_code}/", f"docs/ingest/{region_code}/"))
-        for region_code in get_supported_direct_ingest_region_codes()
-        ],
+    INGEST_DOCS_KEY: [RequiredModificationSets(
+        if_modified_files=frozenset({f"recidiviz/ingest/direct/regions/{region_code}/"}),
+        then_modified_files=frozenset({f"docs/ingest/{region_code}/"}),
+    ) for region_code in get_supported_direct_ingest_region_codes()],
     # case triage dummy data
-    CASE_TRIAGE_FIXTURES_KEY: [
-        frozenset(('recidiviz/tools/case_triage/fixtures/etl_clients.csv',
-                   'recidiviz/case_triage/fixtures/dummy_clients.json'))
-        ],
+    CASE_TRIAGE_FIXTURES_KEY: [RequiredModificationSets(
+        if_modified_files=frozenset({'recidiviz/tools/case_triage/fixtures/etl_clients.csv'}),
+        then_modified_files=frozenset({'recidiviz/case_triage/fixtures/dummy_clients.json'}),
+    )],
 }
 
 
 def _match_filenames(modified_files: FrozenSet[str],
-                     assertion_files: FrozenSet[str]) -> Tuple[FrozenSet[str], FrozenSet[str]]:
+                     required_modification_sets: RequiredModificationSets) -> Tuple[FrozenSet[str], FrozenSet[str]]:
     """Returns all of the assertions in the set of expected assertions which are actually contained within the set of
     modified files."""
-    matched_assertions = frozenset(file_prefix for file_prefix in assertion_files
+    matched_prefixes = frozenset(file_prefix for file_prefix in required_modification_sets.if_modified_files
+                                 if any(modified_file.startswith(file_prefix)
+                                        for modified_file in modified_files))
+    if not matched_prefixes:
+        return frozenset(), frozenset()
+    matched_assertions = frozenset(file_prefix for file_prefix in required_modification_sets.then_modified_files
                                    if any(modified_file.startswith(file_prefix)
                                           for modified_file in modified_files))
 
-    if frozenset() < matched_assertions < assertion_files:
-        return matched_assertions, assertion_files - matched_assertions
+    if matched_assertions < required_modification_sets.then_modified_files:
+        return matched_prefixes, required_modification_sets.then_modified_files - matched_assertions
 
-    return matched_assertions, frozenset()
+    return matched_prefixes, frozenset()
 
 
 def check_assertions(modified_files: FrozenSet[str],
@@ -153,13 +160,13 @@ def check_assertions(modified_files: FrozenSet[str],
     """
     failed_assertion_files: List[Tuple[FrozenSet[str], FrozenSet[str]]] = []
 
-    for set_to_validate, assertion_file_sets in MODIFIED_FILE_ASSERTIONS.items():
+    for set_to_validate, modifications in MODIFIED_FILE_ASSERTIONS.items():
         if set_to_validate in sets_to_skip:
             logging.info('Skipping %s check due to skip commits.', set_to_validate)
             continue
 
-        for assertion_files in assertion_file_sets:
-            matched_prefixes, failed_prefixes = _match_filenames(modified_files, assertion_files)
+        for required_modification_sets in modifications:
+            matched_prefixes, failed_prefixes = _match_filenames(modified_files, required_modification_sets)
             if failed_prefixes:
                 failed_assertion_files.append((matched_prefixes, failed_prefixes))
 
