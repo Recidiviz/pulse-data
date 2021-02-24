@@ -16,6 +16,7 @@
 // =============================================================================
 import styled from "styled-components/macro";
 import {
+  Button,
   CardSection,
   palette,
   spacing,
@@ -24,6 +25,22 @@ import { rem } from "polished";
 
 export const CaseCardSection = styled(CardSection)`
   padding: ${spacing.lg};
+`;
+
+export const CaseCardHeading = styled(CaseCardSection)`
+  position: relative;
+  &:before {
+    position: absolute;
+    display: block;
+    content: "";
+    width: 0;
+    height: 0;
+    border-top: 16px solid transparent;
+    border-bottom: 16px solid transparent;
+    border-right: 16px solid white;
+    left: -15px;
+    top: 38px;
+  }
 `;
 
 export const CaseCardInfo = styled.div`
@@ -53,4 +70,13 @@ export const CaseCardFeedback = styled.div`
 
 export const CheckboxButtonContainer = styled.div`
   margin-top: ${spacing.sm};
+`;
+
+export const CloseButton = styled(Button).attrs({ kind: "link" })`
+  position: absolute;
+  top: 50%;
+  right: ${spacing.lg};
+  transform: translateY(-50%);
+  height: 16px;
+  width: 16px;
 `;

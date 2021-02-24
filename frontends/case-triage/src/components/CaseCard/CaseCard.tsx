@@ -16,12 +16,21 @@
 // =============================================================================
 import * as React from "react";
 import { useState } from "react";
-import { Button, Card, H3, Modal } from "@recidiviz/case-triage-components";
+import {
+  Button,
+  Card,
+  H3,
+  Icon,
+  IconSVG,
+  Modal,
+} from "@recidiviz/case-triage-components";
 import {
   Caption,
   CaseCardFeedback,
   CaseCardFooter,
   CaseCardSection,
+  CaseCardHeading,
+  CloseButton,
 } from "./CaseCard.styles";
 import { HEADING_HEIGHT_MAGIC_NUMBER } from "../ClientList";
 import NeedsEmployment from "./NeedsEmployment";
@@ -32,6 +41,31 @@ import { CaseUpdateActionType } from "../../stores/CaseUpdatesStore/CaseUpdates"
 import { DecoratedClient } from "../../stores/ClientsStore";
 import { titleCase } from "../../utils";
 import { useRootStore } from "../../stores";
+
+const useCardFeedback = (client: DecoratedClient) => {
+  const { caseUpdatesStore } = useRootStore();
+  const [feedbackModalIsOpen, setFeedbackModalIsOpen] = useState(false);
+
+  return (
+    <CaseCardFeedback>
+      See something wrong?
+      <br />
+      <Button kind="link" onClick={() => setFeedbackModalIsOpen(true)}>
+        Give us feedback.
+      </Button>
+      <Modal
+        isOpen={feedbackModalIsOpen}
+        onRequestClose={() => setFeedbackModalIsOpen(false)}
+      >
+        <FeedbackForm
+          caseUpdatesStore={caseUpdatesStore}
+          client={client}
+          onCancel={() => setFeedbackModalIsOpen(false)}
+        />
+      </Modal>
+    </CaseCardFeedback>
+  );
+};
 
 export interface CaseCardProps {
   client: DecoratedClient;
@@ -50,13 +84,9 @@ const CaseCard: React.FC<CaseCardProps> = ({ client }: CaseCardProps) => {
     setScheduledFaceToFace(false);
   }, [client]);
 
-  const [feedbackModalIsOpen, setFeedbackModalIsOpen] = useState(false);
-
   const actionsTaken = () => {
-    const actions =
-      client.inProgressActions !== undefined
-        ? [...client.inProgressActions]
-        : [];
+    const actions = [];
+
     if (helpedWithEmployment) {
       actions.push(CaseUpdateActionType.FOUND_EMPLOYMENT);
     }
@@ -77,7 +107,7 @@ const CaseCard: React.FC<CaseCardProps> = ({ client }: CaseCardProps) => {
           (clientsStore.activeClientOffset || 0) - HEADING_HEIGHT_MAGIC_NUMBER,
       }}
     >
-      <CaseCardSection className="fs-exclude">
+      <CaseCardHeading className="fs-exclude">
         <H3 as="div">{client.name}</H3>
 
         <Caption>
@@ -85,7 +115,11 @@ const CaseCard: React.FC<CaseCardProps> = ({ client }: CaseCardProps) => {
           {titleCase(client.supervisionLevel)},{" "}
           {titleCase(client.personExternalId)}
         </Caption>
-      </CaseCardSection>
+
+        <CloseButton onClick={() => clientsStore.view()}>
+          <Icon kind={IconSVG.Close} />
+        </CloseButton>
+      </CaseCardHeading>
       <NeedsEmployment
         client={client}
         onStatusChanged={(helped: boolean) => setHelpedWithEmployment(helped)}
@@ -106,23 +140,8 @@ const CaseCard: React.FC<CaseCardProps> = ({ client }: CaseCardProps) => {
         className="fs-exclude"
       />
       <CaseCardFooter>
-        <CaseCardFeedback>
-          See something wrong?
-          <br />
-          <Button kind="link" onClick={() => setFeedbackModalIsOpen(true)}>
-            Give us feedback.
-          </Button>
-          <Modal
-            isOpen={feedbackModalIsOpen}
-            onRequestClose={() => setFeedbackModalIsOpen(false)}
-          >
-            <FeedbackForm
-              caseUpdatesStore={caseUpdatesStore}
-              client={client}
-              onCancel={() => setFeedbackModalIsOpen(false)}
-            />
-          </Modal>
-        </CaseCardFeedback>
+        {useCardFeedback(client)}
+
         <div>
           <Button
             kind="primary"

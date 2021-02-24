@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
-import { autorun, makeAutoObservable, runInAction } from "mobx";
+import { autorun, makeAutoObservable, remove, runInAction, set } from "mobx";
 import UserStore from "../UserStore";
 import { Client, DecoratedClient, decorateClient } from "./Client";
 
@@ -33,6 +33,8 @@ class ClientsStore {
   activeClient?: DecoratedClient;
 
   activeClientOffset?: number;
+
+  clientPendingView: DecoratedClient | null;
 
   clients: DecoratedClient[];
 
@@ -54,6 +56,7 @@ class ClientsStore {
 
     this.clients = [];
     this.inProgressClients = [];
+    this.clientPendingView = null;
     this.clientsMarkedInProgress = {};
     this.userStore = userStore;
     this.isLoading = false;
@@ -98,9 +101,12 @@ class ClientsStore {
           // Concatenate clients that have been moved to "In progress"
           // This allows us to render their ClientMarkedInProgress list item overlay
           .concat(
-            Object.values(this.clientsMarkedInProgress).map(
-              ({ client }) => client
-            )
+            Object.values(this.clientsMarkedInProgress)
+              .filter(
+                ({ client }) =>
+                  !client.inProgressActions || !client.inProgressActions.length
+              )
+              .map(({ client }) => client)
           );
 
         this.clients = upNextClients.sort(
@@ -157,11 +163,22 @@ class ClientsStore {
       const alreadyInProgress = this.wasRecentlyMarkedInProgress(client);
 
       if (!alreadyInProgress) {
-        this.clientsMarkedInProgress[client.personExternalId] = {
+        set(this.clientsMarkedInProgress, client.personExternalId, {
           client,
           wasPositiveAction,
-        };
+        });
       }
+    });
+  }
+
+  undoMarkAsInProgress(client: DecoratedClient): void {
+    runInAction(() => {
+      remove(this.clientsMarkedInProgress, client.personExternalId);
+
+      // Viewing a CaseCard requires an `activeClientOffset`, which is derived from the DOM `offsetTop` layout property
+      // As such, rather than viewing our client directly, we mark them as `clientPendingView`
+      // so that the `ClientListCard` calculate the appropriate offset once rendered
+      this.clientPendingView = client;
     });
   }
 
@@ -174,6 +191,7 @@ class ClientsStore {
   view(client: DecoratedClient | undefined = undefined, offset = 0): void {
     this.activeClient = client;
     this.activeClientOffset = offset;
+    this.clientPendingView = null;
   }
 }
 

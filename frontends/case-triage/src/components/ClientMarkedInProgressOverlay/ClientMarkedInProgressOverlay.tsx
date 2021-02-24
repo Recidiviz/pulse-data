@@ -22,7 +22,9 @@ import {
   InProgressOverlay,
   InProgressConfirmation,
   InProgressConfirmationHeading,
+  Undo,
 } from "./ClientMarkedInProgressOverlay.styles";
+import { useRootStore } from "../../stores";
 
 interface Props {
   clientMarkedInProgress: ClientMarkedInProgress;
@@ -31,15 +33,16 @@ interface Props {
 const ClientMarkedInProgressOverlay = ({
   clientMarkedInProgress: { client, wasPositiveAction },
 }: Props) => {
+  const { caseUpdatesStore } = useRootStore();
+
   return (
     <InProgressOverlay>
       <InProgressConfirmation>
         <InProgressConfirmationHeading>
           {wasPositiveAction ? "Great work!" : "Thanks for your feedback!"}
         </InProgressConfirmationHeading>
-        We&lsquo;ve marked {client.name}&lsquo;
-        {client.name[client.name.length - 1] === "s" ? "" : "s"} case as in
-        progress.
+        We&lsquo;ve marked {client.name}&lsquo;s case as in progress.{" "}
+        <Undo onClick={() => caseUpdatesStore.undo(client)}>Undo?</Undo>
       </InProgressConfirmation>
       <Icon kind={IconSVG.Success} fill={palette.white.main} size={32} />
     </InProgressOverlay>

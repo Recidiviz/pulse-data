@@ -66,7 +66,10 @@ class CaseUpdatesStore {
       method: "POST",
       body: JSON.stringify({
         personExternalId: client.personExternalId,
-        actions,
+        actions:
+          client.inProgressActions !== undefined
+            ? [...client.inProgressActions, ...actions]
+            : [...actions],
         otherText,
       }),
     }).then(() => {
@@ -76,11 +79,63 @@ class CaseUpdatesStore {
       );
       this.clientsStore.markAsInProgress(client, wasPositiveAction);
       this.clientsStore.fetchClientsList();
+
+      runInAction(() => {
+        this.isLoading = false;
+      });
+    });
+  }
+
+  async undo(client: DecoratedClient): Promise<void> {
+    /*
+      Given a client, who was recently marked as in-progress, revert their CaseUpdate to its previous state
+      To do so, we feed the `ClientsStore.clientsMarkedInProgress` dictionary entry, which contains the previous
+      representation of the client, back into the `record_client_action` API.
+     */
+    if (!this.userStore.getTokenSilently) {
+      return;
+    }
+
+    if (!this.clientsStore.clientsMarkedInProgress[client.personExternalId]) {
+      return;
+    }
+
+    this.isLoading = true;
+
+    const token = await this.userStore.getTokenSilently({
+      audience: "https://case-triage.recidiviz.org/api",
+      scope: "email",
     });
 
-    runInAction(() => {
-      this.isLoading = false;
-    });
+    const {
+      client: { inProgressActions: previousInProgressActions = [] },
+    } = this.clientsStore.clientsMarkedInProgress[client.personExternalId];
+
+    return fetch("/api/record_client_action", {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": `application/json`,
+      },
+      method: "POST",
+      body: JSON.stringify({
+        personExternalId: client.personExternalId,
+        actions: previousInProgressActions,
+        otherText: "",
+      }),
+    })
+      .then(() => {
+        this.clientsStore.undoMarkAsInProgress(client);
+        this.clientsStore.fetchClientsList();
+
+        runInAction(() => {
+          this.isLoading = false;
+        });
+      })
+      .catch(() => {
+        runInAction(() => {
+          this.isLoading = false;
+        });
+      });
   }
 }
 

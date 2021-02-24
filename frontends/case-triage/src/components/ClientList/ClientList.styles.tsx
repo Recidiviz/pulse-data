@@ -84,7 +84,10 @@ export const ClientListTableHeading = styled.div`
   padding: 8px 24px;
   border-bottom: 1px solid ${palette.backgrounds.D2D8D8};
   margin-bottom: 16px;
-  display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
+  display: flex;
   line-height: 1;
+
+  > span {
+    flex: 1 1 0%;
+  }
 `;

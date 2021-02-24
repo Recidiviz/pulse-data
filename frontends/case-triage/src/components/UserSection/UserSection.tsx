@@ -57,7 +57,7 @@ const FAQLink = styled.a`
 `;
 
 const UserAvatar = styled.span`
-  background: #006c67;
+  background: ${palette.logo.blue};
   border-radius: 50%;
   color: white;
   display: inline-block;

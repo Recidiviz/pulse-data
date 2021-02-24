@@ -52,13 +52,23 @@ const ClientList = () => {
 
   let inProgressClients;
   if (clientsStore.inProgressClients.length) {
-    inProgressClients = clientsStore.inProgressClients.map((client) => (
-      <ClientListCard
-        client={client}
-        isInProgress
-        key={client.personExternalId}
-      />
-    ));
+    inProgressClients = clientsStore.inProgressClients.map((client) => {
+      const markedInProgress =
+        clientsStore.clientsMarkedInProgress[client.personExternalId];
+
+      if (markedInProgress?.client.inProgressActions?.length) {
+        return (
+          <MarkedInProgressCard client={client} key={client.personExternalId} />
+        );
+      }
+      return (
+        <ClientListCard
+          client={client}
+          isInProgress
+          key={client.personExternalId}
+        />
+      );
+    });
   } else {
     inProgressClients = <InProgressEmptyState />;
   }
