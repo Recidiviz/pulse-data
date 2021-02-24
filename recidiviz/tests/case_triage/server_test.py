@@ -300,3 +300,20 @@ class TestUserImpersonation(TestCase):
 
             with self.test_client.session_transaction() as sess:  # type: ignore
                 self.assertEqual(sess[IMPERSONATED_EMAIL_KEY], 'non-admin@recidiviz.org')
+
+    def test_remove_impersonation(self) -> None:
+        with self.test_app.test_request_context():
+            self.auth_store.admin_users = ['admin@recidiviz.org']
+            with self.test_client.session_transaction() as sess:  # type: ignore
+                sess['user_info'] = {
+                    'email': 'admin@recidiviz.org',
+                }
+
+            # Perform initial impersonation
+            self.test_client.get(f'/impersonate_user?{IMPERSONATED_EMAIL_KEY}=non-admin%40recidiviz.org')
+
+            # Undo impersonation
+            response = self.test_client.get('/impersonate_user')
+            self.assertEqual(response.status_code, HTTPStatus.FOUND)
+            with self.test_client.session_transaction() as sess:  # type: ignore
+                self.assertTrue(IMPERSONATED_EMAIL_KEY not in sess)

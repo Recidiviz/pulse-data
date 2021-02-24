@@ -15,7 +15,10 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 """Implements API routes for the Case Triage app."""
-from flask import Blueprint, g, jsonify, request
+import json
+import os
+
+from flask import Blueprint, g, jsonify, request, session
 from flask_sqlalchemy_session import current_session
 
 from recidiviz.case_triage.case_updates.interface import CaseUpdatesInterface
@@ -23,6 +26,7 @@ from recidiviz.case_triage.case_updates.types import CaseUpdateActionType
 from recidiviz.case_triage.exceptions import CaseTriageBadRequestException
 from recidiviz.case_triage.querier.querier import CaseTriageQuerier, PersonDoesNotExistError
 from recidiviz.case_triage.state_utils.requirements import policy_requirements_for_state
+from recidiviz.case_triage.util import SESSION_ADMIN_KEY
 
 
 api = Blueprint('api', __name__)
@@ -30,6 +34,14 @@ api = Blueprint('api', __name__)
 
 @api.route('/clients')
 def get_clients() -> str:
+    if session.get(SESSION_ADMIN_KEY) and not getattr(g, 'current_user', None):
+        fixture_path = os.path.abspath(os.path.join(
+            os.path.dirname(os.path.realpath(__file__)),
+            "./fixtures/dummy_clients.json",
+        ))
+        with open(fixture_path) as f:
+            return jsonify(json.load(f))
+
     return jsonify([
         client.to_json() for client in CaseTriageQuerier.clients_for_officer(
             current_session,
@@ -78,6 +90,11 @@ def post_record_client_action() -> str:
     }
     `actions` must be non-empty and only contain approved actions
     """
+    if not getattr(g, 'current_user', None):
+        raise CaseTriageBadRequestException(
+            code='not_allowed',
+            description='A user must be associated with the record-action request',
+        )
     if not request.json:
         raise CaseTriageBadRequestException(
             code='missing_body',

@@ -41,4 +41,6 @@ class ImpersonateUser(View):
         impersonated_email = request.args.get(IMPERSONATED_EMAIL_KEY)
         if impersonated_email:
             session[IMPERSONATED_EMAIL_KEY] = impersonated_email
+        elif IMPERSONATED_EMAIL_KEY in session:
+            session.pop(IMPERSONATED_EMAIL_KEY)
         return redirect(self.redirect_url)
