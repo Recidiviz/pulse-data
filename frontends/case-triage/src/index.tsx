@@ -25,6 +25,7 @@ import { Link, Router } from "@reach/router";
 import { Assets, GlobalStyle, Header } from "@recidiviz/case-triage-components";
 
 import Home from "./routes/Home";
+import Verify from "./routes/Verify";
 
 import StoreProvider from "./stores";
 import AuthWall from "./components/AuthWall";
@@ -60,6 +61,7 @@ ReactDOM.render(
     <Container>
       <AuthWall>
         <Router>
+          <Verify path="verify" />
           <Home path="/" />
         </Router>
       </AuthWall>
