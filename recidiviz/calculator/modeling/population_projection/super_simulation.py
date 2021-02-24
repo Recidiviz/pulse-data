@@ -17,7 +17,7 @@
 """Highest level simulation object -- runs various comparative scenarios"""
 
 from abc import ABC, abstractmethod
-from typing import Dict, List, Any
+from typing import Dict, List, Any, Optional
 from warnings import warn
 import matplotlib.pyplot as plt
 import numpy as np
@@ -66,8 +66,8 @@ class SuperSimulation(ABC):
         """Re-format PopulationSimulation results so each simulation is a column"""
         simulation_results = pd.DataFrame()
         for scenario, simulation in self.pop_simulations.items():
-            results = simulation.population_projections[simulation.population_projections.time_step >=
-                                                        self.user_inputs['start_time_step']]
+            results = simulation.get_population_projections()
+            results = results[results.time_step >= self.user_inputs['start_time_step']]
             results = results.rename({'time_step': 'year', 'total_population': f'{scenario}_total_population'}, axis=1)
             results.year = self._convert_to_absolute_year(results.year)
 
@@ -104,7 +104,11 @@ class SuperSimulation(ABC):
         self.user_inputs['speed_run'] = yaml_user_inputs.get('speed_run', False)
 
     @abstractmethod
-    def _build_population_simulation(self):
+    def _build_population_simulation(self,
+                                     first_relevant_ts_override: Optional[int] = None,
+                                     outflows_data_override: Optional[pd.DataFrame] = None,
+                                     user_inputs: Dict[str, Any] = None
+                                     ) -> PopulationSimulation:
         """Build and initialize a population simulation."""
 
     def _reset_pop_simulations(self):
@@ -127,8 +131,7 @@ class SuperSimulation(ABC):
         # Run one simulation for the min, middle, and max confidence intervals
         for projection_type in [ProjectionType.LOW.value, ProjectionType.MIDDLE.value, ProjectionType.HIGH.value]:
             self.user_inputs['projection_type'] = projection_type
-            self._simulate_baseline(simulation_title=f'baseline_{projection_type}',
-                                    first_relevant_ts=first_relevant_ts)
+            self._run_baseline(simulation_title=f'baseline_{projection_type}', first_relevant_ts=first_relevant_ts)
 
         simulation_results = self._format_simulation_results(collapse_compartments=True)
 
@@ -148,16 +151,28 @@ class SuperSimulation(ABC):
         if validation_pairs is not None:
             self.calculate_baseline_transition_error(validation_pairs)
 
-    @abstractmethod
-    def _simulate_baseline(self, simulation_title: str, first_relevant_ts: int = None):
+    def _run_baseline(self, simulation_title: str, first_relevant_ts: int = None):
         """
-        Calculates a baseline projection, returns transition error for a specific transition
+        Calculates a baseline projection.
         `simulation_title` is the desired simulation tag for this baseline
         `first_relevant_ts` is the ts at which to start initialization
         """
 
-        self.pop_simulations[simulation_title] = self._build_population_simulation()
+        self.pop_simulations[simulation_title] = self._build_population_simulation(first_relevant_ts)
         self.user_inputs['policy_list'] = []
+
+        self.pop_simulations[simulation_title].simulate_policies()
+
+        self.output_data[simulation_title] = \
+            self.pop_simulations[simulation_title].get_population_projections().sort_values('time_step')
+
+    def _get_first_relevant_ts(self):
+        """calculate ts to start model initialization at. Should only be used by MacroSimulation."""
+        if self.user_inputs['speed_run']:
+            max_sentence = self.user_inputs['projection_time_steps'] + 1
+        else:
+            max_sentence = max(self.data_dict['transitions_data'].compartment_duration)
+        return self.user_inputs['start_time_step'] - int(2 * max_sentence)
 
     def calculate_baseline_transition_error(self, validation_pairs: Dict[str, str]):
         self.output_data['baseline_transition_error'] = \
