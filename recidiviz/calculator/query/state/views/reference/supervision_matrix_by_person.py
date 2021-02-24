@@ -50,6 +50,7 @@ SUPERVISION_MATRIX_BY_PERSON_QUERY_TEMPLATE = \
             IFNULL(level_1_supervision_location_external_id, 'EXTERNAL_UNKNOWN') AS level_1_supervision_location,
             IFNULL(level_2_supervision_location_external_id, 'EXTERNAL_UNKNOWN') AS level_2_supervision_location,
             supervising_officer_external_id AS officer,
+            {state_specific_recommended_for_revocation},
             date_of_supervision,
             FALSE AS is_revocation
         FROM `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_population_metrics_materialized`
@@ -72,6 +73,7 @@ SUPERVISION_MATRIX_BY_PERSON_QUERY_TEMPLATE = \
             level_1_supervision_location,
             level_2_supervision_location,
             officer,
+            recommended_for_revocation,
             revocation_admission_date AS date_of_supervision,
             TRUE as is_revocation
         FROM `{project_id}.{reference_views_dataset}.event_based_revocations_for_matrix_materialized`
@@ -101,6 +103,7 @@ SUPERVISION_MATRIX_BY_PERSON_QUERY_TEMPLATE = \
         level_1_supervision_location,
         level_2_supervision_location,
         officer,
+        recommended_for_revocation,
         person_id, person_external_id,
         IFNULL(gender, 'EXTERNAL_UNKNOWN') AS gender,
         age_bucket,
@@ -120,6 +123,7 @@ SUPERVISION_MATRIX_BY_PERSON_QUERY_TEMPLATE = \
         level_1_supervision_location,
         level_2_supervision_location,
         officer,
+        recommended_for_revocation,
         person_id,
         person_external_id,
         gender,
@@ -147,6 +151,7 @@ SUPERVISION_MATRIX_BY_PERSON_QUERY_TEMPLATE = \
         level_1_supervision_location,
         level_2_supervision_location,
         officer,
+        recommended_for_revocation,
         person_id,
         person_external_id,
         gender,
@@ -189,6 +194,8 @@ SUPERVISION_MATRIX_BY_PERSON_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     thirty_six_month_filter=bq_utils.thirty_six_month_filter(),
     state_specific_dimension_filter=state_specific_query_strings.state_specific_dimension_filter(),
     state_specific_inclusion_filter=state_specific_query_strings.state_specific_inclusion_filter(),
+    state_specific_recommended_for_revocation=
+    state_specific_query_strings.state_specific_recommended_for_revocation(),
 )
 
 if __name__ == '__main__':

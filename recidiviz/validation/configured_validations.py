@@ -86,6 +86,10 @@ from recidiviz.validation.views.state.revocation_matrix_comparison_revocations_b
     REVOCATION_MATRIX_COMPARISON_REVOCATIONS_BY_OFFICER_VIEW_BUILDER
 from recidiviz.validation.views.state.revocation_matrix_comparison_supervision_population import \
     REVOCATION_MATRIX_COMPARISON_SUPERVISION_POPULATION_VIEW_BUILDER
+from recidiviz.validation.views.state.revocation_matrix_distribution_by_gender_comparison import \
+    REVOCATION_MATRIX_DISTRIBUTION_BY_GENDER_COMPARISON_VIEW_BUILDER
+from recidiviz.validation.views.state.revocation_matrix_distribution_by_race_comparison import \
+    REVOCATION_MATRIX_DISTRIBUTION_BY_RACE_COMPARISON_VIEW_BUILDER
 from recidiviz.validation.views.state.revocations_by_period_dashboard_comparison import \
     REVOCATIONS_BY_PERIOD_DASHBOARD_COMPARISON_VIEW_BUILDER
 from recidiviz.validation.views.state.sentence_type_by_district_by_demographics_internal_consistency import \
@@ -187,6 +191,36 @@ def get_all_validations() -> List[DataValidationCheck]:
         SamenessDataValidationCheck(
             view=REVOCATION_MATRIX_COMPARISON_REVOCATIONS_BY_OFFICER_VIEW_BUILDER.build(),
             comparison_columns=['officer_sum', 'caseload_sum']
+        ),
+        SamenessDataValidationCheck(
+            view=REVOCATION_MATRIX_DISTRIBUTION_BY_RACE_COMPARISON_VIEW_BUILDER.build(),
+            validation_name_suffix='revocation',
+            comparison_columns=['revocation_count_all', 'revocation_count_sum']
+        ),
+        SamenessDataValidationCheck(
+            view=REVOCATION_MATRIX_DISTRIBUTION_BY_RACE_COMPARISON_VIEW_BUILDER.build(),
+            validation_name_suffix='supervision',
+            comparison_columns=['supervision_count_all', 'supervision_count_sum']
+        ),
+        SamenessDataValidationCheck(
+            view=REVOCATION_MATRIX_DISTRIBUTION_BY_RACE_COMPARISON_VIEW_BUILDER.build(),
+            validation_name_suffix='recommendation',
+            comparison_columns=['recommended_for_revocation_count_all', 'recommended_for_revocation_count_sum']
+        ),
+        SamenessDataValidationCheck(
+            view=REVOCATION_MATRIX_DISTRIBUTION_BY_GENDER_COMPARISON_VIEW_BUILDER.build(),
+            validation_name_suffix='revocation',
+            comparison_columns=['revocation_count_all', 'revocation_count_sum']
+        ),
+        SamenessDataValidationCheck(
+            view=REVOCATION_MATRIX_DISTRIBUTION_BY_GENDER_COMPARISON_VIEW_BUILDER.build(),
+            validation_name_suffix='supervision',
+            comparison_columns=['supervision_count_all', 'supervision_count_sum']
+        ),
+        SamenessDataValidationCheck(
+            view=REVOCATION_MATRIX_DISTRIBUTION_BY_GENDER_COMPARISON_VIEW_BUILDER.build(),
+            validation_name_suffix='recommendation',
+            comparison_columns=['recommended_for_revocation_count_all', 'recommended_for_revocation_count_sum']
         ),
         SamenessDataValidationCheck(
             view=REVOCATIONS_BY_PERIOD_DASHBOARD_COMPARISON_VIEW_BUILDER.build(),
