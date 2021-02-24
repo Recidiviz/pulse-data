@@ -38,23 +38,23 @@ outflows_data = pd.DataFrame({
 })
 
 transitions_data = pd.DataFrame({
-    'compartment': ['PRISON', 'PRISON', 'RELEASE', 'RELEASE'] * 2,
-    'outflow_to': ['RELEASE', 'RELEASE', 'PRISON', 'RELEASE'] * 2,
-    'compartment_duration': [3, 5, 3, 50] * 2,
-    'state_code': ['test_state'] * 8,
-    'run_date': [datetime(2021, 1, 1)] * 8,
-    'gender': ['MALE'] * 4 + ['FEMALE'] * 4,
-    'total_population': [0.6, 0.4, 0.3, 0.7] * 2
+    'compartment': ['PRISON', 'PRISON', 'RELEASE'] * 2,
+    'outflow_to': ['RELEASE', 'RELEASE', 'RELEASE'] * 2,
+    'compartment_duration': [3, 5, 3] * 2,
+    'state_code': ['test_state'] * 6,
+    'run_date': [datetime(2021, 1, 1)] * 6,
+    'gender': ['MALE'] * 3 + ['FEMALE'] * 3,
+    'total_population': [0.6, 0.4, 1] * 2
 })
 
 remaining_sentence_data = pd.DataFrame({
-    'compartment': ['PRISON', 'PRISON', 'RELEASE', 'RELEASE'] * 2,
-    'outflow_to': ['RELEASE', 'RELEASE', 'PRISON', 'RELEASE'] * 2,
-    'compartment_duration': [1, 2, 1, 50] * 2,
-    'state_code': ['test_state'] * 8,
-    'run_date': [datetime(2021, 1, 1)] * 8,
-    'gender': ['MALE'] * 4 + ['FEMALE'] * 4,
-    'total_population': [60, 40, 10, 90] * 2
+    'compartment': ['PRISON', 'PRISON', 'RELEASE'] * 2,
+    'outflow_to': ['RELEASE', 'RELEASE', 'RELEASE'] * 2,
+    'compartment_duration': [1, 2, 1] * 2,
+    'state_code': ['test_state'] * 6,
+    'run_date': [datetime(2021, 1, 1)] * 6,
+    'gender': ['MALE'] * 3 + ['FEMALE'] * 3,
+    'total_population': [60, 40, 1] * 2
 })
 
 total_population_data = pd.DataFrame({
@@ -113,7 +113,8 @@ class TestMicroSuperSimulation(unittest.TestCase):
 
         # get time before starting cohort filters out of prison
         affected_time_frame = self.microsim.data_dict['transitions_data'][
-            self.microsim.data_dict['transitions_data'].compartment == 'PRISON'].compartment_duration.max()
+            (self.microsim.data_dict['transitions_data'].compartment == 'PRISON') &
+            (self.microsim.data_dict['transitions_data'].total_population > 0)].compartment_duration.max()
 
         # get projected prison population from simulation substituting transitions data for remaining sentences
         substitute_outputs = microsim.output_data['baseline_middle']
