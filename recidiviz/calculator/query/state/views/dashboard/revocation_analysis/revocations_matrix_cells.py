@@ -40,12 +40,6 @@ REVOCATIONS_MATRIX_CELLS_QUERY_TEMPLATE = \
         supervision_type,
         supervision_level,
         charge_category,
-        -- TODO(#4709): Remove this field once it is no-longer used on the frontend
-        CASE
-          WHEN state_code = 'US_MO' THEN level_1_supervision_location
-          WHEN state_code = 'US_PA' THEN level_2_supervision_location
-          ELSE level_1_supervision_location
-        END AS district,
         level_1_supervision_location,
         level_2_supervision_location,
         metric_period_months
@@ -60,7 +54,7 @@ REVOCATIONS_MATRIX_CELLS_VIEW_BUILDER = MetricBigQueryViewBuilder(
     dataset_id=dataset_config.DASHBOARD_VIEWS_DATASET,
     view_id=REVOCATIONS_MATRIX_CELLS_VIEW_NAME,
     view_query_template=REVOCATIONS_MATRIX_CELLS_QUERY_TEMPLATE,
-    dimensions=['state_code', 'metric_period_months', 'district', 'level_1_supervision_location',
+    dimensions=['state_code', 'metric_period_months', 'level_1_supervision_location',
                 'level_2_supervision_location', 'supervision_type', 'supervision_level',
                 'violation_type', 'reported_violations', 'charge_category'],
     description=REVOCATIONS_MATRIX_CELLS_DESCRIPTION,
