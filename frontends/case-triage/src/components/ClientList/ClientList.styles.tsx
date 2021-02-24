@@ -30,17 +30,32 @@ export const ClientNeed = styled(Need)`
   margin-right: ${spacing.sm};
 `;
 
-export const ClientCard = styled(Card)`
+export const ClientCard = styled(Card).attrs((props) => {
+  return { className: `client-card ${props.className}` };
+})`
   padding: ${spacing.md};
-  &:hover {
+  overflow: hidden;
+  position: relative;
+  min-height: 92px;
+
+  &:hover,
+  &:focus {
     cursor: pointer;
     box-shadow: inset 0 0 0 1px #7dc1e8;
+  }
+
+  &.client-card--in-progress {
+    background-color: ${palette.backgrounds.E9EBEB};
   }
 `;
 
 export const MainText = styled.span`
   font-size: ${rem("17px")};
   display: block;
+
+  .client-card--in-progress & {
+    color: ${palette.text.caption};
+  }
 `;
 
 export const SecondaryText = styled.span`

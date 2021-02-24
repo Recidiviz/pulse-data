@@ -29,7 +29,6 @@ export const DueDate: React.FC<DueDateProps> = ({ date }: DueDateProps) => {
   }
 
   const timeAgo = date.fromNow(true).split("");
-  timeAgo[0] = timeAgo[0].toUpperCase();
 
   const formatted = timeAgo.join("");
 
@@ -40,6 +39,8 @@ export const DueDate: React.FC<DueDateProps> = ({ date }: DueDateProps) => {
   if (date.isAfter(moment(), "day")) {
     return <BaseDueDate>In {formatted}</BaseDueDate>;
   }
+
+  timeAgo[0] = timeAgo[0].toUpperCase();
 
   return <PastDueDate>{formatted} ago</PastDueDate>;
 };

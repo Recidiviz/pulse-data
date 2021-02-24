@@ -96,7 +96,9 @@ class TestCasePresenter(TestCase):
 
         case_presenter = CasePresenter(self.mock_client, case_update)
 
-        self.assertEqual(case_presenter.in_progress_officer_actions(), dismiss_actions)
+        self.assertEqual([
+            action.action_type for action in case_presenter.in_progress_officer_actions()
+        ], dismiss_actions)
         self.assertEqual(case_presenter.to_json(), {
             'personExternalId': self.mock_client.person_external_id,
             'fullName': json.loads(self.mock_client.full_name),
@@ -116,6 +118,7 @@ class TestCasePresenter(TestCase):
             'assessmentScore': self.mock_client.assessment_score,
             'mostRecentFaceToFaceDate': self.mock_client.most_recent_face_to_face_date,
             'inProgressActions': [action.value for action in dismiss_actions],
+            'inProgressSubmissionDate': str(datetime(2020, 1, 1, 0, 0)),
             'nextAssessmentDate': str(date(2022, 2, 1)),
             'nextFaceToFaceDate': str(date(2021, 3, 1)),
             'needsMet': {

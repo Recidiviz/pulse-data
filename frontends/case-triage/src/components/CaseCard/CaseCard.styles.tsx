@@ -50,3 +50,7 @@ export const Caption = styled.span`
 export const CaseCardFeedback = styled.div`
   font-size: ${rem("14px")};
 `;
+
+export const CheckboxButtonContainer = styled.div`
+  margin-top: ${spacing.sm};
+`;
