@@ -18,8 +18,9 @@ import * as React from "react";
 import styled from "styled-components/macro";
 import { rem } from "polished";
 import { observer } from "mobx-react-lite";
-import { Button } from "@recidiviz/case-triage-components";
+import { Button, palette } from "@recidiviz/case-triage-components";
 import { User } from "@auth0/auth0-spa-js";
+import { Link } from "@reach/router";
 import { useRootStore } from "../../stores";
 
 const UserFlex = styled.div`
@@ -27,9 +28,8 @@ const UserFlex = styled.div`
   align-items: center;
 `;
 
-const UserName = styled.span`
+const headerStyleBase = `
   font-weight: 500;
-  margin: 0 16px;
 
   display: flex;
   align-items: center;
@@ -37,6 +37,23 @@ const UserName = styled.span`
   font-size: ${rem("15px")};
   letter-spacing: -0.01em;
   font-feature-settings: "ss04" on;
+
+  color: ${palette.text.normal};
+`;
+
+const UserName = styled.span`
+  ${headerStyleBase}
+
+  margin: 0 16px;
+`;
+
+const FAQLink = styled.a`
+  ${headerStyleBase}
+
+  text-decoration: none;
+  &:hover {
+    text-decoration: underline;
+  }
 `;
 
 const UserAvatar = styled.span`
@@ -90,6 +107,12 @@ const UserSection = () => {
 
   return (
     <UserFlex className="fs-exclude">
+      <FAQLink
+        href="https://docs.google.com/document/d/1iqpKkbsnVpl4bTqSICH4UmwPQ65pOjpIH79L47EquaU/edit?usp=sharing"
+        target="_blank"
+      >
+        FAQ
+      </FAQLink>
       <LoginButton />
       {isAuthorized && user ? renderUser({ user }) : null}
     </UserFlex>
