@@ -18,6 +18,8 @@ import { RouteComponentProps } from "@reach/router";
 import React, { ReactElement } from "react";
 import styled from "styled-components/macro";
 import { observer } from "mobx-react-lite";
+
+import AuthWall from "../components/AuthWall";
 import CaseCard from "../components/CaseCard";
 import ClientList from "../components/ClientList";
 import { useRootStore } from "../stores";
@@ -43,12 +45,14 @@ const Home = (props: RouteComponentProps): ReactElement => {
   ) : null;
 
   return (
-    <Container>
-      <Left>
-        <ClientList />
-      </Left>
-      <Right>{ClientCard}</Right>
-    </Container>
+    <AuthWall>
+      <Container>
+        <Left>
+          <ClientList />
+        </Left>
+        <Right>{ClientCard}</Right>
+      </Container>
+    </AuthWall>
   );
 };
 
