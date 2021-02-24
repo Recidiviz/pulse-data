@@ -40,6 +40,7 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_RACE_QUERY_TEMPLATE = \
       violation_type,
       reported_violations,
       COUNT(DISTINCT person_id) AS supervision_population_count,
+      COUNT(DISTINCT IF(recommended_for_revocation, person_id, NULL)) AS recommended_for_revocation_count,
       race,
       supervision_type,
       supervision_level,
@@ -93,7 +94,9 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_RACE_QUERY_TEMPLATE = \
       IFNULL(race_rev.revocation_count, 0) AS revocation_count, -- Race-specific revocation count
       IFNULL(race_term.termination_count, 0) AS exit_count, -- Race-specific termination count
       IFNULL(race_sup.supervision_population_count, 0) AS supervision_population_count, -- Race-specific supervision pop count,
+      IFNULL(race_sup.recommended_for_revocation_count, 0) as recommended_for_revocation_count, -- Race-specific recommended for revocation count
       IFNULL(revocation_count_all, 0) AS revocation_count_all, -- Total revocation count, all races
+      IFNULL(recommended_for_revocation_count_all, 0) AS recommended_for_revocation_count_all, -- Total recommended for revocation, all races
       supervision_count_all, -- Total supervision count, all races
       race,
       supervision_type,
@@ -104,7 +107,9 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_RACE_QUERY_TEMPLATE = \
       metric_period_months
     FROM
       (SELECT * FROM
-        (SELECT * EXCEPT(race, supervision_population_count), SUM(supervision_population_count) AS supervision_count_all
+      (SELECT * EXCEPT(race, supervision_population_count, recommended_for_revocation_count),
+       SUM(supervision_population_count) AS supervision_count_all,
+       SUM(recommended_for_revocation_count) AS recommended_for_revocation_count_all
          FROM supervision_counts WHERE race = 'ALL'
          GROUP BY state_code, violation_type, reported_violations, supervision_type, supervision_level, charge_category,
         level_1_supervision_location, level_2_supervision_location, metric_period_months),
