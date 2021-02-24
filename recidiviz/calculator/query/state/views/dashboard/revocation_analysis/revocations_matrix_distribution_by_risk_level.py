@@ -88,10 +88,6 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_RISK_LEVEL_QUERY_TEMPLATE = \
       state_code,
       violation_type,
       reported_violations,
-      -- TODO(#5473): Delete this column
-      IFNULL(revocation_count, 0) AS population_count, -- [DEPRECATED] Revocation count,
-      -- TODO(#5473): Delete this column
-      supervision_population_count AS total_supervision_count, -- [DEPRECATED] Supervision count,
       IFNULL(revocation_count, 0) AS revocation_count,
       IFNULL(termination_count, 0) AS exit_count,
       supervision_population_count,
@@ -99,12 +95,6 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_RISK_LEVEL_QUERY_TEMPLATE = \
       supervision_type,
       supervision_level,
       charge_category,
-      -- TODO(#4709): Remove this field once it is no-longer used on the frontend
-      CASE
-        WHEN state_code = 'US_MO' THEN level_1_supervision_location
-        WHEN state_code = 'US_PA' THEN level_2_supervision_location
-        ELSE level_1_supervision_location
-      END AS district,
       level_1_supervision_location,
       level_2_supervision_location,
       metric_period_months
@@ -124,7 +114,7 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_RISK_LEVEL_VIEW_BUILDER = MetricBigQueryViewB
     dataset_id=dataset_config.DASHBOARD_VIEWS_DATASET,
     view_id=REVOCATIONS_MATRIX_DISTRIBUTION_BY_RISK_LEVEL_VIEW_NAME,
     view_query_template=REVOCATIONS_MATRIX_DISTRIBUTION_BY_RISK_LEVEL_QUERY_TEMPLATE,
-    dimensions=['state_code', 'metric_period_months', 'district', 'level_1_supervision_location',
+    dimensions=['state_code', 'metric_period_months', 'level_1_supervision_location',
                 'level_2_supervision_location', 'supervision_type', 'violation_type', 'reported_violations',
                 'charge_category', 'risk_level', 'supervision_level'],
     description=REVOCATIONS_MATRIX_DISTRIBUTION_BY_RISK_LEVEL_DESCRIPTION,
