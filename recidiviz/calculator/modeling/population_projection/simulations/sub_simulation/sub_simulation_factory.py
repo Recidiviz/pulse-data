@@ -67,9 +67,12 @@ class SubSimulationFactory:
         return SubSimulation(simulation_compartments, total_population_data, should_scale_populations_after_step)
 
     @classmethod
-    def _initialize_transition_tables(cls, transitions_data: pd.DataFrame, compartments_architecture: Dict[str, str],
-                                      policy_list: List[SparkPolicy]
-                                      ) -> Tuple[Dict[str, CompartmentTransitions], Dict[str, List[SparkPolicy]]]:
+    def _initialize_transition_tables(
+            cls,
+            transitions_data: pd.DataFrame,
+            compartments_architecture: Dict[str, str],
+            policy_list: List[SparkPolicy]
+        ) -> Tuple[Dict[str, CompartmentTransitions], Dict[str, List[SparkPolicy]]]:
         """Create and initialize all transition tables and store shell policies."""
         # Initialize a default transition class for each compartment to represent the no-policy scenario
         transitions_per_compartment = {}
@@ -137,12 +140,15 @@ class SubSimulationFactory:
         return preprocessed_data
 
     @classmethod
-    def _build_compartments(cls, preprocessed_data: pd.DataFrame,
-                            transition_tables_by_compartment: Dict[str, CompartmentTransitions],
-                            shell_policies: Dict[str, List[SparkPolicy]], user_inputs: Dict[str, Any],
-                            simulation_architecture: Dict[str, str], first_relevant_ts: int,
-                            total_population_data: pd.DataFrame,
-                            should_initialize_compartment_populations: bool) -> Dict[str, SparkCompartment]:
+    def _build_compartments(
+            cls,
+            preprocessed_data: pd.DataFrame,
+            transition_tables_by_compartment: Dict[str, CompartmentTransitions],
+            shell_policies: Dict[str, List[SparkPolicy]], user_inputs: Dict[str, Any],
+            simulation_architecture: Dict[str, str], first_relevant_ts: int,
+            total_population_data: pd.DataFrame,
+            should_initialize_compartment_populations: bool
+    ) -> Dict[str, SparkCompartment]:
         """Initialize all the SparkCompartments for the subpopulation simulation"""
 
         simulation_compartments: Dict[str, SparkCompartment] = {}
@@ -180,10 +186,12 @@ class SubSimulationFactory:
         return simulation_compartments
 
     @classmethod
-    def _initialize_edges_and_cohorts(cls,
-                                      simulation_compartments: Dict[str, SparkCompartment],
-                                      total_population_data: pd.DataFrame,
-                                      should_initialize_compartment_populations: bool) -> None:
+    def _initialize_edges_and_cohorts(
+            cls,
+            simulation_compartments: Dict[str, SparkCompartment],
+            total_population_data: pd.DataFrame,
+            should_initialize_compartment_populations: bool
+    ) -> None:
         """Initializes cohorts and edges"""
         for compartment_tag, compartment_obj in simulation_compartments.items():
             compartment_obj.initialize_edges(list(simulation_compartments.values()))

@@ -23,8 +23,8 @@ from pandas.testing import assert_index_equal
 from recidiviz.calculator.modeling.population_projection.simulations.compartment_transitions import \
     CompartmentTransitions
 from recidiviz.calculator.modeling.population_projection.spark_policy import SparkPolicy
-from recidiviz.calculator.modeling.population_projection.simulations.super_simulation.super_simulation_initializer \
-    import SuperSimulationInitializer
+from recidiviz.calculator.modeling.population_projection.simulations.population_simulation.\
+    population_simulation_factory import PopulationSimulationFactory
 
 
 class TestPopulationSimulation(unittest.TestCase):
@@ -67,16 +67,6 @@ class TestPopulationSimulation(unittest.TestCase):
             'pretrial': 'shell', 'prison': 'full', 'supervision': 'full'
         }
 
-        self.population_simulation_builder = {
-                'population_simulation': {'initializer': 'macro'},
-                'sub_simulation': {'initializer': 'macro'}
-        }
-
-        self.population_simulation_builder_micro = {
-            'population_simulation': {'initializer': 'micro'},
-            'sub_simulation': {'initializer': 'micro'}
-        }
-
     def test_disaggregation_axes_must_be_in_data_dfs(self):
         test_outflows_data = self.test_outflows_data.drop('crime', axis=1)
 
@@ -85,49 +75,60 @@ class TestPopulationSimulation(unittest.TestCase):
         test_total_population_data = self.test_total_population_data.drop('crime', axis=1)
 
         with self.assertRaises(ValueError):
-            population_simulation = SuperSimulationInitializer.build_population_simulation(
-                self.population_simulation_builder)
-            population_simulation.simulate_policies(test_outflows_data,
-                                                    self.test_transitions_data,
-                                                    test_total_population_data,
-                                                    self.simulation_architecture,
-                                                    ['crime'],
-                                                    self.user_inputs,
-                                                    first_relevant_ts=-5)
+            _ = PopulationSimulationFactory.build_population_simulation(
+                test_outflows_data,
+                self.test_transitions_data,
+                test_total_population_data,
+                self.simulation_architecture,
+                ['crime'],
+                self.user_inputs,
+                -5,
+                pd.DataFrame(),
+                False,
+                True
+            )
 
         with self.assertRaises(ValueError):
-            population_simulation = SuperSimulationInitializer.build_population_simulation(
-                self.population_simulation_builder)
-            population_simulation.simulate_policies(self.test_outflows_data,
-                                                    self.test_transitions_data,
-                                                    test_total_population_data,
-                                                    self.simulation_architecture,
-                                                    ['crime'],
-                                                    self.user_inputs,
-                                                    first_relevant_ts=-5
-                                                    )
+            _ = PopulationSimulationFactory.build_population_simulation(
+                self.test_outflows_data,
+                self.test_transitions_data,
+                test_total_population_data,
+                self.simulation_architecture,
+                ['crime'],
+                self.user_inputs,
+                -5,
+                pd.DataFrame(),
+                False,
+                True
+            )
 
         with self.assertRaises(ValueError):
-            population_simulation = SuperSimulationInitializer.build_population_simulation(
-                self.population_simulation_builder)
-            population_simulation.simulate_policies(test_outflows_data,
-                                                    self.test_transitions_data,
-                                                    self.test_total_population_data,
-                                                    self.simulation_architecture,
-                                                    ['crime'],
-                                                    self.user_inputs,
-                                                    first_relevant_ts=-5)
+            _ = PopulationSimulationFactory.build_population_simulation(
+                test_outflows_data,
+                self.test_transitions_data,
+                self.test_total_population_data,
+                self.simulation_architecture,
+                ['crime'],
+                self.user_inputs,
+                -5,
+                pd.DataFrame(),
+                False,
+                True
+            )
 
         with self.assertRaises(ValueError):
-            population_simulation = SuperSimulationInitializer.build_population_simulation(
-                self.population_simulation_builder)
-            population_simulation.simulate_policies(self.test_outflows_data,
-                                                    test_transitions_data,
-                                                    self.test_total_population_data,
-                                                    self.simulation_architecture,
-                                                    ['crime'],
-                                                    self.user_inputs,
-                                                    first_relevant_ts=-5)
+            _ = PopulationSimulationFactory.build_population_simulation(
+                self.test_outflows_data,
+                test_transitions_data,
+                self.test_total_population_data,
+                self.simulation_architecture,
+                ['crime'],
+                self.user_inputs,
+                -5,
+                pd.DataFrame(),
+                False,
+                True
+            )
 
     def test_simulation_forces_complete_user_inputs_dict(self):
 
@@ -135,67 +136,75 @@ class TestPopulationSimulation(unittest.TestCase):
             test_user_inputs = deepcopy(self.user_inputs)
             test_user_inputs.pop(i)
             with self.assertRaises(ValueError):
-                population_simulation = SuperSimulationInitializer.build_population_simulation(
-                    self.population_simulation_builder)
-                population_simulation.simulate_policies(self.test_outflows_data, self.test_transitions_data,
-                                                        self.test_total_population_data, self.simulation_architecture,
-                                                        ['crime'], test_user_inputs, first_relevant_ts=-5)
+                _ = PopulationSimulationFactory.build_population_simulation(
+                    self.test_outflows_data,
+                    self.test_transitions_data,
+                    self.test_total_population_data,
+                    self.simulation_architecture,
+                    ['crime'],
+                    test_user_inputs,
+                    -5,
+                    pd.DataFrame(),
+                    False,
+                    True
+                )
 
     def test_microsim_requires_empty_policy_list(self):
-        population_simulation = SuperSimulationInitializer.build_population_simulation(
-            self.population_simulation_builder_micro)
         with self.assertRaises(ValueError):
             user_inputs = deepcopy(self.user_inputs)
             user_inputs['policy_list'] = [SparkPolicy(CompartmentTransitions.test_non_retroactive_policy,
                                                       'supervision', {'crime': 'NAR'})]
-            population_simulation.simulate_policies(
-                outflows_data=self.test_outflows_data,
-                transitions_data=self.test_transitions_data,
-                total_population_data=self.test_total_population_data,
-                simulation_compartments=self.simulation_architecture,
-                disaggregation_axes=['crime'],
-                user_inputs=user_inputs,
-                first_relevant_ts=-5,
-                microsim_data=self.test_outflows_data
+            _ = PopulationSimulationFactory.build_population_simulation(
+                self.test_outflows_data,
+                self.test_transitions_data,
+                self.test_total_population_data,
+                self.simulation_architecture,
+                ['crime'],
+                user_inputs,
+                -5,
+                self.test_outflows_data,
+                True,
+                False
             )
 
     def test_baseline_with_backcast_projection_on(self):
         """Assert that the simulation results has negative time steps when the back-cast is enabled"""
-        population_simulation = SuperSimulationInitializer.build_population_simulation(
-            self.population_simulation_builder)
-        projection = population_simulation.simulate_policies(
-            outflows_data=self.test_outflows_data,
-            transitions_data=self.test_transitions_data,
-            total_population_data=self.test_total_population_data,
-            simulation_compartments=self.simulation_architecture,
-            disaggregation_axes=['crime'],
-            user_inputs=self.user_inputs,
-            first_relevant_ts=-5
+        population_simulation = PopulationSimulationFactory.build_population_simulation(
+            self.test_outflows_data,
+            self.test_transitions_data,
+            self.test_total_population_data,
+            self.simulation_architecture,
+            ['crime'],
+            self.user_inputs,
+            -5,
+            pd.DataFrame(),
+            False,
+            True
         )
+        projection = population_simulation.simulate_policies()
 
         assert_index_equal(projection.index.unique().sort_values(), pd.Int64Index(range(-5, 10)))
 
     def test_baseline_with_backcast_projection_off(self):
         """Assert that microsim simulation results only have positive time steps"""
-        population_simulation = SuperSimulationInitializer.build_population_simulation(
-            self.population_simulation_builder_micro)
-        projection = population_simulation.simulate_policies(
-            outflows_data=self.test_outflows_data,
-            transitions_data=self.test_transitions_data,
-            total_population_data=self.test_total_population_data,
-            simulation_compartments=self.simulation_architecture,
-            disaggregation_axes=['crime'],
-            user_inputs=self.user_inputs,
-            first_relevant_ts=0,
-            microsim_data=self.test_transitions_data
+        population_simulation = PopulationSimulationFactory.build_population_simulation(
+            self.test_outflows_data,
+            self.test_transitions_data,
+            self.test_total_population_data,
+            self.simulation_architecture,
+            ['crime'],
+            self.user_inputs,
+            0,
+            self.test_transitions_data,
+            True,
+            False
         )
+        projection = population_simulation.simulate_policies()
 
         assert_index_equal(projection.index.unique().sort_values(), pd.Int64Index(range(11)))
 
     def test_dropping_data_raises_warning(self):
         """Assert that PopulationSimulation throws an error when some input data goes unused"""
-        population_simulation = SuperSimulationInitializer.build_population_simulation(
-            self.population_simulation_builder)
         non_disaggregated_outflows_data = self.test_outflows_data.copy()
         non_disaggregated_transitions_data = self.test_transitions_data.copy()
         non_disaggregated_total_population_data = self.test_total_population_data.copy()
@@ -205,27 +214,43 @@ class TestPopulationSimulation(unittest.TestCase):
         non_disaggregated_total_population_data.crime = None
 
         with self.assertWarns(Warning):
-            population_simulation.simulate_policies(self.test_outflows_data,
-                                                    self.test_transitions_data,
-                                                    non_disaggregated_total_population_data,
-                                                    self.simulation_architecture,
-                                                    ['crime'],
-                                                    self.user_inputs,
-                                                    first_relevant_ts=-5)
-        with self.assertWarns(Warning):
-            population_simulation.simulate_policies(self.test_outflows_data,
-                                                    non_disaggregated_transitions_data,
-                                                    self.test_total_population_data,
-                                                    self.simulation_architecture,
-                                                    ['crime'],
-                                                    self.user_inputs,
-                                                    first_relevant_ts=-5)
+            _ = PopulationSimulationFactory.build_population_simulation(
+                self.test_outflows_data,
+                self.test_transitions_data,
+                non_disaggregated_total_population_data,
+                self.simulation_architecture,
+                ['crime'],
+                self.user_inputs,
+                -5,
+                pd.DataFrame(),
+                False,
+                True
+            )
 
         with self.assertWarns(Warning):
-            population_simulation.simulate_policies(non_disaggregated_outflows_data,
-                                                    self.test_transitions_data,
-                                                    self.test_total_population_data,
-                                                    self.simulation_architecture,
-                                                    ['crime'],
-                                                    self.user_inputs,
-                                                    first_relevant_ts=-5)
+            _ = PopulationSimulationFactory.build_population_simulation(
+                self.test_outflows_data,
+                non_disaggregated_transitions_data,
+                self.test_total_population_data,
+                self.simulation_architecture,
+                ['crime'],
+                self.user_inputs,
+                -5,
+                pd.DataFrame(),
+                False,
+                True
+            )
+
+        with self.assertWarns(Warning):
+            _ = PopulationSimulationFactory.build_population_simulation(
+                non_disaggregated_outflows_data,
+                self.test_transitions_data,
+                self.test_total_population_data,
+                self.simulation_architecture,
+                ['crime'],
+                self.user_inputs,
+                -5,
+                pd.DataFrame(),
+                False,
+                True
+            )

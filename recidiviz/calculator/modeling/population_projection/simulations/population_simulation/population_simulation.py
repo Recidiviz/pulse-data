@@ -16,90 +16,40 @@
 # =============================================================================
 """Simulation object that models a given policy scenario"""
 
-from typing import Dict, List, Any, Tuple
+from typing import Dict, Any, Tuple, Optional
 from time import time
 import pandas as pd
 
-from recidiviz.calculator.modeling.population_projection.simulations.population_simulation.\
-    population_simulation_initializer import PopulationSimulationInitializer
-from recidiviz.calculator.modeling.population_projection.spark_policy import SparkPolicy
 from recidiviz.calculator.modeling.population_projection.simulations.sub_simulation.sub_simulation import SubSimulation
 
 
 class PopulationSimulation:
     """Control the many sub simulations for one scenario (baseline/control or policy)"""
-    def __init__(self, initializer: PopulationSimulationInitializer) -> None:
-        self.sub_simulations: Dict[str, SubSimulation] = {}
-        self.sub_group_ids_dict: Dict[str, Dict[str, Any]] = {}
-        self.validation_population_data = pd.DataFrame()
-        self.validation_transition_data = pd.DataFrame()
+    def __init__(
+            self,
+            sub_simulations: Dict[str, SubSimulation],
+            sub_group_ids_dict: Dict[str, Dict[str, Any]],
+            validation_population_data: pd.DataFrame,
+            projection_time_steps: int,
+            validation_transitions_data: Optional[pd.DataFrame] = None
+            ) -> None:
+        self.sub_simulations = sub_simulations
+        self.sub_group_ids_dict = sub_group_ids_dict
+        self.validation_population_data = validation_population_data
+        self.projection_time_steps = projection_time_steps
+        self.validation_transition_data = validation_transitions_data or pd.DataFrame()
         self.population_projections = pd.DataFrame()
-        self.initializer = initializer
 
-    def simulate_policies(self, outflows_data: pd.DataFrame,
-                          transitions_data: pd.DataFrame,
-                          total_population_data: pd.DataFrame,
-                          simulation_compartments: Dict[str, str],
-                          disaggregation_axes: List[str],
-                          user_inputs: Dict,
-                          first_relevant_ts: int,
-                          microsim_data: pd.DataFrame = pd.DataFrame()) -> pd.DataFrame:
-        """
-        Run a population projection and return population counts by year, compartment, and sub-group.
-        `outflows_data` should be a DataFrame with columns for each sub-group, year, compartment, outflow_to,
-            and total_population
-        `transitions_data` should be a DataFrame with columns for each dis-aggregation axis, compartment,
-            outflow_to, compartment_duration, and total_population
-        `total_population_data` should be a DataFrame with columns for each disaggregation axis, compartment,
-            time_step and total_population
-        `disaggregation_axes` should be names of columns in historical_data that refer to sub-group categorizations
-        `user_inputs` should be a dict including:
-            'projection_time_steps': number of ts to project forward
-            'policy_time_step': ts policies take effect
-            'start_time_step': first ts of projection
-            'policy_list': List of SparkPolicy objects to use for this simulation
-            'backcast_projection': True if the simulation should be initialized with a backcast projection
-            'constant_admissions': True if the admission population total should remain constant for each time step
-        `first_relevant_ts` should be the ts to start initialization at
-            initialization. Default is 2 to ensure long-sentence cohorts are well-populated.
-        `microsim` should be a boolean indicating whether the simulation is a micro-simulation
-        `microsim_data` should only be passed if microsim, and should be a DataFrame with real transitions data, whereas
-            in that case `transitions_data` will actually be remaining_duration_data
-        """
+    def get_population_projections(self) -> pd.DataFrame:
+        return self.population_projections
+
+    def simulate_policies(self) -> pd.DataFrame:
+        """Run a population projection and return population counts by year, compartment, and sub-group."""
 
         start = time()
 
-        self.validation_population_data = total_population_data
-
-        # Check the inputs have the required fields and types
-        required_user_inputs = ['projection_time_steps', 'policy_time_step', 'start_time_step', 'policy_list',
-                                'constant_admissions', 'speed_run']
-        missing_inputs = [key for key in required_user_inputs if key not in user_inputs]
-        if len(missing_inputs) != 0:
-            raise ValueError(f"Required user input are missing: {missing_inputs}")
-
-        if any(not isinstance(policy, SparkPolicy) for policy in user_inputs['policy_list']):
-            raise ValueError(f"Policy list can only include SparkPolicy objects: {user_inputs['policy_list']}")
-
-        for axis in disaggregation_axes:
-            for df in [outflows_data, transitions_data, total_population_data]:
-                if axis not in df.columns:
-                    raise ValueError(f"All disagregation axis must be included in the input dataframe columns\n"
-                                     f"Expected: {disaggregation_axes}, Actual: {df.columns}")
-
-        self.initializer.initialize_simulation(outflows_data, transitions_data, total_population_data,
-                                               simulation_compartments, disaggregation_axes, user_inputs,
-                                               first_relevant_ts, self.sub_group_ids_dict, microsim_data,
-                                               self.sub_simulations)
-
-        # run simulation up to the start_year
-        self.step_forward(user_inputs['start_time_step'] - first_relevant_ts)
-
-        time1 = time()
-        print('initialization time: ', time1 - start)
-
         # Run the sub simulations for each ts
-        self.step_forward(user_inputs['projection_time_steps'])
+        self.step_forward(self.projection_time_steps)
 
         #  Store the results in one Dataframe
         for simulation_group_id, simulation_obj in self.sub_simulations.items():
@@ -107,9 +57,7 @@ class PopulationSimulation:
             sub_population_projection['simulation_group'] = simulation_group_id
             self.population_projections = pd.concat([self.population_projections, sub_population_projection])
 
-        time2 = time()
-
-        print('simulation_time: ', time2 - time1)
+        print('simulation_time: ', time() - start)
 
         return self.population_projections
 
@@ -140,13 +88,14 @@ class PopulationSimulation:
         """Should change sub_group_id for each row to whatever simulation that cohort should move to in the next ts"""
         return cross_simulation_flows
 
-    def calculate_transition_error(self, validation_data: pd.DataFrame) -> pd.DataFrame:
+    def calculate_transition_error(self, validation_data: pd.DataFrame = pd.DataFrame()) -> pd.DataFrame:
         """
         validation_data should be a DataFrame with exactly:
             one column per axis of disaggregation, 'time_step', 'count', 'compartment', 'outflow_to'
         """
 
-        self.validation_transition_data = validation_data
+        if not validation_data.empty:
+            self.validation_transition_data = validation_data
 
         aggregated_results = self.validation_transition_data.copy()
         aggregated_results['count'] = 0

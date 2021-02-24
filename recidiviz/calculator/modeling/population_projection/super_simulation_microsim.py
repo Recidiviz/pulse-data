@@ -17,17 +17,18 @@
 """Highest level simulation object -- runs various comparative scenarios"""
 
 from datetime import datetime
-from typing import Dict, List, Any
 from warnings import warn
+from typing import Dict, Any, Optional
 import numpy as np
 import pandas as pd
 
 from recidiviz.calculator.modeling.population_projection.super_simulation import SuperSimulation
 from recidiviz.calculator.modeling.population_projection import ignite_bq_utils
-from recidiviz.calculator.modeling.population_projection.simulations.super_simulation.super_simulation_initializer \
-    import SuperSimulationInitializer
+from recidiviz.calculator.modeling.population_projection.simulations.population_simulation.\
+    population_simulation_factory import PopulationSimulationFactory
 from recidiviz.calculator.modeling.population_projection.simulations.population_simulation.population_simulation \
     import PopulationSimulation
+# pylint: disable=unused-variable
 
 
 class MicroSuperSimulation(SuperSimulation):
@@ -76,21 +77,19 @@ class MicroSuperSimulation(SuperSimulation):
         # this will be populated in the PopulationSimulation
         self.user_inputs['policy_list'] = []
 
-    def _build_population_simulation(self) -> PopulationSimulation:
-        return SuperSimulationInitializer.build_population_simulation({
-            'population_simulation': {'initializer': 'micro'},
-            'sub_simulation': {'initializer': 'micro'}
-        })
+    def _build_population_simulation(self,
+                                     first_relevant_ts_override: Optional[int] = None,
+                                     outflows_data_override: Optional[pd.DataFrame] = None,
+                                     user_inputs: Dict[str, Any] = None
+                                     ) -> PopulationSimulation:
+        if user_inputs is not None:
+            raise ValueError("Cannot pass user inputs to micro-simulation")
 
-    def _simulate_baseline(self, simulation_title: str, first_relevant_ts: int = None):
-        """
-        Calculates a baseline projection, returns transition error for a specific transition
-        `simulation_title` is the desired tag of the PopulationSimulation
-        `first_relevant_ts` should always be null
-        """
-        super()._simulate_baseline(simulation_title, first_relevant_ts)
+        if first_relevant_ts_override is not None:
+            raise ValueError("Cannot pass first_relevant_ts_override to micro-simulation")
 
-        first_relevant_ts = int(self.user_inputs['start_time_step'])
+        if outflows_data_override is not None:
+            raise RuntimeError("Cannot pass outflows_data_override to microsimulation")
 
         run_date = self.user_inputs['run_date']
 
@@ -105,41 +104,28 @@ class MicroSuperSimulation(SuperSimulation):
         number_of_missing_events = outflows_data.isnull().sum(axis=1)
         sparse_disaggregations = number_of_missing_events[
             number_of_missing_events / len(outflows_data.columns) > missing_event_threshold]
-        if (not sparse_disaggregations.empty) & (simulation_title == 'baseline_min'):
+        if not sparse_disaggregations.empty:
             warn(f"Outflows data is missing for more than {missing_event_threshold * 100}% for some disaggregations:\n"
                  f"{100 * sparse_disaggregations / len(outflows_data.columns)}")
 
         # Fill the total population with 0 and remove the multiindex for the population simulation
         outflows_data = outflows_data.fillna(0).stack('time_step').reset_index(name='total_population')
 
-        simulation_data_inputs = (
-            outflows_data,
-            self.data_dict['remaining_sentence_data'][self.data_dict['remaining_sentence_data'].run_date == run_date],
-            self.data_dict['total_population_data'][self.data_dict['total_population_data'].run_date
-                                                    == self.data_dict['total_population_data'].run_date.max()],
-            self.data_dict['compartments_architecture'],
-            self.data_dict['disaggregation_axes']
+        return PopulationSimulationFactory.build_population_simulation(
+            outflows_data=outflows_data,
+            transitions_data=self.data_dict['remaining_sentence_data'][
+                self.data_dict['remaining_sentence_data'].run_date == run_date],
+            total_population_data=self.data_dict['total_population_data'][
+                self.data_dict['total_population_data'].run_date == self.data_dict[
+                    'total_population_data'].run_date.max()],
+            simulation_compartments=self.data_dict['compartments_architecture'],
+            disaggregation_axes=self.data_dict['disaggregation_axes'],
+            user_inputs=self.user_inputs,
+            first_relevant_ts=self.user_inputs['start_time_step'],
+            microsim_data=self.data_dict['transitions_data'],
+            should_initialize_compartment_populations=True,
+            should_scale_populations_after_step=False
         )
-
-        self.pop_simulations[simulation_title].simulate_policies(*simulation_data_inputs, self.user_inputs,
-                                                                 first_relevant_ts=first_relevant_ts,
-                                                                 microsim_data=self.data_dict['transitions_data'])
-
-        self.output_data[simulation_title] = \
-            self.pop_simulations[simulation_title].population_projections.sort_values('time_step')
-
-    def microsim_baseline_over_time(self, start_run_dates: List[datetime]):
-        """
-        Run a microsim at many different run_dates.
-        `start_run_dates` should be a list of datetime at which to run the simulation
-        """
-        self._reset_pop_simulations()
-
-        for start_date in start_run_dates:
-            self.user_inputs['run_date'] = start_date
-            self.user_inputs['start_time_step'] = \
-                self._convert_to_relative_date(start_date.year + ((start_date.month - 1)/12))
-            self._simulate_baseline(simulation_title=f"start date: {start_date}")
 
     def _prep_for_upload(self, projection_data: pd.DataFrame):
         """function for scaling and any other state-specific operations required pre-upload"""
