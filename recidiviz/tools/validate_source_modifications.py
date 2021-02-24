@@ -61,6 +61,7 @@ COUNTY_KEY = "county"
 OPERATIONS_KEY = "operations"
 STATE_KEY = "state"
 INGEST_DOCS_KEY = "ingest_docs"
+CASE_TRIAGE_FIXTURES_KEY = 'case_triage_fixtures'
 
 MODIFIED_FILE_ASSERTIONS: Dict[str, List[FrozenSet[str]]] = {
     # ingest info files
@@ -118,7 +119,12 @@ MODIFIED_FILE_ASSERTIONS: Dict[str, List[FrozenSet[str]]] = {
     INGEST_DOCS_KEY: [
         frozenset((f"recidiviz/ingest/direct/regions/{region_code}/", f"docs/ingest/{region_code}/"))
         for region_code in get_supported_direct_ingest_region_codes()
-    ]
+        ],
+    # case triage dummy data
+    CASE_TRIAGE_FIXTURES_KEY: [
+        frozenset(('recidiviz/tools/case_triage/fixtures/etl_clients.csv',
+                   'recidiviz/case_triage/fixtures/dummy_clients.json'))
+        ],
 }
 
 
