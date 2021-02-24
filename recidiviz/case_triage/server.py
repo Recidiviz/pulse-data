@@ -29,7 +29,7 @@ from recidiviz.case_triage.exceptions import CaseTriageAuthorizationError
 from recidiviz.case_triage.impersonate_users import IMPERSONATED_EMAIL_KEY, ImpersonateUser
 from recidiviz.case_triage.scoped_sessions import setup_scoped_sessions
 from recidiviz.case_triage.querier.querier import CaseTriageQuerier
-from recidiviz.case_triage.util import get_local_secret
+from recidiviz.case_triage.util import get_local_secret, SESSION_ADMIN_KEY
 from recidiviz.persistence.database.sqlalchemy_engine_manager import SQLAlchemyEngineManager, SchemaType
 from recidiviz.tools.postgres import local_postgres_helpers
 from recidiviz.utils.auth.auth0 import (
@@ -67,11 +67,15 @@ def on_successful_authorization(_payload: Dict[str, str], token: str) -> None:
     if 'user_info' not in session:
         session['user_info'] = get_userinfo(authorization_config.domain, token)
 
-    if session['user_info']['email'] not in authorization_store.allowed_users:
+    email = session['user_info']['email']
+    if email not in authorization_store.allowed_users:
         raise CaseTriageAuthorizationError(
             code="unauthorized",
             description="You are not authorized to access this application",
         )
+
+    if email in authorization_store.admin_users:
+        session[SESSION_ADMIN_KEY] = True
 
 
 auth0_configuration = get_local_secret("case_triage_auth0")
@@ -106,10 +110,11 @@ def fetch_user_info() -> None:
         if not getattr(g, 'current_user', None):
             g.current_user = CaseTriageQuerier.officer_for_email(current_session, session['user_info']['email'])
     except NoResultFound as e:
-        raise CaseTriageAuthorizationError(
-            code="unauthorized",
-            description="You are not authorized to access this application",
-        ) from e
+        if not session.get(SESSION_ADMIN_KEY):
+            raise CaseTriageAuthorizationError(
+                code="unauthorized",
+                description="You are not authorized to access this application",
+            ) from e
 
 
 app.register_blueprint(api, url_prefix='/api')
