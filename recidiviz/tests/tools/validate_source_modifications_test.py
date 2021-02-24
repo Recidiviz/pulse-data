@@ -68,7 +68,7 @@ class CheckAssertionsTest(unittest.TestCase):
         expected_failures: List[Tuple[FrozenSet[str], FrozenSet[str]]] = [
             (
                 frozenset(['Pipfile']),
-                frozenset(['Pipfile.lock'])
+                frozenset(['Pipfile.lock']),
             )
         ]
 
@@ -130,11 +130,11 @@ class CheckAssertionsTest(unittest.TestCase):
     def test_ingest_docs_unhappy_multiple_regions(self) -> None:
         modified_files = ['recidiviz/ingest/direct/regions/us_nd/raw_data/whatever.yaml',
                           'docs/ingest/us_nd/raw_data.md',
-                          'docs/ingest/us_mo/us_mo.md']
+                          'recidiviz/ingest/direct/regions/us_mo/raw_data/whatever.yaml']
         expected_failures: List[Tuple[FrozenSet[str], FrozenSet[str]]] = [
             (
+                frozenset(['recidiviz/ingest/direct/regions/us_mo/']),
                 frozenset(['docs/ingest/us_mo/']),
-                frozenset(['recidiviz/ingest/direct/regions/us_mo/'])
             )
         ]
 
