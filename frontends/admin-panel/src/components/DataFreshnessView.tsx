@@ -51,11 +51,12 @@ const DataFreshnessView = (): JSX.Element => {
         if (!record.ingestPaused) {
           return "N/A";
         }
-        return "Ingest has been paused. The data in this table may be incorrect as a result.";
+        return "BigQuery data refreshes have been paused. The data in this table may be incorrect as a result.";
       },
     },
   ];
 
+  const sortedData = data?.sort((a, b) => (a.state > b.state ? 1 : -1));
   return (
     <>
       <PageHeader
@@ -64,7 +65,7 @@ const DataFreshnessView = (): JSX.Element => {
       />
       <Table
         columns={columns}
-        dataSource={data}
+        dataSource={sortedData}
         pagination={{
           hideOnSinglePage: true,
           showSizeChanger: true,
