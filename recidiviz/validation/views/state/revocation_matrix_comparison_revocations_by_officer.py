@@ -35,33 +35,34 @@ REVOCATION_MATRIX_COMPARISON_REVOCATIONS_BY_OFFICER_QUERY_TEMPLATE = \
     /*{description}*/
     WITH by_officer as (
       SELECT
-        state_code as region_code, metric_period_months, district, officer, SUM(revocation_count) as total_revocations
+        state_code as region_code, metric_period_months, level_1_supervision_location, level_2_supervision_location,
+        officer, SUM(revocation_count) as total_revocations
       FROM `{project_id}.{view_dataset}.revocations_matrix_distribution_by_officer`
-      WHERE district != 'ALL'
-        AND supervision_level = 'ALL'
+      WHERE supervision_level = 'ALL'
         AND supervision_type = 'ALL'
         AND charge_category = 'ALL'
         AND violation_type = 'ALL'
         AND reported_violations = 'ALL'
-      GROUP BY state_code, metric_period_months, district, officer
+      GROUP BY state_code, metric_period_months, level_1_supervision_location, level_2_supervision_location, officer
     ), caseload_counts AS (
       SELECT
-        state_code as region_code, metric_period_months, district, officer,
+        state_code as region_code, metric_period_months,
+        level_1_supervision_location, level_2_supervision_location, officer,
         COUNT(DISTINCT state_id) as total_revocations
       FROM `{project_id}.{view_dataset}.revocations_matrix_filtered_caseload`
-      GROUP BY state_code, metric_period_months, district, officer
+      GROUP BY state_code, metric_period_months, level_1_supervision_location, level_2_supervision_location, officer
     )
     
    SELECT
       region_code,
       metric_period_months,
-      district,
+      level_1_supervision_location, level_2_supervision_location,
       officer,
       bo.total_revocations as officer_sum,
       c.total_revocations as caseload_sum
     FROM by_officer bo
     JOIN caseload_counts c
-    USING (region_code, metric_period_months, district, officer)
+    USING (region_code, metric_period_months, level_1_supervision_location, level_2_supervision_location, officer)
 """
 
 REVOCATION_MATRIX_COMPARISON_REVOCATIONS_BY_OFFICER_VIEW_BUILDER = SimpleBigQueryViewBuilder(
