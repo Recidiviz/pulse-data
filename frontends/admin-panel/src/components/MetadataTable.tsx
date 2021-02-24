@@ -110,6 +110,7 @@ const MetadataTable = (props: MetadataTableProps): JSX.Element => {
           pagination={{
             hideOnSinglePage: true,
             showSizeChanger: true,
+            pageSize: 50,
             size: "small",
           }}
           rowClassName="metadata-table-row"
