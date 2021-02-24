@@ -28,7 +28,6 @@ import Home from "./routes/Home";
 import Verify from "./routes/Verify";
 
 import StoreProvider from "./stores";
-import AuthWall from "./components/AuthWall";
 import UserSection from "./components/UserSection";
 
 if (process.env.NODE_ENV !== "development") {
@@ -59,12 +58,10 @@ ReactDOM.render(
       right={<UserSection />}
     />
     <Container>
-      <AuthWall>
-        <Router>
-          <Verify path="verify" />
-          <Home path="/" />
-        </Router>
-      </AuthWall>
+      <Router>
+        <Verify path="verify" />
+        <Home path="/" />
+      </Router>
     </Container>
   </StoreProvider>,
   document.getElementById("root")
