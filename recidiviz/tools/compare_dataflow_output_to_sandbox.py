@@ -146,7 +146,9 @@ OUTPUT_COMPARISON_TEMPLATE = """
 # Date columns in the metric tables that should not be included in the dimensions
 DATE_COLUMNS_TO_EXCLUDE = [
     'created_on',
-    'updated_on'
+    'updated_on',
+    # This date is often null, and null values don't join on each other in BigQuery
+    'projected_end_date'
 ]
 
 
@@ -187,7 +189,12 @@ def compare_dataflow_output_to_sandbox(
 
     for pipeline in pipelines:
         if pipeline.pop('job_name', str) == job_name_to_compare:
-            pipeline_metric_types = pipeline.pop('metric_types', str).split()
+            pipeline_metric_types = pipeline.peek_optional('metric_types', str)
+
+            if not pipeline_metric_types:
+                raise ValueError(f"Pipeline job {job_name_to_compare} missing required metric_types attribute.")
+
+            metric_types_for_comparison = pipeline_metric_types.split()
 
             for metric_class, metric_table in DATAFLOW_METRICS_TO_TABLES.items():
                 # Hack to get the value of the metric_type on this RecidivizMetric class
@@ -198,7 +205,7 @@ def compare_dataflow_output_to_sandbox(
 
                 metric_type_value = metric_instance.metric_type.value
 
-                if metric_type_value in pipeline_metric_types:
+                if metric_type_value in metric_types_for_comparison:
                     dimensions = _get_dimension_columns_for_metric_class(metric_class)
                     columns_to_compare = dimensions.copy()
 
