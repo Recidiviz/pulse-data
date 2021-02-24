@@ -43,7 +43,7 @@ def _downgrade_initiated_progress_checker(client: ETLClient, update_action: Case
 
 
 def _found_employment_progress_checker(client: ETLClient, _update_action: CaseUpdateAction) -> bool:
-    return client.employer is None
+    return not client.employer or client.employer.upper() == 'UNEMPLOYED'
 
 
 def _scheduled_face_to_face_progress_checker(client: ETLClient, update_action: CaseUpdateAction) -> bool:

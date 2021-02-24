@@ -14,27 +14,38 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
-import ClientsStore from "./ClientsStore";
-import PolicyStore from "./PolicyStore";
-import UserStore from "./UserStore";
-import CaseUpdatesStore from "./CaseUpdatesStore";
+import styled from "styled-components/macro";
+import { rem } from "polished";
+import { palette } from "@recidiviz/case-triage-components";
 
-export default class RootStore {
-  caseUpdatesStore: CaseUpdatesStore;
-
-  clientsStore: ClientsStore;
-
-  policyStore: PolicyStore;
-
-  userStore: UserStore;
-
-  constructor() {
-    this.userStore = UserStore.build();
-    this.clientsStore = new ClientsStore({ userStore: this.userStore });
-    this.caseUpdatesStore = new CaseUpdatesStore({
-      clientsStore: this.clientsStore,
-      userStore: this.userStore,
-    });
-    this.policyStore = new PolicyStore({ userStore: this.userStore });
+export const InProgressOverlay = styled.div`
+  display: flex;
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  background: ${palette.pine.main};
+  align-items: center;
+  padding: 0 32px;
+  color: white;
+  @keyframes fadeIn {
+    0% {
+      opacity: 0;
+    }
+    100% {
+      opacity: 1;
+    }
   }
-}
+  animation: fadeIn 0.3s;
+`;
+
+export const InProgressConfirmation = styled.div`
+  margin-right: auto;
+  font-size: ${rem("13px")};
+`;
+
+export const InProgressConfirmationHeading = styled.div`
+  font-size: ${rem("16px")};
+  font-weight: 500;
+`;

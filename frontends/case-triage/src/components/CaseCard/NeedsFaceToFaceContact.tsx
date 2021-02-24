@@ -18,17 +18,27 @@ import {
   Icon,
   IconSVG,
   Need,
+  NeedState,
   palette,
 } from "@recidiviz/case-triage-components";
 import * as React from "react";
-import { Caption, CaseCardBody, CaseCardInfo } from "./CaseCard.styles";
+import {
+  Caption,
+  CaseCardBody,
+  CaseCardInfo,
+  CheckboxButtonContainer,
+} from "./CaseCard.styles";
+import { NeedsCheckboxButton } from "./NeedsCheckboxButton";
 import { DecoratedClient } from "../../stores/ClientsStore/Client";
 import { useRootStore } from "../../stores";
 import { SupervisionContactFrequency } from "../../stores/PolicyStore/Policy";
+import { CaseUpdateActionType } from "../../stores/CaseUpdatesStore";
 
 interface NeedsFaceToFaceContactProps {
   className: string;
   client: DecoratedClient;
+
+  onStatusChanged: (helped: boolean) => void;
 }
 
 const getLastContactedText = (client: DecoratedClient) => {
@@ -57,20 +67,35 @@ const getContactFrequencyText = (
 const NeedsFaceToFaceContact: React.FC<NeedsFaceToFaceContactProps> = ({
   className,
   client,
+  onStatusChanged,
 }: NeedsFaceToFaceContactProps) => {
+  const [needChecked, setNeedChecked] = React.useState(false);
+  React.useEffect(() => {
+    setNeedChecked(false);
+  }, [client]);
+
   const { policyStore } = useRootStore();
   const {
     needsMet: { faceToFaceContact: met },
   } = client;
 
-  const title = met ? `Contact: Up To Date` : `Contact Needed`;
+  const title = met
+    ? `Face-to-Face Contact: Up To Date`
+    : `Face-to-Face Contact Needed`;
   const contactFrequency = policyStore.findContactFrequencyForClient(client);
+
+  const onToggleCheck = (checked: boolean) => {
+    setNeedChecked(checked);
+    onStatusChanged(checked);
+  };
 
   return (
     <CaseCardBody className={className}>
       <Need
         kind={IconSVG.NeedsContact}
-        met={client.needsMet.faceToFaceContact}
+        state={
+          client.needsMet.faceToFaceContact ? NeedState.MET : NeedState.NOT_MET
+        }
       />
       <CaseCardInfo>
         <strong>{title}</strong>
@@ -83,6 +108,19 @@ const NeedsFaceToFaceContact: React.FC<NeedsFaceToFaceContactProps> = ({
           <div>{getContactFrequencyText(contactFrequency)}</div>
           {getLastContactedText(client)}
         </Caption>
+        {!client.needsMet.faceToFaceContact ? (
+          <CheckboxButtonContainer>
+            <NeedsCheckboxButton
+              checked={needChecked}
+              inProgress={client.inProgressActions?.includes(
+                CaseUpdateActionType.SCHEDULED_FACE_TO_FACE
+              )}
+              onToggleCheck={onToggleCheck}
+            >
+              I scheduled our next face-to-face contact
+            </NeedsCheckboxButton>
+          </CheckboxButtonContainer>
+        ) : null}
       </CaseCardInfo>
     </CaseCardBody>
   );

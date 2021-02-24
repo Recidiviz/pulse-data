@@ -22,6 +22,11 @@ interface ClientsStoreProps {
   userStore: UserStore;
 }
 
+export interface ClientMarkedInProgress {
+  client: DecoratedClient;
+  wasPositiveAction: boolean;
+}
+
 class ClientsStore {
   isLoading?: boolean;
 
@@ -29,7 +34,16 @@ class ClientsStore {
 
   activeClientOffset?: number;
 
-  clients?: DecoratedClient[];
+  clients: DecoratedClient[];
+
+  // All clients who are in progress
+  inProgressClients: DecoratedClient[];
+
+  // Clients who have been marked in-progress during this session
+  clientsMarkedInProgress: Record<
+    DecoratedClient["personExternalId"],
+    ClientMarkedInProgress
+  >;
 
   error?: string;
 
@@ -38,6 +52,9 @@ class ClientsStore {
   constructor({ userStore }: ClientsStoreProps) {
     makeAutoObservable(this);
 
+    this.clients = [];
+    this.inProgressClients = [];
+    this.clientsMarkedInProgress = {};
     this.userStore = userStore;
     this.isLoading = false;
 
@@ -72,9 +89,22 @@ class ClientsStore {
       const clients = await response.json();
       runInAction(() => {
         this.isLoading = false;
-        this.clients = clients
-          .map((client: Client) => decorateClient(client))
-          .sort((self: DecoratedClient, other: DecoratedClient) => {
+        const decoratedClients = clients.map((client: Client) =>
+          decorateClient(client)
+        );
+
+        const upNextClients = decoratedClients
+          .filter((client: DecoratedClient) => !client.inProgressActions)
+          // Concatenate clients that have been moved to "In progress"
+          // This allows us to render their ClientMarkedInProgress list item overlay
+          .concat(
+            Object.values(this.clientsMarkedInProgress).map(
+              ({ client }) => client
+            )
+          );
+
+        this.clients = upNextClients.sort(
+          (self: DecoratedClient, other: DecoratedClient) => {
             // No upcoming contact recommended. Shift myself to the right
             if (!self.nextFaceToFaceDate) {
               return 1;
@@ -94,6 +124,24 @@ class ClientsStore {
 
             // We both have scheduled contacts on the same day
             return 0;
+          }
+        );
+
+        this.inProgressClients = decoratedClients
+          .filter((client: DecoratedClient) => client.inProgressSubmissionDate)
+          .sort((self: DecoratedClient, other: DecoratedClient) => {
+            if (
+              self.inProgressSubmissionDate! > other.inProgressSubmissionDate!
+            ) {
+              return 1;
+            }
+
+            if (
+              self.inProgressSubmissionDate! < other.inProgressSubmissionDate!
+            ) {
+              return -1;
+            }
+            return 0;
           });
       });
     } catch (error) {
@@ -104,7 +152,26 @@ class ClientsStore {
     }
   }
 
-  view(client: DecoratedClient, offset: number): void {
+  markAsInProgress(client: DecoratedClient, wasPositiveAction: boolean): void {
+    runInAction(() => {
+      const alreadyInProgress = this.wasRecentlyMarkedInProgress(client);
+
+      if (!alreadyInProgress) {
+        this.clientsMarkedInProgress[client.personExternalId] = {
+          client,
+          wasPositiveAction,
+        };
+      }
+    });
+  }
+
+  wasRecentlyMarkedInProgress(
+    client: DecoratedClient
+  ): ClientMarkedInProgress | undefined {
+    return this.clientsMarkedInProgress[client.personExternalId];
+  }
+
+  view(client: DecoratedClient | undefined = undefined, offset = 0): void {
     this.activeClient = client;
     this.activeClientOffset = offset;
   }

@@ -18,7 +18,7 @@ import * as React from "react";
 import styled from "styled-components/macro";
 import { rem } from "polished";
 import { observer } from "mobx-react-lite";
-import { Button, ButtonKind } from "@recidiviz/case-triage-components";
+import { Button } from "@recidiviz/case-triage-components";
 import { User } from "@auth0/auth0-spa-js";
 import { useRootStore } from "../../stores";
 
@@ -61,10 +61,7 @@ const LoginButton: React.FC = () => {
   }
 
   return (
-    <Button
-      onClick={() => userStore.login && userStore.login()}
-      kind={ButtonKind.primary}
-    >
+    <Button onClick={() => userStore.login && userStore.login()} kind="primary">
       Log In
     </Button>
   );

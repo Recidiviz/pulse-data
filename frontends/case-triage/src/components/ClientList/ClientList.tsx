@@ -16,82 +16,51 @@
 // =============================================================================
 import { observer } from "mobx-react-lite";
 import * as React from "react";
-import { IconSVG } from "@recidiviz/case-triage-components";
 import { useRootStore } from "../../stores";
-import { DecoratedClient } from "../../stores/ClientsStore/Client";
-import { titleCase } from "../../utils";
-import {
-  CardHeader,
-  ClientCard,
-  ClientListHeading,
-  ClientListTableHeading,
-  ClientNeed,
-  FlexCardSection,
-  MainText,
-  SecondaryText,
-} from "./ClientList.styles";
-import DueDate from "../DueDate";
+import { ClientListHeading, ClientListTableHeading } from "./ClientList.styles";
+import ClientListCard from "./ClientListCard";
+import MarkedInProgressCard from "./MarkedInProgressCard";
+import InProgressEmptyState from "./InProgressEmptyStateCard";
 
 // Update this if the <ClientListHeading/> height changes
 export const HEADING_HEIGHT_MAGIC_NUMBER = 118;
-
-interface ClientProps {
-  client: DecoratedClient;
-}
-
-const ClientComponent: React.FC<ClientProps> = ({ client }: ClientProps) => {
-  const { clientsStore } = useRootStore();
-
-  const cardRef = React.useRef<HTMLDivElement>(null);
-
-  return (
-    <ClientCard
-      ref={cardRef}
-      onClick={() => {
-        clientsStore.view(
-          client,
-          cardRef !== null && cardRef.current !== null
-            ? cardRef.current.offsetTop
-            : 0
-        );
-      }}
-    >
-      <CardHeader className="fs-exclude">
-        <MainText>{client.formalName}</MainText>
-        <SecondaryText>
-          {titleCase(client.supervisionType)},{" "}
-          {titleCase(client.supervisionLevel)}
-        </SecondaryText>
-      </CardHeader>
-      <FlexCardSection>
-        <ClientNeed
-          kind={IconSVG.NeedsEmployment}
-          met={client.needsMet.employment}
-        />
-        <ClientNeed
-          kind={IconSVG.NeedsRiskAssessment}
-          met={client.needsMet.assessment}
-        />
-        <ClientNeed
-          kind={IconSVG.NeedsContact}
-          met={client.needsMet.faceToFaceContact}
-        />
-      </FlexCardSection>
-      <FlexCardSection>
-        <DueDate date={client.nextFaceToFaceDate} />
-      </FlexCardSection>
-    </ClientCard>
-  );
-};
 
 const ClientList = () => {
   const { clientsStore, policyStore } = useRootStore();
 
   let clients;
   if (clientsStore.clients) {
-    clients = clientsStore.clients.map((client) => (
-      <ClientComponent client={client} key={client.personExternalId} />
+    clients = clientsStore.clients.map((client) => {
+      const markedInProgress =
+        clientsStore.clientsMarkedInProgress[client.personExternalId];
+
+      if (markedInProgress) {
+        return (
+          <MarkedInProgressCard client={client} key={client.personExternalId} />
+        );
+      }
+
+      return (
+        <ClientListCard
+          client={client}
+          isInProgress={false}
+          key={client.personExternalId}
+        />
+      );
+    });
+  }
+
+  let inProgressClients;
+  if (clientsStore.inProgressClients.length) {
+    inProgressClients = clientsStore.inProgressClients.map((client) => (
+      <ClientListCard
+        client={client}
+        isInProgress
+        key={client.personExternalId}
+      />
     ));
+  } else {
+    inProgressClients = <InProgressEmptyState />;
   }
 
   return (
@@ -102,9 +71,20 @@ const ClientList = () => {
         <span>Needs</span>
         <span>Recommended Contact</span>
       </ClientListTableHeading>
-      {clientsStore.isLoading || policyStore.isLoading || !clientsStore.clients
+
+      {clientsStore.isLoading &&
+      clientsStore.clients.length === 0 &&
+      policyStore.isLoading
         ? `Loading... ${clientsStore.error || ""}`
         : clients}
+
+      <br />
+
+      <ClientListHeading>In Progress</ClientListHeading>
+      <ClientListTableHeading />
+      {clientsStore.isLoading || policyStore.isLoading
+        ? `Loading... ${clientsStore.error || ""}`
+        : inProgressClients}
     </div>
   );
 };

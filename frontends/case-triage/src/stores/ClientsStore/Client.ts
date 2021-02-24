@@ -16,6 +16,7 @@
 // =============================================================================
 import moment from "moment";
 import { titleCase } from "../../utils";
+import { CaseUpdateActionType } from "../CaseUpdatesStore";
 /* eslint-disable camelcase */
 interface ClientFullName {
   given_names: string;
@@ -31,6 +32,8 @@ export type CaseType = "GENERAL" | "SEX_OFFENDER";
 export const SupervisionLevels = <const>["HIGH", "MEDIUM", "MINIMUM"];
 export type SupervisionLevel = typeof SupervisionLevels[number];
 
+type APIDate = string | moment.Moment | null;
+
 export interface Client {
   assessmentScore: number | null;
   caseType: CaseType;
@@ -38,20 +41,22 @@ export interface Client {
   fullName: ClientFullName;
   employer?: string;
   gender: Gender;
-  supervisionStartDate: string | moment.Moment | null;
-  projectedEndDate: string | moment.Moment | null;
+  supervisionStartDate: APIDate;
+  projectedEndDate: APIDate;
+  inProgressActions?: CaseUpdateActionType[];
+  inProgressSubmissionDate?: APIDate;
   supervisionType: string;
   supervisionLevel: SupervisionLevel;
   personExternalId: string;
-  mostRecentFaceToFaceDate: string | moment.Moment | null;
-  mostRecentAssessmentDate: string | moment.Moment | null;
+  mostRecentFaceToFaceDate: APIDate;
+  mostRecentAssessmentDate: APIDate;
   needsMet: {
     assessment: boolean;
     employment: boolean;
     faceToFaceContact: boolean;
   };
-  nextAssessmentDate: string | moment.Moment | null;
-  nextFaceToFaceDate: string | moment.Moment | null;
+  nextAssessmentDate: APIDate;
+  nextFaceToFaceDate: APIDate;
 }
 
 export interface DecoratedClient extends Client {
@@ -63,9 +68,10 @@ export interface DecoratedClient extends Client {
   mostRecentAssessmentDate: moment.Moment | null;
   nextAssessmentDate: moment.Moment | null;
   nextFaceToFaceDate: moment.Moment | null;
+  inProgressSubmissionDate: moment.Moment | null;
 }
 
-const parseDate = (date: string | moment.Moment | null) => {
+const parseDate = (date?: APIDate) => {
   if (!date) {
     return null;
   }
@@ -93,6 +99,7 @@ const decorateClient = (client: Client): DecoratedClient => {
     mostRecentAssessmentDate: parseDate(client.mostRecentAssessmentDate),
     nextFaceToFaceDate: parseDate(client.nextFaceToFaceDate),
     nextAssessmentDate: parseDate(client.nextAssessmentDate),
+    inProgressSubmissionDate: parseDate(client.inProgressSubmissionDate),
   };
 };
 
