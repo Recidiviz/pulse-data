@@ -1,0 +1,30 @@
+user_inputs:
+    policy_year: 2021.0
+    start_year: 2016.0
+    projection_years: 15.0
+    speed_run: true
+
+compartments_architecture:
+    pretrial: shell
+    probation: full
+    prison_technical: full
+    prison_newcrime: full
+    release: full
+
+reference_date: 2015.0
+# january
+time_step: 0.083333333
+# one month
+
+disaggregation_axes: 
+- crime_type
+
+data_inputs:
+  big_query_simulation_tag: VA_HB2038
+
+per_year_costs:
+# marginal costs
+  prison_technical: 5883.0
+  prison_newcrime: 5883.0
+  probation: 495.0
+  release: 0.0

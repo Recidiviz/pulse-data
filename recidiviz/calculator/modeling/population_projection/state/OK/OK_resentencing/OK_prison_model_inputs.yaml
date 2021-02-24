@@ -1,0 +1,28 @@
+user_inputs:
+    policy_year: 2021.0
+    start_year: 2019.0
+    projection_years: 13.0
+    speed_run: true
+    constant_admissions: true
+
+compartments_architecture:
+    pretrial: shell
+    prison: full
+    release: full
+    release_full: full
+
+reference_date: 2010.0
+# january
+time_step: 0.083333333
+# one month
+
+disaggregation_axes: 
+- crime_type
+
+data_inputs:
+  big_query_simulation_tag: OK_resentencing
+
+per_year_costs:
+  prison: 2965.53
+  release_full: 0.0
+  release: 0.0
