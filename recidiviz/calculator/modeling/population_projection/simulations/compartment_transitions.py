@@ -145,6 +145,11 @@ class CompartmentTransitions:
 
         # Assign the residual probability as the proportion that remains in the current compartment per month
         self.transition_dfs[state]['remaining'] = 1 - round(self.transition_dfs[state].sum(axis=1), SIG_FIGS - 1)
+        if self.transition_dfs[state].loc[self.max_sentence, 'remaining'] > 10 ** (-SIG_FIGS):
+            raise ValueError(f"Final row of transition table doesn't release everyone: "
+                             f"{self.transition_dfs[state].iloc[-1]}")
+
+        self.transition_dfs[state].loc[self.max_sentence, 'remaining'] = 0
 
         # Make sure all transition probabilities are between 0-1
         for compartment, transition_df in self.transition_dfs[state].items():
