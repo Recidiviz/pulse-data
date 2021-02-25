@@ -17,14 +17,16 @@
 """Test-only implementation of the GCSFileSystem"""
 
 import abc
+import os
 import shutil
 import threading
 from typing import Union, Dict, Optional, List, Set
 
 import attr
 
-from recidiviz.cloud_storage.gcs_file_system import GCSFileSystem, GcsfsFileContentsHandle, generate_random_temp_path, \
-    GCSBlobDoesNotExistError
+from recidiviz.cloud_storage.content_types import FileContentsHandle, FileContentsRowType, IoType
+from recidiviz.cloud_storage.gcs_file_system import GCSFileSystem, GcsfsFileContentsHandle, \
+    generate_random_temp_path, GCSBlobDoesNotExistError
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath, GcsfsDirectoryPath, GcsfsBucketPath, GcsfsPath
 
 
@@ -33,6 +35,7 @@ class FakeGCSFileSystemDelegate:
     def on_file_added(self, path: GcsfsFilePath) -> None:
         """Will be called whenever a new file path is successfully added to the file system."""
 
+
 @attr.s(frozen=True)
 class FakeGCSFileSystemEntry:
     gcs_path: Union[GcsfsFilePath, GcsfsDirectoryPath] = attr.ib()
@@ -40,6 +43,9 @@ class FakeGCSFileSystemEntry:
     # Path to file in local file system. If it is None, still pretend the file exists in the file system but any
     # attempt to access it will fail.
     local_path: Optional[str] = attr.ib()
+    # Content type for the file entry
+    content_type: Optional[str] = attr.ib()
+
 
 class FakeGCSFileSystem(GCSFileSystem):
     """Test-only implementation of the GCSFileSystem."""
@@ -76,7 +82,7 @@ class FakeGCSFileSystem(GCSFileSystem):
             shutil.copyfile(local_path, copied_path)
             local_path = copied_path
 
-        self._add_entry(FakeGCSFileSystemEntry(path, local_path), fail_handle_file_call)
+        self._add_entry(FakeGCSFileSystemEntry(path, local_path, 'application/octet-stream'), fail_handle_file_call)
 
     def _add_entry(self, entry: FakeGCSFileSystemEntry, fail_handle_file_call: bool = False) -> None:
         with self.mutex:
@@ -131,16 +137,17 @@ class FakeGCSFileSystem(GCSFileSystem):
         with open(temp_path, 'w') as f:
             f.write(contents)
 
-        self._add_entry(FakeGCSFileSystemEntry(path, temp_path))
+        self._add_entry(FakeGCSFileSystemEntry(path, temp_path, content_type))
         self.uploaded_paths.add(path)
 
-    def upload_from_contents_handle(self,
-                                    path: GcsfsFilePath,
-                                    contents_handle: GcsfsFileContentsHandle,
-                                    _content_type: str) -> None:
+    def upload_from_contents_handle_stream(self,
+                                           path: GcsfsFilePath,
+                                           contents_handle: FileContentsHandle[FileContentsRowType, IoType],
+                                           content_type: str) -> None:
         temp_path = generate_random_temp_path()
-        shutil.copyfile(contents_handle.local_file_path, temp_path)
-        self._add_entry(FakeGCSFileSystemEntry(path, temp_path))
+        if os.path.exists(contents_handle.local_file_path):
+            shutil.copyfile(contents_handle.local_file_path, temp_path)
+        self._add_entry(FakeGCSFileSystemEntry(path, temp_path, content_type))
         self.uploaded_paths.add(path)
 
     def copy(self,
@@ -157,7 +164,7 @@ class FakeGCSFileSystem(GCSFileSystem):
 
         with self.mutex:
             entry = self.files[src_path.abs_path()]
-            self.files[path.abs_path()] = FakeGCSFileSystemEntry(path, entry.local_path)
+            self.files[path.abs_path()] = FakeGCSFileSystemEntry(path, entry.local_path, 'application/octet-stream')
 
         if self.delegate:
             self.delegate.on_file_added(path)
@@ -177,3 +184,23 @@ class FakeGCSFileSystem(GCSFileSystem):
                     results.append(entry.gcs_path)
 
             return results
+
+    def set_content_type(self, path: GcsfsFilePath, content_type: str) -> None:
+        with self.mutex:
+            entry = self.files[path.abs_path()]
+            self.files[path.abs_path()] = FakeGCSFileSystemEntry(path, entry.local_path, content_type)
+
+    def is_dir(self, path: str) -> bool:
+        try:
+            directory = GcsfsDirectoryPath.from_absolute_path(path)
+            has_dir = self.ls_with_blob_prefix(bucket_name=directory.bucket_name, blob_prefix=directory.relative_path)
+            return len(has_dir) > 0
+        except ValueError:
+            return False
+
+    def is_file(self, path: str) -> bool:
+        try:
+            file = GcsfsFilePath.from_absolute_path(path)
+            return self.exists(file)
+        except ValueError:
+            return False

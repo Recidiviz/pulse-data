@@ -26,7 +26,8 @@ from google.protobuf import timestamp_pb2
 from mock import patch, MagicMock
 
 from recidiviz.common.google_cloud.google_cloud_tasks_shared_queues import \
-    DIRECT_INGEST_SCHEDULER_QUEUE_V2, DIRECT_INGEST_STATE_PROCESS_JOB_QUEUE_V2, DIRECT_INGEST_BQ_IMPORT_EXPORT_QUEUE_V2
+    DIRECT_INGEST_SCHEDULER_QUEUE_V2, DIRECT_INGEST_STATE_PROCESS_JOB_QUEUE_V2, \
+    DIRECT_INGEST_BQ_IMPORT_EXPORT_QUEUE_V2, DIRECT_INGEST_SFTP_DOWNLOAD_QUEUE_V1
 from recidiviz.common.google_cloud.google_cloud_tasks_client_wrapper import \
     QUEUES_REGION
 from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import \
@@ -241,7 +242,6 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
         mock_client.return_value.create_task.assert_called_with(
             parent=queue_path, task=task)
 
-
     @patch('recidiviz.ingest.direct.direct_ingest_cloud_task_manager.uuid')
     @patch('google.cloud.tasks_v2.CloudTasksClient')
     @freeze_time('2019-07-20')
@@ -323,4 +323,32 @@ class TestDirectIngestCloudTaskManagerImpl(TestCase):
         # Assert
         mock_client.return_value.queue_path.assert_called_with(
             self.mock_project_id, QUEUES_REGION, DIRECT_INGEST_BQ_IMPORT_EXPORT_QUEUE_V2)
+        mock_client.return_value.create_task.assert_called_with(parent=queue_path, task=task)
+
+    @patch('recidiviz.ingest.direct.direct_ingest_cloud_task_manager.uuid')
+    @patch('google.cloud.tasks_v2.CloudTasksClient')
+    @freeze_time('2021-01-01')
+    def test_create_direct_ingest_sftp_download_task(
+            self, mock_client: mock.MagicMock, mock_uuid: mock.MagicMock) -> None:
+        uuid = 'random-uuid'
+        mock_uuid.uuid4.return_value = uuid
+        queue_path = f'{_REGION.shared_queue}-path'
+        date = '2021-01-01'
+        task_name = DIRECT_INGEST_SFTP_DOWNLOAD_QUEUE_V1 + '/{}-{}-{}'.format(_REGION.region_code, date, uuid)
+        task = tasks_v2.types.task_pb2.Task(
+            name=task_name,
+            app_engine_http_request={
+                'http_method': 'POST',
+                'relative_uri': f'/direct/upload_from_sftp?region={_REGION.region_code}',
+                'body': json.dumps({}).encode()
+            }
+        )
+
+        mock_client.return_value.task_path.return_value = task_name
+        mock_client.return_value.queue_path.return_value = queue_path
+
+        DirectIngestCloudTaskManagerImpl().create_direct_ingest_sftp_download_task(_REGION)
+
+        mock_client.return_value.queue_path.assert_called_with(
+            self.mock_project_id, QUEUES_REGION, DIRECT_INGEST_SFTP_DOWNLOAD_QUEUE_V1)
         mock_client.return_value.create_task.assert_called_with(parent=queue_path, task=task)

@@ -18,7 +18,9 @@
 import datetime
 from typing import List
 
-from recidiviz.ingest.direct.controllers.download_files_from_sftp import BaseSftpDownloadDelegate
+from recidiviz.cloud_storage.gcs_file_system import GCSFileSystem
+from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
+from recidiviz.ingest.direct.base_sftp_download_delegate import BaseSftpDownloadDelegate
 
 
 class UsIdSftpDownloadDelegate(BaseSftpDownloadDelegate):
@@ -46,6 +48,6 @@ class UsIdSftpDownloadDelegate(BaseSftpDownloadDelegate):
         """The US_ID server is set to use the root directory, so candidate_paths is effectively ignored."""
         return self.CURRENT_ROOT
 
-    def post_process_downloads(self, _: str) -> None:
+    def post_process_downloads(self, downloaded_path: GcsfsFilePath, _: GCSFileSystem) -> str:
         """The US_ID server doesn't require any post-processing."""
-        return
+        return downloaded_path.abs_path()

@@ -17,7 +17,9 @@
 """Unit tests for us_id_sftp_download_delegate.py"""
 import unittest
 
+from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
 from recidiviz.ingest.direct.regions.us_id.us_id_sftp_download_delegate import UsIdSftpDownloadDelegate
+from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
 
 
 class UsIdSftpDownloadDelegateTest(unittest.TestCase):
@@ -45,3 +47,10 @@ class UsIdSftpDownloadDelegateTest(unittest.TestCase):
         ]
         results = self.delegate.filter_paths(test_directories)
         self.assertEqual(results, expected_results)
+
+    def test_post_process_downloads(self) -> None:
+        result = self.delegate.post_process_downloads(
+            GcsfsFilePath.from_absolute_path("test_bucket/test.txt"),
+            FakeGCSFileSystem()
+        )
+        self.assertEqual(result, "test_bucket/test.txt")

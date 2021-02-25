@@ -23,11 +23,13 @@ import tempfile
 import uuid
 from typing import List, Optional, TextIO, Union, Iterator, Callable, Dict
 
+import pysftp
+from paramiko import SFTPFile
 from google.api_core import retry, exceptions
 from google.cloud import storage
 from google.cloud.exceptions import NotFound
 
-from recidiviz.cloud_storage.content_types import FileContentsHandle
+from recidiviz.cloud_storage.content_types import FileContentsHandle, FileContentsRowType, IoType
 from recidiviz.cloud_storage.gcsfs_path import GcsfsPath, \
     GcsfsFilePath, GcsfsDirectoryPath, GcsfsBucketPath
 
@@ -36,9 +38,9 @@ class GCSBlobDoesNotExistError(ValueError):
     pass
 
 
-class GcsfsFileContentsHandle(FileContentsHandle[str]):
+class GcsfsFileContentsHandle(FileContentsHandle[str, TextIO]):
     def __init__(self, local_file_path: str, cleanup_file: bool = True):
-        self.local_file_path = local_file_path
+        super().__init__(local_file_path=local_file_path)
         self.cleanup_file = cleanup_file
 
     def get_contents_iterator(self) -> Iterator[str]:
@@ -59,6 +61,25 @@ class GcsfsFileContentsHandle(FileContentsHandle[str]):
         """
         if self.cleanup_file and os.path.exists(self.local_file_path):
             os.remove(self.local_file_path)
+
+
+class GcsfsSftpFileContentsHandle(FileContentsHandle[bytes, SFTPFile]):
+    def __init__(self,
+                 local_file_path: str,
+                 sftp_connection: pysftp.Connection):
+        super().__init__(local_file_path=local_file_path)
+        self.sftp_connection = sftp_connection
+
+    def get_contents_iterator(self) -> Iterator[bytes]:
+        with self.open() as f:
+            while True:
+                line = f.readline()
+                if not line:
+                    break
+                yield line
+
+    def open(self) -> SFTPFile:
+        return self.sftp_connection.open(remote_file=self.local_file_path, mode='r')
 
 
 class GCSFileSystem:
@@ -122,17 +143,31 @@ class GCSFileSystem:
         """Uploads string contents to a file path."""
 
     @abc.abstractmethod
-    def upload_from_contents_handle(self,
-                                    path: GcsfsFilePath,
-                                    contents_handle: GcsfsFileContentsHandle,
-                                    content_type: str) -> None:
-        """Uploads contents in handle to a file path."""
+    def upload_from_contents_handle_stream(self,
+                                           path: GcsfsFilePath,
+                                           contents_handle: FileContentsHandle[FileContentsRowType, IoType],
+                                           content_type: str) -> None:
+        """Uploads contents in handle via a file stream to a file path."""
 
     @abc.abstractmethod
     def ls_with_blob_prefix(self,
                             bucket_name: str,
                             blob_prefix: str) -> List[Union[GcsfsDirectoryPath, GcsfsFilePath]]:
         """Returns absolute paths of objects in the bucket with the given |relative_path|. """
+
+    @abc.abstractmethod
+    def set_content_type(self,
+                         path: GcsfsFilePath,
+                         content_type: str) -> None:
+        """Allows for the content type of a certain file path to be reset."""
+
+    @abc.abstractmethod
+    def is_dir(self, path: str) -> bool:
+        """Returns whether the given path exists and is a GcsfsDirectoryPath or not."""
+
+    @abc.abstractmethod
+    def is_file(self, path: str) -> bool:
+        """Returns whether the given path exists and is a GcsfsFilePath or not."""
 
 
 def retry_predicate(exception: Exception) -> Callable[[Exception], bool]:
@@ -264,13 +299,14 @@ class GCSFileSystemImpl(GCSFileSystem):
             contents, content_type=content_type)
 
     @retry.Retry(predicate=retry_predicate)
-    def upload_from_contents_handle(self,
-                                    path: GcsfsFilePath,
-                                    contents_handle: GcsfsFileContentsHandle,
-                                    content_type: str) -> None:
+    def upload_from_contents_handle_stream(self,
+                                           path: GcsfsFilePath,
+                                           contents_handle: FileContentsHandle[FileContentsRowType, IoType],
+                                           content_type: str) -> None:
         bucket = self.storage_client.get_bucket(path.bucket_name)
-        bucket.blob(path.blob_name).upload_from_filename(
-            contents_handle.local_file_path, content_type=content_type)
+        bucket.blob(path.blob_name).upload_from_file(
+            contents_handle.open(), content_type=content_type
+        )
 
     @retry.Retry(predicate=retry_predicate)
     def ls_with_blob_prefix(
@@ -279,3 +315,28 @@ class GCSFileSystemImpl(GCSFileSystem):
             blob_prefix: str) -> List[Union[GcsfsDirectoryPath, GcsfsFilePath]]:
         blobs = self.storage_client.list_blobs(bucket_name, prefix=blob_prefix)
         return [GcsfsPath.from_blob(blob) for blob in blobs]
+
+    @retry.Retry(predicate=retry_predicate)
+    def set_content_type(self, path: GcsfsFilePath, content_type: str) -> None:
+        blob = self._get_blob(path)
+        blob.content_type = content_type
+        blob.patch()
+
+    @retry.Retry(predicate=retry_predicate)
+    def is_dir(self, path: str) -> bool:
+        try:
+            directory = GcsfsDirectoryPath.from_absolute_path(path)
+            # If the directory is empty, has_dir will have 1 entry, which is the Blob representing the directory
+            # Otherwise, if the directory doesn't exist on GCS, has_dir will return an empty list
+            has_dir = self.ls_with_blob_prefix(bucket_name=directory.bucket_name, blob_prefix=directory.relative_path)
+            return len(has_dir) > 0
+        except ValueError:
+            return False
+
+    @retry.Retry(predicate=retry_predicate)
+    def is_file(self, path: str) -> bool:
+        try:
+            file = GcsfsFilePath.from_absolute_path(path)
+            return self.exists(file)
+        except ValueError:
+            return False

@@ -29,7 +29,7 @@ from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import GcsfsR
     GcsfsIngestViewExportArgs
 from recidiviz.ingest.direct.direct_ingest_cloud_task_manager import \
     ProcessIngestJobCloudTaskQueueInfo, BQImportExportCloudTaskQueueInfo, \
-    SchedulerCloudTaskQueueInfo
+    SchedulerCloudTaskQueueInfo, SftpCloudTaskQueueInfo
 from recidiviz.tests.ingest.direct.fake_direct_ingest_cloud_task_manager \
     import FakeDirectIngestCloudTaskManager
 from recidiviz.utils import monitoring
@@ -186,6 +186,7 @@ class FakeAsyncDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManager):
         self.scheduler_queue = SingleThreadTaskQueue(name='scheduler')
         self.process_job_queue = SingleThreadTaskQueue(name='process_job')
         self.bq_import_export_queue = SingleThreadTaskQueue(name='bq_import_export')
+        self.sftp_queue = SingleThreadTaskQueue(name='sftp')
 
     def create_direct_ingest_process_job_task(self,
                                               region: Region,
@@ -271,6 +272,12 @@ class FakeAsyncDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManager):
             ingest_view_export_args
         )
 
+    def create_direct_ingest_sftp_download_task(self,
+                                                region: Region) -> None:
+        self.sftp_queue.add_task(
+            f'{region.region_code}-handle_sftp_download',
+            lambda _: None)
+
     def get_process_job_queue_info(self, region: Region) -> ProcessIngestJobCloudTaskQueueInfo:
         with self.process_job_queue.all_tasks_mutex:
             task_names = self.process_job_queue.get_unfinished_task_names_unsafe()
@@ -293,6 +300,15 @@ class FakeAsyncDirectIngestCloudTaskManager(FakeDirectIngestCloudTaskManager):
             if has_unfinished_tasks else []
         return BQImportExportCloudTaskQueueInfo(queue_name=self.bq_import_export_queue.name,
                                                 task_names=task_names)
+
+    def get_sftp_download_queue_info(self, region: Region) -> SftpCloudTaskQueueInfo:
+        with self.sftp_queue.all_tasks_mutex:
+            has_unfinished_tasks = self.sftp_queue.get_unfinished_task_names_unsafe()
+
+        task_names = [f'{region.region_code}-sftp-download'] \
+            if has_unfinished_tasks else []
+        return SftpCloudTaskQueueInfo(queue_name=self.sftp_queue.name,
+                                      task_names=task_names)
 
     def wait_for_all_tasks_to_run(self) -> None:
         bq_import_export_done = False

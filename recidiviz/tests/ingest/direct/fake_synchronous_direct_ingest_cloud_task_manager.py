@@ -26,7 +26,7 @@ from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import GcsfsI
     GcsfsRawDataBQImportArgs
 from recidiviz.ingest.direct.direct_ingest_cloud_task_manager import \
     _build_task_id, ProcessIngestJobCloudTaskQueueInfo, BQImportExportCloudTaskQueueInfo, \
-    SchedulerCloudTaskQueueInfo
+    SchedulerCloudTaskQueueInfo, SftpCloudTaskQueueInfo
 from recidiviz.tests.ingest.direct.fake_direct_ingest_cloud_task_manager \
     import FakeDirectIngestCloudTaskManager
 from recidiviz.utils import monitoring
@@ -46,6 +46,7 @@ class FakeSynchronousDirectIngestCloudTaskManager(
         self.num_finished_scheduler_tasks = 0
         self.bq_import_export_tasks: List[Tuple[str, Union[GcsfsRawDataBQImportArgs, GcsfsIngestViewExportArgs]]] = []
         self.num_finished_bq_import_export_tasks = 0
+        self.sftp_tasks: List[str] = []
 
     def get_process_job_queue_info(self,
                                    region: Region) -> ProcessIngestJobCloudTaskQueueInfo:
@@ -64,6 +65,11 @@ class FakeSynchronousDirectIngestCloudTaskManager(
         return BQImportExportCloudTaskQueueInfo(
             queue_name='bq_import_export',
             task_names=[t[0] for t in self.bq_import_export_tasks])
+
+    def get_sftp_download_queue_info(self, region: Region) -> SftpCloudTaskQueueInfo:
+        return SftpCloudTaskQueueInfo(
+            queue_name='sftp_download',
+            task_names=[t[0] for t in self.sftp_tasks])
 
     def create_direct_ingest_process_job_task(
             self,
@@ -118,6 +124,13 @@ class FakeSynchronousDirectIngestCloudTaskManager(
         task_id = _build_task_id(self.controller.region.region_code, None)
         self.bq_import_export_tasks.append(
             (f'projects/path/to/{task_id}-ingest_view_export', ingest_view_export_args))
+
+    def create_direct_ingest_sftp_download_task(self, region: Region) -> None:
+        if not self.controller:
+            raise ValueError(
+                "Controller is null - did you call set_controller()?")
+        task_id = _build_task_id(self.controller.region.region_code, None)
+        self.sftp_tasks.append(f'projects/path/to/{task_id}-handle_sftp_download')
 
     def test_run_next_process_job_task(self) -> None:
         """Synchronously executes the next queued process job task, but *does
