@@ -16,7 +16,13 @@ exclusions:
   - validation_name: revocation_matrix_comparison_revocation_cell_vs_month
     exclusion_type: DOES_NOT_APPLY
     exclusion_reason: Revocation matrix not used for ID
-max_allowed_error_overrides: []  # This region will use only the default max_allowed_error values
+max_allowed_error_overrides:
+  - validation_name: county_jail_population_person_level_external_comparison
+    max_allowed_error_override: 0.18
+    override_reason: TODO(#6011) Incorporate more of the unpaid bed logic for the county jail incarcerations
+  - validation_name: population_projection_monthly_population_external_comparison
+    max_allowed_error_override: 0.03
+    override_reason: TODO(#6010) IDOC uses a slightly different population metric which causes discrepencies
 num_allowed_rows_overrides:
   - validation_name: incarceration_admission_after_open_period
     num_allowed_rows_override: 60
