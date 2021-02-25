@@ -158,6 +158,45 @@ class TestUsIdIncarcerationAdmissionDateIfRevocationOccurred(unittest.TestCase):
         self.assertTrue(admission_is_revocation)
         self.assertEqual(revoked_period, supervision_period)
 
+    def test_us_id_revoked_supervision_period_if_revocation_occurred_parole_board_to_treatment_revocation(self):
+        supervision_period = StateSupervisionPeriod.new_with_defaults(
+            state_code='US_ID',
+            start_date=date(2017, 1, 1),
+            termination_date=date(2017, 5, 17),
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+        )
+
+        board_hold_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=222,
+            external_id='ip2',
+            state_code='US_ID',
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            admission_date=date(2017, 5, 17),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.RETURN_FROM_SUPERVISION,
+            release_date=date(2017, 5, 29),
+            release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD
+        )
+
+        incarceration_revocation_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=222,
+            external_id='ip2',
+            state_code='US_ID',
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            admission_date=date(2017, 5, 29),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON
+        )
+
+        supervision_periods = [supervision_period]
+
+        admission_is_revocation, revoked_period = us_id_revoked_supervision_period_if_revocation_occurred(
+            incarceration_revocation_period, supervision_periods, board_hold_period)
+        self.assertTrue(admission_is_revocation)
+        self.assertEqual(revoked_period, supervision_period)
+
     def test_us_id_revoked_supervision_period_if_revocation_occurred_treatment_transfer_not_revocation(self):
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             state_code='US_ID',
