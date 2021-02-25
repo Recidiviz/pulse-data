@@ -17,6 +17,7 @@
 
 """Requests handlers for direct ingest control requests.
 """
+import datetime
 import json
 import logging
 from http import HTTPStatus
@@ -31,14 +32,17 @@ from recidiviz.ingest.direct.controllers.direct_ingest_raw_data_table_latest_vie
     DirectIngestRawDataTableLatestViewUpdater
 from recidiviz.ingest.direct.controllers.direct_ingest_raw_update_cloud_task_manager import \
     DirectIngestRawUpdateCloudTaskManager
+from recidiviz.ingest.direct.controllers.download_files_from_sftp import DownloadFilesFromSftpController
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_controller import \
     GcsfsDirectIngestController
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import GcsfsRawDataBQImportArgs, \
     GcsfsIngestViewExportArgs, GcsfsDirectIngestFileType
 from recidiviz.cloud_storage.gcsfs_path import \
     GcsfsFilePath, GcsfsPath
+from recidiviz.ingest.direct.controllers.upload_state_files_to_ingest_bucket_with_date import \
+    UploadStateFilesToIngestBucketController
 from recidiviz.ingest.direct.direct_ingest_cloud_task_manager import \
-    DirectIngestCloudTaskManager
+    DirectIngestCloudTaskManager, DirectIngestCloudTaskManagerImpl
 from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import \
     BaseDirectIngestController
 from recidiviz.ingest.direct.controllers.direct_ingest_types import IngestArgs, CloudTaskArgs
@@ -388,6 +392,86 @@ def kick_all_schedulers() -> None:
                 continue
 
             controller.kick_scheduler(just_finished_job=False)
+
+
+@direct_ingest_control.route('/upload_from_sftp', methods=['GET', 'POST'])
+@requires_gae_auth
+def upload_from_sftp() -> Tuple[str, HTTPStatus]:
+    """Connects to remote SFTP servers and uploads the files in both raw and normalized form
+    to GCS buckets to start the ingest process. Should only be called from a task queue scheduler.
+
+    Args:
+        region_code (Optional[str]): required as part of the request to identify the region
+        date_str (Optional[str]): ISO format date string,
+            used to determine the lower bound date in which to start
+            pulling items from the SFTP server. If None, uses yesterday as the default lower
+            bound time, otherwises creates a datetime from the string.
+        bucket_str (Optional[str]): GCS bucket name, used to override the
+            destination in which the SFTP assets are downloaded to and moved for proper
+            ingest (therefore used in both controllers). If None, uses the bucket determined
+            by |region_code| otherwise, uses this destination.
+    """
+    logging.info('Received request for uploading files from SFTP: %s', request.values)
+    region_code = get_str_param_value('region', request.values)
+    date_str = get_str_param_value('date', request.values)
+    bucket_str = get_str_param_value('bucket', request.values)
+
+    if not region_code:
+        return f'Bad parameters [{request.values}]', HTTPStatus.BAD_REQUEST
+
+    with monitoring.push_region_tag(region_code):
+        lower_bound_update_datetime = datetime.datetime.fromisoformat(date_str) \
+            if date_str is not None else datetime.datetime.utcnow() - datetime.timedelta(1)
+        sftp_controller = DownloadFilesFromSftpController(
+            project_id=metadata.project_id(),
+            region=region_code,
+            lower_bound_update_datetime=lower_bound_update_datetime,
+            gcs_destination_path=bucket_str
+        )
+        downloaded_items, unable_to_download_items = sftp_controller.do_fetch()
+
+        if downloaded_items:
+            _, unable_to_upload_files = UploadStateFilesToIngestBucketController(
+                paths_with_timestamps=downloaded_items,
+                project_id=metadata.project_id(),
+                region=region_code,
+                gcs_destination_path=bucket_str
+            ).do_upload()
+
+            sftp_controller.clean_up()
+
+            if unable_to_download_items or unable_to_upload_files:
+                return f'Unable to download the following files: {unable_to_download_items}, '\
+                       f'and upload the following files: {unable_to_upload_files}', HTTPStatus.MULTI_STATUS
+        elif unable_to_download_items:
+            return f'Unable to download the following files {unable_to_download_items}', HTTPStatus.MULTI_STATUS
+        elif not downloaded_items and not unable_to_download_items:
+            return f'No items to download for {region_code}', HTTPStatus.MULTI_STATUS
+    return '', HTTPStatus.OK
+
+
+@direct_ingest_control.route('/handle_sftp_files', methods=['GET', 'POST'])
+@requires_gae_auth
+def handle_sftp_files() -> Tuple[str, HTTPStatus]:
+    """Schedules the SFTP downloads into the appropriate cloud task queue."""
+    logging.info('Received request for handling SFTP files: %s', request.values)
+    region_code = get_str_param_value('region', request.values)
+
+    if not region_code:
+        return f'Bad parameters [{request.values}]', HTTPStatus.BAD_REQUEST
+
+    with monitoring.push_region_tag(region_code):
+        try:
+            region = regions.get_region(region_code, is_direct_ingest=True)
+            direct_ingest_cloud_task_manager = DirectIngestCloudTaskManagerImpl()
+            direct_ingest_cloud_task_manager.create_direct_ingest_sftp_download_task(region)
+        except FileNotFoundError as e:
+            raise DirectIngestError(
+                msg=f"Region [{region_code}] has no registered manifest",
+                error_type=DirectIngestErrorType.INPUT_ERROR,
+            ) from e
+
+    return '', HTTPStatus.OK
 
 
 def controller_for_region_code(

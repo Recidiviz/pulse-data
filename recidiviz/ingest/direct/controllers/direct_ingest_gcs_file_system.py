@@ -25,6 +25,7 @@ import tempfile
 import uuid
 from typing import List, Optional, Union, Callable, Dict, TypeVar, Generic
 
+from recidiviz.cloud_storage.content_types import FileContentsHandle, FileContentsRowType, IoType
 from recidiviz.cloud_storage.gcs_file_system import GCSFileSystem, GcsfsFileContentsHandle
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import \
     filename_parts_from_path, GcsfsDirectIngestFileType
@@ -227,16 +228,25 @@ class DirectIngestGCSFileSystem(Generic[GCSFileSystemType], GCSFileSystem):
                            content_type: str) -> None:
         return self.gcs_file_system.upload_from_string(path, contents, content_type)
 
-    def upload_from_contents_handle(self,
-                                    path: GcsfsFilePath,
-                                    contents_handle: GcsfsFileContentsHandle,
-                                    content_type: str) -> None:
-        return self.gcs_file_system.upload_from_contents_handle(path, contents_handle, content_type)
+    def upload_from_contents_handle_stream(self,
+                                           path: GcsfsFilePath,
+                                           contents_handle: FileContentsHandle[FileContentsRowType, IoType],
+                                           content_type: str) -> None:
+        return self.gcs_file_system.upload_from_contents_handle_stream(path, contents_handle, content_type)
 
     def ls_with_blob_prefix(self,
                             bucket_name: str,
                             blob_prefix: str) -> List[Union[GcsfsDirectoryPath, GcsfsFilePath]]:
         return self.gcs_file_system.ls_with_blob_prefix(bucket_name, blob_prefix)
+
+    def set_content_type(self, path: GcsfsFilePath, content_type: str) -> None:
+        return self.gcs_file_system.set_content_type(path, content_type)
+
+    def is_dir(self, path: str) -> bool:
+        return self.gcs_file_system.is_dir(path)
+
+    def is_file(self, path: str) -> bool:
+        return self.gcs_file_system.is_file(path)
 
     @staticmethod
     def is_processed_file(path: GcsfsFilePath) -> bool:
@@ -253,7 +263,7 @@ class DirectIngestGCSFileSystem(Generic[GCSFileSystemType], GCSFileSystem):
     @staticmethod
     def is_normalized_file_path(path: GcsfsFilePath) -> bool:
         return DirectIngestGCSFileSystem.is_seen_unprocessed_file(path) or \
-               DirectIngestGCSFileSystem.is_processed_file(path)
+            DirectIngestGCSFileSystem.is_processed_file(path)
 
     def get_unnormalized_file_paths(
             self, directory_path: GcsfsDirectoryPath) -> List[GcsfsFilePath]:
@@ -357,7 +367,6 @@ class DirectIngestGCSFileSystem(Generic[GCSFileSystemType], GCSFileSystem):
             file_type_filter: Optional[GcsfsDirectIngestFileType],
             date_str_bound: str,
             include_bound: bool) -> None:
-
         """Moves all files with timestamps before the provided |date_str_bound| to the appropriate storage location for
         that file. If a |file_type_filter| is provided, only moves files of a certain file type and throws if
         encountering a file of type UNSPECIFIED in the directory path.

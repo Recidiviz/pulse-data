@@ -25,7 +25,7 @@ import attr
 
 from recidiviz.common.google_cloud.cloud_task_queue_manager import CloudTaskQueueInfo, CloudTaskQueueManager
 from recidiviz.common.google_cloud.google_cloud_tasks_shared_queues import \
-    DIRECT_INGEST_SCHEDULER_QUEUE_V2, DIRECT_INGEST_BQ_IMPORT_EXPORT_QUEUE_V2
+    DIRECT_INGEST_SCHEDULER_QUEUE_V2, DIRECT_INGEST_BQ_IMPORT_EXPORT_QUEUE_V2, DIRECT_INGEST_SFTP_DOWNLOAD_QUEUE_V1
 from recidiviz.ingest.direct.controllers.direct_ingest_types import CloudTaskArgs, IngestArgs
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import \
     GcsfsIngestArgs, GcsfsRawDataBQImportArgs, GcsfsIngestViewExportArgs
@@ -61,6 +61,11 @@ def _build_task_id(region_code: str,
 
 @attr.s
 class SchedulerCloudTaskQueueInfo(CloudTaskQueueInfo):
+    pass
+
+
+@attr.s
+class SftpCloudTaskQueueInfo(CloudTaskQueueInfo):
     pass
 
 
@@ -126,6 +131,10 @@ class DirectIngestCloudTaskManager:
         the given region."""
 
     @abc.abstractmethod
+    def get_sftp_download_queue_info(self, region: Region) -> SftpCloudTaskQueueInfo:
+        """Returns information about the tasks in the sftp queue for the given region."""
+
+    @abc.abstractmethod
     def create_direct_ingest_process_job_task(self,
                                               region: Region,
                                               ingest_args: IngestArgs) -> None:
@@ -171,6 +180,15 @@ class DirectIngestCloudTaskManager:
                                                      ingest_view_export_args: GcsfsIngestViewExportArgs) -> None:
         pass
 
+    @abc.abstractmethod
+    def create_direct_ingest_sftp_download_task(self,
+                                                region: Region) -> None:
+        """Creates a sftp download task for direct ingest for a given region.
+
+        Args:
+            region: `Region` direct ingest region.
+        """
+
     @staticmethod
     def json_to_cloud_task_args(json_data: dict) -> Optional[CloudTaskArgs]:
         if 'cloud_task_args' in json_data and 'args_type' in json_data:
@@ -206,7 +224,8 @@ class DirectIngestCloudTaskManagerImpl(DirectIngestCloudTaskManager):
         self.bq_import_export_cloud_task_queue_manager = CloudTaskQueueManager(
             queue_info_cls=BQImportExportCloudTaskQueueInfo,
             queue_name=DIRECT_INGEST_BQ_IMPORT_EXPORT_QUEUE_V2)
-
+        self.sftp_cloud_task_queue_manager = CloudTaskQueueManager(queue_info_cls=SftpCloudTaskQueueInfo,
+                                                                   queue_name=DIRECT_INGEST_SFTP_DOWNLOAD_QUEUE_V1)
         self.region_process_job_queue_managers: Dict[str,
                                                      CloudTaskQueueManager[ProcessIngestJobCloudTaskQueueInfo]] = {}
 
@@ -225,6 +244,9 @@ class DirectIngestCloudTaskManagerImpl(DirectIngestCloudTaskManager):
 
     def get_bq_import_export_queue_info(self, region: Region) -> BQImportExportCloudTaskQueueInfo:
         return self.bq_import_export_cloud_task_queue_manager.get_queue_info(task_id_prefix=region.region_code)
+
+    def get_sftp_download_queue_info(self, region: Region) -> SftpCloudTaskQueueInfo:
+        return self.sftp_cloud_task_queue_manager.get_queue_info(task_id_prefix=region.region_code)
 
     def create_direct_ingest_process_job_task(self,
                                               region: Region,
@@ -306,4 +328,16 @@ class DirectIngestCloudTaskManagerImpl(DirectIngestCloudTaskManager):
             task_id=task_id,
             relative_uri=relative_uri,
             body=body,
+        )
+
+    def create_direct_ingest_sftp_download_task(self,
+                                                region: Region) -> None:
+        task_id = _build_task_id(region.region_code,
+                                 task_id_tag='handle_sftp_download',
+                                 prefix_only=False)
+        relative_uri = f'/direct/upload_from_sftp?region={region.region_code}'
+        self.sftp_cloud_task_queue_manager.create_task(
+            task_id=task_id,
+            relative_uri=relative_uri,
+            body={}
         )

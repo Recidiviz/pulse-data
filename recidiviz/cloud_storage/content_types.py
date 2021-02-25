@@ -20,12 +20,21 @@ from typing import TypeVar, Generic, Iterator
 
 # Type for a single row/chunk returned by the ingest contents iterator.
 FileContentsRowType = TypeVar('FileContentsRowType')
+IoType = TypeVar('IoType')
 
 
-class FileContentsHandle(Generic[FileContentsRowType]):
+class FileContentsHandle(Generic[FileContentsRowType, IoType]):
+
+    def __init__(self, local_file_path: str):
+        self.local_file_path = local_file_path
+
     @abc.abstractmethod
     def get_contents_iterator(self) -> Iterator[FileContentsRowType]:
         """Should be overridden by subclasses to return an iterator over contents of the desired format.
         Will throw if the contents could not be read (i.e. if they no longer
         exist).
         """
+
+    @abc.abstractmethod
+    def open(self) -> IoType:
+        """Should be overridden by subclasses to return a way to open a file stream."""
