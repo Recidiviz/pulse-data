@@ -27,10 +27,14 @@ from recidiviz.validation.checks.existence_check import ExistenceDataValidationC
 from recidiviz.validation.checks.sameness_check import SamenessDataValidationCheck, SamenessDataValidationCheckType
 from recidiviz.validation.validation_models import DataValidationCheck
 from recidiviz.validation.validation_config import ValidationRegionConfig, ValidationGlobalConfig
+# pylint: disable=line-too-long
 from recidiviz.validation.views.state.active_program_participation_by_region_internal_consistency import \
     ACTIVE_PROGRAM_PARTICIPATION_BY_REGION_INTERNAL_CONSISTENCY_VIEW_BUILDER
 from recidiviz.validation.views.state.case_termination_by_type_comparison import \
     CASE_TERMINATIONS_BY_TYPE_COMPARISON_VIEW_BUILDER
+from recidiviz.validation.views.state.population_projection_data_validation.county_jail_population_person_level_external_comparison import \
+    COUNTY_JAIL_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_VIEW_BUILDER, \
+    COUNTY_JAIL_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_MATCHING_PEOPLE_VIEW_BUILDER
 from recidiviz.validation.views.state.ftr_referrals_comparison import FTR_REFERRALS_COMPARISON_VIEW_BUILDER
 from recidiviz.validation.views.state.incarceration_admission_after_open_period import \
     INCARCERATION_ADMISSION_AFTER_OPEN_PERIOD_VIEW_BUILDER
@@ -47,7 +51,6 @@ from recidiviz.validation.views.state.incarceration_population_by_facility_exter
     INCARCERATION_POPULATION_BY_FACILITY_EXTERNAL_COMPARISON_VIEW_BUILDER
 from recidiviz.validation.views.state.incarceration_population_by_facility_internal_comparison import \
     INCARCERATION_POPULATION_BY_FACILITY_INTERNAL_COMPARISON_VIEW_BUILDER
-# pylint: disable=line-too-long
 from recidiviz.validation.views.state.incarceration_population_by_month_internal_comparison import \
     INCARCERATION_POPULATION_BY_MONTH_INTERNAL_COMPARISON_VIEW_BUILDER
 from recidiviz.validation.views.state.incarceration_population_by_prioritized_race_and_ethnicity_by_period_internal_consistency import \
@@ -74,6 +77,8 @@ from recidiviz.validation.views.state.po_report_distinct_by_officer_month import
     PO_REPORT_DISTINCT_BY_OFFICER_MONTH_VIEW_BUILDER
 from recidiviz.validation.views.state.po_report_missing_fields import PO_REPORT_MISSING_FIELDS_VIEW_BUILDER, \
     PO_REPORT_COMPARISON_COLUMNS
+from recidiviz.validation.views.state.population_projection_data_validation.population_projection_monthly_population_external_comparison import \
+    POPULATION_PROJECTION_MONTHLY_POPULATION_EXTERNAL_COMPARISON_VIEW_BUILDER
 from recidiviz.validation.views.state.recidivism_release_cohort_person_level_external_comparison import \
     RECIDIVISM_RELEASE_COHORT_PERSON_LEVEL_EXTERNAL_COMPARISON_VIEW_BUILDER
 from recidiviz.validation.views.state.recidivism_person_level_external_comparison_matching_people import \
@@ -96,7 +101,6 @@ from recidiviz.validation.views.state.sentence_type_by_district_by_demographics_
     SENTENCE_TYPE_BY_DISTRICT_BY_DEMOGRAPHICS_INTERNAL_CONSISTENCY_VIEW_BUILDER
 from recidiviz.validation.views.state.supervision_population_by_district_by_demographics_internal_consistency import \
     SUPERVISION_POPULATION_BY_DISTRICT_BY_DEMOGRAPHICS_INTERNAL_CONSISTENCY_VIEW_BUILDER
-# pylint: disable=line-too-long
 from recidiviz.validation.views.state.supervision_population_by_prioritized_race_and_ethnicity_by_period_internal_consistency import \
     SUPERVISION_POPULATION_BY_PRIORITIZED_RACE_AND_ETHNICITY_BY_PERIOD_INTERNAL_CONSISTENCY_VIEW_BUILDER
 from recidiviz.validation.views.state.supervision_population_person_level_external_comparison import \
@@ -366,6 +370,26 @@ def get_all_validations() -> List[DataValidationCheck]:
             view=SUPERVISION_TERMINATION_PERSON_LEVEL_EXTERNAL_COMPARISON_VIEW_BUILDER.build(),
             sameness_check_type=SamenessDataValidationCheckType.STRINGS,
             comparison_columns=['external_person_external_id', 'internal_person_external_id'],
+            max_allowed_error=0.02),
+        SamenessDataValidationCheck(
+            view=COUNTY_JAIL_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_VIEW_BUILDER.build(),
+            sameness_check_type=SamenessDataValidationCheckType.STRINGS,
+            comparison_columns=['external_person_external_id', 'internal_person_external_id'],
+            max_allowed_error=0.02),
+        SamenessDataValidationCheck(
+            view=COUNTY_JAIL_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_MATCHING_PEOPLE_VIEW_BUILDER.build(),
+            validation_name_suffix='facility',
+            sameness_check_type=SamenessDataValidationCheckType.STRINGS,
+            comparison_columns=['external_facility', 'internal_facility']),
+        SamenessDataValidationCheck(
+            view=COUNTY_JAIL_POPULATION_PERSON_LEVEL_EXTERNAL_COMPARISON_MATCHING_PEOPLE_VIEW_BUILDER.build(),
+            validation_name_suffix='legal_status',
+            sameness_check_type=SamenessDataValidationCheckType.STRINGS,
+            comparison_columns=['external_legal_status', 'internal_legal_status']),
+        SamenessDataValidationCheck(
+            view=POPULATION_PROJECTION_MONTHLY_POPULATION_EXTERNAL_COMPARISON_VIEW_BUILDER.build(),
+            sameness_check_type=SamenessDataValidationCheckType.NUMBERS,
+            comparison_columns=['external_total_population', 'internal_total_population'],
             max_allowed_error=0.02),
     ]
 
