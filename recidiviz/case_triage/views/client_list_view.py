@@ -50,6 +50,29 @@ latest_face_to_face AS (
     person_external_id IS NOT NULL
   GROUP BY person_id, state_code
 ),
+latest_employment_start_date AS (
+   SELECT DISTINCT 
+        state_code,
+        person_external_id,
+        FIRST_VALUE(recorded_start_date) OVER (
+            PARTITION BY person_external_id
+            ORDER BY recorded_start_date DESC
+        ) AS latest_start_date
+    FROM
+        `{project_id}.{case_triage_dataset}.employment_periods`
+),
+latest_employment AS (
+    SELECT 
+        employment_periods.state_code,
+        employment_periods.person_external_id,
+        employment_periods.employer
+     FROM
+        `{project_id}.{case_triage_dataset}.employment_periods` employment_periods
+     JOIN latest_employment_start_date 
+       ON latest_employment_start_date.person_external_id = employment_periods.person_external_id
+       AND latest_employment_start_date.state_code = employment_periods.state_code
+       AND latest_employment_start_date.latest_start_date = employment_periods.recorded_start_date
+),
 -- TODO(#5943): Make ideal_query the main query body.
 ideal_query AS (
 SELECT
@@ -61,7 +84,7 @@ LEFT JOIN
 USING (person_id, gender, state_code)
 -- TODO(#5463): When we ingest employment info, we should replace this joined table with the correct table.
 LEFT JOIN
-  `{project_id}.{case_triage_dataset}.employment_periods`
+  latest_employment
 USING (person_external_id, state_code)
 LEFT JOIN
   `{project_id}.{case_triage_dataset}.latest_assessments`
