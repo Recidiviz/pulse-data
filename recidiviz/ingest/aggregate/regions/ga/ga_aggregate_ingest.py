@@ -38,13 +38,14 @@ DATE_PARSE_ANCHOR = 'DATA SUMMARY'
 
 
 def parse(location: str, filename: str) -> Dict[DeclarativeMeta, pd.DataFrame]:
-    table = _parse_table(location, filename)
+    report_date = _parse_date(filename)
+    table = _parse_table(location, filename, report_date)
 
     # Fuzzy match each facility_name to a county fips
     county_names = table.county_name.map(_sanitize_county_name)
     table = fips.add_column_to_df(table, county_names, us.states.GA)
 
-    table['report_date'] = _parse_date(filename)
+    table['report_date'] = report_date
     table['aggregation_window'] = enum_strings.daily_granularity
     table['report_frequency'] = enum_strings.monthly_granularity
 
@@ -71,7 +72,7 @@ def _parse_date(filename: str) -> datetime.date:
         raise AggregateDateParsingError("Could not extract date")
 
 
-def _parse_table(_: str, filename: str) -> pd.DataFrame:
+def _parse_table(_: str, filename: str, report_date: datetime.date) -> pd.DataFrame:
     """Parses the last table in the GA PDF."""
 
     # Set column names since the pdf makes them hard to parse directly
@@ -112,8 +113,8 @@ def _parse_table(_: str, filename: str) -> pd.DataFrame:
         dfs.append(df4)
         result = pd.concat(df.iloc[1:] for df in dfs)
         result.columns = column_names
-    elif filename.endswith('nov20.pdf'):
-        # Skip every 48th row for this report
+    elif report_date >= datetime.date(2020, 11, 5):
+        # Skip every 48th row for new-style reports
         result = one(tabula.read_pdf(
             filename,
             pages=pages,
