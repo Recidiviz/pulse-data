@@ -37,8 +37,8 @@ def us_id_revoked_supervision_period_if_revocation_occurred(
         - The person is admitted to GENERAL incarceration from non-investigative supervision (typically a probation
             revocation).
         - The person is admitted to TREATMENT_IN_PRISON incarceration from non-investigative supervision.
-        - The person is transferred from a PAROLE_BOARD_HOLD incarceration period to a GENERAL incarceration period
-            because they were revoked by the parole board.
+        - The person is transferred from a PAROLE_BOARD_HOLD incarceration period to a GENERAL or
+            TREATMENT_IN_PRISON incarceration period because they were revoked by the parole board.
     Args:
         - incarceration_period: The StateIncarcerationPeriod being evaluated for an instance of revocation.
         - filtered_supervision_periods: A list of the person's StateSupervisionPeriods that have a set
@@ -69,7 +69,8 @@ def us_id_revoked_supervision_period_if_revocation_occurred(
             incarceration_admission_date = incarceration_period.admission_date
 
     elif incarceration_period.admission_reason == StateIncarcerationPeriodAdmissionReason.TRANSFER:
-        if incarceration_period.specialized_purpose_for_incarceration == PurposeForIncarceration.GENERAL:
+        if incarceration_period.specialized_purpose_for_incarceration in (PurposeForIncarceration.TREATMENT_IN_PRISON,
+                                                                          PurposeForIncarceration.GENERAL):
             if not preceding_incarceration_period:
                 raise ValueError("Preceding incarceration period must exist for a transfer admission to be counted as "
                                  "a revocation. Revocation admission identification not working.")
@@ -137,8 +138,9 @@ def us_id_is_revocation_admission(
             PurposeForIncarceration.TREATMENT_IN_PRISON, PurposeForIncarceration.GENERAL)
 
     if incarceration_period.admission_reason == StateIncarcerationPeriodAdmissionReason.TRANSFER \
-            and purpose_for_incarceration == PurposeForIncarceration.GENERAL:
-        # If the admission was a transfer, there must be a preceding incarceration period they were transferred from
+            and purpose_for_incarceration in (
+            PurposeForIncarceration.TREATMENT_IN_PRISON, PurposeForIncarceration.GENERAL):
+        # Transfers from parole board holds to general incarceration or treatment in prison are revocation admissions
         if not preceding_incarceration_period:
             return False
 
@@ -154,7 +156,8 @@ def us_id_is_revocation_admission(
                 f"Next incarceration_period_id = {incarceration_period.incarceration_period_id}")
 
         if preceding_incarceration_period.release_date == incarceration_period.admission_date:
-            # Transfers from parole board holds to general incarceration are revocation admissions
+            # Transfers from parole board holds to general incarceration or
+            # treatment in prison are revocation admissions
             if preceding_incarceration_period.release_reason == StateIncarcerationPeriodReleaseReason.TRANSFER \
                     and preceding_incarceration_period.specialized_purpose_for_incarceration \
                     == PurposeForIncarceration.PAROLE_BOARD_HOLD:

@@ -1702,9 +1702,9 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
         expected_time_buckets = []
         self.assertCountEqual(expected_time_buckets, supervision_time_buckets)
 
-    def test_findSupervisionTimeBuckets_usId_revokedAfterBoardHold(self):
-        """Tests the find_supervision_time_buckets function for state code US_ID where the person is revoked after
-        being held for a board hold."""
+    def test_findSupervisionTimeBuckets_usId_revokedAfterBoardHoldToGeneral(self):
+        """Tests the find_supervision_time_buckets function for state code US_ID where the person is revoked
+        to general incarceration after being held for a board hold."""
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             external_id='sp1',
@@ -1779,6 +1779,117 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 case_type=StateSupervisionCaseType.GENERAL,
                 is_on_supervision_last_day_of_month=False,
                 revocation_type=StateSupervisionViolationResponseRevocationType.REINCARCERATION),
+            create_start_bucket_from_period(supervision_period),
+            SupervisionTerminationBucket(
+                state_code=supervision_period.state_code,
+                year=supervision_period.termination_date.year,
+                month=supervision_period.termination_date.month,
+                event_date=supervision_period.termination_date,
+                supervision_type=supervision_period.supervision_period_supervision_type,
+                supervision_level=supervision_period.supervision_level,
+                case_type=StateSupervisionCaseType.GENERAL,
+                termination_reason=supervision_period.termination_reason)]
+
+        expected_time_buckets.extend(expected_non_revocation_return_time_buckets(
+            supervision_period,
+            supervision_period.supervision_period_supervision_type,
+            case_compliances={
+                date(2017, 3, 31): SupervisionCaseCompliance(
+                    date_of_evaluation=date(2017, 3, 31),
+                    assessment_count=0,
+                    num_days_assessment_overdue=0,
+                    face_to_face_count=0,
+                    face_to_face_frequency_sufficient=False
+                ),
+                date(2017, 4, 30): SupervisionCaseCompliance(
+                    date_of_evaluation=date(2017, 4, 30),
+                    assessment_count=0,
+                    num_days_assessment_overdue=11,
+                    face_to_face_count=0,
+                    face_to_face_frequency_sufficient=False
+                )
+            }
+        ))
+
+        self.assertCountEqual(expected_time_buckets, supervision_time_buckets)
+
+    def test_findSupervisionTimeBuckets_usId_revokedAfterBoardHoldToTreatment(self):
+        """Tests the find_supervision_time_buckets function for state code US_ID where the person is revoked
+        to treatment in prison after being held for a board hold."""
+        supervision_period = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=111,
+            external_id='sp1',
+            status=StateSupervisionPeriodStatus.TERMINATED,
+            state_code='US_ID',
+            custodial_authority='US_ID_DOC',
+            start_date=date(2017, 3, 5),
+            termination_date=date(2017, 5, 9),
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_level=StateSupervisionLevel.MINIMUM
+        )
+
+        board_hold_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=222,
+            external_id='ip2',
+            state_code='US_ID',
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            admission_date=date(2017, 5, 17),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.RETURN_FROM_SUPERVISION,
+            release_date=date(2017, 6, 3),
+            release_reason=ReleaseReason.TRANSFER,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.PAROLE_BOARD_HOLD
+        )
+
+        revocation_period = StateIncarcerationPeriod.new_with_defaults(
+            incarceration_period_id=222,
+            external_id='ip2',
+            state_code='US_ID',
+            incarceration_type=StateIncarcerationType.STATE_PRISON,
+            status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
+            admission_date=date(2017, 6, 3),
+            admission_reason=StateIncarcerationPeriodAdmissionReason.TRANSFER,
+            release_date=date(2019, 3, 3),
+            release_reason=ReleaseReason.SENTENCE_SERVED,
+            specialized_purpose_for_incarceration=StateSpecializedPurposeForIncarceration.TREATMENT_IN_PRISON
+        )
+
+        supervision_sentence = \
+            StateSupervisionSentence.new_with_defaults(
+                state_code='US_XX',
+                supervision_sentence_id=111,
+                start_date=date(2017, 1, 1),
+                status=StateSentenceStatus.COMPLETED,
+                supervision_periods=[supervision_period]
+            )
+
+        supervision_sentences = [supervision_sentence]
+        incarceration_sentences = []
+        supervision_periods = [supervision_period]
+        incarceration_periods = [board_hold_period, revocation_period]
+        assessments = []
+        violation_responses = []
+        supervision_contacts = []
+
+        supervision_time_buckets = identifier.find_supervision_time_buckets(
+            supervision_sentences, incarceration_sentences,
+            supervision_periods, incarceration_periods,
+            assessments, violation_responses,
+            supervision_contacts,
+            DEFAULT_SUPERVISION_PERIOD_AGENT_ASSOCIATION_LIST,
+            DEFAULT_SUPERVISION_PERIOD_JUDICIAL_DISTRICT_ASSOCIATION_LIST
+        )
+
+        expected_time_buckets = [
+            RevocationReturnSupervisionTimeBucket(
+                state_code=supervision_period.state_code,
+                year=2017, month=6,
+                event_date=revocation_period.admission_date,
+                supervision_type=supervision_period.supervision_period_supervision_type,
+                supervision_level=supervision_period.supervision_level,
+                case_type=StateSupervisionCaseType.GENERAL,
+                is_on_supervision_last_day_of_month=False,
+                revocation_type=StateSupervisionViolationResponseRevocationType.TREATMENT_IN_PRISON),
             create_start_bucket_from_period(supervision_period),
             SupervisionTerminationBucket(
                 state_code=supervision_period.state_code,
