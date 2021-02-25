@@ -66,6 +66,8 @@ DimensionT = TypeVar('DimensionT', bound='Dimension')
 # Dimensions
 
 # TODO(#4472) Refactor all dimensions out to a common justice counts directory.
+
+
 class Dimension:
     """Each dimension is represented as a class that is used to hold the values for that dimension and perform any
     necessary validation. All dimensions are categorical. Those with a pre-defined set of values are implemented as
@@ -113,6 +115,7 @@ class Dimension:
         E.g. 'FEMALE' is a potential value for an instance of the 'global/raw/gender' dimension.
         """
 
+
 @attr.s(frozen=True)
 class RawDimension(Dimension, metaclass=ABCMeta):
     """Base class to use to create a raw version of a normalized dimension.
@@ -139,6 +142,7 @@ class RawDimension(Dimension, metaclass=ABCMeta):
     @property
     def dimension_value(self) -> str:
         return self.value
+
 
 def raw_for_dimension_cls(dimension_cls: Type[Dimension]) -> Type[Dimension]:
     return type(f"{dimension_cls.__name__}Raw", (RawDimension, ), {
@@ -292,6 +296,7 @@ class AdmissionType(Dimension, EntityEnum, metaclass=EntityEnumMeta):
             'FROM SUPERVISION': cls.FROM_SUPERVISION,
         }
 
+
 class SupervisionViolationType(Dimension, EntityEnum, metaclass=EntityEnumMeta):
     NEW_CRIME = 'NEW_CRIME'
     TECHNICAL = 'TECHNICAL'
@@ -324,6 +329,7 @@ class SupervisionViolationType(Dimension, EntityEnum, metaclass=EntityEnumMeta):
             'NEW CRIME': cls.NEW_CRIME,
             'TECHNICAL': cls.TECHNICAL,
         }
+
 
 class SupervisionType(Dimension, EntityEnum, metaclass=EntityEnumMeta):
     PAROLE = 'PAROLE'
@@ -358,6 +364,7 @@ class SupervisionType(Dimension, EntityEnum, metaclass=EntityEnumMeta):
             'PAROLE': cls.PAROLE,
             'PROBATION': cls.PROBATION,
         }
+
 
 def assert_no_overrides(dimension_cls: Type[Dimension], enum_overrides: Optional[EnumOverrides]) -> None:
     if enum_overrides is not None:
@@ -447,6 +454,8 @@ class County(Dimension, EntityEnum, metaclass=EntityEnumMeta):
 Location = Union[Country, State, County]
 
 # TODO(#4473): Make this per jurisdiction
+
+
 @attr.s(frozen=True)
 class Facility(Dimension):
     name: str = attr.ib()
@@ -705,6 +714,8 @@ def _convert_optional(dimension_type: Type[EntityEnumT], value: Optional[str]) -
     return None if value is None else dimension_type(value)
 
 # `attr` requires converters to be named functions, so we create one for each type.
+
+
 def _convert_optional_population_type(value: Optional[str]) -> Optional[PopulationType]:
     return _convert_optional(PopulationType, value)
 
@@ -716,11 +727,14 @@ def _convert_optional_release_type(value: Optional[str]) -> Optional[ReleaseType
 def _convert_optional_admission_type(value: Optional[str]) -> Optional[AdmissionType]:
     return _convert_optional(AdmissionType, value)
 
+
 def _convert_optional_supervision_type(value: Optional[str]) -> Optional[SupervisionType]:
     return _convert_optional(SupervisionType, value)
 
+
 def _convert_optional_supervision_violation_type(value: Optional[str]) -> Optional[SupervisionViolationType]:
     return _convert_optional(SupervisionViolationType, value)
+
 
 @attr.s(frozen=True)
 class Population(Metric):
@@ -757,6 +771,7 @@ class Population(Metric):
     @classmethod
     def get_metric_type(cls) -> schema.MetricType:
         return schema.MetricType.POPULATION
+
 
 @attr.s(frozen=True)
 class Releases(Metric):
@@ -827,12 +842,14 @@ class Admissions(Metric):
     def required_aggregated_dimensions(self) -> List[Type[Dimension]]:
         return []
 
+
 class DateRangeProducer:
     """Produces DateRanges for a given table, splitting the table as needed.
     """
     @abstractmethod
     def split_dataframe(self, df: pandas.DataFrame) -> List[Tuple[DateRange, pandas.DataFrame]]:
         pass
+
 
 @attr.s(frozen=True, kw_only=True)
 class FixedDateRangeProducer(DateRangeProducer):
@@ -843,6 +860,7 @@ class FixedDateRangeProducer(DateRangeProducer):
 
     def split_dataframe(self, df: pandas.DataFrame) -> List[Tuple[DateRange, pandas.DataFrame]]:
         return [(self.fixed_range, df)]
+
 
 @attr.s(frozen=True, kw_only=True)
 class DynamicDateRangeProducer(DateRangeProducer):
@@ -968,9 +986,11 @@ class DimensionGenerator:
 # A single data point that has been annotated with a set of dimensions that it represents.
 DimensionalDataPoint = Tuple[Tuple[Dimension, ...], decimal.Decimal]
 
+
 def _dimension_generators_by_name(dimension_generators: List[DimensionGenerator]) \
         -> Dict[str, DimensionGenerator]:
     return {dimension_generator.column_name: dimension_generator for dimension_generator in dimension_generators}
+
 
 @attr.s(frozen=True)
 class TableConverter:
@@ -1024,8 +1044,11 @@ class TableConverter:
 
 
 HasIdentifierT = TypeVar('HasIdentifierT', Dimension, Type[Dimension])
+
+
 def _sort_dimensions(dimensions: Iterable[HasIdentifierT]) -> List[HasIdentifierT]:
     return sorted(dimensions, key=lambda dimension: dimension.dimension_identifier())
+
 
 @attr.s(frozen=True)
 class Table:
@@ -1180,6 +1203,7 @@ class Table:
 
 def _convert_publish_date(value: Optional[str]) -> datetime.date:
     return datetime.date.fromisoformat(value) if value else datetime.date.today()
+
 
 @attr.s(frozen=True)
 class Report:
@@ -1367,11 +1391,14 @@ def _parse_metric(metric_input: YAMLDict) -> Metric:
     raise ValueError(f"Invalid metric, expected a dictionary with a single key that is one of ('admissions', "
                      f"'population') but received: {repr(metric_input)}")
 
+
 def _normalize(name: str) -> str:
     return name.replace('/', '_')
 
+
 def csv_filename(sheet_name: str, worksheet_name: str) -> str:
     return f"{_normalize(sheet_name)} - {_normalize(worksheet_name)}.csv"
+
 
 def _get_table_filename(spreadsheet_name: str, name: Optional[str], file: Optional[str]) -> str:
     if name is not None:
@@ -1382,6 +1409,8 @@ def _get_table_filename(spreadsheet_name: str, name: Optional[str], file: Option
 
 # Only three layers of dictionary nesting is currently supported by the table parsing logic but we use the recursive
 # dictionary type for convenience.
+
+
 def _parse_tables(gcs: GCSFileSystem, manifest_path: GcsfsFilePath,
                   source_name: str, tables_input: List[YAMLDict]) -> List[Table]:
     """Parses the YAML list of dictionaries describing tables into Table objects"""
@@ -1413,7 +1442,7 @@ def _parse_tables(gcs: GCSFileSystem, manifest_path: GcsfsFilePath,
                 spreadsheet_prefix = spreadsheet_name.split('_')[0]
                 table_handle = open_table_file(
                     gcs, directory_path, f"{spreadsheet_prefix}_Data", table_name, table_filename)
-            except:
+            except BaseException:
                 # Raise the original error.
                 raise e from e
         with table_handle.open() as table_file:
@@ -1430,12 +1459,13 @@ def _parse_tables(gcs: GCSFileSystem, manifest_path: GcsfsFilePath,
 
     return tables
 
+
 def open_table_file(
     gcs: GCSFileSystem, directory_path: GcsfsDirectoryPath, spreadsheet_name: str, table_name: Optional[str],
     table_file: Optional[str]
 ) -> GcsfsFileContentsHandle:
     table_path = GcsfsFilePath.from_directory_and_file_name(
-            directory_path, _get_table_filename(spreadsheet_name, name=table_name, file=table_file))
+        directory_path, _get_table_filename(spreadsheet_name, name=table_name, file=table_file))
     table_handle = gcs.download_to_temp_file(table_path)
     if table_handle is None:
         raise ValueError(f"Unable to download table from path: {table_path}")
@@ -1471,6 +1501,7 @@ def _get_report_and_acquirer(gcs: GCSFileSystem, manifest_path: GcsfsFilePath) -
 
 # Persistence Layer
 # TODO(#4478): Refactor this into the persistence layer (including splitting out conversion, validation)
+
 
 @attr.s(frozen=True)
 class Metadata:
@@ -1580,7 +1611,7 @@ def _persist_report(report: Report, report_metadata: Metadata) -> None:
         # Validation of dimension values should already be enforced by enums above.
 
         session.commit()
-    except:
+    except BaseException:
         session.rollback()
         raise
     finally:
@@ -1596,6 +1627,7 @@ def ingest(gcs: GCSFileSystem, manifest_filepath: GcsfsFilePath) -> None:
     logging.info('Report ingested.')
 
 # TODO(#4127): Everything above should be refactored out of the tools directory so only the script below is left.
+
 
 def _create_parser() -> argparse.ArgumentParser:
     """Creates the CLI argument parser."""
@@ -1643,28 +1675,30 @@ def upload(gcs: GCSFileSystem, manifest_path: str) -> GcsfsFilePath:
             try:
                 spreadsheet_prefix = spreadsheet_name.split('_')[0]
                 upload_table(gcs, directory, gcs_directory, f"{spreadsheet_prefix}_Data", table_name, table_filename)
-            except:
+            except BaseException:
                 # Raise the original error.
                 raise e from e
 
     manifest_gcs_path = GcsfsFilePath.from_directory_and_file_name(gcs_directory, os.path.basename(manifest_path))
-    gcs.upload_from_contents_handle(
+    gcs.upload_from_contents_handle_stream(
         path=manifest_gcs_path,
         contents_handle=GcsfsFileContentsHandle(manifest_path, cleanup_file=False),
         content_type='text/yaml'
     )
     return manifest_gcs_path
 
+
 def upload_table(
     gcs: GCSFileSystem, directory: str, gcs_directory: GcsfsDirectoryPath, spreadsheet_name: str,
     table_name: Optional[str], table_file: Optional[str]
 ) -> None:
     table_filename = _get_table_filename(spreadsheet_name, name=table_name, file=table_file)
-    gcs.upload_from_contents_handle(
-            path=GcsfsFilePath.from_directory_and_file_name(gcs_directory, table_filename),
-            contents_handle=GcsfsFileContentsHandle(os.path.join(directory, table_filename), cleanup_file=False),
-            content_type='text/csv'
-        )
+    gcs.upload_from_contents_handle_stream(
+        path=GcsfsFilePath.from_directory_and_file_name(gcs_directory, table_filename),
+        contents_handle=GcsfsFileContentsHandle(os.path.join(directory, table_filename), cleanup_file=False),
+        content_type='text/csv'
+    )
+
 
 def trigger_ingest(gcs_path: GcsfsFilePath, app_url: Optional[str]) -> None:
     app_url = app_url or f'https://{metadata.project_id()}.appspot.com'

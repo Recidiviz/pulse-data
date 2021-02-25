@@ -19,12 +19,15 @@
 import datetime
 import json
 import unittest
+from http import HTTPStatus
 from unittest import mock
 
+from pysftp import CnOpts
 from flask import Flask
 from mock import patch, create_autospec, Mock
 
 from recidiviz.ingest.direct import direct_ingest_control
+from recidiviz.ingest.direct.base_sftp_download_delegate import BaseSftpDownloadDelegate
 from recidiviz.ingest.direct.controllers.direct_ingest_gcs_file_system import to_normalized_unprocessed_file_path, \
     DirectIngestGCSFileSystem
 from recidiviz.ingest.direct.controllers.direct_ingest_raw_data_table_latest_view_updater import \
@@ -32,13 +35,16 @@ from recidiviz.ingest.direct.controllers.direct_ingest_raw_data_table_latest_vie
 from recidiviz.ingest.direct.controllers.direct_ingest_raw_update_cloud_task_manager import \
     DirectIngestRawUpdateCloudTaskManager
 from recidiviz.ingest.direct.controllers.direct_ingest_types import IngestArgs
+from recidiviz.ingest.direct.controllers.download_files_from_sftp import DownloadFilesFromSftpController, SftpAuth
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_controller import \
     GcsfsDirectIngestController
 from recidiviz.ingest.direct.controllers.gcsfs_direct_ingest_utils import GcsfsRawDataBQImportArgs, \
     GcsfsDirectIngestFileType, GcsfsIngestViewExportArgs
 from recidiviz.cloud_storage.gcsfs_path import GcsfsFilePath
+from recidiviz.ingest.direct.controllers.upload_state_files_to_ingest_bucket_with_date import \
+    UploadStateFilesToIngestBucketController
 from recidiviz.ingest.direct.direct_ingest_cloud_task_manager import \
-    DirectIngestCloudTaskManager
+    DirectIngestCloudTaskManager, DirectIngestCloudTaskManagerImpl
 from recidiviz.ingest.direct.direct_ingest_control import kick_all_schedulers
 from recidiviz.ingest.direct.direct_ingest_region_utils import get_existing_region_dir_names
 from recidiviz.tests.cloud_storage.fake_gcs_file_system import FakeGCSFileSystem
@@ -47,6 +53,7 @@ from recidiviz.utils.metadata import local_project_id_override
 from recidiviz.utils.regions import Region
 
 CONTROL_PACKAGE_NAME = direct_ingest_control.__name__
+TODAY = datetime.datetime.today()
 
 
 @patch('recidiviz.utils.metadata.project_id', Mock(return_value='test-project'))
@@ -704,3 +711,278 @@ class TestDirectIngestControl(unittest.TestCase):
         mock_supported_region_codes.assert_called()
         for region in fake_supported_regions.values():
             region.get_ingestor().kick_scheduler.assert_called_once()
+
+    @patch("recidiviz.utils.environment.get_gcp_environment")
+    @patch("recidiviz.ingest.direct.controllers.download_files_from_sftp.SftpAuth.for_region")
+    @patch("recidiviz.ingest.direct.sftp_download_delegate_factory.SftpDownloadDelegateFactory.build")
+    @patch("recidiviz.ingest.direct.direct_ingest_control.GcsfsFactory.build")
+    @patch("recidiviz.ingest.direct.controllers.download_files_from_sftp."
+           "DownloadFilesFromSftpController")
+    @patch("recidiviz.ingest.direct.controllers.upload_state_files_to_ingest_bucket_with_date."
+           "UploadStateFilesToIngestBucketController")
+    @patch.object(DownloadFilesFromSftpController, "do_fetch", lambda _: ([
+        ("test_file1.txt", TODAY),
+        ("test_file2.txt", TODAY)], []))
+    @patch.object(DownloadFilesFromSftpController, "clean_up", lambda _: None)
+    @patch.object(UploadStateFilesToIngestBucketController, "do_upload",
+                  lambda _: (["test_file1.txt", "test_file2.txt"], []))
+    def test_upload_from_sftp(self,
+                              _mock_upload_controller: mock.MagicMock,
+                              _mock_download_controller: mock.MagicMock,
+                              mock_fs_factory: mock.MagicMock,
+                              mock_download_delegate_factory: mock.MagicMock,
+                              mock_sftp_auth: mock.MagicMock,
+                              mock_environment: mock.MagicMock) -> None:
+
+        region_code = 'us_xx'
+        mock_environment.return_value = 'staging'
+        request_args = {
+            'region': region_code,
+            'date': '2021-01-01'
+        }
+        headers = {'X-Appengine-Cron': 'test-cron'}
+
+        mock_fs_factory.return_value = FakeGCSFileSystem()
+
+        mock_download_delegate_factory.return_value = Mock(
+            spec=BaseSftpDownloadDelegate,
+            root_directory=lambda _, candidate_paths: ".",
+            filter_paths=lambda _, candidate_paths: candidate_paths,
+            post_process_downloads=lambda _, download_directory_path: None
+        )
+        mock_sftp_auth.return_value = SftpAuth("host", "username", "password", CnOpts())
+
+        response = self.client.post('/upload_from_sftp',
+                                    query_string=request_args,
+                                    headers=headers)
+        self.assertEqual(200, response.status_code)
+
+    @patch("recidiviz.utils.environment.get_gcp_environment")
+    @patch("recidiviz.ingest.direct.controllers.download_files_from_sftp.SftpAuth.for_region")
+    @patch("recidiviz.ingest.direct.sftp_download_delegate_factory.SftpDownloadDelegateFactory.build")
+    @patch("recidiviz.ingest.direct.controllers.download_files_from_sftp."
+           "DownloadFilesFromSftpController")
+    @patch("recidiviz.ingest.direct.controllers.upload_state_files_to_ingest_bucket_with_date."
+           "UploadStateFilesToIngestBucketController")
+    @patch.object(DownloadFilesFromSftpController, "do_fetch", lambda _: ([
+        ("test_file1.txt", TODAY)], [("test_file2.txt")]))
+    @patch.object(DownloadFilesFromSftpController, "clean_up", lambda _: None)
+    @patch.object(UploadStateFilesToIngestBucketController, "do_upload",
+                  lambda _: (["test_file1.txt"], []))
+    def test_upload_from_sftp_handles_partial_downloads(self,
+                                                        _mock_upload_controller: mock.MagicMock,
+                                                        _mock_download_controller: mock.MagicMock,
+                                                        mock_download_delegate_factory: mock.MagicMock,
+                                                        mock_sftp_auth: mock.MagicMock,
+                                                        mock_environment: mock.MagicMock) -> None:
+        region_code = 'us_xx'
+        mock_environment.return_value = 'staging'
+        request_args = {
+            'region': region_code,
+            'date': '2021-01-01'
+        }
+        headers = {'X-Appengine-Cron': 'test-cron'}
+
+        mock_download_delegate_factory.return_value = Mock(
+            spec=BaseSftpDownloadDelegate,
+            root_directory=lambda _, candidate_paths: ".",
+            filter_paths=lambda _, candidate_paths: candidate_paths,
+            post_process_downloads=lambda _, download_directory_path: None
+        )
+        mock_sftp_auth.return_value = SftpAuth("host", "username", "password", CnOpts())
+
+        response = self.client.post('/upload_from_sftp',
+                                    query_string=request_args,
+                                    headers=headers)
+        self.assertEqual(HTTPStatus.MULTI_STATUS, response.status_code)
+
+    @patch("recidiviz.utils.environment.get_gcp_environment")
+    @patch("recidiviz.ingest.direct.controllers.download_files_from_sftp.SftpAuth.for_region")
+    @patch("recidiviz.ingest.direct.sftp_download_delegate_factory.SftpDownloadDelegateFactory.build")
+    @patch("recidiviz.ingest.direct.controllers.download_files_from_sftp."
+           "DownloadFilesFromSftpController")
+    @patch("recidiviz.ingest.direct.controllers.upload_state_files_to_ingest_bucket_with_date."
+           "UploadStateFilesToIngestBucketController")
+    @patch.object(DownloadFilesFromSftpController, "do_fetch", lambda _: ([
+        ("test_file1.txt", TODAY),
+        ("test_file2.txt", TODAY)], []))
+    @patch.object(DownloadFilesFromSftpController, "clean_up", lambda _: None)
+    @patch.object(UploadStateFilesToIngestBucketController, "do_upload",
+                  lambda _: (["test_file1.txt"], ["test_file2.txt"]))
+    def test_upload_from_sftp_handles_partial_uploads(self,
+                                                      _mock_upload_controller: mock.MagicMock,
+                                                      _mock_download_controller: mock.MagicMock,
+                                                      mock_download_delegate_factory: mock.MagicMock,
+                                                      mock_sftp_auth: mock.MagicMock,
+                                                      mock_environment: mock.MagicMock) -> None:
+
+        region_code = 'us_xx'
+        mock_environment.return_value = 'staging'
+        request_args = {
+            'region': region_code,
+            'date': '2021-01-01'
+        }
+        headers = {'X-Appengine-Cron': 'test-cron'}
+
+        mock_download_delegate_factory.return_value = Mock(
+            spec=BaseSftpDownloadDelegate,
+            root_directory=lambda _, candidate_paths: ".",
+            filter_paths=lambda _, candidate_paths: candidate_paths,
+            post_process_downloads=lambda _, download_directory_path: None
+        )
+        mock_sftp_auth.return_value = SftpAuth("host", "username", "password", CnOpts())
+
+        response = self.client.post('/upload_from_sftp',
+                                    query_string=request_args,
+                                    headers=headers)
+        self.assertEqual(HTTPStatus.MULTI_STATUS, response.status_code)
+
+    @patch("recidiviz.utils.environment.get_gcp_environment")
+    @patch("recidiviz.ingest.direct.controllers.download_files_from_sftp.SftpAuth.for_region")
+    @patch("recidiviz.ingest.direct.sftp_download_delegate_factory.SftpDownloadDelegateFactory.build")
+    @patch("recidiviz.ingest.direct.controllers.download_files_from_sftp."
+           "DownloadFilesFromSftpController")
+    @patch("recidiviz.ingest.direct.controllers.upload_state_files_to_ingest_bucket_with_date."
+           "UploadStateFilesToIngestBucketController")
+    @patch.object(DownloadFilesFromSftpController, "do_fetch", lambda _: ([
+        ("test_file1.txt", TODAY),
+        ("test_file3.txt", TODAY)], [("test_file2.txt")]))
+    @patch.object(DownloadFilesFromSftpController, "clean_up", lambda _: None)
+    @patch.object(UploadStateFilesToIngestBucketController, "do_upload",
+                  lambda _: (["test_file1.txt"], ["test_file3.txt"]))
+    def test_upload_from_sftp_handles_both_partial_uploads_and_downloads(self,
+                                                                         _mock_upload_controller: mock.MagicMock,
+                                                                         _mock_download_controller: mock.MagicMock,
+                                                                         mock_download_delegate_factory: mock.MagicMock,
+                                                                         mock_sftp_auth: mock.MagicMock,
+                                                                         mock_environment: mock.MagicMock) -> None:
+        region_code = 'us_xx'
+        mock_environment.return_value = 'staging'
+        request_args = {
+            'region': region_code,
+            'date': '2021-01-01'
+        }
+        headers = {'X-Appengine-Cron': 'test-cron'}
+
+        mock_download_delegate_factory.return_value = Mock(
+            spec=BaseSftpDownloadDelegate,
+            root_directory=lambda _, candidate_paths: ".",
+            filter_paths=lambda _, candidate_paths: candidate_paths,
+            post_process_downloads=lambda _, download_directory_path: None
+        )
+        mock_sftp_auth.return_value = SftpAuth("host", "username", "password", CnOpts())
+
+        response = self.client.post('/upload_from_sftp',
+                                    query_string=request_args,
+                                    headers=headers)
+        self.assertEqual(HTTPStatus.MULTI_STATUS, response.status_code)
+
+    @patch("recidiviz.utils.environment.get_gcp_environment")
+    @patch("recidiviz.ingest.direct.controllers.download_files_from_sftp.SftpAuth.for_region")
+    @patch("recidiviz.ingest.direct.sftp_download_delegate_factory.SftpDownloadDelegateFactory.build")
+    @patch("recidiviz.ingest.direct.controllers.download_files_from_sftp."
+           "DownloadFilesFromSftpController")
+    @patch("recidiviz.ingest.direct.controllers.upload_state_files_to_ingest_bucket_with_date."
+           "UploadStateFilesToIngestBucketController")
+    @patch.object(DownloadFilesFromSftpController, "do_fetch", lambda _: ([], ["test_file1.txt"]))
+    def test_upload_from_sftp_handles_all_downloads_failing(self,
+                                                            mock_upload_controller: mock.MagicMock,
+                                                            mock_download_controller: mock.MagicMock,
+                                                            mock_download_delegate_factory: mock.MagicMock,
+                                                            mock_sftp_auth: mock.MagicMock,
+                                                            mock_environment: mock.MagicMock) -> None:
+        region_code = 'us_xx'
+        mock_environment.return_value = 'staging'
+        request_args = {
+            'region': region_code,
+            'date': '2021-01-01'
+        }
+        headers = {'X-Appengine-Cron': 'test-cron'}
+
+        mock_download_delegate_factory.return_value = Mock(
+            spec=BaseSftpDownloadDelegate,
+            root_directory=lambda _, candidate_paths: ".",
+            filter_paths=lambda _, candidate_paths: candidate_paths,
+            post_process_downloads=lambda _, download_directory_path: None
+        )
+        mock_sftp_auth.return_value = SftpAuth("host", "username", "password", CnOpts())
+
+        mock_download_controller.return_value = create_autospec(DownloadFilesFromSftpController)
+        mock_upload_controller.return_value = create_autospec(UploadStateFilesToIngestBucketController)
+
+        response = self.client.post('/upload_from_sftp',
+                                    query_string=request_args,
+                                    headers=headers)
+        mock_upload_controller.do_upload().assert_not_called()
+        mock_download_controller.clean_up().assert_not_called()
+        self.assertEqual(HTTPStatus.MULTI_STATUS, response.status_code)
+
+    @patch("recidiviz.utils.environment.get_gcp_environment")
+    @patch("recidiviz.ingest.direct.controllers.download_files_from_sftp.SftpAuth.for_region")
+    @patch("recidiviz.ingest.direct.sftp_download_delegate_factory.SftpDownloadDelegateFactory.build")
+    @patch("recidiviz.ingest.direct.controllers.download_files_from_sftp."
+           "DownloadFilesFromSftpController")
+    @patch("recidiviz.ingest.direct.controllers.upload_state_files_to_ingest_bucket_with_date."
+           "UploadStateFilesToIngestBucketController")
+    @patch.object(DownloadFilesFromSftpController, "do_fetch", lambda _: ([], []))
+    def test_upload_from_sftp_handles_missing_downloads(self,
+                                                        mock_upload_controller: mock.MagicMock,
+                                                        mock_download_controller: mock.MagicMock,
+                                                        mock_download_delegate_factory: mock.MagicMock,
+                                                        mock_sftp_auth: mock.MagicMock,
+                                                        mock_environment: mock.MagicMock
+                                                        ) -> None:
+        region_code = 'us_xx'
+        mock_environment.return_value = 'staging'
+        request_args = {
+            'region': region_code,
+            'date': '2021-01-01'
+        }
+        headers = {'X-Appengine-Cron': 'test-cron'}
+
+        mock_download_delegate_factory.return_value = Mock(
+            spec=BaseSftpDownloadDelegate,
+            root_directory=lambda _, candidate_paths: ".",
+            filter_paths=lambda _, candidate_paths: candidate_paths,
+            post_process_downloads=lambda _, download_directory_path: None
+        )
+        mock_sftp_auth.return_value = SftpAuth("host", "username", "password", CnOpts())
+
+        mock_download_controller.return_value = create_autospec(DownloadFilesFromSftpController)
+        mock_upload_controller.return_value = create_autospec(UploadStateFilesToIngestBucketController)
+
+        response = self.client.post('/upload_from_sftp',
+                                    query_string=request_args,
+                                    headers=headers)
+        mock_upload_controller.do_upload().assert_not_called()
+        mock_download_controller.clean_up().assert_not_called()
+        self.assertEqual(HTTPStatus.MULTI_STATUS, response.status_code)
+
+    @patch.object(DirectIngestCloudTaskManagerImpl, "create_direct_ingest_sftp_download_task",
+                  lambda _self, _region: None)
+    @patch('google.cloud.tasks_v2.CloudTasksClient')
+    @patch("recidiviz.ingest.direct.direct_ingest_cloud_task_manager.DirectIngestCloudTaskManagerImpl")
+    @patch("recidiviz.utils.environment.get_gcp_environment")
+    @patch("recidiviz.utils.regions.get_region")
+    def test_handle_sftp_files(self,
+                               mock_get_region: mock.MagicMock,
+                               mock_environment: mock.MagicMock,
+                               mock_cloud_task_manager: mock.MagicMock,
+                               _mock_cloud_tasks_client: mock.MagicMock) -> None:
+        fake_regions = {
+            'us_id':
+                fake_region(region_code='us_id', environment='staging', ingestor=Mock())
+        }
+
+        mock_get_region.side_effect = lambda region_code, is_direct_ingest: fake_regions.get(region_code)
+        mock_environment.return_value = 'staging'
+        mock_cloud_task_manager.return_value = create_autospec(DirectIngestCloudTaskManagerImpl)
+
+        headers = {'X-Appengine-Cron': 'test-cron'}
+        request_args = {
+            'region': 'us_id'
+        }
+        response = self.client.get('/handle_sftp_files',
+                                   query_string=request_args,
+                                   headers=headers)
+        self.assertEqual(200, response.status_code)

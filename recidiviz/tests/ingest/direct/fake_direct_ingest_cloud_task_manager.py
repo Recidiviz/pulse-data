@@ -24,7 +24,7 @@ from recidiviz.ingest.direct.controllers.base_direct_ingest_controller import \
 from recidiviz.ingest.direct.controllers.direct_ingest_types import IngestArgs
 from recidiviz.ingest.direct.direct_ingest_cloud_task_manager import \
     DirectIngestCloudTaskManager, ProcessIngestJobCloudTaskQueueInfo, SchedulerCloudTaskQueueInfo, \
-    BQImportExportCloudTaskQueueInfo
+    BQImportExportCloudTaskQueueInfo, SftpCloudTaskQueueInfo
 from recidiviz.utils.regions import Region
 
 
@@ -47,6 +47,10 @@ class FakeDirectIngestCloudTaskManager(DirectIngestCloudTaskManager):
 
     @abc.abstractmethod
     def get_bq_import_export_queue_info(self, region: Region) -> BQImportExportCloudTaskQueueInfo:
+        pass
+
+    @abc.abstractmethod
+    def get_sftp_download_queue_info(self, region: Region) -> SftpCloudTaskQueueInfo:
         pass
 
     @abc.abstractmethod
