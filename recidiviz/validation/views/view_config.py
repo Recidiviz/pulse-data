@@ -66,6 +66,8 @@ from recidiviz.validation.views.state.po_report_clients import PO_REPORT_CLIENTS
 from recidiviz.validation.views.state.po_report_distinct_by_officer_month import \
     PO_REPORT_DISTINCT_BY_OFFICER_MONTH_VIEW_BUILDER
 from recidiviz.validation.views.state.po_report_missing_fields import PO_REPORT_MISSING_FIELDS_VIEW_BUILDER
+from recidiviz.validation.views.state.population_projection_data_validation.population_projection_data_validation_view_config import \
+    POPULATION_PROJECTION_DATA_VALIDATION_VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE
 from recidiviz.validation.views.state.recidivism_release_cohort_person_level_external_comparison import \
     RECIDIVISM_RELEASE_COHORT_PERSON_LEVEL_EXTERNAL_COMPARISON_VIEW_BUILDER
 from recidiviz.validation.views.state.recidivism_person_level_external_comparison_matching_people import \
@@ -193,4 +195,4 @@ VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE: Sequence[BigQueryViewBuilder] = [
     SUB_SESSIONS_INCARCERATION_RELEASES_TO_DATAFLOW_VIEW_BUILDER,
     SUB_SESSIONS_SUPERVISION_TERMINATIONS_TO_DATAFLOW_VIEW_BUILDER_DISAGGREGATED,
     SUB_SESSIONS_SUPERVISION_TERMINATIONS_TO_DATAFLOW_VIEW_BUILDER
-]
+] + POPULATION_PROJECTION_DATA_VALIDATION_VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE
