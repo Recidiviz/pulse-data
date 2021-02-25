@@ -108,7 +108,7 @@ def _parse_table(_: str, filename: str,
             # must be split.  If the columns are concatenated, we need only
             # check one of the rows for a space because they are all
             # concatenated.
-            if ' ' in df[column].iloc[0]:
+            if ' ' in str(df[column].iloc[0]):
                 index_to_insert = df.columns.get_loc(column)
                 df_temp = pd.DataFrame(
                     df.pop(column).str.split(n=1, expand=True))
