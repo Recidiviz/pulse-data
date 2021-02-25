@@ -29,13 +29,16 @@ from recidiviz.utils.metadata import local_project_id_override
 EMPLOYMENT_PERIODS_QUERY_TEMPLATE = """
 SELECT
   'US_ID' AS state_code,
-  employment.id AS person_external_id,
+  offenders.offendernumber AS person_external_id,
   employers.name AS employer,
-  jobtitle AS job_title,
-  IF(startdate IS NULL, NULL, PARSE_DATE("%F", SUBSTR(startdate, 0, 10))) AS recorded_start_date,
-  IF(enddate IS NULL, NULL, PARSE_DATE("%F", SUBSTR(enddate, 0, 10))) AS recorded_end_date
+  employment.jobtitle AS job_title,
+  IF(employment.startdate IS NULL, NULL, PARSE_DATE("%F", SUBSTR(startdate, 0, 10))) AS recorded_start_date,
+  IF(employment.enddate IS NULL, NULL, PARSE_DATE("%F", SUBSTR(enddate, 0, 10))) AS recorded_end_date
 FROM
+    `{project_id}.us_id_raw_data_up_to_date_views.cis_offender_latest` offenders
+LEFT JOIN 
   `{project_id}.us_id_raw_data_up_to_date_views.cis_employment_latest` employment
+ON employment.personemploymentid = offenders.id
 LEFT JOIN
   `{project_id}.us_id_raw_data_up_to_date_views.cis_employer_latest` employers
 ON
