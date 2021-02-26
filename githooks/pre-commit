@@ -1,0 +1,3 @@
+#!/bin/sh
+
+recidiviz/tools/docs/documentation_generation.sh
