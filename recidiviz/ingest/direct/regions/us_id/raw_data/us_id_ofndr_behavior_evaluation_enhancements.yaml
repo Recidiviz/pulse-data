@@ -1,3 +1,8 @@
 file_tag: ofndr_behavior_evaluation_enhancements
+file_description: |-
+  Not in use
 primary_key_cols:
   - ofndr_behavior_evaluation_id
+columns:
+  - name: ofndr_behavior_evaluation_id
+  - name: observed_behavior_enhance_typ

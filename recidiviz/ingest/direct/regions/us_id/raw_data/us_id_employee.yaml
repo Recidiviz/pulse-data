@@ -1,3 +1,27 @@
 file_tag: employee
+file_description: |-
+  Code table that has one row per employee and details the most up to date information about their job role / work
+  location.
+
+  We use this table over `applc_usr` because this table has job roles.
 primary_key_cols:
   - empl_cd
+columns:
+  - name: empl_cd
+    description: |-
+      Code for this specifc employee
+  - name: empl_sdesc
+    description: |-
+      Employee username
+  - name: empl_ldesc
+    description: |-
+      Employee full name
+  - name: empl_title
+    description: |-
+      Employee job role
+  - name: empl_stat
+    description: |-
+      Status code that is either A (active) or H (history, no longer an employee of IDOC)
+  - name: fac_cd
+    description: |-
+      Code for the facility that the employee works from.

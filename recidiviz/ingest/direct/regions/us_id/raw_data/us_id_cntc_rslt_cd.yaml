@@ -1,3 +1,22 @@
 file_tag: cntc_rslt_cd
+file_description: |-
+  A code table that gives details about what the end result of a supervision contact was (success, failure, arrest,
+  etc).
 primary_key_cols:
   - cntc_rslt_cd
+columns:
+  - name: cntc_rslt_cd
+    description: |-
+      ode for contact result
+  - name: cntc_rslt_desc
+    description: |-
+      Description for contact result
+  - name: cntc_success_flg
+    description: |-
+      Whether or not this is a “successful” contact
+  - name: vld_flg
+    description: |-
+      Whether or not this contact result is currently valid
+  - name: lastoffcontact
+    description: |-
+      Unknown

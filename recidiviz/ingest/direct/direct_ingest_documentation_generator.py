@@ -91,7 +91,8 @@ class DirectIngestDocumentationGenerator:
 
         documentation = f"## {raw_file_config.file_tag}\n\n{raw_file_config.file_description}\n\n"
 
-        table_matrix = [[column.name, column.description, _is_primary_key(column.name)] for column in file_columns]
+        table_matrix = [[column.name, column.description or "<No documentation>", _is_primary_key(column.name)]
+                        for column in file_columns]
         writer = MarkdownTableWriter(
             headers=["Column", "Column Description", "Part of Primary Key?"],
             value_matrix=table_matrix,

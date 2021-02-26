@@ -1,3 +1,8 @@
 file_tag: hrchy
+file_description: |-
+  Not in use
 primary_key_cols:
   - staff_usr_id
+columns:
+  - name: staff_usr_id
+  - name: supr_lvl_usr

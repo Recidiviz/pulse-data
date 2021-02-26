@@ -1,8 +1,31 @@
 file_tag: ofndr_wrkld
+file_description: |-
+  Contains a new row for every supervision level span that a person on IDOC supervision has ever had.
+
+  Contains a single row for every legal status span that a person under IDOC authority has ever had.
 primary_key_cols:
   - ofndr_wrkld_id
 columns:
+  - name: ofndr_wrkld_id
+    description: |-
+      ID for this specific supervision level span
+  - name: ofndr_num
+    description: |-
+      ID for the person under supervision
+  - name: wrkld_cat_id
+    description: |-
+      Code for the supervision level
   - name: strt_dt
     is_datetime: True
+    description: |-
+      Start date for this supervision level
   - name: end_dt
     is_datetime: True
+    description: |-
+      End date for this supervision level
+  - name: updt_usr_id
+    description: |-
+      Username of the person who updated this row most recently
+  - name: updt_dt
+    description: |-
+      Date this row was most recently updated

@@ -1,3 +1,10 @@
 file_tag: observed_behavior_cat_cd
+file_description: |-
+  Not in use
 primary_key_cols:
   - observed_behavior_cat_cd
+columns:
+  - name: observed_behavior_cat_cd
+  - name: observed_behavior_cat_sdesc
+  - name: observed_behavior_cat_ldesc
+  - name: vld_flg

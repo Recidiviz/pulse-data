@@ -1,6 +1,17 @@
 file_tag: x_body_loc_cd
+file_description: |-
+  Not in use
 primary_key_cols:
   - fac_cd
   - lu_cd
   - pod
   - loc_cd
+columns:
+  - name: fac_cd
+  - name: lu_cd
+  - name: pod
+  - name: loc_cd
+  - name: body_loc_cd
+  - name: body_loc_desc
+  - name: assgn_rsn_cd
+  - name: assgn_rsn_desc

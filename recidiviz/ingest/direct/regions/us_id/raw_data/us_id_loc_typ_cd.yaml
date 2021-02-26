@@ -1,3 +1,12 @@
 file_tag: loc_typ_cd
+file_description: |-
+  Not in use
 primary_key_cols:
   - loc_typ_cd
+columns:
+  - name: loc_typ_cd
+  - name: loc_typ_desc
+  - name: institutnl_loc_flg
+  - name: obs_intrvl
+  - name: obs_freq_per_intvl
+  - name: vld_flg

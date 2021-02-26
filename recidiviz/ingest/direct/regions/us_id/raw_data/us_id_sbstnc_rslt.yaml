@@ -1,4 +1,18 @@
 file_tag: sbstnc_rslt
+file_description: |-
+  Not in use
 primary_key_cols:
   - tst_id
   - sbstnc_cd
+columns:
+  - name: tst_id
+  - name: updt_usr_id
+  - name: updt_dt
+  - name: sbstnc_cd
+  - name: use_mthd_cd
+  - name: sbstnc_found_flg
+  - name: sbstnc_rslt_lvl
+  - name: sbstnc_std_lvl
+  - name: admit_use_flg
+  - name: sbstnc_retst_flg
+  - name: med_invalidate_flg

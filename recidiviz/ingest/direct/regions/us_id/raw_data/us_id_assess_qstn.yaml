@@ -1,5 +1,14 @@
 file_tag: assess_qstn
+file_description: |-
+  Not in use
 primary_key_cols:
   - assess_qstn_num
   - tst_sctn_num
   - assess_tst_id
+columns:
+  - name: assess_qstn_num
+  - name: tst_sctn_num
+  - name: assess_tst_id
+  - name: assess_qstn
+  - name: multi_rspns_flg
+  - name: vld_flg

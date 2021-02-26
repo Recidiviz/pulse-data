@@ -2,16 +2,132 @@ file_tag: sentence
 primary_key_cols:
   - mitt_srl
   - sent_no
+file_description: |-
+  Contains a new row for all sentences tracked by IDOC.
+
+  This table can be joined with sent_prob to figure out which sentences are probation sentences. This table can also be
+  joined with sent_retn to figure out which sentences are rider sentences. The rest of the sentences are “normal”
+  incarceration sentences. It is common for many sentences to be appear on the same day. This happens when someone is
+  sentenced to many cases at once.
+
+  Other notes:
+
+  - Certain status transitions will **always** result in a new sentence row being created. Those are:
+      - Transition from Probation → Incarceration (whether on a “rider” or normal incarceration)
+      - Transition from Incarceration → Probation (this transition should only happen if someone successfully completes
+        a “rider”)
+  - Whenever a sentence is officially amended (by a court order), a new row is created for the amended sentence. This
+    new row is a snapshot of what the original sentence looked like before the changes. The new row has a sent_disp of
+    `A` and an `am_sent_no` that corresponds to the original sentence. The original sentence gets the updated values.
+      - important note: Sentence rows themselves can be updated without a separate, amended row. Only changes coming
+        from a court order get a new row, all other changes are reflected on the original row.
 columns:
+  - name: mitt_srl
+    description: |-
+      mittimus id - links to mittimus table
+  - name: sent_no
+    description: |-
+      sentence id. <br><br>Note: This is an old system and only allows 40 rows per person. If they get over 40 rows
+      manual intervention occurs which means either a) deleting the oldest sentence or b) deleting the
+      “least important” sentence
+  - name: off_dtd
+    date of offense: |-
+      date of offense
+  - name: off_cat
+    description: |-
+      offense category - with off_cd and off_deg links to offense table
+  - name: off_cd
+    description: |-
+      offense code - with off_cat and off_deg links to offense table.
+  - name: off_deg
+    description: |-
+      off_deg - with off_cat and off_cd links to offense table.
+  - name: off_cnt
+    description: |-
+      offense count
+  - name: sent_min_yr
+    description: |-
+      minimum years to serve for the offense. Does not include any credits / forfeitures.
+  - name: sent_min_mo
+    description: |-
+      minimum months to serve for the offense. Does not include any credits / forfeitures.
+  - name: sent_min_da
+    description: |-
+      minimum days to serve for the offense. Does not include any credits / forfeitures.
+  - name: sent_max_yr
+    description: |-
+      maximum years to serve for the offense. Does not include any credits / forfeitures.
+  - name: sent_max_mo
+    description: |-
+      maximum months to serve for the offense. Does not include any credits / forfeitures.
+  - name: sent_max_da
+    description: |-
+      maximum days to serve for the offense. Does not include any credits / forfeitures.
+  - name: consec_typ
+    description: |-
+      (Enum) detailing if this is a consecutive or a concurrent sentence.
+  - name: consec_sent_no
+    description: |-
+      if this sentence is to be served consecutively to other sentence(s), the number in the chain of consecutive
+      sentences
+  - name: law_cd
+    description: |-
+      Unknown
+  - name: sent_disp
+    description: |-
+      The sentences current disposition/status.
+  - name: vio_doc
+    description: |-
+      Deprecated - always has “N” value
+  - name: vio_1311
+    description: |-
+      Deprecated - always has “N” value
+  - name: lifer
+    description: |-
+      (Bool) if this is a life sentence
+  - name: enhanced
+    description: |-
+      (Bool) if this sentence is “enhanced”
+  - name: govn_sent
+    description: |-
+      governing sentence
   - name: sent_gtr_dtd
     is_datetime: True
+    description: |-
+      Unknown
   - name: sent_beg_dtd
     is_datetime: True
+    description: |-
+      Date this sentence begins
   - name: sent_par_dtd
     is_datetime: True
+    description: |-
+      The first date that a person is eligible for parole. Takes into consideration any credits / forfeitures.
+      <br><br>Note: It is possible that this date passes and the parole board rejects parole, but the person may be
+      parole eligible again at a later date. Regardless, this date field does not change and will always reflect the
+      first date a person is parole eligible.
   - name: sent_ind_dtd
     is_datetime: True
+    description: |-
+      Earliest date the person could be released onto supervision, if the person is given an indeterminate sentence.
+      Takes into consideration any credits / forfeitures. <br><br>This is often the same as the sent_par_dtd; however,
+      this field takes into account all sentences this person may have. That is to say if a person has 2 sentences, one
+      with a parole date of Feb 1 and one with a parole date of Mar 1, both of those sentences would have an
+      indeterminate date of Mar 1.
   - name: sent_ft_dtd
     is_datetime: True
+    description: |-
+      Full term release date. Takes into consideration any credits / forfeitures.
   - name: sent_sat_dtd
     is_datetime: True
+    description: |-
+      Date this sentence was completed. <br><br>Note: This field is often null. When a person is automatically moved to
+      history, this field is not set. In that situation, can only tell the sentence ended if a person moves to history
+      in the movement table.
+  - name: am_sent_no
+    description: |-
+      If this is an amended sentence based on sent_disp, this am_sent_no points to the original sentence that it is
+      amending (am_sent_no = sent_no of original sentence).
+  - name: string_no
+    description: |-
+      Unknown

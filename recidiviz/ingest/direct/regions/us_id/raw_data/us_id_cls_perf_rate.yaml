@@ -1,4 +1,14 @@
 file_tag: cls_perf_rate
+file_description: |-
+  Not in use
 primary_key_cols:
   - cls_enroll_id
   - cls_rate_dt
+columns:
+  - name: updt_dt
+  - name: updt_usr_id
+  - name: cls_enroll_id
+  - name: cls_rate_dt
+  - name: rating_factor
+  - name: fnl_rate_flg
+  - name: cmt

@@ -1,3 +1,9 @@
 file_tag: behavior_evaluation_source_cd
+file_description: |-
+  Not in use
 primary_key_cols:
   - behavior_evaluation_source_cd
+columns:
+  - name: behavior_evaluation_source_cd
+  - name: behavior_evaluation_source_desc
+  - name: vld_flg
