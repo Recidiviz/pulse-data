@@ -39,6 +39,7 @@ from recidiviz.persistence.database.schema.history_table_shared_columns_mixin \
 from recidiviz.persistence.database.schema.justice_counts import schema as justice_counts_schema
 from recidiviz.persistence.database.schema.state import schema as state_schema
 from recidiviz.persistence.database.schema.operations import schema as operations_schema
+from recidiviz.persistence.database.sqlalchemy_engine_manager import SchemaType
 
 _SCHEMA_MODULES: List[ModuleType] = \
     [aggregate_schema, county_schema, justice_counts_schema, state_schema, operations_schema]
@@ -190,6 +191,15 @@ def schema_base_for_system_level(system_level: SystemLevel) -> DeclarativeMeta:
         return StateBase
     if system_level == SystemLevel.COUNTY:
         return JailsBase
+
+    raise ValueError(f"Unsupported SystemLevel type: {system_level}")
+
+
+def schema_type_for_system_level(system_level: SystemLevel) -> SchemaType:
+    if system_level == SystemLevel.STATE:
+        return SchemaType.STATE
+    if system_level == SystemLevel.COUNTY:
+        return SchemaType.JAILS
 
     raise ValueError(f"Unsupported SystemLevel type: {system_level}")
 

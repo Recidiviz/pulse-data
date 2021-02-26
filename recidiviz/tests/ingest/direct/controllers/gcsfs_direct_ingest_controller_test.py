@@ -45,6 +45,7 @@ from recidiviz.ingest.direct.controllers.postgres_direct_ingest_file_metadata_ma
     PostgresDirectIngestFileMetadataManager
 from recidiviz.ingest.direct.errors import DirectIngestError
 from recidiviz.persistence.database.base_schema import OperationsBase
+from recidiviz.persistence.database.bq_refresh.bq_refresh_utils import postgres_to_bq_lock_name_with_suffix
 from recidiviz.persistence.database.schema.operations import schema
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.tests.ingest.direct.direct_ingest_util import \
@@ -60,7 +61,6 @@ from recidiviz.tests.ingest.direct import fixture_util
 from recidiviz.tests.utils.fake_region import TEST_STATE_REGION, \
     TEST_COUNTY_REGION, fake_region
 from recidiviz.tools.postgres import local_postgres_helpers
-from recidiviz.cloud_storage.gcs_pseudo_lock_manager import POSTGRES_TO_BQ_EXPORT_RUNNING_LOCK_NAME
 
 CsvGcsfsDirectIngestControllerT = TypeVar('CsvGcsfsDirectIngestControllerT', bound=CsvGcsfsDirectIngestController)
 
@@ -325,7 +325,7 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
         controller = build_gcsfs_controller_for_tests(StateTestGcsfsDirectIngestController,
                                                       self.FIXTURE_PATH_PREFIX,
                                                       run_async=True)
-        controller.lock_manager.lock(POSTGRES_TO_BQ_EXPORT_RUNNING_LOCK_NAME)
+        controller.lock_manager.lock(postgres_to_bq_lock_name_with_suffix('state'))
         file_tags = list(
             reversed(sorted(controller.get_file_tag_rank_list())))
         add_paths_with_tags(controller, file_tags)
@@ -339,7 +339,7 @@ class TestGcsfsDirectIngestController(unittest.TestCase):
         self.validate_file_metadata(controller, expected_ingest_metadata_tags_with_is_processed=[
             ('tagA', False), ('tagB', False), ('tagC', False)
         ])
-        controller.lock_manager.unlock(POSTGRES_TO_BQ_EXPORT_RUNNING_LOCK_NAME)
+        controller.lock_manager.unlock(postgres_to_bq_lock_name_with_suffix('state'))
         controller.kick_scheduler(just_finished_job=False)
         run_task_queues_to_empty(controller)
 
