@@ -17,7 +17,7 @@
 """State tests for persistence.py."""
 
 from datetime import datetime
-from typing import Optional, Dict
+from typing import Optional, Dict, List, Type
 from unittest import TestCase
 
 import pytest
@@ -27,6 +27,11 @@ from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.ingest_metadata import IngestMetadata, SystemLevel
 from recidiviz.ingest.models.ingest_info_pb2 import IngestInfo
 from recidiviz.persistence import persistence
+from recidiviz.persistence.database.database_entity import DatabaseEntity
+from recidiviz.persistence.entity_matching.entity_matching_types import EntityTree, IndividualMatchResult
+from recidiviz.persistence.entity_matching.state.state_entity_matcher import StateEntityMatcher
+from recidiviz.persistence.entity_matching.state.state_matching_delegate_factory import StateMatchingDelegateFactory
+from recidiviz.persistence.errors import EntityMatchingError
 from recidiviz.persistence.persistence import OVERALL_THRESHOLD, ENTITY_MATCHING_THRESHOLD, ENUM_THRESHOLD, \
     DATABASE_INVARIANT_THRESHOLD
 from recidiviz.persistence.database.session_factory import SessionFactory
@@ -57,6 +62,7 @@ ID_4 = 4
 SENTENCE_GROUP_ID = 'SG1'
 SENTENCE_GROUP_ID_2 = 'SG2'
 SENTENCE_GROUP_ID_3 = 'SG3'
+SENTENCE_GROUP_ID_4 = 'SG4'
 
 STATE_ERROR_THRESHOLDS_WITH_FORTY_PERCENT_RATIOS = {
     SystemLevel.STATE: {
@@ -80,6 +86,35 @@ STATE_CODE_TO_ENTITY_MATCHING_THRESHOLD_FORTY_PERCENT = {
         "US_ND": 0.4,
     }
 }
+
+
+class _PatchedStateEntityMatcher(StateEntityMatcher):
+    """Subclass of StateEntityMatcher which will throw entity matching errors for certain objects."""
+    def __init__(self, region_code: str,
+                 erroring_class: Type,
+                 erroring_external_ids: List[str]):
+        state_matching_delegate = \
+            StateMatchingDelegateFactory.build(region_code=region_code)
+        super().__init__(state_matching_delegate)
+        self.erroring_external_ids = erroring_external_ids
+        self.erroring_class = erroring_class
+
+    def _match_entity_tree(
+            self,
+            *, ingested_entity_tree: EntityTree,
+            db_entity_trees: List[EntityTree],
+            matched_entities_by_db_ids: Dict[int, List[DatabaseEntity]],
+            root_entity_cls: Type) -> IndividualMatchResult:
+        if isinstance(ingested_entity_tree.entity, self.erroring_class) and \
+                ingested_entity_tree.entity.get_external_id() in self.erroring_external_ids:
+            raise EntityMatchingError('error!', ingested_entity_tree.entity.get_entity_name())
+
+        return super()._match_entity_tree(
+            ingested_entity_tree=ingested_entity_tree,
+            db_entity_trees=db_entity_trees,
+            matched_entities_by_db_ids=matched_entities_by_db_ids,
+            root_entity_cls=root_entity_cls
+        )
 
 
 @pytest.mark.uses_db
@@ -129,18 +164,41 @@ class TestStatePersistence(TestCase):
            STATE_CODE_TO_ENTITY_MATCHING_THRESHOLD_OVERRIDE_FAKE_PROJECT)
     @patch('recidiviz.persistence.persistence.SYSTEM_TYPE_TO_ERROR_THRESHOLD',
            STATE_ERROR_THRESHOLDS_WITH_FORTY_PERCENT_RATIOS)
-    def test_state_threeSentenceGroups_dontPersistAboveThreshold(self):
+    @patch('recidiviz.persistence.entity_matching.entity_matching._get_matcher')
+    def test_state_threeSentenceGroups_dontPersistAboveThreshold(self, mock_get_matcher):
+        # Arrange
+        mock_get_matcher.return_value = _PatchedStateEntityMatcher(
+            region_code=STATE_CODE,
+            erroring_class=schema.StateSentenceGroup,
+            erroring_external_ids=[SENTENCE_GROUP_ID, SENTENCE_GROUP_ID_4]
+        )
+
         # Arrange
         ingest_info = IngestInfo()
         ingest_info.state_people.add(
             state_person_id='1_GENERATE',
             state_sentence_group_ids=[
-                SENTENCE_GROUP_ID, SENTENCE_GROUP_ID_2])
+                SENTENCE_GROUP_ID,
+                SENTENCE_GROUP_ID_2
+            ]
+        )
+        ingest_info.state_people.add(
+            state_person_id='2_GENERATE',
+            state_sentence_group_ids=[
+                SENTENCE_GROUP_ID_3,
+                SENTENCE_GROUP_ID_4
+            ])
         ingest_info.state_sentence_groups.add(
             state_sentence_group_id=SENTENCE_GROUP_ID,
             county_code=COUNTY_CODE)
         ingest_info.state_sentence_groups.add(
             state_sentence_group_id=SENTENCE_GROUP_ID_2,
+            county_code=COUNTY_CODE)
+        ingest_info.state_sentence_groups.add(
+            state_sentence_group_id=SENTENCE_GROUP_ID_3,
+            county_code=COUNTY_CODE)
+        ingest_info.state_sentence_groups.add(
+            state_sentence_group_id=SENTENCE_GROUP_ID_4,
             county_code=COUNTY_CODE)
 
         db_person = schema.StatePerson(
@@ -168,16 +226,16 @@ class TestStatePersistence(TestCase):
             person_id=ID_2,
             full_name=FULL_NAME_1,
             state_code=STATE_CODE)
-        db_sentence_group_2_dup = schema.StateSentenceGroup(
+        db_sentence_group_3 = schema.StateSentenceGroup(
             sentence_group_id=ID_3,
             status=StateSentenceStatus.EXTERNAL_UNKNOWN.value,
-            external_id=SENTENCE_GROUP_ID_2,
+            external_id=SENTENCE_GROUP_ID_3,
             state_code=STATE_CODE)
         db_external_id_2 = schema.StatePersonExternalId(
             person_external_id_id=ID_2, state_code=STATE_CODE,
             external_id=EXTERNAL_ID_2, id_type=ID_TYPE)
-        db_person_2.sentence_groups = [db_sentence_group_2_dup]
         db_person_2.external_ids = [db_external_id_2]
+        db_person_2.sentence_groups = [db_sentence_group_3]
 
         # No updates
         expected_person = self.to_entity(db_person)
@@ -201,8 +259,14 @@ class TestStatePersistence(TestCase):
            STATE_ERROR_THRESHOLDS_WITH_FORTY_PERCENT_RATIOS)
     @patch('recidiviz.persistence.persistence.STATE_CODE_TO_ENTITY_MATCHING_THRESHOLD_OVERRIDE',
            STATE_CODE_TO_ENTITY_MATCHING_THRESHOLD_FORTY_PERCENT)
-    def test_state_threeSentenceGroups_persistsTwoBelowThreshold(self):
+    @patch('recidiviz.persistence.entity_matching.entity_matching._get_matcher')
+    def test_state_threeSentenceGroups_persistsTwoBelowThreshold(self, mock_get_matcher):
         """Ensure that the number of errors is below the ND specific threshold"""
+        mock_get_matcher.return_value = _PatchedStateEntityMatcher(
+            region_code=STATE_CODE,
+            erroring_class=schema.StateSentenceGroup,
+            erroring_external_ids=[SENTENCE_GROUP_ID]
+        )
 
         # Set the ENTITY_MATCHING_THRESHOLD to 0, such that we can verify that the forty percent threshold for
         # ENTITY_MATCHING_THRESHOLD is dictated by the state-specific override in
@@ -214,7 +278,15 @@ class TestStatePersistence(TestCase):
         ingest_info.state_people.add(
             state_person_id='1_GENERATE',
             state_sentence_group_ids=[
-                SENTENCE_GROUP_ID, SENTENCE_GROUP_ID_2, SENTENCE_GROUP_ID_3])
+                SENTENCE_GROUP_ID,
+                SENTENCE_GROUP_ID_2
+            ]
+        )
+        ingest_info.state_people.add(
+            state_person_id='2_GENERATE',
+            state_sentence_group_ids=[
+                SENTENCE_GROUP_ID_3
+        ])
         ingest_info.state_sentence_groups.add(
             state_sentence_group_id=SENTENCE_GROUP_ID,
             county_code=COUNTY_CODE)
@@ -239,32 +311,32 @@ class TestStatePersistence(TestCase):
             status=StateSentenceStatus.EXTERNAL_UNKNOWN.value,
             external_id=SENTENCE_GROUP_ID_2,
             state_code=STATE_CODE)
-        db_sentence_group_3 = schema.StateSentenceGroup(
-            sentence_group_id=ID_3,
-            status=StateSentenceStatus.EXTERNAL_UNKNOWN.value,
-            external_id=SENTENCE_GROUP_ID_3,
-            state_code=STATE_CODE)
         db_external_id = schema.StatePersonExternalId(
             person_external_id_id=ID, state_code=STATE_CODE,
             external_id=EXTERNAL_ID, id_type=ID_TYPE)
         db_person.sentence_groups = [
-            db_sentence_group, db_sentence_group_2, db_sentence_group_3]
+            db_sentence_group, db_sentence_group_2]
         db_person.external_ids = [db_external_id]
 
         db_person_2 = schema.StatePerson(
             person_id=ID_2,
             full_name=FULL_NAME_1,
             state_code=STATE_CODE)
-        db_sentence_group_3_dup = schema.StateSentenceGroup(
-            sentence_group_id=ID_4,
+        db_sentence_group_3 = schema.StateSentenceGroup(
+            sentence_group_id=ID_3,
             status=StateSentenceStatus.EXTERNAL_UNKNOWN.value,
             external_id=SENTENCE_GROUP_ID_3,
             state_code=STATE_CODE)
         db_external_id_2 = schema.StatePersonExternalId(
             person_external_id_id=ID_2, state_code=STATE_CODE,
             external_id=EXTERNAL_ID_2, id_type=ID_TYPE)
-        db_person_2.sentence_groups = [db_sentence_group_3_dup]
         db_person_2.external_ids = [db_external_id_2]
+        db_person_2.sentence_groups = [db_sentence_group_3]
+
+        session = SessionFactory.for_schema_base(StateBase)
+        session.add(db_person)
+        session.add(db_person_2)
+        session.commit()
 
         expected_person = StatePerson.new_with_defaults(
             person_id=ID, full_name=FULL_NAME_1, external_ids=[],
@@ -273,25 +345,19 @@ class TestStatePersistence(TestCase):
             person_external_id_id=ID, state_code=STATE_CODE,
             external_id=EXTERNAL_ID,
             id_type=ID_TYPE, person=expected_person)
+        # No county code because errors during match
         expected_sentence_group = StateSentenceGroup.new_with_defaults(
             sentence_group_id=ID, status=StateSentenceStatus.EXTERNAL_UNKNOWN,
             external_id=SENTENCE_GROUP_ID, state_code=STATE_CODE,
-            county_code=COUNTY_CODE,
             person=expected_person)
         expected_sentence_group_2 = StateSentenceGroup.new_with_defaults(
             sentence_group_id=ID_2, status=StateSentenceStatus.EXTERNAL_UNKNOWN,
             external_id=SENTENCE_GROUP_ID_2, state_code=STATE_CODE,
             county_code=COUNTY_CODE,
             person=expected_person)
-        # No county code because errors during match
-        expected_sentence_group_3 = StateSentenceGroup.new_with_defaults(
-            sentence_group_id=ID_3, status=StateSentenceStatus.EXTERNAL_UNKNOWN,
-            external_id=SENTENCE_GROUP_ID_3, state_code=STATE_CODE,
-            person=expected_person)
         expected_person.external_ids = [expected_external_id]
         expected_person.sentence_groups = [expected_sentence_group,
-                                           expected_sentence_group_2,
-                                           expected_sentence_group_3]
+                                           expected_sentence_group_2]
 
         expected_person_2 = StatePerson.new_with_defaults(
             person_id=ID_2, full_name=FULL_NAME_1, state_code=STATE_CODE)
@@ -299,18 +365,15 @@ class TestStatePersistence(TestCase):
             person_external_id_id=ID_2, state_code=STATE_CODE,
             external_id=EXTERNAL_ID_2,
             id_type=ID_TYPE, person=expected_person_2)
-        # No county code because unmatched
-        expected_sentence_group_3_dup = StateSentenceGroup.new_with_defaults(
-            sentence_group_id=ID_4, status=StateSentenceStatus.EXTERNAL_UNKNOWN,
-            external_id=SENTENCE_GROUP_ID_3, state_code=STATE_CODE,
+        expected_sentence_group_3 = StateSentenceGroup.new_with_defaults(
+            sentence_group_id=ID_3,
+            status=StateSentenceStatus.EXTERNAL_UNKNOWN,
+            external_id=SENTENCE_GROUP_ID_3,
+            state_code=STATE_CODE,
+            county_code=COUNTY_CODE,
             person=expected_person_2)
-        expected_person_2.sentence_groups = [expected_sentence_group_3_dup]
+        expected_person_2.sentence_groups = [expected_sentence_group_3]
         expected_person_2.external_ids = [expected_external_id_2]
-
-        session = SessionFactory.for_schema_base(StateBase)
-        session.add(db_person)
-        session.add(db_person_2)
-        session.commit()
 
         # Act
         persistence.write(ingest_info, DEFAULT_METADATA)

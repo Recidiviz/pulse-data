@@ -540,7 +540,7 @@ class TestDao(TestCase):
         session = SessionFactory.for_schema_base(StateBase)
         session.add(person_1)
         session.add(person_2)
-        session.commit()
+        session.flush()
 
         # Act
         external_ids = dao.read_external_ids_of_cls_with_external_id_match(
