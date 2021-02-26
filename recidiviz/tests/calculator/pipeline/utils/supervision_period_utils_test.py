@@ -39,13 +39,15 @@ class TestFindMostRecentlyTerminatedSupervisionPeriod(unittest.TestCase):
         supervision_period_older = StateSupervisionPeriod.new_with_defaults(
             state_code='US_XX',
             start_date=date(2000, 1, 1),
-            termination_date=date(2005, 1, 1)
+            termination_date=date(2005, 1, 1),
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO
         )
 
         supervision_period_recent = StateSupervisionPeriod.new_with_defaults(
             state_code='US_XX',
             start_date=date(2006, 3, 1),
-            termination_date=date(2010, 9, 1)
+            termination_date=date(2010, 9, 1),
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO
         )
 
         most_recently_terminated_period = find_last_supervision_period_terminated_before_date(
@@ -58,13 +60,15 @@ class TestFindMostRecentlyTerminatedSupervisionPeriod(unittest.TestCase):
         supervision_period_older = StateSupervisionPeriod.new_with_defaults(
             state_code='US_XX',
             start_date=date(2000, 1, 1),
-            termination_date=date(2005, 1, 1)
+            termination_date=date(2005, 1, 1),
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO
         )
 
         supervision_period_recent = StateSupervisionPeriod.new_with_defaults(
             state_code='US_XX',
             start_date=date(2006, 3, 1),
-            termination_date=date(2010, 1, 1)
+            termination_date=date(2010, 1, 1),
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO
         )
 
         most_recently_terminated_period = find_last_supervision_period_terminated_before_date(
@@ -77,13 +81,15 @@ class TestFindMostRecentlyTerminatedSupervisionPeriod(unittest.TestCase):
         supervision_period_older = StateSupervisionPeriod.new_with_defaults(
             state_code='US_XX',
             start_date=date(2000, 1, 1),
-            termination_date=date(2005, 1, 1)
+            termination_date=date(2005, 1, 1),
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO
         )
 
         supervision_period_recent = StateSupervisionPeriod.new_with_defaults(
             state_code='US_XX',
             start_date=date(2006, 3, 1),
-            termination_date=date(2010, 1, 1)
+            termination_date=date(2010, 1, 1),
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO
         )
 
         # Set the admission date to be 1 day after the cut-off for how close a supervision period termination has to be
@@ -102,13 +108,15 @@ class TestFindMostRecentlyTerminatedSupervisionPeriod(unittest.TestCase):
         supervision_period_older = StateSupervisionPeriod.new_with_defaults(
             state_code='US_XX',
             start_date=date(2000, 1, 1),
-            termination_date=date(2005, 1, 1)
+            termination_date=date(2005, 1, 1),
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO
         )
 
         supervision_period_recent = StateSupervisionPeriod.new_with_defaults(
             state_code='US_XX',
             start_date=date(2006, 3, 1),
-            termination_date=date(2010, 1, 1)
+            termination_date=date(2010, 1, 1),
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO
         )
 
         # Set the admission date to be on the last day of the cut-off for how close a supervision period termination
@@ -126,14 +134,16 @@ class TestFindMostRecentlyTerminatedSupervisionPeriod(unittest.TestCase):
         supervision_period_older = StateSupervisionPeriod.new_with_defaults(
             state_code='US_XX',
             start_date=date(2000, 1, 1),
-            termination_date=date(2007, 9, 20)
+            termination_date=date(2007, 9, 20),
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO
         )
 
         # Overlapping supervision period should not be returned
         supervision_period_recent = StateSupervisionPeriod.new_with_defaults(
             state_code='US_XX',
             start_date=date(2006, 3, 1),
-            termination_date=date(2010, 1, 1)
+            termination_date=date(2010, 1, 1),
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO
         )
 
         most_recently_terminated_period = find_last_supervision_period_terminated_before_date(
@@ -146,13 +156,15 @@ class TestFindMostRecentlyTerminatedSupervisionPeriod(unittest.TestCase):
         supervision_period_older = StateSupervisionPeriod.new_with_defaults(
             state_code='US_XX',
             start_date=date(2000, 1, 1),
-            termination_date=date(2007, 9, 20)
+            termination_date=date(2007, 9, 20),
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO
         )
 
         # Overlapping supervision period that should have been found in the other identifier code
         supervision_period_recent = StateSupervisionPeriod.new_with_defaults(
             state_code='US_XX',
             start_date=date(2006, 3, 1),
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO
         )
 
         most_recently_terminated_period = find_last_supervision_period_terminated_before_date(
@@ -172,7 +184,8 @@ class TestFindMostRecentlyTerminatedSupervisionPeriod(unittest.TestCase):
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             state_code='US_XX',
             start_date=date(2000, 1, 1),
-            termination_date=date(2005, 3, 31)
+            termination_date=date(2005, 3, 31),
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO
         )
 
         most_recently_terminated_period = find_last_supervision_period_terminated_before_date(
@@ -185,7 +198,8 @@ class TestFindMostRecentlyTerminatedSupervisionPeriod(unittest.TestCase):
         supervision_period_recent = StateSupervisionPeriod.new_with_defaults(
             state_code='US_XX',
             start_date=date(2006, 3, 1),
-            termination_date=date(2007, 12, 31)
+            termination_date=date(2007, 12, 31),
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO
         )
 
         most_recently_terminated_period = find_last_supervision_period_terminated_before_date(
@@ -198,7 +212,8 @@ class TestFindMostRecentlyTerminatedSupervisionPeriod(unittest.TestCase):
         supervision_period_recent = StateSupervisionPeriod.new_with_defaults(
             state_code='US_XX',
             start_date=date(2006, 1, 1),
-            termination_date=date(2007, 12, 31)
+            termination_date=date(2007, 12, 31),
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO
         )
 
         most_recently_terminated_period = find_last_supervision_period_terminated_before_date(
@@ -214,7 +229,8 @@ class TestPrepareSupervisionPeriodsForCalculations(unittest.TestCase):
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             state_code='US_ND',
             start_date=date(2006, 1, 1),
-            termination_date=date(2007, 12, 31)
+            termination_date=date(2007, 12, 31),
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO
         )
 
         updated_periods = prepare_supervision_periods_for_calculations(
@@ -227,7 +243,8 @@ class TestPrepareSupervisionPeriodsForCalculations(unittest.TestCase):
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             state_code='US_ND',
             start_date=date(2006, 1, 1),
-            termination_date=date(2007, 12, 31)
+            termination_date=date(2007, 12, 31),
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO
         )
 
         updated_periods = prepare_supervision_periods_for_calculations(
@@ -263,6 +280,7 @@ class TestPrepareSupervisionPeriodsForCalculations(unittest.TestCase):
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             state_code='US_XX',
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO
         )
 
         updated_periods = prepare_supervision_periods_for_calculations(
@@ -275,7 +293,8 @@ class TestPrepareSupervisionPeriodsForCalculations(unittest.TestCase):
             start_date=date(2006, 1, 1),
             termination_date=date(2007, 12, 31),
             custodial_authority=StateCustodialAuthority.FEDERAL,  # Not the state's authority
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO
         )
 
         updated_periods = prepare_supervision_periods_for_calculations(
@@ -289,7 +308,8 @@ class TestPrepareSupervisionPeriodsForCalculations(unittest.TestCase):
             start_date=date(2006, 1, 1),
             termination_date=date(2007, 12, 31),
             custodial_authority=StateCustodialAuthority.OTHER_COUNTRY,  # Not the state's authority
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO
         )
 
         updated_periods = prepare_supervision_periods_for_calculations(

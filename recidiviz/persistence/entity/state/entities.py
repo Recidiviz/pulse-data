@@ -641,64 +641,76 @@ class StateIncarcerationPeriod(ExternalIdEntity, BuildableAttr, DefaultableAttr,
     state_code: str = attr.ib(validator=attr_validators.is_str)
 
     # Status
-    status: StateIncarcerationPeriodStatus = attr.ib()  # non-nullable
-    status_raw_text: Optional[str] = attr.ib()
+    status: StateIncarcerationPeriodStatus = attr.ib(
+        validator=attr.validators.instance_of(StateIncarcerationPeriodStatus))  # non-nullable
+    status_raw_text: Optional[str] = attr.ib(default=None, validator=attr_validators.is_opt_str)
 
     # Type
-    incarceration_type: Optional[StateIncarcerationType] = attr.ib()
-    incarceration_type_raw_text: Optional[str] = attr.ib()
+    incarceration_type: Optional[StateIncarcerationType] = attr.ib(
+        default=None, validator=attr_validators.is_opt(StateIncarcerationType))
+    incarceration_type_raw_text: Optional[str] = attr.ib(default=None, validator=attr_validators.is_opt_str)
 
     # Attributes
     #   - When
-    admission_date: Optional[datetime.date] = attr.ib()
-    release_date: Optional[datetime.date] = attr.ib()
+    admission_date: Optional[datetime.date] = attr.ib(default=None, validator=attr_validators.is_opt_date)
+    release_date: Optional[datetime.date] = attr.ib(default=None, validator=attr_validators.is_opt_date)
 
     #   - Where
     # The county where the facility is located
-    county_code: Optional[str] = attr.ib()
+    county_code: Optional[str] = attr.ib(default=None, validator=attr_validators.is_opt_str)
 
-    facility: Optional[str] = attr.ib()
-    housing_unit: Optional[str] = attr.ib()
+    facility: Optional[str] = attr.ib(default=None, validator=attr_validators.is_opt_str)
+    housing_unit: Optional[str] = attr.ib(default=None, validator=attr_validators.is_opt_str)
 
     #   - What
-    facility_security_level: Optional[StateIncarcerationFacilitySecurityLevel] = attr.ib()
-    facility_security_level_raw_text: Optional[str] = attr.ib()
+    facility_security_level: Optional[StateIncarcerationFacilitySecurityLevel] = attr.ib(
+        default=None, validator=attr_validators.is_opt(StateIncarcerationFacilitySecurityLevel))
+    facility_security_level_raw_text: Optional[str] = attr.ib(default=None, validator=attr_validators.is_opt_str)
 
-    admission_reason: Optional[StateIncarcerationPeriodAdmissionReason] = attr.ib()
-    admission_reason_raw_text: Optional[str] = attr.ib()
+    admission_reason: Optional[StateIncarcerationPeriodAdmissionReason] = attr.ib(
+        default=None, validator=attr_validators.is_opt(StateIncarcerationPeriodAdmissionReason))
+    admission_reason_raw_text: Optional[str] = attr.ib(default=None, validator=attr_validators.is_opt_str)
 
-    projected_release_reason: Optional[StateIncarcerationPeriodReleaseReason] = attr.ib()
-    projected_release_reason_raw_text: Optional[str] = attr.ib()
+    projected_release_reason: Optional[StateIncarcerationPeriodReleaseReason] = attr.ib(
+        default=None, validator=attr_validators.is_opt(StateIncarcerationPeriodReleaseReason))
+    projected_release_reason_raw_text: Optional[str] = attr.ib(default=None, validator=attr_validators.is_opt_str)
 
-    release_reason: Optional[StateIncarcerationPeriodReleaseReason] = attr.ib()
-    release_reason_raw_text: Optional[str] = attr.ib()
+    release_reason: Optional[StateIncarcerationPeriodReleaseReason] = attr.ib(
+        default=None, validator=attr_validators.is_opt(StateIncarcerationPeriodReleaseReason))
+    release_reason_raw_text: Optional[str] = attr.ib(default=None, validator=attr_validators.is_opt_str)
 
-    specialized_purpose_for_incarceration: Optional[StateSpecializedPurposeForIncarceration] = attr.ib()
-    specialized_purpose_for_incarceration_raw_text: Optional[str] = attr.ib()
+    specialized_purpose_for_incarceration: Optional[StateSpecializedPurposeForIncarceration] = attr.ib(
+        default=None, validator=attr_validators.is_opt(StateSpecializedPurposeForIncarceration))
+    specialized_purpose_for_incarceration_raw_text: Optional[str] = attr.ib(
+        default=None, validator=attr_validators.is_opt_str)
 
     # The type of government entity directly responsible for the person in this period of incarceration.
     # Not necessarily the decision making authority.
-    custodial_authority: Optional[StateCustodialAuthority] = attr.ib()
-    custodial_authority_raw_text: Optional[str] = attr.ib()
+    custodial_authority: Optional[StateCustodialAuthority] = attr.ib(
+        default=None, validator=attr_validators.is_opt(StateCustodialAuthority))
+    custodial_authority_raw_text: Optional[str] = attr.ib(default=None, validator=attr_validators.is_opt_str)
 
     #   - Who
     # See |person| in entity relationships below.
 
     # Primary key - Only optional when hydrated in the data converter, before we have written this entity to the
     # persistence layer
-    incarceration_period_id: Optional[int] = attr.ib(default=None)
+    incarceration_period_id: Optional[int] = attr.ib(default=None, validator=attr_validators.is_opt_int)
 
     # Cross-entity relationships
     person: Optional['StatePerson'] = attr.ib(default=None)
 
     # NOTE: An incarceration period might count towards multiple sentences
-    incarceration_sentences: List['StateIncarcerationSentence'] = attr.ib(factory=list)
-    supervision_sentences: List['StateSupervisionSentence'] = attr.ib(factory=list)
+    incarceration_sentences: List['StateIncarcerationSentence'] = attr.ib(factory=list,
+                                                                          validator=attr_validators.is_list)
+    supervision_sentences: List['StateSupervisionSentence'] = attr.ib(factory=list,
+                                                                      validator=attr_validators.is_list)
 
-    incarceration_incidents: List['StateIncarcerationIncident'] = attr.ib(factory=list)
-    parole_decisions: List['StateParoleDecision'] = attr.ib(factory=list)
-    assessments: List['StateAssessment'] = attr.ib(factory=list)
-    program_assignments: List['StateProgramAssignment'] = attr.ib(factory=list)
+    incarceration_incidents: List['StateIncarcerationIncident'] = attr.ib(factory=list,
+                                                                          validator=attr_validators.is_list)
+    parole_decisions: List['StateParoleDecision'] = attr.ib(factory=list, validator=attr_validators.is_list)
+    assessments: List['StateAssessment'] = attr.ib(factory=list, validator=attr_validators.is_list)
+    program_assignments: List['StateProgramAssignment'] = attr.ib(factory=list, validator=attr_validators.is_list)
 
     # When the admission reason is PROBATION_REVOCATION or PAROLE_REVOCATION, this is the object with info about the
     # violation/hearing that resulted in the revocation
@@ -735,64 +747,73 @@ class StateSupervisionPeriod(ExternalIdEntity, BuildableAttr, DefaultableAttr, D
     state_code: str = attr.ib(validator=attr_validators.is_str)
 
     # Status
-    status: StateSupervisionPeriodStatus = attr.ib()  # non-nullable
-    status_raw_text: Optional[str] = attr.ib()
+    status: StateSupervisionPeriodStatus = attr.ib(validator=attr.validators.instance_of(StateSupervisionPeriodStatus))
+    status_raw_text: Optional[str] = attr.ib(default=None, validator=attr_validators.is_opt_str)
 
     # Type
     # TODO(#2891): DEPRECATED - use supervision_period_supervision_type instead. Delete this field once all existing
     #  users have migrated to the new field.
-    supervision_type: Optional[StateSupervisionType] = attr.ib()
-    supervision_type_raw_text: Optional[str] = attr.ib()
-    supervision_period_supervision_type: Optional[StateSupervisionPeriodSupervisionType] = attr.ib()
-    supervision_period_supervision_type_raw_text: Optional[str] = attr.ib()
+    supervision_type: Optional[StateSupervisionType] = attr.ib(
+        default=None, validator=attr_validators.is_opt(StateSupervisionType))
+    supervision_type_raw_text: Optional[str] = attr.ib(default=None, validator=attr_validators.is_opt_str)
+    supervision_period_supervision_type: Optional[StateSupervisionPeriodSupervisionType] = attr.ib(
+        default=None, validator=attr_validators.is_opt(StateSupervisionPeriodSupervisionType))
+    supervision_period_supervision_type_raw_text: Optional[str] = attr.ib(default=None,
+                                                                          validator=attr_validators.is_opt_str)
 
     # Attributes
     #   - When
-    start_date: Optional[datetime.date] = attr.ib()
-    termination_date: Optional[datetime.date] = attr.ib()
+    start_date: Optional[datetime.date] = attr.ib(default=None, validator=attr_validators.is_opt_date)
+    termination_date: Optional[datetime.date] = attr.ib(default=None, validator=attr_validators.is_opt_date)
 
     #   - Where
     # The county where this person is being supervised
-    county_code: Optional[str] = attr.ib()
+    county_code: Optional[str] = attr.ib(default=None, validator=attr_validators.is_opt_str)
 
-    supervision_site: Optional[str] = attr.ib()
+    supervision_site: Optional[str] = attr.ib(default=None, validator=attr_validators.is_opt_str)
 
     #   - What
-    admission_reason: Optional[StateSupervisionPeriodAdmissionReason] = attr.ib()
-    admission_reason_raw_text: Optional[str] = attr.ib()
+    admission_reason: Optional[StateSupervisionPeriodAdmissionReason] = attr.ib(
+        default=None, validator=attr_validators.is_opt(StateSupervisionPeriodAdmissionReason))
+    admission_reason_raw_text: Optional[str] = attr.ib(default=None, validator=attr_validators.is_opt_str)
 
-    termination_reason: Optional[StateSupervisionPeriodTerminationReason] = attr.ib()
-    termination_reason_raw_text: Optional[str] = attr.ib()
+    termination_reason: Optional[StateSupervisionPeriodTerminationReason] = attr.ib(
+        default=None, validator=attr_validators.is_opt(StateSupervisionPeriodTerminationReason))
+    termination_reason_raw_text: Optional[str] = attr.ib(default=None, validator=attr_validators.is_opt_str)
 
-    supervision_level: Optional[StateSupervisionLevel] = attr.ib()
-    supervision_level_raw_text: Optional[str] = attr.ib()
+    supervision_level: Optional[StateSupervisionLevel] = attr.ib(
+        default=None, validator=attr_validators.is_opt(StateSupervisionLevel))
+    supervision_level_raw_text: Optional[str] = attr.ib(default=None, validator=attr_validators.is_opt_str)
 
     # The type of government entity directly responsible for the person on this period of supervision.
     # Not necessarily the decision making authority.
-    custodial_authority: Optional[StateCustodialAuthority] = attr.ib()
-    custodial_authority_raw_text: Optional[str] = attr.ib()
+    custodial_authority: Optional[StateCustodialAuthority] = attr.ib(
+        default=None, validator=attr_validators.is_opt(StateCustodialAuthority))
+    custodial_authority_raw_text: Optional[str] = attr.ib(default=None, validator=attr_validators.is_opt_str)
 
-    conditions: Optional[str] = attr.ib(default=None)
+    conditions: Optional[str] = attr.ib(default=None, validator=attr_validators.is_opt_str)
 
     #   - Who
     # See |person| in entity relationships below.
 
     # Primary key - Only optional when hydrated in the data converter, before we have written this entity to the
     # persistence layer
-    supervision_period_id: Optional[int] = attr.ib(default=None)
+    supervision_period_id: Optional[int] = attr.ib(default=None, validator=attr_validators.is_opt_int)
 
     # Cross-entity relationships
     person: Optional['StatePerson'] = attr.ib(default=None)
     supervising_officer: Optional['StateAgent'] = attr.ib(default=None)
-    program_assignments: List['StateProgramAssignment'] = attr.ib(factory=list)
+    program_assignments: List['StateProgramAssignment'] = attr.ib(factory=list, validator=attr_validators.is_list)
 
     # NOTE: A supervision period might count towards multiple sentences
-    incarceration_sentences: List['StateIncarcerationSentence'] = attr.ib(factory=list)
-    supervision_sentences: List['StateSupervisionSentence'] = attr.ib(factory=list)
-    supervision_violation_entries: List['StateSupervisionViolation'] = attr.ib(factory=list)
-    assessments: List['StateAssessment'] = attr.ib(factory=list)
-    case_type_entries: List['StateSupervisionCaseTypeEntry'] = attr.ib(factory=list)
-    supervision_contacts: List['StateSupervisionContact'] = attr.ib(factory=list)
+    incarceration_sentences: List['StateIncarcerationSentence'] = attr.ib(factory=list,
+                                                                          validator=attr_validators.is_list)
+    supervision_sentences: List['StateSupervisionSentence'] = attr.ib(factory=list, validator=attr_validators.is_list)
+    supervision_violation_entries: List['StateSupervisionViolation'] = attr.ib(factory=list,
+                                                                               validator=attr_validators.is_list)
+    assessments: List['StateAssessment'] = attr.ib(factory=list, validator=attr_validators.is_list)
+    case_type_entries: List['StateSupervisionCaseTypeEntry'] = attr.ib(factory=list, validator=attr_validators.is_list)
+    supervision_contacts: List['StateSupervisionContact'] = attr.ib(factory=list, validator=attr_validators.is_list)
 
     @property
     def duration(self) -> DateRange:

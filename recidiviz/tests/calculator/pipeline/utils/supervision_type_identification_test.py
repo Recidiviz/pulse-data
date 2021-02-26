@@ -26,7 +26,8 @@ from recidiviz.calculator.pipeline.utils.supervision_type_identification import 
     _get_sentences_overlapping_with_date, _get_sentences_overlapping_with_dates, _get_valid_attached_sentences, \
     _get_sentence_supervision_type_from_sentence, get_pre_incarceration_supervision_type_from_incarceration_period
 from recidiviz.calculator.pipeline.utils.state_utils.state_calculation_config_manager import get_month_supervision_type
-from recidiviz.common.constants.state.state_incarceration_period import StateIncarcerationPeriodAdmissionReason
+from recidiviz.common.constants.state.state_incarceration_period import StateIncarcerationPeriodAdmissionReason, \
+    StateIncarcerationPeriodStatus
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.state.state_supervision import StateSupervisionType
 from recidiviz.common.constants.state.state_supervision_period import StateSupervisionPeriodSupervisionType, \
@@ -698,7 +699,8 @@ class TestGetPreIncarcerationSupervisionType(unittest.TestCase):
         for admission_reason in StateIncarcerationPeriodAdmissionReason:
             incarceration_period = StateIncarcerationPeriod.new_with_defaults(
                 admission_reason=admission_reason,
-                state_code='US_XX')
+                state_code='US_XX',
+                status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO)
             expected_type = None
             if admission_reason == StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION:
                 expected_type = StateSupervisionPeriodSupervisionType.PROBATION
@@ -739,7 +741,8 @@ class TestGetPreIncarcerationSupervisionType(unittest.TestCase):
                                                                             invalid_incarceration_sentence_2]))
 
     def test_getValidAttachedSentences(self):
-        supervision_period = StateSupervisionPeriod.new_with_defaults(state_code='US_XX', supervision_period_id=1)
+        supervision_period = StateSupervisionPeriod.new_with_defaults(
+            state_code='US_XX', supervision_period_id=1, status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO)
         valid_incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
             state_code='US_XX',
             incarceration_sentence_id=1,

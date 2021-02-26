@@ -135,7 +135,8 @@ class TestProgramPipeline(unittest.TestCase):
             start_date=date(2015, 3, 14),
             termination_date=date(2016, 12, 29),
             supervision_type=StateSupervisionType.PROBATION,
-            person_id=fake_person_id
+            person_id=fake_person_id,
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO
         )
 
         program_assignment_data = [
@@ -313,7 +314,8 @@ class TestProgramPipeline(unittest.TestCase):
             start_date=date(2015, 3, 14),
             termination_date=date(2016, 12, 29),
             supervision_type=StateSupervisionType.PROBATION,
-            person_id=fake_person_id
+            person_id=fake_person_id,
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO
         )
 
         program_assignment_data = [

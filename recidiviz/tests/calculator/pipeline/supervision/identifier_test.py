@@ -1018,7 +1018,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             external_id='sp1',
             status=StateSupervisionPeriodStatus.TERMINATED,
             state_code='US_ID',
-            custodial_authority='US_ID_DOC',
+            custodial_authority_raw_text='US_ID_DOC',
             start_date=date(2017, 3, 5),
             termination_date=date(2017, 5, 9),
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
@@ -1030,7 +1030,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             incarceration_period_id=222,
             external_id='ip2',
             state_code='US_ID',
-            custodial_authority='US_ID_DOC',
+            custodial_authority_raw_text='US_ID_DOC',
             incarceration_type=StateIncarcerationType.STATE_PRISON,
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             admission_date=date(2017, 5, 17),
@@ -1130,7 +1130,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             external_id='sp1',
             status=StateSupervisionPeriodStatus.TERMINATED,
             state_code='US_ID',
-            custodial_authority='US_ID_DOC',
+            custodial_authority_raw_text='US_ID_DOC',
             start_date=date(2017, 3, 5),
             termination_date=date(2017, 5, 9),
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
@@ -1144,7 +1144,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             external_id='sp1',
             status=StateSupervisionPeriodStatus.TERMINATED,
             state_code='US_ID',
-            custodial_authority='US_ID_DOC',
+            custodial_authority_raw_text='US_ID_DOC',
             start_date=date(2017, 5, 9),
             termination_date=date(2017, 5, 9),
             supervision_period_supervision_type=None
@@ -1253,7 +1253,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             external_id='sp1',
             status=StateSupervisionPeriodStatus.TERMINATED,
             state_code='US_ID',
-            custodial_authority='US_ID_DOC',
+            custodial_authority_raw_text='US_ID_DOC',
             start_date=date(2017, 3, 5),
             termination_date=date(2017, 5, 9),
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
@@ -1269,7 +1269,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             external_id='sp1',
             status=StateSupervisionPeriodStatus.TERMINATED,
             state_code='US_ID',
-            custodial_authority='US_ID_DOC',
+            custodial_authority_raw_text='US_ID_DOC',
             start_date=date(2017, 5, 9),
             termination_date=date(2017, 5, 9),
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.INTERNAL_UNKNOWN
@@ -1400,7 +1400,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             external_id='sp1',
             status=StateSupervisionPeriodStatus.TERMINATED,
             state_code='US_ID',
-            custodial_authority='US_ID_DOC',
+            custodial_authority_raw_text='US_ID_DOC',
             start_date=date(2017, 3, 5),
             termination_date=date(2017, 5, 9),
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
@@ -1414,7 +1414,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             external_id='sp1',
             status=StateSupervisionPeriodStatus.TERMINATED,
             state_code='US_ID',
-            custodial_authority='US_ID_DOC',
+            custodial_authority_raw_text='US_ID_DOC',
             start_date=date(2017, 5, 9),
             termination_date=date(2017, 5, 9),
             supervision_period_supervision_type=None
@@ -1522,7 +1522,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             external_id='sp1',
             status=StateSupervisionPeriodStatus.TERMINATED,
             state_code='US_ID',
-            custodial_authority='US_ID_DOC',
+            custodial_authority_raw_text='US_ID_DOC',
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             start_date=date(2017, 3, 5),
             termination_date=date(2017, 5, 9),
@@ -1534,7 +1534,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             supervision_period_id=222,
             external_id='sp2',
             state_code='US_ID',
-            custodial_authority='US_ID_DOC',
+            custodial_authority_raw_text='US_ID_DOC',
             status=StateSupervisionPeriodStatus.TERMINATED,
             start_date=date(2017, 5, 9),
             admission_reason=StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE,
@@ -1594,7 +1594,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             external_id='sp1',
             status=StateSupervisionPeriodStatus.TERMINATED,
             state_code='US_ID',
-            custodial_authority='US_ID_DOC',
+            custodial_authority_raw_text='US_ID_DOC',
             start_date=date(2017, 3, 5),
             termination_date=date(2017, 5, 9),
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.INVESTIGATION
@@ -1654,7 +1654,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             external_id='sp1',
             status=StateSupervisionPeriodStatus.TERMINATED,
             state_code='US_ND',
-            custodial_authority='US_ND_DOCR',
+            custodial_authority_raw_text='US_ND_DOCR',
             start_date=date(2017, 3, 5),
             termination_date=date(2017, 5, 9),
             supervision_type=StateSupervisionType.PRE_CONFINEMENT,
@@ -1710,7 +1710,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             external_id='sp1',
             status=StateSupervisionPeriodStatus.TERMINATED,
             state_code='US_ID',
-            custodial_authority='US_ID_DOC',
+            custodial_authority_raw_text='US_ID_DOC',
             start_date=date(2017, 3, 5),
             termination_date=date(2017, 5, 9),
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
@@ -1821,7 +1821,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             external_id='sp1',
             status=StateSupervisionPeriodStatus.TERMINATED,
             state_code='US_ID',
-            custodial_authority='US_ID_DOC',
+            custodial_authority_raw_text='US_ID_DOC',
             start_date=date(2017, 3, 5),
             termination_date=date(2017, 5, 9),
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
@@ -1933,7 +1933,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             external_id='sp1',
             status=StateSupervisionPeriodStatus.TERMINATED,
             state_code='US_ID',
-            custodial_authority='US_ID_DOC',
+            custodial_authority_raw_text='US_ID_DOC',
             start_date=date(2017, 3, 5),
             termination_date=date(2017, 5, 9),
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
@@ -4292,7 +4292,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             ],
             state_code='US_ID',
             supervision_site='DISTRICT_1|OFFICE_2',
-            custodial_authority='US_ID_DOC',
+            custodial_authority_raw_text='US_ID_DOC',
             admission_reason=StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE,
             start_date=date(2018, 3, 5),
             termination_date=date(2018, 5, 19),
@@ -5137,7 +5137,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 status=StateSupervisionPeriodStatus.TERMINATED,
                 supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.DUAL,
                 state_code='US_ID',
-                custodial_authority='US_ID_DOC',
+                custodial_authority_raw_text='US_ID_DOC',
                 start_date=date(2018, 3, 5),
                 termination_date=date(2018, 5, 19),
                 termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
@@ -5467,7 +5467,7 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 external_id='sp1',
                 state_code='US_ND',
                 start_date=date(2019, 6, 2),
-                supervision_type=StateSupervisionType.PROBATION
+                supervision_type=StateSupervisionType.PROBATION,
             )
 
         incarceration_period = \
@@ -5576,7 +5576,6 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
                 admission_date=date(2018, 6, 2),
                 admission_reason=StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
                 release_date=date(2018, 9, 3),
-                release_reason=date(2018, 10, 30)
             )
 
         second_incarceration_period = \
@@ -7809,7 +7808,7 @@ class TestFindTimeBucketsForSupervisionPeriod(unittest.TestCase):
                 external_id='sp1',
                 state_code='US_ND',
                 start_date=date(2003, 7, 5),
-                supervision_type=StateSupervisionType.PROBATION
+                supervision_type=StateSupervisionType.PROBATION,
             )
 
         incarceration_period = \
@@ -7899,7 +7898,8 @@ class TestFindTimeBucketsForSupervisionPeriod(unittest.TestCase):
                 state_code='US_ND',
                 start_date=date(2018, 3, 5),
                 termination_date=date(2018, 5, 19),
-                supervision_type=StateSupervisionType.PROBATION
+                supervision_type=StateSupervisionType.PROBATION,
+                status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO
             )
 
         incarceration_period = \
@@ -7910,7 +7910,8 @@ class TestFindTimeBucketsForSupervisionPeriod(unittest.TestCase):
                 admission_date=date(2018, 4, 25),
                 admission_reason=StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
                 release_date=date(2018, 5, 22),
-                release_reason=ReleaseReason.SENTENCE_SERVED
+                release_reason=ReleaseReason.SENTENCE_SERVED,
+                status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO
             )
 
         supervision_sentence = \
@@ -7975,7 +7976,7 @@ class TestFindTimeBucketsForSupervisionPeriod(unittest.TestCase):
                 external_id='sp1',
                 state_code='US_ND',
                 start_date=date(2019, 3, 5),
-                supervision_type=StateSupervisionType.PROBATION
+                supervision_type=StateSupervisionType.PROBATION,
             )
 
         incarceration_period = \
@@ -7985,7 +7986,8 @@ class TestFindTimeBucketsForSupervisionPeriod(unittest.TestCase):
                 state_code='US_ND',
                 admission_date=date(2019, 5, 25),
                 admission_reason=StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
-                release_date=date(2019, 10, 17)
+                release_date=date(2019, 10, 17),
+                status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO
             )
 
         supervision_sentence = \
@@ -8073,7 +8075,8 @@ class TestFindTimeBucketsForSupervisionPeriod(unittest.TestCase):
                 state_code='US_ND',
                 start_date=date(2018, 3, 5),
                 termination_date=date(2018, 6, 19),
-                supervision_type=StateSupervisionType.PROBATION
+                supervision_type=StateSupervisionType.PROBATION,
+                status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO
             )
 
         incarceration_period = \
@@ -8177,7 +8180,8 @@ class TestFindTimeBucketsForSupervisionPeriod(unittest.TestCase):
                 admission_date=date(2008, 6, 2),
                 admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
                 release_date=date(2009, 12, 3),
-                release_reason=ReleaseReason.CONDITIONAL_RELEASE
+                release_reason=ReleaseReason.CONDITIONAL_RELEASE,
+                status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO
             )
 
         supervision_sentence = \
@@ -8290,7 +8294,8 @@ class TestFindTimeBucketsForSupervisionPeriod(unittest.TestCase):
                 state_code='US_ND',
                 start_date=date(2001, 1, 5),
                 termination_date=date(2001, 7, 1),
-                supervision_type=StateSupervisionType.PROBATION
+                supervision_type=StateSupervisionType.PROBATION,
+                status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO
             )
 
         supervision_sentence = \
@@ -8410,7 +8415,8 @@ class TestFindTimeBucketsForSupervisionPeriod(unittest.TestCase):
                 state_code='US_ND',
                 start_date=date(2001, 1, 5),
                 termination_date=date(2001, 6, 30),
-                supervision_type=StateSupervisionType.PROBATION
+                supervision_type=StateSupervisionType.PROBATION,
+                status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO
             )
 
         supervision_sentence = \
@@ -8512,7 +8518,8 @@ class TestFindTimeBucketsForSupervisionPeriod(unittest.TestCase):
                 state_code='US_ND',
                 start_date=date(2001, 3, 3),
                 termination_date=date(2001, 3, 3),
-                supervision_type=StateSupervisionType.PROBATION
+                supervision_type=StateSupervisionType.PROBATION,
+                status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO
             )
 
         supervision_sentence = \
@@ -8565,7 +8572,8 @@ class TestFindTimeBucketsForSupervisionPeriod(unittest.TestCase):
                 state_code='US_XX',
                 start_date=date(2018, 3, 11),
                 termination_date=date(2018, 12, 10),
-                supervision_type=StateSupervisionType.PROBATION
+                supervision_type=StateSupervisionType.PROBATION,
+                status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO
             )
 
         incarceration_period = \
@@ -8575,7 +8583,8 @@ class TestFindTimeBucketsForSupervisionPeriod(unittest.TestCase):
                 state_code='US_XX',
                 admission_date=date(2018, 5, 25),
                 admission_reason=StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
-                release_date=date(2018, 10, 27)
+                release_date=date(2018, 10, 27),
+                status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO
             )
 
         assessment_1 = StateAssessment.new_with_defaults(
@@ -8661,7 +8670,8 @@ class TestFindTimeBucketsForSupervisionPeriod(unittest.TestCase):
                 state_code='US_ND',
                 start_date=date(2018, 1, 5),
                 termination_date=date(2018, 3, 19),
-                supervision_type=StateSupervisionType.PROBATION
+                supervision_type=StateSupervisionType.PROBATION,
+                status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO
             )
 
         assessment = StateAssessment.new_with_defaults(
@@ -8746,7 +8756,8 @@ class TestFindTimeBucketsForSupervisionPeriod(unittest.TestCase):
                 start_date=date(2018, 1, 5),
                 termination_date=date(2018, 3, 19),
                 supervision_type=StateSupervisionType.PROBATION,
-                supervision_level=StateSupervisionLevel.HIGH
+                supervision_level=StateSupervisionLevel.HIGH,
+                status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO
             ),
             StateSupervisionPeriod.new_with_defaults(
                 supervision_period_id=123,
@@ -8755,7 +8766,8 @@ class TestFindTimeBucketsForSupervisionPeriod(unittest.TestCase):
                 start_date=date(2018, 3, 19),
                 termination_date=date(2018, 4, 30),
                 supervision_type=StateSupervisionType.PROBATION,
-                supervision_level=StateSupervisionLevel.MEDIUM
+                supervision_level=StateSupervisionLevel.MEDIUM,
+                status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO
             ),
         ]
 
@@ -8825,7 +8837,8 @@ class TestFindTimeBucketsForSupervisionPeriod(unittest.TestCase):
                 start_date=date(2010, 1, 5),
                 termination_date=date(2010, 3, 19),
                 supervision_type=StateSupervisionType.PROBATION,
-                supervision_level=StateSupervisionLevel.HIGH
+                supervision_level=StateSupervisionLevel.HIGH,
+                status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO
             ),
             StateSupervisionPeriod.new_with_defaults(
                 supervision_period_id=123,
@@ -8834,7 +8847,8 @@ class TestFindTimeBucketsForSupervisionPeriod(unittest.TestCase):
                 start_date=date(2018, 3, 19),
                 termination_date=date(2018, 4, 30),
                 supervision_type=StateSupervisionType.PROBATION,
-                supervision_level=StateSupervisionLevel.MEDIUM
+                supervision_level=StateSupervisionLevel.MEDIUM,
+                status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO
             ),
         ]
 
@@ -8971,7 +8985,8 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
             state_code='US_ND',
             admission_date=date(2018, 6, 1),
             admission_reason=StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
-            release_date=date(2018, 6, 21)
+            release_date=date(2018, 6, 21),
+            status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO
         )
 
         supervision_sentence = \
@@ -9618,7 +9633,8 @@ class TestClassifySupervisionSuccess(unittest.TestCase):
             incarceration_period_id=111,
             admission_date=date(2017, 6, 1),
             admission_reason=StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
-            release_date=date(2017, 10, 5)
+            release_date=date(2017, 10, 5),
+            status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO,
         )
 
         supervision_sentences = [supervision_sentence]
@@ -11025,7 +11041,8 @@ class TestIdentifyMostSevereCaseType(unittest.TestCase):
                     state_code='US_XX',
                     case_type=StateSupervisionCaseType.SEX_OFFENSE
                 )
-            ]
+            ],
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO
         )
 
         most_severe_case_type = identifier._identify_most_severe_case_type(
@@ -11043,7 +11060,8 @@ class TestIdentifyMostSevereCaseType(unittest.TestCase):
                         state_code='US_XX',
                         case_type=case_type
                     ),
-                ]
+                ],
+                status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO
             )
 
             most_severe_case_type = identifier._identify_most_severe_case_type(
@@ -11054,7 +11072,8 @@ class TestIdentifyMostSevereCaseType(unittest.TestCase):
     def test_identify_most_severe_case_type_no_type_entries(self):
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             state_code='US_XX',
-            case_type_entries=[]
+            case_type_entries=[],
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO
         )
 
         most_severe_case_type = identifier._identify_most_severe_case_type(

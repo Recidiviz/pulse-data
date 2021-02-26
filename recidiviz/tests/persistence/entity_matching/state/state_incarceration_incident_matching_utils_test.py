@@ -97,7 +97,8 @@ class TestIncidentMatchingUtils(BaseStateMatchingUtilsTest):
             incident_date=_DATE_7)
         placeholder_incarceration_period = \
             StateIncarcerationPeriod.new_with_defaults(
-                state_code=_STATE_CODE, incarceration_incidents=[incident_1, incident_2, incident_3])
+                state_code=_STATE_CODE, incarceration_incidents=[incident_1, incident_2, incident_3],
+                status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO)
 
         incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
             state_code=_STATE_CODE,

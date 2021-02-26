@@ -119,6 +119,7 @@ class TestRevokedSupervisionPeriodsIfRevocationOccurred(unittest.TestCase):
             start_date=date(2017, 1, 1),
             termination_date=date(2017, 5, 17),
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO
         )
 
         treatment_period = StateIncarcerationPeriod.new_with_defaults(

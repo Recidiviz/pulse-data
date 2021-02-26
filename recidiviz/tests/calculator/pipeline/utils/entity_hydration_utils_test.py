@@ -425,7 +425,8 @@ class TestSetSentencesOnSentenceGroup(unittest.TestCase):
             incarceration_periods=[
                 StateIncarcerationPeriod.new_with_defaults(
                     state_code='US_XX',
-                    admission_date=date(2000, 3, 2)
+                    admission_date=date(2000, 3, 2),
+                    status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO
                 )
             ]
         )
@@ -442,7 +443,8 @@ class TestSetSentencesOnSentenceGroup(unittest.TestCase):
             incarceration_periods=[
                 StateIncarcerationPeriod.new_with_defaults(
                     state_code='US_XX',
-                    admission_date=date(2000, 3, 2)
+                    admission_date=date(2000, 3, 2),
+                    status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO
                 )
             ]
         )
@@ -485,7 +487,8 @@ class TestSetSentencesOnSentenceGroup(unittest.TestCase):
             incarceration_periods=[
                 StateIncarcerationPeriod.new_with_defaults(
                     state_code='US_XX',
-                    admission_date=date(2000, 3, 2)
+                    admission_date=date(2000, 3, 2),
+                    status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO
                 )
             ]
         )
@@ -502,7 +505,8 @@ class TestSetSentencesOnSentenceGroup(unittest.TestCase):
             incarceration_periods=[
                 StateIncarcerationPeriod.new_with_defaults(
                     state_code='US_XX',
-                    admission_date=date(2000, 3, 2)
+                    admission_date=date(2000, 3, 2),
+                    status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO
                 )
             ]
         )
