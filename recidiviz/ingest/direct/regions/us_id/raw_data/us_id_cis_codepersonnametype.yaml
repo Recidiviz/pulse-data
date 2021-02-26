@@ -1,4 +1,11 @@
 file_tag: cis_codepersonnametype
+file_description: |-
+  Not in use
 primary_key_cols:
   - id
+columns:
+  - name: id
+  - name: codedescription
+  - name: nametypecode
+  - name: active
 separator: ','

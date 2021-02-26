@@ -1,3 +1,14 @@
 file_tag: cls
+file_description: |-
+  Not in use
 primary_key_cols:
-  - cls_id
+  - Cls_ID
+columns:
+  - name: vld_flg
+  - name: Cls_ID
+  - name: Cls_Title
+  - name: Cls_desc
+  - name: Est_tot_hrs
+  - name: Prereq_flg
+  - name: updt_dt
+  - name: updt_usr_id

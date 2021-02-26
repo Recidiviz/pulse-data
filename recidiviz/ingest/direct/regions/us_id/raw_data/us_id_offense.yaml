@@ -1,10 +1,63 @@
 file_tag: offense
+file_description: |-
+  A code table, that when provided an off_cat, off_cd, and off_deg reveals details abot the offense.
 primary_key_cols:
   - off_cat
   - off_cd
   - off_deg
 columns:
+  - name: off_cat
+    description: |-
+      Offense category code
+  - name: off_cd
+    description: |-
+      Offense code
+  - name: off_deg
+    description: |-
+      Offense degree
+  - name: off_rank1
+    description: |-
+      Unknown
+  - name: off_rank2
+    description: |-
+      Unknown
+  - name: off_rank3
+    description: |-
+      Unknown
+  - name: off_viol
+    description: |-
+      Whether or not the offense was violent
+  - name: off_stat_title
+    description: |-
+      Statute Title
+  - name: off_stat_sect
+    description: |-
+      Statute Section
+  - name: off_stat_subsec
+    description: |-
+      Statute Subsection
   - name: off_stat_eff_dtd
     is_datetime: True
+    description: |-
+      Date the statue become effective
   - name: off_stat_term_dtd
     is_datetime: True
+  - name: off_actv_flg
+  - name: off_sxo_flg
+    description: |-
+      Whether or not the offense was a sex offense
+  - name: offvisxo_flg
+  - name: off_rpt_flg
+  - name: off_typ
+    description: |-
+      Offense type
+  - name: off_sdesc
+    description: |-
+      Short description of the offense
+  - name: off_ldesc
+    description: |-
+      Longer description of the offense
+  - name: off_visxo_flg
+  - name: description
+    description: |-
+      Always null

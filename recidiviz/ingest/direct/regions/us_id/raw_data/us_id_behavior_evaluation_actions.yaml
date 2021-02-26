@@ -1,3 +1,8 @@
 file_tag: behavior_evaluation_actions
+file_description: |-
+  Not in use
 primary_key_cols:
   - behavior_evaluation_action_id
+columns:
+  - name: behavior_evaluation_action_id
+  - name: action

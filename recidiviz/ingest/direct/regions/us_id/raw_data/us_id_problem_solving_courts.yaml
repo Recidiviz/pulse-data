@@ -1,3 +1,9 @@
 file_tag: problem_solving_courts
+file_description: |-
+  Not in use
 primary_key_cols:
   - id
+columns:
+  - name: id
+  - name: court
+  - name: active

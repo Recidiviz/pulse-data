@@ -1,12 +1,54 @@
 file_tag: cis_offenderaddress
+file_description: |-
+  Contains a new row for each address span that a person under IDOC custody ever had. Each row should contain start and
+  end dates to represent when the address was in use. This table does not tell you what type of address each of these
+  rows represents nor where the address itself is, and it needs to be joined with `cis_personaddress` to get that
+  information.
 primary_key_cols:
   - personaddressid
 columns:
+  - name: upduser
+    description: |-
+      IDOC username of the last person to update this row
   - name: upddate
     is_datetime: True
+    description: |-
+      IDOC update date for this row
+  - name: version
+  - name: personaddressid
+    description: |-
+      ID of this address row (same as cis_personaddress.id)
   - name: startdate
     is_datetime: True
+    description: |-
+      Start date for this address
+  - name: estimatedstartdate
+    description: |-
+      Whether the provided start date was estimated
   - name: enddate
     is_datetime: True
+    description: |-
+      End date for this address
+  - name: estimatedenddate
+    description: |-
+      Whether the provided end date was estimated
+  - name: directioncomment
+    description: |-
+      Always null
+  - name: validaddress
+    description: |-
+      Whether the address has been validated
+  - name: mailingaddress
+    description: |-
+      Whether the address is a mailing address or not
+  - name: psireportdisplay
+  - name: verifyuserid
+    description: |-
+      IDOC username of the person who verified this address
   - name: verifydate
     is_datetime: True
+    description: |-
+      The date this address was verified
+  - name: codeverifymethodid
+    description: |-
+      Code for how the address was verified

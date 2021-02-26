@@ -1,3 +1,9 @@
 file_tag: prvdr_typ_cd
+file_description: |-
+  Not in use
 primary_key_cols:
   - prvdr_typ_cd
+columns:
+  - name: prvdr_typ_cd
+  - name: vld_flg
+  - name: prvdr_typ_desc

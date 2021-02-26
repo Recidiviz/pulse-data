@@ -1,3 +1,11 @@
 file_tag: ofndr_behavior_evaluation_item
+file_description: |-
+  Not in use
 primary_key_cols:
   - ofndr_behavior_evaluation_id
+columns:
+  - name: ofndr_behavior_evaluation_id
+  - name: ofndr_behavior_evaluation_item_id
+  - name: observed_behavior_cd
+  - name: is_scored
+  - name: scored_val

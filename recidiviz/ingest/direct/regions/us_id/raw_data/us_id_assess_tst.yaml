@@ -1,3 +1,13 @@
 file_tag: assess_tst
+file_description: |-
+  Not in use
 primary_key_cols:
   - assess_tst_id
+columns:
+  - name: assess_tst_id
+  - name: assess_cat_cd
+  - name: tst_title
+  - name: vndr_name
+  - name: tst_obj
+  - name: tst_instruct
+  - name: vld_flg

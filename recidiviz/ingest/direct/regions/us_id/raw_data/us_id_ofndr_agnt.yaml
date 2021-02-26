@@ -1,6 +1,44 @@
 file_tag: ofndr_agnt
+file_description: |-
+  Contains a single row for every person on supervision and has their associated Parole/Probation officer (if known).
+  When a person’s PO is updated, a new row is not created, but the existing row is updated. If a person ends
+  supervision, we expect them to disappear from this table.
+
+
+  We do not use this table, and instead use the `casemgr` table to understand PO assignments. This is for two reasons:
+
+  1. This table does not have historical PO assignments, where as casemgr does.
+  2. There are a few instances where this table and `casemgr` disagree, and in those instances, we’re told that
+  `casemgr` is the source of truth.
+
+
+  Note: On 2/17/2021, we discovered that `ofndr_agnt` and `casemgr` were disagreeing but that the data reported by
+  `ofndr_agnt` was the one that matched POs' understanding of who was on their caseload. The error seemed to be in the
+  copy of `casemgr` that was being sent to us, but in the event of future discrepancies, it is worth re-confirming with
+  IDOC whether our data is correct.
 primary_key_cols:
   - ofndr_num
 columns:
+  - name: ofndr_num
+    description: |-
+      Identifier for the person being supervised.
+  - name: agnt_id
+    description: |-
+      Username of the PO supervising this person
+  - name: agcy_id
+    description: |-
+      ID of the agency the PO works out of
   - name: agnt_strt_dt
     is_datetime: True
+    description: |-
+      Date the agent started supervising this person
+  - name: end_dt
+    description: |-
+      Date the agent ended supervising this person (almost always null)
+  - name: usr_typ_cd
+  - name: updt_usr_id
+    description: |-
+      Username of the person who most recently updated this data
+  - name: updt_dt
+    description: |-
+      Date that this data was most recently updated
