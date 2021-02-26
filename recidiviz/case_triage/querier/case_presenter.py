@@ -96,8 +96,8 @@ class CasePresenter:
 
         today = date.today()
         base_dict['needsMet'] = {
-            # Sometimes the employer field is filled with "UNEMPLOYED", so this attempts to capture that.
-            'employment': bool(self.etl_client.employer) and self.etl_client.employer.upper() != 'UNEMPLOYED',
+            # Sometimes the employer field has "UNEMP" in it somewher to indicate unemployment
+            'employment': bool(self.etl_client.employer) and 'UNEMP' not in self.etl_client.employer.upper(),
             # If the F2F contact is missing, that means there may be no need for it. Otherwise, if the
             # next due face to face contact is after today, the need is met.
             'faceToFaceContact': next_face_to_face_date is None or bool(next_face_to_face_date > today),
