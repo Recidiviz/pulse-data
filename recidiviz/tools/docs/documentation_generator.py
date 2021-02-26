@@ -21,7 +21,7 @@ import logging
 import os
 import subprocess
 
-from typing import List
+from typing import Set
 
 import recidiviz
 from recidiviz.ingest.direct import regions as regions_module
@@ -48,7 +48,7 @@ def generate_raw_data_documentation_for_region(region_code: str) -> None:
     _stdout, _stderr = res.communicate()
 
 
-def get_touched_raw_data_regions() -> List[str]:
+def get_touched_raw_data_regions() -> Set[str]:
     """Greps for touched files in the direct ingest regions directories and returns the touched regions' codes"""
 
     regions_dir_path = os.path.relpath(os.path.dirname(regions_module.__file__),
@@ -57,7 +57,7 @@ def get_touched_raw_data_regions() -> List[str]:
                            shell=True,
                            stdout=subprocess.PIPE)
     stdout, _stderr = res.communicate()
-    return stdout.decode().upper().splitlines()
+    return set(stdout.decode().upper().splitlines())
 
 
 def main() -> None:
