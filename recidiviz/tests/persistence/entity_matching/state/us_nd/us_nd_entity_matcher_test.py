@@ -938,7 +938,7 @@ class TestNdEntityMatching(BaseStateEntityMatcherTest):
                 incarceration_type=StateIncarcerationType.COUNTY_JAIL,
                 release_date=datetime.date(year=2018, month=1, day=2),
                 release_reason=
-                StateIncarcerationPeriodAdmissionReason.TRANSFER)
+                StateIncarcerationPeriodReleaseReason.TRANSFER)
 
         new_incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             state_code=_US_ND,

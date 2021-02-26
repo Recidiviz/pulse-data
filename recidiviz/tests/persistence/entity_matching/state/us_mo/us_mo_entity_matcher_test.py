@@ -20,7 +20,8 @@ import datetime
 import attr
 
 from recidiviz.common.constants.state.state_agent import StateAgentType
-from recidiviz.common.constants.state.state_incarceration_period import StateIncarcerationPeriodAdmissionReason
+from recidiviz.common.constants.state.state_incarceration_period import StateIncarcerationPeriodAdmissionReason, \
+    StateIncarcerationPeriodStatus
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.state.state_supervision_period import \
     StateSupervisionPeriodStatus
@@ -160,7 +161,7 @@ class TestMoEntityMatching(BaseStateEntityMatcherTest):
         placeholder_supervision_period = \
             StateSupervisionPeriod.new_with_defaults(
                 state_code=_US_MO,
-                status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
+                status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO,
                 supervision_violation_entries=[supervision_violation])
         supervision_sentence = StateSupervisionSentence.new_with_defaults(
             status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
@@ -343,7 +344,8 @@ class TestMoEntityMatching(BaseStateEntityMatcherTest):
         supervision_period_update = StateSupervisionPeriod.new_with_defaults(
             external_id=db_supervision_period_open.external_id,
             state_code=_US_MO,
-            termination_date=_DATE_3)
+            termination_date=_DATE_3,
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO)
         supervision_sentence = StateSupervisionSentence.new_with_defaults(
             external_id=db_supervision_sentence.external_id,
             state_code=_US_MO,
@@ -545,7 +547,8 @@ class TestMoEntityMatching(BaseStateEntityMatcherTest):
                 state_code=_US_MO,
                 external_id=_EXTERNAL_ID,
                 admission_reason=StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
-                source_supervision_violation_response=supervision_violation_response)
+                source_supervision_violation_response=supervision_violation_response,
+                status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO)
         incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
             status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
             state_code=_US_MO,
@@ -638,7 +641,8 @@ class TestMoEntityMatching(BaseStateEntityMatcherTest):
                 state_code=_US_MO,
                 external_id=_EXTERNAL_ID,
                 admission_reason=StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
-                source_supervision_violation_response=supervision_violation_response)
+                source_supervision_violation_response=supervision_violation_response,
+                status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO)
         incarceration_sentence = StateIncarcerationSentence.new_with_defaults(
             status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
             state_code=_US_MO,

@@ -34,7 +34,8 @@ from recidiviz.common.constants.state.state_case_type import StateSupervisionCas
 from recidiviz.common.constants.state.state_supervision_contact import StateSupervisionContactType, \
     StateSupervisionContactStatus
 from recidiviz.common.constants.state.state_supervision_period import StateSupervisionPeriodTerminationReason, \
-    StateSupervisionPeriodSupervisionType, StateSupervisionPeriodAdmissionReason, StateSupervisionLevel
+    StateSupervisionPeriodSupervisionType, StateSupervisionPeriodAdmissionReason, StateSupervisionLevel, \
+    StateSupervisionPeriodStatus
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.state.entities import StateSupervisionPeriod, StateAssessment, StateSupervisionContact
 
@@ -88,12 +89,13 @@ class TestAssessmentsInComplianceMonth(unittest.TestCase):
             supervision_period_id=111,
             external_id='sp1',
             state_code='US_ID',
-            custodial_authority='US_ID_DOC',
+            custodial_authority_raw_text='US_ID_DOC',
             start_date=date(2018, 3, 5),  # This was a Monday
             termination_date=date(2018, 5, 19),
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO
         )
         assessments = [
             assessment_out_of_range,
@@ -159,12 +161,13 @@ class TestFaceToFaceContactsInComplianceMonth(unittest.TestCase):
             supervision_period_id=111,
             external_id='sp1',
             state_code='US_ID',
-            custodial_authority='US_ID_DOC',
+            custodial_authority_raw_text='US_ID_DOC',
             start_date=date(2018, 3, 5),  # This was a Monday
             termination_date=date(2018, 5, 19),
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO
         )
 
         contacts = [contact_1, contact_2, contact_3, contact_incomplete, contact_out_of_range, contact_wrong_type]
@@ -187,12 +190,13 @@ class TestContactFrequencySufficient(unittest.TestCase):
             supervision_period_id=111,
             external_id='sp1',
             state_code='US_ID',
-            custodial_authority='US_ID_DOC',
+            custodial_authority_raw_text='US_ID_DOC',
             start_date=date(2018, 3, 5),  # This was a Monday
             termination_date=date(2018, 5, 19),
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO
         )
 
         supervision_contacts = [StateSupervisionContact.new_with_defaults(
@@ -222,12 +226,13 @@ class TestContactFrequencySufficient(unittest.TestCase):
             supervision_period_id=111,
             external_id='sp1',
             state_code='US_ID',
-            custodial_authority='US_ID_DOC',
+            custodial_authority_raw_text='US_ID_DOC',
             start_date=date(2018, 3, 5),
             termination_date=date(2018, 5, 19),
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO
         )
 
         supervision_contacts = [StateSupervisionContact.new_with_defaults(
@@ -259,12 +264,13 @@ class TestContactFrequencySufficient(unittest.TestCase):
             supervision_period_id=111,
             external_id='sp1',
             state_code='US_ID',
-            custodial_authority='US_ID_DOC',
+            custodial_authority_raw_text='US_ID_DOC',
             start_date=date(2018, 3, 5),
             termination_date=date(2018, 5, 19),
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO
         )
 
         supervision_contacts = [StateSupervisionContact.new_with_defaults(
@@ -295,12 +301,13 @@ class TestContactFrequencySufficient(unittest.TestCase):
             supervision_period_id=111,
             external_id='sp1',
             state_code='US_ID',
-            custodial_authority='US_ID_DOC',
+            custodial_authority_raw_text='US_ID_DOC',
             start_date=date(2018, 3, 5),
             termination_date=date(2018, 5, 19),
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO
         )
 
         supervision_contacts = [StateSupervisionContact.new_with_defaults(
@@ -331,14 +338,15 @@ class TestContactFrequencySufficient(unittest.TestCase):
             supervision_period_id=111,
             external_id='sp1',
             state_code='US_ID',
-            custodial_authority='US_ID_DOC',
+            custodial_authority_raw_text='US_ID_DOC',
             start_date=date(2018, 3, 5),
             termination_date=date(2018, 5, 19),
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.MINIMUM,
-            supervision_level_raw_text='LOW'
+            supervision_level_raw_text='LOW',
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO
         )
 
         supervision_contacts = [StateSupervisionContact.new_with_defaults(
@@ -368,14 +376,15 @@ class TestContactFrequencySufficient(unittest.TestCase):
             supervision_period_id=111,
             external_id='sp1',
             state_code='US_ID',
-            custodial_authority='US_ID_DOC',
+            custodial_authority_raw_text='US_ID_DOC',
             start_date=date(2018, 3, 5),
             termination_date=date(2018, 5, 19),
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.MINIMUM,
-            supervision_level_raw_text='LEVEL 1'
+            supervision_level_raw_text='LEVEL 1',
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO
         )
 
         supervision_contacts = [StateSupervisionContact.new_with_defaults(
@@ -405,14 +414,15 @@ class TestContactFrequencySufficient(unittest.TestCase):
             supervision_period_id=111,
             external_id='sp1',
             state_code='US_ID',
-            custodial_authority='US_ID_DOC',
+            custodial_authority_raw_text='US_ID_DOC',
             start_date=date(2018, 3, 5),
             termination_date=date(2018, 5, 19),
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.MAXIMUM,
-            supervision_level_raw_text='LEVEL 4'
+            supervision_level_raw_text='LEVEL 4',
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO
         )
 
         supervision_contacts = [StateSupervisionContact.new_with_defaults(
@@ -442,14 +452,15 @@ class TestContactFrequencySufficient(unittest.TestCase):
             supervision_period_id=111,
             external_id='sp1',
             state_code='US_ID',
-            custodial_authority='US_ID_DOC',
+            custodial_authority_raw_text='US_ID_DOC',
             start_date=date(2018, 3, 5),
             termination_date=date(2018, 5, 19),
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.MAXIMUM,
-            supervision_level_raw_text='LEVEL 4'
+            supervision_level_raw_text='LEVEL 4',
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO
         )
 
         supervision_contacts = [
@@ -486,14 +497,15 @@ class TestContactFrequencySufficient(unittest.TestCase):
             supervision_period_id=111,
             external_id='sp1',
             state_code='US_ID',
-            custodial_authority='US_ID_DOC',
+            custodial_authority_raw_text='US_ID_DOC',
             start_date=date(2018, 3, 5),
             termination_date=date(2018, 5, 19),
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.HIGH,
-            supervision_level_raw_text='HIGH'
+            supervision_level_raw_text='HIGH',
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO
         )
 
         supervision_contacts = [
@@ -533,14 +545,15 @@ class TestContactFrequencySufficient(unittest.TestCase):
             supervision_period_id=111,
             external_id='sp1',
             state_code='US_ID',
-            custodial_authority='US_ID_DOC',
+            custodial_authority_raw_text='US_ID_DOC',
             start_date=date(2018, 3, 5),
             termination_date=date(2018, 5, 19),
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.HIGH,
-            supervision_level_raw_text='LEVEL 3'
+            supervision_level_raw_text='LEVEL 3',
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO
         )
 
         supervision_contacts = [
@@ -580,14 +593,15 @@ class TestContactFrequencySufficient(unittest.TestCase):
             supervision_period_id=111,
             external_id='sp1',
             state_code='US_ID',
-            custodial_authority='US_ID_DOC',
+            custodial_authority_raw_text='US_ID_DOC',
             start_date=date(2018, 3, 5),
             termination_date=date(2018, 5, 19),
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.MAXIMUM,
-            supervision_level_raw_text='LEVEL 4'
+            supervision_level_raw_text='LEVEL 4',
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO
         )
 
         supervision_contacts = [
@@ -620,14 +634,15 @@ class TestContactFrequencySufficient(unittest.TestCase):
             supervision_period_id=111,
             external_id='sp1',
             state_code='US_ID',
-            custodial_authority='US_ID_DOC',
+            custodial_authority_raw_text='US_ID_DOC',
             start_date=date(2018, 3, 5),
             termination_date=date(2018, 5, 19),
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.HIGH,
-            supervision_level_raw_text='HIGH'
+            supervision_level_raw_text='HIGH',
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO
         )
 
         supervision_contacts = [StateSupervisionContact.new_with_defaults(
@@ -657,14 +672,15 @@ class TestContactFrequencySufficient(unittest.TestCase):
             supervision_period_id=111,
             external_id='sp1',
             state_code='US_ID',
-            custodial_authority='US_ID_DOC',
+            custodial_authority_raw_text='US_ID_DOC',
             start_date=date(2018, 3, 5),
             termination_date=date(2018, 5, 19),
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.HIGH,
-            supervision_level_raw_text='LEVEL 3'
+            supervision_level_raw_text='LEVEL 3',
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO
         )
 
         supervision_contacts = [StateSupervisionContact.new_with_defaults(
@@ -694,14 +710,15 @@ class TestContactFrequencySufficient(unittest.TestCase):
             supervision_period_id=111,
             external_id='sp1',
             state_code='US_ID',
-            custodial_authority='US_ID_DOC',
+            custodial_authority_raw_text='US_ID_DOC',
             start_date=date(2018, 3, 5),
             termination_date=date(2018, 5, 19),
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.HIGH,
-            supervision_level_raw_text='HIGH'
+            supervision_level_raw_text='HIGH',
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO
         )
 
         # One contact within the time window, one outside.
@@ -741,14 +758,15 @@ class TestContactFrequencySufficient(unittest.TestCase):
             supervision_period_id=111,
             external_id='sp1',
             state_code='US_ID',
-            custodial_authority='US_ID_DOC',
+            custodial_authority_raw_text='US_ID_DOC',
             start_date=date(2018, 3, 5),
             termination_date=date(2018, 5, 19),
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.HIGH,
-            supervision_level_raw_text='LEVEL 3'
+            supervision_level_raw_text='LEVEL 3',
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO
         )
 
         supervision_contacts = [StateSupervisionContact.new_with_defaults(
@@ -778,14 +796,15 @@ class TestContactFrequencySufficient(unittest.TestCase):
             supervision_period_id=111,
             external_id='sp1',
             state_code='US_ID',
-            custodial_authority='US_ID_DOC',
+            custodial_authority_raw_text='US_ID_DOC',
             start_date=date(2018, 3, 5),
             termination_date=date(2018, 5, 19),
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.MEDIUM,
-            supervision_level_raw_text='MODERATE'
+            supervision_level_raw_text='MODERATE',
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO
         )
 
         supervision_contacts = [StateSupervisionContact.new_with_defaults(
@@ -815,14 +834,15 @@ class TestContactFrequencySufficient(unittest.TestCase):
             supervision_period_id=111,
             external_id='sp1',
             state_code='US_ID',
-            custodial_authority='US_ID_DOC',
+            custodial_authority_raw_text='US_ID_DOC',
             start_date=date(2018, 3, 5),
             termination_date=date(2018, 5, 19),
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.MEDIUM,
-            supervision_level_raw_text='LEVEL 2'
+            supervision_level_raw_text='LEVEL 2',
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO
         )
 
         supervision_contacts = [StateSupervisionContact.new_with_defaults(
@@ -852,14 +872,15 @@ class TestContactFrequencySufficient(unittest.TestCase):
             supervision_period_id=111,
             external_id='sp1',
             state_code='US_ID',
-            custodial_authority='US_ID_DOC',
+            custodial_authority_raw_text='US_ID_DOC',
             start_date=date(2018, 3, 5),
             termination_date=date(2018, 5, 19),
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.MEDIUM,
-            supervision_level_raw_text='MODERATE'
+            supervision_level_raw_text='MODERATE',
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO
         )
 
         # One contact within the time window, one outside.
@@ -899,14 +920,15 @@ class TestContactFrequencySufficient(unittest.TestCase):
             supervision_period_id=111,
             external_id='sp1',
             state_code='US_ID',
-            custodial_authority='US_ID_DOC',
+            custodial_authority_raw_text='US_ID_DOC',
             start_date=date(2018, 3, 5),
             termination_date=date(2018, 5, 19),
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.MEDIUM,
-            supervision_level_raw_text='LEVEL 2'
+            supervision_level_raw_text='LEVEL 2',
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO
         )
 
         supervision_contacts = [StateSupervisionContact.new_with_defaults(
@@ -936,12 +958,13 @@ class TestContactFrequencySufficient(unittest.TestCase):
             supervision_period_id=111,
             external_id='sp1',
             state_code='US_ID',
-            custodial_authority='US_ID_DOC',
+            custodial_authority_raw_text='US_ID_DOC',
             start_date=date(1999, 8, 13),  # This was a Friday
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.MEDIUM,
-            supervision_level_raw_text='MODERATE'
+            supervision_level_raw_text='MODERATE',
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO
         )
 
         supervision_contacts = []
@@ -966,12 +989,13 @@ class TestContactFrequencySufficient(unittest.TestCase):
             supervision_period_id=111,
             external_id='sp1',
             state_code='US_ID',
-            custodial_authority='US_ID_DOC',
+            custodial_authority_raw_text='US_ID_DOC',
             start_date=date(1999, 8, 13),  # This was a Friday
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.MEDIUM,
-            supervision_level_raw_text='LEVEL 2'
+            supervision_level_raw_text='LEVEL 2',
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO
         )
 
         supervision_contacts = []
@@ -996,14 +1020,15 @@ class TestContactFrequencySufficient(unittest.TestCase):
             supervision_period_id=111,
             external_id='sp1',
             state_code='US_ID',
-            custodial_authority='US_ID_DOC',
+            custodial_authority_raw_text='US_ID_DOC',
             start_date=date(2018, 3, 5),
             termination_date=date(2018, 5, 19),
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.MINIMUM,
-            supervision_level_raw_text='SO LOW'
+            supervision_level_raw_text='SO LOW',
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO
         )
 
         supervision_contacts = [StateSupervisionContact.new_with_defaults(
@@ -1033,14 +1058,15 @@ class TestContactFrequencySufficient(unittest.TestCase):
             supervision_period_id=111,
             external_id='sp1',
             state_code='US_ID',
-            custodial_authority='US_ID_DOC',
+            custodial_authority_raw_text='US_ID_DOC',
             start_date=date(2018, 3, 5),
             termination_date=date(2018, 5, 19),
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.MINIMUM,
-            supervision_level_raw_text='SO LOW'
+            supervision_level_raw_text='SO LOW',
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO
         )
 
         supervision_contacts = [StateSupervisionContact.new_with_defaults(
@@ -1070,14 +1096,15 @@ class TestContactFrequencySufficient(unittest.TestCase):
             supervision_period_id=111,
             external_id='sp1',
             state_code='US_ID',
-            custodial_authority='US_ID_DOC',
+            custodial_authority_raw_text='US_ID_DOC',
             start_date=date(2018, 3, 5),
             termination_date=date(2018, 5, 19),
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.MEDIUM,
-            supervision_level_raw_text='SO MODERATE'
+            supervision_level_raw_text='SO MODERATE',
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO
         )
 
         supervision_contacts = [StateSupervisionContact.new_with_defaults(
@@ -1107,14 +1134,15 @@ class TestContactFrequencySufficient(unittest.TestCase):
             supervision_period_id=111,
             external_id='sp1',
             state_code='US_ID',
-            custodial_authority='US_ID_DOC',
+            custodial_authority_raw_text='US_ID_DOC',
             start_date=date(2018, 3, 5),
             termination_date=date(2018, 5, 19),
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.MEDIUM,
-            supervision_level_raw_text='SO MODERATE'
+            supervision_level_raw_text='SO MODERATE',
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO
         )
 
         supervision_contacts = [StateSupervisionContact.new_with_defaults(
@@ -1144,14 +1172,15 @@ class TestContactFrequencySufficient(unittest.TestCase):
             supervision_period_id=111,
             external_id='sp1',
             state_code='US_ID',
-            custodial_authority='US_ID_DOC',
+            custodial_authority_raw_text='US_ID_DOC',
             start_date=date(2018, 3, 5),
             termination_date=date(2018, 5, 19),
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.HIGH,
-            supervision_level_raw_text='SO HIGH'
+            supervision_level_raw_text='SO HIGH',
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO
         )
 
         supervision_contacts = [
@@ -1191,14 +1220,15 @@ class TestContactFrequencySufficient(unittest.TestCase):
             supervision_period_id=111,
             external_id='sp1',
             state_code='US_ID',
-            custodial_authority='US_ID_DOC',
+            custodial_authority_raw_text='US_ID_DOC',
             start_date=date(2018, 3, 5),
             termination_date=date(2018, 5, 19),
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.HIGH,
-            supervision_level_raw_text='SO HIGH'
+            supervision_level_raw_text='SO HIGH',
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO
         )
 
         # One contact within in time period, and one after.
@@ -1239,14 +1269,15 @@ class TestContactFrequencySufficient(unittest.TestCase):
             supervision_period_id=111,
             external_id='sp1',
             state_code='US_ID',
-            custodial_authority='US_ID_DOC',
+            custodial_authority_raw_text='US_ID_DOC',
             start_date=date(2018, 3, 5),
             termination_date=date(2018, 5, 19),
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.HIGH,
-            supervision_level_raw_text='SO HIGH'
+            supervision_level_raw_text='SO HIGH',
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO
         )
         start_date = supervision_period.start_date
         us_id_supervision_compliance = UsIdSupervisionCaseCompliance(supervision_period=supervision_period,
@@ -1266,14 +1297,15 @@ class TestGuidelinesApplicableForCase(unittest.TestCase):
             supervision_period_id=111,
             external_id='sp1',
             state_code='US_ID',
-            custodial_authority='US_ID_DOC',
+            custodial_authority_raw_text='US_ID_DOC',
             start_date=date(2018, 3, 5),
             termination_date=date(2018, 5, 19),
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.MEDIUM,
-            supervision_level_raw_text='LEVEL 2'
+            supervision_level_raw_text='LEVEL 2',
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO
         )
 
         start_date = supervision_period.start_date
@@ -1292,13 +1324,14 @@ class TestGuidelinesApplicableForCase(unittest.TestCase):
             supervision_period_id=111,
             external_id='sp1',
             state_code='US_ID',
-            custodial_authority='US_ID_DOC',
+            custodial_authority_raw_text='US_ID_DOC',
             start_date=date(2018, 3, 5),
             termination_date=date(2018, 5, 19),
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
-            supervision_level=None
+            supervision_level=None,
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO
         )
 
         start_date = supervision_period.start_date
@@ -1317,14 +1350,15 @@ class TestGuidelinesApplicableForCase(unittest.TestCase):
             supervision_period_id=111,
             external_id='sp1',
             state_code='US_ID',
-            custodial_authority='US_ID_DOC',
+            custodial_authority_raw_text='US_ID_DOC',
             start_date=date(2018, 3, 5),
             termination_date=date(2018, 5, 19),
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.INVESTIGATION,
             supervision_level=StateSupervisionLevel.HIGH,
-            supervision_level_raw_text='LEVEL 3'
+            supervision_level_raw_text='LEVEL 3',
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO
         )
 
         start_date = supervision_period.start_date
@@ -1343,14 +1377,15 @@ class TestGuidelinesApplicableForCase(unittest.TestCase):
             supervision_period_id=111,
             external_id='sp1',
             state_code='US_ID',
-            custodial_authority='US_ID_DOC',
+            custodial_authority_raw_text='US_ID_DOC',
             start_date=date(2018, 3, 5),
             termination_date=date(2018, 5, 19),
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
             supervision_level=StateSupervisionLevel.HIGH,
-            supervision_level_raw_text='LEVEL 3'
+            supervision_level_raw_text='LEVEL 3',
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO
         )
 
         case_type = StateSupervisionCaseType.SERIOUS_MENTAL_ILLNESS
@@ -1369,14 +1404,15 @@ class TestGuidelinesApplicableForCase(unittest.TestCase):
             supervision_period_id=111,
             external_id='sp1',
             state_code='US_ID',
-            custodial_authority='US_ID_DOC',
+            custodial_authority_raw_text='US_ID_DOC',
             start_date=date(2018, 3, 5),
             termination_date=date(2018, 5, 19),
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.MEDIUM,
-            supervision_level_raw_text='SO MODERATE'
+            supervision_level_raw_text='SO MODERATE',
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO
         )
 
         case_type = StateSupervisionCaseType.SEX_OFFENSE
@@ -1397,14 +1433,15 @@ class TestGuidelinesApplicableForCase(unittest.TestCase):
             supervision_period_id=111,
             external_id='sp1',
             state_code='US_ID',
-            custodial_authority='US_ID_DOC',
+            custodial_authority_raw_text='US_ID_DOC',
             start_date=date(2018, 3, 5),
             termination_date=date(2018, 5, 19),
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.MAXIMUM,
-            supervision_level_raw_text='SO MAXIMUM'     # Fake string, not actually possible to have max sex offense.
+            supervision_level_raw_text='SO MAXIMUM',     # Fake string, not actually possible to have max sex offense.
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO
         )
 
         case_type = StateSupervisionCaseType.SEX_OFFENSE
@@ -1425,7 +1462,7 @@ class TestGuidelinesApplicableForCase(unittest.TestCase):
             supervision_period_id=111,
             external_id='sp1',
             state_code='US_ID',
-            custodial_authority='US_ID_DOC',
+            custodial_authority_raw_text='US_ID_DOC',
             start_date=date(2018, 3, 5),
             termination_date=date(2018, 5, 19),
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
@@ -1433,6 +1470,7 @@ class TestGuidelinesApplicableForCase(unittest.TestCase):
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.INVESTIGATION,
             supervision_level=StateSupervisionLevel.MAXIMUM,
             supervision_level_raw_text='SO MAXIMUM',  # Fake string, not actually possible to have max sex offense.
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO
         )
 
         case_type = StateSupervisionCaseType.SEX_OFFENSE
@@ -1460,7 +1498,8 @@ class TestReassessmentRequirementAreMet(unittest.TestCase):
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
-            supervision_level=StateSupervisionLevel.MINIMUM
+            supervision_level=StateSupervisionLevel.MINIMUM,
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO
         )
 
         assessment = StateAssessment.new_with_defaults(
@@ -1496,7 +1535,8 @@ class TestReassessmentRequirementAreMet(unittest.TestCase):
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
-            supervision_level=StateSupervisionLevel.MINIMUM
+            supervision_level=StateSupervisionLevel.MINIMUM,
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO
         )
 
         assessment = StateAssessment.new_with_defaults(
@@ -1533,6 +1573,7 @@ class TestReassessmentRequirementAreMet(unittest.TestCase):
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO
         )
 
         assessment = StateAssessment.new_with_defaults(

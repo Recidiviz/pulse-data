@@ -911,39 +911,45 @@ class TestCollapseTemporaryCustodyAndRevocationPeriods(unittest.TestCase):
             admission_date=date(2011, 1, 1),
             admission_reason=AdmissionReason.TEMPORARY_CUSTODY,
             release_date=date(2011, 2, 1),
-            release_reason=ReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY)
+            release_reason=ReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
+            status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO)
         incarceration_period_2 = StateIncarcerationPeriod.new_with_defaults(
             state_code=state_code,
             admission_date=date(2011, 2, 1),
             admission_reason=AdmissionReason.DUAL_REVOCATION,
             release_date=date(2011, 3, 1),
-            release_reason=ReleaseReason.CONDITIONAL_RELEASE)
+            release_reason=ReleaseReason.CONDITIONAL_RELEASE,
+            status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO)
 
         incarceration_period_3 = StateIncarcerationPeriod.new_with_defaults(
             state_code=state_code,
             admission_date=date(2012, 1, 1),
             admission_reason=AdmissionReason.TEMPORARY_CUSTODY,
             release_date=date(2012, 2, 1),
-            release_reason=ReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY)
+            release_reason=ReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
+            status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO)
         incarceration_period_4 = StateIncarcerationPeriod.new_with_defaults(
             state_code=state_code,
             admission_date=date(2012, 3, 1),
             admission_reason=AdmissionReason.DUAL_REVOCATION,
             release_date=date(2012, 4, 1),
-            release_reason=ReleaseReason.CONDITIONAL_RELEASE)
+            release_reason=ReleaseReason.CONDITIONAL_RELEASE,
+            status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO)
 
         incarceration_period_5 = StateIncarcerationPeriod.new_with_defaults(
             state_code=state_code,
             admission_date=date(2013, 1, 1),
             admission_reason=AdmissionReason.TEMPORARY_CUSTODY,
             release_date=date(2013, 2, 1),
-            release_reason=ReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY)
+            release_reason=ReleaseReason.RELEASED_FROM_TEMPORARY_CUSTODY,
+            status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO)
         incarceration_period_6 = StateIncarcerationPeriod.new_with_defaults(
             state_code=state_code,
             admission_date=date(2013, 2, 1),
             admission_reason=AdmissionReason.NEW_ADMISSION,
             release_date=date(2013, 3, 1),
-            release_reason=ReleaseReason.CONDITIONAL_RELEASE)
+            release_reason=ReleaseReason.CONDITIONAL_RELEASE,
+            status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO)
         incarceration_periods = [
             incarceration_period,
             incarceration_period_2,
@@ -985,13 +991,15 @@ class TestCollapseTemporaryCustodyAndRevocationPeriods(unittest.TestCase):
             admission_date=date(2011, 1, 1),
             admission_reason=AdmissionReason.NEW_ADMISSION,
             release_date=date(2011, 2, 1),
-            release_reason=ReleaseReason.CONDITIONAL_RELEASE)
+            release_reason=ReleaseReason.CONDITIONAL_RELEASE,
+            status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO)
         incarceration_period_2 = StateIncarcerationPeriod.new_with_defaults(
             state_code=state_code,
             admission_date=date(2011, 2, 1),
             admission_reason=AdmissionReason.DUAL_REVOCATION,
             release_date=date(2011, 3, 1),
-            release_reason=ReleaseReason.CONDITIONAL_RELEASE)
+            release_reason=ReleaseReason.CONDITIONAL_RELEASE,
+            status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO)
         incarceration_periods = [incarceration_period, incarceration_period_2]
 
         expected_incarceration_period = attr.evolve(incarceration_period)

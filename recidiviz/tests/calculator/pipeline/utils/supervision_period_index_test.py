@@ -21,7 +21,7 @@ from datetime import date
 
 from recidiviz.calculator.pipeline.utils.supervision_period_index import SupervisionPeriodIndex
 from recidiviz.common.constants.state.state_supervision_period import StateSupervisionPeriodAdmissionReason, \
-    StateSupervisionPeriodTerminationReason, StateSupervisionPeriodSupervisionType
+    StateSupervisionPeriodTerminationReason, StateSupervisionPeriodSupervisionType, StateSupervisionPeriodStatus
 from recidiviz.persistence.entity.state.entities import StateSupervisionPeriod
 
 
@@ -33,7 +33,8 @@ class TestSupervisionPeriodIndexSupervisionPeriodsConverter(unittest.TestCase):
             supervision_period_id=111,
             start_date=date(2000, 1, 1),
             termination_date=date(2000, 10, 1),
-            admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE
+            admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO
         )
 
         supervision_period_2 = StateSupervisionPeriod.new_with_defaults(
@@ -41,7 +42,8 @@ class TestSupervisionPeriodIndexSupervisionPeriodsConverter(unittest.TestCase):
             supervision_period_id=222,
             start_date=date(2000, 10, 1),
             termination_date=date(2003, 3, 1),
-            admission_reason=StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE
+            admission_reason=StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE,
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO
         )
 
         supervision_periods = [supervision_period_2, supervision_period_1]
@@ -58,12 +60,14 @@ class TestSupervisionPeriodIndexSupervisionPeriodsConverter(unittest.TestCase):
             supervision_period_id=111,
             start_date=date(2000, 1, 1),
             termination_date=date(2000, 1, 1),
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO
         )
 
         supervision_period_2 = StateSupervisionPeriod.new_with_defaults(
             state_code='US_XX',
             supervision_period_id=222,
             start_date=date(2000, 1, 1),
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO
         )
 
         supervision_periods = [supervision_period_2, supervision_period_1]
@@ -80,7 +84,8 @@ class TestSupervisionPeriodIndexSupervisionPeriodsConverter(unittest.TestCase):
             supervision_period_id=111,
             start_date=date(2000, 1, 1),
             termination_date=date(2000, 1, 1),
-            admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE
+            admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO
         )
 
         supervision_period_2 = StateSupervisionPeriod.new_with_defaults(
@@ -88,7 +93,8 @@ class TestSupervisionPeriodIndexSupervisionPeriodsConverter(unittest.TestCase):
             supervision_period_id=222,
             start_date=date(2000, 1, 1),
             termination_date=date(2000, 1, 1),
-            admission_reason=StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE
+            admission_reason=StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE,
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO
         )
 
         supervision_periods = [supervision_period_2, supervision_period_1]
@@ -105,7 +111,8 @@ class TestSupervisionPeriodIndexSupervisionPeriodsConverter(unittest.TestCase):
             supervision_period_id=111,
             start_date=date(2000, 1, 1),
             termination_date=date(2000, 1, 1),
-            admission_reason=StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE
+            admission_reason=StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE,
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO
         )
 
         supervision_period_2 = StateSupervisionPeriod.new_with_defaults(
@@ -113,7 +120,8 @@ class TestSupervisionPeriodIndexSupervisionPeriodsConverter(unittest.TestCase):
             supervision_period_id=222,
             start_date=date(2000, 1, 1),
             termination_date=date(2000, 1, 1),
-            admission_reason=StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE
+            admission_reason=StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE,
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO
         )
 
         supervision_periods = [supervision_period_2, supervision_period_1]
@@ -133,7 +141,8 @@ class TestSupervisionStartDatesByPeriodID(unittest.TestCase):
             supervision_period_id=111,
             start_date=date(2000, 1, 1),
             termination_date=date(2000, 10, 3),
-            admission_reason=StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE
+            admission_reason=StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE,
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO
         )
 
         supervision_period_2 = StateSupervisionPeriod.new_with_defaults(
@@ -141,7 +150,8 @@ class TestSupervisionStartDatesByPeriodID(unittest.TestCase):
             supervision_period_id=222,
             start_date=date(2000, 10, 3),
             termination_date=date(2000, 10, 11),
-            admission_reason=StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE
+            admission_reason=StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE,
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO
         )
 
         supervision_periods = [supervision_period_2, supervision_period_1]
@@ -162,7 +172,8 @@ class TestSupervisionStartDatesByPeriodID(unittest.TestCase):
             start_date=date(2000, 1, 1),
             termination_date=date(2000, 10, 3),
             admission_reason=StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE,
-            termination_reason=StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE
+            termination_reason=StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE,
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO
         )
 
         supervision_period_2 = StateSupervisionPeriod.new_with_defaults(
@@ -171,7 +182,8 @@ class TestSupervisionStartDatesByPeriodID(unittest.TestCase):
             start_date=date(2000, 10, 3),
             termination_date=date(2000, 10, 11),
             admission_reason=StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE,
-            termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE
+            termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO
         )
 
         supervision_period_3 = StateSupervisionPeriod.new_with_defaults(
@@ -180,7 +192,8 @@ class TestSupervisionStartDatesByPeriodID(unittest.TestCase):
             start_date=date(2020, 5, 1),
             termination_date=date(2020, 10, 3),
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
-            termination_reason=StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE
+            termination_reason=StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE,
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO
         )
 
         supervision_period_4 = StateSupervisionPeriod.new_with_defaults(
@@ -189,7 +202,8 @@ class TestSupervisionStartDatesByPeriodID(unittest.TestCase):
             start_date=date(2020, 10, 3),
             termination_date=date(2020, 10, 11),
             admission_reason=StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE,
-            termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE
+            termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO
         )
 
         supervision_periods = [supervision_period_2, supervision_period_4, supervision_period_3, supervision_period_1]
@@ -212,7 +226,8 @@ class TestSupervisionStartDatesByPeriodID(unittest.TestCase):
             start_date=date(2000, 1, 1),
             termination_date=date(2000, 10, 3),
             admission_reason=StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE,
-            termination_reason=StateSupervisionPeriodTerminationReason.ABSCONSION
+            termination_reason=StateSupervisionPeriodTerminationReason.ABSCONSION,
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO
         )
 
         supervision_period_2 = StateSupervisionPeriod.new_with_defaults(
@@ -221,7 +236,8 @@ class TestSupervisionStartDatesByPeriodID(unittest.TestCase):
             start_date=date(2000, 10, 3),
             termination_date=date(2000, 10, 11),
             admission_reason=StateSupervisionPeriodAdmissionReason.ABSCONSION,
-            termination_reason=StateSupervisionPeriodTerminationReason.RETURN_FROM_ABSCONSION
+            termination_reason=StateSupervisionPeriodTerminationReason.RETURN_FROM_ABSCONSION,
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO
         )
 
         supervision_period_3 = StateSupervisionPeriod.new_with_defaults(
@@ -230,7 +246,8 @@ class TestSupervisionStartDatesByPeriodID(unittest.TestCase):
             start_date=date(2000, 10, 12),
             termination_date=date(2001, 1, 3),
             admission_reason=StateSupervisionPeriodAdmissionReason.RETURN_FROM_ABSCONSION,
-            termination_reason=StateSupervisionPeriodTerminationReason.ABSCONSION
+            termination_reason=StateSupervisionPeriodTerminationReason.ABSCONSION,
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO
         )
 
         supervision_period_4 = StateSupervisionPeriod.new_with_defaults(
@@ -239,7 +256,8 @@ class TestSupervisionStartDatesByPeriodID(unittest.TestCase):
             start_date=date(2001, 1, 4),
             termination_date=date(2001, 10, 11),
             admission_reason=StateSupervisionPeriodAdmissionReason.ABSCONSION,
-            termination_reason=StateSupervisionPeriodTerminationReason.RETURN_FROM_ABSCONSION
+            termination_reason=StateSupervisionPeriodTerminationReason.RETURN_FROM_ABSCONSION,
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO
         )
 
         supervision_periods = [supervision_period_2, supervision_period_4, supervision_period_3, supervision_period_1]
@@ -262,7 +280,8 @@ class TestSupervisionStartDatesByPeriodID(unittest.TestCase):
             supervision_period_id=111,
             start_date=date(2000, 1, 1),
             termination_date=date(2000, 10, 3),
-            admission_reason=StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE
+            admission_reason=StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE,
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO
         )
 
         supervision_period_2 = StateSupervisionPeriod.new_with_defaults(
@@ -270,7 +289,8 @@ class TestSupervisionStartDatesByPeriodID(unittest.TestCase):
             supervision_period_id=222,
             start_date=date(2000, 10, 3),
             termination_date=date(2000, 10, 11),
-            admission_reason=StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE
+            admission_reason=StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE,
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO
         )
 
         supervision_periods = [supervision_period_2, supervision_period_1]
@@ -292,7 +312,8 @@ class TestSupervisionStartDatesByPeriodID(unittest.TestCase):
             termination_date=date(2000, 10, 3),
             admission_reason=StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE,
             termination_reason=StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE,
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.INVESTIGATION
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.INVESTIGATION,
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO
         )
 
         supervision_period_2 = StateSupervisionPeriod.new_with_defaults(
@@ -302,7 +323,8 @@ class TestSupervisionStartDatesByPeriodID(unittest.TestCase):
             termination_date=date(2000, 10, 11),
             admission_reason=StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE,
             termination_reason=StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE,
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.INVESTIGATION
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.INVESTIGATION,
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO
         )
 
         # Transferring from INVESTIGATION to PROBATION is a new official start of supervision
@@ -313,7 +335,8 @@ class TestSupervisionStartDatesByPeriodID(unittest.TestCase):
             termination_date=date(2001, 1, 3),
             admission_reason=StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE,
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO
         )
 
         supervision_periods = [supervision_period_2, supervision_period_3, supervision_period_1]
@@ -336,7 +359,8 @@ class TestSupervisionStartDatesByPeriodID(unittest.TestCase):
             termination_date=date(2000, 10, 3),
             admission_reason=StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE,
             termination_reason=StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE,
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.INFORMAL_PROBATION
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.INFORMAL_PROBATION,
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO
         )
 
         supervision_period_2 = StateSupervisionPeriod.new_with_defaults(
@@ -346,7 +370,8 @@ class TestSupervisionStartDatesByPeriodID(unittest.TestCase):
             termination_date=date(2000, 10, 11),
             admission_reason=StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE,
             termination_reason=StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE,
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.INFORMAL_PROBATION
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.INFORMAL_PROBATION,
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO
         )
 
         # Transferring from INFORMAL_PROBATION to PROBATION is a new official start of supervision
@@ -357,7 +382,8 @@ class TestSupervisionStartDatesByPeriodID(unittest.TestCase):
             termination_date=date(2001, 1, 3),
             admission_reason=StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE,
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO
         )
 
         supervision_periods = [supervision_period_2, supervision_period_3, supervision_period_1]
@@ -380,7 +406,8 @@ class TestSupervisionStartDatesByPeriodID(unittest.TestCase):
             termination_date=date(2000, 10, 3),
             admission_reason=StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE,
             termination_reason=StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE,
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.INVESTIGATION
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.INVESTIGATION,
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO
         )
 
         supervision_period_2 = StateSupervisionPeriod.new_with_defaults(
@@ -390,7 +417,8 @@ class TestSupervisionStartDatesByPeriodID(unittest.TestCase):
             termination_date=date(2000, 10, 11),
             admission_reason=StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE,
             termination_reason=StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE,
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.INFORMAL_PROBATION
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.INFORMAL_PROBATION,
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO
         )
 
         # Transferring from INVESTIGATION to INFORMAL_PROBATION is a new official start of supervision
@@ -401,7 +429,8 @@ class TestSupervisionStartDatesByPeriodID(unittest.TestCase):
             termination_date=date(2001, 1, 3),
             admission_reason=StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE,
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.INFORMAL_PROBATION
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.INFORMAL_PROBATION,
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO
         )
 
         supervision_periods = [supervision_period_2, supervision_period_3, supervision_period_1]
@@ -424,7 +453,8 @@ class TestSupervisionStartDatesByPeriodID(unittest.TestCase):
             termination_date=date(2000, 10, 3),
             admission_reason=StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE,
             termination_reason=StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE,
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.DUAL
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.DUAL,
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO
         )
 
         supervision_period_2 = StateSupervisionPeriod.new_with_defaults(
@@ -434,7 +464,8 @@ class TestSupervisionStartDatesByPeriodID(unittest.TestCase):
             termination_date=date(2000, 10, 11),
             admission_reason=StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE,
             termination_reason=StateSupervisionPeriodTerminationReason.TRANSFER_WITHIN_STATE,
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO
         )
 
         # Transferring from INVESTIGATION to INFORMAL_PROBATION is a new official start of supervision
@@ -445,7 +476,8 @@ class TestSupervisionStartDatesByPeriodID(unittest.TestCase):
             termination_date=date(2001, 1, 3),
             admission_reason=StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE,
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO
         )
 
         supervision_periods = [supervision_period_2, supervision_period_3, supervision_period_1]
@@ -469,7 +501,8 @@ class TestSupervisionPeriodsByTerminationMonth(unittest.TestCase):
             supervision_period_id=111,
             start_date=date(2000, 1, 1),
             termination_date=date(2000, 10, 3),
-            admission_reason=StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE
+            admission_reason=StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE,
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO
         )
 
         supervision_period_2 = StateSupervisionPeriod.new_with_defaults(
@@ -477,7 +510,8 @@ class TestSupervisionPeriodsByTerminationMonth(unittest.TestCase):
             supervision_period_id=222,
             start_date=date(2000, 10, 3),
             termination_date=date(2000, 10, 11),
-            admission_reason=StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE
+            admission_reason=StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE,
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO
         )
 
         supervision_periods = [supervision_period_2, supervision_period_1]
@@ -499,7 +533,8 @@ class TestSupervisionPeriodsByTerminationMonth(unittest.TestCase):
             supervision_period_id=111,
             start_date=date(2000, 1, 1),
             termination_date=date(2000, 5, 3),
-            admission_reason=StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE
+            admission_reason=StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE,
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO
         )
 
         supervision_period_2 = StateSupervisionPeriod.new_with_defaults(
@@ -507,7 +542,8 @@ class TestSupervisionPeriodsByTerminationMonth(unittest.TestCase):
             supervision_period_id=222,
             start_date=date(2000, 10, 3),
             termination_date=date(2000, 10, 11),
-            admission_reason=StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE
+            admission_reason=StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE,
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO
         )
 
         supervision_periods = [supervision_period_2, supervision_period_1]
@@ -529,7 +565,8 @@ class TestSupervisionPeriodsByTerminationMonth(unittest.TestCase):
             supervision_period_id=111,
             start_date=date(2000, 1, 1),
             termination_date=date(2000, 5, 3),
-            admission_reason=StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE
+            admission_reason=StateSupervisionPeriodAdmissionReason.CONDITIONAL_RELEASE,
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO
         )
 
         supervision_period_2 = StateSupervisionPeriod.new_with_defaults(
@@ -537,7 +574,8 @@ class TestSupervisionPeriodsByTerminationMonth(unittest.TestCase):
             supervision_period_id=222,
             start_date=date(2020, 10, 3),
             termination_date=date(2020, 10, 11),
-            admission_reason=StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE
+            admission_reason=StateSupervisionPeriodAdmissionReason.TRANSFER_WITHIN_STATE,
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO
         )
 
         supervision_periods = [supervision_period_2, supervision_period_1]
@@ -565,14 +603,16 @@ class TestGetMostRecentPreviousSupervisionPeriod(unittest.TestCase):
             supervision_period_id=111,
             start_date=date(2000, 1, 1),
             termination_date=date(2000, 10, 1),
-            admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE
+            admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO
         )
         supervision_period_2 = StateSupervisionPeriod.new_with_defaults(
             state_code='US_XX',
             supervision_period_id=111,
             start_date=date(2000, 10, 1),
             termination_date=date(2000, 11, 1),
-            admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE
+            admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO
         )
 
         supervision_periods = [supervision_period_1, supervision_period_2]
@@ -588,14 +628,16 @@ class TestGetMostRecentPreviousSupervisionPeriod(unittest.TestCase):
             supervision_period_id=111,
             start_date=date(2000, 1, 1),
             termination_date=date(2000, 10, 1),
-            admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE
+            admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO
         )
         supervision_period_2 = StateSupervisionPeriod.new_with_defaults(
             state_code='US_XX',
             supervision_period_id=111,
             start_date=date(2010, 10, 1),
             termination_date=date(2010, 11, 1),
-            admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE
+            admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO
         )
 
         supervision_periods = [supervision_period_1, supervision_period_2]
@@ -610,7 +652,8 @@ class TestGetMostRecentPreviousSupervisionPeriod(unittest.TestCase):
             supervision_period_id=111,
             start_date=date(2000, 1, 1),
             termination_date=date(2000, 10, 1),
-            admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE
+            admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO
         )
 
         supervision_periods = [supervision_period]
