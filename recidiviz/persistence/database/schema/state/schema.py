@@ -1264,6 +1264,10 @@ class StateSentenceGroup(StateBase,
                          _StateSentenceGroupSharedColumns):
     """Represents a StateSentenceGroup in the SQL schema"""
     __tablename__ = 'state_sentence_group'
+    __table_args__ = (
+        UniqueConstraint('state_code', 'external_id',
+                         name='sentence_group_external_ids_unique_within_state', deferrable=True, initially='DEFERRED'),
+    )
 
     sentence_group_id = Column(Integer, primary_key=True)
 
@@ -1808,6 +1812,11 @@ class StateIncarcerationIncident(StateBase,
                                  _StateIncarcerationIncidentSharedColumns):
     """Represents a StateIncarcerationIncident in the SQL schema"""
     __tablename__ = 'state_incarceration_incident'
+    __table_args__ = (
+        UniqueConstraint('state_code', 'external_id',
+                         name='incarceration_incident_external_ids_unique_within_state',
+                         deferrable=True, initially='DEFERRED'),
+    )
 
     incarceration_incident_id = Column(Integer, primary_key=True)
 
@@ -1878,6 +1887,11 @@ class StateIncarcerationIncidentOutcome(
         _StateIncarcerationIncidentOutcomeSharedColumns):
     """Represents a StateIncarcerationIncidentOutcome in the SQL schema"""
     __tablename__ = 'state_incarceration_incident_outcome'
+    __table_args__ = (
+        UniqueConstraint('state_code', 'external_id',
+                         name='incarceration_incident_outcome_external_ids_unique_within_state',
+                         deferrable=True, initially='DEFERRED'),
+    )
 
     incarceration_incident_outcome_id = Column(Integer, primary_key=True)
 

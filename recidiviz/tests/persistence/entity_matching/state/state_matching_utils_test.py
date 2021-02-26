@@ -16,7 +16,6 @@
 # =============================================================================
 """Tests for state_matching_utils.py"""
 
-import attr
 import pytest
 from more_itertools import one
 
@@ -585,7 +584,7 @@ class TestStateMatchingUtils(BaseStateMatchingUtilsTest):
         session = SessionFactory.for_schema_base(StateBase)
         session.add(person_1)
         session.add(person_2)
-        session.commit()
+        session.flush()
 
         # Act
         trees_to_merge = read_db_entity_trees_of_cls_to_merge(
