@@ -24,7 +24,10 @@ should be run on a rev where the to-be-rolled-back upgrade migration exists.
 
 Example usage (run from `pipenv shell`):
 
-python -m recidiviz.tools.migrations.downgrade_one_migration --database JAILS --project-id recidiviz-staging
+python -m recidiviz.tools.migrations.downgrade_one_migration \
+    --database STATE \
+    --project-id recidiviz-staging \
+    --ssl-cert-path ~/dev_state_data_certs
 """
 import argparse
 import logging
