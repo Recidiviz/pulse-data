@@ -26,7 +26,8 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_pa.us_pa_revocation_util
 from recidiviz.common.constants.state.state_incarceration import StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_period import StateIncarcerationPeriodAdmissionReason, \
     StateIncarcerationPeriodStatus, StateSpecializedPurposeForIncarceration, StateIncarcerationPeriodReleaseReason
-from recidiviz.common.constants.state.state_supervision_period import StateSupervisionPeriodSupervisionType
+from recidiviz.common.constants.state.state_supervision_period import StateSupervisionPeriodSupervisionType, \
+    StateSupervisionPeriodStatus
 from recidiviz.common.constants.state.state_supervision_violation_response import \
     StateSupervisionViolationResponseRevocationType, StateSupervisionViolationResponseDecision, \
     StateSupervisionViolationResponseType, StateSupervisionViolationResponseDecidingBodyType
@@ -41,7 +42,8 @@ class TestGetPreRevocationSupervisionType(unittest.TestCase):
     def test_us_pa_get_pre_revocation_supervision_type(self):
         revoked_supervision_period = StateSupervisionPeriod.new_with_defaults(
             state_code=STATE_CODE,
-            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO
         )
 
         supervision_type = us_pa_revocation_utils.us_pa_get_pre_revocation_supervision_type(revoked_supervision_period)
@@ -51,7 +53,8 @@ class TestGetPreRevocationSupervisionType(unittest.TestCase):
     def test_us_pa_get_pre_revocation_supervision_type_none(self):
         revoked_supervision_period = StateSupervisionPeriod.new_with_defaults(
             state_code=STATE_CODE,
-            supervision_period_supervision_type=None
+            supervision_period_supervision_type=None,
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO
         )
 
         supervision_type = us_pa_revocation_utils.us_pa_get_pre_revocation_supervision_type(revoked_supervision_period)
@@ -72,7 +75,8 @@ class TestIsRevocationAdmission(unittest.TestCase):
     def test_us_pa_is_revocation_admission_parole(self):
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             state_code=STATE_CODE,
-            admission_reason=StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION
+            admission_reason=StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
+            status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO
         )
 
         self.assertTrue(us_pa_revocation_utils.us_pa_is_revocation_admission(incarceration_period))
@@ -80,7 +84,8 @@ class TestIsRevocationAdmission(unittest.TestCase):
     def test_us_pa_is_revocation_admission_probation(self):
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             state_code=STATE_CODE,
-            admission_reason=StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION
+            admission_reason=StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
+            status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO
         )
 
         self.assertTrue(us_pa_revocation_utils.us_pa_is_revocation_admission(incarceration_period))
@@ -88,7 +93,8 @@ class TestIsRevocationAdmission(unittest.TestCase):
     def test_us_pa_is_revocation_admission_not_revocation(self):
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             state_code=STATE_CODE,
-            admission_reason=StateIncarcerationPeriodAdmissionReason.RETURN_FROM_SUPERVISION
+            admission_reason=StateIncarcerationPeriodAdmissionReason.RETURN_FROM_SUPERVISION,
+            status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO
         )
 
         self.assertFalse(us_pa_revocation_utils.us_pa_is_revocation_admission(incarceration_period))
@@ -100,13 +106,15 @@ class TestRevokedSupervisionPeriodsIfRevocationOccurred(unittest.TestCase):
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             state_code=STATE_CODE,
             admission_reason=StateIncarcerationPeriodAdmissionReason.PAROLE_REVOCATION,
-            admission_date=date(2020, 1, 1)
+            admission_date=date(2020, 1, 1),
+            status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO
         )
 
         revoked_supervision_period = StateSupervisionPeriod.new_with_defaults(
             state_code=STATE_CODE,
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
-            start_date=date(2019, 12, 1)
+            start_date=date(2019, 12, 1),
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO
         )
 
         admission_is_revocation, revoked_supervision_periods = \
@@ -121,13 +129,15 @@ class TestRevokedSupervisionPeriodsIfRevocationOccurred(unittest.TestCase):
         incarceration_period = StateIncarcerationPeriod.new_with_defaults(
             state_code=STATE_CODE,
             admission_reason=StateIncarcerationPeriodAdmissionReason.RETURN_FROM_SUPERVISION,
-            admission_date=date(2020, 1, 1)
+            admission_date=date(2020, 1, 1),
+            status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO
         )
 
         revoked_supervision_period = StateSupervisionPeriod.new_with_defaults(
             state_code=STATE_CODE,
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
-            start_date=date(2019, 12, 1)
+            start_date=date(2019, 12, 1),
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO
         )
 
         admission_is_revocation, revoked_supervision_periods = \

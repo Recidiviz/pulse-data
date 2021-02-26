@@ -27,7 +27,8 @@ from recidiviz.common.constants.state.state_case_type import StateSupervisionCas
 from recidiviz.common.constants.state.state_supervision_contact import StateSupervisionContactType, \
     StateSupervisionContactStatus
 from recidiviz.common.constants.state.state_supervision_period import StateSupervisionPeriodTerminationReason, \
-    StateSupervisionPeriodSupervisionType, StateSupervisionPeriodAdmissionReason, StateSupervisionLevel
+    StateSupervisionPeriodSupervisionType, StateSupervisionPeriodAdmissionReason, StateSupervisionLevel, \
+    StateSupervisionPeriodStatus
 from recidiviz.common.constants.states import StateCode
 from recidiviz.persistence.entity.state.entities import StateAssessment, StateSupervisionPeriod, StateSupervisionContact
 
@@ -74,6 +75,7 @@ class TestAssessmentsCompletedInComplianceMonth(unittest.TestCase):
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO
         )
 
         assessments = [
@@ -110,6 +112,7 @@ class TestFaceToFaceContactsInComplianceMonth(unittest.TestCase):
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO
         )
 
         contacts = []
@@ -136,7 +139,8 @@ class TestGuidelinesApplicableForCase(unittest.TestCase):
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.MEDIUM,
-            supervision_level_raw_text='LEVEL 2'
+            supervision_level_raw_text='LEVEL 2',
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO
         )
 
         us_nd_supervision_compliance = UsNdSupervisionCaseCompliance(supervision_period=supervision_period,
@@ -164,6 +168,7 @@ class TestContactFrequencySufficient(unittest.TestCase):
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO
         )
 
         supervision_contacts = [StateSupervisionContact.new_with_defaults(
@@ -198,6 +203,7 @@ class TestReassessmentRequirementAreMet(unittest.TestCase):
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO
         )
 
         assessment = StateAssessment.new_with_defaults(
@@ -233,6 +239,7 @@ class TestReassessmentRequirementAreMet(unittest.TestCase):
             admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO
         )
 
         assessment = StateAssessment.new_with_defaults(

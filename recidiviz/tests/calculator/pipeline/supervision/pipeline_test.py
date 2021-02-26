@@ -219,7 +219,8 @@ class TestSupervisionPipeline(unittest.TestCase):
             termination_date=date(2016, 12, 29),
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.MINIMUM,
-            person_id=fake_person_id
+            person_id=fake_person_id,
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO
         )
 
         supervision_sentence = schema.StateSupervisionSentence(
@@ -508,7 +509,8 @@ class TestSupervisionPipeline(unittest.TestCase):
             termination_date=date(2017, 1, 4),
             termination_reason=StateSupervisionPeriodTerminationReason.REVOCATION,
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
-            person_id=fake_person_id
+            person_id=fake_person_id,
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO
         )
 
         supervision_sentence = schema.StateSupervisionSentence(
@@ -725,7 +727,8 @@ class TestSupervisionPipeline(unittest.TestCase):
             termination_date=date(2015, 4, 21),
             termination_reason=StateSupervisionPeriodTerminationReason.REVOCATION,
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
-            person_id=fake_person_id
+            person_id=fake_person_id,
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO
         )
 
         initial_supervision_sentence = schema.StateSupervisionSentence(supervision_sentence_id=105109,
@@ -789,7 +792,8 @@ class TestSupervisionPipeline(unittest.TestCase):
             termination_date=date(2017, 2, 6),
             termination_reason=StateSupervisionPeriodTerminationReason.REVOCATION,
             supervision_type=StateSupervisionPeriodSupervisionType.PAROLE,
-            person_id=fake_person_id
+            person_id=fake_person_id,
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO
         )
 
         supervision_sentence = schema.StateSupervisionSentence(supervision_sentence_id=116412, state_code='US_XX',
@@ -1044,7 +1048,8 @@ class TestSupervisionPipeline(unittest.TestCase):
             termination_date=date(2017, 1, 4),
             termination_reason=StateSupervisionPeriodTerminationReason.REVOCATION,
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
-            person_id=fake_person_id
+            person_id=fake_person_id,
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO
         )
 
         supervision_sentence = schema.StateSupervisionSentence(
@@ -1289,7 +1294,8 @@ class TestSupervisionPipeline(unittest.TestCase):
             termination_date=date(2016, 12, 29),
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
-            person_id=fake_person_id_1
+            person_id=fake_person_id_1,
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO
         )
 
         supervision_sentence = schema.StateSupervisionSentence(
@@ -1545,11 +1551,11 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             start_date=date(2015, 3, 14),
             termination_date=date(2015, 5, 29),
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
-            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_type=StateSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.MEDIUM,
             supervision_level_raw_text='MEDM',
             supervision_site='10',
-            person=fake_person
+            person=fake_person,
         )
 
         supervision_sentence = StateSupervisionSentence.new_with_defaults(
@@ -1695,11 +1701,11 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             start_date=date(2015, 3, 14),
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             termination_date=date(2015, 5, 29),
-            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_type=StateSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.HIGH,
             supervision_level_raw_text='H',
             supervision_site='10',
-            person=fake_person
+            person=fake_person,
         )
 
         source_supervision_violation_response = StateSupervisionViolationResponse.new_with_defaults(
@@ -1871,11 +1877,12 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             start_date=date(2015, 3, 14),
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             termination_date=date(2015, 5, 29),
-            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_type=StateSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.HIGH,
             supervision_level_raw_text='H',
             supervision_site='10',
-            person=fake_person
+            person=fake_person,
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO
         )
 
         source_supervision_violation_response = StateSupervisionViolationResponse.new_with_defaults(
@@ -2073,11 +2080,11 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             start_date=date(2015, 3, 14),
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             termination_date=date(2015, 5, 29),
-            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_type=StateSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.INTERNAL_UNKNOWN,
             supervision_level_raw_text='XXXX',
             supervision_site='10',
-            person=fake_person
+            person=fake_person,
         )
 
         supervision_sentence = \
@@ -2181,11 +2188,11 @@ class TestClassifySupervisionTimeBuckets(unittest.TestCase):
             start_date=date(2015, 3, 14),
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             termination_date=date(2015, 5, 29),
-            supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_type=StateSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.INTERNAL_UNKNOWN,
             supervision_level_raw_text='XXXX',
             supervision_site='10',
-            person=fake_person
+            person=fake_person,
         )
 
         supervision_sentence = \

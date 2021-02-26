@@ -27,6 +27,7 @@ from recidiviz.common.constants.state.state_incarceration_period import \
     StateIncarcerationPeriodStatus, StateIncarcerationPeriodAdmissionReason, \
     StateIncarcerationPeriodReleaseReason
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
+from recidiviz.common.constants.state.state_supervision_period import StateSupervisionPeriodStatus
 from recidiviz.common.constants.state.state_supervision_violation_response \
     import StateSupervisionViolationResponseRevocationType
 from recidiviz.persistence.database.schema.state import schema
@@ -39,7 +40,7 @@ from recidiviz.persistence.entity.state.entities import StatePersonExternalId, \
     StateSupervisionPeriod
 from recidiviz.persistence.entity_matching.state.state_matching_utils import \
     default_merge_flat_fields
-from recidiviz.persistence.entity_matching.state.us_nd.\
+from recidiviz.persistence.entity_matching.state.us_nd. \
     us_nd_matching_utils import \
     merge_incomplete_periods, _update_temporary_holds_helper, \
     associate_revocation_svrs_with_ips, _merge_incarceration_periods_helper
@@ -150,7 +151,8 @@ class TestUsNdMatchingUtils(BaseStateMatchingUtilsTest):
             admission_reason_raw_text='PV',
             release_date=_DATE_2,
             release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER.value,
-            incarceration_type=StateIncarcerationType.EXTERNAL_UNKNOWN.value
+            incarceration_type=StateIncarcerationType.EXTERNAL_UNKNOWN.value,
+            status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO
         )
         ip_2 = schema.StateIncarcerationPeriod(
             state_code=_STATE_CODE,
@@ -160,6 +162,7 @@ class TestUsNdMatchingUtils(BaseStateMatchingUtilsTest):
             release_date=_DATE_3,
             release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER.value,
             incarceration_type=StateIncarcerationType.COUNTY_JAIL.value,
+            status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO
         )
         ip_3 = schema.StateIncarcerationPeriod(
             state_code=_STATE_CODE,
@@ -169,6 +172,7 @@ class TestUsNdMatchingUtils(BaseStateMatchingUtilsTest):
             release_date=_DATE_4,
             release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER.value,
             incarceration_type=StateIncarcerationType.STATE_PRISON.value,
+            status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO
         )
         ip_4 = schema.StateIncarcerationPeriod(
             state_code=_STATE_CODE,
@@ -178,6 +182,7 @@ class TestUsNdMatchingUtils(BaseStateMatchingUtilsTest):
             release_date=_DATE_5,
             release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER.value,
             incarceration_type=StateIncarcerationType.COUNTY_JAIL.value,
+            status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO
         )
 
         expected_ip = attr.evolve(
@@ -220,7 +225,8 @@ class TestUsNdMatchingUtils(BaseStateMatchingUtilsTest):
             admission_reason_raw_text='PV',
             release_date=date_1,
             release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER.value,
-            incarceration_type=StateIncarcerationType.EXTERNAL_UNKNOWN.value
+            incarceration_type=StateIncarcerationType.EXTERNAL_UNKNOWN.value,
+            status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO
         )
         ip_2 = schema.StateIncarcerationPeriod(
             state_code=_STATE_CODE,
@@ -230,6 +236,7 @@ class TestUsNdMatchingUtils(BaseStateMatchingUtilsTest):
             admission_reason_raw_text='ADM',
             release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER.value,
             incarceration_type=StateIncarcerationType.COUNTY_JAIL.value,
+            status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO
         )
         ip_3 = schema.StateIncarcerationPeriod(
             state_code=_STATE_CODE,
@@ -239,18 +246,19 @@ class TestUsNdMatchingUtils(BaseStateMatchingUtilsTest):
             release_date=date_3,
             release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER.value,
             incarceration_type=StateIncarcerationType.STATE_PRISON.value,
+            status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO
         )
 
         expected_ip = attr.evolve(
             self.to_entity(ip),
             admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
             release_reason=StateIncarcerationPeriodReleaseReason.
-            RELEASED_FROM_TEMPORARY_CUSTODY)
+                RELEASED_FROM_TEMPORARY_CUSTODY)
         expected_ip_2 = attr.evolve(
             self.to_entity(ip_2),
             admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
             release_reason=StateIncarcerationPeriodReleaseReason.
-            RELEASED_FROM_TEMPORARY_CUSTODY)
+                RELEASED_FROM_TEMPORARY_CUSTODY)
         expected_ip_3 = attr.evolve(
             self.to_entity(ip_3),
             admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION)
@@ -277,6 +285,7 @@ class TestUsNdMatchingUtils(BaseStateMatchingUtilsTest):
             release_date=_DATE_2,
             release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER.value,
             incarceration_type=StateIncarcerationType.COUNTY_JAIL.value,
+            status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO
         )
 
         ip_2 = schema.StateIncarcerationPeriod(
@@ -286,13 +295,14 @@ class TestUsNdMatchingUtils(BaseStateMatchingUtilsTest):
             release_date=_DATE_3,
             release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER.value,
             incarceration_type=StateIncarcerationType.STATE_PRISON.value,
+            status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO
         )
 
         expected_ip = attr.evolve(
             self.to_entity(ip),
             admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY,
             release_reason=StateIncarcerationPeriodReleaseReason.
-            RELEASED_FROM_TEMPORARY_CUSTODY)
+                RELEASED_FROM_TEMPORARY_CUSTODY)
         expected_ip_2 = attr.evolve(self.to_entity(ip_2))
         ips = [ip, ip_2]
         expected_ips = [expected_ip, expected_ip_2]
@@ -314,7 +324,8 @@ class TestUsNdMatchingUtils(BaseStateMatchingUtilsTest):
             admission_date=_DATE_1,
             admission_reason=StateIncarcerationPeriodAdmissionReason.TEMPORARY_CUSTODY.value,
             admission_reason_raw_text='PV',
-            incarceration_type=StateIncarcerationType.COUNTY_JAIL.value
+            incarceration_type=StateIncarcerationType.COUNTY_JAIL.value,
+            status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO
         )
 
         expected_ip = attr.evolve(self.to_entity(ip))
@@ -337,11 +348,13 @@ class TestUsNdMatchingUtils(BaseStateMatchingUtilsTest):
         ip_1 = StateIncarcerationPeriod.new_with_defaults(
             state_code=_STATE_CODE,
             admission_date=_DATE_1,
-            admission_reason=StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION)
+            admission_reason=StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
+            status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO)
         ip_2 = StateIncarcerationPeriod.new_with_defaults(
             state_code=_STATE_CODE,
             admission_date=_DATE_2,
-            admission_reason=StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION)
+            admission_reason=StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
+            status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO)
         placeholder_is = StateIncarcerationSentence.new_with_defaults(
             state_code=_STATE_CODE, incarceration_periods=[ip_1, ip_2],
             status=StateSentenceStatus.PRESENT_WITHOUT_INFO)
@@ -361,7 +374,8 @@ class TestUsNdMatchingUtils(BaseStateMatchingUtilsTest):
         placeholder_sv = StateSupervisionViolation.new_with_defaults(
             state_code=_STATE_CODE, supervision_violation_responses=[svr_1, svr_2, svr_3])
         placeholder_sp = StateSupervisionPeriod.new_with_defaults(
-            state_code=_STATE_CODE, supervision_violation_entries=[placeholder_sv])
+            state_code=_STATE_CODE, supervision_violation_entries=[placeholder_sv],
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO)
         placeholder_ss = StateSupervisionSentence.new_with_defaults(
             state_code=_STATE_CODE, supervision_periods=[placeholder_sp])
 
@@ -430,27 +444,30 @@ class TestUsNdMatchingUtils(BaseStateMatchingUtilsTest):
             state_code=_STATE_CODE,
             response_date=_DATE_1,
             revocation_type=StateSupervisionViolationResponseRevocationType.
-            REINCARCERATION)
+                REINCARCERATION)
         svr_2 = StateSupervisionViolationResponse.new_with_defaults(
             state_code=_STATE_CODE,
             response_date=_DATE_3,
             revocation_type=StateSupervisionViolationResponseRevocationType.
-            RETURN_TO_SUPERVISION)
+                RETURN_TO_SUPERVISION)
         placeholder_sv = StateSupervisionViolation.new_with_defaults(
             state_code=_STATE_CODE, supervision_violation_responses=[svr_1, svr_2])
         placeholder_sp = StateSupervisionPeriod.new_with_defaults(
-            state_code=_STATE_CODE, supervision_violation_entries=[placeholder_sv])
+            state_code=_STATE_CODE, supervision_violation_entries=[placeholder_sv],
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO)
         placeholder_ss = StateSupervisionSentence.new_with_defaults(
             state_code=_STATE_CODE, supervision_periods=[placeholder_sp])
 
         ip_1 = StateIncarcerationPeriod.new_with_defaults(
             state_code=_STATE_CODE,
             admission_date=_DATE_2,
-            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION)
+            admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION,
+            status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO)
         ip_2 = StateIncarcerationPeriod.new_with_defaults(
             state_code=_STATE_CODE,
             admission_date=_DATE_4,
-            admission_reason=StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION)
+            admission_reason=StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
+            status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO)
         placeholder_is = StateIncarcerationSentence.new_with_defaults(
             state_code=_STATE_CODE, incarceration_periods=[ip_1, ip_2],
             status=StateSentenceStatus.PRESENT_WITHOUT_INFO)
@@ -505,27 +522,30 @@ class TestUsNdMatchingUtils(BaseStateMatchingUtilsTest):
             state_code=_STATE_CODE,
             response_date=_DATE_2 + datetime.timedelta(days=1),
             revocation_type=StateSupervisionViolationResponseRevocationType.
-            REINCARCERATION)
+                REINCARCERATION)
         svr_2 = StateSupervisionViolationResponse.new_with_defaults(
             state_code=_STATE_CODE,
             response_date=_DATE_4 + datetime.timedelta(days=100),
             revocation_type=StateSupervisionViolationResponseRevocationType.
-            RETURN_TO_SUPERVISION)
+                RETURN_TO_SUPERVISION)
         placeholder_sv = StateSupervisionViolation.new_with_defaults(
             state_code=_STATE_CODE, supervision_violation_responses=[svr_1, svr_2])
         placeholder_sp = StateSupervisionPeriod.new_with_defaults(
-            state_code=_STATE_CODE, supervision_violation_entries=[placeholder_sv])
+            state_code=_STATE_CODE, supervision_violation_entries=[placeholder_sv],
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO)
         placeholder_ss = StateSupervisionSentence.new_with_defaults(
             state_code=_STATE_CODE, supervision_periods=[placeholder_sp])
 
         ip_1 = StateIncarcerationPeriod.new_with_defaults(
             state_code=_STATE_CODE,
             admission_date=_DATE_2,
-            admission_reason=StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION)
+            admission_reason=StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
+            status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO)
         ip_2 = StateIncarcerationPeriod.new_with_defaults(
             state_code=_STATE_CODE,
             admission_date=_DATE_4,
-            admission_reason=StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION)
+            admission_reason=StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
+            status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO)
         placeholder_is = StateIncarcerationSentence.new_with_defaults(
             state_code=_STATE_CODE, incarceration_periods=[ip_1, ip_2],
             status=StateSentenceStatus.PRESENT_WITHOUT_INFO)
@@ -580,22 +600,25 @@ class TestUsNdMatchingUtils(BaseStateMatchingUtilsTest):
             state_code=_STATE_CODE,
             response_date=_DATE_1,
             revocation_type=StateSupervisionViolationResponseRevocationType.
-            REINCARCERATION)
+                REINCARCERATION)
         placeholder_sv = StateSupervisionViolation.new_with_defaults(
             state_code=_STATE_CODE, supervision_violation_responses=[svr_1])
         placeholder_sp = StateSupervisionPeriod.new_with_defaults(
-            state_code=_STATE_CODE, supervision_violation_entries=[placeholder_sv])
+            state_code=_STATE_CODE, supervision_violation_entries=[placeholder_sv],
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO)
         placeholder_ss = StateSupervisionSentence.new_with_defaults(
             state_code=_STATE_CODE, supervision_periods=[placeholder_sp])
 
         ip_1 = StateIncarcerationPeriod.new_with_defaults(
             state_code=_STATE_CODE,
             admission_date=_DATE_2,
-            admission_reason=StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION)
+            admission_reason=StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
+            status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO)
         ip_2 = StateIncarcerationPeriod.new_with_defaults(
             state_code=_STATE_CODE,
             admission_date=_DATE_4,
-            admission_reason=StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION)
+            admission_reason=StateIncarcerationPeriodAdmissionReason.PROBATION_REVOCATION,
+            status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO)
         placeholder_is = StateIncarcerationSentence.new_with_defaults(
             state_code=_STATE_CODE, incarceration_periods=[ip_1, ip_2],
             status=StateSentenceStatus.PRESENT_WITHOUT_INFO)
@@ -680,7 +703,8 @@ class TestUsNdMatchingUtils(BaseStateMatchingUtilsTest):
             status=StateIncarcerationPeriodStatus.NOT_IN_CUSTODY,
             facility=_FACILITY_3, release_date=_DATE_5,
             release_reason=StateIncarcerationPeriodReleaseReason.TRANSFER)
-        placeholder_period = schema.StateIncarcerationPeriod(state_code=_STATE_CODE)
+        placeholder_period = schema.StateIncarcerationPeriod(state_code=_STATE_CODE,
+                                                             status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO)
 
         expected_merged_incarceration_period_1 = \
             schema.StateIncarcerationPeriod(
@@ -848,7 +872,8 @@ class TestUsNdMatchingUtils(BaseStateMatchingUtilsTest):
             facility=_FACILITY, admission_date=_DATE_1,
             admission_reason=StateIncarcerationPeriodAdmissionReason.NEW_ADMISSION)
         placeholder_incarceration_period = \
-            schema.StateIncarcerationPeriod(state_code=_STATE_CODE)
+            schema.StateIncarcerationPeriod(state_code=_STATE_CODE,
+                                            status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO)
         ingested_incarceration_periods = [
             incarceration_period, placeholder_incarceration_period]
 

@@ -75,7 +75,8 @@ class TestUsMoMatchingUtils(BaseStateMatchingUtilsTest):
             supervision_violation_responses=[svr_2])
         sp = schema.StateSupervisionPeriod(
             state_code=_STATE_CODE,
-            supervision_violation_entries=[sv, sv_2])
+            supervision_violation_entries=[sv, sv_2],
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO)
         ss = schema.StateSupervisionSentence(state_code=_STATE_CODE, supervision_periods=[sp])
         sg = schema.StateSentenceGroup(state_code=_STATE_CODE,
                                        status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
@@ -93,7 +94,8 @@ class TestUsMoMatchingUtils(BaseStateMatchingUtilsTest):
             expected_sv,
             supervision_violation_responses=[expected_svr_2])
         expected_sp = StateSupervisionPeriod.new_with_defaults(
-            state_code=_STATE_CODE, supervision_violation_entries=[expected_sv, expected_sv_2])
+            state_code=_STATE_CODE, supervision_violation_entries=[expected_sv, expected_sv_2],
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO)
         expected_ss = StateSupervisionSentence.new_with_defaults(
             state_code=_STATE_CODE, supervision_periods=[expected_sp])
         expected_sg = StateSentenceGroup.new_with_defaults(
@@ -110,7 +112,8 @@ class TestUsMoMatchingUtils(BaseStateMatchingUtilsTest):
         with pytest.raises(ValueError) as e:
             sv = schema.StateSupervisionViolation(external_id='bad_id')
             sp = schema.StateSupervisionPeriod(
-                supervision_violation_entries=[sv])
+                supervision_violation_entries=[sv],
+                status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO)
             ss = schema.StateSupervisionSentence(supervision_periods=[sp])
             sg = schema.StateSentenceGroup(supervision_sentences=[ss])
             p = schema.StatePerson(sentence_groups=[sg])

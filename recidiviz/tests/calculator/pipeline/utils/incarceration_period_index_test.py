@@ -45,7 +45,8 @@ class TestIndexIncarcerationPeriodsByAdmissionMonth(unittest.TestCase):
                 state_code='US_XX',
                 admission_date=date(2018, 6, 8),
                 admission_reason=AdmissionReason.NEW_ADMISSION,
-                release_date=date(2018, 12, 21)
+                release_date=date(2018, 12, 21),
+                status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO
             )
 
         incarceration_period_index = IncarcerationPeriodIndex([incarceration_period])
@@ -138,7 +139,8 @@ class TestMonthsExcludedFromSupervisionPopulation(unittest.TestCase):
                 admission_date=date(2018, 6, 8),
                 admission_reason=AdmissionReason.NEW_ADMISSION,
                 release_date=date(2018, 12, 21),
-                custodial_authority=StateCustodialAuthority.STATE_PRISON
+                custodial_authority=StateCustodialAuthority.STATE_PRISON,
+                status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO
             )
 
         incarceration_period_index = IncarcerationPeriodIndex([incarceration_period])
@@ -158,7 +160,8 @@ class TestMonthsExcludedFromSupervisionPopulation(unittest.TestCase):
                 admission_date=date(2018, 8, 1),
                 admission_reason=AdmissionReason.NEW_ADMISSION,
                 release_date=date(2018, 12, 21),
-                custodial_authority=StateCustodialAuthority.STATE_PRISON
+                custodial_authority=StateCustodialAuthority.STATE_PRISON,
+                status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO
             )
 
         incarceration_period_index = IncarcerationPeriodIndex([incarceration_period])
@@ -178,7 +181,8 @@ class TestMonthsExcludedFromSupervisionPopulation(unittest.TestCase):
                 admission_date=date(2018, 8, 15),
                 admission_reason=AdmissionReason.NEW_ADMISSION,
                 release_date=date(2018, 10, 31),
-                custodial_authority=StateCustodialAuthority.STATE_PRISON
+                custodial_authority=StateCustodialAuthority.STATE_PRISON,
+                status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO
             )
 
         incarceration_period_index = IncarcerationPeriodIndex([incarceration_period])
@@ -199,7 +203,8 @@ class TestMonthsExcludedFromSupervisionPopulation(unittest.TestCase):
                 admission_date=date(2013, 3, 1),
                 admission_reason=AdmissionReason.NEW_ADMISSION,
                 release_date=date(2013, 3, 30),
-                custodial_authority=StateCustodialAuthority.STATE_PRISON
+                custodial_authority=StateCustodialAuthority.STATE_PRISON,
+                status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO
             )
 
         incarceration_period_index = IncarcerationPeriodIndex([incarceration_period])
@@ -218,7 +223,8 @@ class TestMonthsExcludedFromSupervisionPopulation(unittest.TestCase):
                 admission_date=date(1996, 2, 1),
                 admission_reason=AdmissionReason.NEW_ADMISSION,
                 release_date=date(1996, 2, 28),
-                custodial_authority=StateCustodialAuthority.STATE_PRISON
+                custodial_authority=StateCustodialAuthority.STATE_PRISON,
+                status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO
             )
 
         incarceration_period_index = IncarcerationPeriodIndex([incarceration_period])
@@ -234,7 +240,8 @@ class TestMonthsExcludedFromSupervisionPopulation(unittest.TestCase):
                 admission_date=date(2005, 3, 1),
                 admission_reason=AdmissionReason.NEW_ADMISSION,
                 release_date=date(2005, 3, 15),
-                custodial_authority=StateCustodialAuthority.STATE_PRISON
+                custodial_authority=StateCustodialAuthority.STATE_PRISON,
+                status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO
             )
 
         incarceration_period_index = IncarcerationPeriodIndex([incarceration_period])
@@ -249,7 +256,8 @@ class TestMonthsExcludedFromSupervisionPopulation(unittest.TestCase):
                 admission_date=date(2005, 3, 15),
                 admission_reason=AdmissionReason.TRANSFER,
                 release_date=date(2005, 4, 2),
-                custodial_authority=StateCustodialAuthority.STATE_PRISON
+                custodial_authority=StateCustodialAuthority.STATE_PRISON,
+                status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO
             )
 
         incarceration_period_index = IncarcerationPeriodIndex([incarceration_period, incarceration_period_2])
@@ -267,7 +275,8 @@ class TestMonthsExcludedFromSupervisionPopulation(unittest.TestCase):
                 admission_date=date(2005, 3, 1),
                 admission_reason=AdmissionReason.NEW_ADMISSION,
                 release_date=date(2005, 3, 15),
-                custodial_authority=StateCustodialAuthority.STATE_PRISON
+                custodial_authority=StateCustodialAuthority.STATE_PRISON,
+                status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO
             )
 
         incarceration_period_index = IncarcerationPeriodIndex([incarceration_period])
@@ -282,7 +291,8 @@ class TestMonthsExcludedFromSupervisionPopulation(unittest.TestCase):
                 admission_date=date(2005, 3, 15),
                 admission_reason=AdmissionReason.TRANSFER,
                 release_date=date(2005, 3, 20),
-                custodial_authority=StateCustodialAuthority.STATE_PRISON
+                custodial_authority=StateCustodialAuthority.STATE_PRISON,
+                status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO
             )
 
         incarceration_period_index = IncarcerationPeriodIndex([incarceration_period, incarceration_period_2])
@@ -306,7 +316,8 @@ class TestIndexMonthToOverlappingIPsNotUnderSupervisionAuthority(unittest.TestCa
                 admission_reason=AdmissionReason.NEW_ADMISSION,
                 release_date=date(2008, 3, 28),
                 release_reason=ReleaseReason.SENTENCE_SERVED,
-                custodial_authority=StateCustodialAuthority.STATE_PRISON
+                custodial_authority=StateCustodialAuthority.STATE_PRISON,
+                status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO
             )
 
         index = IncarcerationPeriodIndex([incarceration_period])
@@ -334,7 +345,8 @@ class TestIndexMonthToOverlappingIPsNotUnderSupervisionAuthority(unittest.TestCa
                 admission_reason=AdmissionReason.NEW_ADMISSION,
                 release_date=date(2008, 2, 1),
                 release_reason=ReleaseReason.SENTENCE_SERVED,
-                custodial_authority=StateCustodialAuthority.STATE_PRISON
+                custodial_authority=StateCustodialAuthority.STATE_PRISON,
+                status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO
             )
 
         index = IncarcerationPeriodIndex([incarceration_period])
@@ -405,7 +417,8 @@ class TestIndexMonthToOverlappingIPsNotUnderSupervisionAuthority(unittest.TestCa
                 admission_reason=AdmissionReason.NEW_ADMISSION,
                 release_date=date(2008, 2, 2),
                 release_reason=ReleaseReason.SENTENCE_SERVED,
-                custodial_authority=StateCustodialAuthority.STATE_PRISON
+                custodial_authority=StateCustodialAuthority.STATE_PRISON,
+                status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO
             )
 
         incarceration_period_2 = \
@@ -417,7 +430,8 @@ class TestIndexMonthToOverlappingIPsNotUnderSupervisionAuthority(unittest.TestCa
                 admission_reason=AdmissionReason.NEW_ADMISSION,
                 release_date=date(2008, 4, 5),
                 release_reason=ReleaseReason.SENTENCE_SERVED,
-                custodial_authority=StateCustodialAuthority.STATE_PRISON
+                custodial_authority=StateCustodialAuthority.STATE_PRISON,
+                status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO
             )
 
         index = IncarcerationPeriodIndex([incarceration_period, incarceration_period_2])
@@ -446,7 +460,8 @@ class TestIndexMonthToOverlappingIPsNotUnderSupervisionAuthority(unittest.TestCa
                 admission_reason=AdmissionReason.NEW_ADMISSION,
                 release_date=date(2008, 2, 5),
                 release_reason=ReleaseReason.SENTENCE_SERVED,
-                custodial_authority=StateCustodialAuthority.STATE_PRISON
+                custodial_authority=StateCustodialAuthority.STATE_PRISON,
+                status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO
             )
 
         index = IncarcerationPeriodIndex([incarceration_period])
@@ -469,7 +484,8 @@ class TestIndexMonthToOverlappingIPsNotUnderSupervisionAuthority(unittest.TestCa
                 admission_reason=AdmissionReason.NEW_ADMISSION,
                 release_date=date(2008, 2, 2),
                 release_reason=ReleaseReason.SENTENCE_SERVED,
-                custodial_authority=StateCustodialAuthority.STATE_PRISON
+                custodial_authority=StateCustodialAuthority.STATE_PRISON,
+                status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO
             )
 
         # This period has a supervision custodial authority
@@ -482,7 +498,8 @@ class TestIndexMonthToOverlappingIPsNotUnderSupervisionAuthority(unittest.TestCa
                 admission_reason=AdmissionReason.NEW_ADMISSION,
                 release_date=date(2008, 4, 5),
                 release_reason=ReleaseReason.SENTENCE_SERVED,
-                custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY
+                custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
+                status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO
             )
 
         index = IncarcerationPeriodIndex([incarceration_period, incarceration_period_2])
@@ -512,7 +529,8 @@ class TesIsExcludedFromSupervisionPopulationForRange(unittest.TestCase):
                 admission_date=date(2007, 2, 5),
                 admission_reason=AdmissionReason.NEW_ADMISSION,
                 release_date=date(2007, 2, 8),
-                release_reason=ReleaseReason.TRANSFER
+                release_reason=ReleaseReason.TRANSFER,
+                status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO
             )
 
         incarceration_period_partial_month_2 = \
@@ -523,7 +541,8 @@ class TesIsExcludedFromSupervisionPopulationForRange(unittest.TestCase):
                 admission_date=date(2007, 2, 8),
                 admission_reason=AdmissionReason.TRANSFER,
                 release_date=date(2007, 2, 15),
-                release_reason=ReleaseReason.TRANSFER
+                release_reason=ReleaseReason.TRANSFER,
+                status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO
             )
 
         incarceration_period_partial_month_3 = \
@@ -534,7 +553,8 @@ class TesIsExcludedFromSupervisionPopulationForRange(unittest.TestCase):
                 admission_date=date(2007, 2, 15),
                 admission_reason=AdmissionReason.TRANSFER,
                 release_date=date(2007, 2, 20),
-                release_reason=ReleaseReason.SENTENCE_SERVED
+                release_reason=ReleaseReason.SENTENCE_SERVED,
+                status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO
             )
 
         incarceration_period_mulitple_months = \
@@ -955,7 +975,8 @@ class TestIncarcerationPeriodsNotUnderSupervisionAuthority(unittest.TestCase):
                 admission_reason=AdmissionReason.NEW_ADMISSION,
                 release_date=date(2008, 2, 2),
                 release_reason=ReleaseReason.SENTENCE_SERVED,
-                custodial_authority=StateCustodialAuthority.STATE_PRISON
+                custodial_authority=StateCustodialAuthority.STATE_PRISON,
+                status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO
             )
 
         # This period has a supervision custodial authority
@@ -968,7 +989,8 @@ class TestIncarcerationPeriodsNotUnderSupervisionAuthority(unittest.TestCase):
                 admission_reason=AdmissionReason.NEW_ADMISSION,
                 release_date=date(2008, 4, 5),
                 release_reason=ReleaseReason.SENTENCE_SERVED,
-                custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY
+                custodial_authority=StateCustodialAuthority.SUPERVISION_AUTHORITY,
+                status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO
             )
 
         index = IncarcerationPeriodIndex([incarceration_period, incarceration_period_2])
@@ -986,6 +1008,7 @@ class TestIncarcerationPeriodsNotUnderSupervisionAuthority(unittest.TestCase):
                 admission_reason=AdmissionReason.NEW_ADMISSION,
                 release_date=date(2008, 2, 2),
                 release_reason=ReleaseReason.SENTENCE_SERVED,
+                status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO
             )
 
         all_custodial_authority_values = [None] + list(StateCustodialAuthority)
