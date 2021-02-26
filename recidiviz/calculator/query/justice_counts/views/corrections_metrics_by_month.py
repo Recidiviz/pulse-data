@@ -138,8 +138,8 @@ METRICS = [
 ]
 
 class CorrectionsMetricsByMonthBigQueryViewCollector(BigQueryViewCollector[SimpleBigQueryViewBuilder]):
-    def collect_view_builders(self) -> List[SimpleBigQueryViewBuilder]:
-        builders: List[SimpleBigQueryViewBuilder] = []
+    def __init__(self) -> None:
+        self.metric_builders: List[SimpleBigQueryViewBuilder] = []
         unified_query_select_clauses = []
         for metric in METRICS:
             view_builder = metric_by_month.CalculatedMetricByMonthViewBuilder(
@@ -147,15 +147,17 @@ class CorrectionsMetricsByMonthBigQueryViewCollector(BigQueryViewCollector[Simpl
                 metric_to_calculate=metric)
             unified_query_select_clauses.append(
                 f"SELECT * FROM `{{project_id}}.{{calculation_dataset}}.{view_builder.view_id}_materialized`")
-            builders.append(view_builder)
+            self.metric_builders.append(view_builder)
 
-        builders.append(SimpleBigQueryViewBuilder(
+        self.unified_builder = SimpleBigQueryViewBuilder(
             dataset_id=dataset_config.JUSTICE_COUNTS_DASHBOARD_DATASET,
             view_id="unified_corrections_metrics_by_month",
             view_query_template=' UNION ALL '.join(unified_query_select_clauses) + ';',
             description="Unified view of all calculated corrections metrics by month",
-            calculation_dataset=dataset_config.JUSTICE_COUNTS_CORRECTIONS_DATASET))
-        return builders
+            calculation_dataset=dataset_config.JUSTICE_COUNTS_CORRECTIONS_DATASET)
+
+    def collect_view_builders(self) -> List[SimpleBigQueryViewBuilder]:
+        return self.metric_builders + [self.unified_builder]
 
 
 if __name__ == '__main__':

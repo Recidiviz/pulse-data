@@ -114,4 +114,6 @@ with models.DAG(dag_id="{}_calculation_pipeline_dag".format(project_id),
         if state_code in CASE_TRIAGE_STATES:
             calculation_pipeline >> case_triage_export
 
+    # These exports don't depend on pipeline output.
     _ = trigger_export_operator('INGEST_METADATA')
+    _ = trigger_export_operator('JUSTICE_COUNTS')
