@@ -196,10 +196,7 @@ class TestUsPaGetViolationTypeSubstringsForViolation(unittest.TestCase):
 
     def test_us_pa_get_violation_type_subtype_strings_for_violation_no_types(self) -> None:
         # Arrange
-        violation = StateSupervisionViolation.new_with_defaults(
-            state_code=_STATE_CODE,
-            supervision_violation_types=None
-        )
+        violation = StateSupervisionViolation.new_with_defaults(state_code=_STATE_CODE)
 
         # Act
         type_subtype_strings = us_pa_get_violation_type_subtype_strings_for_violation(violation)

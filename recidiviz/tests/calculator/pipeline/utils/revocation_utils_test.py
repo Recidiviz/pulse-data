@@ -283,7 +283,6 @@ class TestGetRevocationDetails(unittest.TestCase):
             state_code='US_ND',
             supervision_violation_response_id=_DEFAULT_SSVR_ID,
             response_date=date(2018, 4, 23),
-            supervision_violation_response_decisions=None,
             revocation_type=None,
             supervision_violation=supervision_violation
         )

@@ -27,6 +27,7 @@ from recidiviz.common.constants.state.state_incarceration import \
     StateIncarcerationType
 from recidiviz.common.constants.state.state_incarceration_period import \
     StateIncarcerationPeriodStatus
+from recidiviz.common.constants.state.state_program_assignment import StateProgramAssignmentParticipationStatus
 from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.state.state_supervision_period import \
     StateSupervisionPeriodStatus
@@ -265,6 +266,7 @@ def generate_early_discharge(person, **kwargs) -> schema.StateEarlyDischarge:
 def generate_program_assignment(person, **kwargs) -> schema.StateProgramAssignment:
     args = {
         'state_code': _STATE_CODE,
+        'participation_status': StateProgramAssignmentParticipationStatus.PRESENT_WITHOUT_INFO.value,
     }
     args.update(kwargs)
     return schema.StateProgramAssignment(person=person, **args)

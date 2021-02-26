@@ -351,7 +351,8 @@ class TestMoEntityMatching(BaseStateEntityMatcherTest):
             state_code=_US_MO,
             supervision_periods=[
                 supervision_period_update,
-                new_supervision_period])
+                new_supervision_period],
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO)
         sentence_group = StateSentenceGroup.new_with_defaults(
             external_id=db_sentence_group.external_id,
             state_code=_US_MO,
@@ -449,7 +450,8 @@ class TestMoEntityMatching(BaseStateEntityMatcherTest):
 
         placeholder_supervision_sentence = StateSupervisionSentence.new_with_defaults(
             state_code=_US_MO,
-            supervision_periods=[supervsion_period_updated]
+            supervision_periods=[supervsion_period_updated],
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO
         )
         sentence_group = StateSentenceGroup.new_with_defaults(
             external_id=db_sentence_group.external_id,
