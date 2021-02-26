@@ -1,3 +1,12 @@
 file_tag: substance
+file_description: |-
+  Not in use
 primary_key_cols:
   - sbstnc_cd
+columns:
+  - name: sbstnc_cd
+  - name: sbstnc_sbstnc_cd
+  - name: sbstnc_desc
+  - name: tst_by_app
+  - name: vld_flg
+  - name: ordr_by

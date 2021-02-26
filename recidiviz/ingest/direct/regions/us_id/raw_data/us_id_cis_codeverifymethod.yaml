@@ -1,3 +1,10 @@
 file_tag: cis_codeverifymethod
+file_description: |-
+  Not in use
 primary_key_cols:
   - id
+columns:
+  - name: id
+  - name: codedescription
+  - name: active
+  - name: legacyid

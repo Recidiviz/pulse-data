@@ -1,3 +1,37 @@
 file_tag: ofndr_classifications
+file_description: |-
+  Not in use
 primary_key_cols:
   - classification_id
+columns:
+  - name: classification_id
+  - name: ofndr_num
+  - name: ofndr_clssfctn_typ_cd
+  - name: cat_one_score
+  - name: cat_two_score
+  - name: cat_three_score
+  - name: cat_four_score
+  - name: sctn_one_score
+  - name: sctn_two_score
+  - name: sctn_three_score
+  - name: scored_cust_lvl
+  - name: adjusted_cust_lvl
+  - name: recommend_cust_lvl
+  - name: assignd_cust_lvl
+  - name: overide_comment_id
+  - name: proximity_comment
+  - name: dor_status_comment
+  - name: dor_offense_comment
+  - name: review_comment_id
+  - name: facility_comment_id
+  - name: manager_comment_id
+  - name: udc_dspln_case_num
+  - name: man_over_20_yrs
+  - name: man_life_no_ped
+  - name: man_detainer
+  - name: ovride_increase_cust_lvl
+  - name: ovride_decrease_cust_lvl
+  - name: ofndr_age_at_calculation
+  - name: classification_status_id
+  - name: proximety_comment
+  - name: udc_dcpln_case_num

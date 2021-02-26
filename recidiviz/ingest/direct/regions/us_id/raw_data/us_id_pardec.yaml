@@ -1,3 +1,9 @@
 file_tag: pardec
+file_description: |-
+  Not in use
 primary_key_cols:
   - par_hrg_dec
+columns:
+  - name: par_hrg_dec
+  - name: par_hrg_dec_desc
+  - name: tpd_lost

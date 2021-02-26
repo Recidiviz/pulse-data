@@ -1,4 +1,11 @@
 file_tag: prgrm_cls
+file_description: |-
+  Not in use
 primary_key_cols:
   - Prgm_cls_id
   - Prgrm_id
+columns:
+  - name: Prgm_cls_id
+  - name: Prgrm_id
+  - name: Prgm_lvl_desc
+  - name: Vld_flg

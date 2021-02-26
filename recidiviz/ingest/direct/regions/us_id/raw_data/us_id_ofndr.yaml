@@ -1,3 +1,34 @@
 file_tag: ofndr
+file_description: |-
+  Not in use
 primary_key_cols:
   - ofndr_num
+columns:
+  - name: ofndr_num
+  - name: eye_color_cd
+  - name: corrective_lenses_cd
+  - name: hair_color_cd
+  - name: mrtl_stat_cd
+  - name: race_cd
+  - name: rlgn_cd
+  - name: sex
+  - name: ht_ft
+  - name: ht_in
+  - name: wt_lb
+  - name: dxtrty_cd
+  - name: ethnic_cd_ncic
+  - name: skn_tone_cd
+  - name: immgrtn_stat
+  - name: selctv_srvc_flg
+  - name: cmt_rec_flg
+  - name: lgl_juris_typ
+  - name: czn_ctry_cd
+  - name: ofndr_photo
+  - name: escape_flg
+  - name: abscond_flg
+  - name: juv_inst_flg
+  - name: juris_st_cd
+  - name: mntl_inst_flg
+  - name: updt_usr_id
+  - name: updt_dt
+  - name: ncic_num

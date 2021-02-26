@@ -1,3 +1,10 @@
 file_tag: clssfctn_cust_lvl
+file_description: |-
+  Not in use
 primary_key_cols:
   - clssfctn_cust_lvl_cd
+columns:
+  - name: clssfctn_cust_lvl_cd
+  - name: clssfctn_cust_lvl_desc
+  - name: max_clssfctn_score
+  - name: clssfctn_cust_typ

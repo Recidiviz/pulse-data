@@ -1,3 +1,9 @@
 file_tag: observed_behavior_response_exception_cd
+file_description: |-
+  Not in use
 primary_key_cols:
   - observed_behavior_response_exception_cd
+columns:
+  - name: vld_flg
+  - name: observed_behavior_response_exception_cd
+  - name: observed_behavior_response_exception_desc

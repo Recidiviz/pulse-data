@@ -1,10 +1,91 @@
 file_tag: mittimus
 primary_key_cols:
   - mitt_srl
+file_description: |-
+  Contains one row per mittimus. By definition a mittimus is a “warrant issued by a court to commit someone to
+  imprisonment”. A single mittimus can have multiple charges / sentences associated with those charges. Many
+  mittimuses can be evaluated for a given court case.
+
+
+  Notes:
+
+  - There is not an associated mitt_disp code table, but there are only 3 values:
+      - B - probation
+      - C - incarcerated (includes parole)
+      - S - interstate
 columns:
+  - name: mitt_srl
+    description: |-
+      ID for the mittimus
+  - name: docno
+    description: |-
+      IDOC id for the person
+  - name: incrno
+    description: |-
+      Incarceration number for this mittimus
+  - name: lgl_lnam
+    description: |-
+      Person’s last name
+  - name: lgl_fnam
+    description: |-
+      Person’s first name
+  - name: lgl_mnam
+    description: |-
+      Person’s middle name
+  - name: lgl_title
+    description: |-
+      Person’s title
+  - name: caseno
+    description: |-
+      The case number
+  - name: caseno_seq
+    description: |-
+      If multiple cases looked at within a single docket, this is the sequence number of this case
+  - name: state
+    description: |-
+      The state the person was sentenced in
+  - name: cnty_cd
+    description: |-
+      The county the person was sentenced in
   - name: sent_eff_dtd
     is_datetime: True
+    description: |-
+      The date that the first sentences within this mittimus took effect.
   - name: sentence_dtd
     is_datetime: True
+    description: |-
+      The date that all sentences within this mittimus were sentenced.
   - name: sent_exp_dtd
     is_datetime: True
+    description: |-
+      The date that the final sentence within this mittimus expires.
+  - name: plea
+    description: |-
+      Person’s plea
+  - name: judge_cd
+    description: |-
+      Code representing which judge did the sentencing
+  - name: dist_atty
+    description: |-
+      Code representing the District Attorney
+  - name: def_atty
+    description: |-
+      Code representing the Defense Attorney
+  - name: co_defend
+    description: |-
+      Listed co-defendants
+  - name: court_cred
+    description: |-
+      Any court credit used in sentencing
+  - name: jail_cred
+    description: |-
+      Any credit for jail time used in sentencing
+  - name: mitt_time_typ
+    description: |-
+      The original mittimus disposition
+  - name: interstate_mitt
+    description: |-
+      Boolean whether or not this is an interstate mittimus.
+  - name: mitt_disp
+    description: |-
+      The current mittimus disposition.

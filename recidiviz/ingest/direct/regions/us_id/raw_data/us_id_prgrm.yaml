@@ -1,3 +1,13 @@
 file_tag: prgrm
+file_description: |-
+  Not in use
 primary_key_cols:
   - prgrm_id
+columns:
+  - name: vld_flg
+  - name: prgrm_id
+  - name: srvce_typ_cd
+  - name: prgrm_title
+  - name: prgrm_desc
+  - name: updt_usr_id
+  - name: updt_dt
