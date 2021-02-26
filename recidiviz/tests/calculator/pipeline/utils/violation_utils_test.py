@@ -88,10 +88,7 @@ class TestGetViolationTypeFrequencyCounter(unittest.TestCase):
 
     def test_get_violation_type_frequency_counter_no_types(self) -> None:
         violations = [
-            StateSupervisionViolation.new_with_defaults(
-                state_code='US_XX',
-                supervision_violation_types=None,
-            )
+            StateSupervisionViolation.new_with_defaults(state_code='US_XX')
         ]
 
         violation_type_frequency_counter = violation_utils.get_violation_type_frequency_counter(violations)

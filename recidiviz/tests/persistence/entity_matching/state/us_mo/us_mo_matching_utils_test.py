@@ -77,7 +77,8 @@ class TestUsMoMatchingUtils(BaseStateMatchingUtilsTest):
             state_code=_STATE_CODE,
             supervision_violation_entries=[sv, sv_2],
             status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO)
-        ss = schema.StateSupervisionSentence(state_code=_STATE_CODE, supervision_periods=[sp])
+        ss = schema.StateSupervisionSentence(
+            state_code=_STATE_CODE, supervision_periods=[sp], status=StateSentenceStatus.PRESENT_WITHOUT_INFO)
         sg = schema.StateSentenceGroup(state_code=_STATE_CODE,
                                        status=StateSentenceStatus.PRESENT_WITHOUT_INFO,
                                        supervision_sentences=[ss])
@@ -97,7 +98,8 @@ class TestUsMoMatchingUtils(BaseStateMatchingUtilsTest):
             state_code=_STATE_CODE, supervision_violation_entries=[expected_sv, expected_sv_2],
             status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO)
         expected_ss = StateSupervisionSentence.new_with_defaults(
-            state_code=_STATE_CODE, supervision_periods=[expected_sp])
+            state_code=_STATE_CODE, supervision_periods=[expected_sp],
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO)
         expected_sg = StateSentenceGroup.new_with_defaults(
             state_code=_STATE_CODE,
             status=StateSentenceStatus.PRESENT_WITHOUT_INFO,

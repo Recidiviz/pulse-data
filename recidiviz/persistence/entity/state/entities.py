@@ -149,14 +149,15 @@ class StatePersonAlias(Entity, BuildableAttr, DefaultableAttr):
     state_code: str = attr.ib(validator=attr_validators.is_str)
 
     # Attributes
-    alias_type: Optional[StatePersonAliasType] = attr.ib()
-    alias_type_raw_text: Optional[str] = attr.ib()
+    alias_type: Optional[StatePersonAliasType] = attr.ib(default=None,
+                                                         validator=attr_validators.is_opt(StatePersonAliasType))
+    alias_type_raw_text: Optional[str] = attr.ib(default=None, validator=attr_validators.is_opt_str)
     # TODO(#1905): Remove defaults for string fields
-    full_name: Optional[str] = attr.ib(default=None)
+    full_name: Optional[str] = attr.ib(default=None, validator=attr_validators.is_opt_str)
 
     # Primary key - Only optional when hydrated in the data converter, before we have written this entity to the
     # persistence layer
-    person_alias_id: Optional[int] = attr.ib(default=None)
+    person_alias_id: Optional[int] = attr.ib(default=None, validator=attr_validators.is_opt_int)
 
     # Cross-entity relationships
     person: Optional['StatePerson'] = attr.ib(default=None)
@@ -484,51 +485,52 @@ class StateSupervisionSentence(ExternalIdEntity, BuildableAttr, DefaultableAttr)
     state_code: str = attr.ib(validator=attr_validators.is_str)
 
     # Status
-    status: StateSentenceStatus = attr.ib()  # non-nullable
-    status_raw_text: Optional[str] = attr.ib()
+    status: StateSentenceStatus = attr.ib(validator=attr.validators.instance_of(StateSentenceStatus))  # non-nullable
+    status_raw_text: Optional[str] = attr.ib(default=None, validator=attr_validators.is_opt_str)
 
     # Type
     # TODO(#2891): Make this of type StateSupervisionSentenceType (new type)
-    supervision_type: Optional[StateSupervisionType] = attr.ib()
-    supervision_type_raw_text: Optional[str] = attr.ib()
+    supervision_type: Optional[StateSupervisionType] = attr.ib(default=None,
+                                                               validator=attr_validators.is_opt(StateSupervisionType))
+    supervision_type_raw_text: Optional[str] = attr.ib(default=None, validator=attr_validators.is_opt_str)
 
     # Attributes
     #   - When
 
     # The date the person was sentenced
-    date_imposed: Optional[datetime.date] = attr.ib()
+    date_imposed: Optional[datetime.date] = attr.ib(default=None, validator=attr_validators.is_opt_date)
 
     # The date the person actually started serving this sentence
-    start_date: Optional[datetime.date] = attr.ib()
-    projected_completion_date: Optional[datetime.date] = attr.ib()
+    start_date: Optional[datetime.date] = attr.ib(default=None, validator=attr_validators.is_opt_date)
+    projected_completion_date: Optional[datetime.date] = attr.ib(default=None, validator=attr_validators.is_opt_date)
 
     # The date the person finished serving this sentence
-    completion_date: Optional[datetime.date] = attr.ib()
+    completion_date: Optional[datetime.date] = attr.ib(default=None, validator=attr_validators.is_opt_date)
 
     #   - Where
     # The county where this sentence was issued
-    county_code: Optional[str] = attr.ib()
+    county_code: Optional[str] = attr.ib(default=None, validator=attr_validators.is_opt_str)
 
     #   - What
-    min_length_days: Optional[int] = attr.ib()
-    max_length_days: Optional[int] = attr.ib()
+    min_length_days: Optional[int] = attr.ib(default=None, validator=attr_validators.is_opt_int)
+    max_length_days: Optional[int] = attr.ib(default=None, validator=attr_validators.is_opt_int)
 
     #   - Who
 
     # Primary key - Only optional when hydrated in the data converter, before we have written this entity to the
     # persistence layer
-    supervision_sentence_id: Optional[int] = attr.ib(default=None)
+    supervision_sentence_id: Optional[int] = attr.ib(default=None, validator=attr_validators.is_opt_int)
 
     # Cross-entity relationships
     person: Optional['StatePerson'] = attr.ib(default=None)
     sentence_group: Optional['StateSentenceGroup'] = attr.ib(default=None)
-    charges: List['StateCharge'] = attr.ib(factory=list)
+    charges: List['StateCharge'] = attr.ib(factory=list, validator=attr_validators.is_list)
 
     # NOTE: A person might have an incarceration period associated with a supervision sentence if they violate the
     # terms of the sentence and are sent back to prison.
-    incarceration_periods: List['StateIncarcerationPeriod'] = attr.ib(factory=list)
-    supervision_periods: List['StateSupervisionPeriod'] = attr.ib(factory=list)
-    early_discharges: List['StateEarlyDischarge'] = attr.ib(factory=list)
+    incarceration_periods: List['StateIncarcerationPeriod'] = attr.ib(factory=list, validator=attr_validators.is_list)
+    supervision_periods: List['StateSupervisionPeriod'] = attr.ib(factory=list, validator=attr_validators.is_list)
+    early_discharges: List['StateEarlyDischarge'] = attr.ib(factory=list, validator=attr_validators.is_list)
 
 
 @attr.s(eq=False)
@@ -841,12 +843,13 @@ class StateSupervisionCaseTypeEntry(Entity, BuildableAttr, DefaultableAttr):
 
     # Attributes
     #   - What
-    case_type: Optional[StateSupervisionCaseType] = attr.ib()
-    case_type_raw_text: Optional[str] = attr.ib()
+    case_type: Optional[StateSupervisionCaseType] = attr.ib(default=None,
+                                                            validator=attr_validators.is_opt(StateSupervisionCaseType))
+    case_type_raw_text: Optional[str] = attr.ib(default=None, validator=attr_validators.is_opt_str)
 
     # Primary key - Only optional when hydrated in the data converter, before we have written this entity to the
     # persistence layer
-    supervision_case_type_entry_id: Optional[int] = attr.ib(default=None)
+    supervision_case_type_entry_id: Optional[int] = attr.ib(default=None, validator=attr_validators.is_opt_int)
 
     # Cross-entity relationships
     person: Optional['StatePerson'] = attr.ib(default=None)
@@ -864,33 +867,35 @@ class StateIncarcerationIncident(ExternalIdEntity, BuildableAttr, DefaultableAtt
     # N/A
 
     # Type
-    incident_type: Optional[StateIncarcerationIncidentType] = attr.ib()
-    incident_type_raw_text: Optional[str] = attr.ib()
+    incident_type: Optional[StateIncarcerationIncidentType] = attr.ib(
+        default=None, validator=attr_validators.is_opt(StateIncarcerationIncidentType))
+    incident_type_raw_text: Optional[str] = attr.ib(default=None, validator=attr_validators.is_opt_str)
 
     # Attributes
     #   - When
-    incident_date: Optional[datetime.date] = attr.ib()
+    incident_date: Optional[datetime.date] = attr.ib(default=None, validator=attr_validators.is_opt_date)
 
     #   - Where
-    facility: Optional[str] = attr.ib()
-    location_within_facility: Optional[str] = attr.ib()
+    facility: Optional[str] = attr.ib(default=None, validator=attr_validators.is_opt_str)
+    location_within_facility: Optional[str] = attr.ib(default=None, validator=attr_validators.is_opt_str)
 
     #   - What
-    incident_details: Optional[str] = attr.ib()
+    incident_details: Optional[str] = attr.ib(default=None, validator=attr_validators.is_opt_str)
 
     #   - Who
     # See |responding_officer| below
 
     # Primary key - Only optional when hydrated in the data converter, before we have written this entity to the
     # persistence layer
-    incarceration_incident_id: Optional[int] = attr.ib(default=None)
+    incarceration_incident_id: Optional[int] = attr.ib(default=None, validator=attr_validators.is_opt_int)
 
     # Cross-entity relationships
     person: Optional['StatePerson'] = attr.ib(default=None)
     responding_officer: Optional['StateAgent'] = attr.ib(default=None)
     incarceration_period: Optional['StateIncarcerationPeriod'] = attr.ib(default=None)
 
-    incarceration_incident_outcomes: List['StateIncarcerationIncidentOutcome'] = attr.ib(factory=list)
+    incarceration_incident_outcomes: List['StateIncarcerationIncidentOutcome'] = attr.ib(
+        factory=list, validator=attr_validators.is_list)
 
 
 @attr.s(eq=False)
@@ -899,25 +904,26 @@ class StateIncarcerationIncidentOutcome(ExternalIdEntity, BuildableAttr, Default
     state_code: str = attr.ib(validator=attr_validators.is_str)
 
     # Type
-    outcome_type: Optional[StateIncarcerationIncidentOutcomeType] = attr.ib()
-    outcome_type_raw_text: Optional[str] = attr.ib()
+    outcome_type: Optional[StateIncarcerationIncidentOutcomeType] = attr.ib(
+        default=None, validator=attr_validators.is_opt(StateIncarcerationIncidentOutcomeType))
+    outcome_type_raw_text: Optional[str] = attr.ib(default=None, validator=attr_validators.is_opt_str)
 
     # Attributes
     #   - When
-    date_effective: Optional[datetime.date] = attr.ib()
-    hearing_date: Optional[datetime.date] = attr.ib()
-    report_date: Optional[datetime.date] = attr.ib()
+    date_effective: Optional[datetime.date] = attr.ib(default=None, validator=attr_validators.is_opt_date)
+    hearing_date: Optional[datetime.date] = attr.ib(default=None, validator=attr_validators.is_opt_date)
+    report_date: Optional[datetime.date] = attr.ib(default=None, validator=attr_validators.is_opt_date)
 
     #   - What
-    outcome_description: Optional[str] = attr.ib()
-    punishment_length_days: Optional[int] = attr.ib()
+    outcome_description: Optional[str] = attr.ib(default=None, validator=attr_validators.is_opt_str)
+    punishment_length_days: Optional[int] = attr.ib(default=None, validator=attr_validators.is_opt_int)
 
     #   - Who
     # See |person| below
 
     # Primary key - Only optional when hydrated in the data converter, before we have written this entity to the
     # persistence layer
-    incarceration_incident_outcome_id: Optional[int] = attr.ib(default=None)
+    incarceration_incident_outcome_id: Optional[int] = attr.ib(default=None, validator=attr_validators.is_opt_int)
 
     # Cross-entity relationships
     person: Optional['StatePerson'] = attr.ib(default=None)
@@ -933,18 +939,19 @@ class StateParoleDecision(ExternalIdEntity, BuildableAttr, DefaultableAttr):
 
     # Attributes
     #   - When
-    decision_date: Optional[datetime.date] = attr.ib()
-    corrective_action_deadline: Optional[datetime.date] = attr.ib()
+    decision_date: Optional[datetime.date] = attr.ib(default=None, validator=attr_validators.is_opt_date)
+    corrective_action_deadline: Optional[datetime.date] = attr.ib(default=None, validator=attr_validators.is_opt_date)
 
     #   - Where
     # The county where the decision was made, if different from the county where this person is incarcerated.
-    county_code: Optional[str] = attr.ib()
+    county_code: Optional[str] = attr.ib(default=None, validator=attr_validators.is_opt_str)
 
     #   - What
-    decision_outcome: Optional[StateParoleDecisionOutcome] = attr.ib()
-    decision_outcome_raw_text: Optional[str] = attr.ib()
-    decision_reasoning: Optional[str] = attr.ib()
-    corrective_action: Optional[str] = attr.ib()
+    decision_outcome: Optional[StateParoleDecisionOutcome] = attr.ib(
+        default=None, validator=attr_validators.is_opt(StateParoleDecisionOutcome))
+    decision_outcome_raw_text: Optional[str] = attr.ib(default=None, validator=attr_validators.is_opt_str)
+    decision_reasoning: Optional[str] = attr.ib(default=None, validator=attr_validators.is_opt_str)
+    corrective_action: Optional[str] = attr.ib(default=None, validator=attr_validators.is_opt_str)
 
     #   - Who
     # See |decision_agents| below
@@ -956,7 +963,7 @@ class StateParoleDecision(ExternalIdEntity, BuildableAttr, DefaultableAttr):
     # Cross-entity relationships
     person: Optional['StatePerson'] = attr.ib(default=None)
     incarceration_period: Optional['StateIncarcerationPeriod'] = attr.ib(default=None)
-    decision_agents: List['StateAgent'] = attr.ib(factory=list)
+    decision_agents: List['StateAgent'] = attr.ib(factory=list, validator=attr_validators.is_list)
 
 
 @attr.s(eq=False)
@@ -966,12 +973,13 @@ class StateSupervisionViolationTypeEntry(Entity, BuildableAttr, DefaultableAttr)
     state_code: str = attr.ib(validator=attr_validators.is_str)
 
     # Attributes
-    violation_type: Optional[StateSupervisionViolationType] = attr.ib()
-    violation_type_raw_text: Optional[str] = attr.ib()
+    violation_type: Optional[StateSupervisionViolationType] = attr.ib(
+        default=None, validator=attr_validators.is_opt(StateSupervisionViolationType))
+    violation_type_raw_text: Optional[str] = attr.ib(default=None, validator=attr_validators.is_opt_str)
 
     # Primary key - Only optional when hydrated in the data converter, before we have written this entity to the
     # persistence layer
-    supervision_violation_type_entry_id: Optional[int] = attr.ib(default=None)
+    supervision_violation_type_entry_id: Optional[int] = attr.ib(default=None, validator=attr_validators.is_opt_int)
 
     # Cross-entity relationships
     person: Optional['StatePerson'] = attr.ib(default=None)
@@ -988,11 +996,11 @@ class StateSupervisionViolatedConditionEntry(Entity, BuildableAttr, DefaultableA
 
     # Attributes
     # A string code corresponding to the condition - region specific.
-    condition: str = attr.ib()  # non-nullable
+    condition: str = attr.ib(validator=attr_validators.is_str)  # non-nullable
 
     # Primary key - Only optional when hydrated in the data converter, before we have written this entity to the
     # persistence layer
-    supervision_violated_condition_entry_id: Optional[int] = attr.ib(default=None)
+    supervision_violated_condition_entry_id: Optional[int] = attr.ib(default=None, validator=attr_validators.is_opt_int)
 
     # Cross-entity relationships
     person: Optional['StatePerson'] = attr.ib(default=None)
@@ -1015,34 +1023,38 @@ class StateSupervisionViolation(ExternalIdEntity, BuildableAttr, DefaultableAttr
 
     # Type
     # TODO(#2668): DEPRECATED - DELETE IN FOLLOW-UP PR
-    violation_type: Optional[StateSupervisionViolationType] = attr.ib()
-    violation_type_raw_text: Optional[str] = attr.ib()
+    violation_type: Optional[StateSupervisionViolationType] = attr.ib(
+        default=None, validator=attr_validators.is_opt(StateSupervisionViolationType))
+    violation_type_raw_text: Optional[str] = attr.ib(default=None, validator=attr_validators.is_opt_str)
 
     # Attributes
     #   - When
-    violation_date: Optional[datetime.date] = attr.ib()
+    violation_date: Optional[datetime.date] = attr.ib(default=None, validator=attr_validators.is_opt_date)
 
     #   - What
     # These should correspond to |conditions| in StateSupervisionPeriod
-    is_violent: Optional[bool] = attr.ib()
-    is_sex_offense: Optional[bool] = attr.ib()
+    is_violent: Optional[bool] = attr.ib(default=None, validator=attr_validators.is_opt_bool)
+    is_sex_offense: Optional[bool] = attr.ib(default=None, validator=attr_validators.is_opt_bool)
 
     # TODO(#2668): DEPRECATED - DELETE IN FOLLOW-UP PR
-    violated_conditions: Optional[str] = attr.ib(default=None)
+    violated_conditions: Optional[str] = attr.ib(default=None, validator=attr_validators.is_opt_str)
 
     #   - Who
     # See |person| in entity relationships below.
 
     # Primary key - Only optional when hydrated in the data converter, before we have written this entity to the
     # persistence layer
-    supervision_violation_id: Optional[int] = attr.ib(default=None)
+    supervision_violation_id: Optional[int] = attr.ib(default=None, validator=attr_validators.is_opt_int)
 
     # Cross-entity relationships
     person: Optional['StatePerson'] = attr.ib(default=None)
-    supervision_periods: List['StateSupervisionPeriod'] = attr.ib(factory=list)
-    supervision_violation_types: List['StateSupervisionViolationTypeEntry'] = attr.ib(factory=list)
-    supervision_violated_conditions: List['StateSupervisionViolatedConditionEntry'] = attr.ib(factory=list)
-    supervision_violation_responses: List['StateSupervisionViolationResponse'] = attr.ib(factory=list)
+    supervision_periods: List['StateSupervisionPeriod'] = attr.ib(factory=list, validator=attr_validators.is_list)
+    supervision_violation_types: List['StateSupervisionViolationTypeEntry'] = attr.ib(
+        factory=list, validator=attr_validators.is_list)
+    supervision_violated_conditions: List['StateSupervisionViolatedConditionEntry'] = attr.ib(
+        factory=list, validator=attr_validators.is_list)
+    supervision_violation_responses: List['StateSupervisionViolationResponse'] = attr.ib(
+        factory=list, validator=attr_validators.is_list)
 
 
 @attr.s(eq=False)
@@ -1052,16 +1064,19 @@ class StateSupervisionViolationResponseDecisionEntry(Entity, BuildableAttr, Defa
     state_code: str = attr.ib(validator=attr_validators.is_str)
 
     # Attributes
-    decision: Optional[StateSupervisionViolationResponseDecision] = attr.ib()
-    decision_raw_text: Optional[str] = attr.ib()
+    decision: Optional[StateSupervisionViolationResponseDecision] = attr.ib(
+        default=None, validator=attr_validators.is_opt(StateSupervisionViolationResponseDecision))
+    decision_raw_text: Optional[str] = attr.ib(default=None, validator=attr_validators.is_opt_str)
 
     # Only nonnull if one of the decisions is REVOCATION
-    revocation_type: Optional[StateSupervisionViolationResponseRevocationType] = attr.ib()
-    revocation_type_raw_text: Optional[str] = attr.ib()
+    revocation_type: Optional[StateSupervisionViolationResponseRevocationType] = attr.ib(
+        default=None, validator=attr_validators.is_opt(StateSupervisionViolationResponseRevocationType))
+    revocation_type_raw_text: Optional[str] = attr.ib(default=None, validator=attr_validators.is_opt_str)
 
     # Primary key - Only optional when hydrated in the data converter, before we have written this entity to the
     # persistence layer
-    supervision_violation_response_decision_entry_id: Optional[int] = attr.ib(default=None)
+    supervision_violation_response_decision_entry_id: Optional[int] = attr.ib(
+        default=None, validator=attr_validators.is_opt_int)
 
     # Cross-entity relationships
     person: Optional['StatePerson'] = attr.ib(default=None)
@@ -1078,41 +1093,45 @@ class StateSupervisionViolationResponse(ExternalIdEntity, BuildableAttr, Default
     # N/A
 
     # Type
-    response_type: Optional[StateSupervisionViolationResponseType] = attr.ib()
-    response_type_raw_text: Optional[str] = attr.ib()
-    response_subtype: Optional[str] = attr.ib()
+    response_type: Optional[StateSupervisionViolationResponseType] = attr.ib(
+        default=None, validator=attr_validators.is_opt(StateSupervisionViolationResponseType))
+    response_type_raw_text: Optional[str] = attr.ib(default=None, validator=attr_validators.is_opt_str)
+    response_subtype: Optional[str] = attr.ib(default=None, validator=attr_validators.is_opt_str)
 
     # Attributes
     #   - When
-    response_date: Optional[datetime.date] = attr.ib()
+    response_date: Optional[datetime.date] = attr.ib(default=None, validator=attr_validators.is_opt_date)
 
     #   - What
     # TODO(#2668): DEPRECATED - DELETE IN FOLLOW-UP PR
-    decision: Optional[StateSupervisionViolationResponseDecision] = attr.ib()
-    decision_raw_text: Optional[str] = attr.ib()
+    decision: Optional[StateSupervisionViolationResponseDecision] = attr.ib(
+        default=None, validator=attr_validators.is_opt(StateSupervisionViolationResponseDecision))
+    decision_raw_text: Optional[str] = attr.ib(default=None, validator=attr_validators.is_opt_str)
 
     # Only nonnull if one of the decisions is REVOCATION
     # TODO(#2668): DEPRECATED - DELETE IN FOLLOW-UP PR
-    revocation_type: Optional[StateSupervisionViolationResponseRevocationType] = attr.ib()
-    revocation_type_raw_text: Optional[str] = attr.ib()
-    is_draft: Optional[bool] = attr.ib()
+    revocation_type: Optional[StateSupervisionViolationResponseRevocationType] = attr.ib(
+        default=None, validator=attr_validators.is_opt(StateSupervisionViolationResponseRevocationType))
+    revocation_type_raw_text: Optional[str] = attr.ib(default=None, validator=attr_validators.is_opt_str)
+    is_draft: Optional[bool] = attr.ib(default=None, validator=attr_validators.is_opt_bool)
 
     #   - Who
     # See SupervisionViolationResponders below
-    deciding_body_type: Optional[StateSupervisionViolationResponseDecidingBodyType] = attr.ib()
-    deciding_body_type_raw_text: Optional[str] = attr.ib()
+    deciding_body_type: Optional[StateSupervisionViolationResponseDecidingBodyType] = attr.ib(
+        default=None, validator=attr_validators.is_opt(StateSupervisionViolationResponseDecidingBodyType))
+    deciding_body_type_raw_text: Optional[str] = attr.ib(default=None, validator=attr_validators.is_opt_str)
     # See also |decision_agents| below
 
     # Primary key - Only optional when hydrated in the data converter, before we have written this entity to the
     # persistence layer
-    supervision_violation_response_id: Optional[int] = attr.ib(default=None)
+    supervision_violation_response_id: Optional[int] = attr.ib(default=None, validator=attr_validators.is_opt_int)
 
     # Cross-entity relationships
     person: Optional['StatePerson'] = attr.ib(default=None)
     supervision_violation: Optional['StateSupervisionViolation'] = attr.ib(default=None)
     supervision_violation_response_decisions: List['StateSupervisionViolationResponseDecisionEntry'] = \
-        attr.ib(factory=list)
-    decision_agents: List['StateAgent'] = attr.ib(factory=list)
+        attr.ib(factory=list, validator=attr_validators.is_list)
+    decision_agents: List['StateAgent'] = attr.ib(factory=list, validator=attr_validators.is_list)
 
 
 @attr.s(eq=False)
@@ -1122,16 +1141,16 @@ class StateAgent(ExternalIdEntity, BuildableAttr, DefaultableAttr):
     state_code: str = attr.ib(validator=attr_validators.is_str)
 
     # Type
-    agent_type: StateAgentType = attr.ib()
-    agent_type_raw_text: Optional[str] = attr.ib()
+    agent_type: StateAgentType = attr.ib(validator=attr.validators.instance_of(StateAgentType))
+    agent_type_raw_text: Optional[str] = attr.ib(default=None, validator=attr_validators.is_opt_str)
 
     # Attributes
     #   - What
-    full_name: Optional[str] = attr.ib()
+    full_name: Optional[str] = attr.ib(default=None, validator=attr_validators.is_opt_str)
 
     # Primary key - Only optional when hydrated in the data converter, before we have written this entity to the
     # persistence layer
-    agent_id: Optional[int] = attr.ib(default=None)
+    agent_id: Optional[int] = attr.ib(default=None, validator=attr_validators.is_opt_int)
 
 
 @attr.s(eq=False)
@@ -1141,34 +1160,36 @@ class StateProgramAssignment(ExternalIdEntity, BuildableAttr, DefaultableAttr):
     state_code: str = attr.ib(validator=attr_validators.is_str)
 
     # Status
-    participation_status: StateProgramAssignmentParticipationStatus = attr.ib()  # non-nullable
-    participation_status_raw_text: Optional[str] = attr.ib()
+    participation_status: StateProgramAssignmentParticipationStatus = attr.ib(
+        validator=attr.validators.instance_of(StateProgramAssignmentParticipationStatus))  # non-nullable
+    participation_status_raw_text: Optional[str] = attr.ib(default=None, validator=attr_validators.is_opt_str)
 
     # Attributes
     #   - When
-    referral_date: Optional[datetime.date] = attr.ib()
-    start_date: Optional[datetime.date] = attr.ib()
-    discharge_date: Optional[datetime.date] = attr.ib()
+    referral_date: Optional[datetime.date] = attr.ib(default=None, validator=attr_validators.is_opt_date)
+    start_date: Optional[datetime.date] = attr.ib(default=None, validator=attr_validators.is_opt_date)
+    discharge_date: Optional[datetime.date] = attr.ib(default=None, validator=attr_validators.is_opt_date)
 
     #   - What
-    program_id: Optional[str] = attr.ib()
-    program_location_id: Optional[str] = attr.ib()
-    discharge_reason: Optional[StateProgramAssignmentDischargeReason] = attr.ib()
-    discharge_reason_raw_text: Optional[str] = attr.ib()
-    referral_metadata: Optional[str] = attr.ib()
+    program_id: Optional[str] = attr.ib(default=None, validator=attr_validators.is_opt_str)
+    program_location_id: Optional[str] = attr.ib(default=None, validator=attr_validators.is_opt_str)
+    discharge_reason: Optional[StateProgramAssignmentDischargeReason] = attr.ib(
+        default=None, validator=attr_validators.is_opt(StateProgramAssignmentDischargeReason))
+    discharge_reason_raw_text: Optional[str] = attr.ib(default=None, validator=attr_validators.is_opt_str)
+    referral_metadata: Optional[str] = attr.ib(default=None, validator=attr_validators.is_opt_str)
 
     #   - Who
     # See |person| in entity relationships below.
 
     # Primary key - Only optional when hydrated in the data converter, before we have written this entity to the
     # persistence layer
-    program_assignment_id: Optional[int] = attr.ib(default=None)
+    program_assignment_id: Optional[int] = attr.ib(default=None, validator=attr_validators.is_opt_int)
 
     # Cross-entity relationships
     person: Optional['StatePerson'] = attr.ib(default=None)
     referring_agent: Optional['StateAgent'] = attr.ib(default=None)
-    incarceration_periods: List['StateIncarcerationPeriod'] = attr.ib(factory=list)
-    supervision_periods: List['StateSupervisionPeriod'] = attr.ib(factory=list)
+    incarceration_periods: List['StateIncarcerationPeriod'] = attr.ib(factory=list, validator=attr_validators.is_list)
+    supervision_periods: List['StateSupervisionPeriod'] = attr.ib(factory=list, validator=attr_validators.is_list)
 
 
 @attr.s(eq=False)
@@ -1179,28 +1200,32 @@ class StateEarlyDischarge(ExternalIdEntity, BuildableAttr, DefaultableAttr):
 
     # Attributes
     #   - When
-    request_date: Optional[datetime.date] = attr.ib()
-    decision_date: Optional[datetime.date] = attr.ib()
+    request_date: Optional[datetime.date] = attr.ib(default=None, validator=attr_validators.is_opt_date)
+    decision_date: Optional[datetime.date] = attr.ib(default=None, validator=attr_validators.is_opt_date)
 
     #  - What
-    decision: Optional[StateEarlyDischargeDecision] = attr.ib()
-    decision_raw_text: Optional[str] = attr.ib()
-    decision_status: Optional[StateEarlyDischargeDecisionStatus] = attr.ib()
-    decision_status_raw_text: Optional[str] = attr.ib()
-    deciding_body_type: Optional[StateActingBodyType] = attr.ib()
-    deciding_body_type_raw_text: Optional[str] = attr.ib()
-    requesting_body_type: Optional[StateActingBodyType] = attr.ib()
-    requesting_body_type_raw_text: Optional[str] = attr.ib()
+    decision: Optional[StateEarlyDischargeDecision] = attr.ib(
+        default=None, validator=attr_validators.is_opt(StateEarlyDischargeDecision))
+    decision_raw_text: Optional[str] = attr.ib(default=None, validator=attr_validators.is_opt_str)
+    decision_status: Optional[StateEarlyDischargeDecisionStatus] = attr.ib(
+        default=None, validator=attr_validators.is_opt(StateEarlyDischargeDecisionStatus))
+    decision_status_raw_text: Optional[str] = attr.ib(default=None, validator=attr_validators.is_opt_str)
+    deciding_body_type: Optional[StateActingBodyType] = attr.ib(
+        default=None, validator=attr_validators.is_opt(StateActingBodyType))
+    deciding_body_type_raw_text: Optional[str] = attr.ib(default=None, validator=attr_validators.is_opt_str)
+    requesting_body_type: Optional[StateActingBodyType] = attr.ib(
+        default=None, validator=attr_validators.is_opt(StateActingBodyType))
+    requesting_body_type_raw_text: Optional[str] = attr.ib(default=None, validator=attr_validators.is_opt_str)
 
     #   - Where
-    county_code: str = attr.ib()
+    county_code: Optional[str] = attr.ib(default=None, validator=attr_validators.is_opt_str)
 
     #   - Who
     # See |person| in entity relationships below.
 
     # Primary key - Only optional when hydrated in the data converter, before we have written this entity to the
     # persistence layer
-    early_discharge_id: Optional[int] = attr.ib(default=None)
+    early_discharge_id: Optional[int] = attr.ib(default=None, validator=attr_validators.is_opt_int)
 
     # Cross-entity relationships
     person: Optional['StatePerson'] = attr.ib(default=None)
@@ -1217,34 +1242,38 @@ class StateSupervisionContact(ExternalIdEntity, BuildableAttr, DefaultableAttr):
     state_code: str = attr.ib(validator=attr_validators.is_str)
 
     # Status
-    status: Optional[StateSupervisionContactStatus] = attr.ib()
-    status_raw_text: Optional[str] = attr.ib()
+    status: Optional[StateSupervisionContactStatus] = attr.ib(
+        default=None, validator=attr_validators.is_opt(StateSupervisionContactStatus))
+    status_raw_text: Optional[str] = attr.ib(default=None, validator=attr_validators.is_opt_str)
 
     # Attributes
     #   - When
-    contact_date: Optional[datetime.date] = attr.ib()
+    contact_date: Optional[datetime.date] = attr.ib(default=None, validator=attr_validators.is_opt_date)
 
     #   - What
-    contact_type: Optional[StateSupervisionContactType] = attr.ib()
-    contact_type_raw_text: Optional[str] = attr.ib()
+    contact_type: Optional[StateSupervisionContactType] = attr.ib(
+        default=None, validator=attr_validators.is_opt(StateSupervisionContactType))
+    contact_type_raw_text: Optional[str] = attr.ib(default=None, validator=attr_validators.is_opt_str)
 
-    contact_reason: Optional[StateSupervisionContactReason] = attr.ib()
-    contact_reason_raw_text: Optional[str] = attr.ib()
+    contact_reason: Optional[StateSupervisionContactReason] = attr.ib(
+        default=None, validator=attr_validators.is_opt(StateSupervisionContactReason))
+    contact_reason_raw_text: Optional[str] = attr.ib(default=None, validator=attr_validators.is_opt_str)
 
-    location: Optional[StateSupervisionContactLocation] = attr.ib()
-    location_raw_text: Optional[str] = attr.ib()
+    location: Optional[StateSupervisionContactLocation] = attr.ib(
+        default=None, validator=attr_validators.is_opt(StateSupervisionContactLocation))
+    location_raw_text: Optional[str] = attr.ib(default=None, validator=attr_validators.is_opt_str)
 
-    verified_employment: Optional[bool] = attr.ib()
-    resulted_in_arrest: Optional[bool] = attr.ib()
+    verified_employment: Optional[bool] = attr.ib(default=None, validator=attr_validators.is_opt_bool)
+    resulted_in_arrest: Optional[bool] = attr.ib(default=None, validator=attr_validators.is_opt_bool)
 
     #   - Who
     # See |person| in entity relationships below.
 
     # Primary key - Only optional when hydrated in the data converter, before we have written this entity to the
     # persistence layer
-    supervision_contact_id: Optional[int] = attr.ib(default=None)
+    supervision_contact_id: Optional[int] = attr.ib(default=None, validator=attr_validators.is_opt_int)
 
     # Cross-entity relationships
     person: Optional['StatePerson'] = attr.ib(default=None)
     contacted_agent: Optional['StateAgent'] = attr.ib(default=None)
-    supervision_periods: List['StateSupervisionPeriod'] = attr.ib(factory=list)
+    supervision_periods: List['StateSupervisionPeriod'] = attr.ib(factory=list, validator=attr_validators.is_list)

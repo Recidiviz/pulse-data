@@ -521,7 +521,8 @@ class TestSupervisionPipeline(unittest.TestCase):
             start_date=date(2008, 11, 20),
             projected_completion_date=date(2017, 12, 31),
             supervision_periods=[supervision_period],
-            person_id=fake_person_id
+            person_id=fake_person_id,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO
         )
 
         incarceration_sentence = schema.StateIncarcerationSentence(
@@ -737,7 +738,8 @@ class TestSupervisionPipeline(unittest.TestCase):
                                                                            initial_supervision_period],
                                                                        projected_completion_date=date(
                                                                            2016, 10, 31),
-                                                                       person_id=fake_person_id
+                                                                       person_id=fake_person_id,
+                                                                       status=StateSentenceStatus.PRESENT_WITHOUT_INFO
                                                                        )
 
         # violation of the first probation
@@ -1060,7 +1062,8 @@ class TestSupervisionPipeline(unittest.TestCase):
             start_date=date(2008, 11, 20),
             projected_completion_date=date(2017, 12, 31),
             supervision_periods=[supervision_period],
-            person_id=fake_person_id
+            person_id=fake_person_id,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO
         )
 
         incarceration_sentence = schema.StateIncarcerationSentence(

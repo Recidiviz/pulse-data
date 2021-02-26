@@ -3054,7 +3054,8 @@ class TestStateEntityMatching(BaseStateEntityMatcherTest):
         supervision_sentence = StateSupervisionSentence.new_with_defaults(
             external_id=db_supervision_sentence.external_id,
             state_code=_STATE_CODE,
-            incarceration_periods=[updated_incarceration_period]
+            incarceration_periods=[updated_incarceration_period],
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO
         )
         sentence_group = StateSentenceGroup.new_with_defaults(
             external_id=db_sentence_group.external_id,

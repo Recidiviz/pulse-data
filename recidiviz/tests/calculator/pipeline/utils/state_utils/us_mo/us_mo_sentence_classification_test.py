@@ -205,7 +205,7 @@ class UsMoSentenceTest(unittest.TestCase):
              'status_code': '15I1000', 'status_date': '20190808', 'status_description': 'New Court Probation'}]
 
         sentence = StateSupervisionSentence.new_with_defaults(
-            state_code='US_MO',external_id='1345495-20190808-1')
+            state_code='US_MO', external_id='1345495-20190808-1', status=StateSentenceStatus.PRESENT_WITHOUT_INFO)
 
         # Act
         us_mo_sentence = UsMoSupervisionSentence.from_supervision_sentence(sentence,
@@ -267,7 +267,8 @@ class UsMoGetSupervisionTypeOnDay(unittest.TestCase):
         base_sentence = StateSupervisionSentence.new_with_defaults(
             state_code='US_MO',
             external_id='1345495-20190808-1',
-            start_date=datetime.date(year=2019, month=8, day=8)
+            start_date=datetime.date(year=2019, month=8, day=8),
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO
         )
         us_mo_sentence = UsMoSupervisionSentence.from_supervision_sentence(base_sentence, raw_statuses)
 
@@ -432,7 +433,8 @@ class UsMoGetSupervisionTypeOnDay(unittest.TestCase):
         base_sentence = StateSupervisionSentence.new_with_defaults(
             state_code='US_MO',
             external_id='282443-20180427-1',
-            start_date=datetime.date(year=2018, month=5, day=25)
+            start_date=datetime.date(year=2018, month=5, day=25),
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO
         )
         us_mo_sentence = UsMoSupervisionSentence.from_supervision_sentence(base_sentence, raw_statuses)
 
@@ -451,7 +453,8 @@ class UsMoGetSupervisionTypeOnDay(unittest.TestCase):
         base_sentence = StateSupervisionSentence.new_with_defaults(
             state_code='US_MO',
             external_id='1324786-20180214-1',
-            start_date=datetime.date(year=2018, month=3, day=23)
+            start_date=datetime.date(year=2018, month=3, day=23),
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO
         )
         us_mo_sentence = UsMoSupervisionSentence.from_supervision_sentence(base_sentence, raw_statuses)
 
@@ -475,7 +478,8 @@ class UsMoGetSupervisionTypeOnDay(unittest.TestCase):
         base_sentence = StateSupervisionSentence.new_with_defaults(
             state_code='US_MO',
             external_id='1324786-20180214-1',
-            start_date=datetime.date(year=2018, month=3, day=23)
+            start_date=datetime.date(year=2018, month=3, day=23),
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO
         )
         us_mo_sentence = UsMoSupervisionSentence.from_supervision_sentence(base_sentence, raw_statuses)
 
@@ -496,7 +500,8 @@ class UsMoGetSupervisionTypeOnDay(unittest.TestCase):
         base_sentence = StateSupervisionSentence.new_with_defaults(
             state_code='US_MO',
             external_id='165467-20171227-1',
-            start_date=datetime.date(year=2018, month=1, day=29)
+            start_date=datetime.date(year=2018, month=1, day=29),
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO
         )
         us_mo_sentence = UsMoSupervisionSentence.from_supervision_sentence(base_sentence, raw_statuses)
 
@@ -514,7 +519,8 @@ class UsMoGetSupervisionTypeOnDay(unittest.TestCase):
         base_sentence = StateSupervisionSentence.new_with_defaults(
             state_code='US_MO',
             external_id='1269010-20140403-1',
-            start_date=datetime.date(year=2014, month=4, day=3)
+            start_date=datetime.date(year=2014, month=4, day=3),
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO
         )
         us_mo_sentence = UsMoSupervisionSentence.from_supervision_sentence(base_sentence, raw_statuses)
 
@@ -539,7 +545,8 @@ class UsMoGetSupervisionTypeOnDay(unittest.TestCase):
         base_sentence = StateSupervisionSentence.new_with_defaults(
             state_code='US_MO',
             external_id='1344336-20190703-1',
-            start_date=datetime.date(year=2019, month=7, day=16)
+            start_date=datetime.date(year=2019, month=7, day=16),
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO
         )
         us_mo_sentence = UsMoSupervisionSentence.from_supervision_sentence(base_sentence, raw_statuses)
 
@@ -559,7 +566,8 @@ class UsMoGetSupervisionTypeOnDay(unittest.TestCase):
         base_sentence = StateSupervisionSentence.new_with_defaults(
             state_code='US_MO',
             external_id='1254438-20130418-2',
-            start_date=datetime.date(year=2014, month=6, day=10)
+            start_date=datetime.date(year=2014, month=6, day=10),
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO
         )
         us_mo_sentence = UsMoSupervisionSentence.from_supervision_sentence(base_sentence, raw_statuses)
 
@@ -582,7 +590,8 @@ class UsMoGetSupervisionTypeOnDay(unittest.TestCase):
         base_sentence = StateSupervisionSentence.new_with_defaults(
             state_code='US_MO',
             external_id='1328840-20180523-3',
-            start_date=datetime.date(year=2014, month=6, day=10)
+            start_date=datetime.date(year=2014, month=6, day=10),
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO
         )
         us_mo_sentence = UsMoSupervisionSentence.from_supervision_sentence(base_sentence, raw_statuses)
 
@@ -602,7 +611,8 @@ class UsMoGetSupervisionTypeOnDay(unittest.TestCase):
         base_sentence = StateSupervisionSentence.new_with_defaults(
             state_code='US_MO',
             external_id='1163420-20180116-1',
-            start_date=datetime.date(year=2014, month=6, day=10)
+            start_date=datetime.date(year=2014, month=6, day=10),
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO
         )
         us_mo_sentence = UsMoSupervisionSentence.from_supervision_sentence(base_sentence, raw_statuses)
 
@@ -674,7 +684,8 @@ class UsMoGetSupervisionTypeOnDay(unittest.TestCase):
         base_sentence = StateSupervisionSentence.new_with_defaults(
             state_code='US_MO',
             external_id='1343861-20190620-2',
-            start_date=datetime.date(year=2019, month=7, day=10)
+            start_date=datetime.date(year=2019, month=7, day=10),
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO
         )
         us_mo_sentence = UsMoSupervisionSentence.from_supervision_sentence(base_sentence, raw_statuses)
 
@@ -699,7 +710,8 @@ class UsMoGetSupervisionTypeOnDay(unittest.TestCase):
         base_sentence = StateSupervisionSentence.new_with_defaults(
             state_code='US_MO',
             external_id='1343861-20190620-2',
-            start_date=datetime.date(year=2019, month=7, day=10)
+            start_date=datetime.date(year=2019, month=7, day=10),
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO
         )
         us_mo_sentence = UsMoSupervisionSentence.from_supervision_sentence(base_sentence, raw_statuses)
 
@@ -717,7 +729,8 @@ class UsMoGetSupervisionTypeOnDay(unittest.TestCase):
         base_sentence = StateSupervisionSentence.new_with_defaults(
             state_code='US_MO',
             external_id='1343861-20190620-2',
-            start_date=datetime.date(year=2019, month=7, day=10)
+            start_date=datetime.date(year=2019, month=7, day=10),
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO
         )
         us_mo_sentence = UsMoSupervisionSentence.from_supervision_sentence(base_sentence, raw_statuses)
 
@@ -735,7 +748,8 @@ class UsMoGetSupervisionTypeOnDay(unittest.TestCase):
         base_sentence = StateSupervisionSentence.new_with_defaults(
             state_code='US_MO',
             external_id='1343861-20190620-2',
-            start_date=datetime.date(year=2019, month=7, day=10)
+            start_date=datetime.date(year=2019, month=7, day=10),
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO
         )
         us_mo_sentence = UsMoSupervisionSentence.from_supervision_sentence(base_sentence, raw_statuses)
 
@@ -758,7 +772,8 @@ class UsMoGetSupervisionTypeOnDay(unittest.TestCase):
         base_sentence = StateSupervisionSentence.new_with_defaults(
             state_code='US_MO',
             external_id='1343861-20190620-2',
-            start_date=datetime.date(year=2017, month=5, day=5)
+            start_date=datetime.date(year=2017, month=5, day=5),
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO
         )
         us_mo_sentence = UsMoSupervisionSentence.from_supervision_sentence(base_sentence, raw_statuses)
 
@@ -777,7 +792,8 @@ class UsMoGetSupervisionTypeOnDay(unittest.TestCase):
         base_sentence = StateSupervisionSentence.new_with_defaults(
             state_code='US_MO',
             external_id='1123534-20041220-5',
-            start_date=datetime.date(year=2013, month=6, day=3)
+            start_date=datetime.date(year=2013, month=6, day=3),
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO
         )
         us_mo_sentence = UsMoSupervisionSentence.from_supervision_sentence(base_sentence, raw_statuses)
 
@@ -802,7 +818,8 @@ class UsMoGetSupervisionTypeOnDay(unittest.TestCase):
         base_sentence = StateSupervisionSentence.new_with_defaults(
             state_code='US_MO',
             external_id='1123534-20041220-5',
-            start_date=datetime.date(year=2013, month=6, day=3)
+            start_date=datetime.date(year=2013, month=6, day=3),
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO
         )
         us_mo_sentence = UsMoSupervisionSentence.from_supervision_sentence(base_sentence, raw_statuses)
 
@@ -822,7 +839,8 @@ class UsMoGetSupervisionTypeOnDay(unittest.TestCase):
         base_sentence = StateSupervisionSentence.new_with_defaults(
             state_code='US_MO',
             external_id='1291992-20151103-1',
-            start_date=datetime.date(year=2016, month=1, day=5)
+            start_date=datetime.date(year=2016, month=1, day=5),
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO
         )
         us_mo_sentence = UsMoSupervisionSentence.from_supervision_sentence(base_sentence, raw_statuses)
 
@@ -845,7 +863,8 @@ class UsMoGetSupervisionTypeOnDay(unittest.TestCase):
         base_sentence = StateSupervisionSentence.new_with_defaults(
             state_code='US_MO',
             external_id='38140-19800131-8',
-            start_date=datetime.date(year=1980, month=1, day=31)
+            start_date=datetime.date(year=1980, month=1, day=31),
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO
         )
         us_mo_sentence = UsMoSupervisionSentence.from_supervision_sentence(base_sentence, raw_statuses)
 

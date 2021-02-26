@@ -642,7 +642,8 @@ class TestClassifyProgramAssignments(unittest.TestCase):
         program_assignment = entities.StateProgramAssignment.new_with_defaults(
             state_code='US_XX',
             program_id='PG3',
-            referral_date=date(2009, 10, 3)
+            referral_date=date(2009, 10, 3),
+            participation_status=StateProgramAssignmentParticipationStatus.PRESENT_WITHOUT_INFO
         )
 
         supervision_period = \
@@ -677,6 +678,7 @@ class TestClassifyProgramAssignments(unittest.TestCase):
             state_code=program_assignment.state_code,
             program_id=program_assignment.program_id,
             event_date=program_assignment.referral_date,
+            participation_status=program_assignment.participation_status,
             supervision_type=supervision_period.supervision_type,
             supervising_officer_external_id='OFFICER0009',
             supervising_district_external_id='10',
@@ -712,7 +714,8 @@ class TestClassifyProgramAssignments(unittest.TestCase):
         program_assignment = entities.StateProgramAssignment.new_with_defaults(
             state_code='US_XX',
             program_id='PG3',
-            referral_date=date(2009, 10, 3)
+            referral_date=date(2009, 10, 3),
+            participation_status=StateProgramAssignmentParticipationStatus.PRESENT_WITHOUT_INFO
         )
 
         assessment = entities.StateAssessment.new_with_defaults(
@@ -739,6 +742,7 @@ class TestClassifyProgramAssignments(unittest.TestCase):
             event_date=program_assignment.referral_date,
             assessment_score=33,
             assessment_type=StateAssessmentType.ORAS,
+            participation_status=program_assignment.participation_status,
         )
 
         correct_output = [(fake_person.person_id, (fake_person, [program_event]))]

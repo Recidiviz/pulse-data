@@ -225,7 +225,8 @@ class TestIncarcerationPipeline(unittest.TestCase):
             supervision_sentence_id=123,
             state_code=state_code,
             sentence_group_id=sentence_group.sentence_group_id,
-            person_id=fake_person_id
+            person_id=fake_person_id,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO
         )
 
         sentence_group.incarceration_sentences = [incarceration_sentence]
@@ -446,7 +447,8 @@ class TestIncarcerationPipeline(unittest.TestCase):
         supervision_sentence = schema.StateSupervisionSentence(
             supervision_sentence_id=123,
             state_code='US_XX',
-            person_id=fake_person_id
+            person_id=fake_person_id,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO
         )
 
         sentence_group.incarceration_sentences = [incarceration_sentence]

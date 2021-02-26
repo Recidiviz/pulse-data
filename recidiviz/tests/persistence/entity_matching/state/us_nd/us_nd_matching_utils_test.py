@@ -377,7 +377,8 @@ class TestUsNdMatchingUtils(BaseStateMatchingUtilsTest):
             state_code=_STATE_CODE, supervision_violation_entries=[placeholder_sv],
             status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO)
         placeholder_ss = StateSupervisionSentence.new_with_defaults(
-            state_code=_STATE_CODE, supervision_periods=[placeholder_sp])
+            state_code=_STATE_CODE, supervision_periods=[placeholder_sp],
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO)
 
         placeholder_sg = StateSentenceGroup.new_with_defaults(
             state_code=_STATE_CODE,
@@ -456,7 +457,8 @@ class TestUsNdMatchingUtils(BaseStateMatchingUtilsTest):
             state_code=_STATE_CODE, supervision_violation_entries=[placeholder_sv],
             status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO)
         placeholder_ss = StateSupervisionSentence.new_with_defaults(
-            state_code=_STATE_CODE, supervision_periods=[placeholder_sp])
+            state_code=_STATE_CODE, supervision_periods=[placeholder_sp],
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO)
 
         ip_1 = StateIncarcerationPeriod.new_with_defaults(
             state_code=_STATE_CODE,
@@ -534,7 +536,8 @@ class TestUsNdMatchingUtils(BaseStateMatchingUtilsTest):
             state_code=_STATE_CODE, supervision_violation_entries=[placeholder_sv],
             status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO)
         placeholder_ss = StateSupervisionSentence.new_with_defaults(
-            state_code=_STATE_CODE, supervision_periods=[placeholder_sp])
+            state_code=_STATE_CODE, supervision_periods=[placeholder_sp],
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO)
 
         ip_1 = StateIncarcerationPeriod.new_with_defaults(
             state_code=_STATE_CODE,
@@ -607,7 +610,8 @@ class TestUsNdMatchingUtils(BaseStateMatchingUtilsTest):
             state_code=_STATE_CODE, supervision_violation_entries=[placeholder_sv],
             status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO)
         placeholder_ss = StateSupervisionSentence.new_with_defaults(
-            state_code=_STATE_CODE, supervision_periods=[placeholder_sp])
+            state_code=_STATE_CODE, supervision_periods=[placeholder_sp],
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO)
 
         ip_1 = StateIncarcerationPeriod.new_with_defaults(
             state_code=_STATE_CODE,

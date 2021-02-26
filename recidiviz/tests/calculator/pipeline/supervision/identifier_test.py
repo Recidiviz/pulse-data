@@ -10475,7 +10475,7 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
         )
 
         supervision_violation_response_2 = StateSupervisionViolationResponse.new_with_defaults(
-            supervision_violation_response_id='XXX',
+            supervision_violation_response_id=1234567,
             response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
             state_code='US_PA',
             response_date=date(2009, 1, 6),
@@ -10483,7 +10483,7 @@ class TestGetViolationAndResponseHistory(unittest.TestCase):
         )
 
         supervision_violation_response_3 = StateSupervisionViolationResponse.new_with_defaults(
-            supervision_violation_response_id='YYY',
+            supervision_violation_response_id=1234567,
             response_type=StateSupervisionViolationResponseType.VIOLATION_REPORT,
             state_code='US_PA',
             response_date=date(2009, 1, 5),

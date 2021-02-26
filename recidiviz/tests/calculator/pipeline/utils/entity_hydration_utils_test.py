@@ -136,6 +136,7 @@ class TestCovertSentenceToStateSpecificType(unittest.TestCase):
             state_code='US_MO',
             external_id='123-external-id',
             start_date=date(2000, 1, 1),
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO
         )
 
         expected_sentence = UsMoSupervisionSentence.new_with_defaults(
@@ -144,7 +145,8 @@ class TestCovertSentenceToStateSpecificType(unittest.TestCase):
             external_id='123-external-id',
             start_date=date(2000, 1, 1),
             base_sentence=supervision_sentence,
-            sentence_statuses=[self.TEST_CONVERTED_MO_STATUS]
+            sentence_statuses=[self.TEST_CONVERTED_MO_STATUS],
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO
         )
 
         self.run_test_pipeline(self.TEST_PERSON_ID,
@@ -446,7 +448,8 @@ class TestSetSentencesOnSentenceGroup(unittest.TestCase):
                     admission_date=date(2000, 3, 2),
                     status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO
                 )
-            ]
+            ],
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO
         )
 
         sentence_group = StateSentenceGroup.new_with_defaults(
@@ -462,7 +465,8 @@ class TestSetSentencesOnSentenceGroup(unittest.TestCase):
             supervision_sentences=[
                 StateSupervisionSentence.new_with_defaults(
                     state_code='US_XX',
-                    supervision_sentence_id=supervision_sentence_id
+                    supervision_sentence_id=supervision_sentence_id,
+                    status=StateSentenceStatus.PRESENT_WITHOUT_INFO
                 )
             ]
         )
@@ -508,7 +512,8 @@ class TestSetSentencesOnSentenceGroup(unittest.TestCase):
                     admission_date=date(2000, 3, 2),
                     status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO
                 )
-            ]
+            ],
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO
         )
 
         expected_sentence_group = StateSentenceGroup.new_with_defaults(
