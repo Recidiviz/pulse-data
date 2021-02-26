@@ -177,6 +177,7 @@ def wait_for_ingest_to_create_tasks(schema_arg: str) -> Tuple[str, HTTPStatus]:
         lock_id = str(uuid.uuid4())
     else:
         lock_id = json_data['lock_id']
+    logging.info('Request lock id: %s', lock_id)
 
     if not lock_manager.is_locked(postgres_to_bq_lock_name_with_suffix(schema_arg)):
         time = datetime.now().strftime("%m/%d/%Y, %H:%M:%S")
@@ -189,8 +190,9 @@ def wait_for_ingest_to_create_tasks(schema_arg: str) -> Tuple[str, HTTPStatus]:
             contents_json = json.loads(contents)
         except (TypeError, json.decoder.JSONDecodeError):
             contents_json = {}
-        if 'lock_id' not in contents_json or lock_id is not contents_json['lock_id']:
-            raise GCSPseudoLockAlreadyExists(f"Pseudo export lock already exists with UUID {lock_id}")
+        logging.info('Lock contents: %s', contents_json)
+        if lock_id != contents_json.get('lock_id'):
+            raise GCSPseudoLockAlreadyExists(f"UUID {lock_id} does not match existing lock's UUID")
 
     no_regions_running = lock_manager.no_active_locks_with_prefix(GCS_TO_POSTGRES_INGEST_RUNNING_LOCK_NAME)
     if not no_regions_running:
