@@ -22,6 +22,8 @@ import attr
 from recidiviz.big_query.big_query_view import BigQueryViewBuilder
 from recidiviz.big_query.export.export_query_config import ExportBigQueryViewConfig, ExportOutputFormatType
 from recidiviz.big_query.view_update_manager import BigQueryViewNamespace
+from recidiviz.calculator.query.justice_counts.view_config import VIEW_BUILDERS_FOR_VIEWS_TO_EXPORT as \
+    JUSTICE_COUNTS_VIEW_BUILDERS
 from recidiviz.calculator.query.state.views.covid_dashboard.covid_dashboard_views import COVID_DASHBOARD_VIEW_BUILDERS
 from recidiviz.calculator.query.state.views.dashboard.dashboard_views import LANTERN_DASHBOARD_VIEW_BUILDERS, \
     CORE_DASHBOARD_VIEW_BUILDERS
@@ -104,6 +106,7 @@ class ExportViewCollectionConfig:
 CASE_TRIAGE_VIEWS_OUTPUT_DIRECTORY_URI = "gs://{project_id}-case-triage-data"
 COVID_DASHBOARD_OUTPUT_DIRECTORY_URI = "gs://{project_id}-covid-dashboard-data"
 DASHBOARD_VIEWS_OUTPUT_DIRECTORY_URI = "gs://{project_id}-dashboard-data"
+JUSTICE_COUNTS_OUTPUT_DIRECTORY_URI = "gs://{project_id}-justice-counts-data"
 PO_REPORT_OUTPUT_DIRECTORY_URI = "gs://{project_id}-report-data/po_monthly_report"
 PUBLIC_DASHBOARD_VIEWS_OUTPUT_DIRECTORY_URI = "gs://{project_id}-public-dashboard-data"
 INGEST_METADATA_OUTPUT_DIRECTORY_URI = "gs://{project_id}-ingest-metadata"
@@ -150,6 +153,14 @@ VIEW_COLLECTION_EXPORT_CONFIGS: List[ExportViewCollectionConfig] = [
         state_code_filter=None,
         export_name='INGEST_METADATA',
         bq_view_namespace=BigQueryViewNamespace.INGEST_METADATA,
+    ),
+    # Justice Counts views for frontend
+    ExportViewCollectionConfig(
+        view_builders_to_export=JUSTICE_COUNTS_VIEW_BUILDERS,
+        output_directory_uri_template=JUSTICE_COUNTS_OUTPUT_DIRECTORY_URI,
+        state_code_filter=None,
+        export_name='JUSTICE_COUNTS',
+        bq_view_namespace=BigQueryViewNamespace.JUSTICE_COUNTS,
     ),
 ] + [
     # Lantern Dashboard views for all relevant states

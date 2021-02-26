@@ -1,5 +1,5 @@
 # Recidiviz - a data platform for criminal justice reform
-# Copyright (C) 2020 Recidiviz, Inc.
+# Copyright (C) 2021 Recidiviz, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,17 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
-"""Justice Counts view configuration."""
-from typing import Sequence
 
-from recidiviz.big_query.big_query_view import BigQueryViewBuilder
-from recidiviz.calculator.query.justice_counts.views.cloudsql import get_table_view_builders
-from recidiviz.calculator.query.justice_counts.views.corrections_metrics_by_month \
-    import CorrectionsMetricsByMonthBigQueryViewCollector
-
-_corrections_metrics_collector = CorrectionsMetricsByMonthBigQueryViewCollector()
-
-VIEW_BUILDERS_FOR_VIEWS_TO_EXPORT = [_corrections_metrics_collector.unified_builder]
-
-VIEW_BUILDERS_FOR_VIEWS_TO_UPDATE: Sequence[BigQueryViewBuilder] = (
-    get_table_view_builders() + _corrections_metrics_collector.collect_view_builders())
+output "name" {
+  value = google_storage_bucket.bucket.name
+}

@@ -15,23 +15,37 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # =============================================================================
 
-
-locals {
-  state_alpha_codes = ["US_ID", "US_MO", "US_ND", "US_PA", "US_TN", "US_MI"]
+# The project id associated with the buckets and service accounts (ex: "recidiviz-123").
+variable "project_id" {
+  type = string
 }
 
-module "state_direct_ingest_buckets_and_accounts" {
-  for_each         = toset(local.state_alpha_codes)
-  source           = "./modules/state-direct-ingest-bucket"
-  state_code       = each.key
-  region           = contains(["US_ID", "US_MO", "US_ND", "US_PA"], each.key) ? "us-east1" : var.region
-  is_production    = local.is_production
-  project_id       = var.project_id
-  state_admin_role = google_project_iam_custom_role.state-admin-role.name
+# Combined with the project id to creat the name (ex: "dashboard-data" becomes "recidiviz-123-dashboard-data")
+variable "name_suffix" {
+  type = string
 }
 
-module "justice-counts-data-bucket" {
-  source      = "./modules/cloud-storage-bucket"
-  project_id  = var.project_id
-  name_suffix = "justice-counts-data"
+# The location for the bucket, can be regional or multiregion (ex: "us-east1" or "us").
+variable "location" {
+  type    = string
+  default = "us"
+}
+
+resource "google_storage_bucket" "bucket" {
+  name                        = "${var.project_id}-${var.name_suffix}"
+  location                    = var.location
+  uniform_bucket_level_access = true
+
+  lifecycle_rule {
+    action {
+      type = "Delete"
+    }
+    condition {
+      num_newer_versions = 2
+    }
+  }
+
+  versioning {
+    enabled = true
+  }
 }
