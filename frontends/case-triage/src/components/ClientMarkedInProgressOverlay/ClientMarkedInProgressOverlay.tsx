@@ -41,7 +41,8 @@ const ClientMarkedInProgressOverlay = ({
         <InProgressConfirmationHeading>
           {wasPositiveAction ? "Great work!" : "Thanks for your feedback!"}
         </InProgressConfirmationHeading>
-        We&lsquo;ve marked {client.name}&lsquo;s case as in progress.{" "}
+        We&lsquo;ve marked <span className="fs-exclude">{client.name}</span>
+        &lsquo;s case as in progress.{" "}
         <Undo onClick={() => caseUpdatesStore.undo(client)}>Undo?</Undo>
       </InProgressConfirmation>
       <Icon kind={IconSVG.Success} fill={palette.white.main} size={32} />

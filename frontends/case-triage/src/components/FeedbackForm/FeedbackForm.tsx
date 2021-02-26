@@ -119,7 +119,7 @@ const FeedbackFormSchema = Yup.object().shape({
   actions: Yup.array(Yup.string().oneOf(Object.keys(CaseUpdateActionType)))
     .required()
     .min(1),
-  otherText: Yup.string().max(25),
+  otherText: Yup.string(),
 });
 
 interface FeedbackFormValues {
