@@ -58,6 +58,10 @@ resource "google_storage_bucket" "direct-ingest-bucket" {
       num_newer_versions = 2
     }
   }
+
+  versioning {
+    enabled = true
+  }
 }
 
 resource "google_storage_bucket" "prod-only-testing-direct-ingest-bucket" {
@@ -73,6 +77,10 @@ resource "google_storage_bucket" "prod-only-testing-direct-ingest-bucket" {
     condition {
       num_newer_versions = 2
     }
+  }
+
+  versioning {
+    enabled = true
   }
 }
 
