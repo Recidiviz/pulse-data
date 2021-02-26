@@ -150,6 +150,48 @@ class CloudSqlToBQExportManagerTest(unittest.TestCase):
     @mock.patch('recidiviz.utils.metadata.project_number', Mock(return_value='123456789'))
     @mock.patch(f'{CLOUD_SQL_BQ_EXPORT_MANAGER_PACKAGE_NAME}.pubsub_helper')
     @mock.patch(f'{CLOUD_SQL_BQ_EXPORT_MANAGER_PACKAGE_NAME}.BQRefreshCloudTaskManager')
+    def test_monitor_refresh_bq_tasks_requeue_unlock_no_publish(self,
+                                                                mock_task_manager: mock.MagicMock,
+                                                                mock_pubsub_helper: mock.MagicMock,
+                                                                mock_supported_region_codes: mock.MagicMock) -> None:
+        """Test that a bq monitor task does not publish topic/message
+        with empty topic/message and that it unlocks export lock"""
+        lock_manager = GCSPseudoLockManager()
+        mock_supported_region_codes.return_value = []
+
+        schema = 'schema'
+        topic = ''
+        message = ''
+        route = '/monitor_refresh_bq_tasks'
+        data = {"schema": schema, "topic": topic, "message": message}
+
+        lock_manager.lock(POSTGRES_TO_BQ_EXPORT_RUNNING_LOCK_NAME + schema.upper())
+
+        mock_task_manager.return_value.get_bq_queue_info.return_value = \
+            CloudTaskQueueInfo(queue_name='queue_name',
+                               task_names=[])
+
+        response = self.mock_flask_client.post(
+            route,
+            data=json.dumps(data),
+            content_type='application/json',
+            headers={'X-Appengine-Inbound-Appid': 'recidiviz-123'})
+
+        self.assertEqual(response.status_code, HTTPStatus.OK)
+        mock_task_manager.return_value. \
+            create_bq_refresh_monitor_task.assert_not_called()
+        mock_pubsub_helper.publish_message_to_topic.assert_not_called()
+        self.assertFalse(lock_manager.is_locked(POSTGRES_TO_BQ_EXPORT_RUNNING_LOCK_NAME + schema.upper()))
+
+    @mock.patch(f"{CONTROL_PACKAGE_NAME}.get_supported_direct_ingest_region_codes")
+    @mock.patch("recidiviz.utils.environment.get_gcp_environment", Mock(return_value='staging'))
+    @mock.patch("recidiviz.utils.regions.get_region", Mock(return_value='us_mo'))
+    @mock.patch('recidiviz.cloud_storage.gcs_pseudo_lock_manager.GcsfsFactory.build',
+                Mock(return_value=FakeGCSFileSystem()))
+    @mock.patch('recidiviz.utils.metadata.project_id', Mock(return_value='recidiviz-123'))
+    @mock.patch('recidiviz.utils.metadata.project_number', Mock(return_value='123456789'))
+    @mock.patch(f'{CLOUD_SQL_BQ_EXPORT_MANAGER_PACKAGE_NAME}.pubsub_helper')
+    @mock.patch(f'{CLOUD_SQL_BQ_EXPORT_MANAGER_PACKAGE_NAME}.BQRefreshCloudTaskManager')
     def test_monitor_refresh_bq_tasks_requeue_with_no_topic_and_message(self,
                                                       mock_task_manager: mock.MagicMock,
                                                       mock_pubsub_helper: mock.MagicMock,
@@ -186,6 +228,7 @@ class CloudSqlToBQExportManagerTest(unittest.TestCase):
         mock_task_manager.return_value. \
             create_bq_refresh_monitor_task.assert_called_with(schema, topic, message)
         mock_pubsub_helper.publish_message_to_topic.assert_not_called()
+        self.assertTrue(lock_manager.is_locked(POSTGRES_TO_BQ_EXPORT_RUNNING_LOCK_NAME + schema.upper()))
 
     @mock.patch(f"{CONTROL_PACKAGE_NAME}.get_supported_direct_ingest_region_codes")
     @mock.patch("recidiviz.utils.environment.get_gcp_environment", Mock(return_value='staging'))
@@ -232,6 +275,7 @@ class CloudSqlToBQExportManagerTest(unittest.TestCase):
         mock_task_manager.return_value.\
             create_bq_refresh_monitor_task.assert_called_with(schema, topic, message)
         mock_pubsub_helper.publish_message_to_topic.assert_not_called()
+        self.assertTrue(lock_manager.is_locked(POSTGRES_TO_BQ_EXPORT_RUNNING_LOCK_NAME + schema.upper()))
 
     @mock.patch(f"{CONTROL_PACKAGE_NAME}.get_supported_direct_ingest_region_codes")
     @mock.patch("recidiviz.utils.environment.get_gcp_environment", Mock(return_value='staging'))
@@ -274,6 +318,7 @@ class CloudSqlToBQExportManagerTest(unittest.TestCase):
         mock_task_manager.return_value. \
             create_bq_refresh_monitor_task.assert_not_called()
         mock_pubsub_helper.publish_message_to_topic.assert_called_with(message=message, topic=topic)
+        self.assertFalse(lock_manager.is_locked(POSTGRES_TO_BQ_EXPORT_RUNNING_LOCK_NAME + schema.upper()))
 
     @mock.patch('recidiviz.cloud_storage.gcs_pseudo_lock_manager.GcsfsFactory.build',
                 Mock(return_value=FakeGCSFileSystem()))

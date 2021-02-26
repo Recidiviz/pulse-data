@@ -24,7 +24,7 @@ from typing import Generic, Optional
 
 from recidiviz import IngestInfo
 from recidiviz.cloud_storage.gcs_pseudo_lock_manager import GCSPseudoLockManager, \
-    POSTGRES_TO_BQ_EXPORT_RUNNING_LOCK_NAME, GCS_TO_POSTGRES_INGEST_RUNNING_LOCK_NAME
+    GCS_TO_POSTGRES_INGEST_RUNNING_LOCK_NAME
 from recidiviz.ingest.direct.controllers.direct_ingest_types import ContentsHandleType, IngestArgsType
 from recidiviz.ingest.direct.direct_ingest_cloud_task_manager import \
     DirectIngestCloudTaskManagerImpl
@@ -35,6 +35,9 @@ from recidiviz.ingest.direct.errors import DirectIngestError, \
 from recidiviz.ingest.ingestor import Ingestor
 from recidiviz.ingest.scrape import ingest_utils
 from recidiviz.persistence import persistence
+from recidiviz.persistence.database.bq_refresh.bq_refresh_utils import postgres_to_bq_lock_name_for_schema
+from recidiviz.persistence.database.schema_utils import schema_type_for_system_level
+from recidiviz.persistence.database.sqlalchemy_engine_manager import SchemaType
 from recidiviz.utils import regions, trace
 
 
@@ -103,7 +106,9 @@ class BaseDirectIngestController(Ingestor, Generic[IngestArgsType, ContentsHandl
                 self._job_tag(next_job_args))
             return
 
-        if self.lock_manager.is_locked(POSTGRES_TO_BQ_EXPORT_RUNNING_LOCK_NAME):
+        if self.lock_manager.is_locked(
+            postgres_to_bq_lock_name_for_schema(schema_type_for_system_level(self.system_level))
+        ) or self.lock_manager.is_locked(postgres_to_bq_lock_name_for_schema(SchemaType.OPERATIONS)):
             logging.info('Postgres to BigQuery export is running, cannot run ingest - returning')
             return
 
@@ -193,7 +198,9 @@ class BaseDirectIngestController(Ingestor, Generic[IngestArgsType, ContentsHandl
                                                         args: IngestArgsType) -> None:
         check_is_region_launched_in_env(self.region)
 
-        if self.lock_manager.is_locked(POSTGRES_TO_BQ_EXPORT_RUNNING_LOCK_NAME):
+        if self.lock_manager.is_locked(
+            postgres_to_bq_lock_name_for_schema(schema_type_for_system_level(self.system_level))
+        ) or self.lock_manager.is_locked(postgres_to_bq_lock_name_for_schema(SchemaType.OPERATIONS)):
             logging.info('Postgres to BigQuery export is running, can not run ingest')
             return
         self.lock_manager.lock(self.ingest_process_lock_for_region())

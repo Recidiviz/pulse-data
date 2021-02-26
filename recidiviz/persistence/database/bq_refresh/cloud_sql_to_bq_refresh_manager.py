@@ -38,9 +38,10 @@ from flask import request
 
 from recidiviz.big_query.big_query_client import BigQueryClientImpl, BigQueryClient
 from recidiviz.cloud_storage.gcs_pseudo_lock_manager import GCSPseudoLockManager, \
-    GCS_TO_POSTGRES_INGEST_RUNNING_LOCK_NAME, POSTGRES_TO_BQ_EXPORT_RUNNING_LOCK_NAME, GCSPseudoLockAlreadyExists
+    GCS_TO_POSTGRES_INGEST_RUNNING_LOCK_NAME, GCSPseudoLockAlreadyExists
 from recidiviz.ingest.direct.direct_ingest_control import kick_all_schedulers
 from recidiviz.persistence.database.bq_refresh import bq_refresh, cloud_sql_to_gcs_export
+from recidiviz.persistence.database.bq_refresh.bq_refresh_utils import postgres_to_bq_lock_name_with_suffix
 from recidiviz.persistence.database.bq_refresh.cloud_sql_to_bq_refresh_config import CloudSqlToBQConfig
 
 from recidiviz.persistence.database.bq_refresh.bq_refresh_cloud_task_manager import \
@@ -149,7 +150,7 @@ def monitor_refresh_bq_tasks() -> Tuple[str, int]:
 
     # Unlock export lock when all BQ exports complete
     lock_manager = GCSPseudoLockManager()
-    lock_manager.unlock(postgres_to_bq_lock_name_for_schema(schema))
+    lock_manager.unlock(postgres_to_bq_lock_name_with_suffix(schema))
     logging.info('Done running export for %s, unlocking Postgres to BigQuery export', schema)
 
     # Kick scheduler to restart ingest
@@ -158,7 +159,7 @@ def monitor_refresh_bq_tasks() -> Tuple[str, int]:
     return ('', HTTPStatus.OK)
 
 
-@cloud_sql_to_bq_blueprint.route('/create_refresh_bq_tasks/<schema_arg>')
+@cloud_sql_to_bq_blueprint.route('/create_refresh_bq_tasks/<schema_arg>', methods=['GET', 'POST'])
 @requires_gae_auth
 def wait_for_ingest_to_create_tasks(schema_arg: str) -> Tuple[str, HTTPStatus]:
     """Worker function to wait until ingest is not running to create_all_bq_refresh_tasks_for_schema.
@@ -177,13 +178,13 @@ def wait_for_ingest_to_create_tasks(schema_arg: str) -> Tuple[str, HTTPStatus]:
     else:
         lock_id = json_data['lock_id']
 
-    if not lock_manager.is_locked(postgres_to_bq_lock_name_for_schema(schema_arg)):
+    if not lock_manager.is_locked(postgres_to_bq_lock_name_with_suffix(schema_arg)):
         time = datetime.now().strftime("%m/%d/%Y, %H:%M:%S")
         contents_as_json = {"time": time, "lock_id": lock_id}
         contents = json.dumps(contents_as_json)
-        lock_manager.lock(postgres_to_bq_lock_name_for_schema(schema_arg), contents)
+        lock_manager.lock(postgres_to_bq_lock_name_with_suffix(schema_arg), contents)
     else:
-        contents = lock_manager.get_lock_contents(postgres_to_bq_lock_name_for_schema(schema_arg))
+        contents = lock_manager.get_lock_contents(postgres_to_bq_lock_name_with_suffix(schema_arg))
         try:
             contents_json = json.loads(contents)
         except (TypeError, json.decoder.JSONDecodeError):
@@ -243,7 +244,3 @@ def create_all_bq_refresh_tasks_for_schema(schema_arg: str) -> None:
         pub_sub_message = ''
 
     task_manager.create_bq_refresh_monitor_task(schema_type.value, pub_sub_topic, pub_sub_message)
-
-
-def postgres_to_bq_lock_name_for_schema(schema: str) -> str:
-    return POSTGRES_TO_BQ_EXPORT_RUNNING_LOCK_NAME + schema.upper()
