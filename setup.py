@@ -41,6 +41,7 @@ REQUIRED_PACKAGES = [
     'google-api-python-client',
     # TODO(#4231): Pinned due to dependency version introduced in version 2.0.0 on 10/5/20
     'google-cloud-monitoring==1.1.0',
+    'google-cloud-secret-manager',
     'more-itertools',
     'oauth2client',
     'opencensus',
