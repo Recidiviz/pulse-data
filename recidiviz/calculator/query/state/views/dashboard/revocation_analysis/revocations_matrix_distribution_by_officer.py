@@ -103,7 +103,7 @@ REVOCATIONS_MATRIX_DISTRIBUTION_BY_OFFICER_QUERY_TEMPLATE = \
         -- List all locations an officer has supervised in during the time period, with the officer name
         -- E.g. If officer "555: JAMES SMITH" has supervised in locations 07 and 09 in the time period, then this
         -- would produce a label in the format "07, 09 - JAMES SMITH" --
-        CONCAT(STRING_AGG(DISTINCT district, ', ' ORDER BY district), ' - ',
+        CONCAT(STRING_AGG(DISTINCT district, ' & ' ORDER BY district), ' - ',
                IFNULL(SPLIT(officer, ':')[SAFE_OFFSET(1)], officer)) AS officer_label    
       FROM officers_to_locations
       GROUP BY state_code, officer, metric_period_months 
