@@ -207,6 +207,7 @@ class TestFindProgramReferrals(unittest.TestCase):
         program_assignment = StateProgramAssignment.new_with_defaults(
             state_code='US_XX',
             program_id='PG3',
+            participation_status=StateProgramAssignmentParticipationStatus.PRESENT_WITHOUT_INFO
         )
 
         assessments = []

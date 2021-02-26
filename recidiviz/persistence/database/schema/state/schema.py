@@ -2404,7 +2404,7 @@ class _StateProgramAssignmentSharedColumns(_ReferencesStatePersonSharedColumns):
     program_id = Column(String(255))
     program_location_id = Column(String(255))
 
-    participation_status = Column(state_program_assignment_participation_status)
+    participation_status = Column(state_program_assignment_participation_status, nullable=False)
     participation_status_raw_text = Column(String(255))
     discharge_reason = Column(state_program_assignment_discharge_reason)
     discharge_reason_raw_text = Column(String(255))

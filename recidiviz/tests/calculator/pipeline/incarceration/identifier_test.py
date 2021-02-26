@@ -262,7 +262,8 @@ class TestFindIncarcerationEvents(unittest.TestCase):
         supervision_sentence = StateSupervisionSentence.new_with_defaults(
             state_code='US_XX',
             start_date=date(2008, 10, 11),
-            incarceration_periods=[incarceration_period]
+            incarceration_periods=[incarceration_period],
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO
         )
 
         sentence_group = StateSentenceGroup.new_with_defaults(
@@ -336,7 +337,8 @@ class TestFindIncarcerationEvents(unittest.TestCase):
             state_code='US_ID',
             start_date=date(2018, 11, 1),
             incarceration_periods=[incarceration_period],
-            supervision_periods=[supervision_period]
+            supervision_periods=[supervision_period],
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO
         )
 
         sentence_group = StateSentenceGroup.new_with_defaults(
@@ -486,7 +488,8 @@ class TestFindIncarcerationEvents(unittest.TestCase):
         supervision_sentence = StateSupervisionSentence.new_with_defaults(
             state_code='US_XX',
             start_date=date(2008, 10, 11),
-            incarceration_periods=[incarceration_period]
+            incarceration_periods=[incarceration_period],
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO
         )
 
         sentence_group = StateSentenceGroup.new_with_defaults(
@@ -812,7 +815,8 @@ class TestFindEndOfMonthStatePrisonStays(unittest.TestCase):
                     supervision_type=StateSupervisionType.PROBATION,
                     start_date=date(2010, 1, 1),
                     supervision_periods=[supervision_period],
-                    incarceration_periods=[incarceration_period]
+                    incarceration_periods=[incarceration_period],
+                    status=StateSentenceStatus.PRESENT_WITHOUT_INFO
                 ),
                 supervision_type_spans=[
                     SupervisionTypeSpan(
@@ -1565,7 +1569,8 @@ class TestAdmissionEventForPeriod(unittest.TestCase):
                     supervision_type=StateSupervisionType.PROBATION,
                     start_date=date(2010, 1, 1),
                     supervision_periods=[supervision_period],
-                    incarceration_periods=[incarceration_period]),
+                    incarceration_periods=[incarceration_period],
+                    status=StateSentenceStatus.PRESENT_WITHOUT_INFO),
                 supervision_type_spans=[
                     SupervisionTypeSpan(
                         start_date=date(2010, 1, 1),
@@ -1611,7 +1616,8 @@ class TestAdmissionEventForPeriod(unittest.TestCase):
             status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO)
         supervision_sentences = [StateSupervisionSentence.new_with_defaults(
             state_code='US_ID',
-            supervision_periods=[supervision_period]
+            supervision_periods=[supervision_period],
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO
         )]
         incarceration_sentences = []
 
@@ -1845,7 +1851,8 @@ class TestReleaseEventForPeriod(unittest.TestCase):
 
         supervision_sentences = [StateSupervisionSentence.new_with_defaults(
             state_code='US_ID',
-            supervision_periods=[supervision_period]
+            supervision_periods=[supervision_period],
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO
         )]
 
         incarceration_sentences = []
@@ -1895,7 +1902,8 @@ class TestReleaseEventForPeriod(unittest.TestCase):
                     supervision_type=StateSupervisionType.PROBATION,
                     start_date=date(2019, 11, 24),
                     supervision_periods=[supervision_period],
-                    incarceration_periods=[incarceration_period]),
+                    incarceration_periods=[incarceration_period],
+                    status=StateSentenceStatus.PRESENT_WITHOUT_INFO),
                 supervision_type_spans=[
                     SupervisionTypeSpan(
                         start_date=date(2019, 12, 4),
@@ -2015,7 +2023,8 @@ class TestGetUniquePeriodsFromSentenceGroupAndAddBackedges(unittest.TestCase):
                 supervision_sentences=[
                     StateSupervisionSentence.new_with_defaults(
                         state_code='US_XX',
-                        incarceration_periods=[incarceration_period_1, incarceration_period_3]
+                        incarceration_periods=[incarceration_period_1, incarceration_period_3],
+                        status=StateSentenceStatus.PRESENT_WITHOUT_INFO
                     )
                 ]
             ),

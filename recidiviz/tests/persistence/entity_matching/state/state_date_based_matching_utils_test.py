@@ -62,7 +62,8 @@ class TestStateDateBasedMatchingUtils(BaseStateMatchingUtilsTest):
         sp = StateSupervisionPeriod.new_with_defaults(
             state_code=_STATE_CODE, external_id=_EXTERNAL_ID, start_date=_DATE_1, termination_date=_DATE_4,
             status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO)
-        placeholder_ss = StateSupervisionSentence.new_with_defaults(state_code=_STATE_CODE, supervision_periods=[sp])
+        placeholder_ss = StateSupervisionSentence.new_with_defaults(
+            state_code=_STATE_CODE, supervision_periods=[sp], status=StateSentenceStatus.PRESENT_WITHOUT_INFO)
 
         ss = StateSupervisionSentence.new_with_defaults(
             state_code=_STATE_CODE,
@@ -96,7 +97,8 @@ class TestStateDateBasedMatchingUtils(BaseStateMatchingUtilsTest):
         sp = StateSupervisionPeriod.new_with_defaults(
             state_code=_STATE_CODE, external_id=_EXTERNAL_ID, start_date=_DATE_2, termination_date=_DATE_2,
             status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO)
-        placeholder_ss = StateSupervisionSentence.new_with_defaults(state_code=_STATE_CODE, supervision_periods=[sp])
+        placeholder_ss = StateSupervisionSentence.new_with_defaults(
+            state_code=_STATE_CODE, supervision_periods=[sp], status=StateSentenceStatus.PRESENT_WITHOUT_INFO)
 
         ss = StateSupervisionSentence.new_with_defaults(
             state_code=_STATE_CODE,
@@ -144,7 +146,8 @@ class TestStateDateBasedMatchingUtils(BaseStateMatchingUtilsTest):
             status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO)
 
         placeholder_ss = StateSupervisionSentence.new_with_defaults(
-            state_code=_STATE_CODE, supervision_periods=[sp_no_match, sp_1, sp_2], incarceration_periods=[ip_1])
+            state_code=_STATE_CODE, supervision_periods=[sp_no_match, sp_1, sp_2], incarceration_periods=[ip_1],
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO)
 
         ss = StateSupervisionSentence.new_with_defaults(
             state_code=_STATE_CODE,
@@ -198,9 +201,11 @@ class TestStateDateBasedMatchingUtils(BaseStateMatchingUtilsTest):
             status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO)
 
         placeholder_ss = StateSupervisionSentence.new_with_defaults(
-            state_code=_STATE_CODE, supervision_periods=[sp_1], incarceration_periods=[ip_1])
+            state_code=_STATE_CODE, supervision_periods=[sp_1], incarceration_periods=[ip_1],
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO)
         ss = StateSupervisionSentence.new_with_defaults(
-            state_code=_STATE_CODE, external_id=_EXTERNAL_ID, start_date=_DATE_4, completion_date=None)
+            state_code=_STATE_CODE, external_id=_EXTERNAL_ID, start_date=_DATE_4, completion_date=None,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO)
         inc_s = StateIncarcerationSentence.new_with_defaults(
             state_code=_STATE_CODE, external_id=_EXTERNAL_ID, start_date=_DATE_4, completion_date=None,
             status=StateSentenceStatus.PRESENT_WITHOUT_INFO)
@@ -242,9 +247,11 @@ class TestStateDateBasedMatchingUtils(BaseStateMatchingUtilsTest):
             status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO)
 
         placeholder_ss = StateSupervisionSentence.new_with_defaults(
-            state_code=_STATE_CODE, supervision_periods=[sp_1], incarceration_periods=[ip_1])
+            state_code=_STATE_CODE, supervision_periods=[sp_1], incarceration_periods=[ip_1],
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO)
         ss = StateSupervisionSentence.new_with_defaults(
-            state_code=_STATE_CODE, external_id=_EXTERNAL_ID, start_date=_DATE_4, completion_date=None)
+            state_code=_STATE_CODE, external_id=_EXTERNAL_ID, start_date=_DATE_4, completion_date=None,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO)
         inc_s = StateIncarcerationSentence.new_with_defaults(
             state_code=_STATE_CODE, external_id=_EXTERNAL_ID, start_date=_DATE_4, completion_date=None,
             status=StateSentenceStatus.PRESENT_WITHOUT_INFO)
@@ -285,7 +292,8 @@ class TestStateDateBasedMatchingUtils(BaseStateMatchingUtilsTest):
             status=StateIncarcerationPeriodStatus.PRESENT_WITHOUT_INFO)
 
         placeholder_ss = StateSupervisionSentence.new_with_defaults(
-            state_code=_STATE_CODE, supervision_periods=[sp_1], incarceration_periods=[ip_1])
+            state_code=_STATE_CODE, supervision_periods=[sp_1], incarceration_periods=[ip_1],
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO)
         ss = StateSupervisionSentence.new_with_defaults(
             state_code=_STATE_CODE,
             external_id=_EXTERNAL_ID,
@@ -487,7 +495,8 @@ class TestStateDateBasedMatchingUtils(BaseStateMatchingUtilsTest):
         self.assert_people_match([expected_person], input_people)
 
     def test_isSentenceEndedByStatus(self) -> None:
-        sentence = StateSupervisionSentence.new_with_defaults(state_code=_STATE_CODE)
+        sentence = StateSupervisionSentence.new_with_defaults(
+            state_code=_STATE_CODE, status=StateSentenceStatus.PRESENT_WITHOUT_INFO)
         for status in StateSentenceStatus:
             sentence.status = status
             db_entity = converter.convert_entity_to_schema_object(sentence)
@@ -513,7 +522,8 @@ class TestStateDateBasedMatchingUtils(BaseStateMatchingUtilsTest):
             state_code=_STATE_CODE, external_id=_EXTERNAL_ID_2, start_date=_DATE_7,
             status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO)
         ss = StateSupervisionSentence.new_with_defaults(
-            state_code=_STATE_CODE, external_id=_EXTERNAL_ID, supervision_periods=[sp_ss, sp_2_ss, placeholder_sp_ss])
+            state_code=_STATE_CODE, external_id=_EXTERNAL_ID, supervision_periods=[sp_ss, sp_2_ss, placeholder_sp_ss],
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO)
 
         placeholder_sp_is = StateSupervisionPeriod.new_with_defaults(
             state_code=_STATE_CODE, supervision_violation_entries=[sv_2, sv_3],
@@ -580,7 +590,8 @@ class TestStateDateBasedMatchingUtils(BaseStateMatchingUtilsTest):
             supervision_sentence_id=_ID,
             external_id=_EXTERNAL_ID,
             state_code=_STATE_CODE,
-            supervision_periods=[sp_ss])
+            supervision_periods=[sp_ss],
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO)
 
         sg = StateSentenceGroup.new_with_defaults(
             sentence_group_id=_ID, state_code=_STATE_CODE,
@@ -624,7 +635,8 @@ class TestStateDateBasedMatchingUtils(BaseStateMatchingUtilsTest):
             state_code=_STATE_CODE, external_id=_EXTERNAL_ID_2, start_date=_DATE_7,
             status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO)
         ss = StateSupervisionSentence.new_with_defaults(
-            state_code=_STATE_CODE, external_id=_EXTERNAL_ID, supervision_periods=[sp_ss, sp_2_ss, placeholder_sp_ss])
+            state_code=_STATE_CODE, external_id=_EXTERNAL_ID, supervision_periods=[sp_ss, sp_2_ss, placeholder_sp_ss],
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO)
 
         placeholder_sp_is = StateSupervisionPeriod.new_with_defaults(
             state_code=_STATE_CODE, supervision_violation_entries=[sv_2, sv_3],
@@ -697,7 +709,8 @@ class TestStateDateBasedMatchingUtils(BaseStateMatchingUtilsTest):
             supervision_sentence_id=_ID,
             external_id=_EXTERNAL_ID,
             state_code=_STATE_CODE,
-            supervision_periods=[sp_ss])
+            supervision_periods=[sp_ss],
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO)
 
         sg = StateSentenceGroup.new_with_defaults(
             external_id=_EXTERNAL_ID, sentence_group_id=_ID, state_code=_STATE_CODE,
@@ -750,7 +763,8 @@ class TestStateDateBasedMatchingUtils(BaseStateMatchingUtilsTest):
             state_code=_STATE_CODE, external_id=_EXTERNAL_ID_2, start_date=_DATE_7,
             status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO)
         ss = StateSupervisionSentence.new_with_defaults(
-            state_code=_STATE_CODE, external_id=_EXTERNAL_ID, supervision_periods=[sp_ss, sp_2_ss, placeholder_sp_ss])
+            state_code=_STATE_CODE, external_id=_EXTERNAL_ID, supervision_periods=[sp_ss, sp_2_ss, placeholder_sp_ss],
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO)
 
         placeholder_sp_is = StateSupervisionPeriod.new_with_defaults(
             state_code=_STATE_CODE, supervision_contacts=[sc_2, sc_3],
@@ -822,7 +836,8 @@ class TestStateDateBasedMatchingUtils(BaseStateMatchingUtilsTest):
             supervision_sentence_id=_ID,
             external_id=_EXTERNAL_ID,
             state_code=_STATE_CODE,
-            supervision_periods=[sp_ss])
+            supervision_periods=[sp_ss],
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO)
 
         sg = StateSentenceGroup.new_with_defaults(
             external_id=_EXTERNAL_ID, sentence_group_id=_ID, state_code=_STATE_CODE,

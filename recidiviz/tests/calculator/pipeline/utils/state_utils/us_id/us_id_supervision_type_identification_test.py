@@ -31,6 +31,7 @@ from recidiviz.calculator.pipeline.utils.state_utils.us_id.us_id_supervision_typ
 from recidiviz.calculator.pipeline.utils.supervision_period_index import SupervisionPeriodIndex
 from recidiviz.common.constants.state.state_incarceration_period import StateIncarcerationPeriodAdmissionReason, \
     StateIncarcerationPeriodReleaseReason, StateIncarcerationPeriodStatus
+from recidiviz.common.constants.state.state_sentence import StateSentenceStatus
 from recidiviz.common.constants.state.state_supervision_period import StateSupervisionPeriodSupervisionType, \
     StateSupervisionPeriodAdmissionReason, StateSupervisionPeriodTerminationReason, StateSupervisionPeriodStatus
 from recidiviz.persistence.entity.state.entities import StateIncarcerationPeriod, StateSupervisionPeriod, \
@@ -64,7 +65,8 @@ class UsIdGetPreIncarcerationSupervisionTypeTest(unittest.TestCase):
             state_code='US_ID',
             supervision_sentence_id=1,
             external_id='XXX',
-            supervision_periods=[preceding_supervision_period])
+            supervision_periods=[preceding_supervision_period],
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO)
 
         self.assertEqual(StateSupervisionPeriodSupervisionType.PAROLE,
                          us_id_get_pre_incarceration_supervision_type(
@@ -94,7 +96,8 @@ class UsIdGetPreIncarcerationSupervisionTypeTest(unittest.TestCase):
             state_code='US_ID',
             supervision_sentence_id=1,
             external_id='XXX',
-            supervision_periods=[preceding_supervision_period])
+            supervision_periods=[preceding_supervision_period],
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO)
 
         self.assertIsNone(us_id_get_pre_incarceration_supervision_type(
             incarceration_sentences=[],
@@ -125,7 +128,8 @@ class UsIdGetPreIncarcerationSupervisionTypeTest(unittest.TestCase):
             state_code='US_ID',
             supervision_sentence_id=1,
             external_id='XXX',
-            supervision_periods=[preceding_supervision_period])
+            supervision_periods=[preceding_supervision_period],
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO)
 
         self.assertIsNone(us_id_get_pre_incarceration_supervision_type(
             incarceration_sentences=[],
@@ -160,7 +164,8 @@ class UsIdGetPostIncarcerationSupervisionTypeTest(unittest.TestCase):
             state_code='US_ID',
             supervision_sentence_id=1,
             external_id='XXX',
-            supervision_periods=[succeeding_supervision_period])
+            supervision_periods=[succeeding_supervision_period],
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO)
 
         self.assertEqual(StateSupervisionPeriodSupervisionType.PAROLE,
                          us_id_get_post_incarceration_supervision_type(
@@ -193,7 +198,8 @@ class UsIdGetPostIncarcerationSupervisionTypeTest(unittest.TestCase):
             state_code='US_ID',
             supervision_sentence_id=1,
             external_id='XXX',
-            supervision_periods=[succeeding_supervision_period])
+            supervision_periods=[succeeding_supervision_period],
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO)
 
         self.assertIsNone(us_id_get_post_incarceration_supervision_type(
             incarceration_sentences=[],
@@ -227,7 +233,8 @@ class UsIdGetPostIncarcerationSupervisionTypeTest(unittest.TestCase):
             state_code='US_ID',
             supervision_sentence_id=1,
             external_id='XXX',
-            supervision_periods=[succeeding_supervision_period])
+            supervision_periods=[succeeding_supervision_period],
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO)
 
         self.assertIsNone(us_id_get_post_incarceration_supervision_type(
             incarceration_sentences=[],

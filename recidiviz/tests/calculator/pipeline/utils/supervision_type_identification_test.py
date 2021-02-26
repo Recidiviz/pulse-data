@@ -804,8 +804,9 @@ class TestGetPreIncarcerationSupervisionType(unittest.TestCase):
 class TestGetSupervisionPeriodSupervisionTypeFromSentence(unittest.TestCase):
     def test_get_supervision_period_supervision_type_from_sentence(self):
         supervision_sentence = StateSupervisionSentence.new_with_defaults(
-                state_code='US_XX',
-            supervision_sentence_id=111
+            state_code='US_XX',
+            supervision_sentence_id=111,
+            status=StateSentenceStatus.PRESENT_WITHOUT_INFO
         )
 
         for supervision_type in StateSupervisionType:

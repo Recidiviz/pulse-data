@@ -200,6 +200,7 @@ def generate_full_graph_state_person(
         state_code='us_ca',
         external_id='SUPERVISING_OFFICER_ID',
         full_name='SUPERVISING OFFICER',
+        agent_type=StateAgentType.PRESENT_WITHOUT_INFO
     )
     person.supervising_officer = person_supervising_officer
 
