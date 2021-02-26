@@ -29,8 +29,7 @@ from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
 
-STATE_RAW_DATA_FILE_HEADER_TEMPLATE = """
-# {state_name} Raw Data Description
+STATE_RAW_DATA_FILE_HEADER_TEMPLATE = """# {state_name} Raw Data Description
 
 All raw data can be found in append-only tables in the dataset `{state_code_lower}_raw_data`. Views on the raw data
 table that show the latest state of this table (i.e. select the most recently received row for each primary key) can be

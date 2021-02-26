@@ -63,8 +63,7 @@ class DirectIngestDocumentationGeneratorTest(unittest.TestCase):
         documentation_generator = DirectIngestDocumentationGenerator()
         documentation = documentation_generator.generate_raw_file_docs_for_region(region_code)
 
-        expected_documentation = """
-# Test State Raw Data Description
+        expected_documentation = """# Test State Raw Data Description
 
 All raw data can be found in append-only tables in the dataset `us_xx_raw_data`. Views on the raw data
 table that show the latest state of this table (i.e. select the most recently received row for each primary key) can be
