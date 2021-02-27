@@ -1,18 +1,3 @@
 file_tag: prvdr
-file_description: |-
-  Not in use
 primary_key_cols:
   - prvdr_id
-columns:
-  - name: prvdr_id
-  - name: prvdr_name
-  - name: prvdr_typ_cd
-  - name: addr_long
-  - name: city
-  - name: st
-  - name: zip_cd
-  - name: area_cd
-  - name: ph_num
-  - name: vld_flg
-  - name: updt_usr_id
-  - name: updt_dt

@@ -1,9 +1,3 @@
 file_tag: perf_rating
-file_description: |-
-  Not in use
 primary_key_cols:
   - rating_factor
-columns:
-  - name: rating_factor
-  - name: rating_desc
-  - name: vld_flg

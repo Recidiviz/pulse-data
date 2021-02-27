@@ -1,18 +1,3 @@
 file_tag: location
-file_description: |-
-  A code table that gives extra details about a given location code.
 primary_key_cols:
   - loc_cd
-columns:
-  - name: loc_cd
-    description: |-
-      Location code
-  - name: loc_actv_flg
-    description: |-
-      Whether or not the location is currently in use
-  - name: loc_sdesc
-    description: |-
-      Short description of the location
-  - name: loc_ldesc
-    description: |-
-      Long description of the location

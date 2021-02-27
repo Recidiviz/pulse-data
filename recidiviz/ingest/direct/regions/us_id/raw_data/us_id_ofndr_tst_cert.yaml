@@ -1,38 +1,8 @@
 file_tag: ofndr_tst_cert
-file_description: |-
-  Has a single row for every LSIR assessment performed for someone under IDOC jurisdiction, with score details filled
-  out only if the test has been “certified” by the external service MHS (multi health systems). When someone completes
-  an LSIR assessment, an API is called to validate the results, and usually a the assessment is certified immediately.
-  Only assessments that are certified should be used by the DOC for any of its decisions.
 primary_key_cols:
   - ofndr_tst_id
 columns:
-  - name: ofndr_tst_id
-    description: |-
-      The ID of this specific test
-  - name: assess_tst_id
-    description: |-
-      The id of this test’s type. This is always 2 (code for LSIR) in this table.
-  - name: tot_score
-    description: |-
-      Total score
-  - name: eval_desc
-    description: |-
-      Score bucket
   - name: cert_dt
     is_datetime: True
-    description: |-
-      Date the test was certified
-  - name: cert_pass_flg
-    description: |-
-      (bool) Whether the test was certified
-  - name: updt_usr_id
-    description: |-
-      IDOC username of the last person to update this row
   - name: updt_dt
     is_datetime: True
-    description: |-
-      IDOC update datetime
-  - name: cert_xml_doc
-    description: |-
-      (usually null) XML of the assessment itself

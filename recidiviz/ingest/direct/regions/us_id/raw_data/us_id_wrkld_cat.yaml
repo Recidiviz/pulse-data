@@ -1,21 +1,3 @@
 file_tag: wrkld_cat
-file_description: |-
-  A code table that gives details about given workload categories (supervision levels)
 primary_key_cols:
   - wrkld_cat_id
-columns:
-  - name: wrkld_cat_id
-    description: |-
-      Code for this specific supervision level
-  - name: wrkld_tsk_cd
-    description: |-
-      Always set to 100
-  - name: wrkld_cat_title
-    description: |-
-      Name of this supervision level
-  - name: std_of_supr_cd
-    description: |-
-      Always A
-  - name: vld_flg
-    description: |-
-      Whether or not this code is currently in use

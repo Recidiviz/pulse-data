@@ -1,12 +1,3 @@
 file_tag: ofndr_tst_eval
-file_description: |-
-  Not in use
 primary_key_cols:
   - ofndr_tst_id
-columns:
-  - name: ofndr_tst_id
-  - name: updt_usr_id
-  - name: updt_dt
-  - name: tot_score
-  - name: eval_desc
-  - name: pro_rate_score

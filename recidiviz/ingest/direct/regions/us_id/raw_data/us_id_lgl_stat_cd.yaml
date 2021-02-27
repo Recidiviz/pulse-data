@@ -1,13 +1,3 @@
 file_tag: lgl_stat_cd
-file_description: |-
-  Not in use
 primary_key_cols:
   - lgl_stat_cd
-columns:
-  - name: lgl_stat_cd
-  - name: lgl_stat_desc
-  - name: terminated_flg
-  - name: need_spr_agnt_flg
-  - name: lgl_stat_displaycd
-  - name: sort_ordr
-  - name: vld_flg

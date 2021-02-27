@@ -1,13 +1,3 @@
 file_tag: ofndr_behavior_evaluation
-file_description: |-
-  Not in use
 primary_key_cols:
   - ofndr_behavior_evaluation_id
-columns:
-  - name: ofndr_behavior_evaluation_id
-  - name: ofndr_num
-  - name: curr_lgl_stat_cd
-  - name: curr_lsi_level
-  - name: behavior_evaluation_source_cd
-  - name: source_id
-  - name: status

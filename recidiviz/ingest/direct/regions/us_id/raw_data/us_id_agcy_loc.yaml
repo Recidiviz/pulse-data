@@ -1,13 +1,3 @@
 file_tag: agcy_loc
-file_description: |-
-    Not in use
 primary_key_cols:
   - agcy_id
-columns:
-  - name: agcy_id
-  - name: addr_id
-  - name: dvsn_id
-  - name: agcy_desc
-  - name: loc_typ_cd
-  - name: region_id
-  - name: valid_flag
