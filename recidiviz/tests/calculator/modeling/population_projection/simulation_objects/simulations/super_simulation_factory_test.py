@@ -19,14 +19,10 @@ import os
 import unittest
 from unittest.mock import patch
 
-from recidiviz.calculator.modeling.population_projection.simulations.super_simulation_factory import \
+from recidiviz.calculator.modeling.population_projection.simulations.super_simulation.super_simulation_factory import \
     SuperSimulationFactory
-from recidiviz.calculator.modeling.population_projection.super_simulation_macrosim import MacroSuperSimulation
-from recidiviz.calculator.modeling.population_projection.super_simulation_microsim import MicroSuperSimulation
-from recidiviz.tests.calculator.modeling.population_projection.simulation_objects.super_simulation_macrosim_test \
-    import mock_load_table_from_big_query as mock_load_table_from_big_query_macrosim
-from recidiviz.tests.calculator.modeling.population_projection.simulation_objects.super_simulation_microsim_test \
-    import mock_load_table_from_big_query as mock_load_table_from_big_query_microsim
+from recidiviz.tests.calculator.modeling.population_projection.simulation_objects.super_simulation_test \
+    import mock_load_table_from_big_query_macro, mock_load_table_from_big_query_micro
 
 
 def get_inputs_path(file_name: str) -> str:
@@ -37,18 +33,24 @@ class TestSuperSimulationFactory(unittest.TestCase):
     """Tests the SuperSimulationFactory works correctly."""
 
     @patch('recidiviz.calculator.modeling.population_projection.spark_bq_utils.load_spark_table_from_big_query',
-           mock_load_table_from_big_query_macrosim)
+           mock_load_table_from_big_query_macro)
     def test_build_super_simulation_macrosim(self) -> None:
         macrosim = SuperSimulationFactory.build_super_simulation(get_inputs_path(
             'super_simulation_data_ingest.yaml'))
-        self.assertIsInstance(macrosim, MacroSuperSimulation)
+        self.assertFalse(macrosim.initializer.microsim)
+        self.assertFalse(macrosim.simulator.microsim)
+        self.assertFalse(macrosim.validator.microsim)
+        self.assertFalse(macrosim.exporter.microsim)
 
     @patch('recidiviz.calculator.modeling.population_projection.ignite_bq_utils.load_ignite_table_from_big_query',
-           mock_load_table_from_big_query_microsim)
+           mock_load_table_from_big_query_micro)
     def test_build_super_simulation_microsim(self) -> None:
         microsim = SuperSimulationFactory.build_super_simulation(get_inputs_path(
             'super_simulation_microsim_model_inputs.yaml'))
-        self.assertIsInstance(microsim, MicroSuperSimulation)
+        self.assertTrue(microsim.initializer.microsim)
+        self.assertTrue(microsim.simulator.microsim)
+        self.assertTrue(microsim.validator.microsim)
+        self.assertTrue(microsim.exporter.microsim)
 
     def test_invalid_yaml_configs(self) -> None:
         with self.assertRaises(ValueError):

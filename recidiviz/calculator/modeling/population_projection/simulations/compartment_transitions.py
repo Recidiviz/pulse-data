@@ -145,11 +145,15 @@ class CompartmentTransitions:
 
         # Assign the residual probability as the proportion that remains in the current compartment per month
         self.transition_dfs[state]['remaining'] = 1 - round(self.transition_dfs[state].sum(axis=1), SIG_FIGS - 1)
-        if self.transition_dfs[state].loc[self.max_sentence, 'remaining'] > 10 ** (-SIG_FIGS):
-            raise ValueError(f"Final row of transition table doesn't release everyone: "
+
+        # Check that the transition table is valid
+        full_release_times = np.isclose(self.transition_dfs[state]['remaining'], 0, SIG_FIGS)
+        if full_release_times.sum() == 0:
+            raise ValueError(f"Transition table doesn't release everyone: "
                              f"{self.transition_dfs[state].iloc[-1]}")
 
-        self.transition_dfs[state].loc[self.max_sentence, 'remaining'] = 0
+        max_sentence = min(self.max_sentence, min(self.transition_dfs[state][full_release_times].index))
+        self.transition_dfs[state].loc[max_sentence, 'remaining'] = 0
 
         # Make sure all transition probabilities are between 0-1
         for compartment, transition_df in self.transition_dfs[state].items():
