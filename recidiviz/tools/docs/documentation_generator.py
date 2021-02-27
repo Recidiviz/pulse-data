@@ -63,6 +63,10 @@ def get_touched_raw_data_regions() -> Set[str]:
 def main() -> None:
     touched_raw_data_regions = get_touched_raw_data_regions()
     for region_code in touched_raw_data_regions:
+        if region_code in ['US_ID']:
+            # TODO(#5399): Don't overwrite US_ID raw data markdown until existing documentation has been recorded
+            logging.info('Skipping raw data documentation generation for legacy region [%s]', region_code)
+            continue
         logging.info('Generating raw data documentation for region [%s]', region_code)
         generate_raw_data_documentation_for_region(region_code)
 

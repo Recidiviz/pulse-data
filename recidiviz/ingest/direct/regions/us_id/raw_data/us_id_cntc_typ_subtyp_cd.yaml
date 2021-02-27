@@ -1,12 +1,4 @@
 file_tag: cntc_typ_subtyp_cd
-file_description: |-
-  Not in use
 primary_key_cols:
   - cntc_typ_cd
   - cnt_subtyp_cd
-columns:
-  - name: cntc_typ_cd
-  - name: cnt_subtyp_cd
-  - name: cntc_subtyp_desc
-  - name: cntc_subtyp_dtl
-  - name: valid_flg

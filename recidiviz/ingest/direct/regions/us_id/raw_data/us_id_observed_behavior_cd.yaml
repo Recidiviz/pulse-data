@@ -1,16 +1,3 @@
 file_tag: observed_behavior_cd
-file_description: |-
-  Not in use
 primary_key_cols:
   - observed_behavior_cd
-columns:
-  - name: observed_behavior_cat_cd
-  - name: vld_flg
-  - name: observed_behavior_cd
-  - name: observed_behavior_typ
-  - name: observed_behavior_desc
-  - name: low_score
-  - name: moderate_score
-  - name: high_score
-  - name: prle_score
-  - name: sex_offense

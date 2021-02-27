@@ -1,9 +1,3 @@
 file_tag: reldest
-file_description: |-
-  Not in use
 primary_key_cols:
   - rel_dest_cd
-columns:
-  - name: rel_dest_cd
-  - name: rel_dest_sdesc
-  - name: rel_dest_ldesc

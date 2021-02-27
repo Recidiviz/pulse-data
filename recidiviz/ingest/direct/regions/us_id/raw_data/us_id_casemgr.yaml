@@ -1,28 +1,7 @@
 file_tag: casemgr
-file_description: |-
-  Contains a new row every time a person either a) has a new movement (see `movement` table) or b) has their assigned
-  officer changed (can be a PO while on supervision or a case manager while incarcerated).
-
-
-  The table `ofndr_agnt` also has PO information. The difference between these files is two fold:
-
-
-  1.  `ofndr_agnt` only has the current POs (does not have historical data nor case managers for folks incarcerated).
-
-  2. From Michele at IDOC, there are some cases where `ofndr_agnt` and `casemgr` disagree. In those cases,
-  we should trust `casemgr` as the source of truth.
 primary_key_cols:
   - move_srl
   - case_dtd
 columns:
-  - name: move_srl
-    description: |-
-      ID for the person’s most recent move. Can use this ID to join with the `movement` table and get a person
-      identifier.
   - name: case_dtd
     is_datetime: True
-    description: |-
-      The date this employee was assigned to the person
-  - name: empl_cd
-    description: |-
-      Code for which employee is associated with this move

@@ -1,24 +1,3 @@
 file_tag: addr
-file_description: |-
-  Not in use
 primary_key_cols:
   - addr_id
-columns:
-  - name: updt_usr_id
-  - name: updt_dt
-  - name: addr_id
-  - name: pssa_unit_cd
-  - name: pssa_range
-  - name: psda_num
-  - name: psda_pre_dir
-  - name: psda_street
-  - name: psda_sfx_cd
-  - name: psda_post_dir
-  - name: city
-  - name: st
-  - name: zip
-  - name: area_cd
-  - name: ph_num
-  - name: fax_area_cd
-  - name: fax_ph_num
-  - name: vld_flg

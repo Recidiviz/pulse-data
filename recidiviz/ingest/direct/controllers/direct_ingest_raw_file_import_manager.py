@@ -134,13 +134,13 @@ class DirectIngestRawFileConfig:
         """Returns a DirectIngestRawFileConfig built from a YAMLDict"""
         primary_key_cols = file_config_dict.pop('primary_key_cols', list)
         # TODO(#5399): Migrate raw file configs for all legacy regions to have file descriptions
-        if region_code.upper() in {'US_PA'}:
+        if region_code.upper() in {'US_ND', 'US_ID', 'US_PA'}:
             file_description = file_config_dict.pop_optional('file_description', str)\
                                or 'LEGACY_FILE_MISSING_DESCRIPTION'
         else:
             file_description = file_config_dict.pop('file_description', str)
         # TODO(#5399): Migrate raw file configs for all legacy regions to have column descriptions
-        if region_code.upper() in {'US_PA'}:
+        if region_code.upper() in {'US_MO', 'US_ND', 'US_ID', 'US_PA'}:
             columns = file_config_dict.pop_optional('columns', list) or []
         else:
             columns = file_config_dict.pop('columns', list)
@@ -151,7 +151,7 @@ class DirectIngestRawFileConfig:
 
         missing_columns = set(primary_key_cols) - {column['name'] for column in columns}
         # TODO(#5399): Remove exempted region codes once legacy primary keys are documented
-        if missing_columns and region_code.upper() not in {'US_PA'}:
+        if missing_columns and region_code.upper() not in {'US_MO', 'US_ND', 'US_ID', 'US_PA'}:
             raise ValueError(f'Column(s) marked as primary keys not listed in'
                              f' columns list for file [{yaml_filename}]: {missing_columns}')
 
