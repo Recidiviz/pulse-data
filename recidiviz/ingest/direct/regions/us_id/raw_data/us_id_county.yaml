@@ -1,19 +1,4 @@
 file_tag: county
-file_description: |-
-  A code table that has details for every county in Idaho.
 primary_key_cols:
   - cnty_cd
-columns:
-  - name: cnty_cd
-    description: |-
-      County code
-  - name: jud_cd
-    description: |-
-      Judicial district
-  - name: cnty_sdesc
-    description: |-
-      County name (same as ldesc)
-  - name: cnty_ldesc
-    description: |-
-      County name (same as sdesc)
 separator: ','

@@ -1,9 +1,3 @@
 file_tag: dly_rsn_cd
-file_description: |-
-  Not in use
 primary_key_cols:
   - dly_rsn_cd
-columns:
-  - name: dly_rsn_cd
-  - name: dly_rsn_desc
-  - name: vld_flg

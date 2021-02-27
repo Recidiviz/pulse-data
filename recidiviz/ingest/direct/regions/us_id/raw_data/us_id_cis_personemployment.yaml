@@ -1,14 +1,3 @@
 file_tag: cis_personemployment
-file_description: |-
-  Not in use
 primary_key_cols:
   - id
-columns:
-  - name: id
-  - name: unemployed
-  - name: codeunemployedreasonid
-  - name: version
-  - name: insuser
-  - name: insdate
-  - name: upduser
-  - name: upddate

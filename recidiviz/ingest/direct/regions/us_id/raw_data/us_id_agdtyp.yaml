@@ -1,9 +1,3 @@
 file_tag: agdtyp
-file_description: |-
-    Not in use
 primary_key_cols:
   - par_agenda_typ
-columns:
-  - name: par_agenda_typ
-  - name: par_agenda_desc
-  - name: typ_actv_flg

@@ -1,10 +1,3 @@
 file_tag: srvce_typ_cd
-file_description: |-
-  Not in use
 primary_key_cols:
   - srvce_typ_cd
-columns:
-  - name: vld_flg
-  - name: srvce_typ_cd
-  - name: srvce_typ_desc
-  - name: prgrm_flg

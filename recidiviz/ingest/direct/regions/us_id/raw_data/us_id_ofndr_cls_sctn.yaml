@@ -1,20 +1,4 @@
 file_tag: ofndr_cls_sctn
-file_description: |-
-  Not in use
 primary_key_cols:
   - cls_enroll_id
   - cls_sctn_id
-columns:
-  - name: ofndr_num
-  - name: updt_usr_id
-  - name: updt_dt
-  - name: cls_enroll_id
-  - name: cls_sctn_id
-  - name: omp_exit_typ_cd
-  - name: enroll_by_usr_id
-  - name: enroll_dt
-  - name: end_dt
-  - name: rfrd_by_usr_id
-  - name: rfrd_dt
-  - name: cmt
-  - name: ofndr_refuse_flg

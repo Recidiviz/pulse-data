@@ -1,15 +1,5 @@
 file_tag: ofndr_sctn_eval
-file_description: |-
-  Not in use
 primary_key_cols:
   - ofndr_tst_id
   - tst_sctn_num
   - assess_tst_id
-columns:
-  - name: tst_sctn_num
-  - name: assess_tst_id
-  - name: ofndr_tst_id
-  - name: ofndr_sctn_score
-  - name: eval_desc
-  - name: updt_usr_id
-  - name: updt_dt

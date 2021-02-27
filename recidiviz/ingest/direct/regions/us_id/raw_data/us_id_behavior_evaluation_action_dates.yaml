@@ -1,13 +1,4 @@
 file_tag: behavior_evaluation_action_dates
-file_description: |-
-  Not in use
 primary_key_cols:
   - ofndr_behavior_evaluation_id
   - behavior_evaluation_action_id
-columns:
-  - name: ofndr_behavior_evaluation_id
-  - name: behavior_evaluation_action_id
-  - name: usr_id
-    description: |-
-      User ID
-  - name: action_dtd

@@ -1,9 +1,3 @@
 file_tag: wait_lst_rmv_cd
-file_description: |-
-  Not in use
 primary_key_cols:
   - wait_lst_rmv_cd
-columns:
-  - name: wait_lst_rmv_cd
-  - name: wait_lst_rmv_desc
-  - name: vld_flg

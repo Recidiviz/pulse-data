@@ -1,8 +1,3 @@
 file_tag: sexcod
-file_description: |-
-  Not in use
 primary_key_cols:
   - sex_cd
-columns:
-  - name: sex_cd
-  - name: sex_desc

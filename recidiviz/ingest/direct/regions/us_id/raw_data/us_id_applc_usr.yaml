@@ -1,30 +1,4 @@
 file_tag: applc_usr
-file_description: |-
-  Code table that has a single row for all past and present IDOC employees. This table does NOT include
-  job role however, and because of that we often use the `employee` table instead to find up-to-date
-  information about IDOC employees.
 primary_key_cols:
   - usr_id
-columns:
-  - name: usr_id
-    description: |-
-      User ID
-  - name: name
-    description: |-
-      Full name of the IDOC employee
-  - name: agcy_id
-    description: |-
-      ID for the agency the employee belongs to
-  - name: lan_id
-    description: |-
-      Mostly null
-  - name: st_id_num
-    description: |-
-      State ID number (supposedly drivers license)
-  - name: body_loc_cd
-    description: |-
-      Location of their office / work
-  - name: vld_flg
-    description: |-
-      Whether or not this row is valid (should only be invalid if the person has left IDOC).
 separator: ','

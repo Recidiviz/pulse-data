@@ -1,23 +1,4 @@
 file_tag: cis_personname
-file_description: |-
-  Not in use
 primary_key_cols:
   - id
-columns:
-  - name: id
-  - name: personid
-  - name: lastname
-  - name: firstname
-  - name: middlename
-  - name: codpersonnamesuffixid
-  - name: codepersonnametypeid
-  - name: changereason
-  - name: comment
-  - name: soundexcode
-  - name: version
-  - name: insuser
-  - name: insdate
-  - name: upduser
-  - name: upddate
-  - name: codepersonnamesuffixid
 ignore_quotes: True

@@ -1,10 +1,3 @@
 file_tag: cis_codewagefrequency
-file_description: |-
-  Not in use
 primary_key_cols:
   - id
-columns:
-  - name: id
-  - name: codedescription
-  - name: wagepertypecode
-  - name: active
