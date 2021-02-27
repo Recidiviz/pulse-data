@@ -97,8 +97,7 @@ LEFT JOIN
 USING (person_id, state_code, supervision_type)
 WHERE
   supervision_level IS NOT NULL
-  AND supervising_officer_external_id IS NOT NULL
-)
+),
 -- HACK ALERT HACK ALERT HACK ALERT HACK ALERT HACK ALERT HACK ALERT HACK ALERT HACK ALERT
 --
 -- HACK ALERT HACK ALERT HACK ALERT HACK ALERT
@@ -120,14 +119,19 @@ WHERE
 -- HACK ALERT HACK ALERT HACK ALERT HACK ALERT
 --
 -- HACK ALERT HACK ALERT HACK ALERT HACK ALERT HACK ALERT HACK ALERT HACK ALERT HACK ALERT
-SELECT
-  ideal_query.* EXCEPT (supervising_officer_external_id),
-  IF(state_code != 'US_ID', ideal_query.supervising_officer_external_id, UPPER(ofndr_agnt.agnt_id)) AS supervising_officer_external_id
-FROM
-  ideal_query
-LEFT OUTER JOIN
-  `{project_id}.us_id_raw_data_up_to_date_views.ofndr_agnt_latest` ofndr_agnt
-ON ideal_query.person_external_id = ofndr_agnt.ofndr_num
+with_derived_supervising_officer as (
+    SELECT
+      ideal_query.* EXCEPT (supervising_officer_external_id),
+      IF(state_code != 'US_ID', ideal_query.supervising_officer_external_id, UPPER(ofndr_agnt.agnt_id)) AS supervising_officer_external_id
+    FROM
+      ideal_query
+    LEFT OUTER JOIN
+      `{project_id}.us_id_raw_data_up_to_date_views.ofndr_agnt_latest` ofndr_agnt
+    ON ideal_query.person_external_id = ofndr_agnt.ofndr_num
+)
+SELECT * 
+FROM with_derived_supervising_officer
+WHERE with_derived_supervising_officer.supervising_officer_external_id IS NOT NULL;
 """
 
 CLIENT_LIST_VIEW_BUILDER = SelectedColumnsBigQueryViewBuilder(
