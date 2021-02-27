@@ -26,7 +26,7 @@ import pandas
 
 
 from recidiviz.calculator.modeling import population_projection
-from recidiviz.calculator.modeling.population_projection.simulations.super_simulation_factory import \
+from recidiviz.calculator.modeling.population_projection.simulations.super_simulation.super_simulation_factory import \
     SuperSimulationFactory
 
 root_dir_path = os.path.join(os.path.dirname(population_projection.__file__), 'state')

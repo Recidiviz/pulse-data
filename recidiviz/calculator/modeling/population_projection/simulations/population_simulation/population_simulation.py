@@ -88,14 +88,13 @@ class PopulationSimulation:
         """Should change sub_group_id for each row to whatever simulation that cohort should move to in the next ts"""
         return cross_simulation_flows
 
-    def calculate_transition_error(self, validation_data: pd.DataFrame = pd.DataFrame()) -> pd.DataFrame:
+    def calculate_transition_error(self, validation_data: Optional[pd.DataFrame] = None) -> pd.DataFrame:
         """
         validation_data should be a DataFrame with exactly:
             one column per axis of disaggregation, 'time_step', 'count', 'compartment', 'outflow_to'
         """
 
-        if not validation_data.empty:
-            self.validation_transition_data = validation_data
+        self.validation_transition_data = validation_data or self.validation_transition_data
 
         aggregated_results = self.validation_transition_data.copy()
         aggregated_results['count'] = 0

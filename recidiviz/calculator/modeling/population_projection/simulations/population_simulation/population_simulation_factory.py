@@ -41,14 +41,15 @@ class PopulationSimulationFactory:
             outflows_data: pd.DataFrame,
             transitions_data: pd.DataFrame,
             total_population_data: pd.DataFrame,
-            simulation_compartments: Dict[str, str],
+            compartments_architecture: Dict[str, str],
             disaggregation_axes: List[str],
-            user_inputs: Dict,
+            user_inputs: Dict[str, Any],
+            policy_list: List[SparkPolicy],
             first_relevant_ts: int,
             microsim_data: pd.DataFrame,
             should_initialize_compartment_populations: bool,
             should_scale_populations_after_step: bool,
-        ) -> PopulationSimulation:
+    ) -> PopulationSimulation:
         """
         Initializes sub-simulations
         `outflows_data` should be a DataFrame with columns for each sub-group, year, compartment, outflow_to,
@@ -76,23 +77,31 @@ class PopulationSimulationFactory:
         """
         start = time()
 
-        cls._check_inputs_valid(outflows_data, transitions_data, total_population_data, disaggregation_axes,
-                                user_inputs)
+        cls._check_inputs_valid(
+            outflows_data,
+            transitions_data,
+            total_population_data,
+            disaggregation_axes,
+            user_inputs,
+            policy_list,
+            should_initialize_compartment_populations
+        )
 
         sub_group_ids_dict = cls._populate_sub_group_ids_dict(transitions_data, disaggregation_axes)
         if should_initialize_compartment_populations:
-            if len(user_inputs['policy_list']) != 0:
-                raise ValueError("Cannot initialize with remaining sentences if given policy inputs")
+            if len(policy_list) != 0:
+                raise ValueError("Cannot initialize with remaining sentences if given policy inputs"
+                                 f"given policies: {policy_list}")
 
-                # populate "policy list" to switch from remaining sentences data to transitions data
+            # populate "policy list" to switch from remaining sentences data to transitions data
             for sub_group_id, group_attributes in sub_group_ids_dict.items():
                 disaggregated_microsim_data = \
                     microsim_data[(microsim_data[disaggregation_axes] == pd.Series(group_attributes)).all(axis=1)]
 
                 # add one policy per compartment to switch from remaining sentence data to transitions data
-                for full_comp in [i for i in simulation_compartments
-                                  if simulation_compartments[i] != 'shell']:
-                    user_inputs['policy_list'].append(SparkPolicy(
+                for full_comp in [i for i in compartments_architecture
+                                  if compartments_architecture[i] != 'shell']:
+                    policy_list.append(SparkPolicy(
                         policy_fn=partial(
                             CompartmentTransitions.use_alternate_transitions_data,
                             alternate_historical_transitions=
@@ -108,9 +117,10 @@ class PopulationSimulationFactory:
             outflows_data,
             transitions_data,
             total_population_data,
-            simulation_compartments,
+            compartments_architecture,
             disaggregation_axes,
             user_inputs,
+            policy_list,
             first_relevant_ts,
             sub_group_ids_dict,
             should_initialize_compartment_populations,
@@ -165,7 +175,8 @@ class PopulationSimulationFactory:
             total_population_data: pd.DataFrame,
             simulation_compartments: Dict[str, str],
             disaggregation_axes: List[str],
-            user_inputs: Dict,
+            user_inputs: Dict[str, Any],
+            policy_list: List[SparkPolicy],
             first_relevant_ts: int,
             sub_group_ids_dict: Dict[str, Dict[str, Any]],
             should_initialize_compartment_populations: bool,
@@ -196,7 +207,7 @@ class PopulationSimulationFactory:
             unused_total_population_data = unused_total_population_data.drop(disaggregated_total_population_data.index)
 
             # Select the policies relevant to this simulation group
-            group_policies = SparkPolicy.get_sub_population_policies(user_inputs['policy_list'],
+            group_policies = SparkPolicy.get_sub_population_policies(policy_list,
                                                                      sub_group_ids_dict[sub_group_id])
 
             sub_simulations[sub_group_id] = SubSimulationFactory.build_sub_simulation(
@@ -227,17 +238,20 @@ class PopulationSimulationFactory:
             transitions_data: pd.DataFrame,
             total_population_data: pd.DataFrame,
             disaggregation_axes: List[str],
-            user_inputs: Dict[str, Any]
+            user_inputs: Dict[str, Any],
+            policy_list: List[SparkPolicy],
+            should_initialize_compartment_populations: bool
         ) -> None:
         # Check the inputs have the required fields and types
-        required_user_inputs = ['projection_time_steps', 'policy_time_step', 'start_time_step', 'policy_list',
-                                'constant_admissions', 'speed_run']
+        required_user_inputs = ['projection_time_steps', 'policy_time_step', 'start_time_step', 'constant_admissions']
+        if not should_initialize_compartment_populations:
+            required_user_inputs += ['speed_run']
         missing_inputs = [key for key in required_user_inputs if key not in user_inputs]
         if len(missing_inputs) != 0:
             raise ValueError(f"Required user input are missing: {missing_inputs}")
 
-        if any(not isinstance(policy, SparkPolicy) for policy in user_inputs['policy_list']):
-            raise ValueError(f"Policy list can only include SparkPolicy objects: {user_inputs['policy_list']}")
+        if any(not isinstance(policy, SparkPolicy) for policy in policy_list):
+            raise ValueError(f"Policy list can only include SparkPolicy objects: {policy_list}")
 
         for axis in disaggregation_axes:
             for df in [outflows_data, transitions_data, total_population_data]:

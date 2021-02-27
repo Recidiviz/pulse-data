@@ -17,9 +17,12 @@
 """Population projection simulation initializer object -- instantiates SuperSimulation"""
 from typing import Dict, Any, Tuple
 
-from recidiviz.calculator.modeling.population_projection.super_simulation_macrosim import MacroSuperSimulation
-from recidiviz.calculator.modeling.population_projection.super_simulation_microsim import MicroSuperSimulation
-from recidiviz.calculator.modeling.population_projection.super_simulation import SuperSimulation
+from recidiviz.calculator.modeling.population_projection.simulations.super_simulation.initializer import Initializer
+from recidiviz.calculator.modeling.population_projection.simulations.super_simulation.simulator import Simulator
+from recidiviz.calculator.modeling.population_projection.simulations.super_simulation.validator import Validator
+from recidiviz.calculator.modeling.population_projection.simulations.super_simulation.exporter import Exporter
+from recidiviz.calculator.modeling.population_projection.simulations.super_simulation.super_simulation \
+    import SuperSimulation
 from recidiviz.utils.yaml_dict import YAMLDict
 
 
@@ -33,12 +36,30 @@ class SuperSimulationFactory:
         model_params = cls.get_model_params(yaml_file_path)
 
         if 'big_query_simulation_tag' in model_params['data_inputs_raw'].keys():
-            return MacroSuperSimulation(model_params)
+            microsim = False
 
-        if 'big_query_inputs' in model_params['data_inputs_raw'].keys():
-            return MicroSuperSimulation(model_params)
+        elif 'big_query_inputs' in model_params['data_inputs_raw'].keys():
+            microsim = True
 
-        raise RuntimeError(f'Unrecognized data input: {list(model_params.keys())[0]}')
+        else:
+            raise RuntimeError(f'Unrecognized data input: {model_params["data_inputs_raw"].keys()}')
+
+        initializer = Initializer(
+            model_params['reference_year'],
+            model_params['time_step'],
+            model_params['user_inputs_raw'],
+            model_params['data_inputs_raw'],
+            model_params['compartments_architecture'],
+            model_params['disaggregation_axes'],
+            microsim
+        )
+
+        simulator = Simulator(microsim)
+        validator = Validator(microsim)
+        exporter = Exporter(microsim, model_params['compartment_costs'])
+
+        return SuperSimulation(initializer, simulator, validator, exporter)
+
 
     @classmethod
     def get_model_params(cls, yaml_file_path: str) -> Dict[str, Any]:

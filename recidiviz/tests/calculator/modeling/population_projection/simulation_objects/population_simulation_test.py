@@ -59,7 +59,6 @@ class TestPopulationSimulation(unittest.TestCase):
             'projection_time_steps': 10,
             'policy_time_step': 2,
             'start_time_step': 0,
-            'policy_list': [],
             'constant_admissions': True,
             'speed_run': False
         }
@@ -82,6 +81,7 @@ class TestPopulationSimulation(unittest.TestCase):
                 self.simulation_architecture,
                 ['crime'],
                 self.user_inputs,
+                [],
                 -5,
                 pd.DataFrame(),
                 False,
@@ -96,6 +96,7 @@ class TestPopulationSimulation(unittest.TestCase):
                 self.simulation_architecture,
                 ['crime'],
                 self.user_inputs,
+                [],
                 -5,
                 pd.DataFrame(),
                 False,
@@ -110,6 +111,7 @@ class TestPopulationSimulation(unittest.TestCase):
                 self.simulation_architecture,
                 ['crime'],
                 self.user_inputs,
+                [],
                 -5,
                 pd.DataFrame(),
                 False,
@@ -124,6 +126,7 @@ class TestPopulationSimulation(unittest.TestCase):
                 self.simulation_architecture,
                 ['crime'],
                 self.user_inputs,
+                [],
                 -5,
                 pd.DataFrame(),
                 False,
@@ -143,6 +146,7 @@ class TestPopulationSimulation(unittest.TestCase):
                     self.simulation_architecture,
                     ['crime'],
                     test_user_inputs,
+                    [],
                     -5,
                     pd.DataFrame(),
                     False,
@@ -151,16 +155,16 @@ class TestPopulationSimulation(unittest.TestCase):
 
     def test_microsim_requires_empty_policy_list(self):
         with self.assertRaises(ValueError):
-            user_inputs = deepcopy(self.user_inputs)
-            user_inputs['policy_list'] = [SparkPolicy(CompartmentTransitions.test_non_retroactive_policy,
-                                                      'supervision', {'crime': 'NAR'})]
+            policy_list = \
+                [SparkPolicy(CompartmentTransitions.test_non_retroactive_policy, 'supervision', {'crime': 'NAR'})]
             _ = PopulationSimulationFactory.build_population_simulation(
                 self.test_outflows_data,
                 self.test_transitions_data,
                 self.test_total_population_data,
                 self.simulation_architecture,
                 ['crime'],
-                user_inputs,
+                self.user_inputs,
+                policy_list,
                 -5,
                 self.test_outflows_data,
                 True,
@@ -176,6 +180,7 @@ class TestPopulationSimulation(unittest.TestCase):
             self.simulation_architecture,
             ['crime'],
             self.user_inputs,
+            [],
             -5,
             pd.DataFrame(),
             False,
@@ -194,6 +199,7 @@ class TestPopulationSimulation(unittest.TestCase):
             self.simulation_architecture,
             ['crime'],
             self.user_inputs,
+            [],
             0,
             self.test_transitions_data,
             True,
@@ -221,6 +227,7 @@ class TestPopulationSimulation(unittest.TestCase):
                 self.simulation_architecture,
                 ['crime'],
                 self.user_inputs,
+                [],
                 -5,
                 pd.DataFrame(),
                 False,
@@ -235,6 +242,7 @@ class TestPopulationSimulation(unittest.TestCase):
                 self.simulation_architecture,
                 ['crime'],
                 self.user_inputs,
+                [],
                 -5,
                 pd.DataFrame(),
                 False,
@@ -249,6 +257,7 @@ class TestPopulationSimulation(unittest.TestCase):
                 self.simulation_architecture,
                 ['crime'],
                 self.user_inputs,
+                [],
                 -5,
                 pd.DataFrame(),
                 False,
