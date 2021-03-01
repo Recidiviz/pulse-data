@@ -26,7 +26,7 @@ from recidiviz.case_triage.views.dataset_config import VIEWS_DATASET
 from recidiviz.utils.environment import GCP_PROJECT_STAGING
 from recidiviz.utils.metadata import local_project_id_override
 
-EMPLOYMENT_PERIODS_QUERY_TEMPLATE = """
+CURRENT_EMPLOYMENT_PERIODS_QUERY_TEMPLATE = """
 SELECT
   'US_ID' AS state_code,
   offenders.offendernumber AS person_external_id,
@@ -36,21 +36,23 @@ SELECT
   IF(employment.enddate IS NULL, NULL, PARSE_DATE("%F", SUBSTR(enddate, 0, 10))) AS recorded_end_date
 FROM
     `{project_id}.us_id_raw_data_up_to_date_views.cis_offender_latest` offenders
-LEFT JOIN 
+LEFT JOIN
   `{project_id}.us_id_raw_data_up_to_date_views.cis_employment_latest` employment
 ON employment.personemploymentid = offenders.id
 LEFT JOIN
   `{project_id}.us_id_raw_data_up_to_date_views.cis_employer_latest` employers
 ON
   employers.id = employment.employerid
+WHERE
+  codeemploymentstatusid = '1'
 """
 
-EMPLOYMENT_PERIODS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
+CURRENT_EMPLOYMENT_PERIODS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     dataset_id=VIEWS_DATASET,
     view_id='employment_periods',
-    view_query_template=EMPLOYMENT_PERIODS_QUERY_TEMPLATE,
+    view_query_template=CURRENT_EMPLOYMENT_PERIODS_QUERY_TEMPLATE,
 )
 
 if __name__ == '__main__':
     with local_project_id_override(GCP_PROJECT_STAGING):
-        EMPLOYMENT_PERIODS_VIEW_BUILDER.build_and_print()
+        CURRENT_EMPLOYMENT_PERIODS_VIEW_BUILDER.build_and_print()
