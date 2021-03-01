@@ -51,7 +51,7 @@ latest_face_to_face AS (
   GROUP BY person_id, state_code
 ),
 latest_employment_start_date AS (
-   SELECT DISTINCT 
+   SELECT DISTINCT
         state_code,
         person_external_id,
         FIRST_VALUE(recorded_start_date) OVER (
@@ -62,16 +62,18 @@ latest_employment_start_date AS (
         `{project_id}.{case_triage_dataset}.employment_periods`
 ),
 latest_employment AS (
-    SELECT 
+    SELECT
         employment_periods.state_code,
         employment_periods.person_external_id,
         employment_periods.employer
-     FROM
+    FROM
         `{project_id}.{case_triage_dataset}.employment_periods` employment_periods
-     JOIN latest_employment_start_date 
-       ON latest_employment_start_date.person_external_id = employment_periods.person_external_id
-       AND latest_employment_start_date.state_code = employment_periods.state_code
-       AND latest_employment_start_date.latest_start_date = employment_periods.recorded_start_date
+    JOIN latest_employment_start_date
+        ON latest_employment_start_date.person_external_id = employment_periods.person_external_id
+        AND latest_employment_start_date.state_code = employment_periods.state_code
+        AND latest_employment_start_date.latest_start_date = employment_periods.recorded_start_date
+    WHERE
+        employment_periods.recorded_end_date IS NULL OR employment_periods.recorded_end_date > CURRENT_DATE()
 ),
 -- TODO(#5943): Make ideal_query the main query body.
 ideal_query AS (
@@ -129,7 +131,7 @@ with_derived_supervising_officer as (
       `{project_id}.us_id_raw_data_up_to_date_views.ofndr_agnt_latest` ofndr_agnt
     ON ideal_query.person_external_id = ofndr_agnt.ofndr_num
 )
-SELECT * 
+SELECT *
 FROM with_derived_supervising_officer
 WHERE with_derived_supervising_officer.supervising_officer_external_id IS NOT NULL;
 """
