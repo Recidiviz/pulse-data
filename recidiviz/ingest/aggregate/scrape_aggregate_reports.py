@@ -75,6 +75,7 @@ def scrape_aggregate_reports():
     # the same name.
     always_download = (state == 'new_york')
     is_ca = (state == 'california')
+    verify_ssl = (state != 'kentucky')
     urls = state_to_scraper[state]()
     gcp_project = metadata.project_id()
     historical_bucket = HISTORICAL_BUCKET.format(gcp_project)
@@ -95,8 +96,7 @@ def scrape_aggregate_reports():
         else:
             pdf_name = urlparse(url).path.replace('/', '_').lower()
         historical_path = os.path.join(historical_bucket, state, pdf_name)
-        file_to_upload = _get_file_to_upload(
-            historical_path, fs, url, pdf_name, always_download, post_data)
+        file_to_upload = _get_file_to_upload(historical_path, fs, url, pdf_name, always_download, post_data, verify_ssl)
         if file_to_upload:
             upload_path = os.path.join(upload_bucket, state, pdf_name)
             fs.put(file_to_upload, upload_path)
@@ -110,7 +110,7 @@ def scrape_aggregate_reports():
 
 def _get_file_to_upload(
         path: str, fs: gcsfs.GCSFileSystem, url: str, pdf_name: str,
-        always_download: bool, post_data: Dict) \
+        always_download: bool, post_data: Dict, verify_ssl: bool) \
         -> Optional[str]:
     """This function checks first whether it needs to download, and then
     returns the locally downloaded pdf"""
@@ -118,9 +118,9 @@ def _get_file_to_upload(
     path_to_download = None
     if always_download or not fs.exists(path):
         if post_data:
-            response = requests.post(url, data=post_data)
+            response = requests.post(url, data=post_data, verify=verify_ssl)
         else:
-            response = requests.get(url)
+            response = requests.get(url, verify=verify_ssl)
         if response.status_code == 200:
             path_to_download = os.path.join(tempfile.gettempdir(), pdf_name)
             with open(path_to_download, 'wb') as f:
