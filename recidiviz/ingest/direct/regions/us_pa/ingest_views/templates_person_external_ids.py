@@ -76,7 +76,7 @@ def explore_graph_by_column_query(
     )
 
 
-def make_master_person_ids_fragment(v2_filter_clause: str) -> str:
+def make_master_person_ids_fragment() -> str:
     return f"""recidiviz_master_person_ids AS (
     WITH
     distinct_control_to_sid AS (
@@ -91,7 +91,15 @@ def make_master_person_ids_fragment(v2_filter_clause: str) -> str:
     control_number_to_state_id_edges AS (
       SELECT * 
       FROM distinct_control_to_sid
-      {v2_filter_clause}
+      WHERE
+      -- Due to inconsistencies in dbo_tblSearchInmateInfo, distinct_control_to_sid sometimes will have two rows like 
+      -- (control_num_A, <null>) and (control_num_A, control_num_B). We want to throw out all rows that have one null
+      -- in the pair, unless that is the only place that singluar ID is referenced.
+      (state_id IS NOT NULL 
+        OR control_number NOT IN (SELECT control_number FROM distinct_control_to_sid WHERE state_id IS NOT NULL))
+      AND 
+      (control_number IS NOT NULL 
+        OR state_id NOT IN (SELECT state_id FROM distinct_control_to_sid WHERE control_number IS NOT NULL))
     ),
     state_id_to_parole_number_edges AS (
       SELECT 
@@ -146,16 +154,4 @@ def make_master_person_ids_fragment(v2_filter_clause: str) -> str:
 )"""
 
 
-MASTER_STATE_IDS_FRAGMENT = make_master_person_ids_fragment(v2_filter_clause="")
-
-# TODO(#4187): Once queries that use this new version have run in production, integrate this clause into the main query
-#  and delete old queries that use MASTER_STATE_IDS_FRAGMENT.
-MASTER_STATE_IDS_FRAGMENT_V2 = make_master_person_ids_fragment(v2_filter_clause="""      WHERE
-      -- Due to inconsistencies in dbo_tblSearchInmateInfo, distinct_control_to_sid sometimes will have two rows like 
-      -- (control_num_A, <null>) and (control_num_A, control_num_B). We want to throw out all rows that have one null
-      -- in the pair, unless that is the only place that singluar ID is referenced.
-      (state_id IS NOT NULL 
-        OR control_number NOT IN (SELECT control_number FROM distinct_control_to_sid WHERE state_id IS NOT NULL))
-      AND 
-      (control_number IS NOT NULL 
-        OR state_id NOT IN (SELECT state_id FROM distinct_control_to_sid WHERE control_number IS NOT NULL))""")
+MASTER_STATE_IDS_FRAGMENT = make_master_person_ids_fragment()
