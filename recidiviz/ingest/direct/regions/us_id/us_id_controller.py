@@ -424,6 +424,7 @@ class UsIdController(CsvGcsfsDirectIngestController):
         StateSupervisionLevel.INTERNAL_UNKNOWN: [
             'DOSAGE',                   # TODO(#3692): Figure out what this means
             'DOSAGE ELIGIBLE',          # TODO(#3692): Figure out what this means
+            'D7 DUI COURT',             # TODO(#6128): Figure out what this means
             'ADMINISTRATIVE',           # Used for a non-standardized set of situations.
             'GOLD SEAL PENDING',        # Pending supervision termination (after parole board has approved termination)
             # No longer under IDOC authority
