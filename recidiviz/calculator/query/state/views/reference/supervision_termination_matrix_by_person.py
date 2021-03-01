@@ -56,7 +56,8 @@ SUPERVISION_TERMINATION_MATRIX_BY_PERSON_VIEW_QUERY_TEMPLATE = \
             case_type,
             IFNULL(level_1_supervision_location_external_id, 'EXTERNAL_UNKNOWN') AS level_1_supervision_location,
             IFNULL(level_2_supervision_location_external_id, 'EXTERNAL_UNKNOWN') AS level_2_supervision_location,
-            supervising_officer_external_id AS officer,
+            -- TODO(#6115): Stop dropping commas once we are using a different delimiter in the export
+            REPLACE(IFNULL(supervising_officer_external_id, 'EXTERNAL_UNKNOWN'), ',', '') AS officer,
             termination_date,
             FALSE AS is_revocation
         FROM `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_termination_metrics_materialized`
