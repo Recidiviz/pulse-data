@@ -54,14 +54,14 @@ const ClientComponent: React.FC<ClientProps> = ({
   const { clientsStore } = useRootStore();
   const cardRef = React.useRef<HTMLDivElement>(null);
 
-  const viewClient = () => {
+  const viewClient = React.useCallback(() => {
     clientsStore.view(
       client,
       cardRef !== null && cardRef.current !== null
         ? cardRef.current.offsetTop
         : 0
     );
-  };
+  }, [client, clientsStore, cardRef]);
 
   React.useEffect(() => {
     // When undoing a Case Update, we need to re-open the client card
@@ -86,7 +86,7 @@ const ClientComponent: React.FC<ClientProps> = ({
         <MainText>{client.formalName}</MainText>
         <SecondaryText>
           {titleCase(client.supervisionType)},{" "}
-          {titleCase(client.supervisionLevel)}
+          {titleCase(client.supervisionLevelText)}
         </SecondaryText>
       </CardHeader>
       <FlexCardSection>

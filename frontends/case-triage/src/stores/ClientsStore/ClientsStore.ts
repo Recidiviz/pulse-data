@@ -15,11 +15,13 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 import { autorun, makeAutoObservable, remove, runInAction, set } from "mobx";
+import PolicyStore from "../PolicyStore";
 import UserStore from "../UserStore";
 import { Client, DecoratedClient, decorateClient } from "./Client";
 
 interface ClientsStoreProps {
   userStore: UserStore;
+  policyStore: PolicyStore;
 }
 
 export interface ClientMarkedInProgress {
@@ -49,9 +51,11 @@ class ClientsStore {
 
   error?: string;
 
+  policyStore: PolicyStore;
+
   userStore: UserStore;
 
-  constructor({ userStore }: ClientsStoreProps) {
+  constructor({ userStore, policyStore }: ClientsStoreProps) {
     makeAutoObservable(this);
 
     this.clients = [];
@@ -59,6 +63,7 @@ class ClientsStore {
     this.clientPendingView = null;
     this.clientsMarkedInProgress = {};
     this.userStore = userStore;
+    this.policyStore = policyStore;
     this.isLoading = false;
 
     autorun(() => {
@@ -93,7 +98,7 @@ class ClientsStore {
       runInAction(() => {
         this.isLoading = false;
         const decoratedClients = clients.map((client: Client) =>
-          decorateClient(client)
+          decorateClient(client, this.policyStore)
         );
 
         const upNextClients = decoratedClients

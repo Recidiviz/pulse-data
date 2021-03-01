@@ -16,11 +16,7 @@
 // =============================================================================
 import { autorun, makeAutoObservable, runInAction } from "mobx";
 import UserStore from "../UserStore";
-import {
-  SupervisionLevels,
-  SupervisionLevel,
-  DecoratedClient,
-} from "../ClientsStore";
+import { Client, DecoratedClient } from "../ClientsStore";
 import {
   ContactFrequencyByRisk,
   Policy,
@@ -96,24 +92,11 @@ class PolicyStore {
     return this.policies?.assessmentScoreCutoffs[client.gender];
   }
 
-  findAssessmentSupervisionLevelForClient(
-    client: DecoratedClient
-  ): SupervisionLevel | undefined {
-    const supervisionLevelCutoffs = this.getSupervisionLevelCutoffsForClient(
-      client
+  getSupervisionLevelNameForClient(client: Client): string {
+    return (
+      this.policies?.supervisionLevelNames[client.supervisionLevel] ||
+      client.supervisionLevel
     );
-    if (!supervisionLevelCutoffs) {
-      return;
-    }
-
-    return SupervisionLevels.find((supervisionLevel: SupervisionLevel) => {
-      const [min, max] = supervisionLevelCutoffs[supervisionLevel];
-      return (
-        client.assessmentScore !== null &&
-        client.assessmentScore >= min &&
-        (max === null || client.assessmentScore <= max)
-      );
-    });
   }
 
   getContactFrequenciesForClient(

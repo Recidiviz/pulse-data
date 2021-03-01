@@ -35,11 +35,14 @@ export default class RootStore {
 
   constructor() {
     this.userStore = UserStore.build();
-    this.clientsStore = new ClientsStore({ userStore: this.userStore });
+    this.policyStore = new PolicyStore({ userStore: this.userStore });
+    this.clientsStore = new ClientsStore({
+      userStore: this.userStore,
+      policyStore: this.policyStore,
+    });
     this.caseUpdatesStore = new CaseUpdatesStore({
       clientsStore: this.clientsStore,
       userStore: this.userStore,
     });
-    this.policyStore = new PolicyStore({ userStore: this.userStore });
   }
 }

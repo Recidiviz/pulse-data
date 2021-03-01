@@ -17,6 +17,8 @@
 import moment from "moment";
 import { titleCase } from "../../utils";
 import { CaseUpdateActionType } from "../CaseUpdatesStore";
+import PolicyStore from "../PolicyStore";
+
 /* eslint-disable camelcase */
 interface ClientFullName {
   given_names: string;
@@ -69,6 +71,8 @@ export interface DecoratedClient extends Client {
   nextAssessmentDate: moment.Moment | null;
   nextFaceToFaceDate: moment.Moment | null;
   inProgressSubmissionDate: moment.Moment | null;
+
+  supervisionLevelText: string;
 }
 
 const parseDate = (date?: APIDate) => {
@@ -79,7 +83,10 @@ const parseDate = (date?: APIDate) => {
   return moment(date);
 };
 
-const decorateClient = (client: Client): DecoratedClient => {
+const decorateClient = (
+  client: Client,
+  policyStore: PolicyStore
+): DecoratedClient => {
   const { given_names: given, surname } = client.fullName;
 
   const name = `${titleCase(given)} ${titleCase(surname)}`;
@@ -100,6 +107,8 @@ const decorateClient = (client: Client): DecoratedClient => {
     nextFaceToFaceDate: parseDate(client.nextFaceToFaceDate),
     nextAssessmentDate: parseDate(client.nextAssessmentDate),
     inProgressSubmissionDate: parseDate(client.inProgressSubmissionDate),
+
+    supervisionLevelText: policyStore.getSupervisionLevelNameForClient(client),
   };
 };
 
