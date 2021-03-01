@@ -25,7 +25,7 @@ VIEW_QUERY_TEMPLATE = f"""
 WITH current_address_view AS (
     SELECT * EXCEPT(row_num) FROM
         (SELECT
-          personid,
+          offendernumber,
           ARRAY_TO_STRING([line1, city, state_abbreviation, {{cis_personaddress}}.zipcode], ', ') AS current_address,
           ROW_NUMBER() OVER (PARTITION BY personid ORDER BY startdate DESC) as row_num
         FROM
@@ -34,11 +34,15 @@ WITH current_address_view AS (
             {{cis_personaddress}}
         ON
             id = personaddressid
+        FULL OUTER JOIN 
+            {{cis_offender}}
+        ON
+            {{cis_offender}}.id = {{cis_personaddress}}.personid
         LEFT JOIN
             `{{{{project_id}}}}.{STATIC_REFERENCE_TABLES_DATASET}.state_ids`
         ON
             codestateid = CAST(state_id AS STRING)
-        WHERE personid IS NOT NULL
+        WHERE offendernumber IS NOT NULL
             AND {{cis_offenderaddress}}.validaddress = 'T' -- Valid address
             AND {{cis_offenderaddress}}.enddate IS NULL -- Active address
             AND {{cis_personaddress}}.codeaddresstypeid IN ('1')) -- Physical address
@@ -57,7 +61,7 @@ ON
 LEFT JOIN
     current_address_view
 ON
-  current_address_view.personid = {{offender}}.docno
+  current_address_view.offendernumber = {{offender}}.docno
 """
 
 VIEW_BUILDER = DirectIngestPreProcessedIngestViewBuilder(
