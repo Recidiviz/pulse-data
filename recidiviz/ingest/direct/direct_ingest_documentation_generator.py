@@ -25,8 +25,6 @@ from recidiviz.ingest.direct.controllers.direct_ingest_raw_file_import_manager i
     DirectIngestRawFileConfig
 from recidiviz.ingest.direct.controllers.direct_ingest_view_collector import DirectIngestPreProcessedIngestViewCollector
 from recidiviz.utils import regions
-from recidiviz.utils.environment import GCP_PROJECT_STAGING
-from recidiviz.utils.metadata import local_project_id_override
 
 
 STATE_RAW_DATA_FILE_HEADER_TEMPLATE = """# {state_name} Raw Data Description
@@ -141,9 +139,7 @@ class DirectIngestDocumentationGenerator:
         views_by_raw_file = defaultdict(list)
 
         for builder in view_collector.collect_view_builders():
-            # Arbitrary project ID - we just need to build views in order to obtain raw table dependencies
-            with local_project_id_override(GCP_PROJECT_STAGING):
-                ingest_view = builder.build()
+            ingest_view = builder.build()
             dependency_configs = ingest_view.raw_table_dependency_configs
             for config in dependency_configs:
                 views_by_raw_file[config.file_tag].append(ingest_view.file_tag)
