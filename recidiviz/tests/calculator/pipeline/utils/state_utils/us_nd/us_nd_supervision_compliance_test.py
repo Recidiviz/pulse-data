@@ -127,8 +127,60 @@ class TestFaceToFaceContactsInComplianceMonth(unittest.TestCase):
 class TestGuidelinesApplicableForCase(unittest.TestCase):
     """Tests the guidelines_applicable_for_case function."""
 
+    def test_guidelines_applicable_for_case_external_unknown(self):
+        """The guidelines should not be applicable to people who are not classified."""
+        supervision_period = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=111,
+            external_id='sp1',
+            state_code=StateCode.US_ND.value,
+            start_date=date(2018, 3, 5),
+            termination_date=date(2018, 5, 19),
+            admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
+            termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_level=StateSupervisionLevel.EXTERNAL_UNKNOWN,
+            supervision_level_raw_text='5',
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO
+        )
+
+        us_nd_supervision_compliance = UsNdSupervisionCaseCompliance(supervision_period=supervision_period,
+                                                                     case_type=StateSupervisionCaseType.GENERAL,
+                                                                     start_of_supervision=supervision_period.start_date,
+                                                                     assessments=[],
+                                                                     supervision_contacts=[])
+
+        applicable = us_nd_supervision_compliance._guidelines_applicable_for_case()
+
+        self.assertFalse(applicable)
+
+    def test_guidelines_applicable_for_case_interstate_compact(self):
+        """The guidelines should not be applicable to people who are in interstate compact."""
+        supervision_period = StateSupervisionPeriod.new_with_defaults(
+            supervision_period_id=111,
+            external_id='sp1',
+            state_code=StateCode.US_ND.value,
+            start_date=date(2018, 3, 5),
+            termination_date=date(2018, 5, 19),
+            admission_reason=StateSupervisionPeriodAdmissionReason.COURT_SENTENCE,
+            termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
+            supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
+            supervision_level=StateSupervisionLevel.INTERSTATE_COMPACT,
+            supervision_level_raw_text='9',
+            status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO
+        )
+
+        us_nd_supervision_compliance = UsNdSupervisionCaseCompliance(supervision_period=supervision_period,
+                                                                     case_type=StateSupervisionCaseType.GENERAL,
+                                                                     start_of_supervision=supervision_period.start_date,
+                                                                     assessments=[],
+                                                                     supervision_contacts=[])
+
+        applicable = us_nd_supervision_compliance._guidelines_applicable_for_case()
+
+        self.assertFalse(applicable)
+
     def test_guidelines_applicable_for_case(self):
-        """The guidelines should be case and supervision level agnostic."""
+        """The guidelines should be applicable to people who are not in interstate compact or not classified."""
         supervision_period = StateSupervisionPeriod.new_with_defaults(
             supervision_period_id=111,
             external_id='sp1',
@@ -139,7 +191,7 @@ class TestGuidelinesApplicableForCase(unittest.TestCase):
             termination_reason=StateSupervisionPeriodTerminationReason.DISCHARGE,
             supervision_period_supervision_type=StateSupervisionPeriodSupervisionType.PROBATION,
             supervision_level=StateSupervisionLevel.MEDIUM,
-            supervision_level_raw_text='LEVEL 2',
+            supervision_level_raw_text='2',
             status=StateSupervisionPeriodStatus.PRESENT_WITHOUT_INFO
         )
 
