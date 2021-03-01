@@ -130,7 +130,7 @@ class TestScraperAggregateReports(TestCase):
         self.assertFalse(mock_fs_return.exists.called)
         mock_fs_return.put.assert_called_with(temploc, upload_bucket)
         mock_open.assert_called_with(temploc, 'wb')
-        mock_get.assert_called_with(EXISTING_TEST_URL)
+        mock_get.assert_called_with(EXISTING_TEST_URL, verify=True)
 
     @patch.object(gcsfs, 'GCSFileSystem')
     @patch.object(requests, 'get')
@@ -158,7 +158,7 @@ class TestScraperAggregateReports(TestCase):
             os.path.join(self.historical_bucket, 'texas', EXISTING_PDF_NAME))
         mock_fs_return.put.assert_called_with(temploc, upload_bucket)
         mock_open.assert_called_with(temploc, 'wb')
-        mock_get.assert_called_with(EXISTING_TEST_URL)
+        mock_get.assert_called_with(EXISTING_TEST_URL, verify=True)
 
     @patch.object(gcsfs, 'GCSFileSystem')
     @patch.object(requests, 'post')
@@ -186,7 +186,7 @@ class TestScraperAggregateReports(TestCase):
                 self.historical_bucket, 'california', EXISTING_CA_NAME))
         mock_fs_return.put.assert_called_with(temploc, upload_bucket)
         mock_open.assert_called_with(temploc, 'wb')
-        mock_post.assert_called_with(EXISTING_TEST_URL_CA, data=CA_POST_DATA)
+        mock_post.assert_called_with(EXISTING_TEST_URL_CA, data=CA_POST_DATA, verify=True)
 
     @patch.object(gcsfs, 'GCSFileSystem')
     @patch.object(requests, 'get')
