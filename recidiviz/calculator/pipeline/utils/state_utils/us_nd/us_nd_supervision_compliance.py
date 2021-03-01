@@ -17,10 +17,11 @@
 """State-specific utils for determining compliance with supervision standards for US_ND."""
 from datetime import date
 import logging
-from typing import Optional
+from typing import Optional, List
 
 from dateutil.relativedelta import relativedelta
 
+from recidiviz.common.constants.state.state_supervision_period import StateSupervisionLevel
 from recidiviz.calculator.pipeline.utils.supervision_case_compliance_manager import \
     StateSupervisionCaseComplianceManager
 
@@ -38,8 +39,11 @@ class UsNdSupervisionCaseCompliance(StateSupervisionCaseComplianceManager):
         return LSIR_INITIAL_NUMBER_OF_DAYS_COMPLIANCE
 
     def _guidelines_applicable_for_case(self) -> bool:
-        """Returns whether the standard state guidelines are applicable for the given supervision case."""
-        return True
+        """Returns whether the standard state guidelines are applicable for the given supervision case. The standard
+        guidelines are not applicable for people who are not classified or who are in interstate compact."""
+        disallowed_supervision_levels: List[StateSupervisionLevel] =\
+            [StateSupervisionLevel.EXTERNAL_UNKNOWN, StateSupervisionLevel.INTERSTATE_COMPACT]
+        return self.supervision_period.supervision_level not in disallowed_supervision_levels
 
     def _num_days_past_required_reassessment(self,
                                              compliance_evaluation_date: date,
