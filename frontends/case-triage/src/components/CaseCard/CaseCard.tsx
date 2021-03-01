@@ -112,7 +112,7 @@ const CaseCard: React.FC<CaseCardProps> = ({ client }: CaseCardProps) => {
 
         <Caption>
           {titleCase(client.supervisionType)},{" "}
-          {titleCase(client.supervisionLevel)},{" "}
+          {titleCase(client.supervisionLevelText)},{" "}
           {titleCase(client.personExternalId)}
         </Caption>
 
