@@ -40,17 +40,16 @@ interface NeedsRiskAssessmentProps {
   onStatusChanged: (helped: boolean) => void;
 }
 
-const getSupervisionLevelText = (
+const getAssessmentLevelText = (
   client: DecoratedClient,
-  cutoffs?: ScoreMinMaxBySupervisionLevel,
-  supervisionLevel?: SupervisionLevel
+  cutoffs?: ScoreMinMaxBySupervisionLevel
 ) => {
-  if (cutoffs && supervisionLevel) {
-    const cutoff: ScoreMinMax = cutoffs[supervisionLevel];
+  if (cutoffs) {
+    const cutoff: ScoreMinMax = cutoffs[client.supervisionLevel];
 
     return (
       <>
-        , {titleCase(supervisionLevel)}, ({titleCase(client.gender)}{" "}
+        , {titleCase(client.supervisionLevelText)}, ({titleCase(client.gender)}{" "}
         {getCutoffsText(cutoff)})
       </>
     );
@@ -84,9 +83,6 @@ const NeedsRiskAssessment: React.FC<NeedsRiskAssessmentProps> = ({
   const supervisionLevelCutoffs = policyStore.getSupervisionLevelCutoffsForClient(
     client
   );
-  const assessmentSupervisionLevel = policyStore.findAssessmentSupervisionLevelForClient(
-    client
-  );
 
   const {
     needsMet: { assessment: met },
@@ -101,11 +97,7 @@ const NeedsRiskAssessment: React.FC<NeedsRiskAssessmentProps> = ({
       <>
         <div>
           {getAssessmentScoreText(client)}
-          {getSupervisionLevelText(
-            client,
-            supervisionLevelCutoffs,
-            assessmentSupervisionLevel
-          )}
+          {getAssessmentLevelText(client, supervisionLevelCutoffs)}
         </div>
         Last assessed on {mostRecentAssessmentDate.format("MMMM Do, YYYY")}
       </>

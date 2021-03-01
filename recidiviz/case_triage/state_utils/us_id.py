@@ -52,10 +52,17 @@ US_ID_ASSESSMENT_SCORE_RANGE: Dict[Gender, Dict[StateSupervisionLevel, Tuple[int
     },
 }
 
+US_ID_SUPERVISION_LEVEL_NAMES = {
+    StateSupervisionLevel.MINIMUM: 'Low',
+    StateSupervisionLevel.MEDIUM: 'Moderate',
+    StateSupervisionLevel.HIGH: 'High',
+}
+
 
 def us_id_policy_requirements() -> PolicyRequirements:
     """Returns set of policy requirements for Idaho."""
     return PolicyRequirements(
         assessment_score_cutoffs=US_ID_ASSESSMENT_SCORE_RANGE,
         supervision_contact_frequencies=SUPERVISION_CONTACT_FREQUENCY_REQUIREMENTS,
+        supervision_level_names=US_ID_SUPERVISION_LEVEL_NAMES,
     )

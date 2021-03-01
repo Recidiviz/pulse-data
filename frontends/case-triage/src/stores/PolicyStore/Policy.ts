@@ -41,7 +41,10 @@ export type SupervisionContactFrequencies = Record<
   ContactFrequencyByRisk
 >;
 
+export type SupervisionLevelNames = Record<SupervisionLevel, string>;
+
 export interface Policy {
   assessmentScoreCutoffs: AssessmentScoreCutoffs;
   supervisionContactFrequencies: SupervisionContactFrequencies;
+  supervisionLevelNames: SupervisionLevelNames;
 }
