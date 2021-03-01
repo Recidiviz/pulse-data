@@ -24,6 +24,8 @@ from recidiviz.utils.metadata import local_project_id_override
 
 COMPARTMENT_SUB_SESSIONS_VIEW_NAME = 'compartment_sub_sessions'
 
+COMPARTMENT_SUB_SESSIONS_SUPPORTED_STATES = ('US_ND', 'US_ID', 'US_MO', 'US_PA')
+
 COMPARTMENT_SUB_SESSIONS_VIEW_DESCRIPTION = \
     """Sub-sessionized view of each individual. Session defined as continuous stay within a compartment and location"""
 
@@ -55,16 +57,17 @@ COMPARTMENT_SUB_SESSIONS_QUERY_TEMPLATE = \
         created_on,
         state_code,
         'INCARCERATION' as compartment_level_1,
+        /* TODO(#6126): Investigate ID missing reason for incarceration */
         CASE WHEN state_code = 'US_ID' AND specialized_purpose_for_incarceration IN ('GENERAL','PAROLE_BOARD_HOLD','TREATMENT_IN_PRISON')
           THEN specialized_purpose_for_incarceration 
-          ELSE 'GENERAL' END AS compartment_level_2,
+          ELSE COALESCE(specialized_purpose_for_incarceration, 'GENERAL') END as compartment_level_2,
         facility AS compartment_location,
         CAST(NULL AS STRING) AS correctional_level,
         CAST(NULL AS STRING) AS supervising_officer_external_id,
         CAST(NULL AS STRING) AS case_type
     FROM
         `{project_id}.{materialized_metrics_dataset}.most_recent_incarceration_population_metrics_materialized`
-    WHERE state_code in ('US_ND','US_ID')
+    WHERE state_code in ('{supported_states}')
     UNION ALL
     SELECT 
         DISTINCT
@@ -81,7 +84,7 @@ COMPARTMENT_SUB_SESSIONS_QUERY_TEMPLATE = \
         case_type
     FROM
         `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_population_metrics_materialized`
-    WHERE state_code in ('US_ND','US_ID')
+    WHERE state_code in ('{supported_states}')
     UNION ALL
     SELECT 
         DISTINCT
@@ -97,7 +100,7 @@ COMPARTMENT_SUB_SESSIONS_QUERY_TEMPLATE = \
         supervising_officer_external_id,
         case_type
     FROM `{project_id}.{materialized_metrics_dataset}.most_recent_supervision_out_of_state_population_metrics_materialized`
-    WHERE state_code in ('US_ND','US_ID')  
+    WHERE state_code in ('{supported_states}')
     )
     ,
     last_day_of_data_cte AS
@@ -108,7 +111,6 @@ COMPARTMENT_SUB_SESSIONS_QUERY_TEMPLATE = \
         MAX(created_on) AS last_day_of_data
     FROM population_cte
     GROUP BY 1,2
-    ORDER BY 1,2       
     )   
     ,
     dedup_step_1_cte AS 
@@ -257,7 +259,6 @@ COMPARTMENT_SUB_SESSIONS_QUERY_TEMPLATE = \
             DATE_SUB(DATE, INTERVAL ROW_NUMBER() OVER(PARTITION BY person_id, metric_source, compartment_level_1, compartment_level_2, compartment_location
                 ORDER BY date ASC) DAY) AS group_continuous_dates_in_compartment
         FROM filled_missing_pop_types_cte
-        ORDER BY date ASC
         )
     GROUP BY 1,2,3,4,5,6,7
     ORDER BY MIN(DATE) ASC
@@ -536,7 +537,6 @@ COMPARTMENT_SUB_SESSIONS_QUERY_TEMPLATE = \
     LEFT JOIN `{project_id}.{analyst_dataset}.assessment_score_sessions_materialized` assessment_end
         ON COALESCE(s.end_date, '9999-01-01') BETWEEN assessment_end.assessment_date AND COALESCE(assessment_end.score_end_date, '9999-01-01')
         AND s.person_id = assessment_end.person_id
-    ORDER BY s.person_id ASC, s.sub_session_id ASC
     """
 
 COMPARTMENT_SUB_SESSIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
@@ -546,7 +546,8 @@ COMPARTMENT_SUB_SESSIONS_VIEW_BUILDER = SimpleBigQueryViewBuilder(
     description=COMPARTMENT_SUB_SESSIONS_VIEW_DESCRIPTION,
     materialized_metrics_dataset=DATAFLOW_METRICS_MATERIALIZED_DATASET,
     analyst_dataset=ANALYST_VIEWS_DATASET,
-    should_materialize=True
+    should_materialize=True,
+    supported_states = "', '".join(COMPARTMENT_SUB_SESSIONS_SUPPORTED_STATES)
 )
 
 if __name__ == '__main__':
