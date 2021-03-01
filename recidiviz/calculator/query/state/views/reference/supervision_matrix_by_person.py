@@ -49,7 +49,8 @@ SUPERVISION_MATRIX_BY_PERSON_QUERY_TEMPLATE = \
             case_type,
             IFNULL(level_1_supervision_location_external_id, 'EXTERNAL_UNKNOWN') AS level_1_supervision_location,
             IFNULL(level_2_supervision_location_external_id, 'EXTERNAL_UNKNOWN') AS level_2_supervision_location,
-            supervising_officer_external_id AS officer,
+            -- TODO(#6115): Stop dropping commas once we are using a different delimiter in the export
+            REPLACE(IFNULL(supervising_officer_external_id, 'EXTERNAL_UNKNOWN'), ',', '') AS officer,
             {state_specific_recommended_for_revocation},
             date_of_supervision,
             FALSE AS is_revocation
