@@ -33,6 +33,14 @@ from recidiviz.tests.utils.fake_region import fake_region
 class DirectIngestDocumentationGeneratorTest(unittest.TestCase):
     """Tests for DirectIngestDocumentationGenerator."""
 
+    def setUp(self) -> None:
+        self.metadata_patcher = patch('recidiviz.utils.metadata.project_id')
+        self.mock_project_id_fn = self.metadata_patcher.start()
+        self.mock_project_id_fn.return_value = 'project-id'
+
+    def tearDown(self) -> None:
+        self.metadata_patcher.stop()
+
     @patch('recidiviz.ingest.direct.direct_ingest_documentation_generator.DirectIngestRegionRawFileConfig')
     @patch('recidiviz.ingest.direct.direct_ingest_documentation_generator.DirectIngestDocumentationGenerator'
            '._get_updated_by')
