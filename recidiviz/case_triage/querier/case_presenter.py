@@ -84,7 +84,7 @@ class CasePresenter:
         # TODO(#5769): We're doing this quickly here and being intentional about the debt we're taking
         # on. This will be moved to the calculation pipeline once we've shipped the Case Triage MVP.
         next_assessment_date = self._next_assessment_date()
-        base_dict['nextAssessmentDate'] = str(next_assessment_date)
+        base_dict['nextAssessmentDate'] = next_assessment_date
 
         # TODO(#5768): In the long-term, we plan to move away from enforcing the next contact
         # and next assessment so explicitly. This is why we're implementing this in QueriedClient
@@ -92,7 +92,7 @@ class CasePresenter:
         # the calculation pipeline where this information _should_ reside.
         next_face_to_face_date = self._next_face_to_face_date()
         if next_face_to_face_date:
-            base_dict['nextFaceToFaceDate'] = str(next_face_to_face_date)
+            base_dict['nextFaceToFaceDate'] = next_face_to_face_date
 
         today = date.today()
         base_dict['needsMet'] = {
@@ -105,7 +105,7 @@ class CasePresenter:
             'assessment': next_assessment_date is None or bool(next_assessment_date > today),
         }
 
-        return base_dict
+        return _json_map_dates_to_strings(base_dict)
 
     def in_progress_officer_actions(self) -> List[CaseUpdateAction]:
         """Calculates the list of CaseUpdateActionTypes that are still applicable for the client."""
@@ -145,7 +145,7 @@ class CasePresenter:
                 self.etl_client.supervision_start_date,
                 NEW_SUPERVISION_CONTACT_DEADLINE_BUSINESS_DAYS,
                 roll='forward',
-            )
+            ).astype(date)
 
         case_type = StateSupervisionCaseType(self.etl_client.case_type)
         supervision_level = StateSupervisionLevel(self.etl_client.supervision_level)
@@ -164,3 +164,16 @@ class CasePresenter:
         return self.etl_client.most_recent_face_to_face_date + timedelta(
             days=(face_to_face_requirements[1] // face_to_face_requirements[0])
         )
+
+
+def _json_map_dates_to_strings(json_dict: Dict[str, Any]) -> Dict[str, Any]:
+    """This function is used to pre-emptively convert dates to strings. If
+    we don't do this, flask's jsonify tries to be helpful and turns our date
+    into a datetime with a GMT timezone, which causes problems downstream."""
+    results = {}
+    for k, v in json_dict.items():
+        if isinstance(v, date):
+            results[k] = str(v)
+        else:
+            results[k] = v
+    return results
