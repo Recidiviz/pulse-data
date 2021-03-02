@@ -28,17 +28,22 @@ export const DueDate: React.FC<DueDateProps> = ({ date }: DueDateProps) => {
     return <BaseDueDate>Not required</BaseDueDate>;
   }
 
-  const timeAgo = date.fromNow(true).split("");
+  const beginningOfDay = moment().startOf("day");
 
-  if (date.isSame(moment(), "day")) {
+  // Upcoming contacts are set to day boundaries. Use the beginning of today when calculating distance
+  // Thus, showing a minimum unit of "In a day" rather than "In X hours"
+  const timeAgo = date.from(beginningOfDay, true);
+
+  if (date.isSame(beginningOfDay, "day")) {
     return <TodayDueDate>Today</TodayDueDate>;
   }
 
-  if (date.isAfter(moment(), "day")) {
-    return <BaseDueDate>In {timeAgo.join("")}</BaseDueDate>;
+  if (date.isAfter(beginningOfDay, "day")) {
+    return <BaseDueDate>In {timeAgo}</BaseDueDate>;
   }
 
-  timeAgo[0] = timeAgo[0].toUpperCase();
+  const capitalizedTimeAgo =
+    timeAgo.charAt(0).toUpperCase() + timeAgo.substr(1);
 
-  return <PastDueDate>{timeAgo.join("")} ago</PastDueDate>;
+  return <PastDueDate>{capitalizedTimeAgo} ago</PastDueDate>;
 };
