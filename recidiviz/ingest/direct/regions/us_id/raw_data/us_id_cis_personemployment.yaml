@@ -5,10 +5,25 @@ primary_key_cols:
   - id
 columns:
   - name: id
+    is_datetime: False
+    description: Id of this row
   - name: unemployed
+    is_datetime: False
+    description: T if unemployed, F if not
   - name: codeunemployedreasonid
+    is_datetime: False
+    description: Foreign key to the unemployment reason table (`cis_codeunemploymentreason`)
   - name: version
+    is_datetime: False
   - name: insuser
+    is_datetime: False
+    description: IDOC username of whoever created this row
   - name: insdate
+    is_datetime: True
+    description: IDOC timestamp for when this row was created
   - name: upduser
+    is_datetime: False
+    description: IDOC username of the last person to update this row
   - name: upddate
+    is_datetime: True
+    description: IDOC update date for this row
