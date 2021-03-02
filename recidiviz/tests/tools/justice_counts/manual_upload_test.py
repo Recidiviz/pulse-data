@@ -20,7 +20,7 @@ import datetime
 import decimal
 import os
 import unittest
-from typing import Dict, Optional
+from typing import Dict, Optional, List, Type
 
 import pytest
 from dateutil.relativedelta import relativedelta
@@ -34,6 +34,7 @@ from recidiviz.persistence.database.schema.justice_counts import schema
 from recidiviz.persistence.database.session_factory import SessionFactory
 from recidiviz.tests.tools.justice_counts import test_utils
 from recidiviz.tools.justice_counts import manual_upload
+from recidiviz.tools.justice_counts.manual_upload import County, Dimension, raw_for_dimension_cls
 from recidiviz.tools.postgres import local_postgres_helpers
 from recidiviz.utils.yaml_dict import YAMLDict
 
@@ -72,6 +73,16 @@ class FakeType(manual_upload.Dimension, EntityEnum, metaclass=EntityEnumMeta):
     @classmethod
     def dimension_identifier(cls) -> str:
         return 'global/fake_type'
+
+    @classmethod
+    def get_generated_dimension_classes(cls) -> List[Type[Dimension]]:
+        return [raw_for_dimension_cls(cls)]
+
+    @classmethod
+    def generate_dimension_classes(
+            cls, dimension_cell_value: str, enum_overrides: Optional[EnumOverrides] = None
+    ) -> List[Dimension]:
+        return [raw_for_dimension_cls(cls).get(dimension_cell_value)]
 
     @property
     def dimension_value(self) -> str:
@@ -115,6 +126,16 @@ class FakeSubtype(manual_upload.Dimension, EntityEnum, metaclass=EntityEnumMeta)
     @classmethod
     def dimension_identifier(cls) -> str:
         return 'global/fake_subtype'
+
+    @classmethod
+    def get_generated_dimension_classes(cls) -> List[Type[Dimension]]:
+        return [raw_for_dimension_cls(cls)]
+
+    @classmethod
+    def generate_dimension_classes(
+            cls, dimension_cell_value: str, enum_overrides: Optional[EnumOverrides] = None
+    ) -> List[Dimension]:
+        return [raw_for_dimension_cls(cls).get(dimension_cell_value)]
 
     @property
     def dimension_value(self) -> str:
@@ -825,6 +846,53 @@ class ManualUploadTest(unittest.TestCase):
         # Assert
         assert "change it to a filtered dimension" in str(exception_info.value)
 
+    def test_jailPopulationAndFIPS_arePersisted(self) -> None:
+        # Act
+        manual_upload.ingest(self.fs, test_utils.prepare_files(self.fs, manifest_filepath('report_jail_population')))
+
+        # Assert
+        session = SessionFactory.for_schema_base(JusticeCountsBase)
+
+        [table_definition] = session.query(schema.ReportTableDefinition).all()
+        self.assertEqual(['global/location/state', 'metric/population/type'],
+                         table_definition.filtered_dimensions)
+        self.assertEqual(['US_MS', 'JAIL'], table_definition.filtered_dimension_values)
+        self.assertEqual(['global/location/county', 'global/location/county-fips',
+                          'source/colorado_department_of_corrections/county/raw'],
+                         table_definition.aggregated_dimensions)
+
+        cells = session.query(schema.Cell).all()
+        self.assertEqual([
+            (['US_MS_PIKE', '28113', 'Pike County'], decimal.Decimal(1489)),
+            (['US_MS_RANKIN', '28121', 'Rankin County'], decimal.Decimal(5592)),
+            (['US_MS_WINSTON', '28159', 'Winston County'], decimal.Decimal(200784))
+        ], [(cell.aggregated_dimension_values, cell.value) for cell in cells])
+        session.close()
+
+    def test_jailPopulationAndFIPSMultipleStates_arePersisted(self) -> None:
+        # Act
+        manual_upload.ingest(self.fs, test_utils.prepare_files(self.fs, manifest_filepath(
+            'report_jail_population_multiple_states')))
+
+        # Assert
+        session = SessionFactory.for_schema_base(JusticeCountsBase)
+
+        [table_definition] = session.query(schema.ReportTableDefinition).all()
+        self.assertEqual(['metric/population/type'],
+                         table_definition.filtered_dimensions)
+        self.assertEqual(['JAIL'], table_definition.filtered_dimension_values)
+        self.assertEqual(['global/location/county', 'global/location/county-fips',
+                          'global/location/state', 'source/colorado_department_of_corrections/county/raw'],
+                         table_definition.aggregated_dimensions)
+
+        cells = session.query(schema.Cell).all()
+        self.assertEqual([
+            (['US_TN_MCMINN', '47107', 'US_TN', 'McMinn County'], decimal.Decimal(1489)),
+            (['US_OK_HARMON', '40057', 'US_OK', 'Harmon County'], decimal.Decimal(5592)),
+            (['US_MS_WINSTON', '28159', 'US_MS', 'Winston County'], decimal.Decimal(200784))
+        ], [(cell.aggregated_dimension_values, cell.value) for cell in cells])
+        session.close()
+
     def test_genericSpreadsheet_isParsed(self) -> None:
         # Act
         manual_upload.ingest(self.fs, test_utils.prepare_files(
@@ -840,6 +908,10 @@ class ManualUploadTest(unittest.TestCase):
         # Act
         with self.assertRaisesRegex(ValueError, "Invalid value 'NaN'"):
             manual_upload.ingest(self.fs, test_utils.prepare_files(self.fs, manifest_filepath('report_nans')))
+
+    def testCountyIncorrectFormatRaisesError(self) -> None:
+        with self.assertRaisesRegex(ValueError, "Invalid county code"):
+            County.get('New York')
 
     def test_reingestReport(self) -> None:
         # Act
