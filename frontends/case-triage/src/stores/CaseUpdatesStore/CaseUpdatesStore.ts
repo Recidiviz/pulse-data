@@ -21,22 +21,27 @@ import {
 } from "./CaseUpdates";
 import ClientsStore, { DecoratedClient } from "../ClientsStore";
 import UserStore from "../UserStore";
+import API from "../API";
 
 interface CaseUpdatesStoreProps {
+  api: API;
   clientsStore: ClientsStore;
   userStore: UserStore;
 }
 
 class CaseUpdatesStore {
+  api: API;
+
   isLoading: boolean;
 
   clientsStore: ClientsStore;
 
   userStore: UserStore;
 
-  constructor({ clientsStore, userStore }: CaseUpdatesStoreProps) {
+  constructor({ api, clientsStore, userStore }: CaseUpdatesStoreProps) {
     makeAutoObservable(this);
 
+    this.api = api;
     this.isLoading = false;
     this.clientsStore = clientsStore;
     this.userStore = userStore;
@@ -53,37 +58,23 @@ class CaseUpdatesStore {
       return;
     }
 
-    const token = await this.userStore.getTokenSilently({
-      audience: "https://case-triage.recidiviz.org/api",
-      scope: "email",
+    await this.api.post("/api/record_client_action", {
+      personExternalId: client.personExternalId,
+      actions:
+        client.inProgressActions !== undefined
+          ? [...client.inProgressActions, ...actions]
+          : [...actions],
+      otherText,
     });
 
-    const response = await fetch("/api/record_client_action", {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": `application/json`,
-      },
-      method: "POST",
-      body: JSON.stringify({
-        personExternalId: client.personExternalId,
-        actions:
-          client.inProgressActions !== undefined
-            ? [...client.inProgressActions, ...actions]
-            : [...actions],
-        otherText,
-      }),
-    }).then(() => {
-      this.clientsStore.view();
-      const wasPositiveAction = actions.some((action) =>
-        POSITIVE_CASE_UPDATE_ACTIONS.includes(action)
-      );
-      this.clientsStore.markAsInProgress(client, wasPositiveAction);
-      this.clientsStore.fetchClientsList();
+    this.clientsStore.view();
+    const wasPositiveAction = actions.some((action) =>
+      POSITIVE_CASE_UPDATE_ACTIONS.includes(action)
+    );
+    this.clientsStore.markAsInProgress(client, wasPositiveAction);
+    this.clientsStore.fetchClientsList();
 
-      runInAction(() => {
-        this.isLoading = false;
-      });
-    });
+    this.isLoading = false;
   }
 
   async undo(client: DecoratedClient): Promise<void> {
@@ -92,50 +83,29 @@ class CaseUpdatesStore {
       To do so, we feed the `ClientsStore.clientsMarkedInProgress` dictionary entry, which contains the previous
       representation of the client, back into the `record_client_action` API.
      */
-    if (!this.userStore.getTokenSilently) {
-      return;
-    }
-
     if (!this.clientsStore.clientsMarkedInProgress[client.personExternalId]) {
       return;
     }
 
     this.isLoading = true;
 
-    const token = await this.userStore.getTokenSilently({
-      audience: "https://case-triage.recidiviz.org/api",
-      scope: "email",
-    });
-
     const {
       client: { inProgressActions: previousInProgressActions = [] },
     } = this.clientsStore.clientsMarkedInProgress[client.personExternalId];
 
-    return fetch("/api/record_client_action", {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": `application/json`,
-      },
-      method: "POST",
-      body: JSON.stringify({
+    try {
+      await this.api.post("/api/record_client_action", {
         personExternalId: client.personExternalId,
         actions: previousInProgressActions,
         otherText: "",
-      }),
-    })
-      .then(() => {
-        this.clientsStore.undoMarkAsInProgress(client);
-        this.clientsStore.fetchClientsList();
-
-        runInAction(() => {
-          this.isLoading = false;
-        });
-      })
-      .catch(() => {
-        runInAction(() => {
-          this.isLoading = false;
-        });
       });
+
+      this.clientsStore.undoMarkAsInProgress(client);
+      this.clientsStore.fetchClientsList();
+      this.isLoading = false;
+    } catch (error) {
+      this.isLoading = false;
+    }
   }
 }
 

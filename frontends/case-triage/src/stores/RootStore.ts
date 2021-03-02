@@ -14,17 +14,20 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
-import { configure } from "mobx";
+import { autorun, configure } from "mobx";
 import ClientsStore from "./ClientsStore";
 import PolicyStore from "./PolicyStore";
 import UserStore from "./UserStore";
 import CaseUpdatesStore from "./CaseUpdatesStore";
+import API from "./API";
 
 configure({
   useProxies: "never",
 });
 
 export default class RootStore {
+  api: API;
+
   caseUpdatesStore: CaseUpdatesStore;
 
   clientsStore: ClientsStore;
@@ -35,12 +38,21 @@ export default class RootStore {
 
   constructor() {
     this.userStore = UserStore.build();
-    this.policyStore = new PolicyStore({ userStore: this.userStore });
-    this.clientsStore = new ClientsStore({
+    this.api = new API({ userStore: this.userStore });
+
+    this.policyStore = new PolicyStore({
+      api: this.api,
       userStore: this.userStore,
-      policyStore: this.policyStore,
     });
+
+    this.clientsStore = new ClientsStore({
+      api: this.api,
+      policyStore: this.policyStore,
+      userStore: this.userStore,
+    });
+
     this.caseUpdatesStore = new CaseUpdatesStore({
+      api: this.api,
       clientsStore: this.clientsStore,
       userStore: this.userStore,
     });
