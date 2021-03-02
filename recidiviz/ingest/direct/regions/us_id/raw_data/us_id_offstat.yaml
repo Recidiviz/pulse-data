@@ -1,20 +1,65 @@
 file_tag: offstat
+file_description: |-
+  Contains a single row for every legal status span that a person under IDOC authority has ever had. It is possible for
+  more than one status to be in use at a given time, although it is uncommon. From these legal statuses we get both
+  supervision type information (probation, parole, investigation) and information around why the person is incarcerated
+  (general incarceration, parole violation, rider)
 primary_key_cols:
   - docno
   - incrno
   - statno
 columns:
+  - name: docno
+    description: |-
+      Identifier of the person
+  - name: incrno
+    description: |-
+      Incarceration number for this status
+  - name: statno
+    description: |-
+      ID of the status (unique within this person and incarceration number)
+  - name: stat_cd
+    description: |-
+      Code for the type of status (P - supervision, H - history, I - incarceration)
   - name: stat_intake_dtd
     is_datetime: True
+    description: |-
+      Date the status was assigned to the person
   - name: stat_strt_dtd
     is_datetime: True
+    description: |-
+      Date the status began being valid for the person
   - name: stat_rls_dtd
     is_datetime: True
+    description: |-
+      Date the status ended for this person
   - name: stat_elig_end_dtd
     is_datetime: True
   - name: stat_strt_ped_dtd
     is_datetime: True
+  - name: stat_strt_typ
+    description: |-
+      Code for the status that was valid for this time span
+  - name: stat_rls_typ
+    description: |-
+      Code for the status that began after this status was complete
   - name: proj_rls_dtd
     is_datetime: True
+    description: |-
+      Projected end date of the current status
+  - name: proj_rls_typ
+    description: |-
+      Projected end status
+  - name: proj_hard_dtd_flg
+  - name: rel_dest_cd
+  - name: rel_dtr
+  - name: rel_chgs
+  - name: rel_fel_misd
+  - name: rel_alert_notf
   - name: rel_par_revoc_dtd
     is_datetime: True
+  - name: govn_min_sent
+  - name: govn_max_sent
+  - name: law_cd
+    description: |-
+      Unknown

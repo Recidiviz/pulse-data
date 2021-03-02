@@ -1,9 +1,45 @@
 file_tag: sentprob
+file_description: |-
+  Contains a new row for every probation sentence ever tracked by IDOC.
+
+  This table can be joined with `sentence` to get some underlying details about the sentence. It’s important to note
+  that this table contains its own probation start and end dates, which are often distinct from the start and end dates
+  represented in the `sentence` table. The dates in this table represent how long the person is sentenced to
+  supervision, and the dates in the sentence table represent how long the person would be sentenced if they were in
+  prison / are revoked (often longer than the probation sentence). In Idaho terms, the dates in the `sentence` table
+  are a part of the “underlying sentence”.
 primary_key_cols:
   - mitt_srl
   - sent_no
 columns:
+  - name: mitt_srl
+    description: |-
+      ID of this sentence's mittimus
+  - name: sent_no
+    description: |-
+      ID of this sentence (within the above mittimus)
+  - name: prob_no
+    description: |-
+      ID of this probation sentence (within the above mittimus). This ID is only unique within probation sentences
+      under this mittimus. sent_no above is unique with all sentences under this mittimus.
   - name: prob_strt_dtd
     is_datetime: True
+    description: |-
+      Start date of probation. This can be backdated by judges to give a person credit for time already served.
+      <br><br>        - ex. A person on probation goes into a rider and then back on probation. Instead of their
+      probation officially restarting after their rider, the judge backdates their probation date to reflect their
+      original start date. <br>        - ex. A person on probation violates some condition of their probation but is
+      not revoked - a judge may “restart” their probation by moving their `prob_strt_dtd`
+  - name: prob_yr
+    description: |-
+      Number of years on probation
+  - name: prob_mo
+    description: |-
+      Number of months on probation
+  - name: prob_da
+    description: |-
+      Number of days on probation
   - name: prob_end_dtd
     is_datetime: True
+    description: |-
+      End date of this probation, if the person isn’t revoked.

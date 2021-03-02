@@ -1,3 +1,10 @@
 file_tag: ofndr_behavior_evaluation_response
+file_description: |-
+  Not in use
 primary_key_cols:
   - ofndr_behavior_evaluation_response_id
+columns:
+  - name: ofndr_behavior_evaluation_response_id
+  - name: ofndr_behavior_evaluation_id
+  - name: observed_behavior_response_cd
+  - name: observed_behavior_response_exception_cd

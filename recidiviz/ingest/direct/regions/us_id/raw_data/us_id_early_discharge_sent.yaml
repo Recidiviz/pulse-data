@@ -1,4 +1,31 @@
 file_tag: early_discharge_sent
+file_description: |-
+  Contains a single row for each early discharge and sentence combination. When a decision about early discharge is
+  made, it will be updated in this table. It’s important to note that decisions are made on a sentence level, and not
+  necessarily on an early discharge request level (i.e. if 1 early discharge request was filled out for 2 sentences,
+  one of the sentences could be discharged early and the other might not).
 primary_key_cols:
   - early_discharge_sent_id
+columns:
+  - name: early_discharge_sent_id
+    description: |-
+      ID for this early discharge x sentence combination
+  - name: early_discharge_id
+    description: |-
+      ID for the early discharge request
+  - name: mitt_srl
+    description: |-
+      ID of the mittimus. When combined with sent_no tells us which sentence is under review.
+  - name: sent_no
+    description: |-
+      ID of the sentence. When combined with the mitt_srl, this tells us exactly which sentence is under review
+  - name: jurisdiction_decision_code_id
+    description: |-
+      Code representing what decision was made about this sentence’s early discharge request
+  - name: caseno_seq
+    description: |-
+      Case sequence number of the sentence (if multiple within a single docket)
+  - name: juris_decision_comment
+    description: |-
+      Free text comments about the decision.
 always_historical_export: True

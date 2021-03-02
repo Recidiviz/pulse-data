@@ -1,9 +1,35 @@
 file_tag: ofndr_tst
+file_description: |-
+  Has a single row for each “test” that has been administered for a given person in custody.  Here a “test” is a broad
+  term used in the IDOC data to represent a form, violation response, assessment, etc (really anything that is filled
+  out by an IDOC employee about someone in custody).
 primary_key_cols:
   - ofndr_tst_id
 columns:
+  - name: ofndr_tst_id
+    description: |-
+      ID of this specific test
+  - name: body_loc_cd
+    description: |-
+      Location code of the person at the time of assessment
+  - name: ofndr_num
+    description: |-
+      ID of the person being assessed
+  - name: assess_tst_id
+    description: |-
+      ID of the test-type (i.e. was it an LSIR, violation response, etc?)
   - name: tst_dt
     is_datetime: True
+    description: |-
+      Date the test was administered
+  - name: score_by_name
+    description: |-
+      Username of the person who scored the assessment
+  - name: updt_usr_id
+    description: |-
+      Username of the person who last updated the row
   - name: updt_dt
     is_datetime: True
+    description: |-
+      Update date for this row
 ignore_quotes: True

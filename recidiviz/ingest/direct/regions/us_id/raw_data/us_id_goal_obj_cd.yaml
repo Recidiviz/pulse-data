@@ -1,3 +1,12 @@
 file_tag: goal_obj_cd
+file_description: |-
+  Not in use
 primary_key_cols:
   - goal_obj_cd
+columns:
+  - name: goal_obj_cd
+  - name: srvce_typ_cd
+  - name: goal_obj_desc
+  - name: goal_obj_title
+  - name: goal_obj_mod_flg
+  - name: vld_flg

@@ -1,30 +1,123 @@
 file_tag: early_discharge
+file_description: |-
+  Contains a single row for every early discharge request form that is filled out, either by a PO or by the person
+  being supervised themselves. The columns in this table are filled out / updated manually when there are updates.
+  Each early discharge form can be applied to multiple sentences, but to get that information you must join with
+  `early_discharge_sent`
 primary_key_cols:
   - early_discharge_id
 columns:
-  - name: created_by_dt
-    is_datetime: True
-  - name: decision_date
-    is_datetime: True
-  - name: decision_official_dt
-    is_datetime: True
-  - name: decision_updt_date
-    is_datetime: True
-  - name: fine_last_pymnt_dt
-    is_datetime: True
-  - name: juris_auth_sbmt_dt
-    is_datetime: True
-  - name: jurisdiction_authize_date
-    is_datetime: True
-  - name: ncic_chk_date
-    is_datetime: True
-  - name: restitution_last_pymnt_dt
-    is_datetime: True
-  - name: submit_updt_date
-    is_datetime: True
-  - name: subst_tst_start_dt
-    is_datetime: True
-  - name: sup_aprv_sbmt_dt
-    is_datetime: True
+  - name: early_discharge_id
+    description: |-
+      ID of this early discharge request form
+  - name: ofndr_num
+    description: |-
+      Id of the person under IDOC supervision
+  - name: meets_criteria
+    description: |-
+      (bool) Whether or not the person meets the early discharge criteria
+  - name: compliance
+    description: |-
+      (bool) Whether the person has been compliant to their supervision conditions.
+  - name: authority
+    description: |-
+      Body that has the authority to decide on early discharge (either PROBATION or PAROLE)
   - name: supervisor_review_date
     is_datetime: True
+    description: |-
+      Date the supervisor reviewed this request
+  - name: jurisdiction_authize_date
+    is_datetime: True
+    description: |-
+      Date the deciding jurisdiction authorized this request
+  - name: decision_date
+    is_datetime: True
+    description: |-
+      Date decision info was added to the system.
+  - name: jurisdiction_decision_code_id
+    description: |-
+      Always null (need to look at `early_discharge_sent` for decisions)
+  - name: decision_updt_user_id
+    description: |-
+      username of the person who input the decision information
+  - name: decision_updt_date
+    is_datetime: True
+    description: |-
+      Date that decision information was updated
+  - name: submit_updt_user_id
+    description: |-
+      Username of the person who submitted this request
+  - name: submit_updt_date
+    is_datetime: True
+    description: |-
+      The original submission date
+  - name: early_discharge_form_typ_id
+    description: |-
+      Code that tells you the form type which includes information on who requested the early discharge
+      (PO or supervisee)
+  - name: restitution_last_pymnt_dt
+    is_datetime: True
+    description: |-
+      Last date that restitution payment was made
+  - name: fine_last_pymnt_dt
+    is_datetime: True
+    description: |-
+      Last date that fine payments were made
+  - name: restitution_init_bal
+    description: |-
+      Initial balance of restitution
+  - name: fine_init_bal
+    description: |-
+      Initial balance of fines
+  - name: restitution_curr_bal
+    description: |-
+      Current balance of restitution
+  - name: fine_curr_bal
+    description: |-
+      Current balance of fines
+  - name: ncic_chk
+    description: |-
+      Bool indicating if an NCIC check was successfully run (external service which checks if there are any
+      new charges for this person)
+  - name: ncic_chk_date
+    is_datetime: True
+    description: |-
+      Date the NCIC check was performed
+  - name: sup_aprv_sbmt_id
+    description: |-
+      Username  of the supervisor / designee who approved the request
+  - name: sup_aprv_sbmt_dt
+    is_datetime: True
+    description: |-
+      Date that the supervisor / designee approved the request
+  - name: juris_auth_sbmt_id
+    description: |-
+      Username of the person who submitted the request to the jurisdiction authority
+  - name: juris_auth_sbmt_dt
+    is_datetime: True
+    description: |-
+      Date the request was sent to the jurisdiction authority
+  - name: created_by_id
+    description: |-
+      Username of the person who filled out the form (usually a person’s PO)
+  - name: created_by_dt
+    is_datetime: True
+    description: |-
+      Date the form was first saved
+  - name: decision_official_dt
+    is_datetime: True
+    description: |-
+      Date that an official decision was made
+  - name: decision_state
+    description: |-
+      Integer indicating at what stage in the process the request is in (ranges 2-5)
+  - name: initial_lsir_id
+    description: |-
+      Test ID of the person’s initial LSIR assessment
+  - name: current_lsir_id
+    description: |-
+      Test ID of the person’s current LSIR assessment
+  - name: subst_tst_start_dt
+    is_datetime: True
+    description: |-
+      Date after which the person has had no positive substance tests

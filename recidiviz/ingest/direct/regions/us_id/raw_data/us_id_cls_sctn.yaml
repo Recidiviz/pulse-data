@@ -1,3 +1,22 @@
 file_tag: cls_sctn
+file_description: |-
+  Not in use
 primary_key_cols:
   - cls_sctn_id
+columns:
+  - name: updt_dt
+  - name: updt_usr_id
+  - name: cls_sctn_id
+  - name: cls_id
+  - name: location_id
+  - name: prsn_site_loc_id
+  - name: prgrm_prvdr_loc_id
+  - name: instrctr_id
+  - name: cls_sctn_title
+  - name: strt_dt
+  - name: end_dt
+  - name: cls_loc_desc
+  - name: sctn_cpcty
+  - name: instrctr_name
+  - name: cntrl_enroll_flg
+  - name: cmt

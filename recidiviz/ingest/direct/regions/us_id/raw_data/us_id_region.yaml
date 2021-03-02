@@ -1,3 +1,9 @@
 file_tag: region
+file_description: |-
+  Not in use
 primary_key_cols:
   - region_id
+columns:
+  - name: region_id
+  - name: region_desc
+  - name: vld_flg

@@ -1,3 +1,10 @@
 file_tag: ofndr_behavior_evaluation_response_dates
+file_description: |-
+  Not in use
 primary_key_cols:
   - ofndr_behavior_evaluation_response_date_id
+columns:
+  - name: ofndr_behavior_evaluation_response_id
+  - name: ofndr_behavior_evaluation_response_date_id
+  - name: jail_start_dt
+  - name: jail_end_dt

@@ -93,7 +93,7 @@ First raw file.
 |---------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------|
 | col_name_1a         | First column.                                                                                                                                                 | YES                  |
 | col_name_1b         | A column description that is long enough to take up multiple lines. This text block will be interpreted literally and trailing/leading whitespace is removed. | YES                  |
-| undocumented_column |                                                                                                                                                               |                      |
+| undocumented_column | <No documentation>                                                                                                                                            |                      |
 
 
 ## tagColumnsMissing
