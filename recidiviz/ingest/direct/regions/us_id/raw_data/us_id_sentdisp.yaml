@@ -1,3 +1,9 @@
 file_tag: sentdisp
+file_description: |-
+  Not in use
 primary_key_cols:
   - sent_disp
+columns:
+  - name: sent_disp
+  - name: disp_sdesc
+  - name: disp_ldesc

@@ -1,3 +1,20 @@
 file_tag: parhrg
+file_description: |-
+  Not in use
 primary_key_cols:
   - par_hrg_srl
+columns:
+  - name: par_hrg_srl
+  - name: docno
+  - name: incrno
+  - name: par_hrg_dtd
+  - name: par_agenda_typ
+  - name: fac_cd
+  - name: par_hrg_dec
+  - name: par_brd_act_dtd
+  - name: prev_par_hrg_srl
+  - name: par_susp_empl_cd
+  - name: par_ped
+  - name: par_psych
+  - name: hear_order_num
+  - name: sched_hrg_dtd

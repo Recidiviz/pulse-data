@@ -1,3 +1,13 @@
 file_tag: cis_offender
+file_description: |-
+  Not in use
 primary_key_cols:
   - id
+columns:
+  - name: id
+  - name: offendernumber
+  - name: paroleofficerid
+  - name: insuser
+  - name: insdate
+  - name: upduser
+  - name: upddate

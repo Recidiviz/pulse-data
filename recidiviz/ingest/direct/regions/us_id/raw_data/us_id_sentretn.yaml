@@ -1,5 +1,42 @@
 file_tag: sentretn
+file_description: |-
+  Contains a new row for every retained jurisdiction sentence (aka Rider) ever tracked by IDOC. When someone is on a
+  rider sentence, they are undergoing programming at a specific facility, and if that programming goes well, they are
+  put onto probation rather than continuing to serve their sentence in prison. Although these sentences are served in
+  a prison facility, the court technically has jurisdiction over them.
+
+  This table can be joined with `sentence` to get some underlying details about the sentence. It’s important to note
+  that this table contains its own rider start and end dates, which are often distinct from the start and end dates
+  represented in the `sentence` table. The dates in this table represent how long the person is sentenced to their term
+  as a rider, and the dates in the sentence table represent how long the person would be sentenced if their programming
+  is not successfully completed. In Idaho terms, the dates in the `sentence` table are a part of the “underlying
+  sentence”.
 primary_key_cols:
   - mitt_srl
   - sent_no
   - retn_no
+columns:
+  - name: mitt_srl
+    description: |-
+      ID of this sentence's mittimus
+  - name: sent_no
+    description: |-
+      ID of this sentence (within the above mittimus)
+  - name: retn_no
+    description: |-
+      ID of this rider sentence (within the above mittimus). This ID is only unique within rider sentences under this
+      mittimus. sent_no above is unique with all sentences under this mittimus.
+  - name: retn_beg_dtd
+    description: |-
+      Rider begin date
+  - name: retn_beg_typ
+    description: |-
+      Type of rider (either C or S). C means rider began when a person begins custody, S means the rider began the
+      moment they were sentenced
+  - name: duration
+    description: |-
+      Rider duration in days. Now there should mainly be 365 day riders, but previously there were also 180 day riders.
+  - name: quashed_dtd
+    description: |-
+      If present, the date the rider was deemed unsuccessful. At this point in time the underlying sentence dates take
+      over.

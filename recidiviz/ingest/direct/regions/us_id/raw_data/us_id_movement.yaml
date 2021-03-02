@@ -1,6 +1,51 @@
 file_tag: movement
+file_description: |-
+  Contains a new row for every movement that happens for a person under IDOC authority (either on supervision or
+  incarcerated).
 primary_key_cols:
   - move_srl
 columns:
+  - name: move_srl
+    description: |-
+      ID of this movement
+  - name: docno
+    description: |-
+      ID of the person that is being moved
+  - name: incrno
+    description: |-
+      Incarceration number for this person
   - name: move_dtd
     is_datetime: True
+    description: |-
+      The date of the move
+  - name: move_typ
+    description: |-
+      Type of movement (either I for incarcerated or P for probation / parole)
+  - name: fac_cd
+    description: |-
+      Code for the new facility type
+  - name: lu_cd
+    description: |-
+      Code for the new living unit within the facilitly / location<br><br>Can occasionally have extra information for
+      folks on probation / parole (for example this field tells us if folks are on a bench warrant under court
+      probation).
+  - name: loc_cd
+    description: |-
+      Code for the new location within the facility.<br><br>When this is a supervision move, this contains office
+      information.
+  - name: move_pod
+    description: |-
+      (only for incarceration moves) new pod
+  - name: move_tier
+    description: |-
+      (only for incarceration moves) new location tier
+  - name: move_cell
+    description: |-
+      (only for incarceration moves) new cell location
+  - name: move_bunk
+    description: |-
+      (only for incarceration moves) new bunk
+  - name: cnty_cd
+    description: |-
+      County code
+  - name: perm_fac_cd

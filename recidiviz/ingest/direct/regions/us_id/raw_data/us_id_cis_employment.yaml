@@ -1,3 +1,37 @@
 file_tag: cis_employment
+file_description: |-
+  Not in use
 primary_key_cols:
   - id
+columns:
+  - name: id
+  - name: insuser
+  - name: insdate
+  - name: upduser
+  - name: upddate
+  - name: employerid
+  - name: jobtitle
+  - name: wage
+  - name: codewagefrequencyid
+  - name: hoursperweek
+  - name: supervisorname
+  - name: startdate
+  - name: estimatedstartdate
+  - name: enddate
+  - name: estimatedenddate
+  - name: codeemploymentstatusid
+  - name: comment
+  - name: codeemploymentshiftid
+  - name: worksite
+  - name: phonenumberextension
+  - name: schedulestarttime
+  - name: scheduleendtime
+  - name: paydaycomment
+  - name: psireportdisplay
+  - name: verifyuserid
+  - name: verifydate
+  - name: body_loc_cd_id
+  - name: codeverifymethodid
+  - name: version
+  - name: personemploymentid
+  - name: codeemploymentreasonleftid

@@ -1,4 +1,26 @@
 file_tag: lvgunit
+file_description: |-
+  A code table that describes living units within given facilities.
 primary_key_cols:
   - fac_cd
   - lu_cd
+columns:
+  - name: fac_cd
+    description: |-
+      Facility code
+  - name: lu_cd
+    description: |-
+      Living unit code
+  - name: lu_cap
+    description: |-
+      Living unit capacity
+  - name: aca_cap
+  - name: lu_actv_flg
+    description: |-
+      Whether or not the living unit is currently in use
+  - name: lu_sdesc
+    description: |-
+      Short description of the living unit
+  - name: lu_ldesc
+    description: |-
+      Long description of the living unit
