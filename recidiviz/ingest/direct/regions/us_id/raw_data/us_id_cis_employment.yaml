@@ -5,33 +5,90 @@ primary_key_cols:
   - id
 columns:
   - name: id
+    is_datetime: False
+    description: Id of this row
   - name: insuser
+    is_datetime: False
+    description: IDOC username of whoever created this row
   - name: insdate
+    is_datetime: True
+    description: IDOC timestamp for when the row was created
   - name: upduser
+    is_datetime: False
+    description: IDOC username of the last person to update this row
   - name: upddate
+    is_datetime: True
+    description: IDOC update date for this row
   - name: employerid
+    is_datetime: False
+    description: Foreign key to the employer (`cis_employer.id`)
   - name: jobtitle
+    is_datetime: False
+    description: Job title
   - name: wage
+    is_datetime: False
+    description: Wage
   - name: codewagefrequencyid
+    is_datetime: False
+    description: Foreign key to the wage frequency (`cis_codewagefrequency.id`)
   - name: hoursperweek
+    is_datetime: False
+    description: Hours per period, varied depending on `codewagefrequencyid`
   - name: supervisorname
+    is_datetime: False
+    description: Supervisor's name
   - name: startdate
+    is_datetime: True
+    description: Employment start date
   - name: estimatedstartdate
+    is_datetime: False
+    description: If the `startdate` was estimated or not
   - name: enddate
+    is_datetime: True
+    description: Employment end date
   - name: estimatedenddate
+    is_datetime: False
+    description: If the `enddate` was estimated when adding to CIS
   - name: codeemploymentstatusid
+    is_datetime: False
+    description: Foreign key to the employment status (`cis_codeemploymentstatus`)
   - name: comment
+    is_datetime: False
+    description: Comments written from the user who added/updated in CIS
   - name: codeemploymentshiftid
+    is_datetime: False
+    description: Foreign key to the employment shift kind (`cis_codeemploymentshift`)
   - name: worksite
+    is_datetime: False
   - name: phonenumberextension
+    is_datetime: False
+    description: Phone number extension
   - name: schedulestarttime
+    is_datetime: False
+    description: Scheduled work start time i.e. `08:30:00`
   - name: scheduleendtime
+    is_datetime: False
+    description: Scheduled work end time i.e. `17:30:00`
   - name: paydaycomment
+    is_datetime: False
   - name: psireportdisplay
+    is_datetime: False
   - name: verifyuserid
+    is_datetime: False
+    description: IDOC username of whoever verified this row
   - name: verifydate
+    is_datetime: True
+    description: IDOC timestamp of when this row was verified
   - name: body_loc_cd_id
+    is_datetime: False
   - name: codeverifymethodid
+    is_datetime: False
+    description: Foreign key to the employment verification method (`cis_codeverifymethod`)
   - name: version
+    is_datetime: False
   - name: personemploymentid
+    is_datetime: False
+    description: Foreign key to the person employment record (`cis_personemployment`)
   - name: codeemploymentreasonleftid
+    is_datetime: False
+    description: Foreign key to the employment reason left (`cis_codeemploymentreasonleft`)

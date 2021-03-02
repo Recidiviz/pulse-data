@@ -5,15 +5,38 @@ primary_key_cols:
   - id
 columns:
   - name: id
+    is_datetime: False
+    description: Id of this row
   - name: insuser
+    is_datetime: False
+    description: IDOC username of whoever created this row
   - name: insdate
+    is_datetime: True
+    description: IDOC timestamp for when this row was created
   - name: upduser
+    is_datetime: False
+    description: IDOC username of the last person to update this row
   - name: upddate
+    is_datetime: False
+    description: IDOC update date for this row
   - name: version
+    is_datetime: False
   - name: name
+    is_datetime: False
+    description: Employer name
   - name: line1
+    is_datetime: False
+    description: Address line 1
   - name: line2
+    is_datetime: False
+    description: Address line 2
   - name: city
+    is_datetime: False
+    description: City
   - name: codestateid
+    is_datetime: False
   - name: zipcode
+    is_datetime: False
+    description: Zipcode
   - name: phonenumberid
+    is_datetime: False
