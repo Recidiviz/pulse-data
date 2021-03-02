@@ -18,8 +18,10 @@ import { autorun, makeAutoObservable, remove, runInAction, set } from "mobx";
 import PolicyStore from "../PolicyStore";
 import UserStore from "../UserStore";
 import { Client, DecoratedClient, decorateClient } from "./Client";
+import API from "../API";
 
 interface ClientsStoreProps {
+  api: API;
   userStore: UserStore;
   policyStore: PolicyStore;
 }
@@ -30,6 +32,8 @@ export interface ClientMarkedInProgress {
 }
 
 class ClientsStore {
+  api: API;
+
   isLoading?: boolean;
 
   activeClient?: DecoratedClient;
@@ -55,8 +59,10 @@ class ClientsStore {
 
   userStore: UserStore;
 
-  constructor({ userStore, policyStore }: ClientsStoreProps) {
+  constructor({ api, policyStore, userStore }: ClientsStoreProps) {
     makeAutoObservable(this);
+    this.api = api;
+    this.userStore = userStore;
 
     this.clients = [];
     this.inProgressClients = [];
@@ -78,23 +84,9 @@ class ClientsStore {
   async fetchClientsList(): Promise<void> {
     this.isLoading = true;
 
-    if (!this.userStore.getTokenSilently) {
-      return;
-    }
-
-    const token = await this.userStore.getTokenSilently({
-      audience: "https://case-triage.recidiviz.org/api",
-      scope: "email",
-    });
-
-    const response = await fetch("/api/clients", {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-
     try {
-      const clients = await response.json();
+      const clients = await this.api.get<Client[]>("/api/clients");
+
       runInAction(() => {
         this.isLoading = false;
         const decoratedClients = clients.map((client: Client) =>

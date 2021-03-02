@@ -23,12 +23,16 @@ import {
   ScoreMinMaxBySupervisionLevel,
   SupervisionContactFrequency,
 } from "./Policy";
+import API from "../API";
 
 interface PolicyStoreProps {
+  api: API;
   userStore: UserStore;
 }
 
 class PolicyStore {
+  api: API;
+
   isLoading?: boolean;
 
   policies?: Policy;
@@ -37,9 +41,10 @@ class PolicyStore {
 
   userStore: UserStore;
 
-  constructor({ userStore }: PolicyStoreProps) {
+  constructor({ api, userStore }: PolicyStoreProps) {
     makeAutoObservable(this);
 
+    this.api = api;
     this.userStore = userStore;
     this.isLoading = false;
 
@@ -55,28 +60,13 @@ class PolicyStore {
   async fetchPolicies(): Promise<void> {
     this.isLoading = true;
 
-    if (!this.userStore.getTokenSilently) {
-      return;
-    }
-
-    const token = await this.userStore.getTokenSilently({
-      audience: "https://case-triage.recidiviz.org/api",
-      scope: "email",
-    });
-
-    const response = await fetch("/api/policy_requirements_for_state", {
-      body: '{"state": "US_ID"}',
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-    });
-
     try {
       runInAction(async () => {
         this.isLoading = false;
-        this.policies = await response.json();
+        this.policies = await this.api.post<Policy>(
+          "/api/policy_requirements_for_state",
+          { state: "US_ID" }
+        );
       });
     } catch (error) {
       runInAction(() => {

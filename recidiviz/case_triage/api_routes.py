@@ -17,9 +17,11 @@
 """Implements API routes for the Case Triage app."""
 import json
 import os
+from http import HTTPStatus
 
-from flask import Blueprint, g, jsonify, request, session
+from flask import Blueprint, current_app, g, jsonify, request, session
 from flask_sqlalchemy_session import current_session
+from flask_wtf.csrf import generate_csrf
 
 from recidiviz.case_triage.case_updates.interface import CaseUpdatesInterface
 from recidiviz.case_triage.case_updates.types import CaseUpdateActionType
@@ -48,6 +50,13 @@ def get_clients() -> str:
             g.current_user,
         )
     ])
+
+
+@api.route('/bootstrap')
+def get_bootstrap() -> str:
+    return jsonify({
+        "csrf": generate_csrf(current_app.secret_key)
+    })
 
 
 @api.route('/policy_requirements_for_state', methods=['POST'])
@@ -149,4 +158,7 @@ def post_record_client_action() -> str:
         user_initiated_actions,
         other_text,
     )
-    return ''
+    return jsonify({
+        "status": "ok",
+        "status_code": HTTPStatus.OK,
+    })
