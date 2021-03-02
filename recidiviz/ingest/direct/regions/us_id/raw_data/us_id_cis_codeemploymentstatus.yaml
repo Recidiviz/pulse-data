@@ -1,6 +1,16 @@
 file_tag: cis_codeemploymentstatus
 file_description: |-
   Not in use
+
+  Last known entries as of `2021-03-01`
+
+  | id  | code | codedescription | active |
+  | --- | ---- | --------------- | ------ |
+  | 1   | C    | Current         | T      |
+  | 2   | P    | Past            | F      |
+  | 3   | U    | Unknown         | T      |
+  | 4   | P    | Proposed        | T      |
+  | 5   | R    | Rejected        | T      |
 primary_key_cols:
   - id
 columns:

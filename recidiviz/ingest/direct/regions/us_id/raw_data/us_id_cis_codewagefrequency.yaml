@@ -1,6 +1,16 @@
 file_tag: cis_codewagefrequency
 file_description: |-
   Not in use
+
+  Last known entries as of `2021-03-01`
+
+  | id  | codedescription    | wagepertypecode | active |
+  | --- | ------------------ | --------------- | ------ |
+  | 1   | Hour               | HH              | T      |
+  | 2   | Day                | *null*          | F      |
+  | 3   | Week               | WW              | T      |
+  | 4   | Month              | MM              | T      |
+  | 5   | Year               | YY              | T      |
 primary_key_cols:
   - id
 columns:

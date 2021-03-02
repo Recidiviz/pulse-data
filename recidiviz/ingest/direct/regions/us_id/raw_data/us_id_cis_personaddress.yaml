@@ -1,8 +1,10 @@
 file_tag: cis_personaddress
 file_description: |-
-  Contains a new row for each address that a person under IDOC custody ever had. These rows include address type and
-  actual street address columns, but does not include start / end dates nor if the address had been validated. For that
-  information, we must join with `cis_offenderaddress`
+  Contains a new row for each address that a person under IDOC custody ever had.
+
+  These rows include address type and actual street address columns, but does not include
+  start / end dates nor if the address had been validated. For that information, we must join
+  with `cis_offenderaddress`
 
   Important note:
 

@@ -1,6 +1,15 @@
 file_tag: cis_codeemploymentshift
 file_description: |-
   Not in use
+
+  Last known entries as of `2021-03-01`
+
+  | id  | codedescription | active | shiftcode |
+  | --- | --------------- | ------ | --------- |
+  | 1   | GRAVEYARD       | T      | G         |
+  | 2   | DAY             | T      | D         |
+  | 3   | SWING           | T      | S         |
+  | 4   | OTHER           | T      | O         |
 primary_key_cols:
   - id
 columns:
