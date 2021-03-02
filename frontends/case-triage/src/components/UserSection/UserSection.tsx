@@ -20,7 +20,6 @@ import { rem } from "polished";
 import { observer } from "mobx-react-lite";
 import { Button, palette } from "@recidiviz/case-triage-components";
 import { User } from "@auth0/auth0-spa-js";
-import { Link } from "@reach/router";
 import { useRootStore } from "../../stores";
 
 const UserFlex = styled.div`
@@ -69,6 +68,10 @@ const UserAvatar = styled.span`
   width: 32px;
 `;
 
+const LoginButtonDiv = styled(Button)`
+  margin: 0 16px;
+`;
+
 const LoginButton: React.FC = () => {
   const { userStore } = useRootStore();
   const { isAuthorized } = userStore;
@@ -78,9 +81,12 @@ const LoginButton: React.FC = () => {
   }
 
   return (
-    <Button onClick={() => userStore.login && userStore.login()} kind="primary">
+    <LoginButtonDiv
+      onClick={() => userStore.login && userStore.login()}
+      kind="primary"
+    >
       Log In
-    </Button>
+    </LoginButtonDiv>
   );
 };
 
