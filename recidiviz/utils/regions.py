@@ -34,6 +34,7 @@ import attr
 import pytz
 import yaml
 
+from recidiviz.common import fips
 from recidiviz.common.constants.enum_overrides import EnumOverrides
 from recidiviz.utils import environment
 from recidiviz.ingest.scrape import regions as scraper_regions_module
@@ -115,6 +116,10 @@ class Region:
     raw_vs_ingest_file_name_differentiation_enabled_env = attr.ib(default=None)
     raw_data_bq_imports_enabled_env = attr.ib(default=None)
     ingest_view_exports_enabled_env = attr.ib(default=None)
+
+    @region_code.validator
+    def validate_region_code(self, _attr: attr.Attribute, region_code: str) -> None:
+        fips.validate_county_code(region_code)
 
     def __attrs_post_init__(self):
         if self.queue and self.shared_queue:

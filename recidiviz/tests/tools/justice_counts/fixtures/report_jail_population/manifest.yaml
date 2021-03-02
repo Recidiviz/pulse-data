@@ -1,0 +1,28 @@
+source: 'Colorado Department of Corrections'
+report_type: 'Dashboard Measures'
+report_instance: '2020-10-05'
+publish_date: '2020-10-05'
+url: 'https://www.colorado.gov/pacific/cdoc/departmental-reports-and-statistics'
+assignee: 'Solange Knowles'
+tables:
+  - file: 'table.csv'
+    methodology: 'SNAPSHOT'
+    date_range:
+      fixed:
+        type: 'SNAPSHOT'
+        input:
+          - '2020-09-01'
+    system: 'CORRECTIONS'
+    location:
+      state: 'US_MS'
+    metric:
+      population:
+        population_type: 'JAIL'
+        measurement_type: 'INSTANT'
+    value_column:
+      column_name: 'Population'
+    dimension_columns:
+      - column_name: 'FIPS'
+        dimension_name: 'COUNTY_FIPS'
+      - column_name: 'County'
+        synthetic: True

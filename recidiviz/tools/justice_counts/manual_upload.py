@@ -25,7 +25,7 @@ python -m recidiviz.tools.justice_counts.manual_upload \
     --project-id recidiviz-staging \
     --app-url http://127.0.0.1:5000
 """
-
+import re
 from abc import abstractmethod, ABCMeta
 import argparse
 import datetime
@@ -35,7 +35,7 @@ import logging
 import os
 import sys
 from collections import defaultdict, Counter
-from typing import Callable, Dict, Iterable, List, Optional, Tuple, Type, TypeVar, Union
+from typing import Callable, Dict, Iterable, List, Optional, Tuple, Type, TypeVar, Union, Set
 from urllib import parse
 import webbrowser
 
@@ -46,6 +46,7 @@ from sqlalchemy import cast
 from sqlalchemy.orm.session import Session
 from sqlalchemy.sql.schema import UniqueConstraint
 import recidiviz.common.constants.person_characteristics as person_characteristics
+from recidiviz.common import fips
 
 from recidiviz.common.constants import states
 from recidiviz.common.constants.enum_overrides import EnumOverrides
@@ -107,6 +108,18 @@ class Dimension:
         E.g. 'metric/population/type' or 'global/facility/raw'.
         """
 
+    @classmethod
+    @abstractmethod
+    def get_generated_dimension_classes(cls) -> List[Type['Dimension']]:
+        """Returns a list of Dimensions that the current dimension will generate"""
+
+    @classmethod
+    @abstractmethod
+    def generate_dimension_classes(
+        cls, dimension_cell_value: str, enum_overrides: Optional[EnumOverrides] = None
+    ) -> List['Dimension']:
+        """Generates Dimensions based on the dimension cell value provided"""
+
     @property
     @abstractmethod
     def dimension_value(self) -> str:
@@ -138,6 +151,16 @@ class RawDimension(Dimension, metaclass=ABCMeta):
     @classmethod
     def is_normalized(cls) -> bool:
         return False
+
+    @classmethod
+    def get_generated_dimension_classes(cls) -> List[Type[Dimension]]:
+        return []
+
+    @classmethod
+    def generate_dimension_classes(
+        cls, dimension_cell_value: str, enum_overrides: Optional[EnumOverrides] = None
+    ) -> List[Dimension]:
+        return []
 
     @property
     def dimension_value(self) -> str:
@@ -184,8 +207,12 @@ def build_entity_overrides(enum_cls: Type[EntityEnumT], mapping_overrides: Dict[
 
 
 class PopulationType(Dimension, EntityEnum, metaclass=EntityEnumMeta):
+    """
+    Dimension that represents the type of populations
+    """
     PRISON = 'PRISON'
     SUPERVISION = 'SUPERVISION'
+    JAIL = 'JAIL'
 
     @classmethod
     def get(cls, dimension_cell_value: str, enum_overrides: Optional[EnumOverrides] = None) -> 'PopulationType':
@@ -203,6 +230,16 @@ class PopulationType(Dimension, EntityEnum, metaclass=EntityEnumMeta):
     def dimension_identifier(cls) -> str:
         return 'metric/population/type'
 
+    @classmethod
+    def get_generated_dimension_classes(cls) -> List[Type[Dimension]]:
+        return [raw_for_dimension_cls(cls)]
+
+    @classmethod
+    def generate_dimension_classes(
+        cls, dimension_cell_value: str, enum_overrides: Optional[EnumOverrides] = None
+    ) -> List[Dimension]:
+        return [raw_for_dimension_cls(cls).get(dimension_cell_value)]
+
     @property
     def dimension_value(self) -> str:
         return self.value
@@ -212,12 +249,13 @@ class PopulationType(Dimension, EntityEnum, metaclass=EntityEnumMeta):
         return {
             'PRISON': cls.PRISON,
             'SUPERVISION': cls.SUPERVISION,
+            'JAIL': cls.JAIL
         }
 
 
 class ReleaseType(Dimension, EntityEnum, metaclass=EntityEnumMeta):
     """
-    Release type dimension
+    Dimension that represents the type of incarceration release
     """
     # Release from prison to supervision
     TO_SUPERVISION = 'TO_SUPERVISION'
@@ -243,6 +281,16 @@ class ReleaseType(Dimension, EntityEnum, metaclass=EntityEnumMeta):
     @classmethod
     def dimension_identifier(cls) -> str:
         return 'metric/release/type'
+
+    @classmethod
+    def get_generated_dimension_classes(cls) -> List[Type[Dimension]]:
+        return [raw_for_dimension_cls(cls)]
+
+    @classmethod
+    def generate_dimension_classes(
+        cls, dimension_cell_value: str, enum_overrides: Optional[EnumOverrides] = None
+    ) -> List[Dimension]:
+        return [raw_for_dimension_cls(cls).get(dimension_cell_value)]
 
     @property
     def dimension_value(self) -> str:
@@ -285,6 +333,16 @@ class AdmissionType(Dimension, EntityEnum, metaclass=EntityEnumMeta):
     def dimension_identifier(cls) -> str:
         return 'metric/admission/type'
 
+    @classmethod
+    def get_generated_dimension_classes(cls) -> List[Type[Dimension]]:
+        return [raw_for_dimension_cls(cls)]
+
+    @classmethod
+    def generate_dimension_classes(
+        cls, dimension_cell_value: str, enum_overrides: Optional[EnumOverrides] = None
+    ) -> List[Dimension]:
+        return [raw_for_dimension_cls(cls).get(dimension_cell_value)]
+
     @property
     def dimension_value(self) -> str:
         return self.value
@@ -298,6 +356,9 @@ class AdmissionType(Dimension, EntityEnum, metaclass=EntityEnumMeta):
 
 
 class SupervisionViolationType(Dimension, EntityEnum, metaclass=EntityEnumMeta):
+    """
+    Dimension that represents the type of supervision violation
+    """
     NEW_CRIME = 'NEW_CRIME'
     TECHNICAL = 'TECHNICAL'
 
@@ -319,6 +380,16 @@ class SupervisionViolationType(Dimension, EntityEnum, metaclass=EntityEnumMeta):
     def dimension_identifier(cls) -> str:
         return 'metric/supervision_violation/type'
 
+    @classmethod
+    def get_generated_dimension_classes(cls) -> List[Type[Dimension]]:
+        return [raw_for_dimension_cls(cls)]
+
+    @classmethod
+    def generate_dimension_classes(
+        cls, dimension_cell_value: str, enum_overrides: Optional[EnumOverrides] = None
+    ) -> List[Dimension]:
+        return [raw_for_dimension_cls(cls).get(dimension_cell_value)]
+
     @property
     def dimension_value(self) -> str:
         return self.value
@@ -332,6 +403,9 @@ class SupervisionViolationType(Dimension, EntityEnum, metaclass=EntityEnumMeta):
 
 
 class SupervisionType(Dimension, EntityEnum, metaclass=EntityEnumMeta):
+    """
+    Dimension that represents the type of supervision
+    """
     PAROLE = 'PAROLE'
     PROBATION = 'PROBATION'
 
@@ -354,6 +428,16 @@ class SupervisionType(Dimension, EntityEnum, metaclass=EntityEnumMeta):
     def dimension_identifier(cls) -> str:
         return 'metric/supervision/type'
 
+    @classmethod
+    def get_generated_dimension_classes(cls) -> List[Type[Dimension]]:
+        return [raw_for_dimension_cls(cls)]
+
+    @classmethod
+    def generate_dimension_classes(
+        cls, dimension_cell_value: str, enum_overrides: Optional[EnumOverrides] = None
+    ) -> List[Dimension]:
+        return [raw_for_dimension_cls(cls).get(dimension_cell_value)]
+
     @property
     def dimension_value(self) -> str:
         return self.value
@@ -372,6 +456,9 @@ def assert_no_overrides(dimension_cls: Type[Dimension], enum_overrides: Optional
 
 
 class Country(Dimension, EntityEnum, metaclass=EntityEnumMeta):
+    """
+    Dimension that represents the country
+    """
     US = 'US'
 
     @classmethod
@@ -390,6 +477,16 @@ class Country(Dimension, EntityEnum, metaclass=EntityEnumMeta):
     def dimension_identifier(cls) -> str:
         return 'global/location/country'
 
+    @classmethod
+    def get_generated_dimension_classes(cls) -> List[Type[Dimension]]:
+        return [raw_for_dimension_cls(cls)]
+
+    @classmethod
+    def generate_dimension_classes(
+        cls, dimension_cell_value: str, enum_overrides: Optional[EnumOverrides] = None
+    ) -> List[Dimension]:
+        return [raw_for_dimension_cls(cls).get(dimension_cell_value)]
+
     @property
     def dimension_value(self) -> str:
         return self.value
@@ -401,6 +498,9 @@ class Country(Dimension, EntityEnum, metaclass=EntityEnumMeta):
 
 @attr.s(frozen=True)
 class State(Dimension):
+    """
+    Dimension that represents the state. Takes state code as input. example: 'US_WI'
+    """
     state_code: states.StateCode = attr.ib(converter=states.StateCode)
 
     @classmethod
@@ -420,34 +520,117 @@ class State(Dimension):
     def dimension_identifier(cls) -> str:
         return 'global/location/state'
 
+    @classmethod
+    def get_generated_dimension_classes(cls) -> List[Type[Dimension]]:
+        return []
+
+    @classmethod
+    def generate_dimension_classes(
+        cls, dimension_cell_value: str, enum_overrides: Optional[EnumOverrides] = None
+    ) -> List[Dimension]:
+        return []
+
     @property
     def dimension_value(self) -> str:
         return self.state_code.value
 
 
-class County(Dimension, EntityEnum, metaclass=EntityEnumMeta):
+@attr.s(frozen=True)
+class County(Dimension):
+    """
+    Dimension that represents the county. Takes county code as input. example: 'US_WI_MILWAUKEE'
+    """
+    county_code: str = attr.ib()
+
     @classmethod
     def get(cls, dimension_cell_value: str, enum_overrides: Optional[EnumOverrides] = None) -> 'County':
-        return parse_entity_enum(cls, dimension_cell_value, enum_overrides)
+        assert_no_overrides(cls, enum_overrides)
+        return cls(dimension_cell_value)
 
     @classmethod
     def build_overrides(cls, mapping_overrides: Dict[str, str]) -> EnumOverrides:
-        return build_entity_overrides(cls, mapping_overrides)
+        raise ValueError("Can't create overrides for this class")
 
     @classmethod
     def is_normalized(cls) -> bool:
-        return True
+        return False
 
     @classmethod
     def dimension_identifier(cls) -> str:
         return 'global/location/county'
+
+    @classmethod
+    def get_generated_dimension_classes(cls) -> List[Type[Dimension]]:
+        return []
+
+    @classmethod
+    def generate_dimension_classes(
+        cls, dimension_cell_value: str, enum_overrides: Optional[EnumOverrides] = None
+    ) -> List[Dimension]:
+        return []
+
+    @property
+    def dimension_value(self) -> str:
+        return self.county_code
+
+    @classmethod
+    def _get_default_map(cls) -> Dict[str, 'County']:
+        return {}
+
+    @county_code.validator
+    def _value_is_valid(self, _attribute: attr.Attribute, county_code: str) -> None:
+        if re.search('^US_[A-Z]{2}_[A-Z_]+$', county_code) is None:
+            raise ValueError(f"Invalid county code '{county_code}' does not match expected format. "
+                             f"ex: 'US_NY_NEW_YORK'")
+        fips.validate_county_code(county_code.lower())
+
+
+@attr.s(frozen=True)
+class CountyFIPS(Dimension):
+    """
+    Dimension that represents the county fips. Can also generate State and County dimensions from fips value.
+    """
+    value: str = attr.ib(converter=str)
+
+    @value.validator
+    def _values_are_valid(self, _attribute: attr.Attribute, value: str) -> None:
+        if len(value) != 4 and len(value) != 5:  # length can be 4 or 5, because it may not having the leading zero
+            raise ValueError(f"fips should have between 4 and 5 digits, current length: {len(value)}")
+
+    @classmethod
+    def get(cls, dimension_cell_value: str, enum_overrides: Optional[EnumOverrides] = None) -> 'CountyFIPS':
+        assert_no_overrides(cls, enum_overrides)
+        return cls(dimension_cell_value)
+
+    @classmethod
+    def build_overrides(cls, mapping_overrides: Dict[str, str]) -> EnumOverrides:
+        raise ValueError("Can't create overrides for this class")
+
+    @classmethod
+    def is_normalized(cls) -> bool:
+        return False
+
+    @classmethod
+    def dimension_identifier(cls) -> str:
+        return 'global/location/county-fips'
+
+    @classmethod
+    def get_generated_dimension_classes(cls) -> List[Type[Dimension]]:
+        return [State, County]
+
+    @classmethod
+    def generate_dimension_classes(
+        cls, dimension_cell_value: str, enum_overrides: Optional[EnumOverrides] = None
+    ) -> List[Dimension]:
+        [state, county] = fips.get_state_and_county_for_fips(int(dimension_cell_value))
+        return [State.get(state), County.get(f'{state}_{county}')]
 
     @property
     def dimension_value(self) -> str:
         return self.value
 
     @classmethod
-    def _get_default_map(cls) -> Dict[str, 'County']:
+    def _get_default_map(cls) -> Dict[str, 'CountyFIPS']:
         return {}
 
 
@@ -458,6 +641,9 @@ Location = Union[Country, State, County]
 
 @attr.s(frozen=True)
 class Facility(Dimension):
+    """
+    Dimension that represents the facility
+    """
     name: str = attr.ib()
 
     @classmethod
@@ -477,6 +663,16 @@ class Facility(Dimension):
     def dimension_identifier(cls) -> str:
         return 'global/facility/raw'
 
+    @classmethod
+    def get_generated_dimension_classes(cls) -> List[Type[Dimension]]:
+        return []
+
+    @classmethod
+    def generate_dimension_classes(
+        cls, dimension_cell_value: str, enum_overrides: Optional[EnumOverrides] = None
+    ) -> List[Dimension]:
+        return []
+
     @property
     def dimension_value(self) -> str:
         return self.name
@@ -484,6 +680,9 @@ class Facility(Dimension):
 
 @attr.s(frozen=True)
 class Race(Dimension):
+    """
+    Dimension that represents the type race
+    """
     value: str = attr.ib()
 
     @classmethod
@@ -503,6 +702,16 @@ class Race(Dimension):
     def dimension_identifier(cls) -> str:
         return 'global/race'
 
+    @classmethod
+    def get_generated_dimension_classes(cls) -> List[Type[Dimension]]:
+        return [raw_for_dimension_cls(cls)]
+
+    @classmethod
+    def generate_dimension_classes(
+        cls, dimension_cell_value: str, enum_overrides: Optional[EnumOverrides] = None
+    ) -> List[Dimension]:
+        return [raw_for_dimension_cls(cls).get(dimension_cell_value)]
+
     @property
     def dimension_value(self) -> str:
         return self.value
@@ -510,6 +719,9 @@ class Race(Dimension):
 
 @attr.s(frozen=True)
 class Ethnicity(Dimension):
+    """
+    Dimension that represents the type of ethnicity
+    """
     value: str = attr.ib()
 
     @classmethod
@@ -529,6 +741,16 @@ class Ethnicity(Dimension):
     def dimension_identifier(cls) -> str:
         return 'global/ethnicity'
 
+    @classmethod
+    def get_generated_dimension_classes(cls) -> List[Type[Dimension]]:
+        return [raw_for_dimension_cls(cls)]
+
+    @classmethod
+    def generate_dimension_classes(
+        cls, dimension_cell_value: str, enum_overrides: Optional[EnumOverrides] = None
+    ) -> List[Dimension]:
+        return [raw_for_dimension_cls(cls).get(dimension_cell_value)]
+
     @property
     def dimension_value(self) -> str:
         return self.value
@@ -536,6 +758,9 @@ class Ethnicity(Dimension):
 
 @attr.s(frozen=True)
 class Gender(Dimension):
+    """
+    Dimension that represents the type of gender
+    """
     value: str = attr.ib()
 
     @classmethod
@@ -555,6 +780,16 @@ class Gender(Dimension):
     def dimension_identifier(cls) -> str:
         return 'global/gender'
 
+    @classmethod
+    def get_generated_dimension_classes(cls) -> List[Type[Dimension]]:
+        return [raw_for_dimension_cls(cls)]
+
+    @classmethod
+    def generate_dimension_classes(
+        cls, dimension_cell_value: str, enum_overrides: Optional[EnumOverrides] = None
+    ) -> List[Dimension]:
+        return [raw_for_dimension_cls(cls).get(dimension_cell_value)]
+
     @property
     def dimension_value(self) -> str:
         return self.value
@@ -562,6 +797,9 @@ class Gender(Dimension):
 
 @attr.s(frozen=True)
 class Age(Dimension):
+    """
+    Dimension that represents the age
+    """
     value: str = attr.ib()
 
     @classmethod
@@ -580,6 +818,16 @@ class Age(Dimension):
     @classmethod
     def dimension_identifier(cls) -> str:
         return 'global/age/raw'
+
+    @classmethod
+    def get_generated_dimension_classes(cls) -> List[Type[Dimension]]:
+        return []
+
+    @classmethod
+    def generate_dimension_classes(
+        cls, dimension_cell_value: str, enum_overrides: Optional[EnumOverrides] = None
+    ) -> List[Dimension]:
+        return []
 
     @property
     def dimension_value(self) -> str:
@@ -929,11 +1177,23 @@ class ColumnDimensionMapping:
         column_dimension = get_synthetic_dimension(column_name, source)
         return cls(column_dimension, overrides=None)
 
-    def get_raw_dimension_cls(self) -> Optional[Type[Dimension]]:
-        # If it is an EntityEnum, it needs to be normalized.
-        if self.dimension_cls.is_normalized():
-            return raw_for_dimension_cls(self.dimension_cls)
-        return None
+    def get_generated_dimension_classes(self) -> List[Type[Dimension]]:
+        return self.dimension_cls.get_generated_dimension_classes()
+
+
+def _validate_no_dimension_duplicates(dimensions: List['DimensionClassT']) -> None:
+    cleaned_generated_dimension = {dimension.dimension_identifier() for dimension in dimensions}
+    if len(cleaned_generated_dimension) != len(dimensions):
+        raise ValueError(f"There may be one or more duplicate dimensions: {dimensions}")
+
+
+def _validate_generated_dimensions(dimension_cls: Type[Dimension], generated_dimensions: List[Dimension]) -> None:
+    _validate_no_dimension_duplicates(generated_dimensions)
+    dimension_identifiers = [dimension.dimension_identifier() for dimension in generated_dimensions]
+
+    raw_dimension_name = '/'.join([dimension_cls.dimension_identifier(), 'raw'])
+    if dimension_cls.is_normalized() and raw_dimension_name not in dimension_identifiers:
+        raise ValueError(f"Synthetic dimension {dimension_cls} missing generated RawDimension")
 
 
 @attr.s(frozen=True)
@@ -949,10 +1209,7 @@ class DimensionGenerator:
         output = []
         for mapping in self.dimension_mappings:
             output.append(mapping.dimension_cls)
-            raw_dimension_cls = mapping.get_raw_dimension_cls()
-            if raw_dimension_cls is not None:
-                output.append(raw_dimension_cls)
-
+            output.extend(mapping.get_generated_dimension_classes())
         return output
 
     def dimension_values_for_cell(self, dimension_cell_value: str) -> List[Dimension]:
@@ -971,11 +1228,10 @@ class DimensionGenerator:
             if base_dimension_value is not None:
                 dimension_values.append(base_dimension_value)
 
-            raw_dimension = mapping.get_raw_dimension_cls()
-            if raw_dimension is not None:
-                raw_dimension_value = raw_dimension.get(dimension_cell_value)
-                if raw_dimension_value is not None:
-                    dimension_values.append(raw_dimension_value)
+            generated_dimension_classes = mapping.dimension_cls.generate_dimension_classes(  # type: ignore[arg-type]
+                    dimension_cell_value, mapping.overrides)
+            _validate_generated_dimensions(mapping.dimension_cls, generated_dimension_classes)
+            dimension_values.extend(generated_dimension_classes)
 
             if not dimension_values:
                 raise ValueError(f"Unable to parse '{dimension_cell_value}' as {mapping.dimension_cls}, but no raw "
@@ -992,6 +1248,9 @@ def _dimension_generators_by_name(dimension_generators: List[DimensionGenerator]
     return {dimension_generator.column_name: dimension_generator for dimension_generator in dimension_generators}
 
 
+DimensionClassT = TypeVar('DimensionClassT', Dimension, Type[Dimension])
+
+
 @attr.s(frozen=True)
 class TableConverter:
     """Maps all dimension column values to Dimensions in a table into dimensionally-annotated data points."""
@@ -999,8 +1258,14 @@ class TableConverter:
     # For each dimension column, an object that can produce the list of possible dimension types in that column and
     # convert dimension cell values to those types.
     dimension_generators: Dict[str, DimensionGenerator] = attr.ib(converter=_dimension_generators_by_name)
-
     value_column: str = attr.ib()
+    filters: Set[Dimension] = attr.ib()
+
+    def _remove_filtered_dimensions_from_dimension_types_generated(self, generated_dimensions: List['DimensionClassT'])\
+            -> List['DimensionClassT']:
+        return [dimension for dimension in generated_dimensions
+                if dimension.dimension_identifier() not in {filtered_dimension.dimension_identifier()
+                                                            for filtered_dimension in self.filters}]
 
     def dimension_classes_for_columns(self, columns: List[str]) -> List[Type[Dimension]]:
         """Returns a list of all possible dimensions that a value in a table could have (superset of possible dimensions
@@ -1008,8 +1273,9 @@ class TableConverter:
         dimensions: List[Type[Dimension]] = []
         for column in columns:
             if column in self.dimension_generators:
-                possible_dimensions = self.dimension_generators[column].possible_dimensions_for_column()
-                dimensions.extend(possible_dimensions)
+                possible_dimensions = self.dimension_generators[column]\
+                    .possible_dimensions_for_column()
+                dimensions.extend(self._remove_filtered_dimensions_from_dimension_types_generated(possible_dimensions))
             elif column != self.value_column:
                 raise ValueError(f"Column '{column}' was not mapped.")
         return dimensions
@@ -1040,7 +1306,8 @@ class TableConverter:
 
     def _dimension_values_for_dimension_cell(
             self, dimension_column_name: str, dimension_value: str) -> Iterable[Dimension]:
-        return self.dimension_generators[dimension_column_name].dimension_values_for_cell(dimension_value)
+        return self._remove_filtered_dimensions_from_dimension_types_generated(
+            self.dimension_generators[dimension_column_name].dimension_values_for_cell(dimension_value))
 
 
 HasIdentifierT = TypeVar('HasIdentifierT', Dimension, Type[Dimension])
@@ -1107,6 +1374,20 @@ class Table:
                     raise AttributeError(f"Attribute '{unique_dimension}' only has one set value, "
                                          f"change it to a filtered dimension.")
 
+    def _validate_dimension_either_filter_or_aggregate(self) -> None:
+        filter_identifiers = [dimension.dimension_identifier() for dimension in self.filters]
+        dimension_identifiers = [dimension.dimension_identifier() for dimension in self.dimensions]
+
+        duplicate_dimensions = set(filter_identifiers) & set(dimension_identifiers)
+
+        if duplicate_dimensions:
+            raise ValueError(f"These dimensions are both in the dimension column and the filtered dimension: "
+                             f"{duplicate_dimensions}")
+        if State.dimension_identifier() not in dimension_identifiers \
+                and State.dimension_identifier() not in filter_identifiers:
+            raise ValueError("Location not specified and state dimension not in either filtered dimension or "
+                             "dimension columns")
+
     def __attrs_post_init__(self) -> None:
         # Validate consistency between `dimensions` and `data`.
         self._validate_metric()
@@ -1114,6 +1395,8 @@ class Table:
         if len(dimension_identifiers) != len(self.dimensions):
             raise ValueError(f"Duplicate dimensions in table: {self.dimensions}")
         self._validate_aggregate_dimensions()
+        _validate_no_dimension_duplicates(self.filters)
+        self._validate_dimension_either_filter_or_aggregate()
         for dimensions, _value in self.data_points:
             row_dimension_identifiers = {dimension_value.dimension_identifier() for dimension_value in dimensions}
             if len(row_dimension_identifiers) != len(dimensions):
@@ -1228,10 +1511,14 @@ class Report:
 # Parsing Layer
 # TODO(#4480): Pull this out to somewhere within ingest
 
-def _parse_location(location_input: YAMLDict) -> Location:
+def _parse_location(location_input: Optional[YAMLDict]) -> Optional[Location]:
     """Expects a dict with a single entry, e.g. `{'state': 'US_XX'}`"""
+    if location_input is None:
+        return None
+
     if len(location_input) == 1:
-        [[location_type, location_name]] = location_input.get().items()
+        [location_type] = location_input.get().keys()
+        location_name = location_input.pop(location_type, str)
         if location_type == 'country':
             return Country(location_name)
         if location_type == 'state':
@@ -1334,7 +1621,8 @@ def _parse_dimensions_from_additional_filters(additional_filters_input: Optional
 
 def _parse_table_converter(
         source_name: str, value_column_input: YAMLDict,
-        dimension_columns_input: Optional[List[YAMLDict]]) -> TableConverter:
+        dimension_columns_input: Optional[List[YAMLDict]],
+        location: Optional[Location], additional_filters: List[Dimension]) -> TableConverter:
     """Expects a dict with the value column name and, optionally, a list of dicts describing the dimension columns.
 
     E.g. `value_column_input={'column_name': 'Population'}}
@@ -1371,10 +1659,14 @@ def _parse_table_converter(
         dimension_generators.append(DimensionGenerator(column_name=column_name, dimension_mappings=mappings))
     value_column = value_column_input.pop('column_name', str)
 
+    filters: Set[Dimension] = set(additional_filters)
+    if location is not None:
+        filters.add(location)
+
     if len(value_column_input) > 0:
         raise ValueError(f"Received unexpected parameters for value column: {repr(value_column_input)}")
 
-    return TableConverter(dimension_generators=dimension_generators, value_column=value_column)
+    return TableConverter(dimension_generators=dimension_generators, value_column=value_column, filters=filters)
 
 
 def _parse_metric(metric_input: YAMLDict) -> Metric:
@@ -1422,12 +1714,14 @@ def _parse_tables(gcs: GCSFileSystem, manifest_path: GcsfsFilePath,
     for table_input in tables_input:
         # Parse nested objects separately
         date_range_producer = _parse_date_range_producer(table_input.pop_dict('date_range'))
-        table_converter = _parse_table_converter(source_name,
-                                                 table_input.pop_dict('value_column'),
-                                                 table_input.pop_dicts_optional('dimension_columns'))
-        location_dimension: Location = _parse_location(table_input.pop_dict('location'))
+        location_dimension: Optional[Location] = _parse_location(table_input.pop_dict_optional('location'))
         filter_dimensions = \
             _parse_dimensions_from_additional_filters(table_input.pop_dict_optional('additional_filters'))
+        table_converter = _parse_table_converter(source_name,
+                                                 table_input.pop_dict('value_column'),
+                                                 table_input.pop_dicts_optional('dimension_columns'),
+                                                 location=location_dimension,
+                                                 additional_filters=filter_dimensions)
         metric = _parse_metric(table_input.pop_dict('metric'))
 
         table_name = table_input.pop_optional('name', str)
