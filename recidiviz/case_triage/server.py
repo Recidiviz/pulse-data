@@ -17,18 +17,20 @@
 """Backend entry point for Case Triage API server."""
 import json
 import os
+from http import HTTPStatus
 from typing import Dict
 
 from flask import Flask, Response, g, jsonify, send_from_directory, session
 from flask_sqlalchemy_session import current_session
+from flask_wtf.csrf import CSRFError, CSRFProtect
 from sqlalchemy.orm.exc import NoResultFound
 
 from recidiviz.case_triage.api_routes import api
 from recidiviz.case_triage.authorization import AuthorizationStore
 from recidiviz.case_triage.exceptions import CaseTriageAuthorizationError
 from recidiviz.case_triage.impersonate_users import IMPERSONATED_EMAIL_KEY, ImpersonateUser
-from recidiviz.case_triage.scoped_sessions import setup_scoped_sessions
 from recidiviz.case_triage.querier.querier import CaseTriageQuerier
+from recidiviz.case_triage.scoped_sessions import setup_scoped_sessions
 from recidiviz.case_triage.util import get_local_secret, SESSION_ADMIN_KEY
 from recidiviz.persistence.database.sqlalchemy_engine_manager import SQLAlchemyEngineManager, SchemaType
 from recidiviz.tools.postgres import local_postgres_helpers
@@ -41,7 +43,6 @@ from recidiviz.utils.environment import in_development, in_test
 from recidiviz.utils.flask_exception import FlaskException
 from recidiviz.utils.timer import RepeatedTimer
 
-
 # Flask setup
 static_folder = os.path.abspath(os.path.join(
     os.path.dirname(os.path.realpath(__file__)),
@@ -50,6 +51,7 @@ static_folder = os.path.abspath(os.path.join(
 
 app = Flask(__name__, static_folder=static_folder)
 app.secret_key = get_local_secret("case_triage_secret_key")
+CSRFProtect(app)
 
 if in_development():
     db_url = local_postgres_helpers.postgres_db_url_from_env_vars()
@@ -139,6 +141,17 @@ app.add_url_rule('/impersonate_user', view_func=ImpersonateUser.as_view(
 ))
 
 
+@app.errorhandler(CSRFError)
+def handle_csrf_error(_: CSRFError) -> Response:
+    return handle_auth_error(
+        FlaskException(
+            code="invalid_csrf_token",
+            description="The provided X-CSRF-Token header could not be validated",
+            status_code=HTTPStatus.BAD_REQUEST,
+        )
+    )
+
+
 @app.errorhandler(FlaskException)
 def handle_auth_error(ex: FlaskException) -> Response:
     response = jsonify({
@@ -159,6 +172,6 @@ def auth0_public_config() -> str:
 @app.route('/<path:path>')
 def index(path: str = "") -> Response:
     if path != "" and os.path.exists(os.path.join(static_folder, path)):
-        return send_from_directory(os.path.join(static_folder), path)
+        return send_from_directory(static_folder, path)
 
-    return send_from_directory(os.path.join(static_folder), 'index.html')
+    return send_from_directory(static_folder, 'index.html')
