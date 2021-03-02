@@ -1,6 +1,28 @@
 file_tag: ofndr_dob
+file_description: |-
+  Has a single row for every person that has ever been under IDOC authority for whom we have birthdate information.
 primary_key_cols:
   - ofndr_num
 columns:
+  - name: ofndr_num
+    description: |-
+      ID of the person under IDOC authority
   - name: dob
     is_datetime: True
+    description: |-
+      Date of birth
+  - name: st
+    description: |-
+      State of birth (if in the USA)
+  - name: birth_ctry_cd
+    description: |-
+      Always null
+  - name: birth_city
+    description: |-
+      City of birth
+  - name: updt_usr_id
+    description: |-
+      Username of the person who most recently updated this data
+  - name: updt_dt
+    description: |-
+      Update date for this row

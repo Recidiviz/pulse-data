@@ -212,7 +212,7 @@ class DirectIngestRawDataTableBigQueryView(BigQueryView):
     @staticmethod
     def _columns_clause_for_config(raw_file_config: DirectIngestRawFileConfig, region_code: str) -> str:
         # TODO(#5399): Migrate raw file configs for all legacy regions to have column descriptions
-        if region_code.upper() in {'US_MO', 'US_ID', 'US_PA'}:
+        if region_code.upper() in {'US_PA'}:
             columns_str = '*'
         else:
             columns_str = ', '.join([column.name if not column.is_datetime and column.description
@@ -228,13 +228,13 @@ class DirectIngestRawDataTableBigQueryView(BigQueryView):
         except_cols_str = ', '.join(except_cols)
 
         # TODO(#5399): Migrate raw file configs for all legacy regions to have column descriptions
-        return f' EXCEPT ({except_cols_str})' if region_code.upper() in {'US_MO', 'US_ID', 'US_PA'}\
+        return f' EXCEPT ({except_cols_str})' if region_code.upper() in {'US_PA'}\
             else ''
 
     @staticmethod
     def _legacy_datetime_cols_clause_for_config(raw_file_config: DirectIngestRawFileConfig, region_code: str) -> str:
         if not raw_file_config.datetime_cols\
-                or region_code.upper() not in {'US_MO', 'US_ID', 'US_PA'}:
+                or region_code.upper() not in {'US_PA'}:
             return ''
 
         formatted_clauses = [
@@ -706,7 +706,7 @@ class DirectIngestPreProcessedIngestView(BigQueryView):
                 raise ValueError(f'Found unexpected raw table tag [{raw_table_tag}]')
             # TODO(#5399): Remove exempted regions after in-use columns are documented
             if not region_raw_table_config.raw_file_configs[raw_table_tag].columns and \
-                    region_raw_table_config.region_code.upper() not in {'US_ID', 'US_MO', 'US_PA'}:
+                    region_raw_table_config.region_code.upper() not in {'US_PA'}:
                 raise ValueError(f'Found empty set of columns in raw table config [{raw_table_tag}]'
                                  f' in region [{region_raw_table_config.region_code}].')
             if not region_raw_table_config.raw_file_configs[raw_table_tag].primary_key_cols:

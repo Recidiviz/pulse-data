@@ -1,3 +1,13 @@
 file_tag: lawcd
+file_description: |-
+  Not in use
 primary_key_cols:
   - law_cd
+columns:
+  - name: law_cd
+  - name: lawcd_desc
+  - name: law_strt_dtd
+  - name: law_end_dtd
+  - name: determinate
+  - name: stat_time
+  - name: mitt_disp

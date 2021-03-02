@@ -1,4 +1,19 @@
 file_tag: jurisdiction_decision_code
+file_description: |-
+  A code table that gives more information about the ultimate decisions for an early discharge request.
 primary_key_cols:
   - jurisdiction_decision_code_id
+columns:
+  - name: jurisdiction_decision_code_id
+    description: |-
+      Decision code
+  - name: jurisdiction_decision_description
+    description: |-
+      Description of the decision
+  - name: court_flag
+    description: |-
+      Whether or not this is a court decision
+  - name: parole_flag
+    description: |-
+      Whether or not this was a parole board decision
 separator: ','

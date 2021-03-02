@@ -1,3 +1,24 @@
 file_tag: body_loc_cd
+file_description: |-
+  A code table that gives extra information about specific locations. These locations often refer to employee
+  locations, rather than locations of folks under IDOC custody.
 primary_key_cols:
   - body_loc_cd
+columns:
+  - name: body_loc_cd
+    description: |-
+      Location code
+  - name: body_loc_desc
+    description: |-
+      Name of the location
+  - name: loc_typ_cd
+    description: |-
+      Type of the location
+  - name: mdd_acuity_lvl_cd
+    description: |-
+      Always null
+  - name: vld_flg
+    description: |-
+      Whether or not the location is currently used
+  - name: body_loc_cd_id
+  - name: mdcl_acuity_lvl_cd

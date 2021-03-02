@@ -1,4 +1,17 @@
 file_tag: cls_attend
+file_description: |-
+  Not in use
 primary_key_cols:
   - cls_attnd_id
+columns:
+  - name: updt_dt
+  - name: updt_usr_id
+  - name: cls_attnd_id
+  - name: cls_enroll_id
+  - name: attend_excuse_cd
+  - name: attnd_dt
+  - name: attnd_tm
+  - name: attnd_stat
+  - name: attnd_hrs
+  - name: excuse_by_usr_id
 ignore_quotes: True

@@ -1,3 +1,31 @@
 file_tag: sbstnc_tst
+file_description: |-
+  Not in use
 primary_key_cols:
   - tst_id
+columns:
+  - name: tst_id
+  - name: ofndr_num
+  - name: smpl_rqst_dt
+  - name: smpl_rqst_tm
+  - name: smpl_typ_cd
+  - name: rfsd_sbstnc_tst_dt
+  - name: cllct_dt
+  - name: cllct_tm
+  - name: cllct_by_id
+  - name: tst_mthd_cd
+  - name: tst_dt
+  - name: tst_by_id
+  - name: tst_by_name
+  - name: rslt_chall_dt
+  - name: evidence_id
+  - name: sbstnc_tst_cmt
+  - name: cllct_loc_desc
+  - name: smpl_not_tst_dt
+  - name: tst_sched_typ_cd
+  - name: ofndr_med_rpt_flg
+  - name: prsn_dvsn_id
+  - name: prsn_cmplx_id
+  - name: sbstnc_tmprd_flg
+  - name: updt_usr_id
+  - name: updt_dt
