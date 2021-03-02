@@ -1,6 +1,24 @@
 file_tag: cis_codeemploymentreasonleft
 file_description: |-
   Not in use
+
+  Last known entries as of `2021-03-01`
+
+  | id  | codedescription | active | reasonleftcode
+  | --- | --------------- | ------ | --------------
+  | 1   | FIRED           | T      | A
+  | 2   | QUIT            | T      | B
+  | 3   | CHANGE JOB      | T      | C
+  | 4   | RIF             | F      | D
+  | 5   | MOVED           | T      | E
+  | 6   | INCARCERATED    | T      | F
+  | 7   | MEDICAL         | T      | M
+  | 8   | RETIRED         | T      | R
+  | 9   | OUT OF BUSINESS | T      | O
+  | 10  | SCHOOL          | T      | S
+  | 11  | PREGNANCY       | T      | P
+  | 12  | LAID OFF        | T      | L
+  | 13  | SEASONAL        | T      | G
 primary_key_cols:
   - id
 columns:

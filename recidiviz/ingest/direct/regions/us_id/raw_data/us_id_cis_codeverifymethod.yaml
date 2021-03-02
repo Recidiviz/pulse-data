@@ -5,6 +5,13 @@ primary_key_cols:
   - id
 columns:
   - name: id
+    is_datetime: False
+    description: Id of this row
   - name: codedescription
+    is_datetime: False
+    description: Description of the verification method
   - name: active
+    is_datetime: False
+    description: Is this enum entry active?
   - name: legacyid
+    is_datetime: False

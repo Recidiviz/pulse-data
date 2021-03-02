@@ -1,8 +1,10 @@
 file_tag: cis_offenderaddress
 file_description: |-
-  Contains a new row for each address span that a person under IDOC custody ever had. Each row should contain start and
-  end dates to represent when the address was in use. This table does not tell you what type of address each of these
-  rows represents nor where the address itself is, and it needs to be joined with `cis_personaddress` to get that
+  Contains a new row for each address span that a person under IDOC custody ever had.
+
+  Each row should contain start and end dates to represent when the address was in use.
+  This table does not tell you what type of address each of these rows represents nor where
+  the address itself is, and it needs to be joined with `cis_personaddress` to get that
   information.
 primary_key_cols:
   - personaddressid
