@@ -224,6 +224,7 @@ def sums_and_totals_consistency_query(view_builder: MetricBigQueryViewBuilder,
     )
     
     SELECT
+      state_code AS region_code,
       {dimension_columns},
       {totals_columns},
       {sum_columns}
