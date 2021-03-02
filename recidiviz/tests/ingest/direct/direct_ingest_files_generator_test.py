@@ -21,6 +21,8 @@ from shutil import rmtree
 from types import ModuleType
 from typing import List
 
+import pytest
+
 from recidiviz.ingest.direct import regions as regions_module
 from recidiviz.ingest.direct.direct_ingest_files_generator import DirectIngestFilesGenerator
 from recidiviz.ingest.direct.direct_ingest_region_utils import get_existing_region_dir_names, \
@@ -30,6 +32,8 @@ from recidiviz.tests.ingest.direct import regions as regions_tests_module
 from recidiviz.tests.ingest.direct.regions.direct_ingest_region_structure_test import DirectIngestRegionDirStructureBase
 
 
+# TODO(#6105): Use a fake FS for these tests so they can be run in parallel without clobbering each other.
+@pytest.mark.no_parallel
 class DirectIngestFilesGeneratorTest(DirectIngestRegionDirStructureBase, unittest.TestCase):
     """Tests for DirectIngestFilesGenerator."""
 
