@@ -30,7 +30,7 @@ columns:
       IDOC update date for this row
   - name: personid
     description: |-
-      Id of this person (same as docno, ofndr_num in other tables)
+      Id of this person (`cis_offender.id`)
   - name: version
   - name: codeaddresstypeid
     description: |-

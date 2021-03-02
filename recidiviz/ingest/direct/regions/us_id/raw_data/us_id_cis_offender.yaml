@@ -5,9 +5,22 @@ primary_key_cols:
   - id
 columns:
   - name: id
+    is_datetime: False
+    description: Id of this row (often foreign-key linked as x.personid)
   - name: offendernumber
+    is_datetime: False
+    description: DOC number of this person
   - name: paroleofficerid
+    is_datetime: False
   - name: insuser
+    is_datetime: False
+    description: IDOC username of whoever created this row
   - name: insdate
+    is_datetime: True
+    description: IDOC timestamp for when this row was created
   - name: upduser
+    is_datetime: False
+    description: IDOC username for the last person to update this row
   - name: upddate
+    is_datetime: True
+    description: IDOC update date for this row
