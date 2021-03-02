@@ -20,9 +20,13 @@
 // to allow the interface definition to be extended.
 export {};
 
-// values that we add from `runtime_env_vars.js`
 declare global {
   interface Window {
+    // values that we add from `auth0_public_config.js`
     AUTH0_CONFIG: Record<string, string>;
+
+    // Segment's analytics.js
+    /* eslint-disable @typescript-eslint/no-explicit-any */
+    analytics: any;
   }
 }
