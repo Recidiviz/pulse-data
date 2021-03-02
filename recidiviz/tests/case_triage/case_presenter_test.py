@@ -25,6 +25,7 @@ from freezegun import freeze_time
 from recidiviz.case_triage.querier.case_presenter import CasePresenter
 from recidiviz.case_triage.case_updates.interface import CaseUpdatesInterface
 from recidiviz.case_triage.case_updates.types import CaseUpdateMetadataKeys, CaseUpdateActionType
+from recidiviz.case_triage.querier.case_presenter import _json_map_dates_to_strings
 from recidiviz.persistence.database.schema.case_triage.schema import CaseUpdate
 from recidiviz.tests.case_triage.case_triage_helpers import generate_fake_client
 
@@ -44,7 +45,7 @@ class TestCasePresenter(TestCase):
         case_presenter = CasePresenter(self.mock_client, None)
 
         self.assertEqual(case_presenter.in_progress_officer_actions(), [])
-        self.assertEqual(case_presenter.to_json(), {
+        self.assertEqual(case_presenter.to_json(), _json_map_dates_to_strings({
             'personExternalId': self.mock_client.person_external_id,
             'fullName': json.loads(self.mock_client.full_name),
             'gender': self.mock_client.gender,
@@ -62,14 +63,14 @@ class TestCasePresenter(TestCase):
             'mostRecentAssessmentDate': self.mock_client.most_recent_assessment_date,
             'assessmentScore': self.mock_client.assessment_score,
             'mostRecentFaceToFaceDate': self.mock_client.most_recent_face_to_face_date,
-            'nextAssessmentDate': str(date(2022, 2, 1)),
-            'nextFaceToFaceDate': str(date(2021, 3, 1)),
+            'nextAssessmentDate': date(2022, 2, 1),
+            'nextFaceToFaceDate': date(2021, 3, 1),
             'needsMet': {
                 'employment': False,
                 'faceToFaceContact': True,
                 'assessment': True,
             },
-        })
+        }))
 
     @freeze_time('2020-01-01 00:00')
     def test_dismiss_actions(self) -> None:
@@ -99,7 +100,7 @@ class TestCasePresenter(TestCase):
         self.assertEqual([
             action.action_type for action in case_presenter.in_progress_officer_actions()
         ], dismiss_actions)
-        self.assertEqual(case_presenter.to_json(), {
+        self.assertEqual(case_presenter.to_json(), _json_map_dates_to_strings({
             'personExternalId': self.mock_client.person_external_id,
             'fullName': json.loads(self.mock_client.full_name),
             'gender': self.mock_client.gender,
@@ -119,14 +120,14 @@ class TestCasePresenter(TestCase):
             'mostRecentFaceToFaceDate': self.mock_client.most_recent_face_to_face_date,
             'inProgressActions': [action.value for action in dismiss_actions],
             'inProgressSubmissionDate': str(datetime(2020, 1, 1, 0, 0)),
-            'nextAssessmentDate': str(date(2022, 2, 1)),
-            'nextFaceToFaceDate': str(date(2021, 3, 1)),
+            'nextAssessmentDate': date(2022, 2, 1),
+            'nextFaceToFaceDate': date(2021, 3, 1),
             'needsMet': {
                 'employment': False,
                 'faceToFaceContact': True,
                 'assessment': True,
             },
-        })
+        }))
 
     def test_completed_assessment_action_unresolved(self) -> None:
         case_update = CaseUpdate(
