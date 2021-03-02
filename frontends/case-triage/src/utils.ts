@@ -15,7 +15,6 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // =============================================================================
 
-// eslint-disable-next-line import/prefer-default-export
 export const titleCase = (str: string): string => {
   // Step 1. Lowercase the string
   // Step 2. Split the string into an array of strings
@@ -28,4 +27,12 @@ export const titleCase = (str: string): string => {
   }
   // Step 4. Return the output
   return split.join(" "); // ["I'm", "A", "Little", "Tea", "Pot"].join(' ') => "I'm A Little Tea Pot"
+};
+
+// Returns a base64-encoded SHA-256 hash of the input string. Adapted from:
+// https://stackoverflow.com/questions/18338890/are-there-any-sha-256-javascript-implementations-that-are-generally-considered-t
+export const sha256 = async (message: string): Promise<string> => {
+  const msgBuffer = new TextEncoder().encode(message);
+  const hashBuffer = await crypto.subtle.digest("SHA-256", msgBuffer);
+  return btoa(String.fromCharCode(...new Uint8Array(hashBuffer)));
 };
