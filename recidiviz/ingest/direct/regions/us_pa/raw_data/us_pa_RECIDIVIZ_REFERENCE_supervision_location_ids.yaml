@@ -28,7 +28,7 @@ file_description: |-
                      WHEN SO_Identifier = 'PHILADELPHIA WEST DIVISION' THEN 'West'
                      WHEN SO_Identifier = 'PHILADELPHIA NORTHWEST DIVISION' THEN 'Northwest'
                      WHEN SO_Identifier = 'PP SPECIALIZED DIVISION' THEN 'Specialized'
-                     ELSE INITCAP(REPLACE(REPLACE(SO_Identifier, 'SUB OFFICE', ''), 'PBPP', ''))
+                     ELSE INITCAP(REPLACE(REPLACE(SO_Identifier, 'SUB OFFICE', ''), 'PBPP ', ''))
                  END AS sub_office_name
          FROM `recidiviz-123.us_pa_raw_data_up_to_date_views.dbo_LU_PBPP_Organization_latest`
      ),
