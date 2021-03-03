@@ -284,7 +284,7 @@ def _create_or_update_view_and_materialize_if_necessary(bq_client: BigQueryClien
         view_changed = True
 
     if view.materialized_view_table_id:
-        if view_changed or parent_changed:
+        if view_changed or parent_changed or not bq_client.table_exists(dataset_ref, view.materialized_view_table_id):
             bq_client.materialize_view_to_table(view)
         else:
             logging.info(
