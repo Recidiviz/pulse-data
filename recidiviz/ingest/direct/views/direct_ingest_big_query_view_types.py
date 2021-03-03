@@ -239,7 +239,7 @@ class DirectIngestRawDataTableBigQueryView(BigQueryView):
         raw_file_config: DirectIngestRawFileConfig, region_code: str
     ) -> str:
         # TODO(#5399): Migrate raw file configs for all legacy regions to have column descriptions
-        if region_code.upper() in {"US_PA"}:
+        if region_code.upper() in {"US_ID", "US_PA"}:
             columns_str = "*"
         else:
             columns_str = ", ".join(
@@ -269,14 +269,19 @@ class DirectIngestRawDataTableBigQueryView(BigQueryView):
 
         # TODO(#5399): Migrate raw file configs for all legacy regions to have column descriptions
         return (
-            f" EXCEPT ({except_cols_str})" if region_code.upper() in {"US_PA"} else ""
+            f" EXCEPT ({except_cols_str})"
+            if region_code.upper() in {"US_ID", "US_PA"}
+            else ""
         )
 
     @staticmethod
     def _legacy_datetime_cols_clause_for_config(
         raw_file_config: DirectIngestRawFileConfig, region_code: str
     ) -> str:
-        if not raw_file_config.datetime_cols or region_code.upper() not in {"US_PA"}:
+        if not raw_file_config.datetime_cols or region_code.upper() not in {
+            "US_ID",
+            "US_PA",
+        }:
             return ""
 
         formatted_clauses = [
