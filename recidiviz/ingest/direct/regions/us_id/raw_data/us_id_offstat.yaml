@@ -39,7 +39,7 @@ columns:
     is_datetime: True
   - name: stat_strt_typ
     description: |-
-      Code for the status that was valid for this time span
+      Code for the status that was valid for this time span (`PB` - probation, `PR` - parole, others unknown)
   - name: stat_rls_typ
     description: |-
       Code for the status that began after this status was complete
