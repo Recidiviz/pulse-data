@@ -73,7 +73,11 @@ from recidiviz.utils import regions, monitoring, metadata
 from recidiviz.utils.auth.gae import requires_gae_auth
 from recidiviz.utils.monitoring import TagKey
 from recidiviz.utils.params import get_str_param_value, get_bool_param_value
-from recidiviz.utils.regions import get_supported_direct_ingest_region_codes, get_region
+from recidiviz.utils.regions import (
+    Region,
+    get_supported_direct_ingest_region_codes,
+    get_region,
+)
 
 direct_ingest_control = Blueprint("direct_ingest_control", __name__)
 
@@ -439,6 +443,9 @@ def kick_all_schedulers() -> None:
     supported_regions = get_supported_direct_ingest_region_codes()
     for region_code in supported_regions:
         with monitoring.push_region_tag(region_code):
+            region = region_for_region_code(region_code=region_code)
+            if not region.is_ingest_launched_in_env():
+                continue
             try:
                 controller = controller_for_region_code(
                     region_code, allow_unlaunched=False
@@ -558,13 +565,7 @@ def controller_for_region_code(
             error_type=DirectIngestErrorType.INPUT_ERROR,
         )
 
-    try:
-        region = regions.get_region(region_code, is_direct_ingest=True)
-    except FileNotFoundError as e:
-        raise DirectIngestError(
-            msg=f"Region [{region_code}] has no registered manifest",
-            error_type=DirectIngestErrorType.INPUT_ERROR,
-        ) from e
+    region = region_for_region_code(region_code=region_code)
 
     if not allow_unlaunched and not region.is_ingest_launched_in_env():
         check_is_region_launched_in_env(region)
@@ -578,6 +579,16 @@ def controller_for_region_code(
         )
 
     return controller
+
+
+def region_for_region_code(region_code: str, is_direct_ingest: bool = True) -> Region:
+    try:
+        return regions.get_region(region_code, is_direct_ingest=is_direct_ingest)
+    except FileNotFoundError as e:
+        raise DirectIngestError(
+            msg=f"Region [{region_code}] has no registered manifest",
+            error_type=DirectIngestErrorType.INPUT_ERROR,
+        ) from e
 
 
 def _parse_cloud_task_args(
